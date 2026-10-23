@@ -92,6 +92,16 @@ const PROGRESS_EVERY = Number(argOf("--progress-every") ?? 100)
  *  incoming gate), so the census's CONSTRUCT leg can be run alone when only the construct counts and
  *  the build preconditions are needed — the same AST work, without the production parse per file. */
 const SKIP_PRODUCTION = argv.includes("--skip-production")
+/** THE MIRROR FLAG, AND THE ROOT CAUSE IT EXISTS FOR (measured 2026-10-23). The census's first two
+ *  whole-population runs HUNG: reproducible at admitted file #678 (github/codespaces-card.svelte) in
+ *  a fresh process, while that file takes 25 ms in isolation and EACH LEG ALONE completes 700 files
+ *  (production 700/700, construct 700/700 — .tmp-svelte/legs.ts). The hang is therefore in the
+ *  INTERLEAVING of a pool-worker production parse with a main-thread construct parse, after ~600
+ *  files of accumulated state — not in any one file and not in any one leg. The fix is to run the
+ *  legs in SEPARATE PROCESSES (the yaml lane's chunking lesson applied to the legs): an emission
+ *  pass (`--skip-construct`) and a construct pass (`--skip-production`), then merge the two JSONs.
+ *  A census that can hang is not an instrument; it is a slot machine. */
+const SKIP_CONSTRUCT = argv.includes("--skip-construct")
 const SIZE_CAP = 1024 * 1024
 const EXT = ".svelte"
 const EXTENDED = ["decorates", "renders", "mixes_in", "part_of", "overrides"] as const
@@ -603,6 +613,7 @@ for (const f of files) {
   }
 
   // ── LEG 2: the AST — constructs the production emission must be read against
+  if (!SKIP_CONSTRUCT) {
   let tree: any
   try {
     tree = pSvelte.parse(content, f.abs)
@@ -740,6 +751,8 @@ for (const f of files) {
   } catch {
     /* ditto */
   }
+  } // end of the construct leg (--skip-construct skips it)
+
 }
 
 // THE POPULATION MUST BE ACCOUNTED FOR ONE-FOR-ONE, AND filesRead IS PRINTED BESIDE THE ADMITTED COUNT.
@@ -772,6 +785,7 @@ const fmt = (n: number): string => n.toLocaleString("en-US")
 log("")
 log(`files measured ${fmt(C.filesRead)} of ${fmt(C.filesAttempted)} attempted · admitted ${fmt(admitted.length)}${bounded ? " (BOUNDED SET)" : ""} · empty ${C.filesEmpty} · unreadable ${C.filesUnreadable}`)
 if (SKIP_PRODUCTION) log(`production leg SKIPPED (--skip-production): the emission closure is the Lead instruments' job; this run measures CONSTRUCTS + build preconditions only`)
+if (SKIP_CONSTRUCT) log(`construct leg SKIPPED (--skip-construct): this is the EMISSION half of the split census (the two legs run in separate processes — their interleaving hung at admitted #678)`)
 else log(`production parse failures ${C.productionParseFail} · degraded ${C.productionDegraded} · wrong-language ${C.productionWrongLanguage}`)
 log(`SFC parse failures ${C.svelteParseFail} · script blocks ${fmt(C.scriptBlocks)} (ts/tsx ${fmt(C.tsScriptBlocks)}) · sub-parse failures ${C.subParseFail}`)
 log(`relationships ${fmt(C.relationships)}`)
@@ -856,6 +870,7 @@ const report = {
     trackedButAbsent,
     symlinkFileEntries,
   },
+  legs: { emission: !SKIP_PRODUCTION, construct: !SKIP_CONSTRUCT, splitRationale: "the legs run in separate processes because their interleaving hung at admitted file #678; merge emission+construct JSONs for the whole census" },
   emission: {
     filesMeasured: C.filesRead,
     filesAttempted: C.filesAttempted,

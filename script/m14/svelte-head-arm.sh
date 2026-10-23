@@ -28,6 +28,10 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 TOKEN="script/m14/arm-token.sh"
+# THE TAKE VERB IS OVERRIDABLE, because a GRANTED TURN (`take-granted`) is the verb the
+# fleet built for "the lane is queued but its runner is dead": it takes a FREE token and KEEPS the
+# queue place of the lane whose head it passes (Lead, 2026-10-23). `take` stays the default.
+TAKE_VERB="${BB_TAKE_VERB:-take}"
 LANE=svelte
 OUTDIR="validation/m14/measurements"
 STAMP="$(date +%Y%m%dT%H%M%S)"
@@ -89,6 +93,27 @@ run_with_beat() {
   fi
 }
 
+# THE CENSUS RUNS SPLIT, AND THE SPLIT IS THE FIX FOR A MEASURED HANG (2026-10-23): the production
+# leg and the construct leg INTERLEAVED over the whole population hang the census reproducibly at
+# admitted file #678 (shadcn-svelte …/github/codespaces-card.svelte) — while that file takes 25 ms in
+# isolation and EACH LEG ALONE completes 700 files. So the two halves run in SEPARATE PROCESSES and a
+# merge step refuses if they disagree about population/grammars/build preconditions/control arms.
+run_census_split() {
+  run_with_beat "census-emission" \
+    bun run script/m14/svelte-extended-census.ts --skip-construct \
+      --progress "validation/m14/measurements/svelte-census-progress-emission-$STAMP.txt" \
+      --out "validation/m14/measurements/svelte-extended-census-emission-$STAMP.json"
+  run_with_beat "census-construct" \
+    bun run script/m14/svelte-extended-census.ts --skip-production \
+      --progress "validation/m14/measurements/svelte-census-progress-construct-$STAMP.txt" \
+      --out "validation/m14/measurements/svelte-extended-census-construct-$STAMP.json"
+  run_with_beat "census-merge" \
+    bun run script/m14/svelte-census-merge.ts \
+      "validation/m14/measurements/svelte-extended-census-emission-$STAMP.json" \
+      "validation/m14/measurements/svelte-extended-census-construct-$STAMP.json" \
+      "validation/m14/measurements/svelte-extended-census-$STAMP.json"
+}
+
 if [ "$MODE" = "--bounded-check" ]; then
   echo "== BOUNDED CHECK (no token, declared validation only) =="
   "$TOKEN" status 2>/dev/null || true
@@ -103,30 +128,34 @@ fi
 #    HEAD (their artifacts exist and are stamped). It is still a whole-population arm: one heavy run.
 if [ "$MODE" = "--census-only" ]; then
   echo "== CENSUS-ONLY ARM (one heavy run; the closure instruments are already measured) =="
-  if ! "$TOKEN" take "$LANE"; then
+  if ! "$TOKEN" "$TAKE_VERB" "$LANE"; then
     echo "REFUSED — this lane's turn has not arrived (or the memory floor refused). NOTHING WAS RUN." >&2
     exit 3
   fi
   TOOK=1
   echo "== $LANE holds the arm =="
-  run_with_beat "extended-census" \
-    bun run script/m14/svelte-extended-census.ts \
-      --progress "validation/m14/measurements/svelte-census-progress-$STAMP.txt" \
-      --out "validation/m14/measurements/svelte-extended-census-$STAMP.json"
+  run_census_split
   echo
   echo "== CENSUS-ONLY ARM COMPLETE =="
-  ls -la "$OUTDIR"/svelte-head-extended-census-"$STAMP".txt "$OUTDIR"/svelte-extended-census-"$STAMP".json "$OUTDIR"/svelte-census-progress-"$STAMP".txt 2>/dev/null || true
-  grep -hE "^files measured|^BUILD PRECONDITIONS|REACHABLE|unreachable|part_of CAN|^elapsed" "$OUTDIR"/svelte-head-extended-census-"$STAMP".txt 2>/dev/null | head -14 || true
+  ls -la "$OUTDIR"/svelte-head-extended-census-*-"$STAMP".txt "$OUTDIR"/svelte-extended-census-"$STAMP".json "$OUTDIR"/svelte-extended-census-*-"$STAMP".json "$OUTDIR"/svelte-census-progress-*-"$STAMP".txt 2>/dev/null || true
+  grep -hE "^files measured|^BUILD PRECONDITIONS|REACHABLE|unreachable|part_of CAN|^elapsed|^  construct:|^  emission:" "$OUTDIR"/svelte-head-extended-census-*-"$STAMP".txt 2>/dev/null | head -18 || true
   exit 0
 fi
 
-echo "== TAKE THE ARM (refuses unless $LANE is queue head and >=1,200 MB is available) =="
-if ! "$TOKEN" take "$LANE"; then
-  echo "REFUSED — this lane's turn has not arrived (or the memory floor refused). NOTHING WAS RUN." >&2
-  exit 3
+if [ "$MODE" = "--stages-only" ]; then
+  # THE TOKEN IS ALREADY HELD BY THIS LANE (taken ordinally in a separate call so the take is
+  # explicit and auditable). Run the stages; cleanup RELEASES on every exit path.
+  TOOK=1
+  echo "== STAGES-ONLY — the token is already held by $LANE; the stages run and cleanup releases =="
+else
+  echo "== TAKE THE ARM (refuses unless $LANE is queue head and >=1,200 MB is available) =="
+  if ! "$TOKEN" "$TAKE_VERB" "$LANE"; then
+    echo "REFUSED — this lane's turn has not arrived (or the memory floor refused). NOTHING WAS RUN." >&2
+    exit 3
+  fi
+  TOOK=1
+  echo "== $LANE holds the arm =="
 fi
-TOOK=1
-echo "== $LANE holds the arm =="
 
 # 1 · THE HEAD WHOLE-POPULATION CLOSURE — the residual gate (buckets + per-type CLOSURE lines).
 run_with_beat "residual-gate" \
@@ -146,13 +175,10 @@ run_with_beat "incoming-table1" \
   npx tsx script/m14/incoming-gate.ts "$LANE" 0
 ALLOWED_RC="0"
 
-# 3 · THE EXTENDED PROVENANCE CENSUS — emission leg (with sfcDelegated provenance) + AST construct leg.
-# `--progress` names the last file in the artifact AND on stdout (so the beat follows real growth and a
-# hang names its file instead of looking like a slow population — the fleet's rule).
-run_with_beat "extended-census" \
-  bun run script/m14/svelte-extended-census.ts \
-    --progress "validation/m14/measurements/svelte-census-progress-$STAMP.txt" \
-    --out "validation/m14/measurements/svelte-extended-census-$STAMP.json"
+# 3 · THE EXTENDED PROVENANCE CENSUS — SPLIT into its two legs (see run_census_split's header: the
+# interleaving hangs, the halves each complete). `--progress` names the last file in each half's
+# artifact AND on stdout (so the beat follows real growth and a hang names its file).
+run_census_split
 
 echo
 echo "== ARM COMPLETE — artifacts =="
