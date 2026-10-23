@@ -63,7 +63,16 @@ const REPO = resolve(import.meta.dir, "../..")
 // ═══════════════════════════════════════════════════════════════════════════
 // THE FOUR CONDITIONS, AS THE OWNER STATED THEM. THE NAMES ARE THE OWNER'S.
 // ═══════════════════════════════════════════════════════════════════════════
-type Condition = "implemented" | "whole-population" | "resolved" | "walls-dispositioned"
+type Condition = "implemented" | "whole-population" | "resolved" | "walls-dispositioned" | "fixtures"
+
+/** The fixture suite's own language names where they differ from a lane's name. A mapping, not a
+ *  guess: a lane whose key is wrong reads as "no suite ran", which is an UNKNOWN and not a pass. */
+const FIXTURE_LANG: Record<string, string> = {
+  objectivec: "objc",
+  typescript: "typescript",
+  makefile: "make",
+  vbnet: "vb",
+}
 
 const CONDITIONS: Condition[] = ["implemented", "whole-population", "resolved", "walls-dispositioned"]
 
@@ -192,6 +201,51 @@ const parsePopulation = (s: string | undefined): Population | null => {
  * population. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ A MISSING MEASUREMENT IS NOT A PASSING
  * MEASUREMENT, AND AN UNREADABLE DECLARATION IS NOT A CLEAN LANE.**
  */
+// ═══════════════════════════════════════════════════════════════════════════
+// (E) THE FIXTURES — THE OWNER'S FIFTH DONE CONDITION, AND THE GATE DID NOT CHECK IT.
+// ═══════════════════════════════════════════════════════════════════════════
+/**
+ * MEASURED 2026-10-23: the gate called RUBY done while SEVEN of its fixtures failed. The owner's
+ * definition of done names "fixtures pass both directions" explicitly, and this gate checked four
+ * conditions and never checked that one — so a DONE verdict could coexist with a suite that says the
+ * analyzer is broken, and nobody noticed until the Lead ran the fleet's suite by hand.
+ *
+ * ⇒ **A GATE THAT CHECKS FOUR OF THE OWNER'S FIVE CONDITIONS IS A GATE THAT CAN SAY YES WHEN THE
+ * ANSWER IS NO.** The suite is run ONCE for the whole fleet (it is the same binary for every lane)
+ * and its summary line is the measurement. A lane whose suite does not run is an UNKNOWN, not a
+ * pass — and an unknown is printed as a failure here, because the ceiling on a check is the check.
+ */
+const runFixtureSuite = (): { summary: Map<string, { pass: number; fail: number }>; note: string } => {
+  const summary = new Map<string, { pass: number; fail: number }>()
+  try {
+    const out = execFileSync("bun", ["script/m14/run-fixtures.ts"], {
+      cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 1_800_000,
+    })
+    const line = out.split("\n").reverse().find((l) => l.startsWith("summary: "))
+    if (!line) return { summary, note: "THE FIXTURE SUITE PRINTED NO SUMMARY LINE — no lane's fixtures can be called passing" }
+    const obj = JSON.parse(line.slice("summary: ".length))
+    for (const [lang, v] of Object.entries(obj as Record<string, { pass?: number; fail?: number }>)) {
+      summary.set(lang, { pass: Number(v?.pass ?? 0), fail: Number(v?.fail ?? 0) })
+    }
+    return { summary, note: `${summary.size} language suite(s) read` }
+  } catch (e: any) {
+    // A NON-ZERO EXIT IS THE SUITE SAYING SOMETHING FAILED — its stdout still carries the summary.
+    const out = String(e?.stdout ?? "")
+    const line = out.split("\n").reverse().find((l) => l.startsWith("summary: "))
+    if (line) {
+      try {
+        const obj = JSON.parse(line.slice("summary: ".length))
+        for (const [lang, v] of Object.entries(obj as Record<string, { pass?: number; fail?: number }>)) {
+          summary.set(lang, { pass: Number(v?.pass ?? 0), fail: Number(v?.fail ?? 0) })
+        }
+        return { summary, note: `${summary.size} language suite(s) read (the suite exited non-zero, which is the failures, and its stdout still carries the summary)` }
+      } catch { /* fall through */ }
+    }
+    return { summary, note: `THE FIXTURE SUITE COULD NOT BE RUN (${String(e?.message ?? e).split("\n")[0]}) — an unknown is not a pass` }
+  }
+}
+const FIXTURES = runFixtureSuite()
+
 const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
   const conditions = new Map<Condition, { ok: boolean; detail: string }>()
   const problems: string[] = []
@@ -208,6 +262,24 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
         (row.notFired ? " *** THE ANALYZER NEVER FIRED — THERE IS NO MEASUREMENT AT ALL ***" : "") +
         (row.noCorpus ? " *** THE CORPUS WAS EMPTY — THE RUN MEASURED NOTHING ***" : ""),
     })
+  }
+
+  // ── (E) FIXTURES PASS — the owner's fifth condition ──────────────────────
+  // The summary keys are the suite's own language names; a lane absent from the suite is an UNKNOWN.
+  {
+    const key = FIXTURE_LANG[lane] ?? lane
+    const f = FIXTURES.summary.get(key)
+    if (!f) {
+      conditions.set("fixtures", {
+        ok: false,
+        detail: `NO FIXTURE SUITE RAN FOR THIS LANGUAGE (looked up "${key}") — an unknown is not a pass. ${FIXTURES.note}`,
+      })
+    } else {
+      conditions.set("fixtures", {
+        ok: f.fail === 0,
+        detail: `${f.pass} pass / ${f.fail} fail${f.fail === 0 ? "" : " *** THE SUITE SAYS THE ANALYZER IS BROKEN ***"}`,
+      })
+    }
   }
 
   // ── the declaration ──────────────────────────────────────────────────────
@@ -428,7 +500,7 @@ const selfTest = (): { passed: number; failures: string[] } => {
 // ═══════════════════════════════════════════════════════════════════════════
 const { rows, raw } = readCoverageGate()
 const st = selfTest()
-console.log("THE COMPLETION GATE — is this language REALLY done? The owner's four conditions, mechanically.")
+console.log("THE COMPLETION GATE — is this language REALLY done? The owner's FIVE conditions, mechanically.")
 console.log("")
 if (st.failures.length > 0) {
   console.error("FATAL: this gate's own positive control did not fire:")
@@ -452,7 +524,7 @@ const nnLanes = laneNames.filter((l) => {
 const doneLanes = verdicts.filter((v) => v.done).map((v) => v.lane)
 const nnNotDone = nnLanes.filter((l) => !doneLanes.includes(l))
 
-console.log(`lanes: ${laneNames.length}   at n/n per the coverage gate: ${nnLanes.length}   DONE per the owner's four conditions: ${doneLanes.length}`)
+console.log(`lanes: ${laneNames.length}   at n/n per the coverage gate: ${nnLanes.length}   DONE per the owner's five conditions: ${doneLanes.length}`)
 console.log("")
 console.log("DONE:")
 if (doneLanes.length === 0) console.log("  (none)")
