@@ -404,12 +404,69 @@ if (!fromArg) {
   console.error("REFUSED — no --from <arm-output.txt>. The declaration is TRANSCRIBED from the arm's own TABLE 1; it is never typed.")
   process.exit(2)
 }
-const text = readFileSync(resolve(ROOT, fromArg), "utf8")
-const { rows, total } = parseTable1(text)
-const pop = parsePopulation(text)
-if (!pop) {
-  console.error("REFUSED — the arm output carries no `N of M files` population line, so the population is UNREAD and a declaration over an unknown population is a claim about nothing.")
-  process.exit(2)
+// ── ONE ARM RUN, OR SEVERAL DISJOINT CHUNKS SUMMED ──────────────────────────
+// ★ THE CHUNKED FORM IS THE FSHARP LANE'S AND IT EXISTS FOR A REASON THIS HOST TAUGHT US: an arm
+// that dies at file 17,000 of 19,347 publishes NOTHING if the design is one run, while a set of
+// disjoint chunks publishes N of M and REFUSES BY NAME for the rest. The summing is legitimate only
+// with its rule stated, so the declaration records the chunk list and the assertion that makes the
+// sum meaningful: Σ parsed === admitted.
+const fromArgs = process.argv.reduce<string[]>((acc, a, i) => {
+  if (a === "--from") { const v = process.argv[i + 1]; if (v) acc.push(v) } else if (a.startsWith("--from=")) acc.push(a.slice(7))
+  return acc
+}, [])
+const sources = fromArgs.length ? fromArgs : [fromArg]
+const offsetsArg = argOf("offsets")
+
+const parsedRuns = sources.map((src) => {
+  const t = readFileSync(resolve(ROOT, src), "utf8")
+  const tbl = parseTable1(t)
+  const p = parsePopulation(t)
+  if (!p) {
+    console.error(`REFUSED — ${src} carries no \`N of M files\` population line, so its population is UNREAD and a declaration over an unknown population is a claim about nothing.`)
+    process.exit(2)
+  }
+  return { src, rows: tbl.rows, total: tbl.total, pop: p }
+})
+
+let rows: ArmRow[]
+let total: ArmRow | null
+let pop: { parsed: number; total: number }
+let chunkNote = "one arm run over the whole admitted population"
+let chunkList: Array<{ source: string; parsed: number; corpusTotal: number; offset: string | null }> | null = null
+
+if (parsedRuns.length === 1) {
+  const only = parsedRuns[0]!
+  rows = only.rows; total = only.total; pop = only.pop
+} else {
+  // ⇒ THE SUM, AND THE SUM IS NOT A NO-OP: the eleven terms are summed PER TYPE, and the
+  //   population is the sum of the runs' parsed counts against the corpus each run reports.
+  const byType = new Map<string, ArmRow>()
+  for (const run of parsedRuns) {
+    for (const r of run.rows) {
+      const acc = byType.get(r.type)
+      if (!acc) { byType.set(r.type, { ...r }) }
+      else { for (const c of ARM_COLUMNS) acc[c] = (acc[c] ?? 0) + (r[c] ?? 0) }
+    }
+  }
+  rows = [...byType.values()]
+  total = null
+  const sumParsed = parsedRuns.reduce((a, r) => a + r.pop.parsed, 0)
+  const corpora = new Set(parsedRuns.map((r) => r.pop.total))
+  if (corpora.size !== 1) {
+    console.error(`REFUSED — the chunks disagree about the corpus size (${[...corpora].join(", ")}); they are not slices of one population.`)
+    process.exit(5)
+  }
+  pop = { parsed: sumParsed, total: [...corpora][0]! }
+  const offsets = offsetsArg ? offsetsArg.split(",") : []
+  chunkList = parsedRuns.map((r, i) => ({ source: r.src, parsed: r.pop.parsed, corpusTotal: r.pop.total, offset: offsets[i] ?? null }))
+  chunkNote =
+    `${parsedRuns.length} DISJOINT CHUNKS, SUMMED. Each chunk is a slice of the same ${pop.total}-file corpus and the ` +
+    `slices sum to ${sumParsed} of ${pop.total}. ⇒ DISJOINTNESS IS A PROPERTY OF THE OFFSETS PASSED TO THE ARM, NOT OF ` +
+    `THESE FILES: the arm cannot see another run's files, so no reader can re-derive disjointness from the outputs. ` +
+    `The offsets are recorded in meta.chunks so the claim is checkable against the command that made it. ` +
+    `⇒ AND THE REASON THIS FORM EXISTS: an arm that dies at file 17,000 of ${pop.total} publishes NOTHING under a ` +
+    `one-run design, and a truncated run that still prints a TABLE is indistinguishable from a complete one — ` +
+    `so the lane measures in slices it can COMPLETE and lets the population check refuse the rest by name.`
 }
 const admitted = admittedOf()
 const problems = check(rows, total, pop, admitted)
@@ -449,6 +506,8 @@ const decl = {
     analyzer: "src/ast/real-scala-analyzer.ts",
     analyzerDigest: `sha256:${analyzerDigest}`,
     generated: new Date().toISOString().slice(0, 10),
+    measurementForm: chunkNote,
+    ...(chunkList ? { chunks: chunkList } : {}),
     populationNote:
       `THE POPULATION IS THE WHOLE ADMITTED SET. MEASURED over BB_CORPUS_ROOT=$PWD/.corpus on 2026-10-22: ` +
       `${admitted} admitted files of ${admitted} paths, 4 repositories (scala3 18,616 · cats-effect 462 · ` +
