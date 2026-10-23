@@ -317,6 +317,23 @@ function runRegexCensus(): {
     if (t) { total = Number(t[1]); ran = true }
     if (/PASS — 0 regex literals/.test(text)) { total = 0; ran = true }
   }
+  // ★ THE CENSUS IS HEAD-ANCHORED AND MUST BE REGENERATED BEFORE IT IS READ, OR THE GATE REPORTS
+  // A STALE COUNT. MEASURED 2026-10-23 by the scss lane, against this very condition: the artifact
+  // listed **8** literals in `real-scss-analyzer.ts` while the committed blob held **THIRTEEN** —
+  // five had been added by that lane's own later commits and the artifact had not been rebuilt. The
+  // lane fixed all thirteen and the gate would have kept saying eight. Its own field says it:
+  // `describes: HEAD blobs (git show HEAD:src/ast/...)`.
+  // ⇒ A CACHED MEASUREMENT OF A MOVING TARGET IS A MEASUREMENT OF THE CACHE. Regenerate first, then
+  // read, and if the regeneration fails say so rather than reading whatever is on disk.
+  let regenerated = false
+  try {
+    execFileSync("npx", ["tsx", "script/m12/regex-census.ts", "--head"], {
+      encoding: "utf8", maxBuffer: 32 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"],
+    })
+    regenerated = true
+  } catch {
+    regenerated = false
+  }
   try {
     out = execFileSync("bash", ["script/m14/no-regex-gate.sh"], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 })
     absorb(out)
@@ -329,7 +346,9 @@ function runRegexCensus(): {
     ran,
     byLane,
     total,
-    note: ran ? "" : "THE REGEX CENSUS DID NOT RUN — an unknown is not a pass",
+    note: ran
+      ? ""
+      : "THE REGEX CENSUS DID NOT RUN OR COULD NOT BE REGENERATED FROM HEAD — an unknown is not a pass",
   }
 }
 const REGEX_CENSUS = runRegexCensus()
