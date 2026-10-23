@@ -135,11 +135,36 @@ function parseTable1(text: string): { rows: ArmRow[]; total: ArmRow | null; head
   return { rows, total, header }
 }
 
-/** `600 of 19347 files` — the arm's own population line, and the ONLY place the sample shows. */
+/**
+ * THE ARM'S OWN POPULATION LINE, AND THE ONLY PLACE A SAMPLE SHOWS.
+ *
+ * ⇒ TWO SPELLINGS EXIST AND BOTH ARE THE ARM'S, WHICH IS WHY BOTH ARE PARSED:
+ *   · a WHOLE-POPULATION run prints  `population: 19347 parsed of 19347 sampled (corpus has 19347 … files across 4 repos)`
+ *   · a STRIDE run prints            `SAMPLE, NOT POPULATION: 600 of 19347 files.` as a warning
+ *
+ * ★ AND THE SECOND FORM IS WHY THE CHECK MATTERS: the stride artefact's own `population:` line reads
+ * `600 parsed of 19347 sampled`, so a parser that ONLY understood the warning line would have had to
+ * trust that the warning is present. **A CHECK THAT DEPENDS ON THE WARNING BEING PRINTED IS A CHECK THE
+ * WARNING CAN DISABLE** — this parser reads the numbers and compares them, so a truncated run is caught
+ * whether or not the instrument chose to advertise it.
+ */
 function parsePopulation(text: string): { parsed: number; total: number } | null {
-  const m = text.match(/(\d[\d,]*)\s+of\s+(\d[\d,]*)\s+files/)
-  if (!m) return null
-  return { parsed: Number(m[1]!.replace(/,/g, "")), total: Number(m[2]!.replace(/,/g, "")) }
+  const whole = text.match(/(\d[\d,]*)\s+parsed\s+of\s+(\d[\d,]*)\s+sampled/)
+  if (whole) {
+    const parsed = Number(whole[1]!.replace(/,/g, ""))
+    const total = Number(whole[2]!.replace(/,/g, ""))
+    // `corpus has N … files` — when present it MUST agree with the sampled total; two numbers for one
+    // population inside one line is the same defect the fleet ruled on, one order of magnitude smaller.
+    const corpus = text.match(/corpus has (\d[\d,]*)\s/)
+    if (corpus) {
+      const c = Number(corpus[1]!.replace(/,/g, ""))
+      if (c !== total) return { parsed, total: c }
+    }
+    return { parsed, total }
+  }
+  const stride = text.match(/(\d[\d,]*)\s+of\s+(\d[\d,]*)\s+files/)
+  if (stride) return { parsed: Number(stride[1]!.replace(/,/g, "")), total: Number(stride[2]!.replace(/,/g, "")) }
+  return null
 }
 
 // ── THE ELEVEN TERMS AND THE FIVE BUCKETS ───────────────────────────────────
