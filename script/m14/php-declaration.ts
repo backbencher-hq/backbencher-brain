@@ -212,23 +212,38 @@ const caveats = (admitted: number, corpusRepos: number, runEnv: Record<string, u
     "grammar change). `class C { use T; }` was published as `uses`; it is `mixes_in` now, with the same source " +
     "(the composing type), target (the trait leaf), line, confidence and `metadata.isTraitUse`. The evidence tier " +
     "moved to structural because the tier follows the CONSTRUCT (a declaration-header clause), not the old label. " +
-    "MEASURED on the whole population: emission.mixes_in in validation/m14/measurements/php-emission-census.json.",
+    "MEASURED on the whole population: 320 rows over 107 files in 4 repositories, of which the arm resolves 297, finds 1 ambiguous and leaves " +
+    "22 unresolved — the 22 being TRAIT NAMES DECLARED NOWHERE IN THE CORPUS (19 of them the single external trait `ArraySubsetAsserts`, plus " +
+    "`CoveredTrait` whose two same-named declarations make it ambiguous elsewhere, `ProphecyTrait`, `T` and `U`), which is the vendor boundary " +
+    "this lane's other types live on. Artefact: emission.mixes_in in validation/m14/measurements/php-emission-census.json.",
   partOfRelabelAndDangling:
-    "★ `part_of` IS A 1:1 RELABEL OF include/require, AND A PATH TARGET NO ADMITTED FILE ANSWERS IS THE LANE'S " +
-    "`danglingPartOf` CLASS. `include`/`require`/`include_once`/`require_once` was `imports`; it is `part_of` now, " +
-    "with `metadata.partRole: \"library\"` mandatory (php has only the host form of Dart's two roles) and the " +
-    "written form kept per row as `metadata.includeType` so the four-way split is ATTRIBUTED rather than lumped. " +
-    "A row whose path target names no admitted file CANNOT RESOLVE and CANNOT CARRY A CHECKABLE CLAIM; it lands in " +
-    "`otherUnresolved` and is counted in `emission.part_of.targetsNotInAdmittedSet` — the same declaration the " +
-    "fsharp lane made for a `#load` its corpus does not carry. The analyzer does not consult the filesystem when it " +
-    "publishes the row, and neither does the gate's project index.",
+    "★ `part_of` IS A 1:1 RELABEL OF include/require, AND ITS CLOSURE IS MEASURED IN THREE CLASSES, NOT ONE. The arm's TABLE 1 reads " +
+    "1,494 `part_of` rows = 4 resolved + 68 unresolved + 1,422 extOK. (1) THE 1,422 extOK are rows whose `metadata.importProjectFile` " +
+    "FILE CLAIM the project CONFIRMED — the claim guard composes `__DIR__`/`__FILE__`/`dirname(__FILE__)` project-relative, refuses a " +
+    "path escaping the project, requires an admitted extension and `statSync`s, so a verified claim says THE FILE EXISTS IN THIS PROJECT. " +
+    "(2) THE 68 unresolved carry NO claim at all (claimKind \"-\" on every one): the target names nothing the project can confirm. " +
+    "(3) THE 4 resolved are ordinary name resolutions of a path-shaped target and are a coincidence of spelling, not a file binding. " +
+    "⇒ A VERIFIED CLAIM IS NOT AN ADMITTED-POPULATION FILE: the guard admits an ON-DISK file (phpunit's untracked `build/.../vendor/autoload.php` " +
+    "is one), while the GIT-TRACKED population does not carry those trees — so the population census's `targetsNotInAdmittedSet` (1,492 of 1,494) " +
+    "answers a different question from the gate's claim count and the two must not be read against each other. " +
+    "⇒ THE FOUR-WAY WRITTEN-FORM SPLIT IS MEASURED, not inferred: require 820 · require_once 662 · include 9 · include_once 3 " +
+    "(emission census `part_of.byWrittenForm`), and every row carries `metadata.partRole: \"library\"` because php has only the host form " +
+    "of Dart's two roles. The written form stays on the row as evidence; the relation is the file-inclusion fact.",
+  partOfIsAFileRelationNotAModule:
+    "★ `part_of` ROWS DO NOT CREATE A MODULE BINDING AND THE LANE PUBLISHES THEM ANYWAY. The included file's declarations join the " +
+    "includer's one global declaration space (a second declaration of the same name is a fatal error), which is exactly the contract's " +
+    "\"a part shares the library's single scope, imports nothing\" — so the relation is the file-inclusion fact and NOT an import. " +
+    "The `imports` ImportInfo directive list is still published (it is persisted into `brain_import` by src/ast/parallel-indexer.ts), " +
+    "and the LSP file-level readers already admit `part_of` as a dependency kind (`graph_request.ts`, `graph_usages.ts`, " +
+    "`evidence_tier.ts`), so no product surface loses the include when the stored label moves.",
+
   exportsOverridesAreCorpusDensity:
     "★ `exports` AND `overrides` ARE IMPLEMENTED AND FIRE; A SILENT COLUMN ON A SMALL DRAW IS CORPUS DENSITY, " +
-    "MEASURED. The 120-file firing log reads them SILENT because their applicable density is a handful of sites in " +
-    "the whole admitted population; the lane's own whole-corpus census (PHPD40) reads 10 of 10 types firing with " +
-    "MISSED 0 on both sides. The fixture `php/define-exports` pins both resolution shapes of the callee, including " +
-    "the ABSOLUTE-FQ `\\define(...)` that a 2026-10-15 spec sentence wrongly recorded as refused — MEASURED CLOSED " +
-    "2026-10-23 at 33 pass / 0 fail.",
+    "MEASURED. The whole-population emission census (`validation/m14/measurements/php-emission-census.json`) measures " +
+    "`exports` 59 edges over 19 files in 5 repositories and `overrides` 37 edges over 30 files in 2 repositories — a " +
+    "per-file density so low that the 120-file firing stride reads them SILENT while the population fires them. The " +
+    "fixture `php/define-exports` pins both resolution shapes of the callee, including the ABSOLUTE-FQ `\\define(...)` " +
+    "that a 2026-10-15 spec sentence wrongly recorded as refused — MEASURED CLOSED 2026-10-23 at 33 pass / 0 fail.",
   populationIsTracked:
     `★ THE POPULATION IS THE GIT-TRACKED SET, NOT THE DISK: \`git ls-files\` per repository under \`.corpus\`, router ` +
     `extensions .php/.phpt, engine 1 MiB cap, dedup by realpath. MEASURED 2026-10-23: ${admitted} admitted of 6,780 ` +
@@ -236,6 +251,19 @@ const caveats = (admitted: number, corpusRepos: number, runEnv: Record<string, u
     `(pb-grpc 199 · pb-reference 157 — gitlinks not checked out), 199 symlinked directory entries entered over 202 ` +
     `corpus entries. A walk of the DISK finds 6,426 files, of which 2 are UNTRACKED (proxicall's two ` +
     `node_modules/flatted/php/flatted.php) — a different population (validation/m14/measurements/php-population.json).`,
+  bindingsAreNotResolutions:
+    "★ 121,044 OF THE LANE'S EDGES ARE `bindOK`, AND `bindOK` IS NOT `resolved`. A variable read is spelled `<read source>\\u0000<binding>` " +
+    "(`metadata.localBinding`) because a local, parameter or superglobal is never a published symbol; the gate's binding claim is the " +
+    "statement that the target IS a binding, and it is a verified OUTCOME, deliberately never folded into `resolved`. A reader comparing " +
+    "this lane's resolved share with a lane that did not spell reads as bindings must subtract the 121,044 rows first, or the comparison " +
+    "is between two different measurements. It is the same sentence the fleet's own table prints above its TOTAL row.",
+  theWallsArePartitioned:
+    "★ THE 48,378 UNRESOLVED ROWS ARE DISPOSITIONED AS AN EXACT PARTITION, NOT A LIST OF CAUSES: 29,227 bare names unresolved from TWO OR " +
+    "MORE repositories (external evidence) + 13,958 bare names unresolved from exactly ONE (the honest remainder where externality is not " +
+    "provable) + 3,017 qualified names naming no declaration in the project + 2,108 dotted member targets whose receiver type one file " +
+    "cannot state + 68 part_of path targets the file claim cannot place = 48,378. Each class has its own falsifier in `causeRulings`; " +
+    "the split is computed by `script/m14/php-cause-census.ts` from the arm's own dump, and the census CHECKS its outcome tally against " +
+    "TABLE 1 (unresolved 48,378 · amb(decl) 44,275 · bindOK 121,044 · extOK 11,172 — all exact) before it reports a class.",
   sampleRefusedByTheGenerator:
     "★ THIS DECLARATION IS WRITTEN BY `script/m14/php-declaration.ts`, WHICH REFUSES A SAMPLE BY NAME: it will not " +
     "write a declaration whose arm output parsed fewer files than the population holds, and it refuses a population " +

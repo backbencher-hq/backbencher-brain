@@ -40,6 +40,7 @@
  *       disagrees with TABLE 1's unresolved total (two numbers for one set is a refusal, not a note).
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import { resolve, dirname } from "node:path"
 
 const ROOT = resolve(import.meta.dir, "../..")
@@ -69,17 +70,18 @@ if (/DUMP TRUNCATED/.test(text)) {
   process.exit(4)
 }
 
-// ── TABLE 1'S UNRESOLVED TOTAL, FOR THE CONTROL ─────────────────────────────
-let tableUnresolved = -1
+// ── TABLE 1'S TOTAL ROW, FOR THE CONTROLS ───────────────────────────────────
+const table: Record<string, number> = {}
 {
   const lines = text.split("\n")
   for (const l of lines) {
     if (!/^TOTAL\s+\d/.test(l.trim())) continue
     const nums = l.trim().split(/\s+/).slice(1).map(Number)
-    if (nums.length >= ARM_COLUMNS.length) tableUnresolved = nums[ARM_COLUMNS.indexOf("unresolved")]!
+    if (nums.length >= ARM_COLUMNS.length) for (let i = 0; i < ARM_COLUMNS.length; i++) table[ARM_COLUMNS[i]!] = nums[i]!
     break
   }
 }
+const tableUnresolved = table.unresolved ?? -1
 
 // ── THE DUMP ROWS ───────────────────────────────────────────────────────────
 const rows: DumpRow[] = []
@@ -99,9 +101,19 @@ const repoOf = (srcFile: string): string => {
 }
 
 // ── THE CLASSIFIER — SHAPE-BASED, ONE RULE PER SHAPE ────────────────────────
+/**
+ * A PATH, FOR THE CLASSIFIER'S PURPOSES, IS A SPELLING THAT CANNOT BE A DECLARED NAME: it begins
+ * with a magic constant or a stream scheme, or it contains a DIRECTORY SEPARATOR. The first version
+ * of this predicate also accepted anything ending `.php`, which misclassified FIVE member targets
+ * whose MEMBER NAME is literally `php` (`Configuration.php` = owner Configuration + member php,
+ * `TestResult.phpDeprecations` = ... + `phpDeprecations`) as file paths. That is the fleet's
+ * separator-vocabulary defect in miniature: `.php` is a member name in this lane, not only a file
+ * suffix — `config -> php` is a real property in this corpus — so the extension alone decides
+ * nothing and the separator does.
+ */
 const PATHISH = (t: string): boolean =>
   t.startsWith("__DIR__") || t.startsWith("__FILE__") || t.startsWith("FILE_PREFIX") ||
-  t.includes("/") || /\.(php|inc|phar|phtml)$/i.test(t) || /^[a-z][a-z0-9+.-]*:\/\//i.test(t)
+  t.includes("/") || /^[a-z][a-z0-9+.-]*:\/\//i.test(t)
 
 type ClassName = "partOfPathTarget" | "pathShapedOther" | "qualifiedName" | "memberTarget" | "bareName"
 
@@ -119,16 +131,22 @@ interface Bucket { rows: number; targets: Set<string>; repos: Set<string>; sampl
 const empty = (): Bucket => ({ rows: 0, targets: new Set(), repos: new Set(), samples: [], multiRepoRows: 0, singleRepoRows: 0, multiRepoTargets: new Set() })
 const byClass = new Map<ClassName, Bucket>()
 const byLabelClass = new Map<string, Map<ClassName, number>>()
-const ambiguous = { rows: 0, byLabel: new Map<string, number>() }
+const ambiguous = { rows: 0, byLabel: new Map<string, number>(), byOutcome: new Map<string, number>() }
+/** The dump's own outcome vocabulary, counted so a reader can see the partition (the sum must equal
+ *  the dump's row count): `unresolved` · `ambDeclOnly` + `ambBoth` (the two ambiguous classes, which
+ *  together are TABLE 1's amb(decl)) · `bindingVerified` (= bindOK) · `externalVerified` (= extOK). */
+const outcomeTally = new Map<string, number>()
 const partOfClaimKinds = new Map<string, number>()
 /** targets seen per (repo) so the repo-spread claim is measured per TARGET, not per row */
 const reposByTarget = new Map<string, Set<string>>()
 
 for (const r of rows) {
+  outcomeTally.set(r.outcome, (outcomeTally.get(r.outcome) ?? 0) + 1)
   if (r.outcome !== "unresolved") {
-    if (r.outcome === "ambiguous" || r.outcome === "ambiguousByDecl") {
+    if (r.outcome.startsWith("amb")) {
       ambiguous.rows++
       ambiguous.byLabel.set(r.label, (ambiguous.byLabel.get(r.label) ?? 0) + 1)
+      ambiguous.byOutcome.set(r.outcome, (ambiguous.byOutcome.get(r.outcome) ?? 0) + 1)
     }
     continue
   }
@@ -163,6 +181,17 @@ const unresolvedRows = rows.filter((r) => r.outcome === "unresolved").length
 const control: string[] = []
 if (tableUnresolved < 0) control.push("TABLE 1's TOTAL row was not found in the log — the control could not run (an unmatched control is a gap, reported)")
 else if (tableUnresolved !== unresolvedRows) control.push(`REFUSED — TABLE 1 reads unresolved ${tableUnresolved} but the dump carries ${unresolvedRows} unresolved row(s); two numbers for one set cannot both be the census`)
+// the OTHER outcome classes are controls too: bindingVerified must equal TABLE 1's bindOK and
+// externalVerified its extOK, and the two ambiguous dump classes together must equal amb(decl).
+if (Object.keys(table).length > 0) {
+  const bv = outcomeTally.get("bindingVerified") ?? 0
+  const ev = outcomeTally.get("externalVerified") ?? 0
+  if (bv !== table.bindOK) control.push(`REFUSED — the dump carries ${bv} bindingVerified row(s) but TABLE 1 reads bindOK ${table.bindOK}`)
+  if (ev !== table.extOK) control.push(`REFUSED — the dump carries ${ev} externalVerified row(s) but TABLE 1 reads extOK ${table.extOK}`)
+  if (ambiguous.rows !== table.ambDecl) control.push(`REFUSED — the dump's ambiguous outcomes total ${ambiguous.rows} but TABLE 1 reads amb(decl) ${table.ambDecl}`)
+  const tallySum = [...outcomeTally.values()].reduce((a, b) => a + b, 0)
+  if (tallySum !== rows.length) control.push(`REFUSED — the outcome tally sums to ${tallySum} but the dump carries ${rows.length} rows`)
+}
 const classSum = [...byClass.values()].reduce((a, b) => a + b.rows, 0)
 if (classSum !== unresolvedRows) control.push(`the classes sum to ${classSum} but the unresolved rows are ${unresolvedRows}`)
 if (control.some((c) => c.startsWith("REFUSED"))) {
@@ -174,6 +203,11 @@ const out = {
   language: "php",
   generated: new Date().toISOString(),
   from: FROM,
+  // THE CITED DUMP BOUND BY ITS DIGEST. If the raw arm log is not committed (it is large), this
+  // census artifact is the TRACKED evidence and this digest is what binds it to the bytes it was
+  // computed from: a citation resolves to a file in the repository, and the digest makes the
+  // derivation checkable against the raw log a reader can re-run.
+  dumpDigest: `sha256:${createHash("sha256").update(text).digest("hex")}`,
   dump: { rows: rows.length, unresolvedRows, ambiguousRows: ambiguous.rows, tableUnresolved, control },
   unresolved: {
     total: unresolvedRows,
@@ -181,11 +215,13 @@ const out = {
     byLabelClass: Object.fromEntries([...byLabelClass.entries()].map(([l, m]) => [l, Object.fromEntries(m)])),
     partOfClaimKinds: Object.fromEntries(partOfClaimKinds),
   },
-  ambiguous: { rows: ambiguous.rows, byLabel: Object.fromEntries(ambiguous.byLabel) },
+  ambiguous: { rows: ambiguous.rows, byLabel: Object.fromEntries(ambiguous.byLabel), byOutcome: Object.fromEntries(ambiguous.byOutcome) },
+  dumpOutcomes: Object.fromEntries(outcomeTally),
 }
 
 console.log(`PHP CAUSE CENSUS — ${FROM}`)
-console.log(`dump: ${rows.length} non-resolved rows · unresolved ${unresolvedRows} · ambiguous ${ambiguous.rows} · TABLE 1 unresolved ${tableUnresolved < 0 ? "?" : tableUnresolved}`)
+console.log(`dump: ${rows.length} non-resolved rows · outcomes ${JSON.stringify(Object.fromEntries(outcomeTally))}`)
+console.log(`control: unresolved ${unresolvedRows} / TABLE 1 ${tableUnresolved < 0 ? "?" : tableUnresolved} · ambiguous ${ambiguous.rows} / att.amb(decl) ${table.ambDecl ?? "?"} · bindingVerified ${outcomeTally.get("bindingVerified") ?? 0} / att.bindOK ${table.bindOK ?? "?"} · externalVerified ${outcomeTally.get("externalVerified") ?? 0} / att.extOK ${table.extOK ?? "?"}`)
 for (const c of control) console.log(`  control: ${c}`)
 console.log("")
 console.log("UNRESOLVED BY CLASS (rows · targets · repos · multi-repo rows / single-repo rows):")
