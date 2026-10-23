@@ -1554,7 +1554,22 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
       if (tgt.length === 0) {
         // Counted above and COUNTED HERE — the class the intent table was missing. See Row.noTarget.
+        //
+        // ★ AND IT LANDS IN `unres`, BECAUSE THE CLOSURE HAS TO ADD UP. MEASURED 2026-10-23: the
+        // typescript arm reported `contains` at 94,114 edges against 94,113 in its buckets — ONE
+        // EDGE SHORT, and the row carrying it also carried the largest `collRes` in the fleet. The
+        // missing edge was an edge with NO TARGET: it was counted in `edges`, counted again in
+        // `noTarget`, and then `continue`d PAST every resolution bucket, so it existed in the total
+        // and in no part of it.
+        //
+        // ⇒ AN EDGE WITH NOTHING TO RESOLVE IS UNRESOLVED — that is what the word means, and it is
+        // the honest bucket rather than a fourteenth term nobody reads. `noTarget` survives as a
+        // SUB-COUNT beside it, exactly like `amb(kind)` and `collRes` survive beside their parents:
+        // reported, never added twice. THE CLOSURE IS NOW `edges = resolved + amb + unres + ext +
+        // bind` WITH NOTHING OUTSIDE IT, and `noTarget` says how much of `unres` has no target at all.
         row.noTarget++
+        row.project.unresolved++
+        row.pooled.unresolved++
         continue
       }
       const claim = externalClaimOf(rel)
