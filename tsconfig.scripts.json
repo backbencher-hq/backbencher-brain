@@ -14,6 +14,7 @@
     "node_modules",
     "dist",
     "tests",
-    "script/m14/tmp"
+    "script/m14/tmp",
+    "script/m14/ts-grammar-patch/fixtures"
   ]
 }

@@ -13831,7 +13831,11 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       // Trait use inside a class body
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c && (c.type === "name" || c.type === "qualified_name")) push("uses", leafName(c.text))
+        // ★ `mixes_in` since the 2026-10-23 R3 relabel (the analyzer's `use_declaration` branch).
+        // THE ORACLE MUST MOVE WITH THE ANALYZER or every composition row reads unexplained; this is
+        // the same 1:1 relabel ruby's include/extend/prepend took, and the construct is unchanged —
+        // only the label the arbiter expects from it.
+        if (c && (c.type === "name" || c.type === "qualified_name")) push("mixes_in", leafName(c.text))
       }
     }
     // M12.PHP-IMPORTS (2026-10-08): a `use` clause is a MODULE DEPENDENCY — the
@@ -13886,7 +13890,12 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       // analyzer's edge sat one label away. Adjudicated in the analyzer doc §5
       // ("a stale oracle label, not a missing edge"); the label is now the analyzer's.
       const p = extractPhpIncludePath(n)
-      if (p) push("imports", p)
+      // ★ `part_of` since the 2026-10-23 R3 relabel (the analyzer's `emitInclude`): the target is a
+      // PATH, the directive is written by the file that includes the part, and no module binding is
+      // created. `push` keys on (label, target) and the path rule itself — `extractPhpIncludePath`,
+      // SHARED with the analyzer — is unchanged, so the spelling contract this oracle already
+      // enforces (six static shapes, four refused) does not move.
+      if (p) push("part_of", p)
     }
     if (t === "function_call_expression") {
       // R10 (#835): the analyzer's OWN callee rule, not a mirror. A variable
@@ -25358,6 +25367,15 @@ async function main() {
           // two above — a label is comparable exactly when this lane's oracle derives it.
           // Until today it was the one DERIVATION row left in `rel-type-coverage-gate`.
           ...(lang === "php" ? ["exports"] : []),
+          // ★ 2026-10-23: `mixes_in` and `part_of` join php's compared set IN THE SAME CHANGE as the
+          // truth derivation above. BOTH HALVES ARE REQUIRED AND NEITHER IS OPTIONAL — this file's
+          // own rule, stated three times: an oracle with no entry compares nothing, and an entry with
+          // no oracle turns every analyzer row into a fabrication. The allowlist filters the ANALYZER
+          // side too, so until this lands the two labels are stored and compared against nothing:
+          // the differential reads CLEAN AND BLIND on them, which is the derivation debt the
+          // rel-type coverage gate charges. Applying only hunks 1-2 (or only this one) WOULD create a
+          // red window; all three land together or not at all.
+          ...(lang === "php" ? ["mixes_in", "part_of"] : []),
           // M60 julia joins the contains-audited set. `contains` is the backbone the graph is
           // navigated by, and the lane published 10,365 such edges over 941 corpus files with NO
           // independent truth at any scale — the committed evidence was fixtures asserting a handful
