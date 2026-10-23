@@ -1167,7 +1167,29 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (type === "use_declaration") {
-        // Trait use inside a class/interface/trait body.
+        // Trait use inside a class/interface/trait body — a TRAIT COMPOSITION, relabelled
+        // `uses` -> `mixes_in` 1:1 (2026-10-23, rung R3: NO grammar change).
+        //
+        // WHY THIS IS NOT `uses`. The vocabulary was extended exactly for shapes the ten cannot
+        // spell honestly (src/ast/types.ts:75-90), and `mixes_in` is the member that was added
+        // for "a class COMPOSES a mixin into its supertype chain" (types.ts:155-162). PHP's
+        // trait `use` IS that construct: the trait's members are flattened into the composing
+        // type, it is not a value read (which is what `uses` asserts) and it is not an import
+        // (there is no module binding). The three sources the campaign requires agree:
+        //   · the CONSTRUCT exists with a measured population (the whole-population trait-use
+        //     census in validation/m14/measurements/php-emission-census.json),
+        //   · each of the ten is DISHONEST for it — `uses` was the old spelling and says
+        //     "reads a name", which a composition does not,
+        //   · the fleet already publishes this exact relabel: ruby's include/extend/prepend
+        //     (real-ruby-analyzer.ts:2263-2280) and javascript's call-shaped heritage, both at
+        //     R3 with no grammar change.
+        //
+        // THE RELABEL IS 1:1. Nothing else moves: source (the composing type), target (the
+        // trait's leaf), confidence (1.0), line (the trait name), and the `isTraitUse` marker —
+        // which STAYS, because it is the name the trait-composition class has always had for a
+        // consumer (and for the mutant that drops these rows, php/drop-trait-use). The evidence
+        // tier follows the construct, not the old label: `mixes_in` joins the declared-structural
+        // group below, exactly as ruby's does.
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
           if (!child || (child.type !== "name" && child.type !== "qualified_name")) continue
@@ -1175,7 +1197,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           relationships.push({
             source: owner || "global",
             target: traitName,
-            type: ASTEngine.RelationshipType.Uses,
+            type: ASTEngine.RelationshipType.MixesIn,
             confidence: 1.0,
             line_number: this.nodeLine(child),
             metadata: { phpSpecific: true, isTraitUse: true },
@@ -2494,7 +2516,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const dirRel = slash < 0 ? "." : fileRel.slice(0, slash)
     let n = 0
     for (const r of relationships) {
-      if (r.type !== ASTEngine.RelationshipType.Imports) continue
+      // THE TYPE TEST MOVED WITH THE RELABEL, AND IT WOULD HAVE COST 145 VERIFIED CLAIMS TO MISS.
+      // Before 2026-10-23 include/require rows were stored as `imports`; they are `part_of` now.
+      // This pass is what attaches `metadata.importProjectFile` — the FILE CLAIM the incoming
+      // gate verifies against the project's own admitted list (measured: verify 145, REFUTE 0) —
+      // so filtering on the old label here would silently drop every claim from every relocated
+      // row and move them from `extOK` into `otherUnresolved` while the analyzer looked correct.
+      // BOTH labels are accepted because the pass is about the WRITTEN CONSTRUCT (read from
+      // `metadata.relationshipType`), not about the stored label — and the label is crossed once
+      // more in this file's lifetime, so the construct is the stable key.
+      if (r.type !== ASTEngine.RelationshipType.Imports && r.type !== ASTEngine.RelationshipType.PartOf) continue
       const md = r.metadata as Record<string, unknown> | undefined
       if (md?.relationshipType !== "include_path") continue
       const written = String(r.target ?? "")
@@ -3029,12 +3060,33 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // contract here, not the code.
       source: "global",
       target: filePath,
-      // M12.PHP-IMPORTS: `require`/`include` is a module dependency, not a
-      // symbol reference. It was filed as `references`, which mislabels a
-      // file-level edge as an intra-file symbol read and kept it out of the
-      // file-level reader's `('imports','exports')` filter. Same fix as the
-      // `use` clause above: one kind for all PHP module dependencies.
-      type: ASTEngine.RelationshipType.Imports,
+      // `part_of`, relabelled `imports` -> `part_of` 1:1 (2026-10-23, rung R3: NO grammar
+      // change). The contract is "A library unit INCLUDES a part file" (types.ts:163-190), and a
+      // php `include`/`require` IS that shape: the included file is spliced into the including
+      // file's compilation unit, it creates NO binding surface of its own (no names are imported
+      // and no module scope is created — its declarations join the one global declaration space,
+      // where a second declaration of the same name is a fatal error), so the ten cannot spell it
+      // honestly: `imports` would assert a module binding that does not exist, and a value read
+      // is not what a file-level directive is.
+      //
+      // IT IS A 1:1 RELABEL AND THE PREVIOUS TWO LABELS' HISTORY STAYS: it was filed `references`
+      // until the M12.PHP-IMPORTS round proved that a file-level edge is not an intra-file symbol
+      // read, then `imports` until this round. Only the STORED TYPE changes.
+      //
+      // THE DIRECTION IS THE DIRECTIVE'S OWN (types.ts:167-190): source is the file carrying the
+      // directive (php's owner is file scope — see the block above), target is what it names, and
+      // every row carries `metadata.partRole`. php has only ONE of Dart's two forms — there is no
+      // `part of` in php — so every php row is the HOST that INCLUDES the part: partRole
+      // "library", exactly as F#'s `#load` rows are (real-fsharp-analyzer.ts:1908,1968).
+      //
+      // THE WRITTEN FORM STAYS ON THE ROW AS EVIDENCE rather than being erased: `includeType`
+      // names which of php's four directives wrote it (`include` / `require` / `include_once` /
+      // `require_once`), and `relationshipType: "include_path"` is the construct name the lane's
+      // own claim pass and residual probes already read. An `imports` ImportInfo record is ALSO
+      // still pushed above, deliberately: it is the parsed directive LIST (persisted into
+      // brain_import by src/ast/parallel-indexer.ts), not a relationship, so a consumer reading a
+      // file's includes loses nothing when the relationship's label moves.
+      type: ASTEngine.RelationshipType.PartOf,
       confidence: 0.9,
       line_number: this.nodeLine(node),
       metadata: {
@@ -3043,6 +3095,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         fileLevel: true,
         relationshipType: "include_path",
         includeType: node.type.replace("_expression", ""),
+        partRole: "library",
       },
     })
   }
@@ -3815,11 +3868,22 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const md: any = r.metadata ?? {}
       if (type === "contains") { md.evidenceClass = "structural"; continue }
       if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      // `part_of` (relabelled from `imports`, 2026-10-23) IS THE IMPORTS TIER, AND IT IS NOT A
+      // DEFAULT — the same sentence the fsharp lane wrote for its `#load` rows
+      // (real-fsharp-analyzer.ts:3028-3038). A `part_of` row is a FILE-COUPLING fact the SOURCE
+      // WRITES: the directive names the file it includes. The default branch would call it
+      // `usage_contextual`, which says the target was INFERRED from how the source uses a name —
+      // the opposite of the fact.
+      if (type === "part_of") { md.evidenceClass = "import_based"; continue }
       if (type === "calls" || type === "uses") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
       }
-      if (type === "instantiates" || type === "extends" || type === "implements") {
+      // `mixes_in` (relabelled from `uses`, 2026-10-23) joins the DECLARED-STRUCTURAL group, not
+      // the read group: a trait composition is a grammar clause in the declaration header, not a
+      // value read, and the tier follows the construct rather than the old label — ruby's RUBY-D1
+      // relabel made exactly this move (real-ruby-analyzer.ts:3260-3268).
+      if (type === "instantiates" || type === "extends" || type === "implements" || type === "mixes_in") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }

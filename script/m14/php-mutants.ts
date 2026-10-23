@@ -742,3 +742,93 @@ const PHP_SELF_HERITAGE_MUTANTS: Mutant[] = [
 PHP_MUTANTS.push(...PHP_HERITAGE_MUTANTS)
 PHP_MUTANTS.push(...PHP_MEMBER_IDENTITY_MUTANTS)
 PHP_MUTANTS.push(...PHP_SELF_HERITAGE_MUTANTS)
+
+/**
+ * THE EXTENDED-VALUE RELABEL MUTANTS (2026-10-23) — `mixes_in` and `part_of`, both landed at R3
+ * with NO grammar change, each a 1:1 relabel of a row the analyzer already emitted under a label
+ * the ten could not spell honestly.
+ *
+ * A relabel is exactly the class of change whose revert is INVISIBLE: the edge count is unchanged,
+ * the source/target/line/confidence are unchanged, and a consumer that only counts edges sees the
+ * same graph. Every direction below is a way that revert happens in real work rather than a
+ * hypothetical, and each is written off the result's own metadata (`isTraitUse`, `partRole`,
+ * `relationshipType`) so it stays faithful to any fixture edit:
+ *
+ *   · the STORED LABEL reverts (`mixes_in` -> `uses`, `part_of` -> `imports`) — the "it still
+ *     works, why did you change the name" edit, which the fixtures' forbid rows are for;
+ *   · the MULTI-FORM collapses: one composition row per `use` instead of one per trait (php
+ *     `use A, B;` composes TWO), and one `includeType` on every `part_of` row instead of the four
+ *     forms the directive actually has — the Lead's explicit measurement requirement, because a
+ *     lumped split is a count nobody can attribute;
+ *   · the MANDATORY FIELD disappears (`metadata.partRole`, required on EVERY `part_of` row by the
+ *     contract, and without it a consumer cannot tell the emitted direction from the logical
+ *     relation).
+ */
+const PHP_EXTENDED_RELABEL_MUTANTS: Mutant[] = [
+  {
+    id: "php/mixins-reverted-to-uses",
+    language: "php",
+    defectClass: "mislabelled-relationship",
+    description:
+      "reverts the 2026-10-23 trait-composition relabel: every `mixes_in` row carrying `metadata.isTraitUse` is stored as `uses` again. It is the pre-attribution spelling, and it is invisible to every count — the same edges, the same endpoints, the same lines, the same confidence — which is why php/trait-mixins carries a forbid row naming exactly `uses Figure -> Named`. Caught by that forbid (an expected-row check alone would not catch it: the edges are all still there, one label over).",
+    transform: r => ({
+      ...r,
+      relationships: (r?.relationships ?? []).map((x: any) =>
+        x?.type === "mixes_in" && x?.metadata?.isTraitUse ? { ...x, type: "uses", metadata: { ...(x.metadata ?? {}), mutant: true } } : x,
+      ),
+    }),
+  },
+  {
+    id: "php/mixins-collapse-multi-trait-use",
+    language: "php",
+    defectClass: "relationship-loss",
+    description:
+      "keeps only the FIRST composition row per composing type, dropping the second and later ones — the state an implementation that reads the `use` directive as ONE edge (the list's first name) produces. `class Figure { use Named, HasId; }` composes TWO traits and the fixture requires both rows; a single row naming the list is a target nobody can write. Written off the result's own rows (grouped by source), never a name list. Caught by php/trait-mixins' `mixes_in Figure -> HasId` row and by its expectRelationshipCount.",
+    transform: r => {
+      const seen = new Set<string>()
+      return {
+        ...r,
+        relationships: (r?.relationships ?? []).filter((x: any) => {
+          if (x?.type !== "mixes_in" || !x?.metadata?.isTraitUse) return true
+          const src = String(x?.source ?? "")
+          if (seen.has(src)) return false
+          seen.add(src)
+          return true
+        }),
+      }
+    },
+  },
+  {
+    id: "php/part-of-reverted-to-imports",
+    language: "php",
+    defectClass: "mislabelled-relationship",
+    description:
+      "reverts the 2026-10-23 include/require relabel: every `part_of` row carrying `metadata.relationshipType: \"include_path\"` is stored as `imports` again (the label it had between M12.PHP-IMPORTS and this round). Same edges, same endpoints, same claim metadata — the revert is invisible to a count and to the incoming gate's claim verification, which reads metadata rather than the label. Caught by php/include-paths' six `part_of` rows and by php/namespace-containment / php/payload-and-complexity / php/line-contract, each of which pins one of the four written forms.",
+    transform: r => ({
+      ...r,
+      relationships: (r?.relationships ?? []).map((x: any) =>
+        x?.type === "part_of" && x?.metadata?.relationshipType === "include_path"
+          ? { ...x, type: "imports", metadata: { ...(x.metadata ?? {}), mutant: true } }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "php/part-of-loses-partrole-and-form",
+    language: "php",
+    defectClass: "lost-metadata",
+    description:
+      "strips `metadata.partRole` and collapses `metadata.includeType` to \"include\" on every `part_of` row — the relabel shipped WITHOUT its two pieces of evidence. `partRole` is MANDATORY on every row (the contract states it, because the emitted direction is the directive's own and the logical relation is read from the role), and `includeType` is what makes the include/require/include_once/require_once SPLIT attributed rather than lumped. Edges unchanged; only the two fields move, which is exactly why the fixtures pin them. Caught by php/include-paths' per-form `meta.includeType` and `meta.partRole` rows, php/line-contract's `meta.partRole`, and php/namespace-containment's `meta.partRole`.",
+    transform: r => ({
+      ...r,
+      relationships: (r?.relationships ?? []).map((x: any) => {
+        if (x?.type !== "part_of") return x
+        const { partRole: _dropped, ...rest } = x.metadata ?? {}
+        void _dropped
+        return { ...x, metadata: { ...rest, includeType: "include", mutant: true } }
+      }),
+    }),
+  },
+]
+
+PHP_MUTANTS.push(...PHP_EXTENDED_RELABEL_MUTANTS)
