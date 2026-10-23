@@ -92,6 +92,49 @@ if (!(namedTypes > 0) || !servedDigest) {
 
 const constructs: Record<string, { edges: number; files: number; repos: number }> = census?.constructs ?? {}
 const cOf = (name: string) => constructs[name] ?? { edges: 0, files: 0, repos: 0 }
+
+// ── A ZERO WITH ITS DECLARATION BESIDE IT IS A MEASUREMENT; A ZERO ALONE IS AN ABSENCE ──────────
+//
+// THIS IS THE GUARD THAT MAKES THE RE-RUN STRUCTURALLY REQUIRED, and it is the Lead's fourth note.
+// A census whose construct map is built by `add()` creates a key only on a hit, so an ABSENT KEY
+// cannot be told from a counter that never ran — and a ruling that reads such an absence as a zero
+// is resting on a document that does not contain its own claim. So an artifact that does not
+// DECLARE its counter inventory is REFUSED outright, and the declaration must account for every
+// counter it claims: `declared` and `observed` must both be present, and the decisive four must be
+// FOUND IN THE ARTIFACT as explicit rows.
+const countersDeclared: string[] = Array.isArray((census as any)?.countersDeclared)
+  ? ((census as any).countersDeclared as string[])
+  : []
+if (countersDeclared.length === 0) {
+  console.error(
+    "REFUSING — the census artifact does NOT DECLARE ITS COUNTER INVENTORY (`countersDeclared` is " +
+    "missing or empty). In such an artifact a counter with zero sites leaves NO KEY, so a zero " +
+    "read from it is indistinguishable from a counter that never ran, and a ruling filed on it " +
+    "would cite a number the document does not contain. Re-run the census with the declaring " +
+    "instrument (script/m14/yaml-emission-census.ts emits all declared counters as zero rows).",
+  )
+  process.exit(7)
+}
+const countersObserved = Object.keys(constructs).sort()
+const declaredNotObserved = countersDeclared.filter((n) => !(n in constructs)).sort()
+const observedNotDeclared = countersObserved.filter((n) => !countersDeclared.includes(n))
+if (observedNotDeclared.length) {
+  console.error(
+    `REFUSING — the census emitted ${observedNotDeclared.length} counter(s) it did not declare: ` +
+    `${observedNotDeclared.join(", ")}. A counter outside the declaration is a shortlist pretending ` +
+    `to be a census, and the subtraction cannot be checked against it.`,
+  )
+  process.exit(7)
+}
+if (declaredNotObserved.length) {
+  console.error(
+    `REFUSING — ${declaredNotObserved.length} declared counter(s) are MISSING from the artifact: ` +
+    `${declaredNotObserved.join(", ")}. The instrument promises a declared zero for every counter it ` +
+    `maintains, so a missing row is the defect this guard exists to catch.`,
+  )
+  process.exit(7)
+}
+
 const popLine = `${admitted} admitted files in ${Number(pop.reposCarryingAnAdmittedFile ?? 0)} repositories`
 const grammarLine = `${namedTypes} named node types (of ${totalIds} ids) in the grammar's own inventory, served build sha256 ${servedDigest}`
 
@@ -284,6 +327,17 @@ const rows = RULINGS.map((r) => {
     count: d.edges,
     files: d.files,
     repos: d.repos,
+    // A ZERO WITH ITS DECLARATION BESIDE IT IS A MEASUREMENT; A ZERO ALONE IS AN ABSENCE.
+    // Every row states the subtraction that makes its zero checkable: the instrument declared N
+    // counters, the artifact contains N of them, and THIS row's decisive counter was FOUND IN THE
+    // ARTIFACT as an explicit {edges:0,files:0,repos:0} row rather than left out for want of a site.
+    reconciliation: {
+      countersDeclared: countersDeclared.length,
+      countersObserved: countersObserved.length,
+      declaredNotObserved: declaredNotObserved.length,
+      decisiveCounterPresentInArtifact: Object.prototype.hasOwnProperty.call(constructs, r.decisive),
+      decisiveCounterRow: cOf(r.decisive),
+    },
     nearMiss: { construct: r.nearMiss, count: n.edges, files: n.files, repos: n.repos },
     falsifier: r.falsifier,
     population: popLine,
@@ -324,6 +378,27 @@ if (gaps.length) {
 const healthy = cpuCount > 0 && Number(loadAvg.split(" ")[0]) < cpuCount && swapUsedKb < 1048576
 spec.meta = {
   ...(spec.meta ?? {}),
+  // ── THE DECLARED-ZERO SUBTRACTION, IN THE DECLARATION, SO NOBODY HAS TO TAKE THE ARTIFACT ON TRUST
+  counterReconciliation: {
+    countersDeclared: countersDeclared.length,
+    countersObserved: countersObserved.length,
+    declaredNotObserved: declaredNotObserved.length,
+    observedNotDeclared: observedNotDeclared.length,
+    rule:
+      "The census instrument DECLARES every counter it maintains and emits a row for every one of " +
+      "them, including the ones with zero sites, so `declared` minus `observed` is empty by " +
+      "construction and a zero is a DECLARED ZERO rather than an absent key. Before this rule the " +
+      "construct map was built by `add()`, which creates a key only on a hit: the first " +
+      "whole-population artifact carried 42 construct keys and NONE of the four decisive counters, " +
+      "and a ruling read from it would have cited a number the document did not contain.",
+    decisiveCounters: RULINGS.map((r) => ({
+      type: r.label,
+      construct: r.decisive,
+      presentInArtifact: Object.prototype.hasOwnProperty.call(constructs, r.decisive),
+      row: cOf(r.decisive),
+    })),
+    artifact: CENSUS.replace(ROOT + "/", ""),
+  },
   runEnvironment,
   measuredOnAHealthyBox: healthy,
   measuredOnAHealthyBoxRule:

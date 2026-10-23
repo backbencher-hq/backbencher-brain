@@ -64,9 +64,13 @@ if [ "$GOT" != "1" ]; then
   exit 5
 fi
 say "HEAVY TOKEN TAKEN by yaml"
-# A detached beat daemon: `sleep` and a `sed`, wanting no scheduler attention, so the liveness
-# signal does not depend on the CPU the arm is consuming.
-bash script/m14/arm-token.sh loop yaml >> "$LOG" 2>&1 &
+# ── THE PULSE IS A BYPRODUCT OF THE WORK (the scala lane's design, and the Lead's ruling) ────────
+# NO DAEMON. The beat is written when a CHUNK COMPLETES — so the token's age IS the arm's age: one
+# liveness signal instead of two that can disagree, and a stalled arm stops beating at exactly the
+# moment it stopped working. A stale beat then cannot mean "the holder is gone" AND "the holder's
+# heart stopped while its work continued" at the same time, which is the ambiguity the daemon
+# created. A chunk of 2,000 files is ~13 s of parse, so the gap between beats is the work's own
+# gap by construction.
 
 run_pass() {
   MODE="$1"          # parse-only | full
@@ -82,6 +86,8 @@ run_pass() {
     npx tsx script/m14/yaml-emission-census.ts $EXTRA --chunk-idx="$i" --chunk-size="$SIZE" \
       --out="$CHUNK_OUT" >> "$LOG" 2>&1
     if [ ! -f "$CHUNK_OUT" ]; then say "FATAL — chunk $i produced no artifact"; return 6; fi
+    # THE BEAT IS THE WORK'S OWN PULSE: a completed chunk is the arm saying it is alive.
+    bash script/m14/arm-token.sh beat yaml >> "$LOG" 2>&1 || true
   done
   node script/m14/yaml-census-merge.ts --out="$OUT" "$DIR"/chunk-*.json >> "$LOG" 2>&1 || return 7
   say "pass=$MODE merged -> $OUT"
