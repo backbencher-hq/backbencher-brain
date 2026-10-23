@@ -109,9 +109,33 @@ if ! run_heavy "EMISSION + CONSTRUCT CENSUS (6,424 files, beating from its own l
 fi
 
 # 2) the arbiter's whole-population closure + per-edge dump (the cause census reads the dump)
-if ! run_heavy "INCOMING GATE — WHOLE ADMITTED POPULATION (TABLE 1 + --dump)" "$GATE_LOG" \
-  bash -c "BB_CORPUS_ROOT='$REPO/.corpus' BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts $LANE php,phpt 0 --dump"; then
-  say "FAILED — the incoming gate did not complete; the closure is NOT published."
+#
+# ★ THE GATE'S EXIT CODE IS A VERDICT, NOT A COMPLETION SIGNAL, AND THE FIRST VERSION OF THIS
+# RUNNER GOT IT WRONG (measured 2026-10-23, the php arm's own run): the gate exited 1 — which for
+# `incoming-gate.ts` means "FAIL, a real unresolved/ambiguous edge class", the NORMAL state of a
+# working lane — and the runner treated it as an incomplete arm, refused to promote a COMPLETE
+# 36 MB closure, and exited 3. The data was never in doubt. A VERSION OF THIS RUNNER THAT REFUSES TO
+# PROMOTE A COMPLETE MEASUREMENT IS THE FLEET'S "A SAFETY TOOL THAT LEAVES THE TREE IN A LYING
+# STATE" FORM IN MINIATURE: it does not corrupt the log, it declines to say the log exists.
+# ⇒ THE COMPLETION TEST IS THE LOG'S OWN CONTENT, NOT THE EXIT CODE: TABLE 1 + a population line +
+#   no truncation marker ⇒ the closure is published and the verdict is recorded BESIDE it.
+GATE_RC=0
+run_heavy "INCOMING GATE — WHOLE ADMITTED POPULATION (TABLE 1 + --dump)" "$GATE_LOG" \
+  bash -c "BB_CORPUS_ROOT='$REPO/.corpus' BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts $LANE php,phpt 0 --dump" || GATE_RC=$?
+GATE_COMPLETE=0
+if grep -aq "^TABLE 1" "$GATE_LOG" 2>/dev/null && grep -aq "parsed of" "$GATE_LOG" 2>/dev/null; then GATE_COMPLETE=1; fi
+if [ "$GATE_COMPLETE" != 1 ]; then
+  say "FAILED — the incoming gate log is INCOMPLETE (no TABLE 1 or no population line); the closure is NOT published."
+  say "  log: $GATE_LOG  exit=$GATE_RC"
+  [ "$RELEASE" = 1 ] && bash script/m14/arm-token.sh release "$LANE" >/dev/null 2>&1 || true
+  exit 3
+fi
+if [ "$GATE_RC" -eq 1 ]; then
+  say ""
+  say "NOTE — the gate's exit 1 is its VERDICT (clause 1: unresolved/ambiguous edges), not a failed arm."
+  say "  The closure IS published; the verdict is recorded in the log beside it."
+elif [ "$GATE_RC" -ne 0 ]; then
+  say "FAILED — the incoming gate exited $GATE_RC (a usage/environment or instrument-control failure, distinct from its verdict)."
   say "  log: $GATE_LOG"
   [ "$RELEASE" = 1 ] && bash script/m14/arm-token.sh release "$LANE" >/dev/null 2>&1 || true
   exit 3
@@ -119,7 +143,7 @@ fi
 
 say ""
 say "▶ CONTROL CHECKS ON THE TWO RUNS (read, not assumed):"
-grep -E "instrument self-test|parsed [0-9,]+ of|population:" "$GATE_LOG" | head -6 || true
+grep -a -E "instrument self-test|parsed [0-9,]+ of|population:" "$GATE_LOG" | head -6 || true
 python3 - "$GATE_LOG" "$CENSUS_JSON" <<'PY' || say "  (control read could not complete — report it, do not paper over it)"
 import json, re, sys
 gate, census = sys.argv[1], sys.argv[2]

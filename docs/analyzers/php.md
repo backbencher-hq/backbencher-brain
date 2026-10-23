@@ -1,12 +1,32 @@
 # php — the lane verdict
 
 Owner: **php-lane**. Analyzer: `src/ast/real-php-analyzer.ts`. Spec:
-`script/m14/spec/php-completeness.json`. Corpus: **5,094 admitted `.php` files across 9
-repositories** (the router maps `.php` alone — checked against
-`src/ast/language-detection.ts`, so this lane is not one of the ten the population gate found
-measuring a fraction of their language).
+`script/m14/spec/php-completeness.json`. Corpus: **6,424 admitted files — 5,114 `.php` + 1,310
+`.phpt` across 10 repositories carrying an admitted file** (the router maps BOTH extensions to php
+and the engine parses `.phpt` with this analyzer; the population is the GIT-TRACKED set under the
+1 MiB cap: 6,780 tracked paths → 6,424 admitted, 356 tracked-but-absent, 0 over cap, 199 symlinked
+directory entries over 202 corpus entries —
+`validation/m14/measurements/php-population.json`). ⇒ THE OLD HEADER SAID 5,094 `.php` ACROSS 9
+REPOSITORIES; that number is SUPERSEDED, not contradicted: the difference is the `.phpt` population
+the extension map now admits.
 
-Two instruments decide everything below, and both are run over the WHOLE admitted population:
+**Lane status 2026-10-23 — DONE per the completion gate.** `script/m14/completion-gate.ts` reads
+php at **12/12 applicable** (`implemented 12 · exclusions 2` in the coverage gate, `problems 0`),
+with the whole-population declaration at
+`validation/m14/instruments/php/incoming-declaration.json`: **365,409 edges = 140,540 resolved +
+44,275 amb(decl) + 48,378 unresolved + 121,044 bindOK + 11,172 extOK + 0 unclassed — EXACT**, all
+48,378 unresolved rows partitioned into five ruled classes each with a count and a falsifier
+(`validation/m14/measurements/php-cause-census.json`). The lane emits **twelve** relationship values:
+the ten canonical plus `mixes_in` (trait composition) and `part_of` (include/require), both 1:1
+relabels at rung R3 with **no grammar change**; `decorates` is RULED ONTOLOGICAL and `renders` RULED
+GRAMMAR-ABSENCE on measured counters (`validation/m14/verification/PHP-EXTENDED-ADJUDICATION-2026-10-23.md`).
+The arm: `php-population.ts --emit` (6,424/6,424, 0 failed) and `incoming-gate.ts php php,phpt 0
+--dump` (6,424/6,424, 0 failed; log `validation/m14/measurements/php-gate-whole-2026-10-23.txt`).
+Note `bindOK` is NOT `resolved`: 121,044 edges are variable-read BINDING spellings (`metadata.localBinding`),
+counted in `otherUnresolved` by the declaration's class mapping — subtract them before comparing this
+lane's resolved share with a lane that does not spell reads as bindings.
+
+Two instruments decide the lane's own differential work, both over the WHOLE admitted population:
 
     npx tsx script/m14/residual-gate.ts --lane php          # the incoming verdict, per type
     BB_DATA_DIR=$PWD/.tmp-php/bb-data npx tsx validation/m14/fixtures/php/owner-resolution-gate.mts
