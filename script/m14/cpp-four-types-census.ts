@@ -172,6 +172,13 @@ for (const file of admitted) {
       if (hasArgs) answering.decoratesApplies++
     }
   })
+  // ★ THE WASM MODULE GROWS WITH EVERY PARSE AND ABORTS AT ~7,600 (Lead-measured, 2026-10-22):
+  // WITHOUT THIS DELETE the module dies part-way through the population and every later file is
+  // counted as a `filesFailed`. That is exactly what this instrument's first run over the TRUE
+  // population did: 8,014 read and 15,223 failed of 23,237 — and the 15,223 were the INSTRUMENT's
+  // leaked trees, not the files. The 7,435-file population fitted UNDER the abort point, which is
+  // why the defect was invisible until the population was reconciled to the ONE extension table.
+  tree.delete()
 }
 
 const out = {

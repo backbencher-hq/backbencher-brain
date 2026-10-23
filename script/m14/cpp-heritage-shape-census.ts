@@ -112,6 +112,11 @@ for (const file of admitted) {
   try { src = readFileSync(file, "utf8") } catch { filesFailed++; continue }
   let tree: any
   try { tree = parser.parse(src) } catch { filesFailed++; continue }
+  // ★ THE WASM MODULE GROWS WITH EVERY PARSE AND ABORTS AT ~7,600 (Lead-measured, 2026-10-22):
+  // WITHOUT THIS DELETE the module dies part-way through the population and every later file is
+  // counted as a `filesFailed` — which is what a first run of this instrument did: 8,014 read and
+  // 15,223 failed of 23,237, and the 15,223 were the INSTRUMENT's leak, not the files'.
+  tree.delete()
   filesRead++
   walk(tree.rootNode, (n: any) => {
     if (n.type !== "base_class_clause") return
