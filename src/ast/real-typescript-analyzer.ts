@@ -2809,6 +2809,23 @@ class TypeScriptAnalysisRunner {
     // as-casts, instanceof checks) references its named types. Absent until
     // M14 — the corpus oracle never checked it.
     this.extractDeclaredTypeRefs(rootNode, relationships, symbols)
+    // PHASE 6.6: the two constructs the lane's rulings name (M14 round 7).
+    //
+    // `mixes_in` (R3 — no grammar change): a mixin APPLICATION is a class whose extends-expression
+    // is a CALL, `class X extends Mixin(Base) {}`. The discriminator against `extends` is THE SHAPE,
+    // not the name: a plain name in the heritage position is inheritance, a call is an application.
+    // ⇒ MEASURED: the whole admitted population holds ZERO such sites (script/m14/ts-mixin-sites.ts),
+    // so this pass adds no row on today's corpus and the cell's totals do not move. The proof that
+    // it is a real implementation and not a decoration is the FIXTURE that goes red without it —
+    // the csharp lane's `renders` precedent, which the gate counts once inside `implemented` with
+    // its corpus-unexercised status reported beside it.
+    this.extractMixinApplications(rootNode, relationships)
+    // `part_of` (R2 — the grammar is patched by the lane): the triple-slash reference directive.
+    // The SERVED build lexes it as a comment, so this pass emits NOTHING until the patched build
+    // (b75fa34c…/8586372d… — see script/m14/ts-partof-grammar-proof.ts) is the wired grammar. It is
+    // guarded rather than absent on purpose: the analyzer must be ready to read a node that the
+    // current bytes do not produce, and the guard is the node type, not a flag.
+    this.extractReferenceDirectives(rootNode, relationships, filePath)
 
     // DERIV_TS (2026-10-03): ONE mention, ONE label.
     //
@@ -8484,6 +8501,24 @@ class TypeScriptAnalysisRunner {
               // (INTERFACE heritage is the opposite case and does need the strip:
               // `extends A<string>` is a single `generic_type` child, which is why
               // extractInterfaceExtends has carried one since M49 #759.)
+              // ⇒⇒⇒ A CALL-SHAPED HERITAGE IS A MIXIN APPLICATION, AND ITS BASE NAME IS THE CALLEE.
+              // MEASURED (the fixture `mixin-application` failed on the first run because of this):
+              // `class Post extends Tagged(Timestamped)` published an `extends` edge whose target was
+              // the WHOLE CALL TEXT, `Tagged(Timestamped)` — a target that names NO SYMBOL, which is
+              // the exact defect class this fleet keeps finding. The javascript lane, from the same
+              // grammar family, publishes the callee: 76 call-shaped heritage clauses give 76
+              // `extends` edges and 83 `mixes_in` edges. So the base name is the callee's name here
+              // too, and the site carries BOTH labels (the family convention, measured there).
+              // The `mixes_in` row itself is published by `extractMixinApplications`, which is the
+              // pass that owns the SHAPE test; this line only keeps `extends` from naming a call.
+              const callCallee = type.type === "call_expression"
+                ? type.childForFieldName?.("function") ?? null
+                : null
+              if (callCallee && callCallee.text.length > 0) {
+                result.extends.push(callCallee.text)
+                result.extendsLines.push(callCallee.startPosition.row + 1)
+                continue
+              }
               result.extends.push(type.text)
               // M59 (#825): the base TYPE NAME's line, kept parallel to the
               // name list. The subclass's own declaration line is NOT it —
@@ -8554,6 +8589,135 @@ class TypeScriptAnalysisRunner {
     }
 
     return types.length > 0 ? { names: types, lines } : undefined
+  }
+
+  /**
+   * `mixes_in` — THE MIXIN APPLICATION, R3, NO GRAMMAR CHANGE.
+   *
+   * TypeScript composes a mixin with `class X extends Mixin(Base) {}`. The extends-expression is a
+   * `call_expression`, and THAT is the discriminator against `extends`: the heritage clause of a
+   * plain subclass names a type (`extends Base`), while a mixin application CALLS a factory.
+   * The javascript lane measured the same shape from the same node types, so the two lanes'
+   * `mixes_in` counts are comparable — 76 call-shaped heritage clauses there, 0 here, which is a
+   * fact about the two corpora and not about the two instruments.
+   *
+   * WHY THE TARGET IS THE CALLEE AND NOT THE ARGUMENT: the relation is "this class mixes in the
+   * thing the factory produces", and the factory is the name a reader follows. The arguments are
+   * captured as metadata (`mixinArgCount`, `mixinCalleeShape`) so a reader can tell
+   * `Mixin(Base)` from `ns.Mixin(Base)` without a second edge.
+   *
+   * IT EMITS NOTHING OVER TODAY'S CORPUS, and that is a MEASURED zero, not an unimplemented type:
+   * the census found 0 call-shaped heritage clauses in 17,689 files (2,186 class heritage clauses,
+   * 1,107 interface-merging clauses, 0 bases named `*mixin*`). The fixture is what proves the edge
+   * fires when the shape IS present.
+   */
+  private extractMixinApplications(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const emitted = new Set<string>()
+    const visit = (node: Node): void => {
+      if (node.type === "class_heritage") {
+        // The owning class: `class_heritage` sits under the class declaration, and the name is the
+        // declaration's `name` field. An ANONYMOUS class expression (`class extends Base {}`) has no
+        // name field, so it has no source and no edge — see the census, which counts those 10 sites
+        // separately because they extend a TYPE PARAMETER inside a mixin factory's body.
+        let owner: Node | null = node.parent
+        while (owner && owner.type !== "class_declaration" && owner.type !== "abstract_class_declaration") {
+          owner = owner.parent
+        }
+        const classNode = owner?.childForFieldName?.("name") ?? null
+        const source = classNode?.text ?? ""
+        if (source.length > 0) {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const clause = node.namedChild(i)
+            if (!clause || clause.type !== "extends_clause") continue
+            for (let j = 0; j < clause.namedChildCount; j++) {
+              const expr = clause.namedChild(j)
+              // THE SHAPE TEST, and it is the whole discriminator: only a CALL in the heritage
+              // position is a mixin application.
+              if (!expr || expr.type !== "call_expression") continue
+              const callee = expr.childForFieldName?.("function") ?? null
+              const target = callee?.text ?? ""
+              if (target.length === 0) continue
+              const key = `${source}|${target}`
+              if (emitted.has(key)) continue
+              emitted.add(key)
+              const args = expr.childForFieldName?.("arguments") ?? null
+              relationships.push({
+                source,
+                target,
+                type: ASTEngine.RelationshipType.MixesIn,
+                confidence: 0.9,
+                ...this.lineField(expr),
+                metadata: {
+                  relationshipType: "mixin_application",
+                  mixinCalleeShape: callee?.type ?? "unknown",
+                  mixinArgCount: args?.namedChildCount ?? 0,
+                },
+              })
+            }
+          }
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child) visit(child)
+      }
+    }
+    visit(rootNode)
+  }
+
+  /**
+   * `part_of` — THE TRIPLE-SLASH REFERENCE DIRECTIVE, R2, AND THE GRAMMAR IS PATCHED BY THIS LANE.
+   *
+   * `/// <reference path="…" />`, `/// <reference types="…" />` and `/// <reference lib="…" />` are
+   * lexed as COMMENTS by the served build (8515404d…), so this pass finds nothing there. The lane's
+   * patched build (`8586372d…`, one rule and one program in the derived grammar, proven by
+   * `script/m14/ts-partof-grammar-proof.ts`) makes each directive a `reference_directive` node that
+   * CARRIES ITS ROLE AND TARGET AS FIELDS — so this pass reads STRUCTURE (`childForFieldName`) and
+   * never a comment's text. That distinction is the lane's contract: a relation may not be resolved
+   * by matching text, and a directive's role is a field, not a pattern.
+   *
+   * `metadata.partRole` IS MANDATORY ON EVERY ROW (the lane's ruling): a `part_of` edge that does not
+   * say WHICH kind of part it is cannot be checked against the directive that produced it.
+   */
+  private extractReferenceDirectives(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    file: string,
+  ): void {
+    const emitted = new Set<string>()
+    const stem = file.split("/").pop()?.replace(/\.[^.]*$/, "") ?? file
+    const visit = (node: Node): void => {
+      if (node.type === "reference_directive") {
+        const roleNode = node.childForFieldName?.("role") ?? null
+        const targetNode = node.childForFieldName?.("target") ?? null
+        const role = roleNode?.text ?? ""
+        // The target field is the QUOTED literal; the relation's target is the path inside it.
+        const raw = targetNode?.text ?? ""
+        const target = raw.replace(/^"|"$/g, "")
+        if (role.length > 0 && target.length > 0) {
+          const key = `${stem}|${role}|${target}`
+          if (!emitted.has(key)) {
+            emitted.add(key)
+            relationships.push({
+              source: stem,
+              target,
+              type: ASTEngine.RelationshipType.PartOf,
+              confidence: 0.95,
+              ...this.lineField(node),
+              metadata: { relationshipType: "reference_directive", partRole: role },
+            })
+          }
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child) visit(child)
+      }
+    }
+    visit(rootNode)
   }
 
   private extractComments(node: Node): string[] | undefined {
