@@ -700,6 +700,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // files by the gate, so a cache that outlived this call would serve one file's declarations to
     // the next file's reads. Cleared here, at the only entry point that starts a file.
     this.scopeDeclIndex.clear()
+    this.methodComplexityCache.clear()
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -6094,7 +6095,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  // ══ CYCLOMATIC COMPLEXITY IS COMPUTED ONCE PER FUNCTION, NOT ONCE PER CALL.
+  //
+  // `methodComplexity` walks the node's whole subtree, and `processTopLevelFunction` calls it for
+  // every function-like node. In a file of DEEPLY NESTED statements those subtrees OVERLAP — every
+  // nested function's walk includes everything below it — so the pass is O(functions × nodes). The
+  // accessor counter measured it: **103,034,258 `.type` reads** on a 130,042-node file, with
+  // `.text` at 1,596 and 1 MB of characters materialised, and the stack named this function. (That
+  // also FALSIFIED the `.text` hypothesis: the materialisation was never the cost; the re-walking
+  // was, and each visit pays ~10 `.type` reads that cross into WASM.)
+  //
+  // A function's complexity is a pure property of its subtree, so it is cached by the node's stable
+  // SPAN — `startIndex:endIndex:type`, never the node object, because web-tree-sitter hands out
+  // fresh wrappers. Cleared per file in `analyze()`.
+  private methodComplexityCache = new Map<string, number>()
+
   private methodComplexity(node: Node): number {
+    const cacheKey = `${node.startIndex}:${node.endIndex}:${node.type}`
+    const cached = this.methodComplexityCache.get(cacheKey)
+    if (cached !== undefined) return cached
     let c = 1
     // The method BODY is a sibling of the signature node (tree-sitter-dart:
     // `method_signature`/`function_signature` then a following `function_body`
@@ -6127,6 +6146,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push(child)
       }
     }
+    this.methodComplexityCache.set(cacheKey, c)
     return c
   }
 
