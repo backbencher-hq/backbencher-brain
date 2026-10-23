@@ -359,6 +359,87 @@ export const CLOJURE_SPECIAL_FORMS: ReadonlySet<string> = new Set([
   ".", "&",
 ])
 
+/**
+ * ⇒⇒⇒ NO REGEX, AND THE REASON IS THE OWNER'S SIXTH CRITERION. Three text tests
+ * were replaced by the three helpers below. **A REGEX OVER SOURCE TEXT MATCHES
+ * COMMENTS AND STRING LITERALS, MISSES NESTED SYNTAX, AND BREAKS SILENTLY ON THE
+ * NEXT GRAMMAR VERSION** — and each of the three was a STRING TEST where a suffix,
+ * a token or an ordered scan is what the check actually MEANT.
+ *
+ * · `endsWithIgnoreCase` replaces `/\.edn$/i` — a file EXTENSION is a suffix, not a
+ *   pattern: lower-case a copy and compare the tail.
+ * · `carriesPrivateToken` replaces `/(^|\s|\^):?private(\s|$|\})/` — the dangerous
+ *   one: a text match for `:private` fires on the SUBSTRING inside a docstring or a
+ *   comment that merely NAMES it, which is the exact false positive the rule exists
+ *   to prevent. A token can only be a WHOLE token: split on whitespace BY CHARACTER
+ *   CODE, strip a leading `^` (the metadata reader marker) and a trailing `}`, then
+ *   compare with `:private` / `private`.
+ * · `splitOnNamespaceSeparators` replaces `/\/|\.|::|:/` — an ORDERED scan, because
+ *   the alternation tried `::` BEFORE `:`, so `::` is a TWO-character separator and
+ *   `a::b` splits into ["a","b"] rather than ["a","","b"]. The ORDER is preserved
+ *   rather than "improved", because the split must be the ARBITER's split.
+ */
+export function endsWithIgnoreCase(s: string, suffix: string): boolean {
+  if (s.length < suffix.length) return false
+  return s.slice(s.length - suffix.length).toLowerCase() === suffix.toLowerCase()
+}
+
+/** Split on WHITESPACE by character code — the boundary the old text test allowed. */
+export function whitespaceTokens(s: string): string[] {
+  const out: string[] = []
+  let cur = ""
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i)
+    if (code <= 0x20 || code === 0xa0) {
+      if (cur.length > 0) { out.push(cur); cur = "" }
+    } else cur += s[i]
+  }
+  if (cur.length > 0) out.push(cur)
+  return out
+}
+
+/**
+ * Does a declaration-name symbol carry `^:private` in its OWN TEXT? A TOKEN test.
+ * ⇒ SAME MATCH SET ON THE SHAPES THAT OCCUR (`^:private f`, `^private f`,
+ * `:private f`) and NARROWER on the shapes that do not: `^{:private true}` never
+ * matched this test (`scan()` on the `meta_lit` children handles it — the `:` before
+ * `private` is not a boundary there), and a longer token that merely CONTAINS
+ * `:private` (`docstring-mentioning-:private`) can now never match either spelling.
+ */
+export function carriesPrivateToken(s: string): boolean {
+  for (const tok of whitespaceTokens(s)) {
+    let t = tok
+    while (t.startsWith("^")) t = t.slice(1)
+    while (t.endsWith("}")) t = t.slice(0, -1)
+    if (t === ":private" || t === "private") return true
+  }
+  return false
+}
+
+/**
+ * `target.split(/\/|\.|::|:/)`, as an ORDERED CHARACTER SCAN. At each position the
+ * alternatives are tried in their ORIGINAL order — `/`, `.`, `::`, `:` — so `::`
+ * wins over `:` where both would match, and it consumes BOTH colons.
+ */
+export function splitOnNamespaceSeparators(s: string): string[] {
+  const out: string[] = []
+  let start = 0
+  let i = 0
+  while (i < s.length) {
+    const c = s[i]!
+    let len = 0
+    if (c === "/" || c === ".") len = 1
+    else if (c === ":") len = s[i + 1] === ":" ? 2 : 1   // `::` BEFORE `:` — the alternation's order
+    if (len > 0) {
+      out.push(s.slice(start, i))
+      i += len
+      start = i
+    } else i += 1
+  }
+  out.push(s.slice(start))
+  return out
+}
+
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // ── CLJ-EX3 (2026-10-20, Lead ruling): EDN IS DATA, NOT CODE ─────────────
@@ -379,7 +460,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // words — the analyzer's output for an EDN file is empty BY CONTRACT, not by
     // failure. Their two-direction fixture: `edn-data-rule.edn` (zero rows) and
     // `edn-data-rule.clj` (the same forms as code keep their rows).
-    if (/\.edn$/i.test(filePath)) return this.dataOnlyResult(content)
+    if (endsWithIgnoreCase(filePath, ".edn")) return this.dataOnlyResult(content)
 
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -548,7 +629,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         return false
       }
-      if ((nd.type === "sym_lit" || nd.type === "sym_name") && /(^|\s|\^):?private(\s|$|\})/.test(nd.text ?? "")) return true
+      if ((nd.type === "sym_lit" || nd.type === "sym_name") && carriesPrivateToken(nd.text ?? "")) return true
       for (let i = 0; i < nd.namedChildCount; i++) {
         const c = nd.namedChild(i)
         if (c && (c.type === "meta_lit" || c.type === "old_meta_lit") && scan(c)) return true
@@ -3382,7 +3463,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `incoming-rule.ts`'s `namespaceMatchOf`, and the lane's own instrument
         // (`validation/m14/fixtures/clojure/production-binding-split.ts`) re-implements the pair
         // and ASSERTS that the two agree over the whole population.
-        const segs = target.split(/\/|\.|::|:/)
+        const segs = splitOnNamespaceSeparators(target)
         for (let n = segs.length; n >= 1; n--) {
           const cand = segs.slice(0, n).join(".")
           if (LANGUAGE_NAMESPACE_ROOTS.includes(cand)) return cand
