@@ -818,5 +818,16 @@
    "$.design_decision.decisions[JSD33].decision",
    "$.design_decision.decisions[JSD40].resolution"
   ]
+ },
+ "label_coverage": {
+  "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them by DESIGN. Read by the worker-scope gate (script/m14/differential.ts:5697 readDeclaredNoTruth) and by script/m14/completion-gate.ts: a DECLARED label is printed as a ruling with its reason and closes_when and does NOT fail the run; an UNDECLARED label with no truth still fails, because that one is a hole.",
+  "declared_gaps": [],
+  "declared_no_truth": [
+   {
+    "label": "overrides",
+    "reason": "`overrides` sits in the differential's DEFAULT admitted prefix, so every `overrides` row this analyzer emits enters the comparison looking for truth to meet — and this lane's overrides oracle deliberately derives truth for a NARROWER population than the analyzer emits. ⇒⇒⇒ THE SCOPE, STATED AND MEASURED: the oracle (script/m14/differential.ts:5777 deriveJavaScriptOverrides, whose scope test is `isJsBuiltin(base)` at :5798) derives an override edge ONLY for a class whose heritage base is a PLATFORM BUILTIN, because that is the one case it can decide INDEPENDENTLY — it holds a builtin-prototype table of its own and can therefore REFUTE the analyzer without re-reading the analyzer's reasoning. ⇒⇒⇒ MEASURED over the whole admitted population by script/m14/javascript-overrides-scope.ts (validation/m14/measurements/javascript-overrides-scope.json): of (unmeasured) emitted `overrides` rows, (unmeasured) name a platform builtin and are inside the oracle's scope, and (unmeasured) do not (their base is a project class or is not found in the same file) and have NO truth to meet. Those rows are reported `heuristic`, which is the ANALYZER'S OWN DECLARED SUSPICION and not a fabricated edge. ⇒⇒⇒ AND THE SCOPE IS NOT WIDENED, ON PURPOSE: the oracle's job is to ADJUDICATE, NOT TO MIRROR. It can refute a builtin-base row and cannot refute a non-builtin-base row, because deciding the latter means walking the project's own class hierarchy — the same evidence the analyzer walked — and an oracle that agrees with the analyzer by construction cannot catch the analyzer being wrong. Widening this one would have made it a copy of the analyzer, and a mirror cannot adjudicate; it would also have HIDDEN the fact that the oracle's scope was never stated, where DECLARING it STATES the scope and puts the reader where the gap is. ⇒⇒⇒ NOTHING HERE IS A CLAIM THAT THE OUT-OF-SCOPE ROWS ARE CORRECT — it is a claim that this lane has no instrument that can say, and that the absence is deliberate rather than forgotten.",
+    "closes_when": "an overrides oracle exists for javascript that can ADJUDICATE a NON-BUILTIN base — i.e. one that decides an override edge from evidence independent of the analyzer's own heritage walk (a project-level class hierarchy the analyzer's per-file, index-less scope does not hold, or a second derivation over the grammar that does not share the analyzer's code path). When it exists: admit it here, delete this declaration, and reconcile this lane's `overrides` rows against it in the same round that lowers the heuristic count. Until then the state is DECLARED rather than silently missing, which is the whole difference between a ruling and a hole."
+   }
+  ]
  }
 }

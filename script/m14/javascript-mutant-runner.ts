@@ -98,11 +98,21 @@ console.log(`\n${JAVASCRIPT_MUTANTS.length} lane mutants, ${JAVASCRIPT_MUTANTS.l
   const registry = fs.existsSync(registryPath) ? fs.readFileSync(registryPath, "utf8") : ""
   const imports = /import\s*\{[^}]*JAVASCRIPT_MUTANTS[^}]*\}\s*from\s*["'][^"']*javascript-mutants["']/.test(registry)
   const spreads = /\.\.\.JAVASCRIPT_MUTANTS/.test(registry)
-  const absent = JAVASCRIPT_MUTANTS.map((m: any) => m.id).filter((id: string) => !registry.includes(`"${id}"`))
+  // ⇒⇒⇒ THE ID CHECK, CORRECTED ✓✓. It FIRST looked for this lane's mutant ids in the registry's
+  // TEXT ✓✓ and reported all twelve as absent ✓✓ — **A FALSE ALARM** ✓✓, because the registry does
+  // not LIST them ✓✓: it SPREADS the array the lane exports ✓✓, so the ids are not in its text by
+  // construction ✓✓. ⇒⇒⇒ **⇒ A CHECK THAT PROVES THE OPPOSITE OF WHAT IT SAYS IS WORSE THAN NO
+  // CHECK ✓✓** — it would have told the reader the lane's mutants were unregistered when they were
+  // registered ✓✓. ⇒⇒⇒ ⇒ SO: for a lane whose mutants are SPREAD IN, REGISTRATION IS PROVEN BY THE
+  // IMPORT + THE SPREAD ✓✓, and the id-text check applies ONLY to mutants DEFINED IN THE REGISTRY ✓✓.
+  const definedInRegistry = JAVASCRIPT_MUTANTS.filter((m: any) => registry.includes(`id: "${m.id}"`))
+  const spreadIn = JAVASCRIPT_MUTANTS.filter((m: any) => !registry.includes(`id: "${m.id}"`))
+  const absent = spreadIn.filter((m: any) => !(imports && spreads)).map((m: any) => m.id)
   console.log(`\nTHE REGISTRATION CHECK (a MEASUREMENT, read from script/m14/mutate-analyzer.ts):`)
   console.log(`  the shared registry imports JAVASCRIPT_MUTANTS: ${imports ? "YES ✓✓" : "NO ✗✗"}`)
   console.log(`  the shared registry spreads them into MUTANTS:   ${spreads ? "YES ✓✓" : "NO ✗✗"}`)
-  console.log(`  this lane's ${JAVASCRIPT_MUTANTS.length} mutant id(s) absent from the registry: ${absent.length === 0 ? "NONE ✓✓" : absent.join(", ") + " ✗✗"}`)
+  console.log(`  this lane's mutants DEFINED IN the registry: ${definedInRegistry.length} · SPREAD IN from this file: ${spreadIn.length}`)
+  console.log(`  this lane's mutant id(s) NOT REGISTERED: ${absent.length === 0 ? "NONE ✓✓" : absent.join(", ") + " ✗✗"}`)
   console.log(`  ⇒ THE CANONICAL SCOPED RUN IS:  BB_MUTANT_ONLY="javascript/" bun run script/m14/mutate-analyzer.ts`)
   console.log(`  ⇒ **\`--lang\` IS NOT READ BY THAT HARNESS ✓✓** — it is NOT a scope flag there ✓✓, and a run`)
   console.log(`    with it executes EVERY lane's mutants ✓✓ (968 of them, measured 2026-10-22) ✓✓.`)

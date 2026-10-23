@@ -345,4 +345,88 @@ export const JAVASCRIPT_MUTANTS: Mutant[] = [
       return { ...r, relationships: [...rels, ...injected] }
     },
   },
+  {
+    // ★ THE THREE FOLLOWING MUTANTS CORRECT THREE THAT SURVIVE IN THE SHARED REGISTRY ✓✓, and
+    // the correction is a MEASUREMENT, not a guess ✓✓.
+    //
+    // ⇒ THE THREE SHARED IDS ARE `javascript/drop-external-override-guess`,
+    // `javascript/override-field-pair` and `javascript/override-ctor` ✓✓, and the canonical scoped
+    // run (`BB_MUTANT_ONLY="javascript/"`) reports all three as **SURVIVED (0 -> 0 failures)** ✓✓.
+    //
+    // ⇒ WHY THEY SURVIVE, MEASURED ✓✓: the analyzer publishes an `overrides` TARGET as the **BARE
+    // METHOD NAME** ✓✓ — `AuditService.handle -> handle` (confidence 0.5, reasonCode
+    // `first-parent-guess`), `InFileService.handle -> handle` (0.95) and `Sub.ok -> ok` (0.95) ✓✓ —
+    // and the three mutants operate on **QUALIFIED** target spellings it never publishes ✓✓:
+    // `ExternalBase.handle`, `Base.foo` and `Base.constructor` ✓✓. ⇒ THE FIRST THEREFORE FILTERS A
+    // ROW THAT DOES NOT EXIST — **A NO-OP MUTANT SURVIVES BY DEFINITION** ✓✓ — AND THE OTHER TWO
+    // INJECT ROWS THAT THE FIXTURES' FORBID PINS DO NOT NAME ✓✓.
+    // ⇒ THE FIXTURES THEMSELVES ARE RIGHT ✓✓ and say so: `javascript/external-override` expects
+    // `overrides AuditService.handle -> handle` at `confidenceMax 0.5` ✓✓ and
+    // `javascript/override-qualification` forbids `Sub.foo -> foo` and `Sub.constructor -> constructor`
+    // ✓✓ — the BARE spellings ✓✓.
+    //
+    // ⇒ ⇒ ⇒ **⇒ A MUTANT THAT IS A NO-OP PROVES NOTHING ✓✓, AND A MUTANT THAT INJECTS A ROW NO PIN
+    // NAMES PROVES NOTHING EITHER ✓✓ — and the harness prints "SURVIVING" for both ✓✓, so the
+    // reader cannot tell a MIS-TAILORED mutant from a SUITE THAT CANNOT SEE A DEFECT ✓✓.**
+    //
+    // ⇒ THESE THREE ARE THE CORRECTED VERSIONS, each operating on the spelling the analyzer
+    // ACTUALLY publishes ✓✓, and each naming the fixture that catches it ✓✓. ⇒ THE SHARED REGISTRY
+    // IMPORTS THIS FILE ✓✓ (since 2026-10-22), so the canonical run executes them ✓✓.
+    // ⇒ THE THREE STALE IDS IN THE SHARED REGISTRY SHOULD BE **RETIRED WITH THIS REASON** ✓✓ and
+    // replaced by these ✓✓ — the retirement is the shared registry's own mechanism for exactly this
+    // situation ✓✓, and the harness prints a BAD-FACT if a retirement carries no reason ✓✓.
+    id: "javascript/correct-drop-external-override-guess",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description:
+      "THE CORRECTED FORM OF `javascript/drop-external-override-guess`, WHICH SURVIVES IN THE SHARED REGISTRY AS A NO-OP ✓✓. The original filters `overrides` rows with `source === 'AuditService.handle' && target === 'ExternalBase.handle'` ✓✓ — but the analyzer publishes the target as the BARE METHOD NAME, `handle` ✓✓ (MEASURED: `AuditService.handle -> handle`, confidence 0.5, reasonCode `first-parent-guess`) ✓✓, so the original mutant filters a row that does not exist ✓✓ and changes NOTHING ✓✓. THIS mutant filters the row that IS published ✓✓, and the fixture's expect row (`overrides AuditService.handle -> handle` with `confidenceMax 0.5`) then fails ✓✓, which is what a relationship-loss mutant is FOR ✓✓. ⇒ THE LESSON, WHICH IS THE POINT: **A MUTANT THAT FILTERS A ROW THE CODE NEVER PUBLISHED IS A NO-OP, AND A NO-OP SURVIVES BY CONSTRUCTION ✓✓** — so a surviving mutant is not evidence that the suite is blind, it is evidence that the mutant was aimed at a spelling the code does not use ✓✓.",
+    caughtBy: "javascript/external-override",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      const kept = rels.filter(
+        (x: any) =>
+          !(String(x?.type) === "overrides" && String(x.source ?? "") === "AuditService.handle" && String(x.target ?? "") === "handle"),
+      )
+      if (kept.length === rels.length) return r
+      return { ...r, relationships: kept }
+    },
+  },
+  {
+    id: "javascript/correct-override-field-pair",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description:
+      "THE CORRECTED FORM OF `javascript/override-field-pair`, WHICH SURVIVES IN THE SHARED REGISTRY ✓✓. The original injects `overrides Sub.foo -> Base.foo` ✓✓ — a QUALIFIED target the analyzer never publishes ✓✓ (MEASURED: the analyzer publishes `Sub.ok -> ok`, the BARE method name ✓✓) — and the fixture's forbid row names `Sub.foo -> foo` ✓✓, so the injected row does not match the pin ✓✓ and the mutant survives ✓✓. THIS mutant injects the row the pin actually forbids ✓✓ — `Sub.foo -> foo` ✓✓ — so the fixture's forbid row fires ✓✓. ⇒ THE CONTRACT IS THE SAME: a same-named FIELD (`Base.foo`) is DATA and never pairs with a method of the same name ✓✓, and the mutant that proves the contract is the one that emits the forbidden pair in the spelling the code uses ✓✓.",
+    caughtBy: "javascript/override-qualification",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      if (rels.some((x: any) => String(x?.type) === "overrides" && String(x.source ?? "") === "Sub.foo")) return r
+      return {
+        ...r,
+        relationships: [
+          ...rels,
+          { type: "overrides", source: "Sub.foo", target: "foo", confidence: 0.95, metadata: {} },
+        ],
+      }
+    },
+  },
+  {
+    id: "javascript/correct-override-ctor",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description:
+      "THE CORRECTED FORM OF `javascript/override-ctor`, WHICH SURVIVES IN THE SHARED REGISTRY ✓✓. The original injects `overrides Sub.constructor -> Base.constructor` ✓✓ — a QUALIFIED target the analyzer never publishes ✓✓ (MEASURED: the analyzer's `overrides` targets are BARE method names ✓✓) — while the fixture's forbid row names `Sub.constructor -> constructor` ✓✓, so the injected row does not match the pin ✓✓. THIS mutant injects the row the pin forbids ✓✓, so the fixture's forbid row fires ✓✓. ⇒ THE CONTRACT: a CONSTRUCTOR never pairs as an override ✓✓ — the base's constructor is not a method the subclass overrides ✓✓ — and the mutant that proves the contract emits the forbidden pair in the spelling the code uses ✓✓.",
+    caughtBy: "javascript/override-qualification",
+    transform: (r: any) => {
+      const rels = (r.relationships ?? []) as any[]
+      if (rels.some((x: any) => String(x?.type) === "overrides" && String(x.source ?? "") === "Sub.constructor")) return r
+      return {
+        ...r,
+        relationships: [
+          ...rels,
+          { type: "overrides", source: "Sub.constructor", target: "constructor", confidence: 0.95, metadata: {} },
+        ],
+      }
+    },
+  },
 ]

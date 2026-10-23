@@ -230,12 +230,44 @@ const VOCABULARIES: { type: string; label: string; words: string[]; positiveCont
     positiveControl: { wasm: DART_WASM, mustContain: "part_directive" },
   },
 ]
+// ⇒⇒⇒ THE DUPLICATE KEY, AND WHY IT WAS NOT COSMETIC ✓✓. THIS LITERAL ONCE READ
+//   `[PRODUCTION_WASM]: gateInv,` FOLLOWED BY `[FIXTURE_WASM]: fixInv,` ✓✓ — AND
+// `PRODUCTION_WASM === FIXTURE_WASM === "wasm/tree-sitter-javascript.wasm"` ✓✓, so THE TWO KEYS WERE
+// THE SAME KEY ✓✓, **THE SECOND ONE WON, AND `gateInv` WAS SILENTLY GONE** ✓✓. ⇒ THE COMPILER SAYS
+// SO (TS1117) ✓✓, and `npx tsc --noEmit -p tsconfig.scripts.json` is the command that says it ✓✓ —
+// `bunx tsc --noEmit -p tsconfig.json` DOES **NOT** COVER `script/m14` ✓✓ and exits 0 on this file ✓✓.
+//
+// ⇒⇒⇒ WHY IT MATTERS EVEN THOUGH THE NUMBERS CAME OUT RIGHT ✓✓: the two inventories are of the SAME
+// FILE ✓✓, so the ruling's output was not wrong ✓✓ — but the file SILENTLY DEPENDED ON TWO NAMES
+// DENOTING ONE BUILD ✓✓, and had the fixture suite's spelling ever pointed at a DIFFERENT build ✓✓,
+// the ruling would have read the WRONG INVENTORY AS THE PRODUCTION ONE ✓✓ and NOTHING WOULD HAVE SAID
+// SO ✓✓. ⇒⇒⇒ **A THING THAT NAMES ANOTHER THING MUST BE CHECKED AGAINST IT, OR THE NAME IS A GUESS
+// ✓✓** — here two NAMES for one build, and the check is that their BYTES AGREE ✓✓.
+//
+// ⇒⇒⇒ THE FIX IS TWO PARTS ✓✓: ONE key per build ✓✓, and an ASSERTION that the two spellings of the
+// production build resolve to the same BYTES ✓✓ — so if the fixture suite ever loads a different
+// build, the instrument says so INSTEAD OF OVERWRITING ✓✓.
 const inventories: Record<string, Inventory> = {
   [PRODUCTION_WASM]: gateInv,
-  [FIXTURE_WASM]: fixInv,
   [GATE_WASM]: npmInv,
   [TS_WASM]: tsInv,
   [DART_WASM]: dartInv,
+}
+// ⇒ THE FIXTURE SUITE'S SPELLING IS THE PRODUCTION BUILD'S SPELLING ✓✓ — assert it against the BYTES,
+// not against the PATH ✓✓ (a path is a guess; a digest is a measurement) ✓✓.
+if (FIXTURE_WASM !== PRODUCTION_WASM) {
+  inventories[FIXTURE_WASM] = fixInv
+  console.log(
+    `  the FIXTURE SUITE's spelling (${FIXTURE_WASM}) DIFFERS from the PRODUCTION spelling (${PRODUCTION_WASM}) ⇒ both are kept ✓✓`,
+  )
+} else if (fixInv.sha256 !== gateInv.sha256) {
+  // ⇒ THE PATHS AGREE BUT THE BYTES DO NOT ✓✓ ⇒ SOMETHING RESOLVES THE SAME SPELLING TO TWO
+  // DIFFERENT BUILDS ✓✓, and the ruling must NOT quietly pick one ✓✓.
+  throw new Error(
+    `javascript-grammar-ruling: ${PRODUCTION_WASM} was read twice and produced TWO DIFFERENT digests ` +
+      `(${gateInv.sha256} and ${fixInv.sha256}) - the same spelling resolved to two builds, and a ruling ` +
+      `that picks one of them silently is a ruling nobody can check`,
+  )
 }
 for (const v of VOCABULARIES) {
   const hits = gateInv.named.filter((n) => v.words.some((w) => n.includes(w)))

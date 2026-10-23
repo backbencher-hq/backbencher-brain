@@ -42,7 +42,22 @@ const WANT = Number(argOf("--want", "400"))
 const CAP = Number(argOf("--cap", "400"))
 const MAX_BYTES = Number(argOf("--max-bytes", String(400 * 1024)))
 
-const EXT = { tsx: [".tsx"], ts: [".ts"], typescript: [".ts", ".tsx"] }[LANG] ?? [".tsx"]
+// ⇒⇒⇒ THE EXTENSION SET IS THE ONE TABLE's, NOT A COPY ✓✓ (2026-10-22).
+// ⇒⇒⇒ THIS FILE CARRIED ITS OWN LIST — `{ tsx: [".tsx"], ts: [".ts"], typescript: [".ts", ".tsx"] }`
+// ✓✓ — and the one table says `typescript: "ts,tsx,mts,cts"` ✓✓, so the COPY EXCLUDED `.mts` and
+// `.cts` ✓✓ and this pilot was MEASURING A POPULATION THAT IS NOT THE ROUTER'S POPULATION ✓✓.
+// ⇒⇒⇒ **THE INSTRUMENT AND THE DENOMINATOR MUST COUNT THE SAME POPULATION** ✓✓, and a table
+// duplicated in two places is one table that WILL diverge ✓✓ — and it did ✓✓.
+// ⇒⇒⇒ `tsx` and `ts` are GRAMMAR selectors, not extension selectors ✓✓ (`.tsx` needs the JSX-capable
+// `tree-sitter-tsx.wasm` ✓✓) ⇒ they are now read as SUBSETS OF THE TABLE's SET ✓✓, so they cannot
+// drift either ✓✓.
+import { extensionsFor } from "./language-extensions.ts"
+const TABLE_EXTS = extensionsFor("typescript").map((e) => (e.startsWith(".") ? e : `.${e}`))
+const EXT =
+  LANG === "typescript" ? TABLE_EXTS
+  : LANG === "tsx" ? TABLE_EXTS.filter((e) => e === ".tsx")
+  : LANG === "ts" ? TABLE_EXTS.filter((e) => e === ".ts")
+  : TABLE_EXTS
 
 const { getParser } = await import(`${HERE}/src/ast/engine.ts`)
 const { RelationshipType } = await import(`${HERE}/src/ast/types.ts`)

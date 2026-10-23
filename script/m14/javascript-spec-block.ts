@@ -245,14 +245,100 @@ const block = {
   _implemented_measured: measured,
 }
 
+/**
+ * ⇒⇒⇒ THE `label_coverage` BLOCK — A LANE'S RULING ABOUT ITS OWN LANE ✓✓, and it is a WRITTEN FILE,
+ * not a measurement ✓✓.
+ *
+ * ⇒⇒⇒ THE DEFECT IT CLOSES ✓✓. The G20 gate — "a label compared with no truth fails the run" —
+ * treated a label the lane has DELIBERATELY declared as having no truth exactly like a label nobody
+ * wrote an oracle for ✓✓. ⇒⇒⇒ **⇒⇒⇒ A DECLARED ABSENCE IS A RULING; AN UNDECLARED ONE IS A HOLE**
+ * ✓✓, and the gate could not tell them apart because it never read the declaration ✓✓ — which lives
+ * here, in the spec, the whole time ✓✓. ⇒⇒⇒ ⇒⇒⇒ The gate READS THIS BLOCK NOW ✓✓
+ * (`readDeclaredNoTruth` in `script/m14/differential.ts:5697-5730` and the completion gate) ✓✓: a
+ * DECLARED label is printed with its reason and does NOT fail the run ✓✓; an UNDECLARED label with no
+ * truth still does ✓✓, because that one IS a hole ✓✓.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE DECLARATION'S `reason` IS WHERE THE SCOPE LIVES ✓✓. A DECLARATION WITHOUT A
+ * SCOPE IS A WISH, and a wish in a spec is a citation nobody can check ✓✓. ⇒⇒⇒ So this reason names
+ * the oracle's ACTUAL scope — BUILTIN BASES ONLY — and gives the MEASURED split that proves it ✓✓,
+ * from `validation/m14/measurements/javascript-overrides-scope.json` ✓✓, whose parts are ASSERTED to
+ * sum to their total ✓✓.
+ *
+ * ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **AND WHY THE ORACLE IS NOT WIDENED ✓✓: THE ORACLE'S PURPOSE IS TO ADJUDICATE, NOT TO
+ * MIRROR ✓✓.** It CAN refute a builtin-base row (it holds an independent builtin-prototype table ✓✓)
+ * and it CANNOT refute a non-builtin-base row (it would have to read the same class hierarchy the
+ * analyzer reads ✓✓). ⇒⇒⇒ Widening it to cover those WOULD HAVE MADE IT A COPY OF THE ANALYZER ✓✓,
+ * **AND A MIRROR CANNOT ADJUDICATE** ✓✓ — it would have hidden the fact that its scope was never
+ * STATED ✓✓, where DECLARING it STATES the scope ✓✓. ⇒⇒⇒ ⇒⇒⇒ That is the stronger argument, and it is
+ * why the decision against widening STANDS ✓✓.
+ */
+const OVERRIDES_SCOPE = ((): { builtin: number; outOfScope: number; rows: number } => {
+  try {
+    const p = path.join(ROOT, "validation/m14/measurements/javascript-overrides-scope.json")
+    const m = JSON.parse(readFileSync(p, "utf8"))
+    const builtin = Number(m.builtinBaseRows ?? 0)
+    const outOfScope = Number(m.nonBuiltinBaseRows ?? 0) + Number(m.noBaseRows ?? 0)
+    const rows = Number(m.overridesRows ?? 0)
+    // ⇒⇒⇒ THE CONSUMER APPLIES THE PRODUCER'S OWN RULE ✓✓: **⇒⇒⇒ A MEASUREMENT WHOSE PARTS DO NOT SUM
+    // TO ITS TOTAL IS NOT A MEASUREMENT** ✓✓, and this generator WILL NOT PUBLISH one ✓✓.
+    // ⇒⇒⇒ NOT HYPOTHETICAL: the first version of that instrument never incremented its non-builtin
+    // counter and wrote `57 + 0 + 308` against 7,259 rows ✓✓ ⇒ without this check THAT BROKEN SPLIT
+    // WOULD HAVE GONE INTO THE SPEC ✓✓, where the completion gate reads it and where nobody adds it
+    // up ✓✓. ⇒⇒⇒ ⇒⇒⇒ **A NUMBER THAT REACHES A SPEC HAS TO BE CHECKED WHERE IT IS CONSUMED — the
+    // producer's assertion only guards the run that produced it ✓✓.**
+    if (![builtin, outOfScope, rows].every((v) => Number.isFinite(v))) {
+      return { builtin: NaN, outOfScope: NaN, rows: NaN }
+    }
+    if (builtin + outOfScope !== rows) {
+      return { builtin: NaN, outOfScope: NaN, rows: NaN }
+    }
+    return { builtin, outOfScope, rows }
+  } catch {
+    // ⇒⇒⇒ AN UNREAD MEASUREMENT IS SAID, NOT GUESSED ✓✓ — the declaration then carries NO NUMBER
+    // rather than a number nobody measured ✓✓ (a number without its command, population, root and
+    // scope is not a number).
+    return { builtin: NaN, outOfScope: NaN, rows: NaN }
+  }
+})()
+
+const LABEL_COVERAGE = {
+  _description:
+    "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them by DESIGN. Read by the worker-scope gate (script/m14/differential.ts:5697 readDeclaredNoTruth) and by script/m14/completion-gate.ts: a DECLARED label is printed as a ruling with its reason and closes_when and does NOT fail the run; an UNDECLARED label with no truth still fails, because that one is a hole.",
+  declared_gaps: [],
+  declared_no_truth: [
+    {
+      label: "overrides",
+      reason:
+        "`overrides` sits in the differential's DEFAULT admitted prefix, so every `overrides` row this analyzer emits enters the comparison looking for truth to meet — and this lane's overrides oracle deliberately derives truth for a NARROWER population than the analyzer emits. ⇒⇒⇒ THE SCOPE, STATED AND MEASURED: the oracle (script/m14/differential.ts:5777 deriveJavaScriptOverrides, whose scope test is `isJsBuiltin(base)` at :5798) derives an override edge ONLY for a class whose heritage base is a PLATFORM BUILTIN, because that is the one case it can decide INDEPENDENTLY — it holds a builtin-prototype table of its own and can therefore REFUTE the analyzer without re-reading the analyzer's reasoning. ⇒⇒⇒ MEASURED over the whole admitted population by script/m14/javascript-overrides-scope.ts (validation/m14/measurements/javascript-overrides-scope.json): of " +
+        (Number.isFinite(OVERRIDES_SCOPE.rows) ? OVERRIDES_SCOPE.rows.toLocaleString("en-US") : "(unmeasured)") +
+        " emitted `overrides` rows, " +
+        (Number.isFinite(OVERRIDES_SCOPE.builtin) ? OVERRIDES_SCOPE.builtin.toLocaleString("en-US") : "(unmeasured)") +
+        " name a platform builtin and are inside the oracle's scope, and " +
+        (Number.isFinite(OVERRIDES_SCOPE.outOfScope) ? OVERRIDES_SCOPE.outOfScope.toLocaleString("en-US") : "(unmeasured)") +
+        " do not (their base is a project class or is not found in the same file) and have NO truth to meet. Those rows are reported `heuristic`, which is the ANALYZER'S OWN DECLARED SUSPICION and not a fabricated edge. ⇒⇒⇒ AND THE SCOPE IS NOT WIDENED, ON PURPOSE: the oracle's job is to ADJUDICATE, NOT TO MIRROR. It can refute a builtin-base row and cannot refute a non-builtin-base row, because deciding the latter means walking the project's own class hierarchy — the same evidence the analyzer walked — and an oracle that agrees with the analyzer by construction cannot catch the analyzer being wrong. Widening this one would have made it a copy of the analyzer, and a mirror cannot adjudicate; it would also have HIDDEN the fact that the oracle's scope was never stated, where DECLARING it STATES the scope and puts the reader where the gap is. ⇒⇒⇒ NOTHING HERE IS A CLAIM THAT THE OUT-OF-SCOPE ROWS ARE CORRECT — it is a claim that this lane has no instrument that can say, and that the absence is deliberate rather than forgotten.",
+      closes_when:
+        "an overrides oracle exists for javascript that can ADJUDICATE a NON-BUILTIN base — i.e. one that decides an override edge from evidence independent of the analyzer's own heritage walk (a project-level class hierarchy the analyzer's per-file, index-less scope does not hold, or a second derivation over the grammar that does not share the analyzer's code path). When it exists: admit it here, delete this declaration, and reconcile this lane's `overrides` rows against it in the same round that lowers the heuristic count. Until then the state is DECLARED rather than silently missing, which is the whole difference between a ruling and a hole.",
+    },
+  ],
+}
+
+
 if (CHECK) {
-  const cur = JSON.stringify(doc.coverage)
-  const next = JSON.stringify(block)
-  console.log(cur === next ? "the coverage block is UP TO DATE" : "the coverage block DIFFERS from the measurements")
-  process.exit(cur === next ? 0 : 1)
+  // ⇒⇒⇒ THE CHECK COMPARES BOTH BLOCKS ✓✓ — a `--check` that verified only the coverage block would
+  // report UP TO DATE for a spec whose DECLARATION had been hand-edited behind the generator's back,
+  // which is the same defect as a check that proves the opposite of what it says.
+  const covOk = JSON.stringify(doc.coverage) === JSON.stringify(block)
+  const labOk = JSON.stringify(doc.label_coverage) === JSON.stringify(LABEL_COVERAGE)
+  console.log(
+    covOk && labOk
+      ? "the coverage block and the label_coverage block are UP TO DATE"
+      : `the spec DIFFERS from the measurements — coverage ${covOk ? "ok" : "DIFFERS"}, label_coverage ${labOk ? "ok" : "DIFFERS"}`,
+  )
+  process.exit(covOk && labOk ? 0 : 1)
 }
 
 doc.coverage = block
+doc.label_coverage = LABEL_COVERAGE
 // THE FILE's OWN FORMAT — one space of indent, exactly as the tree carries it, so the diff is the
 // BLOCK and not the file. (A two-space re-serialization rewrote 1,600 lines to change forty.)
 writeFileSync(SPEC, JSON.stringify(doc, null, 1) + "\n")

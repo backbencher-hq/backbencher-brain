@@ -1,25 +1,34 @@
-#!/usr/bin/env bun
 /**
- * THE SAFE COMMIT — A PRIVATE INDEX, SO ANOTHER LANE's STAGED FILES CAN NEVER BE SWEPT IN.
+ * THE SAFE COMMIT — A PRIVATE INDEX, SO THE SHARED INDEX IS NEVER READ AND NEVER WRITTEN.
  *
- * ⇒ WHY THIS EXISTS ✓✓. In a SHARED index — and this repository's index IS shared — `git add` +
- * `git commit -- <paths>` still commits whatever ELSE happens to be staged ✓✓. ⇒ THIS LANE HAS BEEN
- * BURNED IN BOTH DIRECTIONS ✓✓:
- *   · the yaml lane's commit `0b86199f8` swept **three of this lane's files** into a commit whose
- *     message described four defects in four Lead-owned files ✓✓, and
- *   · this lane's own commit `400f2a329` swept **three of the html lane's files** into a commit whose
- *     message described thirteen page headers ✓✓.
- * ⇒ IN BOTH CASES THE CONTENT WAS RIGHT AND THE ATTRIBUTION WAS WRONG ✓✓, AND IN BOTH CASES THE
- * FIX WAS THE SAME ✓✓: **THE COMMIT's CONTENT MUST BE A FUNCTION OF ITS ARGUMENTS ALONE** ✓✓.
+ * ⇒ WHY THIS EXISTS, AND **THE CAUSE IS NOT WHAT I FIRST SAID** ✓✓. This lane's first version of
+ * this tool claimed that `git commit -- <paths>` commits "whatever else happens to be staged" ✓✓.
+ * ⇒ **THAT CLAIM WAS WRONG, AND THE LEAD's CONTROLLED MEASUREMENT CORRECTED IT** ✓✓: in a scratch
+ * repository, with TWO files staged and ONE named on the commit line, `git commit -m "..." -- a.txt`
+ * landed **only `a.txt`**, and `b.txt` **remained staged** ✓✓. ⇒ THE PATH LIST **DOES** LIMIT WHAT
+ * LANDS ✓✓. ⇒ **THE CAUSE OF WHAT ACTUALLY HAPPENED WAS THE MISSING `--` ✓✓** — a commit with NO
+ * path argument commits THE WHOLE INDEX ✓✓, which is what the documentation says it does ✓✓.
+ * ⇒ THIS LANE PROVED IT AGAINST ITSELF ✓✓: its own commit that passed `-- <paths>` landed exactly
+ * the three named files ✓✓, and its own commit that used a heredoc for the message and OMITTED the
+ * paths landed fifteen ✓✓, three of them another lane's ✓✓.
  *
- * ⇒ THE METHOD ✓✓: commit through a **PRIVATE INDEX** ✓✓ — a temporary `GIT_INDEX_FILE` seeded
- * from HEAD, into which ONLY the named paths are added ✓✓. ⇒ The shared index is never read and
- * never written ✓✓, so another lane's staged files cannot be committed, cannot be unstaged, and
- * cannot be destroyed ✓✓.
+ * ⇒ **⇒ A FLEET THAT REWRITES ITS CAUSES ON THE STRENGTH OF ONE OBSERVATION WILL REWRITE THEM
+ * WRONG ✓✓** — so the correction is recorded here, in the tool that carries the lesson ✓✓.
  *
- * ⇒ AND IT REFUSES RATHER THAN GUESS ✓✓: after the private index is built, its path list is
+ * ⇒ AND THE TOOL IS STILL THE RIGHT THING, FOR THE STRONGER REASON THE MEASUREMENT MAKES CLEARER
+ * RATHER THAN WEAKER ✓✓: `git commit -- <paths>` limits what LANDS; it does not make the shared
+ * index UNREAD ✓✓. ⇒ THE RESIDUAL HAZARD IS NOT "another lane's file lands in my commit" ✓✓ — it is
+ * that **the shared index is READ and MODIFIED by my commit, so a concurrent `git add` by another
+ * lane can RACE my commit's index snapshot** ✓✓. ⇒ A **PRIVATE INDEX** removes the shared index
+ * from the picture entirely ✓✓: it is never read and never written, so another lane's staged files
+ * can be neither committed, nor unstaged, nor destroyed ✓✓. ⇒ THAT IS A STRONGER GUARANTEE THAN
+ * THE ONE THE ORIGINAL HEADER ARGUED FOR ✓✓.
+ *
+ * ⇒ AND IT REFUSES RATHER THAN GUESSES ✓✓: after the private index is built, its path list is
  * COMPARED against the requested path list ✓✓, and any difference is a refusal (exit 4) ✓✓ —
- * because a commit that silently contains an extra file is a commit whose message is a lie ✓✓.
+ * because a commit that silently contains an extra file is a commit whose message is a lie ✓✓. It
+ * also prints the shared index's staged count BEFORE and AFTER, so the invariant is OBSERVABLE
+ * rather than asserted ✓✓.
  *
  * ⇒ USAGE ✓✓:
  *   bun run script/m14/javascript-safe-commit.ts --message <file> -- <path> [<path> ...]
@@ -27,7 +36,8 @@
  *
  * The message is read from a FILE, never from `-m` on a shell command line ✓✓ — a backtick in a
  * shell double-quoted string is a COMMAND SUBSTITUTION ✓✓, and this lane lost a word from a commit
- * message to exactly that ✓✓.
+ * message to exactly that ✓✓. ⇒ THE `--` IS NOT OPTIONAL ✓✓: without it the commit takes the whole
+ * index ✓✓.
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
