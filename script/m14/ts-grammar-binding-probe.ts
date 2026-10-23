@@ -2,35 +2,36 @@
  * TS GRAMMAR-BINDING PROBE — WHICH GRAMMAR BUILD DOES PRODUCTION ACTUALLY LOAD, AND WHAT DOES THE
  * DIFFERENCE COST OVER THE ADMITTED POPULATION (L-2026-10-21-11).
  *
- * ## THE FACT THIS INSTRUMENT EXISTS TO ESTABLISH — RE-MEASURED, AND THE EARLIER VERSION OF THIS
- * ## HEADER ASSERTED SOMETHING THE MEASUREMENT DOES NOT BEAR OUT
+ * ## THE FACT THIS INSTRUMENT EXISTS TO ESTABLISH — AND THIS HEADER HAS BEEN WRONG TWICE
  *
- * There are THREE typescript grammar builds visible from this repository, and the fact that matters
- * is WHICH ONE EACH ROUTE LOADS. The earlier version of this block said 778025db was "the build
- * PRODUCTION loads". **THAT IS FALSE.** The measured binding is:
+ * THE ONLY CITATION THAT SURVIVES IS THE DIGEST OF THE BYTES THE RESOLVER HANDS THE PARSER. Not a
+ * path, not a directory someone believes is first in the candidate list, and not a log line's
+ * `wasmPath` taken on trust — the log line names a path, and a path can be a file that is never
+ * loaded. So this probe MEASURES: it calls the production resolver, reads the path the engine logs,
+ * hashes THAT file, and prints the digest.
  *
- *   · **8515404dceed38e1ed86aa34b09fcf3379fff1b4ff9dd3967bcd6d1eb5ac3d8f** — 2,342,690 bytes,
- *     385 node ids / 191 named types. ⇒⇒⇒ **THIS IS THE BUILD PRODUCTION AND THE FIXTURE SUITE BOTH
- *     LOAD.** There is no second build in use, and no build difference to cost.
- *   · **778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d** — 1,413,849 bytes, the
- *     npm package's own `node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm`.
- *     ⇒⇒⇒ **LOADED BY NOTHING.** It is on disk and no code path in this repository reaches it: not
- *     production, not the fixture suite. It is not a fallback; it is an unused file.
- *   · **6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6** — the TSX build
- *     (`wasm/tree-sitter-tsx.wasm`), 405 ids / 203 named. The TSX grammar is a DIFFERENT BUILD from
- *     the typescript grammar and the two are NOT interchangeable: parsing a `.tsx` file with the
- *     typescript grammar measures a different population from parsing it with the tsx grammar.
+ * MEASURED 2026-10-23, from a real script file so the resolver path is production's:
  *
- * ⇒⇒⇒ **A GRAMMAR CITATION IS THE SHA-256 OF THE BYTES THE REGISTRY SERVES, NEVER A PATH AND NEVER A
- * LOG LINE.** The engine logs `language parser loaded {"wasmPath": …}` whenever it (re)loads a
- * parser; that line names a PATH, and this fleet has already mistaken a path for a build — this
- * header did. Every number in this lane's pages cites a digest, so a reader can tell which bytes a
- * count was taken over.
+ *   · **778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d** — 1,413,849 bytes —
+ *     `node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm`. ⇒⇒⇒ **THIS IS THE SERVED
+ *     TYPESCRIPT BUILD.**
+ *   · **8515404dceed38e1ed86aa34b09fcf3379fff1b4ff9dd3967bcd6d1eb5ac3d8f** — 2,342,690 bytes —
+ *     `wasm/tree-sitter-typescript.wasm`. **Present, and NEVER SERVED for this language in this
+ *     checkout**: the resolver walks past it. Three rounds of this lane cited it as production's
+ *     build, and an earlier version of this very header declared 778025db "loaded by NOTHING".
+ *     **Both statements were wrong, and each was wrong about the other file.**
+ *   · **b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335** — this lane's R2 patch,
+ *     built from the npm package's own source; that source's shipped build is 778025db, which is why
+ *     the patch is compared against 778025db and NOT against wasm/. A comparison against the wrong
+ *     baseline produced a drift figure this lane had to withdraw.
+ *   · **6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6** — the TSX build. The TSX
+ *     grammar is a DIFFERENT BUILD and not interchangeable: a `.tsx` file parsed with the typescript
+ *     grammar is a different population from the same file parsed with the tsx grammar, and mixing
+ *     the two in one comparison is how the wrong drift figure was produced.
  *
- * **A CELL WHOSE FIXTURES RAN ON A DIFFERENT PARSER IS NOT WRONG — IT IS UNSTATED.** Here both
- * routes load the SAME digest, which is why the cell can state it; that is a MEASUREMENT this probe
- * makes rather than an inference, and the third build's presence is why "the parser loaded" is not
- * self-evidently the parser that produced a count.
+ * ⇒⇒⇒ **A GRAMMAR CITATION IS A SHA-256 OF SERVED BYTES. THIS PROBE EXISTS TO COMPUTE IT, NOT TO
+ * ASSERT IT** — because every assertion this lane has made about which build is served has been
+ * wrong at least once, including in both directions.
  *
  * ## WHAT IT MEASURES
  *
