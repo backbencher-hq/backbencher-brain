@@ -30,8 +30,10 @@ What backs it instead, re-measured on every run of the instrument:
   and parsed by the wired wasm with 0 ERROR and 0 MISSING.
 
 `src/parser.c` (41 MB) is deliberately not vendored; `PIN.md` carries the exact
-two-command rebuild sequence. `.nim` is the only routed extension — see
-*Honest limitations* for why `.nims` and `.nimble` are not.
+two-command rebuild sequence. `.nim`, `.nims` and `.nimble` are all routed to this
+analyzer (decisions NIMD4/NIMD5 in `script/m14/spec/nim-completeness.json`, measured over
+every tracked `.nimble`/`.nims` in the corpus: 0 error files, 0 error nodes), which is why
+the admitted population below is 6,063 files and not the 5,846 `.nim`-only subset.
 
 ## Symbol contract
 
@@ -71,7 +73,8 @@ re-parsing.
 
 | Relationship | Rule | Carries a line |
 | --- | --- | --- |
-| `imports` | one edge per module named by `import`, `from M import …` and `include`; source is the synthetic `(global)` | the naming node (the path token, not the directive) |
+| `imports` | one edge per module named by `import` and `from M import …`; source is the synthetic `(global)` | the naming node (the path token, not the directive) |
+| `part_of` | one edge per operand of `include` — a TEXTUAL scope-sharing inclusion, not a module import (the included file's declarations join THIS module's single scope; no module is created and nothing can `import` it). 1:1 RELABEL of the old `imports` row, rung R3, 2026-10-23: same source, target, line and confidence, plus `partRole: "library"` and `targetResolution: "module-name"` | the naming node (the path token) |
 | `exports` | one edge per OPERAND of an `export` statement — a re-export of a name this module imported, which nothing else in the payload records | the operand node |
 | `contains` | one edge per owned member: object fields, enum members, module-level procs/types, methods under their receiver | no, by design |
 | `calls` | `call` and `dot_generic_call` whose callee resolves to a callable this file declares; UFCS member calls included | the callee node |
@@ -309,6 +312,44 @@ already ask. `nim/reexport` pins that judgement with a forbid on
 `{exports, target: visible}`, so the decision has to be argued rather than
 rediscovered.
 
+## `include` is `part_of`, and its target rule is recorded (2026-10-23, rung R3)
+
+`include` is a **textual scope-sharing inclusion**: the included file's declarations become
+part of the INCLUDING module's single declaration space, no module is created, no binding
+scope is imported, and nothing can `import` what was included. This document already said so
+in Nim's own words (`.nims` "is `include`d into another module; it is not a module and
+nothing can `import` it") — and until 2026-10-23 the edge was nevertheless published as
+`imports`. It is now `part_of` (`src/ast/types.ts:164-190`), the same contract fsharp's
+`#load` and php's `include`/`require` were relabelled to, at the same rung (R3, no grammar
+change: `include_statement` is a named node type of the served build — 164 named types,
+served digest `421369fe6a88…`).
+
+**The relabel is 1:1 and moves NO number in the closure's target rule.** Same source
+`(global)`, same target, same `line_number`, same confidence 1, same
+`metadata.relationshipType: "nim_include"` marker, and the `ImportInfo` payload stays (it is
+the parsed directive list, persisted into `brain_import` by `src/ast/parallel-indexer.ts`,
+not a relationship). Two metadata fields are the contract's own:
+
+| field | value | why |
+| --- | --- | --- |
+| `partRole` | `"library"` | MANDATORY on every `part_of` row (`src/ast/types.ts:170-183`). Nim has only ONE of Dart's two roles — there is no `part of` counterpart, because an included file does not know it is included — so every row is the host that INCLUDES the part. Same single-role shape php declares. |
+| `targetResolution` | `"module-name"` | **THE RECORDED DIVERGENCE, never flattened.** fsharp and php emit a PROJECT-RELATIVE PATH as the `part_of` target; nim keeps the analyzer's normalized MODULE NAME. A reader comparing two lanes' `part_of` cells must be able to see that the two cells are resolved in DIFFERENT KEYSPACES, so the shape is named on the row. |
+
+**Why the target rule did not move.** It is already measured: 458 `nim_include` edges
+resolve at both ends on 96.9 % intra-file / 98.0 % corpus-wide, normalisation changed the
+target of 12, and reverting to the verbatim written path binds **0** of the 14 it leaves
+unresolved (`validation/m14/fixtures/nim/import-resolution-probe.mts`,
+`s18-import-probe.txt`, 6,063 files). Moving the target to a project-relative path the way
+fsharp/php do would replace a measured 98 % binding rule with an unmeasured one; the
+divergence is therefore RECORDED rather than normalized away. The construct is the reason
+the rules differ: a Nim include names a module path expression, not a string file literal.
+
+**Fixture, both directions:** `validation/m14/fixtures/nim/include-part.nim` pins a
+`part_of` row (`include helpers` → target `helpers`, `partRole` and `targetResolution`
+asserted) AND forbids the same construct under `imports`; `nim/module-target`'s
+`include "std/prelude"` row moved to `part_of` with its quoted-spelling branch and its
+`nimStdlibModule` marker still asserted. The fixture suite is 14/14 after the move.
+
 ## Concept refinement, and the field shape that hides it
 
 `childForFieldName("refines")` on `type A = concept x of B` returns a node whose
@@ -407,11 +448,18 @@ each is a node the language cannot name or a name the language does not use:
 - **An empty basename.** A path that yields no name publishes nothing, rather than an
   empty-named symbol.
 
-#### `imports` is two kinds of edge, and the census groups them
+#### `imports` and `part_of` are two STORED types for one module surface (the split is no longer only a census grouping)
 
-`validation/m14/fixtures/nim/import-resolution-probe.mts` splits the type, because
-`imports` is not one thing and a reader cannot otherwise tell an unbindable stdlib
-import from a broken one. `s18-import-probe.txt`, 6,063 files, 1 worker, analyzer
+`validation/m14/fixtures/nim/import-resolution-probe.mts` first split the type, because the
+module surface is not one thing and a reader cannot otherwise tell an unbindable stdlib
+import from a broken one. **Since the 2026-10-23 R3 relabel that split is in the STORE as
+well as in this census: `nim_import` rows are `imports` and `nim_include` rows are
+`part_of`** — one 1:1 label move, the same source/target/line/confidence, with
+`metadata.relationshipType` keeping the two subkinds distinguishable exactly as this table
+records them. The numbers below therefore still describe the two SUBKINDS' resolution
+behaviour (the target rule did not move, by the Lead's ruling — see *`include` is
+`part_of`*), while the stored kind of the second row is now `part_of`.
+`s18-import-probe.txt`, 6,063 files, 1 worker, analyzer
 sha256 `deeab0756e0c4c1f` unchanged on both sides:
 
 | subkind | edges | files | intra-file | corpus-wide | normalisation changed the target | verbatim would bind |
@@ -480,7 +528,7 @@ Current tally, `BB_MUTANT_ONLY=nim/`: **69 nim mutants, 66 caught, 3 survived** 
 all three survivors are the stale shared ones named above, none of them in a file this
 lane owns.
 
-## The ten relationship types: verdict and measurement
+## The ten relationship types measured at the ontology round — and the eleventh (`part_of`, 2026-10-23)
 
 Every number below comes from production `parseFile` (`src/ast/pool-worker.ts`,
 not `analyze()`) over the corpus at `$HOME/fixtures/repositories`, via
@@ -490,7 +538,7 @@ re-runnable). **Corpus: 6,063 tracked files over 8 repositories** — `nim` 3,96
 `bigints` 21, `dom96-jester` 19, `Aporia` 12 — sampled by `git ls-files` +
 `detectLanguageFromPath === "nim"` + a 512 KB cap, which is the arbiter's own
 walk, so the file set is the same set. **110,043 symbols**, 0 empty names, 0 empty
-kinds, 0 edge types outside the ten, 0 empty endpoints, 0 throws.
+kinds, 0 edge types outside the ten that existed at that blob, 0 empty endpoints, 0 throws. (The eleventh emitted type, `part_of`, was added 2026-10-23 by the R3 relabel of `include`; it is a label move of rows this census already counted, and its landing is measured in *`include` is `part_of`* above, not by re-reading this table.)
 Artifacts: `validation/m14/measurements/nim/session10-1w-census.{json,txt}` at the
 current blob, and `session6-1w-census.{json,txt}` at the previous one.
 
@@ -3813,15 +3861,20 @@ quiet machine will cover all 5,227 through the production path.
     identity already includes the file path, so this lane's pass makes the edge target
     match a published name without claiming the name is unique.
 32. **`include` is normalised by the same rule as `import`, which is a claim this lane
-    measured and then reversed itself on.** An earlier draft of the
+    measured and then reversed itself on — and since 2026-10-23 its STORED KIND is
+    `part_of`, not `imports`.** An earlier draft of the
     `publishModuleSymbol` header asserted that `include` kept its written path; the code
     normalised it, and the two disagreed. The measurement settled it — 458
     `nim_include` edges resolve at both ends on 96.9% intra-file, and reverting them to
     the verbatim path binds **0** of the 14 they leave unresolved — so the code is right
-    and the comment was wrong. What is still unmeasured is the case where normalisation
-    would bind an edge to the WRONG module: `include "x.nims"` where a module `x` also
-    exists. The corpus has no such pair in the sample, so this lane cannot say the
-    normalisation is safe there, only that it is safe on what was walked.
+    and the comment was wrong. **The R3 relabel (`imports` → `part_of`) deliberately kept
+    that normalised MODULE-NAME target and records the divergence on the row
+    (`targetResolution: "module-name"`), because fsharp and php emit project-relative paths
+    and two lanes' `part_of` cells must not be read as one keyspace.** What is still
+    unmeasured is the case where normalisation would bind an edge to the WRONG module:
+    `include "x.nims"` where a module `x` also exists. The corpus has no such pair in the
+    sample, so this lane cannot say the normalisation is safe there, only that it is safe on
+    what was walked.
 33. **`meta.nimStdlibModule` marks 5,389 edges and disambiguates 66 of the 485 that
     cannot bind.** The other 419 are not marked, and 309 of those are BARE names where
     no per-file rule can help: `import re` is a local module, a `lib/pure` module, and a
@@ -4192,7 +4245,8 @@ quiet machine will cover all 5,227 through the production path.
     `import std / strutils` at `nim/tools/atlas/parse_requires.nim:4`, plus 15 further
     corpus files, so a predicate that required `std/` with no space marks real upstream
     source as a local module. `nim/module-target` now carries both
-    (`include "std/prelude"` as a `nim_include` row with the marker asserted TRUE, and
+    (`include "std/prelude"` as a `nim_include` row — on the `part_of` label since the
+    2026-10-23 relabel, with the marker asserted TRUE — and
     `import std / monotimes` with `meta.nimModulePath` keeping the spaces verbatim), and
     the mutation table in limitation 43 records that one of the two is caught and one is
     not.

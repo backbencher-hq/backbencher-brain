@@ -703,7 +703,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "overrides", "references", "uses", "exports", "implements"],
+    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "part_of", "overrides", "references", "uses", "exports", "implements"],
     // Matrix 1b rows nim actually pins. `complexity` is a per-SYMBOL value
     // (expectComplexity), unlike perl's whole-file decision count.
     payloads: {
@@ -909,7 +909,17 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // (javascript/jsx-usage, decorator-declaration-lines-861, decorator-arguments-not-decorates), so
     // section B's forward check stays green and its reverse check now names the labels instead of
     // failing on the analyzer publishing more than the contract row admitted.
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates"],
+    // ★ `mixes_in` IS NAMED HERE, AND IT IS NAMED BECAUSE THE LANE MEASURED A CONSTRUCT — NOT BECAUSE
+    // A RULING WAS RELAXED. The javascript `mixes_in` was ruled `grammar-absence` on the ground that
+    // "no rule can tell `Route.extend(M)` from `_.extend(obj, props)` without a naming convention,
+    // which C2 forbids". That was HALF the truth, and the half that decided it was wrong: the
+    // discriminator is not the callee's NAME but that THE CALL IS THE HERITAGE. A call in heritage
+    // position is class-producing BY CONSTRUCTION — the language requires the heritage to evaluate to
+    // a constructor — and a call in argument position is not. POSITION, NOT A NAME ⇒ C2 IS NOT
+    // VIOLATED. MEASURED over the whole admitted population (12,374 files): 76 call-shaped heritage
+    // clauses (74 member-form, 2 identifier-form), 0 found before the remedy, 76 `extends` + 83
+    // `mixes_in` published after it, 11 computed-only near misses refused.
+    requiredKinds: ["calls", "extends", "mixes_in", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "javascript/payload-pins" },
       docstrings: { key: "expectComments", pin: "javascript/payload-docs" },

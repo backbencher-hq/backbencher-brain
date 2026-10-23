@@ -5,7 +5,10 @@
  * and the template/macro surface, plus the call/use graph over expressions.
  * Grammar: tree-sitter-nim.wasm (WASM loaded by engine.ts).
  * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
- * implements, overrides, instantiates.
+ * implements, overrides, instantiates, part_of. (`part_of` is the 1:1 RELABEL of `include` rows
+ * from `imports`, 2026-10-23, rung R3 — see `readIncludeStatement`'s header; `renders`,
+ * `decorates`, `mixes_in` are RULED and this analyzer does not emit them, see
+ * script/m14/spec/nim-completeness.json.)
  * Where its scripts/validations live: docs/analyzers/real-nim-analyzer.md,
  * script/m14/spec/nim-completeness.json, validation/m14/fixtures/nim/**, and the LANG_CONFIG
  * row in script/m14/completeness-inventory.ts.
@@ -1440,7 +1443,51 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  /** `include a, b, c` — one edge per operand, through the same path reader. */
+  /**
+   * `include a, b, c` — one edge per operand, through the same path reader.
+   *
+   * ## THE EDGE IS `part_of`, NOT `imports` — a 1:1 RELABEL AT RUNG R3 (2026-10-23)
+   *
+   * Nim's `include` is a TEXTUAL scope-sharing inclusion: the included file's declarations become
+   * part of the INCLUDING module's single declaration space; no module is created, no binding
+   * scope is imported, and nothing can `import` what was included. That is exactly the `part_of`
+   * contract (`src/ast/types.ts:164-190`: "A library unit INCLUDES a part file … a part shares
+   * the library's single scope, imports nothing, and cannot be resolved as a separate module").
+   * This file says the same thing in Nim's words further down: "`.nims`. A NimScript file is
+   * `include`d into another module; it is not a module and nothing can `import` it."
+   *
+   * So the stored TYPE moves `imports` -> `part_of` and NOTHING ELSE moves: the same source, the
+   * same target, the same line, the same confidence, the same `relationshipType: "nim_include"`
+   * marker, and the same `ImportInfo` payload pushed above (which `src/ast/parallel-indexer.ts`
+   * persists into `brain_import` — a consumer reading a file's directive list loses nothing when
+   * the relationship's label moves).
+   *
+   * THE FLEET'S PRECEDENT, three lanes and the same relabel discipline:
+   *   · fsharp (`real-fsharp-analyzer.ts:1900-1965`): `#load` -> `part_of`, 1:1;
+   *   · php (`real-php-analyzer.ts:3085-3100`): include/require -> `part_of`, 1:1;
+   *   · dart (`real-dart-analyzer.ts`): `part`/`part of` -> `part_of`.
+   *
+   * ## THE DIVERGENCE FROM fsharp/php IS RECORDED, NOT FLATTENED
+   *
+   * fsharp and php emit a PROJECT-RELATIVE PATH as the target (`targetResolution:
+   * "project-relative-path"`). Nim's target STAYS the analyzer's normalized MODULE NAME — the
+   * artifact of the 2026-10-14 import-resolution work, measured at 96.9 % intra-file / 98.0 %
+   * corpus-wide binding for the 458 `nim_include` edges (`validation/m14/fixtures/nim/
+   * import-resolution-probe.mts`, `s18-import-probe.txt`), and reverting the normalization to the
+   * verbatim path binds 0 of the 14 it leaves unresolved. The target rule is a property of the
+   * construct — a Nim include names a module path expression, not a string file literal — and a
+   * reader comparing two lanes' `part_of` cells must be able to see that they are resolved in
+   * DIFFERENT KEYSPACES. Hence `targetResolution: "module-name"` on every row: the shape is
+   * named on the row rather than normalized away.
+   *
+   * ## DIRECTION AND `partRole`
+   *
+   * The direction is the directive's own (types.ts:170-183): the source is the file carrying the
+   * directive (`(global)`, this analyzer's file-level source convention), the target is what it
+   * names. Nim has only ONE of Dart's two roles — there is no `part of` counterpart, because an
+   * included file does not know it is included — so every row is the host that INCLUDES the
+   * part: `partRole: "library"`, the same single-role shape php declares.
+   */
   private readIncludeStatement(
     n: Node,
     imports: ASTEngine.ImportInfo[],
@@ -1466,10 +1513,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       relationships.push({
         source: "(global)",
         target: this.moduleNameOfPath(text),
-        type: ASTEngine.RelationshipType.Imports,
+        type: ASTEngine.RelationshipType.PartOf,
         confidence: 1,
         line_number: n.startPosition.row + 1,
-        metadata: this.moduleEdgeMetadata("nim_include", text),
+        metadata: this.moduleEdgeMetadata("nim_include", text, {
+          // MANDATORY on every `part_of` row (src/ast/types.ts:170-183): the direction is the
+          // directive's own and `partRole` says which of Dart's two roles this row is. Nim has
+          // only the host role.
+          partRole: "library",
+          // THE RECORDED DIVERGENCE: fsharp and php emit project-relative PATHS; nim keeps the
+          // analyzer's normalized MODULE NAME (see this function's header for the measurement).
+          targetResolution: "module-name",
+        }),
       })
     }
   }
