@@ -16956,7 +16956,14 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
       // above uses — the analyzer's own fileSource mirror. `modName || ""`
       // dropped these edges (push refuses an empty source), so every header's
       // include reference was analyzer-only on the big corpora.
-      if (s?.text) push("references", modName || "Global", stripQuotes(s.text))
+      // ★ ER-D46 (2026-10-23): an include is FILE INCLUSION, not a reference — `-include("x.hrl")`
+      // splices the header textually into this module's single compilation scope and the `.hrl` is
+      // not a compilable unit, so the relation is `part_of` and not `references`. The analyzer's
+      // `processInclude` (real-erlang-analyzer.ts:1138 region) was relabelled at R3 on the same day
+      // and the lane's own independent oracles already return `part_of`
+      // (script/m14/erlang-truth-oracle.ts:538-543). THE MIRROR MUST MOVE WITH THE ANALYZER or every
+      // header row reads unexplained, and the include form is unchanged — only the label.
+      if (s?.text) push("part_of", modName || "Global", stripQuotes(s.text))
     } else if (t === "import_attribute") {
       const m = childByType(n, "atom")
       if (m?.text) push("references", modName || "Global", m.text)
@@ -25415,6 +25422,10 @@ async function main() {
           // existed in zig-truth.ts, wired only to tmp probes.
           ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
           ...(lang === "erlang" ? ["contains"] : []),
+          // ★ 2026-10-23: erlang's audited set gains `part_of` in the SAME change as the mirror
+          // above. Truth without the allowance is the #910 shape where the new oracle's rows read as
+          // MISSING; the allowance without the mirror turns every analyzer row into an UNEXPLAINED.
+          ...(lang === "erlang" ? ["part_of"] : []),
           // ERLANG fleet-phase (2026-10-19): the exports/imports oracles are now pushed above
           // (erlang-exports-imports.ts — the exports oracle existed with no consumer); both
           // labels join the compared set so their truth can match.
@@ -25786,7 +25797,7 @@ async function main() {
       // A PATH-LIKE imports target is compared EXACTLY as written (the specifier is the fact); dotted module
       // names ("java.util") keep the old behaviour for now, and the includes() fallback is disabled for
       // path-like targets for the same reason — a containment test on "sol" is not evidence.
-      const PATH_EXT = new Set(["sol","h","hh","hpp","hxx","c","cc","cpp","cxx","cu","js","jsx","mjs","cjs","ts","tsx","mts","cts","py","pyi","pyw","dart","rb","java","go","rs","json","yaml","yml","toml","md","css","scss","sass","html","proto"])
+      const PATH_EXT = new Set(["sol","h","hh","hpp","hxx","c","cc","cpp","cxx","cu","js","jsx","mjs","cjs","ts","tsx","mts","cts","py","pyi","pyw","dart","rb","java","go","rs","json","yaml","yml","toml","md","css","scss","sass","html","proto","hrl","erl"])
       const isPathLikeImport = (t: string): boolean => {
         if (t.length === 0) return false
         if (t.startsWith(".") || t.includes("/") || t.includes("\\")) return true
@@ -25796,7 +25807,16 @@ async function main() {
       }
       const matchKey = (label: string, target: any): string => {
         const t = String(target ?? "")
-        return label === "imports" && isPathLikeImport(t) ? `EXACT:${t}` : normTarget(auditTarget(t))
+        // ★ `part_of` IS PATH-LIKE TOO, AND WITHOUT THIS THE ER LANG AUDIT IS CLEAN AND BLIND.
+        // MEASURED 2026-10-23 (erlang lane): with `imports` as the only path-like label, every
+        // header path targets `kernel/include/file.hrl` and `normTarget(auditTarget(...))` — with
+        // `hrl` absent from PATH_EXT — collapses to the single token `hrl`, so ANY include matched
+        // ANY other include. The comparison then existed, passed, and COULD NOT FAIL. That is the
+        // vacuous-audit defect already fixed once for solidity module paths (see the comment above),
+        // and it was one label away from returning.
+        return (label === "imports" || label === "part_of") && isPathLikeImport(t)
+          ? `EXACT:${t}`
+          : normTarget(auditTarget(t))
       }
       for (const te of truth) {
         const hit = rels.some((r: any) => r.label === te.label && matchKey(r.label, r.target) === matchKey(te.label, te.target))
