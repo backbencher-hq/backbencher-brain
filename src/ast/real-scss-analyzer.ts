@@ -359,6 +359,89 @@ function isPrivateSassName(published: string): boolean {
 }
 
 /**
+ * THE SCHEME HEAD OF A SPECIFIER — `https:`, `data:`, `sass:` — WITHOUT A REGEX OVER SOURCE TEXT.
+ *
+ * What the removed regex was: `/^[a-zA-Z][a-zA-Z0-9+.-]*:/`, i.e. "a letter, then scheme
+ * characters, then a colon". A colon is a POSITION, not a pattern: `indexOf(':')` splits the string
+ * where the syntax puts it and the head is validated by character. This is the no-regex rule's whole
+ * argument in one function — a path/identifier test is a structural question, and a string operation
+ * answers it exactly, while a regex answers it approximately and breaks on the next grammar version.
+ */
+function hasSchemeHead(specifier: string): boolean {
+  const colon = specifier.indexOf(":")
+  if (colon <= 0) return false
+  const isAlpha = (c: number): boolean => (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+  const isDigit = (c: number): boolean => c >= 48 && c <= 57
+  if (!isAlpha(specifier.charCodeAt(0))) return false
+  for (let i = 1; i < colon; i++) {
+    const c = specifier.charCodeAt(i)
+    // the scheme characters the grammar allows: letter, digit, '+', '.', '-'
+    if (!isAlpha(c) && !isDigit(c) && c !== 43 && c !== 46 && c !== 45) return false
+  }
+  return true
+}
+
+/** A `node_modules` SEGMENT — a package tree, never a git-tracked corpus file. */
+function hasNodeModulesSegment(specifier: string): boolean {
+  return specifier.startsWith("node_modules/") || specifier.includes("/node_modules/")
+}
+
+/** `@scope/pkg/…` — an npm SCOPED package. The scope segment is validated by character. */
+function isScopedPackageSpecifier(specifier: string): boolean {
+  if (!specifier.startsWith("@")) return false
+  const slash = specifier.indexOf("/", 1)
+  if (slash < 2) return false
+  const isAlpha = (c: number): boolean => (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+  const isDigit = (c: number): boolean => c >= 48 && c <= 57
+  for (let i = 1; i < slash; i++) {
+    const c = specifier.charCodeAt(i)
+    // a scope name's characters: letter, digit, '.', '_', '-'
+    if (!isAlpha(c) && !isDigit(c) && c !== 46 && c !== 95 && c !== 45) return false
+  }
+  return true
+}
+
+/** A `.css` FILE — at the END of the specifier, or before a query/fragment. A stylesheet load. */
+function hasCssFileExtension(specifier: string): boolean {
+  const lower = specifier.toLowerCase()
+  let at = lower.indexOf(".css")
+  while (at >= 0) {
+    const next = lower.charAt(at + 4) // "" when the match ends the string
+    if (next === "" || next === "?" || next === "#") return true
+    at = lower.indexOf(".css", at + 4)
+  }
+  return false
+}
+
+/** `;` or a content block at the statement's END — a STRUCTURAL test, not a text pattern. */
+function includeStatementIsComplete(statementText: string): boolean {
+  const trimmed = statementText.trimEnd()
+  if (trimmed.endsWith(";")) return true
+  if (!trimmed.endsWith("}")) return false
+  // a block form: the closing brace ends the statement and an opening brace begins it
+  return trimmed.indexOf("{") >= 0
+}
+
+/**
+ * THE MODULE-IDENTITY SPELLING: a path's LAST segment, without a Sass partial's leading `_` and
+ * without the `.scss`/`.sass`/`.css` extension. `..`/`.` segments are handled by the split (they are
+ * never the last segment of a specifier that names a module).
+ */
+function normalizeModuleSpelling(spelling: string): string {
+  const segments = spelling.split("\\").join("/").split("/")
+  let leaf = segments.length > 0 ? (segments[segments.length - 1] ?? spelling) : spelling
+  const lower = leaf.toLowerCase()
+  for (const ext of [".scss", ".sass", ".css"]) {
+    if (lower.endsWith(ext)) {
+      leaf = leaf.slice(0, leaf.length - ext.length)
+      break
+    }
+  }
+  if (leaf.startsWith("_")) leaf = leaf.slice(1)
+  return leaf
+}
+
+/**
  * A SPECIFIER THAT NAMES A PACKAGE OR A REMOTE RESOURCE, NOT A PATH IN THIS PROJECT.
  *
  * THE SHAPE TEST IS DELIBERATELY NARROW, and the narrowness is the whole point. There are other
@@ -380,10 +463,10 @@ function isPrivateSassName(published: string): boolean {
  * a claim that hides a resolution is the laundering vector the claim kinds were designed to refuse.
  */
 function isExternalImportSpecifier(written: string): boolean {
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(written) || written.startsWith("//")) return true
-  if (/(^|\/)node_modules\//.test(written)) return true
+  if (hasSchemeHead(written) || written.startsWith("//")) return true
+  if (hasNodeModulesSegment(written)) return true
   if (written.startsWith("~")) return true
-  if (/^@[A-Za-z0-9][A-Za-z0-9._-]*\//.test(written)) return true
+  if (isScopedPackageSpecifier(written)) return true
   return false
 }
 
@@ -408,8 +491,8 @@ function sourcePathClaimIsUnrefutable(projectRoot: string, written: string): boo
     if (t.length > 0 && !candidates.includes(t)) candidates.push(t)
   }
   push(written)
-  push(written.replace(/^\.\//, ""))
-  push(written.replace(/^\.\.\//, ""))
+  push(written.startsWith("./") ? written.slice(2) : written)
+  push(written.startsWith("../") ? written.slice(3) : written)
   const segs = written.split("/").filter((x) => x.length > 0 && x !== "." && x !== "..")
   if (segs.length > 0) {
     push(segs.join("/"))
@@ -1411,8 +1494,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
      * returned before emitting anything. Sass conventions are applied on BOTH sides: a partial's
      * leading `_` and the `.scss`/`.sass`/`.css` extension carry no part of the module's identity.
      */
-    const norm = (spelling: string): string =>
-      (spelling.split(/[\\/]/).pop() ?? spelling).replace(/\.(scss|sass|css)$/i, "").replace(/^_/, "")
+    const norm = (spelling: string): string => normalizeModuleSpelling(spelling)
     const want = norm(modulePath)
     let targetTypeName: string | undefined
     if (want !== "") {
@@ -1617,7 +1699,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the discriminator the census uses too, so the analyzer's emitted set and the measured site
     // count cannot drift apart.
     const includeText = String(node.text ?? "")
-    const complete = /;\s*$/.test(includeText) || /\{[\s\S]*\}\s*$/.test(includeText)
+    const complete = includeStatementIsComplete(includeText)
     if (!complete) return
     const nameNode = this.findChild(node, (c) => c.type === "identifier" || c.type === "plain_value")
     if (!nameNode) return
@@ -1680,9 +1762,10 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (named.length !== 1 || named[0]!.type !== "string_value") return
     const spec = stripAllQuotes(named[0]!.text).trim()
     if (spec.length === 0) return
-    if (/\.css($|[?#])/i.test(spec)) return
-    if (/^(https?:)?\/\//i.test(spec)) return
-    if (/^(sass|data):/i.test(spec)) return
+    if (hasCssFileExtension(spec)) return
+    const lower = spec.toLowerCase()
+    if (lower.startsWith("//") || lower.startsWith("http://") || lower.startsWith("https://")) return
+    if (lower.startsWith("sass:") || lower.startsWith("data:")) return
     ctx.sassPartImports.add(spec)
   }
 
