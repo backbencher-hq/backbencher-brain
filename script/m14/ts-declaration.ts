@@ -48,7 +48,10 @@ const lines = raw.split(/\r?\n/)
 const popLine = lines.find((l) => /^\s*population:/i.test(l)) ?? ""
 const popMatch = /(\d+)\s+parsed\s+of\s+(\d+)/i.exec(popLine)
 const corpusMatch = /corpus has (\d+)\s+([^\s]+)\s+files across (\d+) repos/i.exec(popLine)
-const extMatch = /admitted extensions\s+([^\s(]+)/i.exec(lines.find((l) => /admitted extensions/i.test(l)) ?? "")
+// ⇒ the report prints `admitted extensions = .ts, .tsx, .mts, .cts (…)`; a pattern that takes the next
+// token blindly captures the `=` and yields `exts==` in the population string — a rule that silently
+// becomes a wrong value. So the extension LIST is matched, and a `=` separator is optional.
+const extMatch = /admitted extensions\s*=?\s*([.\w]+(?:\s*,\s*[.\w]+)*)/i.exec(lines.find((l) => /admitted extensions/i.test(l)) ?? "")
 if (!popMatch || !extMatch) {
   console.error("REFUSED: the arm log does not carry a population line and an admitted-extensions line.")
   console.error(`  population line: ${popLine || "(none)"}`)
@@ -57,7 +60,7 @@ if (!popMatch || !extMatch) {
 }
 const parsed = Number(popMatch[1])
 const admitted = Number(popMatch[2])
-const exts = extMatch[1]
+const exts = extMatch[1].replace(/\s+/g, "")
 const corpusTotal = corpusMatch ? Number(corpusMatch[1]) : admitted
 const repos = corpusMatch ? Number(corpusMatch[3]) : 0
 const populationString = `parsed=${parsed}/${admitted} admitted=${admitted} exts=${exts} index=yes`
@@ -134,7 +137,11 @@ const declaration = {
     armLogSha256: logSha,
     instrument: "script/m14/incoming-gate.ts (the shared arm) over the population rule in script/m14/ts-corpus.ts",
     command: `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ${exts} 0 --index`,
-    grammar: "8586372d50cbdc97dbcc1f8affe66028680a2fe8c9b1e608197587c3ac2c6ab3 (this lane's R2 patched build; the served build it replaces is kept at script/m14/ts-grammar-patch/tree-sitter-typescript-served.wasm, 8515404dceed…, so every earlier number stays re-measurable)",
+    // ⇒ THE SERVED DIGEST IS MEASURED FROM THE RESOLVER, NOT ASSUMED FROM A PATH. `getParser("typescript")`
+    // logs `wasmPath = node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm`, and THAT file
+    // hashes to 778025db… — this lane cited 8515404d… for three rounds and was wrong. No path is cited
+    // below, because a path is how the error happened.
+    grammar: "778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d — THE SERVED TYPESCRIPT BUILD, measured from the resolver's own log line (the engine serves node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm; wasm/tree-sitter-typescript.wasm is present and NOT served for this language). This lane's R2 patch (b75fa34c…) is built, proven and NOT SERVED, so `part_of` has no emission path in production and is declared as a gap.",
     analyzerSha256: createHash("sha256").update(readFileSync(join(REPO, "src/ast/real-typescript-analyzer.ts"))).digest("hex"),
     arbiterSha256: createHash("sha256").update(readFileSync(join(REPO, "script/m14/incoming-rule.ts"))).digest("hex"),
   },
@@ -147,7 +154,9 @@ const declaration = {
     "`amb(kind)` IS REPORTED AND NEVER ADDED: it is a SUBSET of `ambiguous`, so adding it would count those rows twice.",
     "THE BUCKET MAPPING IS DECLARED: external = extOK + ext?; otherUnresolved = unresolved + extFAIL + binding columns + cause columns. A declared cause is a STATEMENT, not a resolution, so causeOK is in otherUnresolved and never in resolved — the arm prints it in its own column for exactly that reason.",
     "`unclassed` IS 0 BY CONSTRUCTION, and this declaration refuses to be written if the buckets do not close to the arm's own edge count. A difference parked in `unclassed` would be an unclassified edge wearing a classification's name.",
-    "THE GRAMMAR MOVED. This declaration was measured on the lane's patched build (8586372d…), not on the served build (8515404d…) every earlier number in this lane came from. The two builds parse the same corpus and the fixture suite is green on the patched one; the per-label delta against the published cell is the evidence that the swap extended the lane instead of changing it.",
+    "THE SERVED BUILD IS 778025db…, MEASURED FROM THE RESOLVER — and this lane cited 8515404d… as served for three rounds. `getParser(\"typescript\")` resolves to node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm; wasm/tree-sitter-typescript.wasm (8515404d…) is present and NEVER SERVED for this language. Every earlier number in this lane's pages that named 8515404d… as production's build is wrong about WHICH FILE IS SERVED, and no path is cited in this declaration because a path is how the error happened.",
+    "`part_of` IS A GAP AND THE ARM AGREES: this run publishes 0 `part_of` edges, because every `/// <reference … />` line is an ordinary comment under the served grammar. The lane HAS a patched grammar (b75fa34c…, one atomic token, a `reference_directive` node) which is built, behaviourally proven, and measured CLEAN at 0 non-target files of 207 — and it cannot reach production, because the serving path is an UNTRACKED directory (npm ci would erase it and a fresh checkout would not have it) while wasm/ holds 67 grammars and preferring it would re-point every language at once. That is a LEAD-OWNED GAP with a named remedy, not a limitation of this lane's work; the 50 directives in 34 files (types 47 · path 2 · lib 1) and their 38 unresolved targets are what the graph cannot see until the wire changes.",
+    "`mixes_in` IS IMPLEMENTED AND EXERCISED: 2 edges, both resolved (the vault UI's `class X extends baseResourceFactory<Mount>()`). The lane's first census reported 0 and was WRONG — its pattern required `Name(` and missed a GENERIC callee. The falsifier written into the measurement is what caught it, and the corrected figure is one file of the corpus rather than a pattern.",
   ],
   _derivation: {
     from: `the arm's own report, sha256 ${logSha}`,
