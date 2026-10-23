@@ -1,5 +1,21 @@
 # real-erlang-analyzer.md
 
+> **2026-10-23, M14 CAMPAIGN ADDENDUM — READ THIS BEFORE READING A NUMBER.**
+> The ER3 wave measured a corpus that no longer exists. On this checkout `.corpus` carries otp at a
+> different revision, rebar3, and elixir (48 `.erl`); **cowboy is not in the corpus at all**. Every
+> ER3 population figure in this document — 4,326 files, 4,617 files, the 3,939-file censuses, the
+> `424,081 calls`-style whole-corpus tables — is **SUPERSEDED, not edited in place**, for the reason the
+> cpp lane recorded: a number whose population changed must be superseded visibly, because a reader who
+> finds it cannot otherwise tell whether it is wrong or merely old. The current state, the supersession
+> table and the campaign's admitted population are in `validation/m14/verification/ERLANG-STATE.md`.
+> **THE CAMPAIGN'S ADMITTED POPULATION IS 4,465 `.erl`/`.hrl` FILES OVER 3 REPOSITORIES** (otp 4,148 ·
+> rebar3 269 · elixir 48; `git ls-files`, 1 MiB cap, 0 absent, 6 over cap; measured 2026-10-23), and the
+> relationship vocabulary is the campaign's **14 values**, not the ten: since **ER-D46**
+> `-include`/`-include_lib` publish **`part_of`** (file inclusion) instead of `references`, and
+> `decorates`/`renders`/`mixes_in` are **RULED** with the evidence in
+> `script/m14/spec/erlang-completeness.json` and `validation/m14/measurements/erlang-grammar-nodes.json`.
+> Wherever this document still says an include is a `references` row, that is the PRE-ER-D46 reading.
+
 > **ER3 (2026-09-28).** This document was rewritten against the current tree
 > after the wave found that the previous version described code that was never
 > committed. Every number here is re-measured; the witness is named beside it.
@@ -59,7 +75,8 @@
 | calls | ✅ | `call` nodes in EVALUATION contexts (a clause head is a pattern; type syntax is DECL-ONLY — ER-D3). Source = the named function, else the enclosing `-record` (a field default, ER-D12), else the module. Remote calls keep `module:function` (ER-D1) with STRUCTURAL extraction (the module atom of `remote_module`, the function atom of `remote`) and `?MODULE:` expands to the current module (ER-D14, `meta.macroModule`); local calls resolve against the file's declared name/ARITY set (forward references included). Self-recursion IS emitted. `meta.callArity` is the call's `expr_args` named-child count, comments excluded, and it is part of the edge identity: `f/1` and `f/2` sites are distinct edges (ER-D2) | 0.9 |
 | instantiates | ✅ | `record_expr` (`#state{...}`) in BODY/guard position only → `instantiates run -> state`. Record literals in PATTERN position (function heads, `expr_args` before the guard/body) emit NOTHING. `record_update_expr` (`State#state{...}`) is a member WRITE, not a construction — no instantiates (ER-D4) | 1.0 |
 | uses | ✅ | record member READ (`State#state.q`, `#state.label` index reads) → `uses -> <record>` AND `uses -> <field>`; record member UPDATE (`State#state{count = X}`) → `uses -> <record>` and → each assigned field. Evaluation contexts only: a head pattern emits nothing (ER-D7, closes ER-G4). `meta.context` is `record member read` or `record field update` | 1.0 |
-| references | ✅ | module dependencies (`-include`/`-include_lib` path string, `-import` module); macro USES (`?TIMEOUT`, `?MODULE`, `?SERVER_HEADER` — emitted whether or not the macro is defined here, ER-D8, closes ER-G1); fun VALUES (`fun f/1` bare, `fun lists:map/2` qualified — a value is not an invocation, ER-D9, closes ER-G2); type dependencies from `-type`/`-opaque` to every type name the expression APPLIES (ER-D10 narrowed by ER3, closes ER-G5). Body variable uses emit NOTHING | 1.0 |
+| references | ✅ | the `-import` module mention (ER-D41); macro USES (`?TIMEOUT`, `?MODULE`, `?SERVER_HEADER` — emitted whether or not the macro is defined here, ER-D8, closes ER-G1); fun VALUES (`fun f/1` bare, `fun lists:map/2` qualified — a value is not an invocation, ER-D9, closes ER-G2); type dependencies from `-type`/`-opaque` to every type name the expression APPLIES (ER-D10 narrowed by ER3, closes ER-G5). Body variable uses emit NOTHING. `-include`/`-include_lib` moved OUT of this row to `part_of` by ER-D46 — a mention cannot say the file became part of this unit | 1.0 |
+| part_of | ✅ | `-include("x.hrl")` / `-include_lib("kernel/…")` — FILE INCLUSION (ER-D46): the header is spliced into this module's single compilation scope, cannot be compiled as a unit of its own, and imports nothing, which is the vocabulary's `part_of` contract. Direction is the directive's own: source = the file carrying the directive (its module symbol, else its path, ER-D32), target = the path as written; `metadata.partRole:"library"` (this file is the including library and names the part) and `metadata.isFileInclusion:true` are MANDATORY on every row. Tier follows the construct: 1.0 / `import_based`. The `-import` module stays `imports` + `references` — a name import creates binding scope, an include splices text | 1.0 |
 
 ### Type dependencies: an applied name, never a bare one (ER3, 2026-09-25)
 
@@ -202,7 +219,7 @@ and defines a callback yields ONE symbol whose kind and line are the
 | `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name (ER-D28) and an UPPERCASE name is read as the `var` the grammar types it to be (ER-D42) |
 | `imports` | `-import(Mod, [f/a])` (ER-D41) | the dependency the module pass reads (`brain_import` rows, `dependencies.ts:27-28`), alongside the `references` mention of the same atom |
 | `extends` | **never** | RULED with a measurement — see "The two ruled types, and what rules them" below. ER-D34 recorded it as N/A; the ruling now carries a corpus instrument and a corpus number, which N/A did not |
-| `overrides` | **never** | **GAP** — the construct is real and 2,548 identities wide, and the derivation needs a resolution channel this repository does not give an Erlang file (`.sol` only). The in-file tier and the preprocessor's own `redefine` marker both measure 0 replacements. See "The two ruled types" and the GAP correction below |
+| `overrides` | **never** | **RULED — grammar-absence** (reconciled 2026-10-23 against the CONTRACT'S DIRECTION, not convenience). `-behaviour` is CONFORMANCE and belongs to `implements` (572 emitted rows); NOTHING IS INHERITED in Erlang, so no member can be redefined; the 33 in-file `-callback`+definition pairs collapse to ONE symbol (a self-loop is not a redefinition); and the 2,548 callback-supply identities are a module PROMISING to provide functions — **the opposite direction from overriding, which is a subclass replacing an inherited member**. The grammar declares no override production. See "`overrides` — RULED GRAMMAR-ABSENCE, reconciled" below |
 
 `confidence` is 1.0 for structural edges and 0.9 for name-resolved ones. **No
 edge is a heuristic guess** — the corpus dual lens reports a heuristic class of
@@ -285,7 +302,7 @@ commit: exit 2, 3,939 admitted files, no RULING TABLE.
 | type | verdict | count | files | where it comes from |
 |---|---|---|---|---|
 | `calls` | **EMITTED** | 424,081 | 3,152 | `call` in an evaluation context; local calls resolve against the file's declared NAME/ARITY set (ER-D45), remote calls keep `module:function` |
-| `references` | **EMITTED** | 187,010 | 3,164 | include/include_lib paths, `-import` mentions, macro uses, fun values, type dependencies |
+| `references` | **EMITTED** | 187,010 *(SUPERSEDED corpus)* | 3,164 | `-import` mentions, macro uses, fun values, type dependencies. The include paths this row used to carry are `part_of` since ER-D46 |
 | `contains` | **EMITTED** | 182,162 | 3,847 | module → its records/macros/types/functions/callbacks; record → its fields |
 | `uses` | **EMITTED** | 58,082 | 965 | record member read (`S#r.f`) and record update (`S#r{f=…}`) |
 | `exports` | **EMITTED** | 64,354 | 3,079 | one `exports` edge per `fa` in `-export` / `-export_type` |
@@ -295,19 +312,35 @@ commit: exit 2, 3,939 admitted files, no RULING TABLE.
 | `extends` | **RULED** | 0 | 0 | instrument A + instrument B, below |
 | `overrides` | **GAP** — construct real, 2,548 identities, not derivable from one file | 0 | 0 | the cross-file channel does not exist for `.erl`; the in-file and preprocessor tiers measure 0 replacements (probes below). **This is a correction**: the previous version of this row read `RULED in-file · REPORTED cross-file`, and `RULED` is the wrong verdict by the workstream's own definition — a type is RULED only when the construct **never occurs**, and this one occurs 2,548 times |
 
-### `overrides` is a GAP, not a RULED verdict, and the label was wrong for a whole wave
+### `overrides` — RULED GRAMMAR-ABSENCE, reconciled against the contract's DIRECTION
 
-`docs/analyzers/ONTOLOGY-WORKSTREAM.md` allows exactly three verdicts. `RULED` requires
-"a written reason **AND a corpus measurement** proving the construct that would produce
-it **never occurs**". The behaviour-callback supply construct occurs **2,548 times**
-(B7, below). So the type cannot be RULED whatever the plumbing argument is, and calling
-it RULED asserts a falsehood about Erlang while looking like a completed piece of work.
-The verdict is **GAP**: the language has the construct, and this analyzer does not read it.
+**THIS SECTION REPLACES TWO CONTRADICTORY VERDICTS THIS DOCUMENT CARRIED AT ONCE.** An earlier
+correction said `overrides` was a **GAP** because the behaviour-callback supply construct "occurs
+2,548 times"; a later section argued it was **RULED in-file, REPORTED cross-file**. **A DOC THAT
+DISAGREES WITH ITSELF IS WORSE THAN ONE THAT IS WRONG, because a reader cannot tell which half to
+cite.** Reconciled 2026-10-23, and the reconciliation is against the CONTRACT rather than against
+convenience:
 
-What is implemented, and what is not, is unchanged by the label: no `overrides` edge is
-emitted, because no derivation of one exists from inside `analyze(rootNode, content,
-filePath)` — see "The one thing that has to change first" for the three master-owned
-edits, each verified by reading the file rather than by inference.
+* `overrides` means **a member redefines a member it INHERITS**. Erlang has no inheritance
+  (`extends` is grammar-absence, below): there is no parent implementation for an overriding
+  declaration to replace.
+* `-behaviour(B)` is a **CONFORMANCE** declaration. The fleet emits it as `implements` (572 rows),
+  which is the label the vocabulary has for "this module satisfies that contract" — the reason this
+  row is not a missing label.
+* The **2,548 callback-supply identities** are a module **promising to provide** the functions a
+  behaviour declares. That is a supply/conformance relation, **the opposite direction from
+  overriding** — a subclass replacing an inherited member. The relation is already published one
+  level up as `implements`.
+* The **33** `-callback`+definition pairs in one file collapse to ONE symbol (ER-D30) on purpose, so
+  the edge would be `f -> f`: a self-loop carries no information.
+* The preprocessor's own `redefine` marker and the two-macro-alternative-body class measure **0**
+  (`script/m60/erlang-override-construct-probe.ts`), and the pinned grammar declares no override
+  production (`validation/m14/measurements/erlang-grammar-nodes.json`: 0 of 137 named ids).
+
+So the verdict is **RULED — grammar-absence**, and the fixture `erlang/ontology-no-inheritance`
+pins that NO `overrides` edge of any endpoints is emitted. The earlier GAP label is recorded here as
+the reconciliation's subject rather than silently dropped. What is implemented is unchanged: no
+`overrides` edge is emitted, and the cross-file material that looked like one is `implements`.
 
 ### What the instrument does and does not promise
 
@@ -576,19 +609,14 @@ construct that would overturn each one:
 | a `-callback` declared AND the same identity defined in ONE file | **33** sites in 20 files | ER-D30 merges the pair into ONE symbol on purpose, so the edge would be `f → f`: a self-loop carrying no information |
 | **a `-behaviour(B)` module supplying a callback B declares** | **378** `-callback` declarations in 83 files from **79** modules; **572** `-behaviour` sites in 550 files across 50 distinct behaviours; **43** behaviours whose callbacks are in this corpus; **560 of 572** implementation files match at least one of B's callback identities; **2,548** identities supplied by exact name AND arity (276 published in those behaviours) | **THE CONSTRUCT IS REAL AND LARGE. It is deliberately not published, and the reason is a fact about this repository rather than about Erlang.** The only production channel for cross-file member resolution is `AnalyzeContext.projectIndex`, and `src/ast/parallel-indexer.ts:1300` registers exactly one extension for it: `PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }`. No `.erl` entry, so an arity-carrying index is never built. The two channels that DO exist carry a `Set<string>` of bare NAMES — `src/ast/override-context.ts:85` adds `s.name`, `src/ast/project-index.ts:313` adds `childForFieldName("name")` — and the batch indexer only runs the companion pass for `["perl", "python"]` (`parallel-indexer.ts`, the `for (const companionLang of …)` loop), so an Erlang companion is never built even in memory. Erlang's callback identity is name AND arity, because that is what OTP checks: `Module:behaviour_info(callbacks)` is compared against the module's exported `f/A` pairs. A name-only match would publish `code_change/2` as implementing `code_change/3`, at a confidence a reader cannot discount — and this repository has already measured that failure mode on another lane: 75.6% of perl's `overrides` edges are withdrawn once a companion exists (`src/ast/override-companion-pass.ts`) |
 
-The last row is why this is not written as a flat RULED. Every other lane that
-publishes a member-level supply edge does it **in-file** — Clojure's
-`(defprotocol P (m [this]))` with `(extend-type T P (m …))` in one file, and
-Haskell's `class C m` with `instance C T where m` in one file — which is why neither
-of them needs an index. Erlang's in-file tier is the 33 sites above, and all 33
-collapse to a self-loop. The cross-file tier is 2,548 identities and needs a channel
-that exists for Solidity only.
-
-Implementing it anyway would produce edges under the fixture harness and **zero in
-production**, which is the same "audited but never produced" defect in the opposite
-direction. So the class is reported with its size, the master-owned changes that would
-unlock it are named in the wave report, and the fixture
-`erlang/ontology-no-inheritance` pins that the edges are absent.
+The last row is the one that LOOKS like a missing member-level relation, and it is not one: a
+module supplying a behaviour's callbacks is a **CONFORMANCE** act (`implements`, emitted 572 times),
+and the vocabulary's `overrides` requires a member that INHERITS its target. Every other lane that
+publishes a member-level supply edge does it in-file across a real class hierarchy (Clojure's
+`extend-type`, Haskell's `instance`); Erlang has no hierarchy, and its in-file 33 callback+definition
+pairs collapse to one symbol (a self-loop). So the class is **RULED grammar-absence**, the fixture
+`erlang/ontology-no-inheritance` pins that no `overrides` edge exists, and the reconciliation with the
+document's earlier GAP wording is recorded in the section above.
 
 ### A fourth and fifth candidate the previous ruling never probed: the preprocessor's OWN override marker
 
@@ -693,7 +721,7 @@ colon where Elixir writes a dot:
 | tier | rows | why |
 |---|---|---|
 | `structural` | `contains`, `exports`, `implements`, `instantiates` | the claim IS the syntax (a declaration's member list, an `-export` entry, a `-behaviour` name) |
-| `import_based` | `imports` (`-import`, `-include`, `-include_lib`) | a module dependency; this is the fall-through-bug class every lane has paid for (an import reported as usage) |
+| `import_based` | `imports` (`-import`) and `part_of` (`-include`, `-include_lib` — ER-D46) | a directive dependency; this is the fall-through-bug class every lane has paid for (an import reported as usage). The tier follows the CONSTRUCT: an include is a file-inclusion directive, so it is import_based, not reference_qualified |
 | `reference_qualified` | every `references` row, and a `calls` edge whose target keeps its module qualifier (`mod:fn`, ER-D1) | the callee/type was NAMED with its module — a reference resolved by spelling |
 | `usage_contextual` | a bare `calls` target (`f(...)`), and `uses` | resolved against this module's declared set, i.e. context-dependent |
 
@@ -746,9 +774,10 @@ comment is what a reader would have checked instead of the code.
   MODULE. It reads the `fa`'s three name spellings (`atom`, `var` for an UPPERCASE
   name, `macro_call_expr` for `?MODULE`), resolves `?MODULE` to the module, and refuses
   any other macro there rather than naming a member after a preprocessor constant. Two
-  forms are deliberately NOT rows and say why in the header: `-include` (a textual
-  inclusion, already `references`) and `-compile({parse_transform, …})` (nothing comes
-  into scope by name).
+  forms are deliberately NOT rows and say why in the header: `-include` (a textual inclusion,
+  published by the analyzer as `part_of` since ER-D46 — the INCLUDE ORACLE derives `part_of` too, and
+  this oracle deliberately derives only `exports`/`imports`) and `-compile({parse_transform, …})`
+  (nothing comes into scope by name).
 * `script/m14/verify-erlang-ontology-oracle.ts` — what makes it an instrument rather
   than an assertion. Three checks over the lane's 27 fixtures plus a stride-sampled 253
   corpus files: **agreement**, **reachability** (the oracle emits rows, so agreement is
@@ -849,7 +878,7 @@ result transform cannot express, and all **3** are caught by a NAMED fixture.
 | `ontology/overrides-behaviour-callback-supply` | `-behaviour` + a matching name is a member-level override | `ontology-no-inheritance` |
 | `ontology/overrides-preprocessor-alternative-body` | two `-ifdef` bodies is a redefinition | `ontology-no-inheritance` |
 | `ontology/extends-from-type-dependency` | a type applying another type is a subtype relation | 7 fixtures |
-| `ontology/extends-from-include` | `-include` is inheritance | `attrs-er3`, `callsite-lines-825` |
+| `ontology/extends-from-include` | `-include` is inheritance | `attrs-er3`, `callsite-lines-825`, `extended-part-of` |
 | `ontology/extends-relabel-implements` | `-behaviour` is `extends`, not `implements` | 5 fixtures |
 | `ontology/exports-drop-type-form` | `-export_type` can be published under the plain form | 2 fixtures |
 | `ontology/exports-uppercase-name-dropped` | ER-D42 regression | `macros-er3` |

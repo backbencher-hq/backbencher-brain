@@ -537,8 +537,12 @@ export function oracleAnalyze(root: any, _filePath: string): OracleFile {
       }
       case "pp_include":
       case "pp_include_lib": {
+        // ER-D46 (2026-10-23): an include is FILE INCLUSION — `part_of`, not `references`.
+        // The oracle derives the label independently from the same directive node the
+        // analyzer reads, so the second opinion stays a second opinion (same grammar,
+        // different walker): the construct's label is the contract's, not the analyzer's.
         const s = childByType(n, "string")
-        if (s) push("references", moduleName, stripQuotes(s.text), line1(s), t === "pp_include" ? "include" : "include_lib")
+        if (s) push("part_of", moduleName, stripQuotes(s.text), line1(s), t === "pp_include" ? "include" : "include_lib")
         break
       }
       case "import_attribute": {

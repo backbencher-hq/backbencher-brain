@@ -438,6 +438,41 @@
         "status": "RULED",
         "question": "`-import(Mod, [f/a])` is a dependency. Which relationship label records it?",
         "resolution": "RULED: BOTH `imports` and `references`, from the same declaration, each named at the module atom's own line. `imports` is the one the module-dependency pass actually reads \u2014 `brain_import` rows, src/intelligence/analysis/dependencies.ts:27-28, relied on precisely BECAUSE `resolved_symbol_id` is often null and only the specifier and its `is_external` flag matter. Before this, an Erlang `-import` emitted only `references`, so the pass that exists to report it could not see one: the fact was recorded under a label nothing was reading. 19 analyzers emit `imports`; this one stored the fact and dropped the label. `references` stays because the two statements differ \u2014 `imports` is the dependency, `references` is the mention \u2014 matching the shape the bash analyzer already uses for `source`-style imports (real-bash-analyzer.ts:1299). `isExternal: true` is already recorded on ImportInfo by ER-D20 and is repeated on the edge."
+      },
+      {
+        "id": "ER-D46",
+        "node_type": "pp_include / pp_include_lib",
+        "status": "IMPLEMENTED",
+        "question": "`-include(\"x.hrl\")` / `-include_lib(\u2026)`: a mention (`references`), an import (`imports`), or file inclusion (`part_of`)?",
+        "resolution": "IMPLEMENTED at R3 (no grammar change): the construct is FILE INCLUSION \u2014 the header is textually spliced into this module's SINGLE compilation scope, cannot be compiled as a unit of its own, and imports nothing \u2014 which is the vocabulary's part_of contract (src/ast/types.ts:PartOf). The old `references` row said the path was MENTIONED and could not say the file became part of this unit. Direction is the directive's own: source = the file carrying the directive (module symbol, else path, ER-D32), target = the path as written; metadata.partRole:\"library\" (this file is the including library and names the part) and metadata.isFileInclusion:true are MANDATORY. Confidence 1.0 and evidenceClass import_based FOLLOW THE CONSTRUCT (php's part_of relabel did the same), not the old row's 0.9/reference_qualified. `-import(Mod,[f/a])` STAYS imports + references (ER-D41) \u2014 a name import creates binding scope; an include splices text. Fleet precedent: php's include/require \u2192 part_of and fsharp's #load \u2192 part_of took the same 1:1 relabel. MEASURED over the whole admitted population: 4,340 part_of rows over 2,464 files = the 4,340 include sites exactly (plain 2,133 \u00b7 lib 2,207; in .erl 4,249 \u00b7 in .hrl 91), so the relabel is 1:1. Pinned by the fixtures attrs-er3, callsite-lines-825 (line = the path STRING's line, not the keyword's), imports-and-try and the new extended-part-of (both forms, split line, -ifdef region, negative half forbidding references/imports at include sites), and by the lane mutant ontology/extends-from-include moved to the new label."
+      },
+      {
+        "id": "ER-D47",
+        "node_type": "attr_name / wild_attribute (annotation attributes)",
+        "status": "RULED",
+        "question": "Do Erlang attributes DECORATE a declaration (`decorates`)?",
+        "resolution": "RULED \u2014 ONTOLOGICAL. The vocabulary's decorates contract (src/ast/types.ts) requires an APPLIED CALLABLE the runtime applies to a declaration; an Erlang attribute is COMPILE-TIME ANNOTATION or a compiler directive \u2014 passive metadata \u2014 and the vocabulary proposal DELIBERATELY LEFT annotations on existing values. MEASURED whole population: 36,352 annotation-attribute sites (doc 34,423 \u00b7 moduledoc 1,381 \u00b7 dialyzer 329 \u00b7 vsn 87 \u00b7 author 80 \u00b7 nifs 27 \u00b7 on_load 20 \u00b7 copyright 5) plus 16,686 -spec and 429 -callback attributes; the served grammar declares 0 decorator productions (137 named ids, sha256 8d20d814b7ad) and the corpus emits 0 decorator sites; the cross-grammar positive control finds `decorator` in the javascript/typescript grammars, so the probe can see one. No grammar patch can produce an applied-callable decorator without inventing syntax. csharp/dart/scala carry the same ontological ruling."
+      },
+      {
+        "id": "ER-D48",
+        "node_type": "(no node type \u2014 absence)",
+        "status": "RULED",
+        "question": "Does a component RENDER another component (`renders`)?",
+        "resolution": "RULED \u2014 GRAMMAR-ABSENCE. 0 of the served build's 137 named node-type ids is a component-element render production (probe set jsx_element, jsx_self_closing_element, jsx_opening_element, element = ZERO; `bin_element` is a binary segment, adjudicated not a render site), with the javascript inventory as a cross-grammar positive control. Corpus half: 0 render sites over the 4,465-file population; the counted near miss is 31,256 wx/wxe widget-construction CALLS \u2014 module:function invocations that name no declared component, the vocabulary's own MUST-NOT. Erlang has no element syntax for a patch to recover; R2 would have to invent one."
+      },
+      {
+        "id": "ER-D49",
+        "node_type": "(no node type \u2014 absence)",
+        "status": "RULED",
+        "question": "Does a class compose a mixin into its supertype chain (`mixes_in`)?",
+        "resolution": "RULED \u2014 GRAMMAR-ABSENCE. 0 of the 137 named node-type ids is a mixin/with-clause/class production (groovy's trait_declaration and scala's trait_definition are the cross-grammar positive controls); `try_class` (4,830 sites) is the exception class of try/catch, adjudicated not a class declaration. Corpus half: 0 mixin sites over 4,465 files. Erlang has no classes and no supertype chain; its composition constructs are counted and labelled elsewhere \u2014 655 -behaviour sites are CONFORMANCE (implements) and 4,340 include sites are FILE INCLUSION (part_of)."
+      },
+      {
+        "id": "ER-D50",
+        "node_type": "(contract direction)",
+        "status": "RULED",
+        "question": "`overrides` \u2014 GAP (the behaviour-callback supply construct is real) or grammar-absence? (This document carried BOTH verdicts for a wave.)",
+        "resolution": "RULED \u2014 GRAMMAR-ABSENCE, reconciled 2026-10-23 against the CONTRACT'S DIRECTION. overrides means a member REDEFINES A MEMBER IT INHERITS; Erlang has no inheritance (extends is grammar-absence), so no member can be redefined. `-behaviour(B)` is CONFORMANCE and is published as `implements` (655 rows over the whole population). The 2,548 callback-supply identities that were read as an override are a module PROMISING to provide functions \u2014 the OPPOSITE direction from a subclass replacing an inherited member \u2014 and are already covered by implements one level up; the 33 in-file -callback+definition pairs collapse to ONE symbol (ER-D30), a self-loop that carries no information; and the preprocessor's own redefine marker plus the two-macro-alternative-body class measure 0 (script/m60/erlang-override-construct-probe.ts). NO overrides edge is emitted, and the fixture ontology-no-inheritance pins the type-only absence. The earlier GAP label is recorded in docs/analyzers/real-erlang-analyzer.md as the reconciliation's subject, not silently dropped."
       }
     ]
   },
@@ -508,7 +543,8 @@
       "references",
       "exports",
       "implements",
-      "instantiates"
+      "instantiates",
+      "part_of"
     ],
     "excluded": [
       {
@@ -522,70 +558,122 @@
         "evidence": "grammar-absence",
         "from": "PINNED GRAMMAR wasm/tree-sitter-erlang.wasm (sha256 8d20d814b7ad9b69): 0 of the 132 distinct named types and 0 of the 173 distinct anonymous tokens is an override or member-redefinition production \u2014 there is no override/override_specifier/virtual/redefinition node. THE NEAREST NAMES ARE ADJUDICATED, not overlooked: ssr_definition, ssr_replacement, ssr_when and the replacement_* node types are the binary-SSR forms (a binary-only OTP construct) and macro-body guards, which this lane's own spec script/m14/spec/erlang-completeness.json classifies as shapes with no corpus site rather than as overriding; the probe name sets above do not include them, and the reading of the full enumeration is what rules them out. CROSS-GRAMMAR CONTROL: the identical probe finds override_specifier in tree-sitter-solidity.wasm, virtual_specifier in tree-sitter-cpp.wasm and override_modifier in tree-sitter-typescript.wasm \u2014 7 of the 64 loadable pinned grammars carry an override production, so the probe can see one. CORPUS HALF: the same 800-file run reads overrides 0 edges while eight other types fire on the SAME files (calls 99723 references 35607 contains 34450 uses 13353 exports 11286 instantiates 2841 implements 118 imports 60), and the pinned firing log validation/m14/results/firing-laptop-b.current.log agrees (overrides SILENT on its 120-file stride). AND the analyzer has 0 `RelationshipType.Overrides` references in src/ast/real-erlang-analyzer.ts. THIRD READING, TOKEN LEVEL AND ANALYZER-INDEPENDENT: the same 300-file census finds `overrides` exactly 3 times and EVERY hit is an `atom` node \u2014 a name spelled `overrides`, never a declaration \u2014 on a run whose controls fire on real construct nodes (module 284, export 509, end 5937).",
         "quote": "0 of the 132 named types is an override production: Erlang has no inheritance, so there is no overridden declaration for an overriding one to point at"
+      },
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "THE VOCABULARY'S OWN CONTRACT, not a preference: src/ast/types.ts (Decorates) requires the RUNTIME to APPLY the decorator to the declaration. Erlang's attribute family is COMPILE-TIME ANNOTATION, measured over the WHOLE admitted population (4,465 files, validation/m14/measurements/erlang-extended-census.json): 36,352 annotation-attribute sites (doc 34,423 \u00b7 moduledoc 1,381 \u00b7 dialyzer 329 \u00b7 vsn 87 \u00b7 author 80 \u00b7 nifs 27 \u00b7 on_load 20 \u00b7 copyright 5) plus 16,686 -spec and 429 -callback attributes \u2014 every one is passive metadata or a contract, none is an applied callable. The vocabulary proposal (validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md) deliberately left ANNOTATIONS on existing values, and the csharp/dart/scala lanes took the same ontological ruling. R1 on the served build (validation/m14/measurements/erlang-grammar-nodes.json, 137 named node-type ids, sha256 8d20d814b7ad): 0 decorator productions and 0 corpus decorator sites (census decorator_production_sites = 0); the cross-grammar POSITIVE CONTROL finds `decorator` in the javascript and typescript inventories (sha256 63812b9e275d / 8515404dceed), so the probe can see one. SPEC ER-D47.",
+        "quote": "an Erlang attribute is a compile-time annotation or compiler directive; the vocabulary's decorates names an APPLIED CALLABLE the runtime applies to a declaration, which Erlang does not have \u2014 a grammar patch would have to invent one"
+      },
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "SERVED GRAMMAR, read from the live parser of the bytes the registry serves: validation/m14/measurements/erlang-grammar-nodes.json \u2014 137 named node-type ids (132 distinct names), sha256 8d20d814b7ad, and 0 of the 137 is a component-element render production (the probe set jsx_element, jsx_self_closing_element, jsx_opening_element, element matches ZERO; the one substring near miss `bin_element` is a BINARY SEGMENT whose parent is `binary`, adjudicated not a rendering site). CROSS-GRAMMAR POSITIVE CONTROL: the same probe finds jsx_element/jsx_self_closing_element/jsx_opening_element in validation/m14/measurements/javascript-grammar-nodes.json (125 named ids), so the reading can see a render production. CORPUS HALF, whole admitted population (4,465 files, validation/m14/measurements/erlang-extended-census.json): render_component_element_sites = 0; the counted near miss render_near_miss_widget_construction_calls = 31,256 wx/wxe remote calls \u2014 the nearest thing Erlang has to a UI construction site \u2014 and every one is a CALL (module:function) that names no declared component as a rendered target, the vocabulary's own MUST-NOT (`React.createElement(Foo)` stays calls). An R2 patch would have to invent an element syntax. SPEC ER-D48.",
+        "quote": "0 of the served build's 137 named node-type ids carries a render production, and the corpus's wx/wxe widget-construction calls are calls, not component renders \u2014 there is no element syntax for a grammar patch to recover"
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "from": "SERVED GRAMMAR: validation/m14/measurements/erlang-grammar-nodes.json \u2014 0 of the 137 named node-type ids is a mixin/with-clause/class production (probe set mixins, mixin_application, mixin_application_class, with_clause, trait_declaration, class_declaration, extends_clause matches ZERO); the substring near miss `try_class` (4,830 sites over the whole population) is the exception CLASS of `try ... catch C:R ->`, adjudicated not a class declaration. CROSS-GRAMMAR POSITIVE CONTROL: groovy-grammar-nodes.json carries `trait_declaration` and scala-grammar-nodes.json `trait_definition`, so the probe can see one. CORPUS HALF: mixin_with_clause_sites = 0 over 4,465 files (validation/m14/measurements/erlang-extended-census.json); the composition constructs Erlang DOES have are counted and honestly labelled elsewhere: 655 -behaviour sites \u2192 implements (conformance, ER-D6) and 4,340 include sites \u2192 part_of (file inclusion, ER-D46). A mixin is a class composing an implementation into its supertype chain; Erlang has no classes and no supertype chain, so an R2 patch would invent syntax. SPEC ER-D49.",
+        "quote": "0 of 137 named node types is a mixin/with-clause/class production; Erlang's only composition constructs are -behaviour (conformance \u2192 implements) and -include (file inclusion \u2192 part_of), both already labelled"
       }
     ],
     "corpusUnexercised": [],
     "_emissionSites": {
       "calls": [
-        "src/ast/real-erlang-analyzer.ts:1487",
-        "src/ast/real-erlang-analyzer.ts:1514",
-        "src/ast/real-erlang-analyzer.ts:1556"
+        "src/ast/real-erlang-analyzer.ts:1605",
+        "src/ast/real-erlang-analyzer.ts:1632",
+        "src/ast/real-erlang-analyzer.ts:1674"
       ],
       "uses": [
-        "src/ast/real-erlang-analyzer.ts:1622",
-        "src/ast/real-erlang-analyzer.ts:1634",
-        "src/ast/real-erlang-analyzer.ts:1657",
-        "src/ast/real-erlang-analyzer.ts:1672"
+        "src/ast/real-erlang-analyzer.ts:1740",
+        "src/ast/real-erlang-analyzer.ts:1752",
+        "src/ast/real-erlang-analyzer.ts:1775",
+        "src/ast/real-erlang-analyzer.ts:1790"
       ],
       "contains": [
-        "src/ast/real-erlang-analyzer.ts:1948"
+        "src/ast/real-erlang-analyzer.ts:2066"
       ],
       "imports": [
-        "src/ast/real-erlang-analyzer.ts:977"
+        "src/ast/real-erlang-analyzer.ts:1052"
       ],
       "references": [
-        "src/ast/real-erlang-analyzer.ts:824",
-        "src/ast/real-erlang-analyzer.ts:986",
-        "src/ast/real-erlang-analyzer.ts:1033",
-        "src/ast/real-erlang-analyzer.ts:1581"
+        "src/ast/real-erlang-analyzer.ts:899",
+        "src/ast/real-erlang-analyzer.ts:1061",
+        "src/ast/real-erlang-analyzer.ts:1699",
+        "src/ast/real-erlang-analyzer.ts:1828",
+        "src/ast/real-erlang-analyzer.ts:1855",
+        "src/ast/real-erlang-analyzer.ts:1872",
+        "src/ast/real-erlang-analyzer.ts:1886",
+        "src/ast/real-erlang-analyzer.ts:2002"
       ],
       "exports": [
-        "src/ast/real-erlang-analyzer.ts:926"
+        "src/ast/real-erlang-analyzer.ts:1001"
       ],
       "implements": [
-        "src/ast/real-erlang-analyzer.ts:876"
+        "src/ast/real-erlang-analyzer.ts:951"
       ],
       "instantiates": [
-        "src/ast/real-erlang-analyzer.ts:1598"
+        "src/ast/real-erlang-analyzer.ts:1716"
+      ],
+      "part_of": [
+        "src/ast/real-erlang-analyzer.ts:1138"
       ]
     },
     "_implemented_measured": {
-      "_unit": "STRIDE SAMPLE, NOT POPULATION: `npx tsx script/m14/incoming-gate.ts erlang erl,hrl 800` \u2014 instrument disclosure `population: 800 parsed of 800 sampled (corpus has 4465 .erl,hrl files across 3 repos; stride sample)`; per-type edges are TABLE 1 of that run, read 2026-10-14, wall clock 325s. The stride is a lower bound, so these eight counts are lower bounds and not corpus totals; the two types reading 0 are NOT given a count here because a stride zero is not a census \u2014 they are excluded on the grammar enumeration plus the type-specific corpus zero, both stated in `excluded`.",
+      "_unit": "WHOLE ADMITTED POPULATION, measured by this lane's own instruments: 4,465 .erl/.hrl files over 3 repositories (otp 4,148 \u00b7 rebar3 269 \u00b7 elixir 48), git ls-files under $PWD/.corpus, 1 MiB cap, 0 absent, 6 over cap; census `bun script/m14/erlang-extended-census.ts --phase=constructs` then `--phase=analyzer` then `--phase=merge` CLOSED at parsed=4465/4465 and wrote validation/m14/measurements/erlang-extended-census.json; the closure arm is `npx tsx script/m14/incoming-gate.ts erlang erl,hrl 0 --dump` over the same population (validation/m14/measurements/erlang-gate-whole-2026-10-23.log). Each count below is the analyzer's own edge count over that population, one parse per file, tree.delete() in a finally.",
       "calls": {
-        "edges": 99723
+        "edges": 480990,
+        "files": 3601
       },
       "uses": {
-        "edges": 13353
+        "edges": 57933,
+        "files": 1014
       },
       "contains": {
-        "edges": 34450
+        "edges": 196234,
+        "files": 4346
       },
       "imports": {
-        "edges": 60
+        "edges": 314,
+        "files": 252
       },
       "references": {
-        "edges": 35607
+        "edges": 201468,
+        "files": 3233
       },
       "exports": {
-        "edges": 11286
+        "edges": 71412,
+        "files": 3516
       },
       "implements": {
-        "edges": 118
+        "edges": 655,
+        "files": 633
       },
       "instantiates": {
-        "edges": 2841
+        "edges": 9844,
+        "files": 1044
+      },
+      "part_of": {
+        "edges": 4340,
+        "files": 2464
       }
     },
-    "_from": "DERIVATION. implemented = the eight types with an emission site in src/ast/real-erlang-analyzer.ts (per type in `_emissionSites`), each also carrying a stride count in `_implemented_measured`. The two types with no site \u2014 `extends` and `overrides` \u2014 are excluded by the pinned grammar's own inventory, not by the missing code, and the two exclusions are made independently: an IS-A production and an override production are different productions and the enumeration rules out both. `implements` is NOT a gap despite Erlang having no interfaces: `-behaviour` IS the conformance construct and the analyzer emits it (:876), with 15 edges on the stride. CLOSURE: implemented 8 + corpusUnexercised 0 + gaps 0 = applicable 8 = 10 - 2 grammar-absence - 0 unclassified. MEASURED, 2026-10-14: `npx tsx script/m14/incoming-gate.ts erlang erl,hrl 800` over an 800-file even stride of the 4465 admitted .erl/.hrl files in 3 repositories (instrument disclosure: `population: 800 parsed of 800 sampled`) fires EIGHT types and reads `extends` 0 and `overrides` 0 \u2014 the two excluded types \u2014 while calls 99723, references 35607, contains 34450, uses 13353, exports 11286, instantiates 2841, implements 118 and imports 60 fire on the SAME files. A type-specific zero beside eight firing types is the corpus-side reading of both exclusions, and it agrees with the grammar enumeration. `imports` is the smallest margin at 60 edges and is named so a lower bound is not mistaken for a total."
+    "_from": "DERIVATION (2026-10-23, M14 campaign). implemented = the NINE types with an emission site in src/ast/real-erlang-analyzer.ts (`_emissionSites`), each measured on the WHOLE ADMITTED POPULATION (4,465 .erl/.hrl files over 3 repositories; parsed=4465/4465 admitted=4465 exts=erl,hrl index=no; census validation/m14/measurements/erlang-extended-census.json, closure arm validation/m14/measurements/erlang-gate-whole-2026-10-23.log). `part_of` is the `-include`/`-include_lib` FILE INCLUSION relabel (ER-D46): 4,340 rows over 2,464 files = the 4,340 include sites EXACTLY (plain 2,133 \u00b7 lib 2,207; erl 4,249 \u00b7 hrl 91), so the relabel is 1:1 and no edge was gained or lost \u2014 `references` fell by exactly that. The FIVE exclusions are made independently: extends and overrides by the served grammar's own inventory (validation/m14/measurements/erlang-grammar-nodes.json) plus the measured 0 emissions; decorates by the vocabulary's applied-callable contract (ER-D47, ontological \u2014 annotations are passive metadata the proposal deliberately left on existing values); renders and mixes_in by the grammar's 0 render/mixin productions plus counted corpus near misses and cross-grammar positive controls (ER-D48/ER-D49). CLOSURE: implemented 9 + corpusUnexercised 0 + gaps 0 = applicable 9 = 14 - 5 exclusions - 0 unclassified. THE PREVIOUS DECLARATION'S 8 + 0 + 0 = 8 = 10 - 2 IS SUPERSEDED: it was the ten-limb arithmetic on the pre-campaign denominator and a stride-sampled measurement (see coverage.population_note).",
+    "denominator": {
+      "n": 9,
+      "types": [
+        "calls",
+        "uses",
+        "contains",
+        "imports",
+        "references",
+        "exports",
+        "implements",
+        "instantiates",
+        "part_of"
+      ]
+    },
+    "population_note": "POPULATION SUPERSESSION (2026-10-23, and read this before comparing any number in this file). The ER3 wave measured a corpus that no longer exists: it carried otp at a different revision, rebar3 and cowboy; this checkout carries otp, rebar3 and elixir (48 .erl), and NO cowboy. All pre-2026-10-23 figures in this file \u2014 the 4,326/4,617-file populations, the 25-fixture / 54-mutant counts, the 3,939-file censuses, and the `_implemented_measured` numbers before this change \u2014 are SUPERSEDED, NOT EDITED IN PLACE (the cpp lane's rule: a number whose population changed must be superseded visibly, because a reader cannot otherwise tell whether it is wrong or merely old). THE CURRENT, ONLY POPULATION THIS BLOCK SPEAKS ABOUT IS 4,465 admitted .erl/.hrl files over 3 repositories (git ls-files, 1 MiB cap, 0 absent, 6 over cap), and the current fixture count is 30/30."
   }
 }

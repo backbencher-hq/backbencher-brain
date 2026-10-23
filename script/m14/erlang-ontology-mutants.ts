@@ -150,17 +150,14 @@ const MUTANTS: Mutant[] = [
   {
     id: "ontology/extends-from-include",
     reads: "`-include(\"other.hrl\")` splices another file's declarations into this module, which is inheritance.",
-    measured: "It is a TEXTUAL inclusion and the dependency is already published, as `references`, at the path string's own line. `contains` does not gain a row either: the included file's declarations belong to the module that textually includes it, and attributing them to the includer would put two owners on one declaration. Publishing it a third time under `extends` would triple-count one dependency in three classes.",
+    measured: "It is a TEXTUAL inclusion and since ER-D46 (2026-10-23) the dependency is published as `part_of` — the vocabulary's file-inclusion relation (php's include/require and fsharp's #load took the same relabel) — at the path string's own line, with `metadata.partRole:\"library\"`. Before ER-D46 it was `references`; the label moved because a mention cannot say the file became part of this unit. `contains` does not gain a row either: the included file's declarations belong to the module that textually includes it, and attributing them to the includer would put two owners on one declaration. Publishing it under `extends` would assert an IS-A relation the language does not have — which `erlang/extended-part-of`'s type-only `extends` forbid and `erlang/ontology-no-inheritance` both reject. This mutant survived once the label moved, which is why its filter is the NEW label: a mutant whose filter names a row that no longer exists tests nothing.",
     transform: (r) => ({
       ...r,
-      relationships: [
-        ...(r.relationships ?? []).map((x: any) =>
-          String(x.type) === "references" && (x.metadata as any)?.isInclude
-            ? { ...x, type: "extends" }
-            : x,
-        ),
-        ...(r.relationships ?? []).filter((x: any) => String(x.type) === "references" && (x.metadata as any)?.isInclude).map((x: any) => ({ ...x, type: "extends", metadata: {} })),
-      ],
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type) === "part_of" && (x.metadata as any)?.isFileInclusion
+          ? { ...x, type: "extends" }
+          : x,
+      ),
     }),
   },
   {

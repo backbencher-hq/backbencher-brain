@@ -2,15 +2,17 @@
 // — the OTP surface in full: `-module`/`-export`/`-behaviour` attributes become symbols and edges, function
 // clauses become methods with arity-aware identity, and every relationship derives from Tree-sitter nodes
 // (pure char scans; no RegExp on source). The full grammar classification lives in the spec, not here.
-// Relationship types covered (eight, measured this round over the 29 expectation-paired fixture sources):
-// contains 152 · references 88 · exports 72 · calls 37 · uses 18 · implements 5 · instantiates 4 · imports 3
-// (this grammar expresses no `extends`; the ten-type ontology's remaining rows are ruled in the spec).
+// Relationship types covered (NINE as of ER-D46, 2026-10-23): contains · references · exports · calls ·
+// uses · implements · instantiates · imports · part_of. `part_of` is the `-include`/`-include_lib` file
+// inclusion (it was `references` before ER-D46; see processInclude). This grammar expresses no `extends`,
+// `overrides`, `decorates`, `renders` or `mixes_in`; each of those is ruled in the spec with a citation.
 // ER-D1 — REMOTE-CALL TARGET CONVENTION, recorded so nobody "fixes" it: a remote call's target KEEPS the
 // module qualifier on the EDGE (`calls target="lists:map"`, `"io:format"`), and NO symbol carries a
 // `qualifiedName` alias. The two are consistent — the qualifier lives in the edge target, not in a symbol  name — and the evidence-tier split below uses that same colon as its signal.
 // M14 section D: every relationship states metadata.evidenceClass — structural (contains/exports/implements/
-// instantiates) · import_based (imports) · reference_qualified (references + `mod:fn` calls) · usage_contextual
-// (bare calls + uses).  Where docs, spec, fixtures and validations live: docs/analyzers/real-erlang-analyzer.md ·
+// instantiates) · import_based (imports, and `part_of` per ER-D46 — both are directives) · reference_qualified
+// (references + `mod:fn` calls) · usage_contextual (bare calls + uses).  Where docs, spec, fixtures and
+// validations live: docs/analyzers/real-erlang-analyzer.md ·
 // script/m14/spec/erlang-completeness.json · validation/m14/fixtures/erlang/** ·
 // `bun run script/m14/run-fixtures.ts --lang erlang` · ERLANG-STATE.md under validation/m14/verification/.
 // CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the docs
@@ -1080,10 +1082,40 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Preprocessor
   // ==========================================================================
+  /**
+   * `-include("x.hrl")` / `-include_lib("kernel/include/x.hrl")`.
+   *
+   * ER-D46 (2026-10-23): THE LABEL IS `part_of`, NOT `references`. An include is
+   * FILE INCLUSION: the header is textually spliced into THIS module's single
+   * compilation scope, it cannot be compiled as a unit of its own, and it
+   * imports nothing — which is the vocabulary's `part_of` contract
+   * (`src/ast/types.ts:PartOf`: "a library unit INCLUDES a part file … one
+   * compilation unit"), the same construct php's include/require and fsharp's
+   * `#load` were relabelled to. `references` said the path was MENTIONED; it
+   * cannot say the file became part of this unit.
+   *
+   * DIRECTION AND ROLE follow the directive's own: source = the file carrying
+   * the directive (its module symbol, else its path — ER-D32); target = the
+   * path as written. `metadata.partRole:"library"` because THIS file is the
+   * including library and names the part. `isExternal` keeps ER-D20's
+   * classification: `-include_lib` resolves through the code path (a system
+   * header), `-include` is this project's.
+   *
+   * NOT `imports`: `-import(Mod, [f/a])` stays imports + references (ER-D41) —
+   * a name import creates binding scope, an include splices text. The two
+   * constructs were distinguished by the fixture `imports-and-try` before this
+   * change and are pinned apart by the `extended-part-of` fixture after it.
+   *
+   * THE TIER FOLLOWS THE CONSTRUCT, as php's `part_of` relabel did: a file
+   * inclusion directive is `import_based`, confidence 1.0 (the directive IS the
+   * syntax) — not the old row's 0.9/`reference_qualified`, which was the
+   * mention reading the relabel exists to replace.
+   *
+   * M59 (#825): the line belongs to the NAME-BEARING node — the path STRING,
+   * never the `-include` keyword. The fixture erlang/callsite-lines-825 splits
+   * the attribute across three lines precisely to pin that difference.
+   */
   private processInclude(node: Node, ctx: ErlangContext, isPlain: boolean, filePath: string) {
-    // M59 (#825): the line belongs to the NAME-BEARING node — the path STRING,
-    // never the `-include` keyword. The fixture erlang/callsite-lines-825 splits
-    // the attribute across three lines precisely to pin that difference.
     const fNode = this.getChildByType(node, "string")
     if (!fNode) return
     const includePath = this.stripQuotes(fNode.text)
@@ -1103,9 +1135,22 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx,
       ctx.moduleName ?? filePath,
       includePath,
-      ASTEngine.RelationshipType.References,
-      0.9,
-      { erlangSpecific: true, isInclude: isPlain, isLibInclude: !isPlain },
+      ASTEngine.RelationshipType.PartOf,
+      1.0,
+      {
+        erlangSpecific: true,
+        // THE MANDATORY ROLE FIELD (part_of's contract): this file carries the
+        // directive and names the part, so it is the library side of the pair.
+        partRole: "library",
+        isInclude: isPlain,
+        isLibInclude: !isPlain,
+        // A PATH TARGET, not a symbol: the include names a file. Consumers that
+        // resolve names must not read it as one, and the declaration's
+        // resolution caveat relies on this marker.
+        isFileInclusion: true,
+        // The tier follows the construct (ER-D46) — see the doc block above.
+        evidenceClass: "import_based",
+      },
       line,
     )
   }
