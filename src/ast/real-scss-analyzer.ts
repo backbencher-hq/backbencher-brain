@@ -278,6 +278,18 @@ interface ScssContext {
   variableNames: Record<string, string>
   /** `as` namespace -> the module it names, pre-collected from `@use` */
   namespaces: Record<string, string>
+  /**
+   * THE SASS FILE-INCLUSION SPECIFIERS, READ FROM THE TREE AND HELD FOR THE RELABEL.
+   *
+   * `@import "x"` is a Sass INCLUSION: the imported file is evaluated as though its contents
+   * appeared in place of the `@import`, so it shares the importing file's single scope — which is
+   * the vocabulary's `part_of`, not an `imports` binding. The CSS delegate parses the statement and
+   * publishes the `imports` row (it is a CSS `@import` to the CSS grammar), so this lane RELABELS
+   * the Sass-form rows to `part_of` after the delegate's file-claim pass has run. The set is
+   * populated by the walk and consumed once; it holds only the specifiers whose SHAPE is the
+   * Sass form (see `processSassPartImport`).
+   */
+  sassPartImports: Set<string>
   /** symbol names already published, so a repeated declaration is not published twice */
   published: Record<string, boolean>
   /** the owner each published name was published under, so a scope can be told apart */
@@ -432,6 +444,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       functionNames: {},
       variableNames: {},
       namespaces: {},
+      sassPartImports: new Set<string>(),
       published: {},
       publishedOwner: {},
       moduleName: this.moduleNameOf(filePath),
@@ -584,6 +597,19 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ------------------------------------------- THE SASS FILE-INCLUSION RELABEL
+    //
+    // THE LABEL MOVES AND THE EDGE SET DOES NOT: `@import "x"` was published as `imports` by the
+    // CSS delegate (to the CSS grammar it IS an `@import`), and the vocabulary's `part_of` is the
+    // type that says what Sass does with it — the imported file is evaluated in place and shares
+    // the importing file's SINGLE scope, which is exactly the contract's "a part shares the
+    // library's single scope, imports nothing". This runs AFTER the delegate's file-claim pass so
+    // the `metadata.importProjectFile` claim the pass attached travels with the row, and it moves
+    // only the statements whose SHAPE is the Sass form (`processSassPartImport`): a `url(...)`, a
+    // media query, a `.css` suffix or a protocol stays `imports`, because those load a stylesheet
+    // rather than include a part.
+    this.relabelSassPartImports(ctx)
+
     // ------------------------------------------- THE FILE-SCOPED IDENTITY (SCSS-added symbols)
     //
     // The delegate publishes a project-unique `qualifiedName` per declaration and respells the
@@ -673,6 +699,12 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       ASTEngine.RelationshipType.Calls,
       ASTEngine.RelationshipType.Uses,
       ASTEngine.RelationshipType.Overrides,
+      // `mixes_in` targets a `@mixin <name>` symbol THIS FILE may declare, so the same file-scoped
+      // respell applies — and it must: a target published bare for a mixin the file declares is the
+      // collision shape this pass exists to remove. `part_of` is deliberately ABSENT for the reason
+      // `Imports` is: its target names ANOTHER file's module, and respelling it to this file's
+      // scope would point the inclusion at the including file itself.
+      ASTEngine.RelationshipType.MixesIn,
     ])
     for (const rel of ctx.relationships) {
       if (!REWRITABLE.has(String(rel.type ?? ""))) continue
@@ -1216,6 +1248,12 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "extend_statement":
           this.processExtend(child, ctx)
           break
+        // The CSS delegate already published this statement's `imports` row. This case only
+        // RECORDS the specifiers whose shape is the Sass FILE-INCLUSION form, for the relabel
+        // that runs after the delegate's file-claim pass (see `relabelSassPartImports`).
+        case "import_statement":
+          this.processSassPartImport(child, ctx)
+          break
         case "at_root_statement":
         case "debug_statement":
         case "warn_statement":
@@ -1534,37 +1572,143 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   // ── `@include` ──────────────────────────────────────────────────────────────
 
+  /**
+   * `@include` — A MIXIN COMPOSITION, PUBLISHED AS `mixes_in`.
+   *
+   * THE CONSTRUCT IS THE VOCABULARY'S MIXIN APPLICATION: a rule (or the module, for a top-level
+   * include) composes a named mixin's body into itself. It is NOT `extends` (there is no
+   * inheritance clause), NOT `implements` (no conformance is declared) and NOT `calls` (the
+   * ontology's own measured population for this type is a composition row — ruby relabelled its
+   * include/extend/prepend from `calls` to `mixes_in` for exactly this reason, and php's trait-use
+   * rows are the second precedent). `@extend` is this lane's `extends`; conflict rules keep the
+   * two apart.
+   *
+   * THE TARGET IS THE WRITTEN MIXIN NAME IN THE LANE'S PUBLISHED SPELLING, `@mixin <name>`, for
+   * EVERY clean include — not only the ones this file declares. The old version published a `calls`
+   * row only when the callee resolved IN THE FILE, which measured 48 of 132 clean includes on a
+   * 247-file screen: an include of a mixin that `@use`/`@import` brought in produced NOTHING, and
+   * the relation was invisible for 64% of the construct's sites. A target that names another
+   * file's mixin is UNRESOLVED rather than absent — the arbiter resolves it through the project
+   * index the way it resolves an `imports` specifier, and the same-file case is respelled to
+   * `<scope>::@mixin <name>` by `publishScssFileScopedIdentities`.
+   *
+   * THE NAMESPACED FORM IS A MEASURED WALL, NOT AN EDGE WE CAN NAME. The served build splits
+   * `@include ns.mixin` at the dot — the `include_statement` closes with a MISSING `;` and the
+   * dotted name lands in an ERROR/selector sibling — so the MIXIN name is not a node this walk can
+   * read, and publishing `@mixin <namespace>` would be a FABRICATED target. This case returns and
+   * the site is COUNTED by `script/m14/scss-extended-census.ts` (`includeUnparsable`), with R2 (a
+   * grammar patch to accept a dotted callable path) named as the available remedy and NOT taken
+   * this round.
+   */
   private processInclude(node: Node, ctx: ScssContext): void {
+    // THE MEASURED WALL: a namespaced `@include ns.mixin` parses into a damaged node whose only
+    // identifier is the NAMESPACE. Skip it rather than fabricate a target from it.
+    if (this.hasErrorOrMissing(node)) return
     const nameNode = this.findChild(node, (c) => c.type === "identifier" || c.type === "plain_value")
     if (!nameNode) return
-    const bare = stripAllQuotes(nameNode.text)
-    // A NAMESPACED include, `@include map.get($k)`, resolves through the namespace
-    // declared by `@use … as`. Both halves are pre-collected, so the order of the
-    // `@use` and the `@include` does not matter.
-    const [maybeNs, maybeName] = bare.includes(".") ? bare.split(".") : [undefined, bare]
-    const target =
-      maybeNs && ctx.namespaces[maybeNs]
-        ? ctx.mixinNames[maybeName] ?? ctx.functionNames[maybeName]
-        : ctx.mixinNames[bare] ?? ctx.functionNames[bare]
-    if (!target) return
-    const owner = this.ownerForNode(node, ctx)
+    const bare = stripAllQuotes(nameNode.text).trim()
+    // A dotted name reaching here would be the namespace half of the broken form above; it cannot
+    // be the mixin, so it is not published.
+    if (bare.length === 0 || bare.includes(".")) return
+    const owner = this.ownerForNode(node, ctx) || ctx.moduleName
     if (!owner) return
-    // `calls`, not `uses`. The lane already resolved the callee to a mixin or function
-    // THIS FILE DECLARES — `target` is `@mixin name` or `@function name` and nothing else
-    // gets here — so this is a resolved invocation, and the ontology's rule for a
-    // resolved invocation is the one the lua lane states (`real-lua-analyzer.md:647`):
-    // "a member that is called is not merely read". `uses` was the neighbour, and it is
-    // the same label `@extend` carried until the change measured in `emitExtend`.
+    // DEFENSIVE, AND KEPT FROM THE OLD RULE: `@include` names a mixin in Sass, but if the name is
+    // ONLY a function this file declares, the resolved-invocation label (`calls`) is the truthful
+    // one and the old behaviour is preserved. Measured 0 such sites on the 247-file screen.
+    if (!ctx.mixinNames[bare] && ctx.functionNames[bare]) {
+      ctx.relationships.push({
+        source: owner,
+        target: ctx.functionNames[bare],
+        type: ASTEngine.RelationshipType.Calls,
+        line_number: this.lineOf(nameNode),
+        metadata: { evidenceClass: "usage_contextual", cssSpecific: true, isScssInclude: true },
+      })
+      return
+    }
+    const sameFileMixin = ctx.mixinNames[bare] !== undefined
     ctx.relationships.push({
       source: owner,
-      target,
-      type: ASTEngine.RelationshipType.Calls,
-      // M59.A7: the name is the mixin's own line, which is the VALUE's line for a
-      // namespaced call and the statement's line otherwise. The value is the more
-      // specific of the two and survives reformatting better.
+      target: mixinName(bare),
+      type: ASTEngine.RelationshipType.MixesIn,
       line_number: this.lineOf(nameNode),
-      metadata: { evidenceClass: "usage_contextual", cssSpecific: true, isScssInclude: true },
+      // `structural`: the relation is a syntactic declaration-header construct (the keyword plus
+      // the written name), not a name-resolution guess. The tier follows the CONSTRUCT, the same
+      // rule php recorded when its trait-use rows moved off `usage_contextual`.
+      metadata: {
+        evidenceClass: "structural",
+        cssSpecific: true,
+        isScssInclude: true,
+        mixinComposition: true,
+        ...(sameFileMixin ? {} : { mixinDeclaredInFile: false }),
+      },
     })
+  }
+
+  /**
+   * RECORD the specifiers whose `@import` shape is the Sass FILE-INCLUSION form.
+   *
+   * THE SHAPE IS THE WHOLE DISCRIMINATOR, and it is a tree fact rather than a string guess:
+   *   `@import "x";`          → import_statement with EXACTLY ONE named child, a `string_value`
+   *   `@import url("x.css")`  → the child is a `call_expression`             (stylesheet load)
+   *   `@import "x" screen`    → a second named child (the media query)        (stylesheet load)
+   *   `@import "x.css";`      → one string_value whose TEXT is a CSS file     (stylesheet load)
+   * so the Sass form is: one string_value child AND a specifier that is not a `.css` file, not a
+   * protocol/`//` URL, not `sass:` (built-in module) and not `data:`. The relabel itself runs after
+   * the delegate's file-claim pass; this method only collects the set.
+   */
+  private processSassPartImport(node: Node, ctx: ScssContext): void {
+    const named: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) named.push(c)
+    }
+    if (named.length !== 1 || named[0]!.type !== "string_value") return
+    const spec = stripAllQuotes(named[0]!.text).trim()
+    if (spec.length === 0) return
+    if (/\.css($|[?#])/i.test(spec)) return
+    if (/^(https?:)?\/\//i.test(spec)) return
+    if (/^(sass|data):/i.test(spec)) return
+    ctx.sassPartImports.add(spec)
+  }
+
+  /**
+   * MOVE the Sass-form `imports` rows to `part_of`. A LABEL MOVE, NOT A GAIN OR A LOSS: the row's
+   * source, target, line and the delegate's `metadata.importProjectFile` claim are unchanged; only
+   * the type moves, plus the mandatory `partRole` and the structural evidence class. The fixture
+   * suite pins the move in both directions and the census counts the sites, so a reader can check
+   * that nothing vanished.
+   */
+  private relabelSassPartImports(ctx: ScssContext): void {
+    if (ctx.sassPartImports.size === 0) return
+    for (const r of ctx.relationships) {
+      if (r.type !== ASTEngine.RelationshipType.Imports) continue
+      const target = String(r.target ?? "")
+      if (!ctx.sassPartImports.has(target)) continue
+      r.type = ASTEngine.RelationshipType.PartOf
+      r.metadata = {
+        ...((r.metadata as Record<string, unknown> | undefined) ?? {}),
+        // MANDATORY ON EVERY part_of ROW (the vocabulary contract): this file is the LIBRARY —
+        // it carries the directive and names the part it includes.
+        partRole: "library",
+        isSassPartImport: true,
+        evidenceClass: "structural",
+      }
+    }
+  }
+
+  /** A node that the parser marked with a MISSING token or an ERROR descendant. */
+  private hasErrorOrMissing(node: Node): boolean {
+    if ((node as unknown as { isMissing?: boolean }).isMissing === true) return true
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if ((n as unknown as { isMissing?: boolean }).isMissing === true) return true
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (c) stack.push(c)
+      }
+    }
+    return false
   }
 
   // ── `@return`: a FACT ABOUT A FUNCTION, NOT AN EDGE ─────────────────────────
