@@ -836,7 +836,7 @@ class Host
   // saw it — the analyzer's (correct) edge surfaced as the one unexplained
   // edge W12's 400-file svelte measurement left open. Revert the
   // deriveSvelteComponentUsages branch and this probe fails as
-  // `oracle no longer derives: instantiates:Widget`. The negative half keeps
+  // `oracle no longer derives: renders:Widget`. The negative half keeps
   // the mirror HONEST: the analyzer gates on the import binding, so a local
   // `const Widget` must NOT produce an oracle instantiates either — a bare
   // superset here would fix an unexplained edge by fabricating one.
@@ -903,11 +903,11 @@ class Host
     const localOnly = run(
       "<script>\n\tconst Widget = 1;\n</script>\n\n<svelte:component this={Widget}/>\n"
     )
-    const ok = imported.has("instantiates:Widget") && !localOnly.has("instantiates:Widget")
+    const ok = imported.has("renders:Widget") && !localOnly.has("renders:Widget")
     record(
       "F9-PROBE-SVELTE-DYNAMIC-COMPONENT",
       "svelte",
-      "the oracle derives instantiates for an import-bound <svelte:component this={X}/> target and does NOT for a non-import (member) target — the analyzer's own gate, so the mirror cannot fabricate",
+      "the oracle derives RENDERS for an import-bound <svelte:component this={X}/> target and does NOT for a non-import (member) target — the analyzer's own gate, so the mirror cannot fabricate",
       ok,
       `imported=[${[...imported].join(",")}] local=[${[...localOnly].join(",")}]`
     )

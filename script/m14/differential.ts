@@ -1485,7 +1485,7 @@ export function deriveSvelteComponentUsages(
             if (!importBindings?.has(vt)) continue
             if (seen.has(vt)) continue
             seen.add(vt)
-            edges.push({ label: "instantiates", from: "(expr)", target: vt })
+            edges.push({ label: "renders", from: "(expr)", target: vt })
           }
         }
       }
@@ -1505,7 +1505,7 @@ export function deriveSvelteComponentUsages(
       const reservedUndeclared = !!name && name.startsWith("svelte:") && !VUE_STYLE_BUILTINS.has(name)
       if (name && !reservedUndeclared && !ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name) && !seen.has(name)) {
         seen.add(name)
-        edges.push({ label: "instantiates", from: "(expr)", target: name })
+        edges.push({ label: "renders", from: "(expr)", target: name })
       }
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
@@ -25244,7 +25244,7 @@ async function main() {
       // strict superset of the exclusion: it drops `overrides` from the compared set for
       // dart and go as well as csharp/swift/cpp. Taking the local list would have
       // re-admitted two lanes whose override oracles were deliberately left unwired.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" || lang === "perl" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", "renders", ...(lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "hcl" ? ["calls", "uses", "references", "imports", "exports"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" || lang === "perl" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
