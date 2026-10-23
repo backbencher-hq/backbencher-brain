@@ -19783,12 +19783,32 @@ async function main() {
     }
     console.log("")
   }
+  // ── A LANE FILTER THAT IS ACTUALLY READ ────────────────────────────────────────────────────────
+  // MEASURED 2026-10-23 by the typescript lane: `--lang typescript` ran the WHOLE battery (java
+  // mutants appeared in its output) because only BB_MUTANT_ONLY was read and only by mutant id —
+  // so no lane could re-verify its own mutants, and a run of everything died with a wasm abort
+  // (RuntimeError: Aborted(), web-tree-sitter, after 965 results) that a single lane's set never
+  // reaches. ⇒ A FILTER WHOSE FLAG IS SILENTLY IGNORED IS WORSE THAN NO FILTER: the lane believes it
+  // scoped the run and in fact re-ran the fleet's whole battery.
+  // `--lang <name>` is now read from the command line (and BB_MUTANT_LANG from the environment),
+  // and an unmatched language REFUSES rather than reporting a pass on zero mutants.
+  const argvLang = (() => {
+    const i = process.argv.findIndex((a) => a === "--lang" || a.startsWith("--lang="))
+    if (i === -1) return process.env.BB_MUTANT_LANG ?? ""
+    const a = process.argv[i] ?? ""
+    return a.includes("=") ? a.slice(a.indexOf("=") + 1) : (process.argv[i + 1] ?? "")
+  })().trim()
   const selected = MUTANTS.filter((m) => {
     if (m.retired) return false
+    if (argvLang && m.language !== argvLang) return false
     // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
     if (!mutantFilter) return true
     return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
   })
+  if (argvLang && selected.length === 0) {
+    console.error(`--lang "${argvLang}" matched 0 of ${MUTANTS.length} mutants - nothing was verified`)
+    process.exit(3)
+  }
   // M61 #886: an unmatched selector must fail loudly instead of "passing" on
   // zero mutants, and a filtered run is dev-scoped: it prints results but
   // writes NO canonical evidence (canonical F4 is only ever a full run).
