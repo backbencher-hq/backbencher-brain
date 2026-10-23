@@ -134,6 +134,35 @@ merged.population.note =
 for (const fam of ["perType", "perMarker", "perMarkerType", "constructs", "includeTagSpellings", "includeKeySpellings", "supertypeKeySpellings"]) {
   merged[fam] = mergeFamily(fam)
 }
+// ── THE ELEVEN-TERM CLOSURE'S BUCKETS, SUMMED LIKE EVERY OTHER FAMILY ────────────────────────────
+// ★ THIS FIELD WAS ADDED LATER AND THE MERGE DID NOT KNOW IT, so the merged artifact carried CHUNK
+// 0's buckets alone — a TENTH of the population — while `perType` was summed correctly. The
+// declaration generator would have published 122,528 edges against a `contains` count of 1,413,388.
+// A field added to the instrument and not to the merge is a number that is silently a sample, which
+// is the failure this whole programme keeps finding; so the families are listed ONCE and the bucket
+// family is in the list.
+merged.perTypeBuckets = (() => {
+  const out: Record<string, any> = {}
+  for (const c of chunks) {
+    for (const [t, b] of Object.entries((c.perTypeBuckets ?? {}) as Record<string, any>)) {
+      const acc = out[t] ?? (out[t] = { resolved: 0, external: 0, ambiguous: 0, otherUnresolved: 0, unclassed: 0, edges: 0 })
+      for (const k of ["resolved", "external", "ambiguous", "otherUnresolved", "unclassed", "edges"]) {
+        acc[k] = Number(acc[k] ?? 0) + Number((b as any)[k] ?? 0)
+      }
+    }
+  }
+  return out
+})()
+// AND THE CLOSURE IS RE-CHECKED AFTER THE SUM, not only inside each chunk: a chunk that closes can
+// still be merged into a set that does not, if a key were dropped on the way.
+for (const [t, b] of Object.entries(merged.perTypeBuckets as Record<string, any>)) {
+  const sum = b.resolved + b.external + b.ambiguous + b.otherUnresolved + b.unclassed
+  if (sum !== b.edges) {
+    console.error(`FAIL — after the merge, ${t}: buckets sum ${sum} ≠ edges ${b.edges}`)
+    process.exit(11)
+  }
+}
+
 // The repo sets ride with the merged artifact too, so the merge itself is checkable.
 const mergedRepoSets: Record<string, any> = {}
 for (const fam of ["perType", "perMarker", "perMarkerType", "constructs", "includeTagSpellings", "includeKeySpellings", "supertypeKeySpellings"]) {

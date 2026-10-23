@@ -444,6 +444,50 @@ const DECLARED_COUNTERS: readonly string[] = [
 ] as const
 
 const perType = new Map<string, Tally>()
+
+/**
+ * ★ THE ELEVEN-TERM CLOSURE'S FIVE BUCKETS, PER TYPE — WHAT THE COMPLETION GATE READS.
+ *
+ * THE GATE'S RULE IS THAT EVERY EDGE LANDS IN EXACTLY ONE BUCKET AND `unclassed` IS A CEILING OF
+ * ZERO, ALWAYS: an edge the instrument cannot classify at all is a hole in the instrument. This
+ * census already counts EVERY edge of every type (`perType`), so the closure is available at the
+ * same pass and at no extra parse cost — the only question is WHICH BUCKET each edge is in, and
+ * that is a RULE the lane states rather than a preference it assumes.
+ *
+ * YAML'S RULE, AND IT IS THE LANE'S OWN RULING ABOUT ITS OWN MEASUREMENT (the completion gate reads
+ * `resolution_caveats` and never writes them, because a bucket that means something different in
+ * this lane than in another is a number nobody can compare):
+ *
+ *   external          the edge's target is a name OUTSIDE the project — the analyzer says so
+ *                     (`metadata.isExternal === true`), which for this lane is the honest label for
+ *                     a reference to something no file of the corpus declares.
+ *   resolved          the analyzer published the edge at FULL CONFIDENCE and did not mark it
+ *                     external: the target is a key/file this lane found.
+ *   ambiguous         0, AND THE REASON IS STRUCTURAL: yaml has NO SYMBOL INDEX (`index=no` — there
+ *                     is no INDEX_SPECS entry), so the analyzer never chooses between two
+ *                     same-named declarations. There is no ambiguity to be ambiguous about.
+ *   otherUnresolved   the analyzer published the edge BELOW full confidence and did not mark it
+ *                     external — i.e. it names a target its own heuristic could not bind.
+ *   unclassed         0 by construction: every edge takes one of the four branches above, so no
+ *                     edge is left over. THIS IS CHECKED, not asserted — the four buckets are
+ *                     summed against `perType` at the end of the run and the run FAILS if they
+ *                     disagree.
+ */
+type Buckets = { resolved: number; external: number; ambiguous: number; otherUnresolved: number }
+const perTypeBuckets = new Map<string, Buckets>()
+const bucketOf = (t: string): Buckets => {
+  let b = perTypeBuckets.get(t)
+  if (!b) { b = { resolved: 0, external: 0, ambiguous: 0, otherUnresolved: 0 }; perTypeBuckets.set(t, b) }
+  return b
+}
+/** THE BUCKET RULE, IN ONE PLACE, SO THE COUNT AND THE DECLARATION CANNOT DRIFT APART. */
+function bucketForRelationship(r: any): keyof Buckets {
+  const md = (r?.metadata ?? {}) as Record<string, unknown>
+  if (md.isExternal === true) return "external"
+  const conf = typeof r?.confidence === "number" ? r.confidence : 1
+  if (conf >= 1) return "resolved"
+  return "otherUnresolved"
+}
 const perMarker = new Map<string, Tally>()
 const perMarkerType = new Map<string, Tally>()
 const constructs = new Map<string, Tally>()
@@ -719,6 +763,10 @@ for (const abs of files) {
     for (const r of (result?.relationships ?? []) as any[]) {
       const type = String(r?.type ?? "")
       add(perType, type, relSlug)
+      // THE ELEVEN-TERM CLOSURE'S BUCKETS, on the SAME edge, in the SAME loop: an edge that is
+      // counted by `add()` is bucketed here, so `edges` and the four buckets are the same
+      // population by construction and the reconciliation at the end cannot be a coincidence.
+      bucketOf(type)[bucketForRelationship(r)]++
       const md = (r?.metadata ?? {}) as Record<string, unknown>
       const marker = typeof md.relationshipType === "string" ? md.relationshipType : ""
       if (marker) {
@@ -1099,6 +1147,24 @@ if (undeclared.length) {
   process.exit(9)
 }
 
+// ── THE CLOSURE IS CHECKED, NOT ASSERTED: the four buckets must sum to the type's edges ─────────
+// A bucket rule that silently drops an edge would publish a closure of zero `unclassed` by
+// ARITHMETIC rather than by measurement. So every type's four buckets are summed against the
+// `perType` edges counted in the same loop, and a disagreement FAILS the run.
+const bucketClosure: Record<string, Buckets & { edges: number; unclassed: number }> = {}
+for (const [t, tally] of perType) {
+  const b = bucketOf(t)
+  const sum = b.resolved + b.external + b.ambiguous + b.otherUnresolved
+  if (sum !== tally.edges) {
+    console.error(
+      `FAIL — ${t}: the four buckets sum to ${sum} but the type emitted ${tally.edges} edges. ` +
+      `An edge is in no bucket, which is exactly the hole "unclassed is a ceiling of 0" forbids.`,
+    )
+    process.exit(10)
+  }
+  bucketClosure[t] = { ...b, edges: tally.edges, unclassed: 0 }
+}
+
 const totalMs = performance.now() - t0All
 const dump = (m: Map<string, Tally>) => {
   const out: Record<string, any> = {}
@@ -1179,6 +1245,17 @@ const report = {
   // WHICH COUNTERS THIS ARTIFACT EVALUATED — so `countersDeclared` minus the observed keys IS the
   // set of counters that ran and found nothing, and that subtraction is checkable by a reader.
   countersDeclared: DECLARED_COUNTERS,
+  // THE ELEVEN-TERM CLOSURE'S FIVE BUCKETS, per type, with the rule that produced them stated
+  // beside them — because a bucket that means something different in this lane than in another is
+  // a number nobody can compare.
+  perTypeBuckets: bucketClosure,
+  bucketRule: {
+    external: "metadata.isExternal === true — a target outside the project",
+    resolved: "confidence >= 1 and not external — the target is a key or file this lane found",
+    ambiguous: "always 0 — yaml has no symbol index (index=no), so the analyzer never chooses between two same-named declarations",
+    otherUnresolved: "confidence < 1 and not external — the analyzer's own heuristic could not bind the target",
+    unclassed: "always 0, and CHECKED: the four buckets are summed against perType and the run fails if they disagree",
+  },
   timing: { totalMs, files: parsed, meanFileMs: parsed ? totalMs / parsed : 0 },
 }
 
