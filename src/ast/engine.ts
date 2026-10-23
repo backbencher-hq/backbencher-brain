@@ -927,6 +927,29 @@ export namespace ASTEngine {
     }
   }
 
+  /**
+   * THE PARSER FOR A LANGUAGE, IF ONE IS ALREADY LOADED — a SYNCHRONOUS accessor, and it exists for
+   * one measured reason rather than for convenience.
+   *
+   * AN ANALYZER'S `analyze()` IS SYNCHRONOUS. `getParser` is async, so an analyzer that needs to read
+   * a SECOND file's syntax tree — a sibling manifest, say — cannot get a parser at all, and the yaml
+   * lane's cross-file resource resolution therefore read the sibling's TEXT and matched `kind:` and
+   * `name:` with anchored regexes over source lines. That is precisely the shape the fleet's
+   * no-regex rule forbids, and the lane's own comment recorded the async accessor as the reason: A
+   * CONSTRAINT IN THE RUNTIME BECAME A REGEX IN THE ANALYZER.
+   *
+   * By the time an analyzer is resolving anything, THE PARSER FOR ITS OWN LANGUAGE IS ALREADY
+   * LOADED — the engine loaded it to parse the file the analyzer is looking at. So the cache is
+   * warm by construction and a synchronous read of it is safe, and `undefined` is a real answer
+   * (a caller that is not in a parse pass gets nothing) rather than a case to paper over.
+   *
+   * ⇒ THE CALLER MUST TREAT `undefined` AS "NO TREE AVAILABLE" AND PUBLISH AN UNRESOLVED ROW, not
+   * fall back to a text filter: a fallback is how the regex survives a rule that forbade it.
+   */
+  export function getCachedParser(language: SupportedLanguage): Parser | undefined {
+    return parsers.get(language)
+  }
+
   // Get parser for a specific language
   export async function getParser(language: SupportedLanguage): Promise<Parser> {
     await ensureWasmRegistry()
@@ -2840,3 +2863,5 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
 
 export const parseFile = ASTEngine.parseFile
 export const getParser = ASTEngine.getParser
+/** Synchronous companion to `getParser`: the parser already in the cache, or undefined. */
+export const getCachedParser = ASTEngine.getCachedParser

@@ -2458,27 +2458,112 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       } catch {
         continue
       }
-      if (!RealYamlAnalyzer.declaresResource(text, kind, ref.target)) continue
+      // ★ THE SIBLING IS PARSED, NOT PATTERN-MATCHED. This used to read the sibling's TEXT and match
+      // `kind:`/`name:` with anchored regexes over source lines — the exact shape the fleet's
+      // no-regex rule forbids, because regex over source text MATCHES COMMENTS AND STRING LITERALS,
+      // misses nested syntax, and breaks silently on the next grammar version. A commented-out
+      // `# kind: Deployment` or a `description: "kind: Pod"` string matched it.
+      //
+      // The lane's own comment recorded WHY it was a regex: `analyze()` is synchronous and the only
+      // parser accessor was async. THAT WAS A CONSTRAINT IN THE RUNTIME TURNED INTO A REGEX IN THE
+      // ANALYZER, and it is gone: `ASTEngine.getCachedParser` reads the parser cache synchronously,
+      // and by the time this runs the yaml parser is ALREADY LOADED — the engine loaded it to parse
+      // the file being analyzed. NO CACHED PARSER IS AN UNRESOLVED SIBLING, never a text fallback.
+      const parser = ASTEngine.getCachedParser("yaml" as any)
+      if (!parser) return null
+      let siblingTree: any = null
+      try {
+        // `parse(input, oldTree?)` — the second parameter is an INCREMENTAL PARSE's previous tree,
+        // not a path, so the sibling is parsed from scratch. The tree is disposed in the finally.
+        siblingTree = parser.parse(text)
+      } catch {
+        continue
+      }
+      let declares = false
+      try {
+        declares = siblingTree?.rootNode ? this.declaresResourceInTree(siblingTree.rootNode, kind, ref.target) : false
+      } finally {
+        try { siblingTree?.delete?.() } catch { /* a tree that is not disposed is a leak the arm pays for */ }
+      }
+      if (!declares) continue
       if (hits.length > 0) return null // two candidates: refuse rather than pick
       hits.push(this.documentName(join(dirAbs, entry), 1, ctx.projectRoot))
     }
     return hits.length === 1 ? hits[0] : null
   }
 
-  /** The two spellings a sibling manifest declares: `kind:` at column 0, and `name:` inside a
-   *  top-level `metadata:` block. Anchored, so a nested pod-template `metadata.name` is not read as
-   *  the document's own.
+  /**
+   * DOES THIS SIBLING DECLARE `kind`/`name`? ASKED OF ITS TREE, NOT OF ITS TEXT.
    *
-   *  NOT PRIVATE, and the reason is a measurement rather than convenience: the question "does this
-   *  text filter produce the same CANDIDATE SET a parse would?" can only be answered against the
-   *  filter that actually runs, and a probe carrying its own copy would be testing the copy. */
-  static declaresResource(text: string, kind: string, name: string): boolean {
-    const kindMatch = text.match(/^kind:[ \t]*["']?([A-Za-z][\w.-]*)["']?[ \t]*$/m)
-    if (kindMatch === null || kindMatch[1] !== kind) return false
-    const meta = findMetadataLine(text)
-    if (meta < 0) return false
-    const nameMatch = text.slice(meta).match(/^[ \t]+name:[ \t]*["']?([^"'\n#]+?)["']?[ \t]*$/m)
-    return nameMatch !== null && nameMatch[1].trim() === name
+   * THE DEFECT THIS REPLACES WAS MEASURED BY THE FLEET'S OWN RULE, not by taste: the old version
+   * matched `/^kind:[ \t]*["']?([A-Za-z][\w.-]*)["']?[ \t]*$/m` and
+   * `/^[ \t]+name:[ \t]*["']?([^"'\n#]+?)["']?[ \t]*$/m` over the sibling's SOURCE TEXT. Regex over
+   * source text MATCHES COMMENTS AND STRING LITERALS, MISSES NESTED SYNTAX, AND BREAKS SILENTLY ON
+   * THE NEXT GRAMMAR VERSION — so a commented-out `# kind: Deployment` matched, and so did a
+   * `description: "kind: Pod"` value, which is a string ABOUT a kind rather than a kind.
+   *
+   * THE TREE CANNOT SEE EITHER. The pair's `key` field gives `kind` and `metadata` exactly, the
+   * `value` field gives the scalar with its QUOTING ALREADY RESOLVED BY THE GRAMMAR (so `kind:
+   * "Deployment"` and `kind: Deployment` read the same, which the regex only approximated), and a
+   * comment is not a node. The rules are unchanged and are the reason this is anchored at the
+   * document's top level: only the document's OWN `kind`, and only the `name` INSIDE ITS OWN
+   * `metadata` block — a nested pod-template `metadata.name` is not the document's own.
+   *
+   * IT DESCENDS THE STREAM THE GRAMMAR ACTUALLY PRODUCES: the root is a `stream` of `document`
+   * nodes, not a mapping, so a reader that assumed a mapping would silently find nothing.
+   */
+  private declaresResourceInTree(root: Node, kind: string, name: string): boolean {
+    const document = this.firstChildOfType(root, "document")
+    if (!document) return false
+    const mapping = this.firstMappingUnder(document)
+    if (!mapping) return false
+    if (this.mappingEntryScalar(mapping, "kind") !== kind) return false
+    const metadata = this.mappingValueForKey(mapping, "metadata")
+    if (!metadata) return false
+    const inner = this.firstMappingUnder(this.scalarNode(metadata))
+    if (!inner) return false
+    return this.mappingEntryScalar(inner, "name") === name
+  }
+
+  /** The first descendant of a given type, in tree order. */
+  private firstChildOfType(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (child.type === type) return child
+      const deeper = this.firstChildOfType(child, type)
+      if (deeper) return deeper
+    }
+    return null
+  }
+
+  /** The mapping a document (or a wrapper) holds: the first mapping-shaped named child. */
+  private firstMappingUnder(node: Node): Node | null {
+    const unwrapped = this.scalarNode(node)
+    if (MAPPING_TYPES.has(unwrapped.type)) return unwrapped
+    for (let i = 0; i < unwrapped.namedChildCount; i++) {
+      const child = unwrapped.namedChild(i)
+      if (!child) continue
+      const inner = this.firstMappingUnder(child)
+      if (inner) return inner
+    }
+    return null
+  }
+
+  /** The VALUE NODE of a mapping's entry for `keyName` — the counterpart of `mappingEntryScalar`. */
+  private mappingValueForKey(node: Node | null, keyName: string): Node | null {
+    if (!node) return null
+    const mapping = this.scalarNode(node)
+    if (!MAPPING_TYPES.has(mapping.type)) return null
+    for (let i = 0; i < mapping.namedChildCount; i++) {
+      const pair = mapping.namedChild(i)
+      if (!pair || !MAPPING_PAIR_TYPES.has(pair.type)) continue
+      const keyNode = pair.childForFieldName("key") || this.firstNonDecorationChild(pair)
+      if (!keyNode || this.scalarText(keyNode) !== keyName) continue
+      const value = pair.childForFieldName("value") || this.mappingValueNode(pair)
+      if (value) return value
+    }
+    return null
   }
 
   /** The referring KEY -> the object KIND it names. One source of truth: the falsifier imports it,
@@ -2533,16 +2618,54 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * (`Shared.Components.OpenAPI.yaml#/components/schemas/CommonParameters`) names a file this
    * document composes with, and the file claim is the one the project can check.
    */
+  /**
+   * THE COMPOSER OF A SCHEMA PATH, or null when the path is not a DIRECT member of an `allOf`.
+   *
+   * `…allOf[N].$ref` and `…allOf.$ref` are compositions; `…allOf[1].properties.X.$ref` is a property
+   * reference and is NOT. THE RULE IS THE TAIL, and the walk says so in one pass: find the LAST
+   * `.allOf`, then require the rest of the string to be exactly `[N]?.$ref`. A path with a deeper
+   * `$ref` fails that requirement at the first character after `.allOf`.
+   *
+   * A STRING WALK AND NOT A REGEX — the token is already in hand, and the fleet's rule is that
+   * pattern-matching a value you already have is a second implementation of a question already
+   * answered. Returns the composer (everything before `.allOf`), or null.
+   */
+  private allOfComposerOf(source: string): string | null {
+    const marker = ".allOf"
+    const at = source.lastIndexOf(marker)
+    // `at <= 0` covers both "no allOf at all" and "allOf at the very start", which has no composer:
+    // an edge whose source would be the empty string is not a claim about anything.
+    if (at <= 0) return null
+    let i = at + marker.length
+    if (source[i] === "[") {
+      const close = source.indexOf("]", i)
+      if (close < 0) return null
+      const digits = source.slice(i + 1, close)
+      if (digits.length === 0) return null
+      for (let d = 0; d < digits.length; d++) {
+        const c = digits[d]
+        if (c < "0" || c > "9") return null
+      }
+      i = close + 1
+    }
+    if (source[i] === ".") i++
+    if (source.slice(i) !== "$ref") return null
+    return source.slice(0, at)
+  }
+
   private emitSchemaComposition(ctx: YamlContext): void {
     for (const r of ctx.relationships) {
       if (r?.metadata?.relationshipType !== "yaml_json_pointer") continue
       const source = String(r.source ?? "")
-      const m = /^(.*)\.allOf(?:\[\d+\]|\.\$ref|\.\w+)*$/.exec(source)
-      if (!m) continue
-      // THE DIRECT-MEMBER RULE, applied to the path's tail: `…allOf[N].$ref` and `…allOf.$ref`.
-      const tail = source.slice(m[1].length)
-      if (!/^\.allOf(?:\[\d+\])?\.?\$ref$/.test(tail)) continue
-      const composer = m[1]
+      // THE DIRECT-MEMBER RULE AS A STRING WALK OVER A TOKEN THE ANALYZER ALREADY HOLDS — no pattern
+      // matcher, for two reasons. (1) The fleet's rule: a regex over a value the tree already gave
+      // you is a second, weaker implementation of a question the tree answered. (2) The two patterns
+      // it replaces were doing ONE job between them: the first found `.allOf` anywhere with any
+      // number of suffixes, then the second re-tested the tail — and a `$ref` DEEPER inside an allOf
+      // item passed the first and was refused by the second. The rule is exactly the tail:
+      // `.allOf` + optional `[N]` + optional `.` + `$ref`, with everything before it the composer.
+      const composer = this.allOfComposerOf(source)
+      if (composer === null) continue
       const target = String(r.target ?? "")
       if (!composer || !target) continue
       const md = (r.metadata ?? {}) as Record<string, unknown>
