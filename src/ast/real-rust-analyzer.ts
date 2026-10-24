@@ -89,6 +89,38 @@ function hasBareWord(hay: string, word: string): boolean {
   return false
 }
 
+/** The `^[A-Z]` test as a char-code comparison. Used by the module-file rule, where an
+ *  upper-case leaf means ITEM and a lower-case leaf means MODULE — a fact about the spelling,
+ *  which is exactly what the char class said and nothing more. */
+function startsUpperAscii(s: string): boolean {
+  if (s.length === 0) return false
+  const c = s.charCodeAt(0)
+  return c >= 65 && c <= 90
+}
+
+/**
+ * `A::b` — exactly TWO identifier segments joined by ONE `::`.
+ *
+ * This is `^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$`, written as a scan. It is used on
+ * the analyzer's OWN `metadata.qualified` spelling (`T::m`), which the analyzer wrote itself — so
+ * the check is a shape assertion about a string this file produced, never a read of source text.
+ * ASCII identifier classes, exactly as the old expression's char classes said them; a Unicode
+ * identifier is refused here for the same reason it was refused there.
+ */
+function isTwoSegmentIdentPath(s: string): boolean {
+  const sep = s.indexOf("::")
+  if (sep <= 0 || sep + 3 > s.length) return false
+  if (s.indexOf("::", sep + 2) >= 0) return false
+  const isStart = (c: number): boolean => (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+  const isPart = (c: number): boolean => isStart(c) || (c >= 48 && c <= 57)
+  if (!isStart(s.charCodeAt(0))) return false
+  for (let k = 1; k < sep; k++) if (!isPart(s.charCodeAt(k))) return false
+  const tail = sep + 2
+  if (!isStart(s.charCodeAt(tail))) return false
+  for (let k = tail + 1; k < s.length; k++) if (!isPart(s.charCodeAt(k))) return false
+  return true
+}
+
 /**
  * THE MODULE-FILE RULE — the file a Rust module path names. This is the evidence behind the
  * `importProjectFile` claim the `imports` rows carry, and it is exported so the lane's census
@@ -188,7 +220,7 @@ export function rustModuleFileCandidates(
   // `self::Item` is REFUSED by the self branch below (eff.length < 2): the prefix is this very
   // file, and a claim that confirms itself is not evidence. Lower-case leaves are never treated
   // as items here — a lower-case leaf can be a module or an item and the path does not say which.
-  const leafIsItem = parts.length >= 2 && /^[A-Z]/.test(parts[parts.length - 1])
+  const leafIsItem = parts.length >= 2 && startsUpperAscii(parts[parts.length - 1])
   const eff = leafIsItem ? parts.slice(0, -1) : parts
   if (rootWord === "crate" || rootWord === "self" || rootWord === "super") {
     if (rootWord !== "crate" && !atFileScope) return null
@@ -200,7 +232,7 @@ export function rustModuleFileCandidates(
       // wildcard) both depend on the CRATE ROOT FILE — that is where a `crate::` path resolves.
       // It is claimed only when exactly one of `lib.rs`/`main.rs` sits there: with both, which
       // crate the importing file belongs to is a fact this edge does not state, so it is refused.
-      if (eff.length === 1 || (eff.length === 2 && /^[A-Z]/.test(eff[1]))) {
+      if (eff.length === 1 || (eff.length === 2 && startsUpperAscii(eff[1]))) {
         return crateRootFileCandidates(base)
       }
       const stem = path.join(base, ...eff.slice(1))
@@ -317,17 +349,239 @@ function readManifest(dir: string): string {
   }
 }
 
-/** The module name a manifest declares, or null when it is not a package. */
-function manifestPackageName(text: string): string | null {
-  const name = /\n\s*name\s*=\s*"([A-Za-z_][A-Za-z0-9_-]*)"/.exec("\n" + text)?.[1]
-  return name === undefined ? null : name.replace(/-/g, "_")
+/**
+ * ── THE TOML MANIFEST READER: WHY THE REGEXES ARE GONE, AND WHY THIS IS A READER ────────────────
+ *
+ * The manifest facts below used to be read by FIVE regex literals (a `name = "…"` scan, a `[lib]`
+ * section scan, a `path = "…"` scan, a `[workspace]` test and a `members = […]` scan) and the
+ * module-file rule carried two more. The owner's DONE definition says RESOLUTION USES NO REGEX and
+ * the lane's analyzer had TEN — every one of them a text read standing in for a parse.
+ *
+ * WHY A READER AND NOT THE SERVED TOML GRAMMAR. The engine can hand a `Tree` to an analyzer only
+ * because it loads the parser itself: `src/ast/engine.ts:2000-2002` says it in so many words ("the
+ * analyzer is sync and cannot load parsers itself") and solves it for markdown by pre-parsing the
+ * embedded trees into `AnalyzeContext` (`sfcScriptTrees` is the same pattern for svelte/vue).
+ * `web-tree-sitter` 0.25.9 exposes ONLY `Language.load(): Promise<…>` — no synchronous load — so a
+ * per-file analyzer cannot load `wasm/tree-sitter-toml.wasm` itself. Until the engine pre-parses
+ * Cargo.toml into the context, this is the TOML read the analyzer can actually run, and it is NOT
+ * a re-pattern: it tokenises TOML — sections, dotted keys, basic/literal strings with escapes,
+ * multiline strings, arrays, inline tables — and SKIPS every value it does not need structurally,
+ * so no value can desynchronise it.
+ *
+ * AND IT IS PROVED EQUAL TO THE GRAMMAR, NOT ASSERTED: `script/m14/rust-manifest-ast-verify.ts`
+ * reads EVERY tracked `Cargo.toml` in the corpus with BOTH this reader and the served
+ * `wasm/tree-sitter-toml.wasm` (through the engine's `getParser`, in an async script where that is
+ * legal) and exits non-zero on any disagreement. The verifier is the control; this comment is not.
+ */
+export interface RustManifestFacts {
+  hasWorkspace: boolean
+  packageName: string | null
+  libPath: string | null
+  workspaceMembers: string[]
+}
+
+export function rustManifestFacts(text: string): RustManifestFacts {
+  const facts: RustManifestFacts = { hasWorkspace: false, packageName: null, libPath: null, workspaceMembers: [] }
+  const n = text.length
+  let i = 0
+  let section = ""
+  const at = (k: number): number => (k >= 0 && k < n ? text.charCodeAt(k) : -1)
+  const skipTrivia = (): void => {
+    for (;;) {
+      while (i < n && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9 || text.charCodeAt(i) === 13 || text.charCodeAt(i) === 10)) i++
+      if (i < n && text.charCodeAt(i) === 35 /* # */) {
+        while (i < n && text.charCodeAt(i) !== 10) i++
+        continue
+      }
+      break
+    }
+  }
+  /** A TOML string: basic `"…"` with escapes, literal `'…'`, and their `"""` / `'''` multiline forms. */
+  const parseString = (): string | null => {
+    const q = at(i)
+    if (q !== 34 && q !== 39) return null
+    const triple = at(i + 1) === q && at(i + 2) === q
+    i += triple ? 3 : 1
+    let out = ""
+    while (i < n) {
+      const c = text.charCodeAt(i)
+      if (triple) {
+        if (c === q && at(i + 1) === q && at(i + 2) === q) { i += 3; return out }
+      } else if (c === q) {
+        i++
+        return out
+      }
+      if (c === 92 /* \ */ && q === 34) {
+        const e = at(i + 1)
+        if (e === 34) { out += '"'; i += 2; continue }
+        if (e === 92) { out += "\\"; i += 2; continue }
+        if (e === 110) { out += "\n"; i += 2; continue }
+        if (e === 116) { out += "\t"; i += 2; continue }
+        if (e === 114) { out += "\r"; i += 2; continue }
+        if (e === 98) { out += "\b"; i += 2; continue }
+        if (e === 102) { out += "\f"; i += 2; continue }
+        if (e === 117 || e === 85) {
+          const len = e === 117 ? 4 : 8
+          let hex = ""
+          i += 2
+          for (let k = 0; k < len && i < n; k++, i++) hex += text[i]
+          const cp = parseInt(hex, 16)
+          if (Number.isFinite(cp) && cp >= 0 && cp <= 0x10ffff) out += String.fromCodePoint(cp)
+          continue
+        }
+        // An unknown escape keeps the escaped character rather than dropping the rest of the file.
+        if (i + 1 < n) out += text[i + 1]
+        i += 2
+        continue
+      }
+      out += text[i]
+      i++
+    }
+    return null
+  }
+  /** A key, dotted or not: `a.b` reads "a.b". */
+  const parseKey = (): string | null => {
+    const parts: string[] = []
+    for (;;) {
+      while (i < n && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9)) i++
+      const c = at(i)
+      let seg = ""
+      if (c === 34 || c === 39) {
+        const s = parseString()
+        if (s === null) return null
+        seg = s
+      } else {
+        const start = i
+        while (i < n) {
+          const d = text.charCodeAt(i)
+          const bare =
+            (d >= 48 && d <= 57) || (d >= 65 && d <= 90) || (d >= 97 && d <= 122) || d === 95 || d === 45
+          if (!bare) break
+          i++
+        }
+        if (i === start) return null
+        seg = text.slice(start, i)
+      }
+      parts.push(seg)
+      while (i < n && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9)) i++
+      if (at(i) === 46 /* . */) { i++; continue }
+      break
+    }
+    return parts.join(".")
+  }
+  /** Skip one value structurally: brackets balanced, strings respected, comments ignored. */
+  const skipValue = (): void => {
+    let depth = 0
+    while (i < n) {
+      const c = text.charCodeAt(i)
+      if (c === 34 || c === 39) { if (parseString() === null) return; continue }
+      if (c === 91 || c === 123) { depth++; i++; continue }
+      if (c === 93 || c === 125) { if (depth === 0) return; depth--; i++; continue }
+      if (depth === 0 && (c === 10 || c === 44)) return
+      if (depth === 0 && c === 35) { while (i < n && text.charCodeAt(i) !== 10) i++; return }
+      i++
+    }
+  }
+  type Value = { kind: "string"; value: string } | { kind: "array"; items: string[] } | { kind: "other" }
+  const parseValue = (): Value => {
+    while (i < n && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9)) i++
+    const c = at(i)
+    if (c === 34 || c === 39) {
+      const s = parseString()
+      return s === null ? { kind: "other" } : { kind: "string", value: s }
+    }
+    if (c === 91) {
+      i++
+      const items: string[] = []
+      for (;;) {
+        skipTrivia()
+        if (i >= n) break
+        const d = text.charCodeAt(i)
+        if (d === 93) { i++; break }
+        if (d === 44) { i++; continue }
+        if (d === 34 || d === 39) {
+          const s = parseString()
+          if (s === null) break
+          items.push(s)
+          continue
+        }
+        const before = i
+        skipValue()
+        if (i === before) i++ // never spin on a byte this reader does not understand
+      }
+      return { kind: "array", items }
+    }
+    skipValue()
+    return { kind: "other" }
+  }
+
+  for (;;) {
+    skipTrivia()
+    if (i >= n) break
+    if (text.charCodeAt(i) === 91 /* [ */) {
+      i++
+      const arrayOfTables = at(i) === 91
+      if (arrayOfTables) i++
+      const key = parseKey()
+      while (i < n && text.charCodeAt(i) !== 93) i++
+      if (i < n) i++
+      if (arrayOfTables && at(i) === 93) i++
+      if (key !== null) {
+        section = key
+        if (key === "workspace") facts.hasWorkspace = true
+      }
+      continue
+    }
+    const key = parseKey()
+    if (key === null) { i++; continue }
+    skipTrivia()
+    if (at(i) !== 61 /* = */) continue // a bare key with no value: the next loop reads on
+    i++
+    const value = parseValue()
+    // DOTTED KEYS ARE THE SAME FACT A SECTION STATES: `package.name = "x"` ≡ `[package] name`.
+    let effSection = section
+    let effKey = key
+    if (effSection === "") {
+      const dot = key.lastIndexOf(".")
+      if (dot > 0) { effSection = key.slice(0, dot); effKey = key.slice(dot + 1) }
+    }
+    if (effSection === "package" && effKey === "name" && value.kind === "string" && facts.packageName === null) {
+      facts.packageName = value.value
+    }
+    if (effSection === "lib" && effKey === "path" && value.kind === "string" && facts.libPath === null) {
+      facts.libPath = value.value
+    }
+    if (effSection === "workspace" && effKey === "members" && value.kind === "array" && facts.workspaceMembers.length === 0) {
+      facts.workspaceMembers = value.items
+    }
+  }
+  return facts
+}
+
+/** Manifest facts are per DIRECTORY and immutable during a run; every file of a crate asks the same
+ *  question, so the read is cached (bounded, like the workspace map below). */
+const RUST_MANIFEST_FACTS = new Map<string, RustManifestFacts>()
+
+function manifestFactsOf(dir: string): RustManifestFacts {
+  const cached = RUST_MANIFEST_FACTS.get(dir)
+  if (cached !== undefined) return cached
+  const facts = rustManifestFacts(readManifest(dir))
+  if (RUST_MANIFEST_FACTS.size > 4096) RUST_MANIFEST_FACTS.clear()
+  RUST_MANIFEST_FACTS.set(dir, facts)
+  return facts
+}
+
+/** The module name a manifest declares, or null when it is not a package. Cargo crate names use
+ *  `-` where a Rust path uses `_`, so the member map is keyed by the path spelling. */
+function manifestPackageName(dir: string): string | null {
+  const raw = manifestFactsOf(dir).packageName
+  return raw === null ? null : raw.split("-").join("_")
 }
 
 /** The library root file a crate directory declares, or null when it has none. */
-function manifestLibFile(dir: string, text: string): string | null {
-  const libSection = /\[lib\]([\s\S]*?)(?:\n\[|$)/.exec(text)?.[1] ?? ""
-  const libPath = /\bpath\s*=\s*"([^"]+)"/.exec(libSection)?.[1]
-  const libFile = libPath !== undefined ? path.resolve(dir, libPath) : path.join(dir, "src", "lib.rs")
+function manifestLibFile(dir: string): string | null {
+  const facts = manifestFactsOf(dir)
+  const libFile = facts.libPath !== null ? path.resolve(dir, facts.libPath) : path.join(dir, "src", "lib.rs")
   return isFile(libFile) ? libFile : null
 }
 
@@ -373,7 +627,9 @@ function findWorkspaceDirUncached(filePath: string, projectRoot: string): string
   for (;;) {
     if (isFile(path.join(dir, "Cargo.toml"))) {
       if (nearestPackageDir === null) nearestPackageDir = dir
-      if (/^\s*\[workspace\]/m.test(readManifest(dir))) return dir
+      // `[workspace]` — the SECTION KEY, not a line that happens to spell it. The old test was a
+      // multiline `/^\s*\[workspace\]/m`, i.e. a text search for a line starting with the token.
+      if (manifestFactsOf(dir).hasWorkspace) return dir
     }
     const current = path.resolve(dir)
     if (current === stop) break
@@ -390,21 +646,20 @@ function rustWorkspaceCrates(filePath: string, projectRoot: string): Map<string,
   const cached = RUST_WORKSPACE_CRATES.get(workspaceDir)
   if (cached !== undefined) return cached
   const out = new Map<string, string>()
-  const rootText = readManifest(workspaceDir)
   const addCrate = (dir: string): void => {
-    const text = readManifest(dir)
-    const name = manifestPackageName(text)
+    const name = manifestPackageName(dir)
     if (name === null || out.has(name)) return
-    const libFile = manifestLibFile(dir, text)
+    const libFile = manifestLibFile(dir)
     if (libFile !== null) out.set(name, libFile)
   }
   // The root package is a member, and for a single-crate repository it is the ONLY one.
   addCrate(workspaceDir)
-  const membersBlock = /(?:^|\n)\s*members\s*=\s*\[([\s\S]*?)\]/.exec(rootText)?.[1]
-  if (membersBlock !== undefined) {
-    for (const m of membersBlock.matchAll(/["']([^"']+)["']/g)) {
-      for (const dir of expandMemberPattern(workspaceDir, m[1])) addCrate(dir)
-    }
+  // `members` is the [workspace] array, read as an ARRAY of strings rather than as the quoted
+  // tokens inside a bracketed block. Membership — not "any manifest under the project" — is
+  // load-bearing: a whole-tree manifest walk found a test-fixture crate named `serde` and would
+  // have claimed 11 real `use serde` edges (see the module-file rule above).
+  for (const pattern of manifestFactsOf(workspaceDir).workspaceMembers) {
+    for (const dir of expandMemberPattern(workspaceDir, pattern)) addCrate(dir)
   }
   if (RUST_WORKSPACE_CRATES.size > 32) RUST_WORKSPACE_CRATES.clear()
   RUST_WORKSPACE_CRATES.set(workspaceDir, out)
@@ -2247,7 +2502,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The `T::m(...)` path form: the analyzer's own `metadata.qualified` IS the qualified
         // spelling, and the file-declares-it test below is the same one the receiver form uses.
         const q = String((rel.metadata as Record<string, unknown> | undefined)?.qualified ?? "")
-        if (/^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/.test(q) && q.endsWith(`::${target}`)) key = q
+        if (isTwoSegmentIdentPath(q) && q.endsWith(`::${target}`)) key = q
       }
       if (!key || !declaredMembers.has(key)) continue
       rel.target = key
