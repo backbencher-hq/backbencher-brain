@@ -18729,6 +18729,76 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         seenCalls.add("macro:" + mname)
         edges.push({ label: "calls", from: "(expr)", target: mname })
       }
+      // ★ part_of TRUTH (2026-10-23, the R3 relabel): `include!("path")` is TEXTUAL FILE INCLUSION
+      // — the splice that shares the including file's single scope and has no module identity —
+      // so the oracle mirrors the analyzer's emission. NOT `mod` (fleet ruling L-2026-10-21-06:
+      // ownership/split; a resolvable unit is the opposite of a fragment). `include_str!` /
+      // `include_bytes!` are DATA inclusion and emit NOTHING here, and a non-literal argument is
+      // not truth either — the mirrors of the analyzer's three refusals.
+      if (mname === "include") {
+        const ttP = n.namedChildren.find((c: any) => c.type === "token_tree")
+        let incPath: string | null = null
+        if (ttP) {
+          for (let k = 0; k < ttP.namedChildCount; k++) {
+            const c = ttP.namedChild(k)
+            if (c && c.type === "string_literal") {
+              const raw = String(c.text)
+              incPath = raw.length >= 2 ? raw.slice(1, -1) : raw
+              break
+            }
+          }
+        }
+        if (incPath && incPath.length > 0) edges.push({ label: "part_of", from: "(expr)", target: incPath })
+      }
+    } else if (n.type === "attribute_item") {
+      // ★ decorates + mixes_in TRUTH (2026-10-23, the R3 emissions). The decorated declaration is
+      // the attribute_item's NEXT NAMED SIBLING (an outer attribute precedes its item in this
+      // grammar); the attribute's own name is the `attribute` child's first path child; the derive
+      // arguments are the identifier children of the attribute's token_tree — QUALIFIED PATHS
+      // FLATTEN to sibling identifiers joined by anonymous `::` separators (probe-measured), so the
+      // truth groups runs and takes the RIGHTMOST segment, exactly as the analyzer does.
+      const attrOuter = n.namedChild(0)
+      const attrName = attrOuter ? (attrOuter.childForFieldName?.("path") ?? attrOuter.namedChild(0)) : null
+      const decorated: any = (() => {
+        let sib = n.nextSibling
+        while (sib) {
+          const st = String(sib.type)
+          if (st === "line_comment" || st === "block_comment" || st === "attribute_item") { sib = sib.nextSibling; continue }
+          break
+        }
+        return sib
+      })()
+      if (attrName && decorated) {
+        const declNm =
+          decorated.childForFieldName?.("name") ??
+          (Array.from({ length: decorated.namedChildCount }, (_, i) => decorated.namedChild(i)).find(
+            (c: any) => c?.type === "type_identifier" || c?.type === "identifier",
+          ) ?? null)
+        if (declNm) {
+          const an = String(attrName.text)
+          edges.push({ label: "decorates", from: String(declNm.text), target: an })
+          if (an === "derive") {
+            const ttD = attrOuter ? (attrOuter.childForFieldName?.("arguments") ?? attrOuter.namedChild(1)) : null
+            if (ttD) {
+              const flat: { text: string; isIdent: boolean }[] = []
+              for (let k = 0; k < ttD.childCount; k++) {
+                const c = ttD.child(k)
+                if (!c) continue
+                flat.push({ text: String(c.text), isIdent: String(c.type) === "identifier" })
+              }
+              let k2 = 0
+              while (k2 < flat.length) {
+                if (!flat[k2].isIdent) { k2++; continue }
+                let pEnd = k2
+                while (pEnd + 2 < flat.length && flat[pEnd + 1].text === "::" && flat[pEnd + 2].isIdent) pEnd += 2
+                const traitName = flat[pEnd].text
+                if (traitName.length > 0) edges.push({ label: "mixes_in", from: String(declNm.text), target: traitName })
+                k2 = pEnd + 1
+              }
+            }
+          }
+        }
+      }
     }
     if (n.type === "call_expression") {
       const fn = n.childForFieldName?.("function")
@@ -25431,6 +25501,15 @@ async function main() {
           // labels join the compared set so their truth can match.
           ...(lang === "erlang" ? ["exports", "imports"] : []),
           ...(lang === "rust" ? ["contains", "imports", "exports", "overrides"] : []),
+          // ★ 2026-10-23: rust's audited set gains decorates, mixes_in and part_of IN THE SAME
+          // CHANGE as the truth derivations above (deriveRustEdges' attribute_item and include!
+          // branches). All three landed together with the analyzer's R3 emissions, so truth
+          // exists for each: without the allowance the new oracle rows read as MISSING; with the
+          // allowance and no truth every analyzer row reads as UNEXPLAINED. `renders` is already
+          // admitted through the global list and its truth is the render-macro branch — the
+          // corpus measured 0 render macros over the whole population, so the pair is
+          // EMPTY-PASSES-EMPTY there, which the corpus-unexercised caveat carries.
+          ...(lang === "rust" ? ["decorates", "mixes_in", "part_of"] : []),
           // SQL-G14 / M14.0.F5: sql joins the compared set with the TWO labels its first-half oracle
           // derives — `contains` and `references`. THE ARM IS DELIBERATELY NARROW: the oracle's header
           // names the labels it does NOT derive yet (calls, uses, imports, overrides, instantiates), so
