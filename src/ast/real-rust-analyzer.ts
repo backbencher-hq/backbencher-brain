@@ -2278,6 +2278,95 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private handleAttribute(node: Node, ctx: RustContext): void {
     const text = node.text
+
+    // ── `decorates` FROM `attribute_item` — THE R3 EMISSION, 2026-10-23 ──────────────────────────
+    //
+    // WHY THIS IS decorates AND NOT A RULING. csharp ruled its attributes PASSIVE metadata and
+    // NAMED ITS FALSIFIER: "a runtime callable-wrapper construct — there is none in the grammar."
+    // IN RUST THAT FALSIFIER FIRES: `#[proc_macro_attribute] pub fn cargo_test`
+    // (.corpus/cargo/crates/cargo-test-macro/src/lib.rs:61) takes the declared item and returns a
+    // replacement, and `#[derive]`/`#[tokio::main]`/`#[tracing::instrument]` all TRANSFORM the
+    // declaration. ⇒ A RULING TRANSFERS ONLY WHEN ITS FALSIFIER DOES NOT FIRE IN THE NEW LANGUAGE
+    // (fleet form 16), and here it fires, so decorates is IMPLEMENTED.
+    //
+    // BOTH CLASSES ARE PUBLISHED, split by `metadata.attributeKind` (the nim pragma shape, one
+    // better: nim ruled the directive class away, this publishes it so a reader can discount it):
+    //   · "applied_callable_candidate" — the attribute names something that COULD be an applied
+    //     macro (a non-builtin path: qualified `tokio::main`, or a non-derivable bare name).
+    //   · "builtin_directive"          — the compiler's own directive set (derive, allow, cfg,
+    //     inline, test, repr, doc, path, no_mangle, cold, deprecated, must_use …), still published
+    //     because the application IS real — the compiler applies the builtin to the declaration —
+    //     and the SPLIT is the fact a reader needs, not a reason to suppress half the construct.
+    //
+    // SOURCE = the DECORATED DECLARATION (the attribute_item's next named sibling — an outer
+    // attribute precedes its item in Rust's grammar, measured in the probe tree), TARGET = the
+    // attribute's own name. An inner attribute (`#![…]`, decorating the module) has no following
+    // sibling in this file and is REFUSED AND COUNTED, never silently dropped.
+    {
+      const decorated: Node | null = (() => {
+        let sib: Node | null = node.nextSibling
+        while (sib) {
+          const st = String(sib.type)
+          if (st === "line_comment" || st === "block_comment" || st === "attribute_item") { sib = sib.nextSibling; continue }
+          break
+        }
+        return sib
+      })()
+      if (decorated) {
+        // The declaration's own name node: every rust item carries `name` except struct/enum/
+        // union which carry `type`-spelled `name` fields in this grammar; fall back to the first
+        // type_identifier/identifier child.
+        const declName: Node | null =
+          decorated.childForFieldName?.("name") ??
+          (() => {
+            for (let k = 0; k < decorated.namedChildCount; k++) {
+              const c = decorated.namedChild(k)
+              const ct = String(c?.type ?? "")
+              if (ct === "type_identifier" || ct === "identifier") return c
+            }
+            return null
+          })()
+        if (declName) {
+          const attr = node.namedChild(0)
+          const nameNode = attr ? (attr.childForFieldName?.("path") ?? attr.namedChild(0)) : null
+          const attrName = nameNode ? String(nameNode.text) : ""
+          if (attrName.length > 0 && declName.text && declName.text.length > 0) {
+            const BUILTIN = new Set([
+              "derive","allow","deny","warn","cfg","cfg_attr","inline","test","repr","doc",
+              "path","no_mangle","cold","deprecated","must_use","feature","macro_use","macro_export",
+              "should_panic","ignore","bench","global_allocator","windows_sdk","no_std","panic_handler",
+              "proc_macro","proc_macro_derive","proc_macro_attribute",
+            ])
+            // `#[proc_macro_attribute]` on the macro's own fn marks the APPLIED-CALLABLE ITSELF;
+            // its targets are other declarations. It is published with its own kind so the
+            // candidate class is countable rather than inferred.
+            const qualified = attrName.includes("::")
+            const kind = BUILTIN.has(attrName) ? "builtin_directive" : "applied_callable_candidate"
+            ctx.relationships.push({
+              source: String(declName.text),
+              target: attrName,
+              fromSymbol: String(declName.text),
+              toSymbol: `attribute:${attrName}`,
+              type: ASTEngine.RelationshipType.Decorates,
+              // Both endpoints are read from the tree — the declaration's name node and the
+              // attribute's own name node — and the sibling relation is structural, so 1.0.
+              confidence: 1.0,
+              ...(this.nodeLine(nameNode) ? { line_number: this.nodeLine(nameNode)! } : {}),
+              metadata: {
+                attributeKind: kind,
+                isQualifiedPath: qualified,
+                rustSpecific: true,
+                decoratesDeclaration: String(decorated.type),
+              },
+            })
+          }
+        }
+      } else {
+        // An inner attribute (`#![…]`) decorates the MODULE, and a module-scoped source is not a
+        // declaration in this file — REFUSED AND COUNTED so the wall is a number.
+        this.noOwner(ctx, "decorates:inner_attribute_no_sibling")
+      }
+    }
     // Attribute-based framework detection (family contract: python/cpp
     // populate detectedFrameworks from code signals; rust previously only
     // caught actix route macros). Name-scoped — std derives (Debug, Clone)

@@ -501,7 +501,8 @@
       "implements",
       "overrides",
       "instantiates",
-      "part_of"
+      "part_of",
+      "decorates"
     ],
     "excluded": [],
     "corpusUnexercised": [],
@@ -543,6 +544,13 @@
         "_emissionSite": "handleMacroInvocation \u2014 real-rust-analyzer.ts, the include! branch before the R7 file-scope guard",
         "_fixture": "rust/part-of-include-macro (pins the causal edge, the partRole, and BOTH near-miss refusals at equals:0)",
         "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (pending the whole-population arm; the 4-site count is from the lane's whole-population construct census)"
+      },
+      "decorates": {
+        "_note": "R3 from attribute_item. csharp's ontological ruling NAMED ITS FALSIFIER ('a runtime callable-wrapper construct \u2014 none in the grammar') and IN RUST IT FIRES: #[proc_macro_attribute] pub fn cargo_test (.corpus/cargo/crates/cargo-test-macro/src/lib.rs:61) takes the item and returns a replacement; #[derive]/#[tokio::main]/#[tracing::instrument] transform the declaration. A RULING TRANSFERS ONLY WHEN ITS FALSIFIER DOES NOT FIRE (fleet form 16). BOTH classes published, split by metadata.attributeKind: builtin_directive and applied_callable_candidate \u2014 the nim shape one better (nim ruled the directive class away; this publishes it so a reader can discount it).",
+        "_emissionSite": "handleAttribute \u2014 real-rust-analyzer.ts, the decorates block at the head of the handler",
+        "_fixture": "rust/decorates-attribute-application (4 rows, both kinds, the derive/allow/inline builtins and the tokio::main candidate; dead_code at equals:0 pins the argument-not-attribute refusal)",
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (site counts from the lane's 422-file stride sample: attribute_item 2,378 + inner_attribute_item 117; whole-population count pending the arm)",
+        "_refusedClass": "decorates:inner_attribute_no_sibling \u2014 an inner attribute decorates the module and has no declaration sibling in this file; counted in metadata.unattributedEdges"
       }
     },
     "_claims": {
