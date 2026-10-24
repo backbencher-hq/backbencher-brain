@@ -1,104 +1,423 @@
 {
   "meta": {
     "lang": "rust",
-    "asked": "the fleet gate MEASURES rust and exits 1 on its fleet-wide bar; this declaration RATCHETS the same measurement per type, so a class can only move deliberately.",
-    "instrument": "script/m14/incoming-gate.ts (single measurement; no second instrument)",
-    "instrumentVersion": "row schema: edges/resolved/ambiguousByDecl/ambiguousByKind/unresolved/markedExternal + 25-name worklists",
-    "sample": 200,
-    "corpusTotal": 267,
-    "corpusRepos": 3,
-    "parsed": 200,
-    "qualifiedNameAliases": 0,
-    "metric": "ambiguous counted by DECLARATIONS (distinct-file declarations), not distinct kinds",
-    "analyzer": "src/ast/real-rust-analyzer.ts",
-    "analyzerDigest": "sha256:3202b93bf77f143f",
-    "generated": "2026-10-10",
-    "direction": "resolved/external are FLOORS (may not decrease). ambiguous/otherUnresolved/unclassed are CEILINGS (may not increase). The classes are siblings that partition the edges: edges = resolved + ambiguous + otherUnresolved + external + unclassed, and the last of those is checked to be 0 rather than assumed."
+    "instrument": "script/m14/incoming-gate.ts (single whole-population measurement; the declaration is DERIVED from its own TABLE 1 by script/m14/rust-declaration.ts, which refuses on any non-closure)",
+    "sample": 2532,
+    "corpusTotal": 2532,
+    "corpusRepos": 9,
+    "parsed": 2532,
+    "population": "parsed=2532/2532 admitted=2532 exts=rs index=no",
+    "populationRule": {
+      "rule": "the admitted set is the GIT-TRACKED set: per-checkout `git ls-files` under $PWD/.corpus, extension .rs from the router's ONE table, present on disk, <= 1 MiB cap",
+      "root": "$PWD/.corpus",
+      "scope": "9 repositories carry an admitted file",
+      "censusAgreement": "script/m14/rust-extended-types-census.ts independently admitted 2532 files over 9 repos — the two instruments agree"
+    },
+    "measurementForm": "ONE arm run over the whole admitted population (2,532 files, single process, index=no — under the ~7,600-parse WASM abort point the dart lane measured, and the arm frees every tree). NO chunking, so there is no chunk-resolution bias and no mixed-index arm to caveat.",
+    "generator": "script/m14/rust-declaration.ts"
   },
-  "rules": {
-    "resolved": "target matched exactly one declaration in the 200-file sample's declaration pool (name or qualifiedName alias). A floor, not a ceiling: resolution is the point of the lane.",
-    "external": "target matched no declaration and the edge carries the analyzer's provable external marker (isExternalTarget:true + a recorded externalReason). A floor: such an edge must keep being able to say so. Marking is NOT claimed complete — see otherUnresolved.",
-    "ambiguous": "target matched two or more declarations. Counted by DECLARATION (incoming-gate.ts) — a name declared in n files counts n. The pool is file-local, so a member name emitted unqualified by one file can collide with another file's declaration of the same word.",
-    "otherUnresolved": "target matched no declaration and carries no marker. This is the backlog. It is explicitly NOT asserted to be third-party: each name in it is either (a) a member path of a foreign type the analyzer cannot see, (b) a local declaration question the target spelling defeats, or (c) project code not present in the 200-file sampled pool.",
-    "unclassed": "edges with an empty target string. Ceiling 0, always: the instrument can only classify an edge it has a target for, and an empty target is a defect in the emitting type, not a class."
-  },
-  "notes": [
-    "A ceiling is a claim about what is known and accepted, never that the class is fine. Repaying a cluster means lowering its ceiling in the same commit that lowers the number.",
-    "This gate shares the instrument with the fleet gate on purpose: two instruments measuring the same population and disagreeing is the failure mode script/m14/verify-honesty.ts exists to catch. One measurement, two verdicts — the fleet's bar and Rust's declaration.",
-    "The worklist printed below each type is the instrument's own (up to 25 names per type, per run). A count that cannot be walked back to its names is not a measurement.",
-    "EXTERNAL IS 0 on all ten types, and that is a state, not a defect claim: this lane's analyzer emits no provable external marker, so by construction every unbound target in it is backlog (cli/unknown targets included) and the ceiling carries the whole weight. Marking is future work with a proof obligation the Java precedent shows how to meet: an edge may only join the external class if the analyzer can record WHY the target is outside the project (see real-java-analyzer.ts's isExternalTarget + externalReason), because an unmarked unresolved edge and a marked one are different claims.",
-    "qualifiedNameAliases 0: this lane publishes no qualified names, so the qualified-endpoint resolution rule (java's qualifiedNameAliases 3,040) has nothing to bind with here and every alias-shaped target stays unbound by rule rather than by accident."
-  ],
   "types": {
     "calls": {
-      "resolved": 8776,
+      "edges": 180486,
+      "resolved": 52703,
       "external": 0,
-      "ambiguous": 8922,
-      "otherUnresolved": 13061,
-      "unclassed": 0
+      "ambiguous": 85094,
+      "otherUnresolved": 42689,
+      "unclassed": 0,
+      "_ambKind": 60891,
+      "_collRes": 0,
+      "closure": {
+        "edges": 180486,
+        "resolved": 52703,
+        "collRes": 0,
+        "ambDecl": 85094,
+        "ambKind": 60891,
+        "unresolved": 42689,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "uses": {
-      "resolved": 2847,
+      "edges": 28323,
+      "resolved": 20301,
       "external": 0,
-      "ambiguous": 2894,
-      "otherUnresolved": 546,
-      "unclassed": 0
+      "ambiguous": 6302,
+      "otherUnresolved": 1720,
+      "unclassed": 0,
+      "_ambKind": 4251,
+      "_collRes": 0,
+      "closure": {
+        "edges": 28323,
+        "resolved": 20301,
+        "collRes": 0,
+        "ambDecl": 6302,
+        "ambKind": 4251,
+        "unresolved": 1720,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "contains": {
-      "resolved": 2700,
+      "edges": 22507,
+      "resolved": 22507,
       "external": 0,
-      "ambiguous": 3283,
+      "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 15667,
+      "closure": {
+        "edges": 22507,
+        "resolved": 22507,
+        "collRes": 15667,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "imports": {
-      "resolved": 121,
-      "external": 0,
-      "ambiguous": 74,
-      "otherUnresolved": 914,
-      "unclassed": 0
+      "edges": 11822,
+      "resolved": 506,
+      "external": 7546,
+      "ambiguous": 550,
+      "otherUnresolved": 3220,
+      "unclassed": 0,
+      "_ambKind": 314,
+      "_collRes": 0,
+      "closure": {
+        "edges": 11822,
+        "resolved": 506,
+        "collRes": 0,
+        "ambDecl": 550,
+        "ambKind": 314,
+        "unresolved": 3220,
+        "extOK": 7546,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "references": {
-      "resolved": 1599,
+      "edges": 38680,
+      "resolved": 17417,
       "external": 0,
-      "ambiguous": 2993,
-      "otherUnresolved": 2324,
-      "unclassed": 0
+      "ambiguous": 9411,
+      "otherUnresolved": 11852,
+      "unclassed": 0,
+      "_ambKind": 3975,
+      "_collRes": 0,
+      "closure": {
+        "edges": 38680,
+        "resolved": 17417,
+        "collRes": 0,
+        "ambDecl": 9411,
+        "ambKind": 3975,
+        "unresolved": 11852,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "exports": {
-      "resolved": 1484,
+      "edges": 6185,
+      "resolved": 5809,
       "external": 0,
-      "ambiguous": 306,
-      "otherUnresolved": 0,
-      "unclassed": 0
+      "ambiguous": 338,
+      "otherUnresolved": 38,
+      "unclassed": 0,
+      "_ambKind": 215,
+      "_collRes": 0,
+      "closure": {
+        "edges": 6185,
+        "resolved": 5809,
+        "collRes": 0,
+        "ambDecl": 338,
+        "ambKind": 215,
+        "unresolved": 38,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "extends": {
+      "edges": 29,
       "resolved": 1,
       "external": 0,
       "ambiguous": 1,
-      "otherUnresolved": 5,
-      "unclassed": 0
+      "otherUnresolved": 27,
+      "unclassed": 0,
+      "_ambKind": 1,
+      "_collRes": 0,
+      "closure": {
+        "edges": 29,
+        "resolved": 1,
+        "collRes": 0,
+        "ambDecl": 1,
+        "ambKind": 1,
+        "unresolved": 27,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "implements": {
-      "resolved": 63,
+      "edges": 1901,
+      "resolved": 698,
       "external": 0,
-      "ambiguous": 37,
-      "otherUnresolved": 312,
-      "unclassed": 0
+      "ambiguous": 191,
+      "otherUnresolved": 1012,
+      "unclassed": 0,
+      "_ambKind": 55,
+      "_collRes": 0,
+      "closure": {
+        "edges": 1901,
+        "resolved": 698,
+        "collRes": 0,
+        "ambDecl": 191,
+        "ambKind": 55,
+        "unresolved": 1012,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
     "overrides": {
+      "edges": 2910,
+      "resolved": 2910,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 2910,
+        "resolved": 2910,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "instantiates": {
+      "edges": 6149,
+      "resolved": 4524,
+      "external": 0,
+      "ambiguous": 1097,
+      "otherUnresolved": 528,
+      "unclassed": 0,
+      "_ambKind": 347,
+      "_collRes": 0,
+      "closure": {
+        "edges": 6149,
+        "resolved": 4524,
+        "collRes": 0,
+        "ambDecl": 1097,
+        "ambKind": 347,
+        "unresolved": 528,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "decorates": {
+      "edges": 15930,
+      "resolved": 1968,
+      "external": 0,
+      "ambiguous": 6567,
+      "otherUnresolved": 7395,
+      "unclassed": 0,
+      "_ambKind": 6028,
+      "_collRes": 0,
+      "closure": {
+        "edges": 15930,
+        "resolved": 1968,
+        "collRes": 0,
+        "ambDecl": 6567,
+        "ambKind": 6028,
+        "unresolved": 7395,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "renders": {
+      "edges": 0,
       "resolved": 0,
       "external": 0,
       "ambiguous": 0,
-      "otherUnresolved": 1180,
-      "unclassed": 0
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     },
-    "instantiates": {
-      "resolved": 114,
+    "mixes_in": {
+      "edges": 11176,
+      "resolved": 695,
       "external": 0,
-      "ambiguous": 874,
-      "otherUnresolved": 43,
-      "unclassed": 0
+      "ambiguous": 1030,
+      "otherUnresolved": 9451,
+      "unclassed": 0,
+      "_ambKind": 329,
+      "_collRes": 0,
+      "closure": {
+        "edges": 11176,
+        "resolved": 695,
+        "collRes": 0,
+        "ambDecl": 1030,
+        "ambKind": 329,
+        "unresolved": 9451,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "part_of": {
+      "edges": 3,
+      "resolved": 0,
+      "external": 3,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 3,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 3,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
     }
-  }
+  },
+  "causeRulings": {
+    "R1_qualified_and_foreign_targets": {
+      "population": "parsed=2532/2532 admitted=2532 exts=rs index=no",
+      "count": 61048,
+      "what": "unresolved rows whose targets are qualified paths, foreign-crate leaves or file paths — a per-file analyzer's structural reach, stated rather than resolved. The census's per-construct counts are the evidence classes: derive args 11,176 (the mixes_in rows' targets are TRAIT names, resolved only when the file declares them), attribute names 16,195 (the decorates rows' targets are attribute names, not symbols), include paths 3 (the part_of target is a PATH by construction — §8: a fragment has no symbol).",
+      "falsifier": {
+        "run": "bun run script/m14/incoming-gate.ts rust rs 0 --dump (the whole-population arm; TABLE 1's per-type unresolved column is the count)",
+        "wouldFail": "a per-type unresolved count that exceeds the census's construct count for that type, or a resolved row whose target the project does not declare — the arbiter's key space is the project's symbols and the census counts the shapes"
+      }
+    },
+    "renders_corpus_unexercised": {
+      "population": "parsed=2532/2532 admitted=2532 exts=rs index=no",
+      "count": 0,
+      "what": "renders is IMPLEMENTED and CORPUS-UNEXERCISED (csharp's class — counted once inside implemented, never an exclusion): the census measured 0 render-macro invocations over all 2,532 files and the probe PROVED the shape parses (hasError:false, the tag identifiers are structural children of the macro's token_tree). The fixture rust/renders-component-tag pins the emission fires when the construct exists.",
+      "falsifier": {
+        "run": "bun script/m14/rust-extended-types-census.ts --json=<out> (the render_macro_invocations counter, whole population)",
+        "wouldFail": "a corpus file carrying a declared render macro (view!/html!/rsx!/render!/maud!/markup!) whose angle-tag identifier names a same-file callable or type — the census counts exactly that shape and the arm's renders row would leave 0"
+      }
+    },
+    "part_of_path_target_by_construction": {
+      "population": "parsed=2532/2532 admitted=2532 exts=rs index=no",
+      "count": 3,
+      "what": "part_of's 3 rows are UNRESOLVED BY CONSTRUCTION and their 3 extOK edges are project-CONFIRMED file claims: the target is the include! PATH because a fragment has no symbol (fleet §8), and the importProjectFile claim is statted before it is written, so the arbiter confirms the file exists rather than resolving a declaration. NOT `mod` (fleet ruling L-2026-10-21-06: ownership/split; the census counts the rejected near miss at mod_file_declarations 1,898 + mod_inline 227 for the record).",
+      "falsifier": {
+        "run": "bun script/m14/rust-extended-types-census.ts --json=<out> (include_string_literal 3, include_non_literal 1, include_str_sites 20, include_bytes_sites 2)",
+        "wouldFail": "an include_string_literal census count that differs from the arm's part_of edge count, or a mod file-declaration appearing as a part_of row"
+      }
+    }
+  },
+  "resolution_caveats": [
+    "A CAUSE IS STATED, NOT RESOLVED: unresolved rows live in otherUnresolved, never in resolved, and the analyzer's scope is PER FILE with index=no — a target declared in another file of the project is genuinely out of its reach and the arbiter (which holds the project) is what answers it.",
+    "amb(kind) IS A SUBSET OF amb(decl), printed beside it and NEVER added to the closure.",
+    "collRes IS A SUBSET OF resolved (a tie-break pick among colliding declarations), printed beside it and NEVER added.",
+    "decorates' TARGETS ARE ATTRIBUTE NAMES, not symbols: the row's target is the attribute's own name (derive, tokio::main), so it resolves only when the file declares something of that name — the attributeKind split (builtin_directive 5,950 / applied_callable_candidate 10,245 by census) is published so a reader can discount the directive class.",
+    "mixes_in's TARGETS ARE DERIVED TRAIT NAMES: the census counts 11,176 derive args over 32 distinct traits and the arm counts 11,176 edges — EXACT agreement, the strongest form of the emission covering the construct. A derived trait resolves only when the file declares it, which a derive arg rarely does.",
+    "part_of's TARGET IS THE PATH BY CONSTRUCTION (§8: a fragment has no symbol) with a statted importProjectFile claim, so confirmed rows land extOK rather than silent-unresolved.",
+    "renders is IMPLEMENTED AND CORPUS-UNEXERCISED (0 sites over the whole population, probe-proved shape, fixture-pinned emission) — csharp's class, counted once inside implemented with the overlap printed, never an exclusion."
+  ]
 }
