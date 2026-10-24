@@ -130,9 +130,9 @@ async function main(): Promise<void> {
       try { text = readFileSync(f, "utf8") } catch { continue }
       compared++
       const reader = rustManifestFacts(text)
-      let tree = null
+      let tree: any = null
       try { tree = await (await getParser("toml")).parse(text) } catch { unparsed++; continue }
-      if (tree.rootNode.hasError) { unparsed++; continue }
+      if (!tree || tree.rootNode.hasError) { unparsed++; continue }
       const grammar = factsFromTree(tree.rootNode)
       if (!same(reader, grammar)) {
         disagreements++

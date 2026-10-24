@@ -4518,6 +4518,74 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ── `renders` FROM UI-FRAMEWORK MACROS — R3, CORPUS-UNEXERCISED (2026-10-23) ─────────────────────
+    //
+    // THE SHAPE SURVIVES THE GRAMMAR AS REAL NODES, not recovery text (probe-measured,
+    // hasError:false): `fn App() -> impl IntoView { view! { <MyButton/> } }` parses to a
+    // macro_invocation whose token_tree carries the TAG IDENTIFIERS — the component names —
+    // as structural children. So the emission is possible TODAY and the lane's census measured
+    // the corpus does not exercise it: 0 of 2,532 files carry a render-shaped macro
+    // (view!/html!/rsx!/render!/maud!/markup!) and 0 Cargo.toml name leptos/yew/dioxus/maud/
+    // askama. THAT IS csharp's class — IMPLEMENTED AND CORPUS-UNEXERCISED, counted once inside
+    // implemented with the overlap printed, never an exclusion.
+    //
+    // THE MUST-NOTS (the lane's measured impostor classes):
+    //   · the macro leaf must be in the DECLARED render-macro list — a name filter on shape
+    //     alone is the dart impostor lesson;
+    //   · an ANGLE-TAG shape must exist inside the token_tree (`<` ... `>` or `<` ... `/>`);
+    //   · the tag identifier must name a SAME-FILE callable or type (clojure's
+    //     impostor-stopping test) — a bare HTML tag name (`div`, `span`) renders a VALUE,
+    //     not a component, and emits nothing.
+    if (macroName === "view" || macroName === "html" || macroName === "rsx" || macroName === "render" || macroName === "maud" || macroName === "markup") {
+      const ttR = node.childForFieldName("token_tree") ?? node.namedChild(1)
+      if (ttR) {
+        // All children INCLUDING anonymous tokens: an angle tag is `< Ident … [/] >` where the
+        // angle brackets are anonymous `token` nodes in this grammar.
+        const flat: { text: string; type: string }[] = []
+        for (let k = 0; k < ttR.childCount; k++) {
+          const c: Node | null = ttR.child(k)
+          if (!c) continue
+          flat.push({ text: String(c.text), type: String(c.type) })
+        }
+        // An angle-tag shape: an anonymous `<` followed by an identifier that is NOT a bare
+        // HTML tag, with a matching `>` or `/>`.
+        const BARE_HTML = new Set(["div","span","p","a","ul","li","ol","h1","h2","h3","h4","h5","h6","br","hr","img","input","button","form","table","tr","td","th","section","header","footer","nav","main","aside","article","label","select","option","textarea","canvas","svg","path","g","template","slot"])
+        for (let k = 0; k + 1 < flat.length; k++) {
+          if (flat[k].text === "<" && flat[k + 1].type === "identifier") {
+            const tag = flat[k + 1].text
+            if (tag.length > 0 && !BARE_HTML.has(tag.toLowerCase())) {
+              // THE COMPONENT TEST: the tag names a same-file symbol (the impostor stop).
+              const hasSymbol = ctx.symbols.some((sym: any) => sym.name === tag)
+              if (hasSymbol) {
+                const renderScope = this.edgeSource(parent) ?? RUST_FILE_SOURCE
+                ctx.relationships.push({
+                  source: renderScope,
+                  target: tag,
+                  fromSymbol: renderScope,
+                  toSymbol: tag,
+                  type: ASTEngine.RelationshipType.Renders,
+                  // The tag identifier and the same-file symbol match are both tree-read — 1.0.
+                  confidence: 1.0,
+                  ...(this.nodeLine(macroNameNode) ? { line_number: this.nodeLine(macroNameNode)! } : {}),
+                  metadata: {
+                    renderMacro: macroName,
+                    isComponentTag: true,
+                    corpusUnexercised: true,
+                    rustSpecific: true,
+                  },
+                })
+              } else {
+                this.noOwner(ctx, "renders:tag_not_a_same_file_symbol")
+              }
+            } else {
+              this.noOwner(ctx, "renders:bare_html_tag")
+            }
+            k++ // consumed the identifier
+          }
+        }
+      }
+    }
+
     // R7: same rule as the call edge above — a macro invocation written at file
     // scope owns nothing, and the invocation's own `calls -> macroName` row below
     // is the fact that IS nameable.

@@ -503,10 +503,19 @@
       "instantiates",
       "part_of",
       "decorates",
-      "mixes_in"
+      "mixes_in",
+      "renders"
     ],
     "excluded": [],
-    "corpusUnexercised": [],
+    "corpusUnexercised": [
+      {
+        "label": "renders",
+        "evidence": "corpus-unexercised",
+        "from": "0 render-macro sites over the WHOLE admitted population (parsed=2532/2532 admitted=2532 exts=rs index=no; 9 repositories): the lane's whole-population construct census scanned for every declared render macro (view! html! rsx! render! maud! markup!) and measured ZERO files carrying one, and ZERO Cargo.toml naming leptos/yew/dioxus/maud/askama. The SHAPE IS PROVED EXPRESSIBLE BY THE GRAMMAR, not assumed: the probe (`fn App() -> impl IntoView { view! { <MyButton/> } }`) parses hasError:false to a macro_invocation whose token_tree carries the tag identifiers as STRUCTURAL CHILDREN (probe-measured 2026-10-23), and the emission fires in the fixture rust/renders-component-tag (App -> MyButton from view!). So the type is IMPLEMENTED and the corpus does not exercise it \u2014 csharp's class, counted once inside implemented with the overlap printed, never an exclusion.",
+        "count": 0,
+        "falsifier": "a corpus file carrying a declared render macro whose angle-tag identifier names a same-file callable or type \u2014 the census instrument counts exactly that shape, and the fixture asserts the emission fires when one exists"
+      }
+    ],
     "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane rust`): 2,532 parsed of 2,532 admitted .rs files across 9 repos, 0 parse failures; artifact validation/m14/measurements/task105/rust-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 178,084 \u00b7 uses 28,019 \u00b7 contains 21,702 \u00b7 imports 11,685 \u00b7 references 38,648 \u00b7 exports 4,571 \u00b7 extends 29 \u00b7 implements 1,793 \u00b7 overrides 2,169 \u00b7 instantiates 6,019 \u2014 TOTAL 292,719, exactly the sum of the ten rows. THE RUN IS A LOWER BOUND AND SAYS SO, which is the part that must not be smoothed: of the 303 files returning no symbols and no relationships, 253 hold NO CONTENT AT ALL (0 bytes or whitespace \u2014 the run missed nothing) and 50 HOLD CONTENT AND RETURNED NOTHING, named in the artifact (cargo's `cargo-test-support` container stubs, `rustfix` no_main fixtures, `cargo_add` fixtures). The gate explicitly REFUSES to decide whether those 50 are parse failures or content that cannot declare anything, and this block does not decide for it. ONE file was DEGRADED (regex fallback) and one analyzer TIMEOUT was logged and aborted (`ripgrep/crates/core/flags/defs.rs`, engine timeout, basic parse result). Every count above is therefore a FLOOR over the files the run could measure, not a ceiling. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 \u2212 0 grammar-absence \u2212 0 unclassified. THE 120-FILE FIRING LOG AGREES HERE rather than being refuted \u2014 validation/m14/results/firing-laptop-b.current.log line 6-7 reads `RUST 10 types fired 110/110 parsed` with every type counted \u2014 and the earlier lane measurement in RUST-D14 (7 labels, 74,584 relationships over 450 files, 2026-09-29) is a SAMPLE whose counts this whole-population run is not comparable with. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten.",
     "_implemented_measured": {
       "_unit": "edges published through the production path over the WHOLE admitted 2,532-file rust population (9 repos, 0 parse failures, 1 degraded, 50 content-bearing files returning nothing \u2014 so a LOWER BOUND) \u2014 CLOSURE block of validation/m14/measurements/task105/rust-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 292,719",
@@ -559,6 +568,13 @@
         "_fixture": "rust/mixes-in-derive-composition (4 rows incl. the qualified Serialize at exactly 1 and the path segment serde at equals:0; the `use as _` alternative at equals:0)",
         "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (site counts from the lane's 422-file stride; whole-population count pending the arm)",
         "_refusedClass": "mixes_in:derive_no_traits \u2014 a derive with an empty or unreadable argument list, counted in metadata.unattributedEdges"
+      },
+      "renders": {
+        "_note": "R3, CORPUS-UNEXERCISED (csharp's class \u2014 counted once inside implemented, never an exclusion). The shape survives the grammar as real nodes (probe-measured hasError:false): the UI framework macros (view!/html!/rsx!/render!/maud!/markup!) parse to a macro_invocation whose token_tree carries the tag identifiers as structural children. MEASURED: 0 of 2,532 files carry a render-shaped macro and 0 Cargo.toml name leptos/yew/dioxus/maud/askama. The three must-nots: macro leaf in the DECLARED render list (dart impostor lesson), an angle-tag shape in the token_tree, the tag identifier names a SAME-FILE callable/type (clojure's impostor stop) \u2014 bare HTML tags and undeclared tags are refused and counted.",
+        "_emissionSite": "handleMacroInvocation \u2014 real-rust-analyzer.ts, the renders block before the R7 guard",
+        "_fixture": "rust/renders-component-tag (1 row from view!; div/Other/println! each at equals:0)",
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (corpus-unexercised: 0 render-macro sites in the whole admitted set)",
+        "_corpusUnexercised": true
       }
     },
     "_claims": {
