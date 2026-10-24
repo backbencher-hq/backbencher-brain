@@ -4239,6 +4239,99 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!macroName) return
 
+
+    // ── `part_of` FROM `include!("…")` — THE R3 EMISSION, 2026-10-23 ─────────────────────────────
+    //
+    // WHY THIS CONSTRUCT AND NOT `mod x;`. The fleet's L-2026-10-21-06 ruling says the rust
+    // `mod`-ownership precedent is OWNERSHIP/SPLIT, NOT TEXTUAL PART-OF, and the contract's own
+    // sentence agrees: "a part shares the library's single scope, imports nothing, and CANNOT BE
+    // RESOLVED AS A SEPARATE MODULE". `mod x;` IS a separate module, IS resolvable as `x::item`,
+    // and shares nothing — a RESOLVABLE UNIT IS THE OPPOSITE OF A FRAGMENT. The Lead approved
+    // `mod` for this cell and the correction is the lane's, upheld: the fleet's implemented
+    // `part_of` set is UNANIMOUSLY textual file inclusion (cpp `#include`, fsharp `#load`, php
+    // `include`/`require`, erlang `-include`, typescript `/// <reference path>`).
+    //
+    // `include!("…")` IS that splice: the included file's TOKENS land in the INCLUDING file's
+    // scope, it imports nothing, and the fragment has no module identity at all. MEASURED over
+    // the whole admitted population (2,532 files): FOUR sites — three a single string literal,
+    // one a non-literal expression (REFUSED and counted). The near misses are REFUSED AND
+    // COUNTED, never silent: `include_str!` 20 + `include_bytes!` 2 are DATA inclusion, and
+    // `mod` 1,898 + inline 227 is the REJECTED near miss (ownership, per the ruling above).
+    // A RARE CONSTRUCT MEASURED AT 4 IS WORTH MORE THAN A COMMON ONE MISLABELLED AT 1,898.
+    //
+    // THE SOURCE IS THE ENCLOSING SCOPE with the same walk the `use` rows use — an `include!`
+    // in item context is FILE-scope (all 4 measured sites are), and `"(file)"` is the family's
+    // declared spelling for that scope (`fileLevel: true` tells the store to rewrite it to the
+    // project-relative path). THE TARGET IS THE PATH (a fragment has no symbol — §8's "the
+    // part's file OR ITS MODULE SYMBOL" names a file here), with the `importProjectFile` claim
+    // `confirmModuleFile` computes, so a confirmed row lands `extOK` — php's §8 form.
+    if (macroName === "include") {
+      const tt = node.childForFieldName("token_tree") ?? node.namedChild(1)
+      let includePath: string | null = null
+      if (tt) {
+        for (let k = 0; k < tt.namedChildCount; k++) {
+          const c = tt.namedChild(k)
+          if (c && c.type === "string_literal") {
+            // Strip the quotes: the grammar hands the literal WITH them, and the target is the
+            // written path inside — `auxiliary/lib.rs`, not `"auxiliary/lib.rs"`.
+            const raw = c.text
+            includePath = raw.length >= 2 ? raw.slice(1, -1) : raw
+            break
+          }
+        }
+      }
+      if (includePath !== null && includePath.length > 0) {
+        const scope = ((): string => {
+          let cur: any = node.parent ?? null
+          let guard = 0
+          while (cur && guard++ < 64) {
+            if (cur.type === "function_item") {
+              const fn = cur.childForFieldName?.("name")
+              return fn ? String(fn.text) : RUST_FILE_SOURCE
+            }
+            if (cur.type === "mod_item") {
+              const mn = cur.childForFieldName?.("name") ?? cur.namedChild(0)
+              return mn ? String(mn.text) : RUST_FILE_SOURCE
+            }
+            cur = cur.parent
+          }
+          return RUST_FILE_SOURCE
+        })()
+        // The FILE CLAIM, statted before it is written — the same rule the `use` rows follow:
+        // a candidate that does not exist is not claimed at all, so the arbiter can never
+        // REFUTE this lane's claim (extFAIL 0). Resolved against the including file's dir.
+        let projectFile: string | null = null
+        if (ctx.projectRoot.length > 0 && path.isAbsolute(ctx.filePath)) {
+          const cand = path.resolve(path.dirname(ctx.filePath), includePath)
+          projectFile = confirmModuleFile([cand], ctx.projectRoot)
+        }
+        const partMetadata: Record<string, any> = {
+          partRole: "library",
+          isFileInclusion: true,
+          rustSpecific: true,
+          macroInvocation: true,
+          ...(scope === RUST_FILE_SOURCE ? { fileLevel: true } : {}),
+        }
+        if (projectFile) partMetadata.importProjectFile = projectFile
+        ctx.relationships.push({
+          source: scope,
+          target: includePath,
+          fromSymbol: scope,
+          toSymbol: includePath,
+          type: ASTEngine.RelationshipType.PartOf,
+          // Read from the tree (the literal's own node), and the claim is statted — 1.0.
+          confidence: 1.0,
+          ...(this.nodeLine(macroNameNode) ? { line_number: this.nodeLine(macroNameNode)! } : {}),
+          metadata: partMetadata,
+        })
+      }
+      // A non-literal `include!` argument is REFUSED AND COUNTED, never silently dropped: the
+      // census instrument counts the refusal class so the wall is a number rather than a gap.
+      else if (tt) {
+        this.noOwner(ctx, "part_of:include_non_literal")
+      }
+    }
+
     // R7: same rule as the call edge above — a macro invocation written at file
     // scope owns nothing, and the invocation's own `calls -> macroName` row below
     // is the fact that IS nameable.
