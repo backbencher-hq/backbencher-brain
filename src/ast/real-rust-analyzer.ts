@@ -2376,6 +2376,103 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         ctx.metadata.detectedFrameworks = [...(ctx.metadata.detectedFrameworks || []), name]
       }
     }
+    // ── `mixes_in` FROM `#[derive(A, B)]` — THE R3 EMISSION, 2026-10-23 ─────────────────────────────
+    //
+    // WHY derive IS mixes_in. The contract's discriminator: "a mixin composes behaviour into a
+    // type's supertype chain WITHOUT declaring conformance — not `implements` (no conformance is
+    // declared), not `extends` (no single base)". `#[derive(Serialize)]` makes the declaration
+    // compose trait implementations it does NOT declare: there is no `impl Serialize for Foo`
+    // in the source, and the derived methods arrive at build time. MEASURED (422-file stride):
+    // 372 derive sites over 17 distinct derived traits (Debug 339 · Clone 297 · Serialize 204 ·
+    // PartialEq 192 · Deserialize 162 · Eq 127 · Default 79 · OpenDd 58 …).
+    //
+    // THE MEASURED ALTERNATIVE, REJECTED BY COUNT: `use Trait as _` (67 use_as_clause, 21 of them
+    // `as _`) mixes names into a SCOPE, not into a type's chain, and names no composing type —
+    // it is not this relation and emits nothing here.
+    //
+    // THE DERIVED TRAITS ARE READ FROM THE TREE, not from the text: the derive args are
+    // `identifier` (or `scoped_identifier`) NODES inside the attribute's `token_tree`, so a
+    // derive inside a comment or a string cannot fire and a spelling change that does not move
+    // the nodes cannot break it.
+    {
+      const decoratedMix: Node | null = (() => {
+        let sib: Node | null = node.nextSibling
+        while (sib) {
+          const st = String(sib.type)
+          if (st === "line_comment" || st === "block_comment" || st === "attribute_item") { sib = sib.nextSibling; continue }
+          break
+        }
+        return sib
+      })()
+      const attrOuterMix = node.namedChild(0)
+      const attrNameMix: Node | null = attrOuterMix ? (attrOuterMix.childForFieldName?.("path") ?? attrOuterMix.namedChild(0)) : null
+      if (decoratedMix && attrNameMix && String(attrNameMix.text) === "derive") {
+        const declNameMix: Node | null =
+          decoratedMix.childForFieldName?.("name") ??
+          (() => {
+            for (let k = 0; k < decoratedMix.namedChildCount; k++) {
+              const c = decoratedMix.namedChild(k)
+              const ct = String(c?.type ?? "")
+              if (ct === "type_identifier" || ct === "identifier") return c
+            }
+            return null
+          })()
+        if (declNameMix && declNameMix.text) {
+          const ttMix = attrOuterMix ? (attrOuterMix.childForFieldName?.("arguments") ?? attrOuterMix.namedChild(1)) : null
+          if (ttMix) {
+            const seenMix = new Set<string>()
+            // ★ QUALIFIED DERIVE PATHS FLATTEN IN THIS GRAMMAR: `serde::Serialize` is TWO
+            // sibling `identifier` nodes inside the token_tree — there is NO scoped_identifier
+            // there (probe-measured 2026-10-23). The FIRST version of this emitter read each
+            // identifier separately and produced Config->serde AND Config->Serialize for one
+            // derive arg. THE FIX IS STRUCTURAL, NOT TEXTUAL: walk ALL children (named and
+            // anonymous — the `::` separators are anonymous `::` tokens), group identifiers
+            // joined by a `::` separator into ONE path, and take the RIGHTMOST segment as the
+            // composed trait (M59.A7's rule: the name, not the path's leftmost segment).
+            const args: { text: string; isIdent: boolean }[] = []
+            for (let k = 0; k < ttMix.childCount; k++) {
+              const c: Node | null = ttMix.child(k)
+              if (!c) continue
+              const isIdent = String(c.type) === "identifier"
+              args.push({ text: String(c.text), isIdent })
+            }
+            let k2 = 0
+            while (k2 < args.length) {
+              if (!args[k2].isIdent) { k2++; continue }
+              // Collect a run of identifiers joined by `::` — one derive argument.
+              let pathEnd = k2
+              while (pathEnd + 2 < args.length && args[pathEnd + 1].text === "::" && args[pathEnd + 2].isIdent) pathEnd += 2
+              const traitName = args[pathEnd].text
+              const lineNode: Node | null = ttMix.namedChild(k2) // the run's first node carries the line
+              if (traitName.length > 0 && !seenMix.has(traitName)) {
+                seenMix.add(traitName)
+                ctx.relationships.push({
+                  source: String(declNameMix.text),
+                  target: traitName,
+                  fromSymbol: String(declNameMix.text),
+                  toSymbol: `derive:${traitName}`,
+                  type: ASTEngine.RelationshipType.MixesIn,
+                  // The trait name and the declaration name are both tree-read nodes, and the
+                  // derive args are structural children of the attribute — 1.0.
+                  confidence: 1.0,
+                  ...(this.nodeLine(lineNode) ? { line_number: this.nodeLine(lineNode)! } : {}),
+                  metadata: {
+                    isMixin: true,
+                    deriveComposition: true,
+                    rustSpecific: true,
+                    decoratesDeclaration: String(decoratedMix.type),
+                  },
+                })
+              }
+              k2 = pathEnd + 1
+            }
+            // A `derive` with an empty or unreadable argument list is REFUSED AND COUNTED.
+            if (seenMix.size === 0) this.noOwner(ctx, "mixes_in:derive_no_traits")
+          }
+        }
+      }
+    }
+
     if (text.startsWith("#[")) {
       // derive-name bodies never contain further brackets, so a scan between
       // `derive(` and `)]` is exact for the marker names.

@@ -502,7 +502,8 @@
       "overrides",
       "instantiates",
       "part_of",
-      "decorates"
+      "decorates",
+      "mixes_in"
     ],
     "excluded": [],
     "corpusUnexercised": [],
@@ -551,6 +552,13 @@
         "_fixture": "rust/decorates-attribute-application (4 rows, both kinds, the derive/allow/inline builtins and the tokio::main candidate; dead_code at equals:0 pins the argument-not-attribute refusal)",
         "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (site counts from the lane's 422-file stride sample: attribute_item 2,378 + inner_attribute_item 117; whole-population count pending the arm)",
         "_refusedClass": "decorates:inner_attribute_no_sibling \u2014 an inner attribute decorates the module and has no declaration sibling in this file; counted in metadata.unattributedEdges"
+      },
+      "mixes_in": {
+        "_note": "R3 from #[derive(A, B)]. The contract's discriminator: a mixin composes behaviour into a type's supertype chain WITHOUT declaring conformance \u2014 #[derive(Serialize)] composes trait implementations the source never declares. MEASURED (422-file stride): 372 derive sites over 17 distinct traits (Debug 339, Clone 297, Serialize 204, PartialEq 192, Deserialize 162, Eq 127, Default 79, OpenDd 58...). THE MEASURED ALTERNATIVE REJECTED BY COUNT: `use Trait as _` (67 use_as_clause, 21 `as _`) mixes names into a SCOPE, not a type's chain. QUALIFIED PATHS: serde::Serialize flattens to TWO sibling identifier nodes in the token_tree (probe-measured); the emitter groups identifier runs joined by `::` and takes the RIGHTMOST segment \u2014 one row per derive argument.",
+        "_emissionSite": "handleAttribute \u2014 real-rust-analyzer.ts, the derive block before the framework detection",
+        "_fixture": "rust/mixes-in-derive-composition (4 rows incl. the qualified Serialize at exactly 1 and the path segment serde at equals:0; the `use as _` alternative at equals:0)",
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (site counts from the lane's 422-file stride; whole-population count pending the arm)",
+        "_refusedClass": "mixes_in:derive_no_traits \u2014 a derive with an empty or unreadable argument list, counted in metadata.unattributedEdges"
       }
     },
     "_claims": {
