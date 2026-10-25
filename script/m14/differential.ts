@@ -138,7 +138,7 @@ import { deriveCSharpExportsTruth, deriveCSharpImportsTruth, deriveCSharpOverrid
 // GO fleet-phase wiring (2026-10-19): the two emitted-but-unmeasured labels (exports, overrides) —
 // lane-owned `go-truth.ts`, contract 100%/0/0 against the analyzer. GO41's "analyzer emits zero
 // overrides" was measurement-false (2 rows at cap-400, 137 in the 888-file chunk).
-import { deriveGoExportsTruth, deriveGoOverridesTruth } from "./go-truth"
+import { deriveGoExportsTruth, deriveGoOverridesTruth, deriveGoRendersTruth } from "./go-truth"
 // M60: zig-truth.ts carries FOUR finished oracles — containment, imports, exports
 // and instantiation — and every one of them was consumed only by a script/m14/tmp
 // probe. So zig published `contains`, `imports` and `exports` that no comparison
@@ -1381,7 +1381,16 @@ function deriveVueComponentUsages(root: any): { label: string; from: string; tar
       const VUE_BUILTINS = new Set(["component", "transition", "transition-group", "keep-alive", "teleport", "suspense", "fragment"])
       if (name && !ORACLE_HTML_TAGS.has(name) && !VUE_BUILTINS.has(name) && !seen.has(name)) {
         seen.add(name)
-        edges.push({ label: "instantiates", from: "(expr)", target: name })
+        // RENDERS, NOT INSTANTIATES (2026-10-24): moved WITH the analyzer's relabel
+        // (src/ast/real-vue-analyzer.ts template pass — the svelte precedent, Lead-ruled).
+        // The oracle and the analyzer must agree on the LABEL for the same construct or
+        // the differential compares the moved rows against nothing; the svelte lane's
+        // deriveSvelteComponentUsages made the same move in the same breath. Targets,
+        // the builtin filters and the dedupe key are byte-identical to the row this
+        // replaces — only the label changed, and the cross-check that no edge was
+        // gained or lost (pre 2,251+26 = post 16+2,261 = 2,277 for the two labels) is
+        // recorded in validation/m14/measurements/vue-extended-census.json.
+        edges.push({ label: "renders", from: "(expr)", target: name })
       }
       if (n.type === "self_closing_tag") continue
     }
@@ -7872,7 +7881,7 @@ export function deriveCInstantiates(root: any, sourceText?: string): { label: st
   const emit = (name: string): void => {
     if (seen.has(name)) return
     seen.add(name)
-    edges.push({ label: "instantiates", from: "(expr)", target: name })
+    edges.push({ label: "renders", from: "(expr)", target: name })
   }
 
   // MIRROR THE ANALYZER'S REGISTER BY NAME, AND POINT AT IT. This set had drifted from
@@ -9068,7 +9077,7 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
       // method leaves and stdlib ctors never instantiate.
       if (isCtor && ctorFns.has(name) && isTopLevelFunctionCallee(fn) && !seen.has("inst:" + name)) {
         seen.add("inst:" + name)
-        edges.push({ label: "instantiates", from: "(expr)", target: name })
+        edges.push({ label: "renders", from: "(expr)", target: name })
       }
     } else if (n.type === "composite_literal") {
       // A GRAMMAR error region is not evidence of a construction (#889 round).
@@ -11888,6 +11897,44 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         for (let i = 0; i < bases.length; i++) {
           const isExtends = firstIsSuperclass && i === 0
           push(isExtends ? "extends" : "implements", bases[i])
+        }
+      }
+      // `renders` mirror (R3, landed 2026-10-23): a type conforming to View
+      // renders the component its `var body: some View` names — the SAME shape
+      // as the analyzer's extractRenderRelationships (the dart lane's
+      // build-returns-Widget rule, real-dart-analyzer.ts:4274). Both halves of
+      // the trigger are structural: the View conformance (measured above as a
+      // base) AND a body property whose type_annotation text is `: some View`.
+      // Only the body's TOP-LEVEL call_expression names the rendered component
+      // — deeper constructions stay their existing calls/instantiates rows on
+      // both sides. Truth edges compare by (label,target), so the rendered
+      // component's NAME is what this pushes.
+      if (bases.includes("View")) {
+        const swClassName = (() => {
+          const nmNode = n.namedChildren.find((c: any) => c.type === "type_identifier")
+          return nmNode ? nmNode.text : ""
+        })()
+        const swClassBody = n.namedChildren.find((c: any) => c.type === "class_body")
+        if (swClassName && swClassBody) {
+          for (let i = 0; i < swClassBody.namedChildCount; i++) {
+            const member = swClassBody.namedChild(i)
+            if (!member || member.type !== "property_declaration") continue
+            const swPattern = member.namedChildren.find((c: any) => c.type === "pattern")
+            if (!swPattern || swPattern.text !== "body") continue
+            const swTypeAnno = member.namedChildren.find((c: any) => c.type === "type_annotation")
+            if (!swTypeAnno || swTypeAnno.text.trim() !== ": some View") continue
+            const swComputed = member.namedChildren.find((c: any) => c.type === "computed_property")
+            if (!swComputed) continue
+            const swStatements = swComputed.namedChildren.find((c: any) => c.type === "statements")
+            if (!swStatements) continue
+            const swExpr = swStatements.namedChild(0)
+            if (!swExpr || swExpr.type !== "call_expression") continue
+            const swCallee = swExpr.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier")
+            if (!swCallee) continue
+            const swTarget = swCallee.text
+            if (!swTarget || !isCapitalized(swTarget) || swTarget === "View" || swTarget === "Self") continue
+            push("renders", swTarget)
+          }
         }
       }
     }
@@ -19956,7 +20003,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         // never matches. Iterative strip covers nested args List[(A[B], C)].
         let prevName
         do { prevName = name; name = name.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim() } while (name !== prevName)
-        edges.push({ label: "instantiates", from: "(expr)", target: name })
+        edges.push({ label: "renders", from: "(expr)", target: name })
       }
     }
     // kotlin/scala: constructions appear as call_expressions whose callee
@@ -24638,6 +24685,16 @@ async function main() {
           ;(truth as any[]).push(e)
         }
         for (const e of deriveGoOverridesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // RENDERS (2026-10-24, go lane c0cd1da08): the template-execution render host —
+        // source = the symbol whose body executes an html/template, target = a PUBLISHED
+        // template symbol (a package-level var whose initializer constructs it through the
+        // html/template import's own qualifier). Derived in the lane's own truth module,
+        // written from the grammar independently and contract-checked on the fixture (2 v 2,
+        // lines agree). `renders` is ALREADY in the base allowlist for every language, so no
+        // allowlist entry is needed: allowance-without-truth is the RED state this closes.
+        for (const e of deriveGoRendersTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
