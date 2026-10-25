@@ -225,6 +225,18 @@ function isWhitespaceChar(c: string): boolean {
 
 // Strip ALL quote characters from a string (multi-quote values like
 // `url("theme.css")` inner text). Pure-String scan.
+/** A `.css` FILE — at the END of the specifier, or before a query/fragment. A stylesheet load. */
+function hasCssFileExtension(specifier: string): boolean {
+  const lower = specifier.toLowerCase()
+  let at = lower.indexOf(".css")
+  while (at >= 0) {
+    const next = lower.charAt(at + 4) // "" when the match ends the string
+    if (next === "" || next === "?" || next === "#") return true
+    at = lower.indexOf(".css", at + 4)
+  }
+  return false
+}
+
 function stripAllQuotes(text: string): string {
   let out = ""
   for (let i = 0; i < text.length; i++) {
@@ -684,6 +696,15 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // for every symbol this run publishes. See the FILE SCOPE note above `cssFileScopeOf`.
     this.fileScope = cssFileScopeOf(filePath)
     this.fileDir = filePath.length > 0 ? path.dirname(filePath) : ""
+    // The host-extension gate for `part_of`: this lane admits `css,less,sass`
+    // (`script/m14/language-extensions.ts`, and the router sends both "css" and "sass" here).
+    // scss delegates its walk to this class and performs its OWN Sass relabel, and html delegates
+    // with a module name that has no extension — neither may receive this lane's relabel.
+    {
+      const dot = lastSegment.lastIndexOf(".")
+      const ext = dot >= 0 ? lastSegment.slice(dot + 1).toLowerCase() : ""
+      this.cssFamilyHost = ext === "css" || ext === "less" || ext === "sass"
+    }
 
     const ctx: CssContext = {
       symbols: [],
@@ -1623,6 +1644,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * case) means the claim is not stated — see the note at the assignment in `analyze`.
    */
   private claimProjectRoot = ""
+  // THE HOST-EXTENSION GATE: `part_of` is enabled only for the extensions this lane admits
+  // (`css,less,sass`). scss delegates its walk here and relabels the Sass form ITSELF, and html
+  // delegates with an extensionless module name — so the relabel must be decided by the file this
+  // run is analyzing, not by a flag a caller could forget. Computed once in analyze().
+  private cssFamilyHost = false
 
   private determineSelectorKind(
     hasId: boolean,
@@ -2654,6 +2680,35 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return specifier
   }
 
+  /**
+   * Is this `@import` the PLAIN FILE FORM — the one that names a stylesheet to fold in?
+   *
+   * Sass and Less inline a non-CSS import at compile time, so that form is an inclusion of one
+   * source file into another, not a stylesheet load. The grammar answers the question as a SHAPE,
+   * which is why this reads the tree rather than matching spellings:
+   *   `@import url("x")`      → one named child, type `call_expression`   (stylesheet load)
+   *   `@import "x" screen`    → a second named child (the media query)    (stylesheet load)
+   *   `@import "x.css";`      → one `string_value` whose text is a CSS file (stylesheet load)
+   * so the plain-file form is: exactly ONE named child, type `string_value`, and a specifier that
+   * is not a `.css` file, not a protocol URL, not a `sass:` built-in module and not `data:`.
+   * Error-recovered statements fail the shape test and stay `imports`.
+   */
+  private isPlainFileFormImport(node: Node): boolean {
+    const named: Node[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) named.push(c)
+    }
+    if (named.length !== 1 || named[0]!.type !== "string_value") return false
+    const spec = stripAllQuotes(named[0]!.text).trim()
+    if (spec.length === 0) return false
+    if (hasCssFileExtension(spec)) return false
+    const lower = spec.toLowerCase()
+    if (lower.startsWith("//") || lower.startsWith("http://") || lower.startsWith("https://")) return false
+    if (lower.startsWith("sass:") || lower.startsWith("data:")) return false
+    return true
+  }
+
   private processImport(node: Node, ctx: CssContext) {
     const stringNode = this.findImportNameNode(node)
     if (stringNode) {
@@ -2677,10 +2732,20 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the file as `source_external` — the same handling every other language's
       // top-level cross-file import gets — so the edge is honest rather than
       // dangling by construction.
+      // THE LABEL. A plain-file-form `@import` in the CSS family (css/less/sass) folds one
+      // source file into another at compile time — `part_of`, with the mandatory `partRole`
+      // and the library side marked. Every other form (url(), a media query, a `.css`
+      // stylesheet, a protocol URL) stays `imports`, and so does every form in a delegated run
+      // (`.scss` here via the scss lane, and html's extensionless module names).
+      //
+      // A LABEL MOVE, NOT A GAIN OR A LOSS: source, target, line and the project-file claim are
+      // unchanged; only the type moves, so no resolution can change — the same shape the scss
+      // lane uses for the Sass form, pinned in both directions by the fixture suite.
+      const isPart = this.cssFamilyHost && this.isPlainFileFormImport(node)
       ctx.relationships.push({
         source: this.importerName,
         target: targetName,
-        type: ASTEngine.RelationshipType.Imports,
+        type: isPart ? ASTEngine.RelationshipType.PartOf : ASTEngine.RelationshipType.Imports,
         // the name on this edge is the MODULE, so the line is the
         // `string_value` / `call_expression` node — which can be on a LATER line
         // than the `@import` keyword, and is for the multi-line form where the
@@ -2692,6 +2757,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           isCssImport: true,
           importSource: this.importerName,
           importSpecifier: moduleName,
+          ...(isPart ? { partRole: "library", isCssPartImport: true } : {}),
           // THE REASON, on the channel the arbiter reads. `imports` was the only residual type of
           // this lane that published NO claim at all (gate marker table: `extClaim 0`), while the
           // analyzer already knew which specifiers are network URLs and which name a project file.
