@@ -185,6 +185,13 @@ async function main() {
     references: ["deriveGoDeclaredTypeRefs", HARNESS], contains: ["deriveGoContains", HARNESS],
     uses: ["deriveGoUses", HARNESS], imports: ["deriveGoImports", HARNESS],
     exports: ["deriveGoExportsTruth", ORACLE], overrides: ["deriveGoOverridesTruth", ORACLE],
+    // GO'S EMBEDDING SPLIT (2026-10-24, go lane c2dc1ae8d + the Lead's mirror fd0477af4):
+    // the struct half is `mixes_in` and the interface half stays `extends`, and BOTH are
+    // derived by the same oracle function — `deriveGoEdges` carries the struct-embedding
+    // branch (label `mixes_in`) and the interface-embedding branch (label `extends`).
+    // Mapped entry by entry rather than by prefix, because a label added to that function
+    // without an entry here is exactly the half-applied shape this gate exists to catch.
+    mixes_in: ["deriveGoEdges", HARNESS],
   }
   let oracleSrc = ""
   try { oracleSrc = fs.readFileSync(path.join(ROOT, ORACLE), "utf8") } catch { /* reported per label below */ }
