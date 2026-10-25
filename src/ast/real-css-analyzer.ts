@@ -37,6 +37,15 @@ interface CssContext {
   counterStyleNames: Record<string, boolean>
   /** custom-media name (`--x`) -> the `@custom-media` in THIS file that declares it. */
   customMediaNames: Record<string, boolean>
+  /**
+   * CSS Functions and Mixins Level 1 gives CSS its own named function:
+   * `@function --add(a, b) { … }`, called as `--add(1, 2)`. The callable name is the
+   * `--name` token; the published SYMBOL is named by the at-rule. This map is
+   * callable name -> published symbol name, collected as the at-rules are walked so
+   * a `call_expression` can be resolved against a DECLARATION in the same file
+   * rather than against a spelling.
+   */
+  cssFunctionNames: Record<string, string>
   /** font family -> declared by a `@font-feature-values` in THIS file. */
   fontFeatureValuesNames: Record<string, boolean>
   /** `@layer` names already published, so the ORDERING form cannot duplicate them. */
@@ -225,6 +234,23 @@ function isWhitespaceChar(c: string): boolean {
 
 // Strip ALL quote characters from a string (multi-quote values like
 // `url("theme.css")` inner text). Pure-String scan.
+/**
+ * The CALLABLE name of a `@function` prelude: Level 1 requires `--name(...)`, so the name is
+ * the leading `--`-prefixed token before the parameter list. Returns "" when the prelude does
+ * not carry one, which is the "not this construct" answer rather than a guess.
+ */
+function firstCustomFunctionName(prelude: string): string {
+  const trimmed = prelude.trim()
+  if (!trimmed.startsWith("--")) return ""
+  let end = 2
+  while (end < trimmed.length) {
+    const c = trimmed.charAt(end)
+    if (!(c === "-" || c === "_" || (c >= "0" && c <= "9") || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z"))) break
+    end++
+  }
+  return end > 2 ? trimmed.slice(0, end) : ""
+}
+
 /** A `.css` FILE — at the END of the specifier, or before a query/fragment. A stylesheet load. */
 function hasCssFileExtension(specifier: string): boolean {
   const lower = specifier.toLowerCase()
@@ -717,6 +743,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       fontFaceNames: {},
     counterStyleNames: {},
     customMediaNames: {},
+    cssFunctionNames: {},
     fontFeatureValuesNames: {},
       layerNames: {},
       namespacePrefixes: {},
@@ -3715,6 +3742,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     //   @use/@forward  Sass module imports, emitted as `imports` like @import
     const DECLARING = new Set([
       "@layer", "@container", "@scope", "@font-face", "@property", "@namespace", "@mixin",
+      // CSS Functions and Mixins Level 1: `@function --name(a, b) { … }` DECLARES a
+      // callable that `--name(1, 2)` invokes. Measured on the corpus: 10 `@function`
+      // at-rules (all in .sass utility files under Documenter.jl), so the construct is
+      // real in this lane's population and arrives as a generic `at_rule`.
+      "@function",
       // the three that were silently dropped: each DECLARES a named, referable
       // thing, so each belongs here. Measured, not assumed — a probe of all three
       // returned zero symbols before this line and the fixtures pin them now.
@@ -3995,6 +4027,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (keyword === "@mixin" && namePart) ctx.mixinNames[namePart] = true
 
+      // A declared CSS function is CALLABLE: record its callable name (`--add`) beside the
+      // published symbol name (`@function --add(a, b)`), so a `call_expression` can be
+      // resolved against the declaration in this file. The callable name is the prelude's
+      // first token when it starts with `--`, which is what the Level 1 syntax requires.
+      if (keyword === "@function" && namePart) {
+        const callable = firstCustomFunctionName(namePart)
+        // The published symbol's name is the keyword plus the prelude, which is how every
+        // at-rule symbol in this file is named (`@mixin card`, `@function --add(a, b)`).
+        if (callable) ctx.cssFunctionNames[callable] = `${keyword} ${namePart}`
+      }
+
       if (keyword === "@include" && currentSelector && namePart) {
         // The mixin reference resolves to the `@mixin` symbol when the mixin is
         // declared in this file. It is emitted unconditionally rather than
@@ -4081,7 +4124,55 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (list.indexOf(property) === -1) list.push(property)
   }
 
+  /**
+   * CSS MODULES `export` SURFACE — `:export { name: value; }`.
+   *
+   * CSS Modules writes a cross-file export surface with no export syntax: a rule whose
+   * selector is `:export` holds the names the module publishes to its importers. The
+   * construct EXISTS in the language family and occurs 0 times in this lane's .css
+   * population, so the type is implemented and counted once as corpus-unexercised —
+   * a zero-sites ruling would otherwise sit in the denominator claiming nothing.
+   *
+   * Each declaration inside the block publishes a SYMBOL for the exported name and an
+   * `exports` edge from the file's own module symbol to it, so the target is a symbol
+   * this file really declares rather than a string a reader cannot join against.
+   */
+  private processCssModulesExport(node: Node, entry: Node, currentSelector: string, ctx: CssContext): boolean {
+    if (currentSelector.trim() !== ":export") return false
+    const propNode = this.findChild(entry, (c) => c?.type === "property_name")
+    if (!propNode) return false
+    const exported = stripAllQuotes(propNode.text).trim()
+    if (exported.length === 0) return false
+    const range = this.nodeToRange(propNode)
+    ctx.symbols.push({
+      name: exported,
+      kind: ASTEngine.SymbolKind.Variable,
+      range,
+      scope: "",
+      visibility: "public",
+      complexity: 1,
+      metadata: { isCssModulesExport: true, exportedName: exported },
+    })
+    ctx.relationships.push({
+      source: this.importerName,
+      target: exported,
+      type: ASTEngine.RelationshipType.Exports,
+      line_number: this.lineOf(propNode),
+      confidence: 1.0,
+      metadata: {
+        cssSpecific: true,
+        exportForm: "css_modules_export_block",
+        isModuleSurface: true,
+        evidenceClass: "structural",
+      },
+    })
+    return true
+  }
+
   private processDeclaration(node: Node, currentSelector: string, ctx: CssContext) {
+    // CSS Modules' `:export` block is the module's published surface, and a declaration
+    // inside it is an EXPORT rather than a rule-level property declaration.
+    if (this.processCssModulesExport(node, node, currentSelector, ctx)) return
     // Positional lookup only: the pinned tree-sitter-css wasm exposes
     // fieldCount=0 (probe: childForFieldName("property") is UNDEFINED on
     // `color: red`), so a field call here would be provably dead code. F1's
@@ -4329,6 +4420,39 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processCallExpression(node: Node, currentSelector: string, keyframeScope: string, ctx: CssContext) {
     const fnNameNode = this.findChild(node, (c) => c?.type === "function_name" || c?.type === "identifier")
     if (!fnNameNode) return
+
+    // `calls` — a USER-DEFINED CSS function, invoked. CSS Functions and Mixins Level 1 is the
+    // only place this language declares a callable: `@function --add(a, b) { … }` declares it
+    // and `--add(1, 2)` invokes it. The target is the DECLARATION, so the edge is emitted only
+    // when this file declares that name — a built-in (`var`, `rgba`, `calc`, `url`) names no
+    // declaration anywhere and is not a call target, which the census measures at 162,470 /
+    // 20,370 / 15,220 / 4,932 sites and the fixture forbids.
+    {
+      const callee = fnNameNode.text.trim()
+      const declared = ctx.cssFunctionNames[callee]
+      if (declared) {
+        // The OWNER is the same one a `var()` read reports: the rule's selector when there is
+        // one, otherwise the enclosing keyframes scope. A function declared but called at
+        // file scope (inside another at-rule) still has an owner from this pair, and when
+        // both are empty the declaration itself is the only honest source.
+        const owner = currentSelector || keyframeScope || declared
+        ctx.relationships.push({
+          source: owner,
+          target: declared,
+          type: ASTEngine.RelationshipType.Calls,
+          // the CALLEE node's line: the name is what the edge names, and a wrapped call's
+          // statement line is a different line.
+          line_number: this.lineOf(fnNameNode),
+          confidence: 1.0,
+          metadata: {
+            cssSpecific: true,
+            isUserDefinedFunctionCall: true,
+            callableName: callee,
+            evidenceClass: "structural",
+          },
+        })
+      }
+    }
 
     if (fnNameNameIsVar(fnNameNode) && (currentSelector || keyframeScope)) {
       const argsNode = this.findChild(node, (c) => c?.type === "arguments")
