@@ -9144,9 +9144,13 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
                 // published `Example]` for `listers.ResourceIndexer[*crv1.Example]`
                 // (see goEmbeddedLeaf).
                 const t = goEmbeddedLeaf(typeN)
-                if (t && !seen.has("ext:" + nm.text + "->" + t)) {
-                  seen.add("ext:" + nm.text + "->" + t)
-                  edges.push({ label: "extends", from: nm.text, target: t })
+                // THE CONTRACT SPLITS GO'S EMBEDDING: `struct{ E }` composes E's
+                // IMPLEMENTATION with no declared supertype -> `mixes_in`; only the
+                // interface half (below) is `extends`. Prefix "mix:" so the two
+                // halves can never dedupe each other.
+                if (t && !seen.has("mix:" + nm.text + "->" + t)) {
+                  seen.add("mix:" + nm.text + "->" + t)
+                  edges.push({ label: "mixes_in", from: nm.text, target: t })
                 }
               }
             }
@@ -25510,6 +25514,12 @@ async function main() {
           // corpus measured 0 render macros over the whole population, so the pair is
           // EMPTY-PASSES-EMPTY there, which the corpus-unexercised caveat carries.
           ...(lang === "rust" ? ["decorates", "mixes_in", "part_of"] : []),
+          // GO (2026-10-24, go lane c2dc1ae8d): the struct half of embedding is `mixes_in` — a 1:1 label
+          // move of the old extends rows; the interface half stays `extends`. Truth is the struct-embedding
+          // branch of deriveGoEdges, landed with this entry (the two-sided rule: truth w/o allowance =
+          // MISSING, allowance w/o truth = UNEXPLAINED; both halves alone are RED, only together are they
+          // compared).
+          ...(lang === "go" ? ["mixes_in"] : []),
           // SQL-G14 / M14.0.F5: sql joins the compared set with the TWO labels its first-half oracle
           // derives — `contains` and `references`. THE ARM IS DELIBERATELY NARROW: the oracle's header
           // names the labels it does NOT derive yet (calls, uses, imports, overrides, instantiates), so
