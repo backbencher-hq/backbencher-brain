@@ -228,6 +228,18 @@ grammars/tree-sitter-yaml/src/parser.c
 # `tree-sitter generate` rebuilds it deterministically from grammar.js.
 !grammars/tree-sitter-solidity/src/grammar.json
 !grammars/tree-sitter-solidity/src/node-types.json
+
+# M14 — the Kotlin lane's R1 clone (grammars/tree-sitter-kotlin, npm pack route,
+# tree-sitter-kotlin@0.3.8, PROVENANCE.md in place): same gap, same fix. The pin
+# convention's source<->wasm proof (check 6) reads src/node-types.json +
+# src/grammar.json, and `grammars/tree-sitter-*/src/*` excludes them. The scanner
+# is HAND-WRITTEN source (a copy of tree-sitter-javascript's scanner — the exact
+# class the powershell entry protects): without it `tree-sitter generate` cannot
+# rebuild the grammar's lexer and the tree would look complete while being
+# unbuildable. src/parser.c (23 MB generated) stays ignored, as every lane's does.
+!grammars/tree-sitter-kotlin/src/grammar.json
+!grammars/tree-sitter-kotlin/src/node-types.json
+!grammars/tree-sitter-kotlin/src/scanner.c
 __pycache__/
 *.pyc
 # `libxslt/` is a 2,245-file git clone with its OWN `.git`, checked out as a
