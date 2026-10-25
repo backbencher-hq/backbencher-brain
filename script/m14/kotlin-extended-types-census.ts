@@ -412,10 +412,23 @@ async function main(): Promise<void> {
           case "delegation_specifier":
             add(delegByNode, t, rel)
             break
-          case "interface_declaration": {
-            add(counter, "interface_declaration", rel)
-            // the java-lane near miss: interface members with bodies are default methods —
-            // conformance IS declared when a class names the interface, so they are `implements`.
+          case "class_declaration": {
+            // ★ kotlin's interfaces are class_declaration with an ANONYMOUS `interface` token as
+            // the FIRST child — there is no interface_declaration node type (probe-measured; a
+            // counter keyed on the nonexistent node would print a clean zero over nothing, the
+            // fleet's first form). The java-lane near miss counts interface members with bodies:
+            // default methods are `implements` (conformance IS declared when a class names the
+            // interface), not a mixin.
+            let isInterface = false
+            for (let i = 0; i < n.childCount; i++) {
+              const c = n.child(i)
+              if (c && c.type === "interface") {
+                isInterface = true
+                break
+              }
+            }
+            if (!isInterface) break
+            add(counter, "interface (class_declaration + interface token)", rel)
             for (let i = 0; i < n.namedChildCount; i++) {
               const b = n.namedChild(i)
               if (!b || b.type !== "class_body") continue
@@ -575,7 +588,7 @@ async function main(): Promise<void> {
         applyFromSites: gradleApplyFrom.get("apply(from = …)")?.sites ?? 0,
         applyFromFiles: gradleApplyFrom.get("apply(from = …)")?.files.size ?? 0,
       },
-      interfaceDeclarations: counter.get("interface_declaration")?.sites ?? 0,
+      interfaceSites: counter.get("interface (class_declaration + interface token)")?.sites ?? 0,
     },
     filesFailed,
   }
