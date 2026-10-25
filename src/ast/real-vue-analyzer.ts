@@ -232,7 +232,19 @@ function vueRegistryName(tag: string): { target: string; candidates: string[]; n
   // number a first pass got wrong by generalizing it: the two-sided class was measured
   // only for HYPHENLESS tags, where the kebab side of the same table reads +1,433 / -16.)
   const kebab = tag.includes("-")
-  const camel = !kebab && /[A-Z]/.test(tag.slice(1))
+  // NO-REGEX (owner's sixth condition; the svelte §12 precedent): the camel-shape test
+  // "does the tag hold an UPPERCASE letter after position 0" was `/[A-Z]/.test(tag.slice(1))`,
+  // replaced by a character walk with the IDENTICAL accept set — every ASCII A..Z at any
+  // index >= 1. The first character is deliberately EXCLUDED in both forms (a leading
+  // capital is the PascalCase component convention, not the camel marker), and the walk
+  // keeps that exclusion by starting at 1. Nothing else was widened or narrowed.
+  let camel = false
+  if (!kebab) {
+    for (let ci = 1; ci < tag.length; ci++) {
+      const cc = tag.charCodeAt(ci)
+      if (cc >= 65 /* A */ && cc <= 90 /* Z */) { camel = true; break }
+    }
+  }
   if (!kebab && !camel) return { target: tag, candidates, normalized: false }
   // A KEBAB (or camel) tag is the shape Vue's compiler normalizes for you, and it is the
   // shape the measurement is about: 1,433 edges whose written spelling resolves NOWHERE
