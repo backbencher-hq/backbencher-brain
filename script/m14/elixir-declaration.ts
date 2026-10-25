@@ -314,8 +314,12 @@ const caveats = (admitted: number, repos: number, armLog: string) => ({
     "(the using module), target, line and confidence, and `metadata.isMixin` is kept. THE MEMBER-READ `uses` ROWS ARE " +
     "UNTOUCHED and still counted under `uses` — the contract's mixin is a composition into the declaring module, which " +
     "`Mod.__using__/1` performs at compile time (gen_server.ex:899), and no conformance is declared by the module " +
-    "(@behaviour is a separate construct and stays `implements`). Measured construct basis: 1,368 `use` sites outside " +
-    "quote blocks over 855 files (validation/m14/measurements/elixir-extended-types-census.json).",
+    "(@behaviour is a separate construct and stays `implements`). Measured construct basis: 1,368 `use` call-shaped " +
+    "sites outside quote blocks over 855 files (validation/m14/measurements/elixir-extended-types-census.json); the " +
+    "arm's TABLE 1 carries 1,367 `mixes_in` rows, and THE ONE-ROW DELTA IS RECONCILED, not rounded: the missing site is " +
+    "the DEFINITION of `use` itself, `defmacro use(module, opts \\\\ [])` at lib/elixir/lib/kernel.ex:6133 — a " +
+    "declaration head, correctly silent by EX-D4 (def-head calls never emit). Per-file reconciliation measured over " +
+    "all 855 files: exactly 1 file disagrees (kernel.ex sites=1 rows=0); the other 854 agree one-for-one.",
   eexNotRouted:
     "★ `renders` IS RULED GRAMMAR-ABSENCE AND THE ONTOLOGICAL FACT IS PUBLISHED BESIDE IT (groovy-.gsp precedent): " +
     "164 git-tracked `.eex` template files exist in the corpus (phoenix 161 · elixir 3) and 0 `.heex`, and the ONE " +
