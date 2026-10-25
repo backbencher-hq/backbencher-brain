@@ -1,8 +1,15 @@
 /**
  * REAL GO ANALYZER — Author: Muhammad Ishaq Khan.
  * WHAT THIS FILE IS. The production `LanguageAnalyzer` for Go (pinned `grammars/tree-sitter-go.wasm`):
- * parses one file and emits the ten relationships that apply — calls, uses, contains, imports,
- * references, exports, extends, implements, overrides, instantiates. Targets follow the family LEAF
+ * parses one file and emits the relationships that apply — calls, uses, contains, imports, references,
+ * exports, extends, implements, overrides, instantiates, mixes_in. GO'S EMBEDDING IS SPLIT BY THE
+ * CONTRACT AND BOTH HALVES ARE COUNTED: `type T struct{ E }` is implementation COMPOSITION with no
+ * declared supertype — the embedded type's methods are promoted into T's method set and Go has no
+ * inheritance clause — which is exactly what the `mixes_in` contract names ("the class composes this
+ * mixin's implementation into its own supertype chain"), so the STRUCT half is `mixes_in`;
+ * `type I interface { J }` composes NO implementation (an interface has none) and is the fleet's
+ * interface-inheritance rule (java interface extends interface, rust trait supertrait), so the
+ * INTERFACE half stays `extends`. Targets follow the family LEAF
  * contract (Rust M12.18): a selector call publishes its leaf (`strings.ToUpper` -> `ToUpper`) with
  * the qualified spelling in metadata (`callExpression`/`qualifiedType`/`selectorExpression`).
  * WHERE ITS EVIDENCE LIVES. Doc `docs/analyzers/real-go-analyzer.md`; spec
@@ -129,8 +136,12 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
   "references|return_type": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
   // `struct { E }` promotes E's method set. Go has no inheritance declaration,
   // so the edge records a promotion that the compiler resolves, not an
-  // extends-clause the author wrote.
-  "extends|go_struct_embedding": "promotion_by_embedding_not_a_declared_supertype",
+  // extends-clause the author wrote. THE STORED TYPE IS `mixes_in` because that
+  // same fact IS the mixin contract — composition of E's IMPLEMENTATION into
+  // T's method set, no single base, no inheritance clause. The
+  // `go_struct_embedding` construct id is KEPT: metadata identifies the
+  // construct, so the label move is 1:1 and this reason still states the fact.
+  "mixes_in|go_struct_embedding": "promotion_by_embedding_not_a_declared_supertype",
   "extends|go_interface_embedding": "interface_method_set_inclusion_not_a_declared_supertype",
   // The target is an import PATH (`net/http`, `encoding/json`), which names a
   // module and not any symbol this analyzer can bind.
@@ -200,6 +211,7 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
   "implements|*": "implemented_interface_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
   "overrides|*": "promoted_method_recorded_with_its_qualified_owner_whose_declaring_file_is_out_of_scope",
   "instantiates|*": "instantiated_name_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
+  "mixes_in|*": "embedded_name_recorded_as_a_promotion_rather_than_a_declared_supertype",
 }
 
 /**
@@ -878,7 +890,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           : "usage_contextual"
         continue
       }
-      if (t === "extends" || t === "implements" || t === "overrides") {
+      // `mixes_in` is in this family because it IS the relabelled struct half of
+      // `extends`: the relabel contract says a label move must keep the
+      // evidenceClass the row had (0.8 -> `inferred`), or a label move would
+      // silently change the tier distribution.
+      if (t === "extends" || t === "implements" || t === "overrides" || t === "mixes_in") {
         md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
         continue
       }
@@ -2517,8 +2533,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * keyword, but it has the SEMANTIC: a method declared on the outer type at
    * depth 0 replaces the promoted method of the same name at depth 1 for every
    * selector `x.M` (Go spec, selectors: the shallowest depth wins). The family
-   * already models this half — the embedding itself is an `extends` edge
-   * (`go_struct_embedding`). What was missing is the second half: the analyzer
+   * already models this half — the embedding itself is a `mixes_in` edge
+   * (`go_struct_embedding`: the STRUCT half; the interface half is `extends`).
+   * What was missing is the second half: the analyzer
    * COMPUTED the shadowing inside `collectGoPromotedMethods` and THREW IT AWAY,
    * dropping the promoted method from the method set without recording that it
    * had been displaced. So the relationship was derivable from this file's own
@@ -2560,11 +2577,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // interface pass reached the identical hazard and defends it the same way.
     const embeddedOf: Record<string, string[]> = Object.create(null)
     for (const r of relationships) {
-      if (
-        (r.type || r.relationshipType || "") !== ASTEngine.RelationshipType.Extends ||
-        (r.metadata as any)?.relationshipType !== "go_struct_embedding"
-      ) {
-        continue
+      // THE CONSTRUCT ID IS METADATA, NOT THE STORED TYPE. This pass reads the
+      // STRUCT embedding rows; after the contract relabel those are `mixes_in`
+      // (the interface half is `extends` and is not this pass's input). The
+      // accept-both test is deliberate: a reader keyed on the stored type alone
+      // is exactly the intra-analyzer consumer a relabel breaks SILENTLY (the
+      // dart lane's lesson), so the metadata identifies the construct and the
+      // type only has to be one of the two labels this construct has ever had.
+      {
+        const rt = String(r.type || r.relationshipType || "")
+        const constructId = (r.metadata as any)?.relationshipType
+        if (
+          constructId !== "go_struct_embedding" ||
+          (rt !== ASTEngine.RelationshipType.MixesIn && rt !== ASTEngine.RelationshipType.Extends)
+        ) {
+          continue
+        }
       }
       const src = String(r.source ?? r.from ?? "")
       const tgt = String(r.target ?? r.to ?? r.toSymbol ?? "")
@@ -2703,11 +2731,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           const typeName = nameNode?.text
           if (!typeName) continue
           // (a) Struct embedding = anonymous-field composition with method
-          // promotion — family contract (Java/C++/Swift/ObjC): ONE extends
-          // edge, no contains twin. The embedded type is a member via the
-          // ownerName contains pass below, and field-type dependency edges
-          // are NOT emitted (Rust M12.18 contract — fields get contains
-          // only, no dangling type-text targets).
+          // promotion. THE CONTRACT, NOT THE CONSTRUCT'S NAME, DECIDES THE
+          // LABEL, and it decides `mixes_in`: the embedded type's
+          // IMPLEMENTATION is composed into T's method set, there is no single
+          // base (a struct may embed several), the embed list is not an
+          // inheritance clause, and no conformance is declared — which is the
+          // `mixes_in` member's own definition and its own "not extends / not
+          // implements" test. The row used to be published as `extends` with a
+          // reason code that ALREADY said
+          // `promotion_by_embedding_not_a_declared_supertype`: the construct was
+          // never a declared supertype, and the stored type now says what the
+          // reason said. ONE `mixes_in` edge, no contains twin; the embedded
+          // type is a member via the ownerName contains pass below, and
+          // field-type dependency edges are NOT emitted (Rust M12.18 contract —
+          // fields get contains only, no dangling type-text targets).
           const structSpec = this.findChildByType(typeSpec, "struct_type")
           if (structSpec) {
             const embeddedTypeNodes = this.extractGoEmbeddedTypeNodes(structSpec)
@@ -2730,16 +2767,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               relationships.push({
                 source: typeName,
                 target: embedLeaf,
-                type: ASTEngine.RelationshipType.Extends,
+                // THE RELABEL: stored type `extends` -> `mixes_in`, with the
+                // confidence (0.8) and therefore the evidenceClass UNCHANGED —
+                // that is the relabel contract, and it is what keeps this a
+                // label move rather than a distribution change.
+                type: ASTEngine.RelationshipType.MixesIn,
                 confidence: 0.8,
                 // M59.A7 (#825): the EMBEDDED TYPE's line — the site the
                 // embedded declaration is written on.
                 ...(this.nodeLine(embeddedType) ? { line_number: this.nodeLine(embeddedType)! } : {}),
                 metadata: {
+                  // THE CONSTRUCT ID IS KEPT: `go_struct_embedding` names the
+                  // construct and is what every consumer (including this
+                  // analyzer's own two passes) keys on, so the label move does
+                  // not need a metadata move as well.
                   relationshipType: "go_struct_embedding",
                   isEmbedding: true,
                   isAnonymous: true,
-                  embedType: "struct_composition_extends",
+                  isMixin: true,
+                  embedType: "struct_composition_mixes_in",
                   embeddedStruct: rawEmbedded,
                 },
               })
@@ -2747,8 +2793,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           // (b) Interface embedding (`interface { Reader; io.Closer }`) is
           // Go's interface inheritance — the family contract (java interface
-          // extends interface, rust trait supertrait) gives an EXTENDS edge,
-          // exactly like struct embedding. GOD4/M37 #604: the pre-fix analyzer
+          // extends interface, rust trait supertrait) gives an EXTENDS edge.
+          // IT IS NOT `mixes_in` AND THE SPLIT IS THE POINT: an interface has no
+          // implementation, so `mixes_in`'s own definition ("composes this
+          // mixin's IMPLEMENTATION into its supertype chain") is FALSE of it,
+          // while a declared interface-superset relationship is exactly what
+          // `extends` asserts. BOTH HALVES ARE COUNTED — struct -> mixes_in
+          // (the branch above), interface -> extends (here), once per embedded
+          // type. GOD4/M37 #604: the pre-fix analyzer
           // emitted only a member-symbol contains for embedded interfaces, so
           // the embedding relationship never appeared as extends (measured
           // 156 embedding sites across go-tools+terraform). Target is the
@@ -2881,8 +2933,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // could never satisfy an interface via an embedded type, so real
     // satisfied interfaces were missed (and, absent promotion, a struct with
     // only Shape embedded appeared NOT to implement an interface it does).
-    // Resolve embedding via the go_struct_embedding extends edges (source =
-    // embedding struct, target = embedded type).
+    // Resolve embedding via the go_struct_embedding `mixes_in` edges (source =
+    // embedding struct, target = embedded type; the construct id in metadata is
+    // what identifies them after the extends -> mixes_in relabel).
     //
     // `Object.create(null)`, NOT `{}`. The key is a Go TYPE NAME, and Go
     // identifiers may be any Unicode letter followed by letters and digits —
@@ -2903,10 +2956,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the oracle's comment. See reviews/go/sixth-review.md §12.
     const embeddedOf: Record<string, string[]> = Object.create(null)
     for (const r of relationships) {
-      if (
-        (r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Extends &&
-        (r.metadata as any)?.relationshipType === "go_struct_embedding"
-      ) {
+      // Same relabel discipline as the promotion-shadowing pass above: the
+      // STRUCT embedding rows are `mixes_in` now, the construct id in metadata
+      // identifies them, and the interface half (`extends`) is not an input.
+      {
+        const rt = String(r.type || r.relationshipType || "")
+        const constructId = (r.metadata as any)?.relationshipType
+        if (
+          constructId !== "go_struct_embedding" ||
+          (rt !== ASTEngine.RelationshipType.MixesIn && rt !== ASTEngine.RelationshipType.Extends)
+        ) {
+          continue
+        }
         const src = String(r.source ?? r.from ?? "")
         const tgt = String(r.target ?? r.to ?? r.toSymbol ?? "")
         if (src && tgt) { if (!embeddedOf[src]) embeddedOf[src] = []; embeddedOf[src].push(tgt) }
