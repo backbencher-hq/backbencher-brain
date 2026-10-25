@@ -855,7 +855,25 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         //
         // A NAMED default export is unaffected: `export default class Widget`
         // yields the target `Widget`, which is a real symbol, and it still ships.
-        if (String(r.type ?? r.relationshipType) === ASTEngine.RelationshipType.Exports && tgt === "default") continue
+        //
+        // F19 REPAIRED 2026-10-25 (Lead-ruled). The blanket drop this branch used to
+        // perform removed the JS delegate's OWN default-export row as well as any
+        // keyword-shaped stray, and the fleet's fixture record (bdc8f1593) called the
+        // result a REAL analyzer gap: the JS delegate emits `exports -> default` for
+        // a default export — MEASURED, all five shapes (anonymous object / call /
+        // literal and named function / class), one row each, `metadata.isDefault:
+        // true` — while the TS delegate REFUSES it (M4: `default` is a keyword, no
+        // symbol; a NAMED default declaration publishes its NAME instead). BOTH ARE
+        // CORRECT FOR THEIR OWN GRAMMAR, so the SEAM keeps the delegate's row when
+        // the delegate MARKED it as a default-export declaration, and publishes its
+        // own marked row only where the delegate is silent (the TS dispatch — the
+        // block after this merge loop). A row targeting `default` WITHOUT that
+        // marker still names a keyword no file declares, so it is still dropped:
+        // THE MARKER IS THE PROOF THAT SOMETHING ASSERTED THIS IS A DECLARATION,
+        // not that a string matched a keyword.
+        if (String(r.type ?? r.relationshipType) === ASTEngine.RelationshipType.Exports && tgt === "default") {
+          if (r.metadata?.isDefault !== true) continue
+        }
         // (#825): the delegate's lines are SCRIPT-RELATIVE, and this loop is
         // the seam where they become FILE lines — every other script artifact
         // (symbols, imports, exports, errors) is shifted right below/above, and
@@ -915,6 +933,79 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
+      }
+      // F19's OTHER HALF (repaired 2026-10-25, Lead-ruled): THE SEAM PUBLISHES WHAT
+      // THE DELEGATES DISAGREE ON.
+      //
+      // The family's two delegates answer the default-export construct differently
+      // and both are right for their own grammar: the JS delegate emits
+      // `exports -> default` (measured: all five shapes, one row each,
+      // `metadata.isDefault: true`), while the TS delegate refuses it (M4:
+      // `default` is a keyword with no symbol; a NAMED default declaration
+      // publishes its NAME instead). The measured consequence for this lane: of the
+      // 144 corpus `.vue` files that declare a default export, the 23 that
+      // published NO export fact were EVERY one a `<script lang="ts">` +
+      // `export default defineComponent({…})` — the dominant Vue 3 + TS component
+      // shape — and none of the 121 bare `export default {…}` files (F19's own
+      // census, preserved in the fixtures' rationale).
+      //
+      // So the seam publishes ONE row for the TS dispatch, carrying:
+      //   · source = `moduleName` — the F8 sweep re-points it to the declared
+      //     identity once `name:` has been read (that sweep is what makes the
+      //     fixture's `from: TypedPanel` true rather than the file stem),
+      //   · target = `default` — the KEYWORD is deliberate here: for a `.vue` file
+      //     the default export IS the component, so this row states that fact
+      //     BESIDE the component's own Class symbol rather than instead of it,
+      //   · `meta.sfcDefaultExport: true` — the marker the fixtures pin and that
+      //     script/m12/vue-ontology-census.ts:253 already reads, so a reader can
+      //     tell a SEAM row from a DELEGATE row,
+      //   · `meta.isDefault: true` — the same marker the JS delegate writes, so a
+      //     consumer does not have to learn a second spelling for one fact,
+      //   · the line of the `export default` statement itself (the statement's
+      //     script-relative row + the seam's lineOffset), not the block's first line.
+      //
+      // THE JS DISPATCH GETS NOTHING HERE: its delegate row already exists and is
+      // kept UNMARKED, so the marker stays a reliable producer signal — the
+      // js-default-export-delegate-row fixture forbids it on that row. And the
+      // `already` guard keeps a future delegate that starts emitting the row from
+      // doubling it: one declaration, one row.
+      // THE ANONYMOUS SHAPE ONLY, and that is the ruling's own line: a NAMED
+      // default declaration (`export default class Widget` / `export default
+      // function widget()`) publishes a row whose target is a REAL SYMBOL — both
+      // delegates emit it, M4 included — so adding a keyword-target row beside it
+      // would be the "row whose only content is the word `default`" F19 rightly
+      // refused, and the ts-class-heritage-seam fixture still forbids exactly that
+      // beside its named row. The seam row is for the shape that publishes
+      // NOTHING: an ANONYMOUS default expression (`export default
+      // defineComponent({…})`, `export default {…}`, `export default 42`), which
+      // the TS delegate refuses wholesale and which is the dominant Vue 3 + TS
+      // component form. One declaration, one row, and never two.
+      const namedDefaultDeclaration = defaultExport
+        ? (defaultExport.namedChildren ?? []).some(
+            (c: any) =>
+              c.type === "class_declaration" ||
+              c.type === "abstract_class_declaration" ||
+              c.type === "function_declaration" ||
+              c.type === "generator_function_declaration",
+          )
+        : false
+      if (isTs && defaultExport && !namedDefaultDeclaration) {
+        const alreadyPublished = relationships.some(
+          (x) =>
+            String(x.type ?? x.relationshipType) === ASTEngine.RelationshipType.Exports &&
+            String(x.target ?? "") === "default" &&
+            x.metadata?.isDefault === true,
+        )
+        if (!alreadyPublished) {
+          relationships.push({
+            source: moduleName,
+            target: "default",
+            type: ASTEngine.RelationshipType.Exports,
+            confidence: 1.0,
+            line_number: defaultExport.startPosition.row + 1 + lineOffset,
+            metadata: { isDefault: true, sfcDefaultExport: true },
+          })
+        }
       }
       for (const i of sub.imports ?? []) {
         if (i.range) {
@@ -3486,15 +3577,35 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * M14 #299 - evidence-tier classification for EVERY emitted relationship.
-   * Same rules as the JVM family. Vue template instantiates are
+   * Same rules as the JVM family. Vue template component tags are
    * usage_contextual (component usage by tag name, not construction).
+   *
+   * THE 0.7 FLOOR IS APPLIED HERE, AND THIS IS THE ONLY LAYER THAT CAN APPLY IT
+   * (F20, re-measured 2026-10-25 on the way to closing the fixture). The contract
+   * in src/lsp/evidence_tier.ts is two rules that interact: rule 1 says a STORED
+   * legend-tier evidenceClass WINS and is "never re-derived, never re-upgraded",
+   * and rule 2 says an edge below the 0.7 floor is a guess and MUST read
+   * `inferred`. Because rule 1 short-circuits the derivation, a confident class
+   * STORED on a heuristic row is final — nobody downstream can correct it. The
+   * lane measured the consequence over 1,151 corpus files: 1,628 rows sit at
+   * confidence 0.6 (1,616 `uses` field-read/bare-read rows and 12 unresolved
+   * dynamic-import/`require` rows) and every one was stored as `usage_contextual`
+   * or `import_based`. So the floor is applied at the TOP of this pass, before
+   * the stored-class skip and before any per-label arm: a sub-floor row stores
+   * `inferred` whoever produced it (a delegate's `import_based` at 0.6 is the
+   * same claim about a row the analyzer cannot see inside), and a row at or
+   * above the floor keeps the arm's own classification. The confident template
+   * read at 0.95 stays `usage_contextual` — the fixture pins it beside the
+   * downgraded rows so a mutant that downgraded EVERYTHING would be caught.
    */
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
       const md = r.metadata ?? (r.metadata = {})
+      const conf = typeof r.confidence === "number" ? r.confidence : 1
+      // THE FLOOR — see the docblock. 0.7 is evidence_tier.ts's STRUCTURAL_FLOOR.
+      if (conf < 0.7) { md.evidenceClass = "inferred"; continue }
       if (md.evidenceClass) continue
       const t = String(r.type ?? r.relationshipType ?? "")
-      const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") {
         md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"

@@ -22,8 +22,8 @@
       "tsx": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6"
     },
     "artifacts": {
-      "armTable1": "validation/m14/measurements/vue-head-incoming-table1-20261024.txt",
-      "residualGate": "validation/m14/measurements/vue-head-residual-gate-20261024.txt",
+      "armTable1": "validation/m14/measurements/vue-head-incoming-table1-20261025.txt",
+      "residualGate": "validation/m14/measurements/vue-head-residual-gate-20261025.txt",
       "census": "validation/m14/measurements/vue-extended-census.json"
     },
     "generator": "script/m14/vue-declaration.ts"
@@ -160,25 +160,25 @@
       }
     },
     "exports": {
-      "edges": 2,
+      "edges": 146,
       "resolved": 2,
       "external": 0,
       "ambiguous": 0,
-      "otherUnresolved": 0,
+      "otherUnresolved": 144,
       "unclassed": 0,
       "_ambKind": 0,
       "_collRes": 0,
       "closure": {
-        "edges": 2,
+        "edges": 146,
         "resolved": 2,
         "collRes": 0,
         "ambDecl": 0,
         "ambKind": 0,
-        "unresolved": 0,
+        "unresolved": 23,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
-        "bindOK": 0,
+        "bindOK": 121,
         "bindUnk": 0,
         "bindFAIL": 0,
         "causeOK": 0,

@@ -129,10 +129,13 @@ const declaration: any = {
       javascript: census.grammars.javascript,
       tsx: census.grammars.tsx,
     },
+    // THE DECLARATION RECORDS ITS OWN INPUTS (the java lesson, tightened): the
+    // artifact paths are the ARGUMENTS this generator was run with, so the file can
+    // never cite a measurement it was not derived from.
     artifacts: {
-      armTable1: "validation/m14/measurements/vue-head-incoming-table1-20261024.txt",
-      residualGate: "validation/m14/measurements/vue-head-residual-gate-20261024.txt",
-      census: "validation/m14/measurements/vue-extended-census.json",
+      armTable1: armLog,
+      residualGate: residualLog,
+      census: censusPath,
     },
     generator: "script/m14/vue-declaration.ts",
   },
