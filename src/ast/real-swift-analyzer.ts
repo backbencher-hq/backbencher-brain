@@ -2711,6 +2711,23 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (reExportForm) {
         importMd.isModuleReExport = true
         importMd.reExportForm = reExportForm
+        // M14 SWIFT EXPORT-INVARIANT ROOT CAUSE — THE CLAIM MOVES ONTO THE KEY
+        // THE GATE READS. run-fixtures.ts's export invariant admits an export
+        // name that is not a resolved top-level symbol when the file's IMPORT
+        // INFO carries `metadata.reExport`
+        // (`(result.imports ?? []).some(i => i.metadata?.reExport)`) — the key
+        // the JS lane publishes for `export { a } from "./m"`. This lane made
+        // the same claim under `isModuleReExport` only, so the admission never
+        // fired: the export LIST rows for a re-exported MODULE (WinSDK, Utils,
+        // ReExported, Basic) were reported as "do not resolve to a top-level
+        // symbol" on three fixtures whose every relationship row was otherwise
+        // met. A re-exported module IS an importable unit by construction, and
+        // the `exports` edge and LIST row already say so; this publishes the
+        // SAME fact where the arbiter looks, exactly as `isExternal` and
+        // `isImportNameReference` above are routed onto `metadata`. It cannot
+        // move a resolution: the harness reads `reExport` only to admit a name,
+        // and no index consumer reads it off an ImportInfo.
+        importMd.reExport = true
       }
       imports.push({ module: spelled, isExternal: true, range, metadata: importMd })
       // SWIFTD21 (the ontology lane, DERIV_EXPORTS_SWIFT3): `@_exported import M`
