@@ -192,6 +192,12 @@ async function main() {
     // Mapped entry by entry rather than by prefix, because a label added to that function
     // without an entry here is exactly the half-applied shape this gate exists to catch.
     mixes_in: ["deriveGoEdges", HARNESS],
+    // RENDERS (2026-10-24, go lane c0cd1da08 + the Lead's mirror 5fa9af0b9): the Go
+    // render host is the TEMPLATE EXECUTION and the rendered component must be a
+    // PUBLISHED symbol. The oracle is the lane's own truth module (written from the
+    // grammar independently, contract-checked against the analyzer on the fixture), so
+    // it maps to ORACLE and not to the shared harness.
+    renders: ["deriveGoRendersTruth", ORACLE],
   }
   let oracleSrc = ""
   try { oracleSrc = fs.readFileSync(path.join(ROOT, ORACLE), "utf8") } catch { /* reported per label below */ }
