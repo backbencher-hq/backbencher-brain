@@ -1,30 +1,30 @@
 #!/usr/bin/env bun
 /**
- * THE ANALYZER'S TWO ENTRY POINTS, MEASURED AGAINST EACH OTHER — the instrument behind the
- * 525-row cause ruling's re-reading and the 954-edge bound.
+ * THE ANALYZER'S TWO ENTRY POINTS, MEASURED AGAINST EACH OTHER — READ IN EACH SIDE'S OWN SHAPE.
  *
- * WHY THIS EXISTS. The lane's cause census joins the ARBITER's per-row verdict against a KEY SPACE
- * built from the analyzer's own symbols. Those two things were measured through DIFFERENT entry
- * points: the gate parses through `pool-worker.parseFile`, the census parses through
- * `ASTEngine.getParser -> parse -> RealCSharpAnalyzer.analyze`. If the two entry points produce
- * different symbol sets, the join is between a verdict and a key space that answer different
- * questions, and every row where they differ is a row the cause census mis-labels. The census's own
- * `--parity` block could not see this: it compared `parseFile` against `parseFile` — the pooled path
- * against itself — which is a tautology for the question that matters.
+ * THE DEFECT THIS INSTRUMENT SHIPPED WITH, AND WHY IT IS WRITTEN DOWN HERE. Its first version
+ * counted `sym.range?.startLine` on BOTH sides. The DIRECT path's symbols carry `range.startLine`;
+ * the POOLED path returns the store's FLAT record (`startLine`, `endLine`, `startIndex`, …) and has
+ * no `range` at all, so the counter read `undefined` for every pooled symbol and reported that the
+ * production path "loses every symbol line number". The line numbers were never lost. The measure
+ * could not distinguish ABSENT from NAMED DIFFERENTLY, and it turned that into a production defect
+ * that would have sent the fleet hunting a phantom in a shared file. A FIELD NAME IS NOT A FIELD,
+ * and measuring one shape with the other shape's field name is the same class of error as reading a
+ * sample and calling it a population.
  *
- * WHAT IT DOES. For a DECLARED sample of admitted files it parses each file BOTH ways and reports,
- * per file and in total: symbol count, how many symbols carry a line, the INDEXER symbols (the
- * analyzer names an indexer `this`, a C# keyword), the relationship count, and the keyword-target
- * edges. Then it states the difference as numbers, so the mechanism is a measurement rather than a
- * sentence.
+ * WHAT IT DOES NOW. Each side is read in its own shape and the counts are kept SEPARATE — never
+ * collapsed into one another — so a reader can see both what each side carries and whether the two
+ * sides carry the same THING under different names. It also measures the SHAPES THEMSELVES (the
+ * top-level key sets of the symbols and of the relationships), because "the two entry points return
+ * different shapes" is the finding that is actually true and checkable.
  *
- * THE BOUND IS DECLARED, NOT IMPLIED. The sample is a sorted PREFIX of the admitted list — not a
- * stride, not a stride dressed as a sample — and the artifact carries the population it came from.
- * The population-scale confirmation is the two whole-population totals the lane already published:
- * the census's direct path totals 1,263,451 edges against the gate's 1,262,497, a difference of 954.
+ * THE RELATIONSHIP COMPARISON IS SHAPE-INDEPENDENT. Relationships are compared as MULTISETS of an
+ * identity key built from fields both shapes share, and the instrument PRINTS which fields the key
+ * used, so a shape change cannot silently manufacture a difference.
  *
- * This instrument does not edit the analyzer, the arbiter, or the gate, and it needs NO arm token:
- * it parses a declared sample and writes a tracked artifact.
+ * THE BOUND IS DECLARED. The sample is a sorted PREFIX of the walked file list — a declared sample,
+ * not a stride — and the artifact carries the population it came from. `--file <path>` measures one
+ * file in full, which is how a reader can EYEBALL a difference instead of trusting a total.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
@@ -39,11 +39,85 @@ const argOf = (name: string): string | undefined => {
   const i = argv.indexOf(name)
   return i >= 0 ? argv[i + 1] : undefined
 }
-const SAMPLE = Number(argOf("--sample") ?? "500")
+const SAMPLE = Number(argOf("--sample") ?? "400")
+const ONE_FILE = argOf("--file")
 const OUT = argOf("--out") ?? "validation/m14/measurements/csharp-parse-path-parity.json"
 const jsonOut = argv.includes("--json")
 
-/** Walk the corpus for admitted csharp files, sorted, so the sample is a DECLARED prefix. */
+/** The analyzer's own keyword set (src/ast/real-csharp-analyzer.ts:370). */
+const KEYWORDS = new Set([
+  "if", "for", "foreach", "while", "do", "switch", "case", "else", "return", "throw", "using",
+  "new", "delegate", "in", "is", "as", "sizeof", "fixed", "lock", "checked", "unchecked", "params",
+  "ref", "out", "base", "this", "get", "set", "nameof",
+])
+
+type Rec = Record<string, unknown>
+const keysOf = (o: Rec): string[] => Object.keys(o)
+const unionKeys = (into: Set<string>, o: Rec): void => { for (const k of keysOf(o)) into.add(k) }
+
+/**
+ * ONE SIDE, READ IN ITS OWN SHAPE. The three line counters are kept apart on purpose: a shape that
+ * names the field `range.startLine` and a shape that names it `startLine` both have the line, and
+ * a measure that reports only one of them is measuring its own assumption.
+ */
+type Side = {
+  symbols: number
+  lineViaRangeStartLine: number
+  lineViaFlatStartLine: number
+  symbolsWithALineInEitherShape: number
+  indexerSymbols: number
+  relationships: number
+  keywordTargetEdges: number
+}
+const emptySide = (): Side => ({
+  symbols: 0, lineViaRangeStartLine: 0, lineViaFlatStartLine: 0, symbolsWithALineInEitherShape: 0,
+  indexerSymbols: 0, relationships: 0, keywordTargetEdges: 0,
+})
+
+type Measured = { side: Side; symbolKeys: string[]; relationshipKeys: string[]; relIds: string[]; symDetail: string[] }
+
+/** THE IDENTITY KEY FOR A RELATIONSHIP, built only from fields the shape actually has. */
+const REL_ID_FIELDS = ["type", "source", "target"] as const
+function relationshipId(r: Rec, fields: string[]): string {
+  const parts: string[] = []
+  for (const f of fields) parts.push(String(r[f] ?? ""))
+  return parts.join("\u0001")
+}
+
+function measure(r: { symbols?: unknown[]; relationships?: unknown[] }): Measured {
+  const syms = (r.symbols ?? []) as Rec[]
+  const rels = (r.relationships ?? []) as Rec[]
+  const s = emptySide()
+  const symKeys = new Set<string>()
+  const relKeys = new Set<string>()
+  s.symbols = syms.length
+  const symDetail: string[] = []
+  for (const sym of syms) {
+    symDetail.push(`${String(sym.kind ?? "")}@${Number((sym.range as Rec | undefined)?.startLine ?? sym.startLine ?? 0)} ${String(sym.name ?? "")}`)
+    unionKeys(symKeys, sym)
+    const viaRange = Number((sym.range as Rec | undefined)?.startLine ?? 0)
+    const viaFlat = Number(sym.startLine ?? 0)
+    if (viaRange > 0) s.lineViaRangeStartLine++
+    if (viaFlat > 0) s.lineViaFlatStartLine++
+    if (viaRange > 0 || viaFlat > 0) s.symbolsWithALineInEitherShape++
+    if (String(sym.name ?? "") === "this") s.indexerSymbols++
+  }
+  s.relationships = rels.length
+  const presentFields: string[] = []
+  for (const f of REL_ID_FIELDS) if (rels.some((rel) => rel[f] !== undefined)) presentFields.push(f)
+  for (const rel of rels) {
+    unionKeys(relKeys, rel)
+    if (KEYWORDS.has(String(rel.target ?? ""))) s.keywordTargetEdges++
+  }
+  return {
+    side: s,
+    symbolKeys: [...symKeys].sort(),
+    relationshipKeys: [...relKeys].sort(),
+    relIds: rels.map((rel) => relationshipId(rel, presentFields)).sort(),
+    symDetail,
+  }
+}
+
 function walk(dir: string, out: string[]): void {
   let entries: import("node:fs").Dirent[]
   try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
@@ -57,111 +131,118 @@ function walk(dir: string, out: string[]): void {
     else if (e.name.endsWith(".cs") || e.name.endsWith(".csx")) out.push(abs)
   }
 }
-const all: string[] = []
-walk(CORPUS, all)
-all.sort()
-const files = all.slice(0, SAMPLE)
 
-/** The analyzer's own keyword set (src/ast/real-csharp-analyzer.ts:370) — the same list the
- *  analyzer uses at :2240 to refuse to fabricate a call to a keyword. */
-const KEYWORDS = new Set([
-  "if", "for", "foreach", "while", "do", "switch", "case", "else", "return", "throw", "using",
-  "new", "delegate", "in", "is", "as", "sizeof", "fixed", "lock", "checked", "unchecked", "params",
-  "ref", "out", "base", "this", "get", "set", "nameof",
-])
-
-type Side = { symbols: number; symbolsWithLine: number; indexerSymbols: number; relationships: number; keywordTargetEdges: number }
-const empty = (): Side => ({ symbols: 0, symbolsWithLine: 0, indexerSymbols: 0, relationships: 0, keywordTargetEdges: 0 })
-function measure(r: { symbols?: unknown[]; relationships?: unknown[] }): Side {
-  const syms = (r.symbols ?? []) as { name?: unknown; range?: { startLine?: number } }[]
-  const rels = (r.relationships ?? []) as { target?: unknown }[]
-  const s = empty()
-  s.symbols = syms.length
-  for (const sym of syms) {
-    if ((sym.range?.startLine ?? 0) > 0) s.symbolsWithLine++
-    if (String(sym.name ?? "") === "this") s.indexerSymbols++
-  }
-  s.relationships = rels.length
-  for (const rel of rels) if (KEYWORDS.has(String(rel.target ?? ""))) s.keywordTargetEdges++
-  return s
-}
-
-const direct = empty()
-const pooled = empty()
-const differ: { file: string; direct: Side; pooled: Side; symbolsLost: number; relationshipsLost: number }[] = []
-let filesCompared = 0
-let filesWithDifference = 0
-/** The two entry points are reached through their own types; these structural aliases keep the
- *  call sites explicit without importing the grammar's full Parser/Analyzer types, which differ
- *  between the two paths and are exactly what is being compared. */
 type MiniParser = { parse: (text: string, name: string) => { rootNode: unknown } }
 type MiniAnalyzer = { analyze: (n: unknown, c: string, p: string, ctx: unknown) => { symbols?: unknown[]; relationships?: unknown[] } }
 const parser = (await ASTEngine.getParser("csharp" as never)) as unknown as MiniParser
 
-for (const f of files) {
+/** Parse ONE file through BOTH entry points. */
+async function bothWays(f: string): Promise<{ direct: Measured; pooled: Measured } | null> {
   const rel = path.relative(CORPUS, f)
   const repo = rel.split(path.sep)[0] ?? rel
   const root = path.join(CORPUS, repo)
-  let d: Side
-  let p: Side
   try {
-    // THE CENSUS'S PATH, spelled out exactly as the census spells it.
     const content = decodeSourceText(readFileSync(f)).text
     const tree = parser.parse(content, f)
     const a = new RealCSharpAnalyzer() as unknown as MiniAnalyzer
-    d = measure(a.analyze(tree.rootNode, content, f, { projectRoot: root }))
-    // THE GATE'S PATH.
-    p = measure((await parseFile(f, root, { projectRoot: root } as never)) as never)
+    const direct = measure(a.analyze(tree.rootNode, content, f, { projectRoot: root }))
+    const pooled = measure((await parseFile(f, root, { projectRoot: root } as never)) as never)
+    return { direct, pooled }
   } catch {
-    continue
+    return null
   }
+}
+
+// ── MODE 1: ONE FILE, IN FULL, FOR EYEBALLING ───────────────────────────────
+if (ONE_FILE !== undefined) {
+  const m = await bothWays(ONE_FILE)
+  if (m === null) { console.error(`could not parse ${ONE_FILE} both ways`); process.exit(2) }
+  const rel = path.relative(CORPUS, ONE_FILE)
+  console.log(`CSHARP - ONE FILE THROUGH BOTH ENTRY POINTS: ${rel}`)
+  for (const [name, side] of [["DIRECT (the census's path)", m.direct], ["POOLED (the gate's path)", m.pooled]] as const) {
+    console.log(`  ${name}`)
+    console.log(`    symbols=${side.side.symbols}  with range.startLine=${side.side.lineViaRangeStartLine}  with flat startLine=${side.side.lineViaFlatStartLine}  with A LINE IN EITHER SHAPE=${side.side.symbolsWithALineInEitherShape}`)
+    console.log(`    relationships=${side.side.relationships}  keyword-target=${side.side.keywordTargetEdges}  indexer symbols=${side.side.indexerSymbols}`)
+    console.log(`    SYMBOL KEYS: ${side.symbolKeys.join(" ")}`)
+    console.log(`    RELATIONSHIP KEYS: ${side.relationshipKeys.join(" ")}`)
+  }
+  // WHAT EACH SIDE HAS AT THE SAME LINES — "dropped" and "renamed" are different defects and a
+  // count alone cannot tell them apart.
+  for (const [name, side] of [["DIRECT", m.direct], ["POOLED", m.pooled]] as const) {
+    console.log(`  ${name} SYMBOLS (kind@line name), ${side.side.symbols} of them:`)
+    console.log(`    ${side.symDetail.slice(0, 40).join(" | ")}`)
+  }
+  const onlyDirect = m.direct.relIds.filter((id) => !m.pooled.relIds.includes(id))
+  const onlyPooled = m.pooled.relIds.filter((id) => !m.direct.relIds.includes(id))
+  console.log(`  relationships only on the DIRECT side (identity key = type/source/target): ${onlyDirect.length}`)
+  for (const id of onlyDirect.slice(0, 10)) console.log(`    ${id.split("\u0001").join(" -> ")}`)
+  console.log(`  relationships only on the POOLED side: ${onlyPooled.length}`)
+  for (const id of onlyPooled.slice(0, 10)) console.log(`    ${id.split("\u0001").join(" -> ")}`)
+  console.log(`  THE SHAPES: ${m.direct.symbolKeys.join(",") === m.pooled.symbolKeys.join(",") ? "the same symbol key set" : "DIFFERENT symbol key sets"}`)
+  process.exit(0)
+}
+
+// ── MODE 2: A DECLARED SAMPLE ───────────────────────────────────────────────
+const all: string[] = []
+walk(CORPUS, all)
+all.sort()
+const files = all.slice(0, SAMPLE)
+const directSum = emptySide()
+const pooledSum = emptySide()
+const differ: { file: string; direct: Side; pooled: Side; onlyDirectRels: number; onlyPooledRels: number }[] = []
+let filesCompared = 0
+let filesWithRelationshipDifference = 0
+let filesWithSymbolDifference = 0
+let filesWithLineDifference = 0
+const directSymKeys = new Set<string>()
+const pooledSymKeys = new Set<string>()
+for (const f of files) {
+  const m = await bothWays(f)
+  if (m === null) continue
   filesCompared++
-  for (const k of Object.keys(direct) as (keyof Side)[]) direct[k] += d[k]
-  for (const k of Object.keys(pooled) as (keyof Side)[]) pooled[k] += p[k]
-  const symbolsLost = d.symbols - p.symbols
-  const relationshipsLost = d.relationships - p.relationships
-  if (symbolsLost !== 0 || relationshipsLost !== 0 || d.symbolsWithLine !== p.symbolsWithLine || d.keywordTargetEdges !== p.keywordTargetEdges) {
-    filesWithDifference++
-    if (differ.length < 25) differ.push({ file: rel, direct: d, pooled: p, symbolsLost, relationshipsLost })
+  for (const k of Object.keys(directSum) as (keyof Side)[]) directSum[k] += m.direct.side[k]
+  for (const k of Object.keys(pooledSum) as (keyof Side)[]) pooledSum[k] += m.pooled.side[k]
+  for (const k of m.direct.symbolKeys) directSymKeys.add(k)
+  for (const k of m.pooled.symbolKeys) pooledSymKeys.add(k)
+  const sameRelCount = m.direct.side.relationships === m.pooled.side.relationships
+  const onlyDirect = m.direct.relIds.filter((id) => !m.pooled.relIds.includes(id))
+  const onlyPooled = m.pooled.relIds.filter((id) => !m.direct.relIds.includes(id))
+  if (!sameRelCount || onlyDirect.length > 0 || onlyPooled.length > 0) {
+    filesWithRelationshipDifference++
+    if (differ.length < 20) differ.push({ file: path.relative(CORPUS, f), direct: m.direct.side, pooled: m.pooled.side, onlyDirectRels: onlyDirect.length, onlyPooledRels: onlyPooled.length })
   }
+  if (m.direct.side.symbols !== m.pooled.side.symbols) filesWithSymbolDifference++
+  if (m.direct.side.symbolsWithALineInEitherShape !== m.pooled.side.symbolsWithALineInEitherShape) filesWithLineDifference++
 }
 
-const delta = {
-  symbols: direct.symbols - pooled.symbols,
-  symbolsWithLine: direct.symbolsWithLine - pooled.symbolsWithLine,
-  indexerSymbols: direct.indexerSymbols - pooled.indexerSymbols,
-  relationships: direct.relationships - pooled.relationships,
-  keywordTargetEdges: direct.keywordTargetEdges - pooled.keywordTargetEdges,
-}
-
-console.log(`CSHARP - THE TWO ENTRY POINTS, MEASURED AGAINST EACH OTHER`)
-console.log(`  population: the admitted list is ${all.length} files; THIS SAMPLE IS THE SORTED PREFIX of ${files.length} — a DECLARED sample, not a stride`)
-console.log(`  files compared: ${filesCompared} · files with ANY difference: ${filesWithDifference}`)
-console.log(`  DIRECT (the census's path: getParser -> parse -> analyze) ${JSON.stringify(direct)}`)
-console.log(`  POOLED (the gate's path: pool-worker.parseFile)           ${JSON.stringify(pooled)}`)
-console.log(`  DIRECT MINUS POOLED: ${JSON.stringify(delta)}`)
-console.log(`  THE MECHANISM: the gate's path loses ${delta.relationships} relationships and ${delta.symbols} symbols over ${filesCompared} files, INCLUDING the indexer symbols the analyzer names \`this\` (a C# keyword), and ` + (pooled.symbolsWithLine === 0 ? `ALL symbol line numbers (0 of ${pooled.symbols} carry a line, against ${direct.symbolsWithLine} of ${direct.symbols} on the direct path)` : `some symbol line numbers`))
+console.log(`CSHARP - THE TWO ENTRY POINTS, READ IN EACH SIDE'S OWN SHAPE`)
+console.log(`  population: the walk finds ${all.length} .cs/.csx files; THIS SAMPLE IS THE SORTED PREFIX of ${files.length} — a DECLARED sample, not a stride`)
+console.log(`  files compared: ${filesCompared}`)
+console.log(`  DIRECT (getParser -> parse -> analyze): ${JSON.stringify(directSum)}`)
+console.log(`  POOLED (pool-worker.parseFile):         ${JSON.stringify(pooledSum)}`)
+console.log(`  THE LINE COUNTS THAT MATTER: direct ${directSum.symbolsWithALineInEitherShape} of ${directSum.symbols} symbols carry a line IN EITHER SHAPE; pooled ${pooledSum.symbolsWithALineInEitherShape} of ${pooledSum.symbols} — per shape: direct ${directSum.lineViaRangeStartLine} via range.startLine + ${directSum.lineViaFlatStartLine} via flat startLine; pooled ${pooledSum.lineViaRangeStartLine} via range.startLine + ${pooledSum.lineViaFlatStartLine} via flat startLine`)
+console.log(`  files where the symbols differ: ${filesWithSymbolDifference} · where the LINE counts differ: ${filesWithLineDifference} · where the RELATIONSHIPS differ: ${filesWithRelationshipDifference}`)
+console.log(`  THE SHAPES: direct symbol keys [${[...directSymKeys].sort().join(",")}]`)
+console.log(`              pooled symbol keys [${[...pooledSymKeys].sort().join(",")}]`)
+console.log(`              ${[...directSymKeys].sort().join(",") === [...pooledSymKeys].sort().join(",") ? "THE SAME KEY SET" : "DIFFERENT KEY SETS — a consumer naming the other shape's fields reads undefined"}`)
 if (jsonOut) {
   const out = {
     lane: "csharp",
     instrument: "script/m14/csharp-parse-path-parity.ts",
-    question: "do the analyzer's two entry points - the census's direct path and the gate's pooled path - produce the same symbols and relationships?",
-    population: { admitted: all.length, sample: files.length, sampleKind: "sorted prefix of the admitted list (a DECLARED sample, not a stride)" },
+    question: "do the analyzer's two entry points - the census's direct path and the gate's pooled path - return the same data?",
+    THE_DEFECT_THIS_INSTRUMENT_SHIPPED_WITH: "its first version read `sym.range?.startLine` on BOTH sides; the pooled side's symbols are the store's FLAT record and carry `startLine` with no `range`, so the counter read undefined for every one of them and the instrument reported that the production path 'loses every symbol line number'. The line numbers were never lost - the measure could not distinguish ABSENT from NAMED DIFFERENTLY. Corrected here, and kept in the artifact because a corrected instrument that hides its own defect teaches nobody.",
+    population: { walked: all.length, sample: files.length, sampleKind: "sorted prefix of the walked list (a DECLARED sample, not a stride)" },
     filesCompared,
-    filesWithDifference,
-    direct,
-    pooled,
-    delta,
-    populationScaleConfirmation: {
-      note: "the two whole-population totals the lane already published, from DIFFERENT runs of the two paths",
-      censusDirectPathEdges: 1263451,
-      gatePooledPathEdges: 1262497,
-      difference: 954,
-      source: "validation/m14/measurements/csharp-tiebreak-movement.json (direct-path row space) against the gate's whole-population TABLE 1 (pooled path)",
-    },
-    mechanism: "the gate parses through pool-worker.parseFile, the census through ASTEngine.getParser -> parse -> RealCSharpAnalyzer.analyze; the pooled wrapper returns FEWER symbols (the indexer symbol named `this` among them) and FEWER relationships, and strips symbol line numbers",
-    consequence: "the lane's cause census joined the arbiter's verdict (pooled path) against a key space built from the direct path, so every row where the two paths disagree was labelled a 'project-key-space-gap'; the 525-row bucket is that difference, not a gap in the arbiter",
-    differenceFiles: differ,
+    direct: directSum,
+    pooled: pooledSum,
+    delta: Object.fromEntries((Object.keys(directSum) as (keyof Side)[]).map((k) => [k, directSum[k] - pooledSum[k]])),
+    filesWithSymbolDifference,
+    filesWithLineDifference,
+    filesWithRelationshipDifference,
+    directSymbolKeys: [...directSymKeys].sort(),
+    pooledSymbolKeys: [...pooledSymKeys].sort(),
+    shapeVerdict: [...directSymKeys].sort().join(",") === [...pooledSymKeys].sort().join(",") ? "the same symbol key set" : "DIFFERENT symbol key sets - the direct path nests the position under `range`, the pooled path returns a flat store record",
+    relationshipDifferenceFiles: differ,
   }
   await Bun.write(OUT, JSON.stringify(out, null, 2) + "\n")
   console.log(`  written: ${OUT}`)
