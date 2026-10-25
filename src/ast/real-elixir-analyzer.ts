@@ -3026,26 +3026,30 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
             // Plug.Conn` on a PASSING row, and the module view reads the
             // dependency edge. Both edges come from the same directive because they
             // are two true statements (the module-dep reference and the name-
-            // bringing import), exactly as  of this lane's doc rules for `use`.
+            // bringing import), exactly as §13 of this lane's doc rules for `use`.
             if (dep.name !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.References, 0.9,
               { reasonCode: `elixir_directive_${target}`, directive: target }, dep.line)
-            // ELX-EXPORTS `uses`: `use Mod` is Elixir's MIXIN APPLICATION —
+            // ELX-M14 `mixes_in`: `use Mod` is Elixir's MIXIN APPLICATION —
             // `Mod.__using__(opts)` runs inside the using module and injects code
-            // into it, which is the claim the family records as `uses` (dart's
-            // `class A extends B with M1` at real-dart-analyzer.ts, css's
-            // `@include` of a `@mixin`). It is NOT a relabelling of the
-            // dependency: `references` is a separate true statement that the
-            // module view reads, so BOTH edges come from the same directive, and
-            // a self-directive publishes neither (ELXD8, the guard above).
+            // into it, which the extended vocabulary records as `mixes_in`
+            // (dart's `class A extends B with M1`, php's `use T;`, ruby's
+            // include/extend/prepend). It is a 1:1 RELABEL of the former
+            // `uses{isMixin:true}` row (2026-10-24): same source (the using
+            // module), target, line and confidence; only the stored type changed,
+            // and `metadata.isMixin` stays for consumers that read the marker.
+            // It is NOT a relabelling of the dependency: `references` is a
+            // separate true statement that the module view reads, so BOTH edges
+            // come from the same directive, and a self-directive publishes
+            // neither (ELXD8, the guard above).
             //
             // `structural` and not a usage class: the directive's text NAMES the
             // module, so the evidence is syntax, not context. The sibling pin
             // `elx4-uses-mixin` records the pushRel DEFAULT (`usage_contextual`)
             // for the same construct, so the two pins disagree about this one
             // field and the disagreement is recorded rather than smoothed over —
-            // see  of docs/analyzers/real-elixir-analyzer.md.
+            // see §13 of docs/analyzers/real-elixir-analyzer.md.
             if (target === "use" && dep.name !== currentScope?.name) {
-              this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.Uses, 0.9,
+              this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.MixesIn, 0.9,
                 { elixirSpecific: true, isMixin: true, via: "use", evidenceClass: "structural", reasonCode: "elixir_use_mixin_application" }, dep.line)
             }
             // imports-ONTOLOGY (`import` = the module-dependency directive):

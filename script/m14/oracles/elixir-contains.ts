@@ -732,18 +732,19 @@ export function deriveElixirUsesTruth(root: any): TruthEdge[] {
       }
       // The uses edge itself — evaluated on the scope that is CURRENT here, which
       // for a def-shaped call is the enclosing one (the def pushes after).
-      // ELX-EXPORTS `uses`: `use Mod` is Elixir's MIXIN APPLICATION — the analyzer publishes it
-      // as a uses row (isMixin/via:use) beside the directive reference. An oracle that omits it
-      // leaves the mixin class UNEXPLAINED on every draw that uses a module (32 elixir / 55
-      // phoenix rows after wiring): measured, not hypothesised.
+      // ELX-M14 `mixes_in`: `use Mod` is Elixir's MIXIN APPLICATION — the analyzer publishes it
+      // as a mixes_in row (isMixin/via:use, the 2026-10-24 1:1 relabel of the former uses row)
+      // beside the directive reference. An oracle that omits it leaves the mixin class
+      // UNEXPLAINED on every draw that uses a module (32 elixir / 55 phoenix rows after
+      // wiring): measured, not hypothesised.
       if (name === "use" && !inDefHead && !inDeclarationAttributeValue(node) && !inQuote) {
         const args = argumentsOf(node)
         const first = args ? kids(args)[0] : undefined
         if (first && (first.type === "alias" || first.type === "identifier" || first.type === "atom" || first.type === "dot")) {
           const target = resolveUseTarget(first.text)
           if (target.length > 0 && target !== cur) {
-            const k = `uses|${cur}|${target}`
-            if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: cur, target }) }
+            const k = `mixes_in|${cur}|${target}`
+            if (!seen.has(k)) { seen.add(k); edges.push({ label: "mixes_in", from: cur, target }) }
           }
         }
       }

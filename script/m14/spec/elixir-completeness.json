@@ -266,7 +266,8 @@
       "exports",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "mixes_in"
     ],
     "excluded": [
       {
@@ -274,6 +275,47 @@
         "evidence": "grammar-absence",
         "from": "PINNED GRAMMAR wasm/tree-sitter-elixir.wasm (sha256 ed99093c548c12d4, the pin src/ast/engine.ts:1044 resolves) enumerated through web-tree-sitter's Language API: 235 node-type slots = 74 named + 161 anonymous, i.e. 45 distinct named types and 158 distinct anonymous tokens. 0 of the 45 named types is an inheritance production (no class/inherit/superclass/extends_clause node exists) and 0 of the 158 anonymous tokens is extends, inherit, inherits, superclass or subclass. STATED CAVEAT, so a reader can judge it: Elixir's module-level directives (`use`, `import`, `alias`, `require`, `@behaviour`) all parse through the generic `call` and `@` nodes, which name no supertype \u2014 the grammar is expression-generic, and the claim here is that no production expresses IS-A, not that no macro could be written. CROSS-GRAMMAR CONTROL: the identical probe finds inheritance productions in 18 of the 64 loadable pinned grammars (base_class_clause in tree-sitter-cpp.wasm, superclass in tree-sitter-groovy.wasm, extends_clause in tree-sitter-scala.wasm), so the 0 is a reading the instrument can falsify. CORPUS HALF, WHOLE POPULATION: `npx tsx script/m14/incoming-gate.ts elixir ex,exs 1368` sampled EVERY admitted file (`population: 1368 parsed of 1368 sampled (corpus has 1368 .ex,exs files across 5 repos)`) and reads extends 0 edges while nine other types fire on the same population (calls 61308 contains 14389 exports 7451 uses 6032 references 2566 instantiates 1834 imports 377 implements 285 overrides 174) \u2014 a type-specific zero over the whole population, which is a corpus zero and not a stride artefact. The pinned firing log validation/m14/results/firing-laptop-b.current.log agrees on its own 120-file stride (extends SILENT). AND the analyzer has no extends emission site at all: 0 `RelationshipType.Extends` references in src/ast/real-elixir-analyzer.ts, against 1 Imports and 4 Implements sites in the same file. THIRD READING, TOKEN LEVEL AND ANALYZER-INDEPENDENT: a census over 300 of the 1368 admitted files (345,667 leaf tokens, 0 parse failures) finds the word `extends` ZERO times \u2014 not as a construct and not even as a name \u2014 while its controls fire on real construct nodes (defmodule 514, def 1322, end 7671, of which 7659 carry the grammar's own `end` node type).",
         "quote": "0 of the 45 distinct named node types and 0 of the 158 distinct anonymous tokens in the pinned Elixir grammar is an IS-A production or keyword \u2014 no supertype slot exists to write"
+      },
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "ELX-M14 (2026-10-24) \u2014 ONTOLOGICAL, java's class and NOT rust's, and the falsifier measurement is the deciding half (Form 16 checked in BOTH directions). The rust/nim 'decorates = applied callable' falsifier does NOT fire in Elixir: measured over the whole admitted population (parsed=1368/1368 admitted=1368 exts=ex,exs index=no) by validation/m14/elixir/elixir-extended-types-census.ts, the module-attribute application surface is @derive 28 sites / 9 files whose argument shapes close EXACTLY \u2014 0 call \u00b7 2 alias \u00b7 19 tuple \u00b7 7 list \u00b7 0 other \u2014 so NO attribute argument is an applied callable (java's JLS-9.7.1 constant-expression class, measured the same way: 0 calls, 0 lambdas). Every @derive argument names a PROTOCOL (Inspect 15, JSON.Encoder, Phoenix.Param, Derivable, WithAny \u2014 15 of the 28; the rest are :a/:b opt keys), 0 of the 28 name a declared defmacro, and the deriving is done by Protocol.__derive__/3 at RUNTIME EXPANSION (elixir's own runtime source: lib/elixir/lib/protocol.ex:439, the defmacro derive/3 hook), not by a syntactically applied callable. @before_compile 15 sites; 0 of its targets (GenServer, Protocol, Phoenix.*, ExUnit.Callbacks) declare __before_compile__ anywhere in the corpus. The R1 grammar half is measured too: 0 of the served build's 45 distinct named types carries a decor/derive stem (validation/m14/measurements/elixir-grammar-nodes.json, served digest ed99093c548c12d4\u2026 read from the resolver's own choice per \u00a76, = tree-sitter-elixir@0.3.5 the NEWEST published build, so R1 is closed with nothing newer to move to). The java precedent transfers because its falsifier was measured HERE and did not fire; the rust one was measured HERE and did not fire either.",
+        "quote": "0 of 28 @derive argument sites is a call form and 0 names a declared macro \u2014 the applied-callable falsifier does not fire in Elixir",
+        "count": {
+          "attributeDeriveSites": 28,
+          "beforeCompileSites": 15,
+          "deriveArgIsCall": 0
+        },
+        "population": "parsed=1368/1368 admitted=1368 exts=ex,exs index=no",
+        "falsifier": "an @derive/@before_compile argument that is a call or names a locally declared defmacro (measured 0/28 and 0/15); the counted construct is validation/m14/measurements/elixir-extended-types-census.json decorates.*",
+        "artifact": "validation/m14/measurements/elixir-extended-types-census.json"
+      },
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "ELX-M14 (2026-10-24) \u2014 GRAMMAR-ABSENCE measured on the served build's own inventory (validation/m14/measurements/elixir-grammar-nodes.json, served digest ed99093c548c12d4\u2026 = tree-sitter-elixir@0.3.5, the newest published): 0 of the 45 distinct named types is a render/component production, and the sigil census over the whole admitted population (parsed=1368/1368 admitted=1368 exts=ex,exs index=no) finds 0 ~H/~L/~e template sigils and 0 component-tag names inside sigil content \u2014 .ex files carry no component DSL. THE ONTOLOGICAL FACT IS PUBLISHED BESIDE THE RULING, groovy's .gsp precedent: 164 git-tracked .eex template files exist in the corpus (phoenix 161 \u00b7 elixir 3) and 0 .heex, and the ONE TABLE (script/m14/language-extensions.ts) routes no eex/heex spelling to this lane \u2014 a construct expressible in files NOT routed here is an honest disclosure, not a blind spot, and adopting it would be routing work, not analyzer work. R2 would have to INVENT a component DSL the language does not have in .ex files.",
+        "quote": "0 of the served grammar's 45 distinct named types is a render production; 0 template sigils in .ex; 164 unrouted .eex files disclosed beside the ruling",
+        "count": {
+          "eexSigilsInEx": 0,
+          "eexTemplateFilesNotRouted": 164,
+          "heexTemplateFilesNotRouted": 0
+        },
+        "population": "parsed=1368/1368 admitted=1368 exts=ex,exs index=no",
+        "falsifier": "a ~H/~L/~e sigil or a component-tag name inside any .ex file of the population (measured 0), or an eex/heex spelling appearing in the ONE table's elixir row",
+        "artifact": "validation/m14/measurements/elixir-extended-types-census.json"
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "from": "ELX-M14 (2026-10-24) \u2014 GRAMMAR-ABSENCE, measured against the fleet's UNANIMOUS implemented set: every implemented part_of is a TEXTUAL FILE-INCLUSION DIRECTIVE (cpp #include \u00b7 fsharp #load \u00b7 php include/require \u00b7 erlang -include \u00b7 nim include \u00b7 typescript /// <reference path>), and Elixir has none \u2014 0 of the served build's 45 distinct named types carries an include/part stem (validation/m14/measurements/elixir-grammar-nodes.json, served digest ed99093c548c12d4\u2026), and the whole-population census (parsed=1368/1368 admitted=1368 exts=ex,exs index=no) counts 0 include-tokens. The near miss is Code.eval_file at 6 sites / 4 files \u2014 a RUNTIME function call that evaluates a file's code at execution time, not a compile-time inclusion directive: it creates a NEW binding scope per eval, the opposite of the contract's 'a part shares the library's single scope, imports nothing'. The rust mod precedent (L-2026-10-21-06) applies the same way: module composition is ownership, not textual part-of. R2 would have to INVENT syntax the language does not have.",
+        "quote": "0 include-tokens in the whole population; Code.eval_file (6 sites) is a runtime call, and the fleet's implemented part_of set is unanimously textual-inclusion directives",
+        "count": {
+          "includeTokens": 0,
+          "codeEvalFile": 6
+        },
+        "population": "parsed=1368/1368 admitted=1368 exts=ex,exs index=no",
+        "falsifier": "a file-inclusion directive spelling in the population (measured 0 include-tokens); Code.eval_file is the counted near miss and is runtime evaluation",
+        "artifact": "validation/m14/measurements/elixir-extended-types-census.json"
       }
     ],
     "corpusUnexercised": [],
@@ -313,6 +355,9 @@
       ],
       "instantiates": [
         "src/ast/real-elixir-analyzer.ts:1411"
+      ],
+      "mixes_in": [
+        "src/ast/real-elixir-analyzer.ts:3052"
       ]
     },
     "_implemented_measured": {
@@ -345,6 +390,6 @@
         "edges": 1834
       }
     },
-    "_from": "DERIVATION. implemented = the nine types with an emission site in src/ast/real-elixir-analyzer.ts (per type in `_emissionSites`), seven of which also carry a stride count in `_implemented_measured`. `extends` is excluded by the pinned grammar's own inventory, not by the missing code. TWO TYPES ARE IMPLEMENTED BUT UNMEASURED CORPUS-WIDE AND ARE NAMED AS SUCH: `imports` (:3018) and `overrides` (:1074, :1770, :2584) have emission sites and read SILENT on the 120-file stride; they stay in the denominator as implemented, their corpus exercise not yet demonstrated. CLOSURE: implemented 9 + corpusUnexercised 0 + gaps 0 = applicable 9 = 10 - 1 grammar-absence - 0 unclassified. WHOLE-POPULATION READING, 2026-10-14: `npx tsx script/m14/incoming-gate.ts elixir ex,exs 1368` sampled EVERY admitted file \u2014 the instrument's own disclosure reads `population: 1368 parsed of 1368 sampled (corpus has 1368 .ex,exs files across 5 repos; stride sample)`, i.e. a stride of 1 over the whole discovered population, not a subset of it. On it, `extends` reads 0 edges while NINE other types fire (calls 61308 contains 14389 exports 7451 uses 6032 references 2566 instantiates 1834 imports 377 implements 285 overrides 174), which is the second, corpus-side reading of the extends exclusion and it agrees with the grammar enumeration. The two types this block previously left uncounted are now measured: `imports` 377 and `overrides` 174."
+    "_from": "DERIVATION. implemented = the TEN types with an emission site in src/ast/real-elixir-analyzer.ts (per type in `_emissionSites`). `mixes_in` is the 2026-10-24 1:1 RELABEL of the former `uses{isMixin:true}` use-directive row (php/ruby shape: same source, target, line, confidence; only the stored type changed) \u2014 the member-read `uses` rows are untouched and still counted under `uses`. `extends`, `decorates`, `renders` and `part_of` are excluded by MEASURED rulings (grammar inventory + counted falsifiers), not by missing code. WHOLE-POPULATION READING, 2026-10-14, unchanged by the relabel: `npx tsx script/m14/incoming-gate.ts elixir ex,exs 1368` sampled EVERY admitted file \u2014 on it `extends` reads 0 edges while NINE other types fire (calls 61308 contains 14389 exports 7451 uses 6032 references 2566 instantiates 1834 imports 377 implements 285 overrides 174), which is the corpus-side reading of the extends exclusion and it agrees with the grammar enumeration. The mixes_in rows are those of the former use-directive `uses` class; their whole-population count is re-measured at the next arm (the 2026-10-14 run predates the relabel and its `uses` 6032 bucket holds both classes; the census measured the use-directive class at 1,368 sites / 855 files)."
   }
 }

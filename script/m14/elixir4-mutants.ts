@@ -35,32 +35,42 @@ const unknownEndpointBack = (r: any) => {
 
 export const ELIXIR4_MUTANTS: Mutant[] = [
   {
+    // RE-SPELLED to the LIVE value `mixes_in` (2026-10-24): the ELX-M14 relabel made the
+    // analyzer emit `mixes_in` for `use Mod`, so the former `x.type !== "uses"` filter was a
+    // NO-OP against the use-directive row — the exact ruby `drop-implements-edge` trap the
+    // registry's own comment records (a no-op mutant is a statement about the mutant, not the
+    // suite). The member-read `uses` rows are NOT this mutant's subject; they survive.
     id: "elixir/elx4-uses-mixin-dropped",
     language: "elixir",
-    defectClass: "relationship type dropped (ELX4 `uses`)",
-    description: "ELX4: `use Mod` stops publishing `uses`. A pin that only asserted `references` would still pass, so this is what proves the new type is asserted.",
-    transform: (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "uses") }),
+    defectClass: "relationship type dropped (ELX-M14 `mixes_in`)",
+    description: "ELX-M14: `use Mod` stops publishing `mixes_in`. A pin that only asserted `references` would still pass, so this is what proves the relabelled type is asserted.",
+    transform: (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "mixes_in") }),
   },
   {
+    // RE-SPELLED to the LIVE value `mixes_in` (same reason as the mutant above): the plausible
+    // wrong fix is now `mixes_in` -> `references`, the module-dep edge surviving while the
+    // mixin claim never appears.
     id: "elixir/elx4-uses-mixin-relabelled",
     language: "elixir",
-    defectClass: "relationship mislabelled (`uses` -> `references`)",
-    description: "ELX4: `use Mod` is relabelled to `references` instead of ALSO emitting `uses` — the plausible wrong fix, in which the module-dep edge survives and the mixin claim never appears. The corpus measurement (512 sites) is what would have hidden it.",
+    defectClass: "relationship mislabelled (`mixes_in` -> `references`)",
+    description: "ELX-M14: `use Mod` is relabelled to `references` instead of ALSO emitting `mixes_in` — the plausible wrong fix, in which the module-dep edge survives and the mixin claim never appears. The corpus measurement (1,368 sites) is what would have hidden it.",
     transform: (r: any) => ({
       ...r,
-      relationships: (r.relationships ?? []).map((x: any) => (x.type === "uses" ? { ...x, type: "references" } : x)),
+      relationships: (r.relationships ?? []).map((x: any) => (x.type === "mixes_in" ? { ...x, type: "references" } : x)),
     }),
   },
   {
+    // RE-SPELLED to the LIVE value `mixes_in` (2026-10-24, same reason as the two above): the
+    // widening mutant must fabricate the LIVE label on the neighbour directives.
     id: "elixir/elx4-uses-applied-to-alias",
     language: "elixir",
-    defectClass: "label widened past its construct (ELX4 `uses` on alias/import/require)",
-    description: "ELX4: the mixin edge is emitted for `alias`/`import`/`require` too. A rename and an import are not mixin applications; this is the neighbour-label failure `forbidRelationships` exists to catch.",
+    defectClass: "label widened past its construct (ELX-M14 `mixes_in` on alias/import/require)",
+    description: "ELX-M14: the mixin edge is emitted for `alias`/`import`/`require` too. A rename and an import are not mixin applications; this is the neighbour-label failure `forbidRelationships` exists to catch.",
     transform: (r: any) => ({
       ...r,
       relationships: [
-        ...(r.relationships ?? []).filter((x: any) => x.type !== "uses"),
-        ...(r.relationships ?? []).filter((x: any) => x.type === "references").map((x: any) => ({ ...x, type: "uses", metadata: { ...x.metadata, isMixin: true } })),
+        ...(r.relationships ?? []).filter((x: any) => x.type !== "mixes_in"),
+        ...(r.relationships ?? []).filter((x: any) => x.type === "references").map((x: any) => ({ ...x, type: "mixes_in", metadata: { ...x.metadata, isMixin: true } })),
       ],
     }),
   },
@@ -72,6 +82,10 @@ export const ELIXIR4_MUTANTS: Mutant[] = [
     transform: (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "imports") }),
   },
   {
+    // RE-SPELLED to the LIVE value `mixes_in` (2026-10-24): the mutant fabricates an `imports`
+    // row from the use-directive edge, which the relabel made `mixes_in` — the old
+    // `x.type === "uses"` source filter matched only member-read rows and the mutant survived
+    // as a NO-OP against its own subject (the ruby trap, found by this very run).
     id: "elixir/elx4-imports-applied-to-use",
     language: "elixir",
     defectClass: "label widened past its construct (ELX4 `imports` on `use`)",
@@ -80,7 +94,7 @@ export const ELIXIR4_MUTANTS: Mutant[] = [
       ...r,
       relationships: [
         ...(r.relationships ?? []),
-        ...(r.relationships ?? []).filter((x: any) => x.type === "uses").map((x: any) => ({ ...x, type: "imports" })),
+        ...(r.relationships ?? []).filter((x: any) => x.type === "mixes_in").map((x: any) => ({ ...x, type: "imports" })),
       ],
     }),
   },
