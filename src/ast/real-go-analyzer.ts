@@ -2,7 +2,12 @@
  * REAL GO ANALYZER — Author: Muhammad Ishaq Khan.
  * WHAT THIS FILE IS. The production `LanguageAnalyzer` for Go (pinned `grammars/tree-sitter-go.wasm`):
  * parses one file and emits the relationships that apply — calls, uses, contains, imports, references,
- * exports, extends, implements, overrides, instantiates, mixes_in. GO'S EMBEDDING IS SPLIT BY THE
+ * exports, extends, implements, overrides, instantiates, mixes_in, renders. `renders` is Go's
+ * TEMPLATE-EXECUTION render host: source = the symbol whose body executes an `html/template`,
+ * target = the PUBLISHED template symbol (a package-level var whose initializer constructs it).
+ * `text/template` is the measured IMPOSTOR class (151 corpus files, almost all code generators)
+ * and publishes no row, and a name-only/runtime identity publishes no row because a name string
+ * would let the arbiter bind an unrelated declaration. GO'S EMBEDDING IS SPLIT BY THE
  * CONTRACT AND BOTH HALVES ARE COUNTED: `type T struct{ E }` is implementation COMPOSITION with no
  * declared supertype — the embedded type's methods are promoted into T's method set and Go has no
  * inheritance clause — which is exactly what the `mixes_in` contract names ("the class composes this
@@ -212,6 +217,11 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
   "overrides|*": "promoted_method_recorded_with_its_qualified_owner_whose_declaring_file_is_out_of_scope",
   "instantiates|*": "instantiated_name_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope",
   "mixes_in|*": "embedded_name_recorded_as_a_promotion_rather_than_a_declared_supertype",
+  // The rendered component is a template SYMBOL whose template-ness is read from
+  // its own constructor call (tree-sitter-go has no type resolution), and the
+  // execution is a method call — the render relation is inferred from those two
+  // facts rather than declared by the language, which is why this row is 0.9.
+  "renders|go_template_render": "render_relation_inferred_from_an_html_template_execution_and_the_template_symbols_own_construction",
 }
 
 /**
@@ -549,6 +559,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // own import list. Empty means no claim is attached anywhere (never a shape guess).
     const stdlibQualifiers = this.collectGoStdlibQualifiers(imports)
     this.analyzeGoRelationships(rootNode, relationships, symbols, ctx, stdlibQualifiers)
+
+    // PHASE 2b: `renders` — the template-execution render host. Runs AFTER the imports are
+    // read (the construct is gated on the file's own `html/template` import) and after the
+    // symbol/relationship passes, so it adds one row per (rendering symbol, published
+    // template symbol) and never replaces a `calls` row: the Execute call is a real
+    // invocation AND a render, and both facts are true of the same site.
+    this.analyzeGoTemplateRenders(rootNode, imports, relationships)
 
     // PHASE 3: (imports were processed above; this phase emits their edges)
 
@@ -963,7 +980,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // moves.
     for (const r of relationships) {
       const t = String(r.type ?? "")
-      if (t === "contains") continue
+      // `contains` and `renders` are excluded because their TARGET IS the
+      // declaration itself (a member; a published template symbol), so there is
+      // no binding question to answer. `renders`' sub-1.0 REASON is still
+      // published by the reasonCode loop above.
+      if (t === "contains" || t === "renders") continue
       const md = r.metadata ?? (r.metadata = {})
       if (typeof md.bindReason === "string" && md.bindReason.length) continue
       const label = String(md.relationshipType ?? "")
@@ -2845,6 +2866,232 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
   }
+
+  /**
+   * RENDERS — Go's render host is the TEMPLATE EXECUTION, and the rendered
+   * component must be a PUBLISHED SYMBOL.
+   *
+   * WHY THIS IS A RELATION AND NOT A CALL. `pageTemplate.Execute(w, data)` is a
+   * method call and the `calls` pass already publishes it; `renders` asserts the
+   * DIFFERENT fact the call performs: this symbol puts THIS template's output on
+   * the wire. The family's renders contract is "the symbol whose body creates
+   * the rendered component renders it" (jsx/tsx; dart's build method returning a
+   * Widget), and Go's standard-library equivalent is `html/template` execution —
+   * the template IS the rendered component. The call edge stays: it is a real
+   * invocation, and one site can honestly carry both facts.
+   *
+   * THE RENDER HOST FILTER IS THE IMPORT, NOT THE NAME. The file must import
+   * `html/template`, the HTML renderer. `text/template` is the measured IMPOSTOR
+   * class — 151 of the corpus's template-importing files use it and almost all
+   * are CODE GENERATORS, not renderers — so a text/template-only file publishes
+   * no renders row, and a file that aliases text/template as a SECOND import
+   * cannot smuggle one in: the constructor's QUALIFIER is resolved against the
+   * html/template import's own local name, never against the spelling
+   * "template". A dot-imported (`import . "html/template"`) constructor cannot
+   * be qualified, so it publishes no row — declared MUST-NOT, not a guess.
+   *
+   * THE TARGET MUST BE A PUBLISHED SYMBOL. A template value is a component only
+   * when the program NAMES it: a package-level var whose initializer constructs
+   * a template (`var page = template.Must(template.New("page").Parse(...))`).
+   * A local template (`tpl := template.Must(...)`), a parameter, a struct field,
+   * a call result or an expression receiver publishes NO row: Go locals are not
+   * symbols (LocalsAreNotSymbols), and a NAME STRING would let the arbiter bind
+   * an unrelated declaration — the false-edge direction this programme refuses.
+   * Cross-file execution is therefore silent too: a per-file analyzer cannot
+   * prove that a bare identifier from ANOTHER file of the package is a template,
+   * and the limitation is declared rather than fabricated around.
+   *
+   * LINE: the OPERAND's line — the rendered symbol's own name at the call site.
+   * A method selector can wrap (`pageTemplate.\n\tExecute(...)`), so the Execute
+   * token's line is a different, wrong site (M59.A7: a row's line is the
+   * name-bearing node's line).
+   *
+   * CONFIDENCE 0.9 / usage_contextual, the render family's tier: both ends are
+   * read from this file, but the template's identity is recognised from its
+   * CONSTRUCTOR CALL rather than a declared type (tree-sitter-go has no type
+   * resolution), so the row is not `structural`.
+   */
+  private analyzeGoTemplateRenders(
+    rootNode: Node,
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    // 1. THE RENDER HOST FILTER — the html/template import's own local name.
+    let hostName: string | undefined
+    let dotImported = false
+    for (const imp of imports) {
+      if ((imp.module ?? "") !== "html/template") continue
+      const alias = typeof (imp as any).alias === "string" ? String((imp as any).alias) : ""
+      if (alias === "_") continue
+      if (alias === ".") {
+        dotImported = true
+        continue
+      }
+      hostName = alias.length > 0 ? alias : "template"
+      break
+    }
+    if (!hostName || dotImported) return
+
+    // 2. THE PUBLISHED COMPONENT SET — package-level var whose initializer
+    //    constructs a template THROUGH THE HOST'S OWN QUALIFIER. The value is
+    //    the template's own `template.New("<literal>")` name when it has one
+    //    ("" means the name is a runtime value and nothing is published for it).
+    const templateSymbols = new Map<string, string>()
+    for (let i = 0; i < rootNode.namedChildCount; i++) {
+      const decl = rootNode.namedChild(i)
+      if (!decl || decl.type !== "var_declaration") continue
+      for (let j = 0; j < decl.namedChildCount; j++) {
+        const spec = decl.namedChild(j)
+        if (!spec || spec.type !== "var_spec") continue
+        const value = spec.childForFieldName?.("value")
+        if (!value) continue
+        const constructed = this.goTemplateConstructionName(value, hostName)
+        if (constructed === null) continue // not a template construction
+        for (let k = 0; k < spec.namedChildCount; k++) {
+          const c = spec.namedChild(k)
+          if (!c || c.type !== "identifier") continue
+          const text = String(c.text ?? "")
+          if (text.length === 0 || text === "_") continue
+          templateSymbols.set(text, constructed)
+        }
+      }
+    }
+    if (templateSymbols.size === 0) return
+
+    // 3. THE RENDER SITES — `<published template symbol>.Execute(...)` /
+    //    `.ExecuteTemplate(...)`. One row per (source, target): the relationship
+    //    is "this symbol renders that template", so a body that executes the
+    //    same template twice is one fact at the first site's line (the lane's
+    //    per-set-with-first-site convention, GO32).
+    const seen = new Set<string>()
+    const stack = [rootNode]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "call_expression") {
+        const fn = node.childForFieldName("function")
+        if (fn && fn.type === "selector_expression") {
+          const field = fn.childForFieldName("field")
+          const operand = fn.childForFieldName("operand")
+          const method = field ? String(field.text ?? "") : ""
+          if (
+            (method === "Execute" || method === "ExecuteTemplate") &&
+            operand && operand.type === "identifier"
+          ) {
+            const target = String(operand.text ?? "")
+            const constructedName = templateSymbols.get(target)
+            if (constructedName !== undefined) {
+              const source = this.findContainingGoFunction(node)
+              const key = `${source ?? ""}|${target}`
+              if (source && !seen.has(key)) {
+                seen.add(key)
+                const templateName = method === "ExecuteTemplate"
+                  ? this.goTemplateRenderNameArgument(node, constructedName)
+                  : constructedName
+                relationships.push({
+                  source,
+                  target,
+                  type: ASTEngine.RelationshipType.Renders,
+                  confidence: 0.9,
+                  ...(this.nodeLine(operand) ? { line_number: this.nodeLine(operand)! } : {}),
+                  metadata: {
+                    relationshipType: "go_template_render",
+                    isRenderHost: true,
+                    renderHost: "html/template",
+                    renderMethod: method,
+                    ...(templateName ? { templateName } : {}),
+                  },
+                })
+              }
+            }
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  /**
+   * Does this initializer construct an `html/template` through the import's own
+   * local name? `null` when it does not construct a template at all; the
+   * template's own `template.New("<literal>")` name when it does; `""` when it
+   * constructs one whose name is a runtime value.
+   *
+   * Recognised root constructors are the standard library's own: Must, New,
+   * ParseFiles, ParseGlob, ParseFS. `Parse` is deliberately NOT a root
+   * constructor: it is a METHOD on a template (`tpl.Parse(...)`), so an
+   * initializer whose root call is `Parse` is not constructing one; the
+   * `template.Must(template.New(...).Parse(...))` chain is recognised through
+   * Must and its arguments are searched for the `New` literal.
+   */
+  private goTemplateConstructionName(node: Node, hostName: string): string | null {
+    const constructors = ["Must", "New", "ParseFiles", "ParseGlob", "ParseFS"]
+    const asHostCall = (n: Node): Node | null => {
+      if (n.type !== "call_expression") return null
+      const fn = n.childForFieldName("function")
+      if (!fn || fn.type !== "selector_expression") return null
+      const operand = fn.childForFieldName("operand")
+      const field = fn.childForFieldName("field")
+      if (!operand || operand.type !== "identifier") return null
+      if (String(operand.text ?? "") !== hostName) return null
+      if (!field || !inArray(constructors, String(field.text ?? ""))) return null
+      return n
+    }
+    const nameOfNew = (call: Node): string => {
+      const args = call.childForFieldName("arguments")
+      const first = args?.namedChild(0)
+      if (!first || first.type !== "interpreted_string_literal") return ""
+      return this.stripQuotedString(String(first.text ?? ""))
+    }
+    /** null = no template construction anywhere; "" = runtime name; else the written name. */
+    const found = (n: Node, depth: number): string | null => {
+      if (depth > 6) return null
+      const root = asHostCall(n)
+      if (root) {
+        const field = root.childForFieldName("function")?.childForFieldName("field")
+        if (String(field?.text ?? "") === "New") return nameOfNew(root)
+        const args = root.childForFieldName("arguments")
+        for (const a of args?.namedChildren ?? []) {
+          if (!a) continue
+          const r = found(a, depth + 1)
+          if (r !== null && r.length > 0) return r
+        }
+        return ""
+      }
+      let sawConstruction = false
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        const r = found(c, depth + 1)
+        if (r !== null) {
+          sawConstruction = true
+          if (r.length > 0) return r
+        }
+      }
+      if (!sawConstruction) return null
+      return ""
+    }
+    return found(node, 0)
+  }
+
+  /**
+   * The rendered sub-template's name, for `ExecuteTemplate(w, "name", data)`:
+   * its SECOND argument when that argument is a string literal; otherwise the
+   * template's own construction name. `undefined` when neither names it — no
+   * NAME is ever invented for metadata.
+   */
+  private goTemplateRenderNameArgument(call: Node, constructedName: string): string | undefined {
+    const args = call.childForFieldName("arguments")
+    const second = args?.namedChild(1)
+    if (second && second.type === "interpreted_string_literal") {
+      const name = this.stripQuotedString(String(second.text ?? ""))
+      if (name.length > 0) return name
+    }
+    return constructedName.length > 0 ? constructedName : undefined
+  }
+
 
   /**
    * Go Interface Implementation Analysis

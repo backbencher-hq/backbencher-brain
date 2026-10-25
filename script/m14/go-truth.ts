@@ -255,3 +255,117 @@ export function deriveGoOverridesTruth(root: Node): GoTruthEdge[] {
   }
   return out
 }
+
+/**
+ * TRUTH for `renders` — Go's render host is the TEMPLATE EXECUTION, and the rendered
+ * component must be a PUBLISHED symbol.
+ *
+ * Written FROM THE GRAMMAR, independently of the analyzer (the family rule; the contract
+ * harness `script/m14/go-oracle-contract.ts` measures agreement before wiring):
+ *
+ *   1. THE RENDER HOST FILTER IS THE IMPORT. The file must import `html/template`, and the
+ *      qualifier is that import's OWN local name (an unaliased import binds `template`; an
+ *      alias binds the alias). `text/template` is the measured IMPOSTOR class — 151 corpus
+ *      files, almost all code generators — and it cannot be admitted through an alias
+ *      because the qualifier is resolved to the html/template binding, not to the spelling
+ *      "template". A dot-imported (`import . "html/template"`) constructor cannot be
+ *      qualified, so it derives NOTHING: the construct is unprovable, and an unprovable
+ *      render is not published as a row.
+ *
+ *   2. THE RENDERED COMPONENT MUST BE A PUBLISHED SYMBOL: a PACKAGE-LEVEL `var` whose
+ *      initializer constructs a template through that qualifier (`Must`, `New`, `ParseFiles`,
+ *      `ParseGlob`, `ParseFS`; `Parse` is a METHOD, not a constructor). Locals, parameters,
+ *      struct fields, call results and name strings can never enter the set, because only
+ *      package-level var initialisers are collected and only IDENTIFIER operands are
+ *      matched — the MUST-NOT classes are excluded by CONSTRUCTION here, not by a filter.
+ *
+ *   3. THE RENDER SITE is `<component>.(Execute|ExecuteTemplate)(...)` inside a
+ *      function/method body; the source is that enclosing symbol. One edge per
+ *      (source, target) — the relation is "this symbol renders that template", and a body
+ *      that executes the same template twice is one fact (the lane's per-set convention).
+ *      The LINE is the OPERAND's line: the rendered symbol's own name at the call site
+ *      (M59.A7), which differs from the Execute token's line when the selector wraps.
+ *
+ * Cross-file execution derives nothing: a per-file truth cannot prove that a bare identifier
+ * from another file of the package is a template, and the limitation is named rather than
+ * guessed around.
+ */
+export function deriveGoRendersTruth(root: Node): GoTruthEdge[] {
+  const out: GoTruthEdge[] = []
+  const unquote = (raw: string): string =>
+    raw.length >= 2 && raw.charCodeAt(0) === 34 && raw.charCodeAt(raw.length - 1) === 34 ? raw.slice(1, -1) : raw
+
+  // 1. THE RENDER HOST — the html/template import's own local name.
+  let host = ""
+  let dotImport = false
+  walk(root, (n) => {
+    if (n.type !== "import_spec") return
+    if (unquote(text(field(n, "path"))) !== "html/template") return
+    const alias = text(field(n, "name"))
+    if (alias === "_") return
+    if (alias === ".") { dotImport = true; return }
+    host = alias || "template"
+  })
+  if (!host || dotImport) return out
+
+  // 2. THE PUBLISHED COMPONENT SET — package-level `var` initialisers only.
+  const CONSTRUCTORS = ["Must", "New", "ParseFiles", "ParseGlob", "ParseFS"]
+  const hostCall = (n: Node): boolean => {
+    if (n.type !== "call_expression") return false
+    const fn = field(n, "function")
+    if (!fn || fn.type !== "selector_expression") return false
+    const op = field(fn, "operand")
+    const fld = field(fn, "field")
+    if (!op || op.type !== "identifier" || text(op) !== host) return false
+    return CONSTRUCTORS.indexOf(text(fld)) !== -1
+  }
+  const containsConstruction = (n: Node, depth: number): boolean => {
+    if (depth > 6) return false
+    if (hostCall(n)) return true
+    for (const c of namedChildren(n)) if (containsConstruction(c, depth + 1)) return true
+    return false
+  }
+  const components = new Set<string>()
+  for (const decl of namedChildren(root)) {
+    if (decl.type !== "var_declaration") continue
+    for (const spec of namedChildren(decl)) {
+      if (spec.type !== "var_spec") continue
+      const value = field(spec, "value")
+      if (!value || !containsConstruction(value, 0)) continue
+      for (const nm of specNames(spec)) {
+        const name = text(nm)
+        if (name.length > 0 && name !== "_") components.add(name)
+      }
+    }
+  }
+  if (components.size === 0) return out
+
+  // 3. THE RENDER SITES — inside a function/method body, `<component>.Execute*`.
+  const enclosingFunction = (n: Node): string => {
+    let cur: Node | null = n.parent
+    while (cur) {
+      if (cur.type === "function_declaration" || cur.type === "method_declaration") return text(field(cur, "name"))
+      cur = cur.parent
+    }
+    return ""
+  }
+  const seen = new Set<string>()
+  walk(root, (n) => {
+    if (n.type !== "call_expression") return
+    const fn = field(n, "function")
+    if (!fn || fn.type !== "selector_expression") return
+    const op = field(fn, "operand")
+    const method = text(field(fn, "field"))
+    if (method !== "Execute" && method !== "ExecuteTemplate") return
+    if (!op || op.type !== "identifier") return
+    const target = text(op)
+    if (!components.has(target)) return
+    const from = enclosingFunction(n)
+    if (!from) return
+    const key = `${from}|${target}`
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push({ label: "renders", from, target, line: op.startPosition.row + 1 })
+  })
+  return out
+}
