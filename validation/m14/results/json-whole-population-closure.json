@@ -1,0 +1,250 @@
+{
+  "meta": {
+    "instrument": "merge-arm-slices.ts",
+    "population": {
+      "parsed": 14158,
+      "corpusTotal": 14158,
+      "admitted": 14158,
+      "string": "parsed=14158/14158 admitted=14158 exts=(slices' own) index=(slices' own)"
+    },
+    "slices": [
+      {
+        "file": "chunk-0.txt",
+        "range": [
+          0,
+          100
+        ],
+        "parsed": 100,
+        "edges": 320892
+      },
+      {
+        "file": "chunk-100.txt",
+        "range": [
+          100,
+          200
+        ],
+        "parsed": 100,
+        "edges": 937676
+      },
+      {
+        "file": "chunk-200.txt",
+        "range": [
+          200,
+          300
+        ],
+        "parsed": 100,
+        "edges": 740404
+      },
+      {
+        "file": "chunk-300.txt",
+        "range": [
+          300,
+          400
+        ],
+        "parsed": 100,
+        "edges": 138165
+      },
+      {
+        "file": "chunk-400.txt",
+        "range": [
+          400,
+          500
+        ],
+        "parsed": 100,
+        "edges": 23433
+      },
+      {
+        "file": "chunk-500.txt",
+        "range": [
+          500,
+          600
+        ],
+        "parsed": 100,
+        "edges": 11075
+      },
+      {
+        "file": "chunk-600.txt",
+        "range": [
+          600,
+          700
+        ],
+        "parsed": 100,
+        "edges": 2130
+      },
+      {
+        "file": "chunk-700.txt",
+        "range": [
+          700,
+          800
+        ],
+        "parsed": 100,
+        "edges": 30891
+      },
+      {
+        "file": "chunk-800.txt",
+        "range": [
+          800,
+          900
+        ],
+        "parsed": 100,
+        "edges": 48879
+      },
+      {
+        "file": "chunk-900.txt",
+        "range": [
+          900,
+          1000
+        ],
+        "parsed": 100,
+        "edges": 62713
+      },
+      {
+        "file": "chunk-1000.txt",
+        "range": [
+          1000,
+          2000
+        ],
+        "parsed": 1000,
+        "edges": 225155
+      },
+      {
+        "file": "chunk-2000.txt",
+        "range": [
+          2000,
+          3000
+        ],
+        "parsed": 1000,
+        "edges": 96173
+      },
+      {
+        "file": "chunk-3000.txt",
+        "range": [
+          3000,
+          4000
+        ],
+        "parsed": 1000,
+        "edges": 144231
+      },
+      {
+        "file": "chunk-4000.txt",
+        "range": [
+          4000,
+          5000
+        ],
+        "parsed": 1000,
+        "edges": 654825
+      },
+      {
+        "file": "chunk-5000.txt",
+        "range": [
+          5000,
+          6000
+        ],
+        "parsed": 1000,
+        "edges": 354622
+      },
+      {
+        "file": "chunk-6000.txt",
+        "range": [
+          6000,
+          7000
+        ],
+        "parsed": 1000,
+        "edges": 323291
+      },
+      {
+        "file": "chunk-7000.txt",
+        "range": [
+          7000,
+          8000
+        ],
+        "parsed": 1000,
+        "edges": 236446
+      },
+      {
+        "file": "chunk-8000.txt",
+        "range": [
+          8000,
+          9000
+        ],
+        "parsed": 1000,
+        "edges": 209974
+      },
+      {
+        "file": "chunk-9000.txt",
+        "range": [
+          9000,
+          10000
+        ],
+        "parsed": 1000,
+        "edges": 51546
+      },
+      {
+        "file": "chunk-10000.txt",
+        "range": [
+          10000,
+          11000
+        ],
+        "parsed": 1000,
+        "edges": 22231
+      },
+      {
+        "file": "chunk-11000.txt",
+        "range": [
+          11000,
+          12000
+        ],
+        "parsed": 1000,
+        "edges": 32200
+      },
+      {
+        "file": "chunk-12000.txt",
+        "range": [
+          12000,
+          13000
+        ],
+        "parsed": 1000,
+        "edges": 64713
+      },
+      {
+        "file": "chunk-13000.txt",
+        "range": [
+          13000,
+          14000
+        ],
+        "parsed": 1000,
+        "edges": 835240
+      },
+      {
+        "file": "chunk-14000.txt",
+        "range": [
+          14000,
+          14158
+        ],
+        "parsed": 158,
+        "edges": 38766
+      }
+    ],
+    "incompleteIgnored": [],
+    "tilingRule": "every slice's parsed equals its claimed width; the union is contiguous from 0 with no overlap and no shortfall; mixed widths are legitimate",
+    "closureRule": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges"
+  },
+  "closure": {
+    "edges": 5605671,
+    "resolved": 5605387,
+    "collRes": 2,
+    "ambDecl": 0,
+    "ambKind": 0,
+    "unresolved": 0,
+    "extOK": 168,
+    "extPending": 116,
+    "extFAIL": 0,
+    "bindOK": 0,
+    "bindPending": 0,
+    "bindFAIL": 0,
+    "causeOK": 0,
+    "causeFAIL": 0,
+    "sum": 5605671,
+    "exact": true
+  }
+}
