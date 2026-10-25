@@ -451,6 +451,9 @@
       ],
       "instantiates": [
         "src/ast/real-cpp-analyzer.ts:4503"
+      ],
+      "part_of": [
+        "src/ast/real-cpp-analyzer.ts:3410"
       ]
     },
     "_emissionSites_revision": "Lines re-derived 2026-10-18 from script/m14/cpp-applicable-set.ts's source scan (the same read the D1 spec table uses). The 2026-10-17 values were taken before the head comment and the overrides spelling restoration moved the pushes; every current line names a `type: ...RelationshipType.X` emission.",
@@ -512,21 +515,73 @@
       },
       "TOTAL": {
         "edges": 1282777
-      }
+      },
+      "_population_superseded": "THE 7,435-FILE / 31-REPO FIGURES IN THIS ENTRY ARE A LOWER BOUND AND ARE SUPERSEDED. Those runs used NINE cpp spellings and omitted `.h` and `.hh`; the ONE extension table holds ELEVEN, and over the farm root that is 18,370 tracked header files. Re-measured with extensionsFor(\"cpp\"): parsed=23237/23237 admitted=23237 exts=cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu index=no across 46 repos. The counts here were measured over a THIRD of the lane and are labelled lower bounds rather than re-baselined in place."
     },
     "grammarRemedyPending": [],
-    "_part_of_measured": {
-      "label": "part_of",
-      "rung": "R3 — TAKEN AND LANDED 2026-10-22 (no grammar change: `preproc_include` is a NAMED node type of the served build)",
-      "emissionSite": "src/ast/real-cpp-analyzer.ts — the `preproc_include` branch of `analyze()`; the helper is `cppPartTargetPath` (module level, pure string scan)",
-      "population": "MEASURED before the emission, whole admitted population: 51,874 include sites = 39,665 QUOTED + 12,209 angle-bracket (script/m14/cpp-four-types-census.ts, validation/m14/measurements/cpp-four-types-census.json)",
-      "contract": "src/ast/types.ts:148-160 — a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module; `metadata.partRole` is MANDATORY",
-      "shape": "QUOTED `#include \"x.h\"` ⇒ `part_of`, source = the including unit (file scope), target = the part's PATH (the including file's directory joined with the specifier, normalised), metadata.partRole = \"part\", metadata.relationshipType = \"part_of_directive\", metadata.isImport = false, metadata.specifier = the written form. ANGLE `<x.h>` ⇒ `imports`, unchanged.",
-      "readersExtended": "src/lsp/graph_request.ts (both file-level queries) and src/lsp/graph_usages.ts (classifyFileLevel) now read `part_of` as a FILE-LEVEL DEPENDENCY — without that clause the move would drop these rows out of the one surface that answers what a translation unit depends on, which is the invisibility #910 was filed to remove.",
-      "fixtures": "cpp/part-of-quoted-include (new, both directions) · cpp/imports-include-910 · cpp/include-kind-imports · cpp/include-name-924 (all three re-pinned from `imports` to `part_of` with an `imports`-forbid arm)",
-      "behaviouralProof": "measured directly through the production parser: quoted include ⇒ 1 `part_of` row with partRole \"part\", relationshipType \"part_of_directive\", isImport false, target a PATH, specifier the written form; angle include ⇒ 1 `imports` row. The edge exists only when the directive reaches the analyzer as a REAL `preproc_include` node.",
-      "targetFormGap": "the target is an ABSOLUTE path, because `analyze()` receives an absolute `filePath` and the analyzer does not know the project root. A PROJECT-RELATIVE form needs the engine's root. NAMED GAP, sized at 100% of quoted-include rows, and the resolution split is the ARM's measurement.",
-      "falsifier": "an include site whose target resolves to a separate module in the same project retires `part_of` for that site and puts it back on `imports`."
-    }
+    "_extendedTypes": [
+      {
+        "label": "part_of",
+        "disposition": "implemented",
+        "rung": "R3 — implement with an EXISTING node type. `preproc_include` is a NAMED node type of the served build (210 named of 496 ids, sha256 0821b6f64ea5444e...), so NO grammar change was needed and no rebuild is wired for this cell.",
+        "population": "parsed=23237/23237 admitted=23237 exts=cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu index=no",
+        "populationSource": "script/m14/cpp-census-denominators.ts over .corpus (git-tracked + the ONE extension table + the 1 MB cap)",
+        "count": 94409,
+        "countUnit": "include sites in the admitted population — the near miss, not the answer: 50,179 QUOTED (the part shape) + 44,230 ANGLE (a separate module's header, which stays `imports`)",
+        "answeringCount": 50179,
+        "answeringUnit": "quoted includes emitted as `part_of`",
+        "emissionSite": "src/ast/real-cpp-analyzer.ts:3410 (the `preproc_include` branch); helpers cppPartTargetPath (:315) and cppPartSymbol (:351)",
+        "shape": "QUOTED `#include \"x.h\"` => type `part_of`, source = the including unit (file scope), TARGET = the part's MODULE SYMBOL (its file stem), metadata.partRole=\"part\" (MANDATORY per src/ast/types.ts:148-160), metadata.relationshipType=\"part_of_directive\", metadata.isImport=false, metadata.specifier = the written form, metadata.partPath = the path (evidence, not the target). ANGLE `<x.h>` => `imports`, unchanged.",
+        "resolutionSplit": "MEASURED over the labelled 2,000-file stride sample of the admitted population (NOT the whole population): 4,612 `part_of` edges => 383 resolved + 272 amb(decl) + 70 amb(kind) + 3,957 unresolved. The 383 is the CONTROLLED result: the same population and sample with the target as a PATH gave 0 of 4,612.",
+        "residual": "3,957 of 4,612 unresolved BY CONSTRUCTION: a header need not declare a symbol named after itself, so the stem binds only where the project declares one. Counted, named, not hidden.",
+        "readersExtended": "src/lsp/graph_request.ts (both file-level queries) and src/lsp/graph_usages.ts (classifyFileLevel) now read `part_of` as a FILE-LEVEL DEPENDENCY. Without that clause, moving the rows would have removed them from the one surface that answers what a translation unit depends on — the invisibility #910 was filed to remove. REPORTED TO THE LEAD, which ruled the edit stays.",
+        "fixtures": "cpp/part-of-quoted-include (both directions, target pinned) · cpp/imports-include-910 · cpp/include-kind-imports · cpp/include-name-924 (re-pinned to part_of with an imports-forbid arm). Suite: cpp 57 pass / 0 fail.",
+        "falsifier": "an include site whose quoted target resolves as a SEPARATE module in the same project retires `part_of` for that site and puts it back on `imports`; and a gate run where the symbol target resolves fewer than 383 of the same 4,612 rows retires the symbol-target remedy."
+      },
+      {
+        "label": "decorates",
+        "disposition": "ruled",
+        "rulingClass": "ontological",
+        "population": "parsed=23237/23237 admitted=23237 exts=cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu index=no",
+        "populationSource": "script/m14/cpp-decorates-discriminator.ts over .corpus",
+        "count": 12456,
+        "countUnit": "attribute sites — the near miss",
+        "nearMiss": "7,311 carry an argument list; 3,180 carry a CALL in an argument (11,609 arguments, 3,308 carrying a call)",
+        "answeringCount": 0,
+        "answeringUnit": "attribute-argument calls whose callee names a callable through a PATH (`field_expression`/`qualified_identifier`) rather than an `identifier`. ZERO of 3,180 => ZERO APPLIED CALLABLES.",
+        "discriminator": "STRUCTURAL, and it uses NO NAME LIST (a name list is the second table that will diverge): in C++ an attribute is spelled `__attribute__((marker(args)))` or `[[ns::marker(args)]]`, so an `identifier` callee IS the marker's own syntax, and only a callee that must RESOLVE could be an applied callable. MEASURED 0 of 3,180 over 23,237 files with 0 failures.",
+        "supersededDefect": "The FIRST discriminator compared the callee's name against the attribute's own marker name and reported 3,308 'distinct callables' while its ten samples were plainly the markers — because the GNU form nests the marker inside the argument_list of an `attribute` child. A DISCRIMINATOR THAT REPORTS THOUSANDS OF THE THING IT SEEKS WHILE ITS OWN SAMPLES SHOW THE OPPOSITE IS BROKEN. Recorded rather than replaced quietly.",
+        "evidence": "validation/m14/measurements/cpp-decorates-discriminator.json",
+        "falsifier": "an attribute site over the admitted population whose argument invokes a callable that is NOT the attribute's own marker — a callee that must RESOLVE — retires the ruling and puts `decorates` back in the denominator as a gap."
+      },
+      {
+        "label": "renders",
+        "disposition": "ruled",
+        "rulingClass": "grammar-remedy-ruled",
+        "population": "parsed=23237/23237 admitted=23237 exts=cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu index=no",
+        "populationSource": "script/m14/cpp-four-types-census.ts over .corpus",
+        "count": 433450,
+        "countUnit": "template sites — the near miss",
+        "answeringCount": 0,
+        "answeringUnit": "calls whose callee NAMES A TYPE ARGUMENT (the C#-lane shape) — 0 of 433,450",
+        "rationale": "C++ has no render/component channel: a type argument to a template is a COMPILE-TIME parameterised composition, and no call passes a component as a type argument. A zero that survived a 3.1x population is a stronger zero than the one that was ruled.",
+        "rungsUnavailable": "R1 no npm build exists for this lane's grammar; R2 was PROVED end to end on another question (four in-repo patches, regenerate + rebuild) but no patch can invent a construct the language does not express; R3 has nothing to build on — no existing node type carries the relation.",
+        "falsifier": "a call site over the admitted population whose callee names a COMPONENT as a type argument — the C#-lane shape — retires the ruling and puts `renders` back in the denominator."
+      },
+      {
+        "label": "mixes_in",
+        "disposition": "ruled",
+        "rulingClass": "grammar-remedy-ruled",
+        "population": "parsed=23237/23237 admitted=23237 exts=cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu index=no",
+        "populationSource": "script/m14/cpp-four-types-census.ts over .corpus",
+        "count": 10007,
+        "countUnit": "base clauses — the near miss",
+        "answeringCount": 8489,
+        "answeringUnit": "base clauses COMPOSING SEVERAL bases into one chain (the `with M` shape)",
+        "rationale": "C++ has a SINGLE base specifier list, not a mixin composition into a chain: `class C : A, B {}` is multiple INHERITANCE, which the vocabulary already carries as `extends` per base. `mixes_in` names the Dart `class C with M` shape — a mixin COMPOSED INTO the supertype chain — which the grammar cannot express. R1 unavailable (no npm build); R2 cannot invent the construct; R3 has nothing to build on.",
+        "falsifier": "a base clause over the admitted population that composes a mixin INTO the supertype chain rather than naming a base type — the `with M` shape — retires the ruling and puts `mixes_in` back in the denominator."
+      }
+    ],
+    "_extendedTypes_unit": "THE FOUR EXTENDED VALUES FOR THIS LANE, EACH WITH ITS COUNT, ITS FULL-FORM POPULATION AND ITS FALSIFIER. The population string is written once per entry in the SAME form the arm prints (parsed/admitted/exts/index) so a reader can compare it with a gate run without translating: parsed=23237/23237 admitted=23237 exts=cpp,cc,cxx,c++,hpp,hxx,hh,h,ipp,inl,cu index=no. `count` is the NEAR MISS (the construct the type might have named); `answeringCount` is what the language's own test turns it into, and it is the number the disposition rests on. Ruled entries carry the rung that was unavailable and why; the implemented entry carries its emission site, its resolution split and its residual."
   }
 }
