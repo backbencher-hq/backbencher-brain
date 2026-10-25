@@ -51,7 +51,7 @@ interface CssContext {
   /**
    * The LIVE declaration of a `@keyframes` name: the at-keyword it was last declared
    * under, and the line it is on. "Live" rather than "first" because CSS Animations L1
-   * §3 makes the LAST declaration of a name the one that runs — so the third
+   *  makes the LAST declaration of a name the one that runs — so the third
    * `@keyframes spin` in a file replaces the SECOND, not the first, and an edge that
    * claimed otherwise would point at a block that was already dead.
    *
@@ -85,7 +85,7 @@ interface CssContext {
    * between them per element. Emitting `overrides` there would claim the second kills the
    * first, which is false. Two declarations in the SAME block have one origin, one
    * specificity, one layer and one importance, so there the later one does replace the
-   * earlier one outright (CSS Cascade 5 §6.1, "The last declaration in document order
+   * earlier one outright (CSS Cascade 5 , "The last declaration in document order
    * wins"), which is the shape `recordKeyframesOverride` already implements for
    * `@keyframes`. So the block, not the file, is the unit.
    */
@@ -284,7 +284,7 @@ function leadingCustomIdent(prelude: string): string {
 /**
  * One code point of a CSS `<custom-ident>` continuation, or false.
  *
- * CSS Syntax 3 §3.2: an ident code point is a letter, a non-ASCII code point, a digit,
+ * CSS Syntax 3 : an ident code point is a letter, a non-ASCII code point, a digit,
  * a hyphen, or an underscore. The non-ASCII and escape arms are not enumerated here
  * because the only caller reads a name this grammar already lexed as a single
  * `keyword_query` token, and an escape inside one arrives as `escape_sequence` text.
@@ -719,7 +719,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileMaxSelectorComplexity: 0,
     }
 
-    // D5 (2026-09-26). The keyframe-name set was filled DURING the walk, so an
+    // D5 . The keyframe-name set was filled DURING the walk, so an
     // `animation:` reference only resolved if the `@keyframes` block appeared
     // EARLIER IN THE FILE. Measured: `.x { animation: fade 1s }` followed by
     // `@keyframes fade { … }` emitted no reference edge at all, while the same
@@ -1463,10 +1463,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * which is equally not a declaration.
    */
   /**
-   * The 1-based line of a node — the M59 convention, matching the symbol
+   * The 1-based line of a node — the convention, matching the symbol
    * `line_start` base the LSP reads with `line - 1`.
    *
-   * M59.A7 / #825. The rule this lane follows is one sentence: **the line belongs
+   * / #825. The rule this lane follows is one sentence: **the line belongs
    * to the NAME, never to the construct that contains it.** Every call site below
    * passes the node the NAME is written on, not the node that encloses it:
    *
@@ -1895,7 +1895,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Universal reset rules (*, *::before, *::after) are boilerplate that
     // carries no semantic symbol — suppress them to keep output clean.
     //
-    // D8 (2026-09-26). The test was "is EVERY selector in the group a reset
+    // D8 . The test was "is EVERY selector in the group a reset
     // selector", so a MIXED group survived whole: `*, .real { … }` produced one
     // symbol named `*, .real` — a fabricated identity that names the universal
     // reset AND a real class in one string, so neither the reset's suppression
@@ -2001,7 +2001,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // stricter metric, it is an unmeasurable one.
       let selectorComplexity = 1
       let nestingDepth = 0
-      // M59.A7: each chain LEAF's own line. The rule "the line belongs to the
+      // each chain LEAF's own line. The rule "the line belongs to the
       // name" means `contains #toc -> a` is named by the `a`, not by the rule's
       // `selectors` node — and in a multi-line selector group those are different
       // lines. Measured: taking the group's line made 7 of 7 chain edges
@@ -2056,7 +2056,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           specClass += 1
           isUtility = false
           selectorComplexity += 1
-          // D7 (2026-09-26). Every other chain form pushes itself — id, tag,
+          // D7 . Every other chain form pushes itself — id, tag,
           // class, universal — and the attribute form did not, so `.a [href]`
           // emitted NO chain edge while `.a .b`, `.a #b` and `.a *` all did. The
           // omission was silent: the selector symbol and its `uses` edges were
@@ -2153,7 +2153,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (isComplex && chain.length >= 2) {
-        // RULING (2026-09-26). A selector chain is DEFERRED, not emitted blind.
+        // RULING . A selector chain is DEFERRED, not emitted blind.
         //
         // `contains .nav -> a` for `.nav a` asserts containment between two
         // things the analyzer does not publish: the rule is ONE symbol named
@@ -2205,7 +2205,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       isComplex,
     )
 
-    // D4 (2026-09-26). A nested rule whose resolved selector is IDENTICAL to its
+    // D4 . A nested rule whose resolved selector is IDENTICAL to its
     // parent is not a new selector. The case is a bare `&`:
     // `.a { & { color: red } }` — a real CSS construct that adds declarations to
     // the parent's own context. Resolving `&` to `.a` and then emitting a symbol
@@ -2268,7 +2268,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx.frameworks["CSS Modules"] = true
     }
 
-    // M59.A7: every one of these five edges is named by the rule's SELECTOR, so
+    // every one of these five edges is named by the rule's SELECTOR, so
     // all five take the `selectors` node's line. The scope source's own line
     // would be a different line for a nested rule, and the `rule_set`'s line
     // would be the same as the selector's here — but the SELECTOR is the name,
@@ -2289,7 +2289,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (`.a { .b { … } }`, no `&` at all) composes too. The scope edges were the
     // same case with the test missing, which is why they were the last ones to
     // fail: nothing in pure CSS nests the way SCSS does, so the CSS corpus rarely
-    // reaches them, and the 40-file M59 sample read 86/86 on the strength of that
+    // reaches them, and the 40-file sample read 86/86 on the strength of that
     // rarity. The SCSS lane, whose entire corpus nests, exposed all 10 at once.
     //
     // So the test is hoisted here and both families consume one answer. A name the
@@ -2369,7 +2369,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
     if (parentSelector) {
-      // M59.A7, and the third state is the answer. A CSS-nested rule writes `&`,
+      // , and the third state is the answer. A CSS-nested rule writes `&`,
       // not its resolved name: the source says `& .item` where the symbol is
       // `.nav .item`. The resolved name is therefore SYNTHESISED — it is written
       // on no line of the file — and the precedent is explicit that a claim of a
@@ -2681,7 +2681,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: this.importerName,
         target: targetName,
         type: ASTEngine.RelationshipType.Imports,
-        // M59.A7: the name on this edge is the MODULE, so the line is the
+        // the name on this edge is the MODULE, so the line is the
         // `string_value` / `call_expression` node — which can be on a LATER line
         // than the `@import` keyword, and is for the multi-line form where the
         // url() wraps its argument. Taking the statement's line would be the
@@ -2848,7 +2848,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // rather than asserting it.
       const mediaName = `@media ${collapseWhitespace(this.atRulePrelude(node, "@media"))}`
       ctx.patterns["Responsive Design (Media Queries)"] = true
-      // RULING (2026-09-26). The comment this replaces read "a media query is a
+      // RULING . The comment this replaces read "a media query is a
       // structural scope, not a symbol — it is NOT emitted as a standalone
       // symbol", and that decision is what made 5,115 relationships carry a
       // source that exists nowhere in the graph: `@media (max-width: 768px)`
@@ -3296,7 +3296,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * ## What the construct is
    *
-   * CSS Animations L1 §3: "If multiple `@keyframes` rules with the same name are
+   * CSS Animations L1 : "If multiple `@keyframes` rules with the same name are
    * declared, the last one wins." The Properties & Values API says the same for a
    * re-registered `@property --x`. So a second declaration of a name REPLACES the
    * first, wholly — the earlier block becomes dead code. This is the same shape the
@@ -3328,7 +3328,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * — spelled three times, once prefixed and twice not — was filed under
    * "cross-keyword" on the strength of its first pair and its genuine redefinition was
    * never counted. It reported 1 where the truth is 4. The rule that decides this is
-   * adjacency, because CSS Animations L1 §3 makes the LAST declaration the live one, so
+   * adjacency, because CSS Animations L1  makes the LAST declaration the live one, so
    * a declaration is compared against the one it replaces and not against its whole
    * group. `validation/m14/census/css-overrides-split.ts` now counts adjacent pairs and
    * agrees with the production census at 4.
@@ -3358,7 +3358,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * rather than left for a reader to infer.
    *
    * The line is also load-bearing for STORAGE, not only for meaning: a relationship's
-   * store key is (source, type, target, line) — M59 #822, which markdown's own
+   * store key is (source, type, target, line) — #822, which markdown's own
    * comment records — so an edge without the superseding line would collide with any
    * other `spin -> spin` edge in the file and `INSERT OR IGNORE` would keep one.
    *
@@ -3421,8 +3421,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * Two declarations of one property inside one block share origin, context, layer,
    * specificity and importance, so nothing about them distinguishes them except their
-   * position, and CSS Cascade 5 §6.1 resolves that: "The last declaration in document
-   * order wins." CSS Variables 1 §2 adds that custom properties are not special here —
+   * position, and CSS Cascade 5  resolves that: "The last declaration in document
+   * order wins." CSS Variables 1  adds that custom properties are not special here —
    * "Custom properties are ordinary properties, so they can be declared on any element,
    * are resolved with the normal inheritance and cascade rules." So the second
    * assignment REPLACES the first outright and the first is dead, which is exactly what
@@ -3445,7 +3445,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * ## `!important` is respected
    *
    * `--x: 1 !important; --x: 2;` does NOT replace — the important declaration wins and
-   * the later one loses. Cascade 5 §6.1 sorts importance above document order, so the
+   * the later one loses. Cascade 5  sorts importance above document order, so the
    * two are not interchangeable and an edge between them would be backwards. Only a pair
    * of EQUAL importance is emitted, which is the only case where "later wins" is the
    * whole rule. Measured on the corpus: every occurrence is an equal-importance pair, so
@@ -3497,7 +3497,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       source: name,
       target: name,
       type: ASTEngine.RelationshipType.Overrides,
-      // M59.A7: the name on this edge is the `@keyframes` name, and it is written on
+      // the name on this edge is the `@keyframes` name, and it is written on
       // BOTH lines — the superseding one first, because that is the declaration the
       // edge is about and the one a reader navigates to.
       line_number: laterLine,
@@ -3593,7 +3593,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let namePart = ""
 
-    // D6 (2026-09-26). Four at-rules that NAME something were producing nothing
+    // D6 . Four at-rules that NAME something were producing nothing
     // at all, because the whitelist below did not mention them:
     //
     //   @font-face   names a font family and its sources. A stylesheet's declared
@@ -3622,7 +3622,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // grammar's 151 ids never produces them. An earlier version of this comment
     // pointed at a "recorded as silent with that reason" entry that did not
     // exist, which is the kind of citation that quietly rots.
-    // D10 (2026-09-26). The whitelist below conflated two different things: an
+    // D10 . The whitelist below conflated two different things: an
     // at-rule that DECLARES a named entity, and an at-rule CONSUMED BY A BUILD
     // TOOL. Measured, the second kind was 71 fabricated `module` symbols in a
     // 148-file sample — `@apply flex` became a symbol named after a Tailwind
@@ -3940,7 +3940,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: currentSelector,
           target: `@mixin ${namePart}`,
           type: ASTEngine.RelationshipType.Uses,
-          // M59.A7: the referenced mixin name is written in the `@include`
+          // the referenced mixin name is written in the `@include`
           // prelude, on the at-rule's own line. (The relation stays `uses` — a
           // mixin reference is a USE. An edit here briefly changed it to
           // `contains` on the theory that the mixin is "contained" in the rule;
@@ -3957,7 +3957,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: this.importerName,
           target: stripAllQuotes(firstToken(namePart)),
           type: ASTEngine.RelationshipType.Imports,
-          // M59.A7: the module name is the at-rule's prelude, on its own line.
+          // the module name is the at-rule's prelude, on its own line.
           line_number: this.lineOf(node),
           confidence: 1.0,
           metadata: { isCssImport: true, isSassModuleImport: true, importSource: this.importerName },
@@ -3981,8 +3981,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Every property a selector declares, recorded on the SELECTOR SYMBOL rather
    * than emitted as a relationship to the property name.
    *
-   * RULING (2026-09-26, measured — script/m14/tmp/css-ontology-census.ts, 457
-   * files / 13 corpora). This used to emit `uses <selector> -> <property>` for
+   * RULING . This used to emit `uses <selector> -> <property>` for
    * every declaration, and the class table says what that cost:
    *
    *   uses   34,727 edges   2,073 resolve at both ends    6.0%
@@ -4034,7 +4033,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (propName === "composes") {
       ctx.patterns["CSS Modules (composes)"] = true
       ctx.frameworks["CSS Modules"] = true
-      // D9 (2026-09-26). The value collection took every child that is not
+      // D9 . The value collection took every child that is not
       // `property_name` and not `:`, which INCLUDED the anonymous `;` — so
       // `.a { composes: b; }` emitted `uses .a -> "b"` and `uses .a -> ";"`. A
       // semicolon is punctuation, not a name, and it was a fabricated edge in
@@ -4049,7 +4048,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: currentSelector,
           target,
           type: ASTEngine.RelationshipType.Uses,
-          // M59.A7: the name is the composed class, so the line is the VALUE
+          // the name is the composed class, so the line is the VALUE
           // node it is written on — not the `composes` property, which is a
           // different name on the same declaration.
           line_number: this.lineOf(val),
@@ -4089,7 +4088,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: currentSelector,
           target: propName,
           type: ASTEngine.RelationshipType.Contains,
-          // M59.A7: the name is the custom property, so the line is its
+          // the name is the custom property, so the line is its
           // `property_name` node — NOT the `declaration`, which can open on
           // an earlier line (a leading comment inside the block, or a declaration
           // written across lines).
@@ -4206,7 +4205,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               // the same both-ends-must-resolve rule the chain edges follow.
               target: this.fontFaceSymbolName(family),
               type: ASTEngine.RelationshipType.Uses,
-              // M59.A7, the same rule as the animation edge: the name is the FAMILY
+              // , the same rule as the animation edge: the name is the FAMILY
               // as written in the value, so the line is the value's line — not the
               // `font-family` property's, and for a fallback list
               // (`"Inter", sans-serif`) the specific family that matched rather
@@ -4234,7 +4233,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: currentSelector,
               target: text,
               type: ASTEngine.RelationshipType.Uses,
-              // M59.A7: the name is the KEYFRAMES name, which is written in the
+              // the name is the KEYFRAMES name, which is written in the
               // VALUE — not the `animation` property, which is a different name
               // and, for the shorthand, shares its line with the duration and
               // easing. Taking the value node is what makes the edge point at the
@@ -4285,7 +4284,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: owner,
               target: n.text.trim(),
               type: ASTEngine.RelationshipType.References,
-              // M59.A7: the name is the custom property INSIDE `var()`, so the
+              // the name is the custom property INSIDE `var()`, so the
               // line is that argument node. The `call_expression` starts at its
               // receiver's position, which for `calc(var(--x) * 2)` is the
               // `calc` — a different line whenever the value wraps.

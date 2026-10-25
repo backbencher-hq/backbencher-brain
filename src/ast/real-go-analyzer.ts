@@ -160,7 +160,7 @@ const GO_SUB_UNIT_REASON: Record<string, string> = {
   "instantiates|go_instantiation": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
   "instantiates|go_package_scope_instantiation": "pascal_case_name_is_a_constructor_convention_with_no_declaration",
 
-  // ── THE BIND REASONS (2026-10-21) — the same eleven facts, asked of a second question.
+  // ── THE BIND REASONS  — the same eleven facts, asked of a second question.
   //
   // The table above answers "WHY IS THIS EDGE BELOW 1.0". The D7 wall needs a
   // different answer: "WHY DID THE ARBITER NOT BIND THIS EDGE's TARGET" — and
@@ -458,7 +458,7 @@ export interface GoContext {
 
 export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
-   * M59.A7 (#825): the CALLEE node of each deduped call, keyed by the enclosing
+   * the CALLEE node of each deduped call, keyed by the enclosing
    * function's `startIndex` and then by the call text. The calls lane iterates
    * `symbol.qualified_calls` — a deduped STRING list by design (M37 #604, GOD9)
    * — so the node an edge's line comes from has to be recorded where the scan
@@ -593,7 +593,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // failure exactly as `unresolved` is. The lane therefore leaves the 200+ stdlib multi-segment
       // imports unresolved even though they cite a CLOSED, language-level vocabulary.
       //
-      // THE RULED MECHANISM is the namespace citation with an OPT-IN slash separator: the Lead's
+      // THE RULED MECHANISM is the namespace citation with an OPT-IN slash separator: the
       // arbiter change splits the target on `/` IN ADDITION to `.`/`::`/`:` ONLY when the edge
       // carries `languageNamespaceSlash: true`, so every other lane's citation arms are
       // byte-identical. The lane emits it for `imports` edges ONLY, and only where ALL of these
@@ -634,7 +634,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // relationship kind by completeness section B, which reads the MARKER
         // (script/m14/completeness-inventory.ts, section B) — so the kind is
         // claimed twice over and the evidence tier stays import_based.
-        // M59.A7 (#825): the import_spec, whose line is the path's line for a
+        // the import_spec, whose line is the path's line for a
         // single import and for each entry of a grouped one (the spec starts
         // at its path — an alias would share the line).
         ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
@@ -767,7 +767,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: e.name,
           type: ASTEngine.RelationshipType.Exports,
           confidence: 1.0,
-          // M59.A7 (#825): the exported declaration's own line.
+          // the exported declaration's own line.
           ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
           metadata: {
             relationshipType: "go_exported_identifier",
@@ -956,7 +956,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const code = GO_SUB_UNIT_REASON[`${t}|${label}`] ?? GO_SUB_UNIT_REASON[`${t}|*`]
       if (code) md.reasonCode = code
     }
-    // VERIFY_GO9 — THE BIND REASON (2026-10-21). The loop above answers "WHY
+    // VERIFY_GO9 — THE BIND REASON . The loop above answers "WHY
     // IS THIS EDGE BELOW 1.0". This one answers the ARBITER's question: "WHY
     // DID THIS EDGE's TARGET NOT BIND TO A DECLARATION". They are different
     // questions, and the difference is measurable, not stylistic.
@@ -1112,7 +1112,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // is the tell — the set was built before generics and never revisited.
     const BUILTINS = new Set(["int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "float32", "float64", "complex64", "complex128", "string", "bool", "byte", "rune", "error", "any", "comparable"])
 
-    // M59.A7 (#825): the node form of collectTypeNames — same traversal, same
+    // the node form of collectTypeNames — same traversal, same
     // BUILTINS guard, same first-wins dedupe, but it keeps the NODE the name is
     // written on so the edge can carry that line instead of the construct's.
     const collectTypeNameNodes = (n: Node, out: Node[], qualified?: string): void => {
@@ -2196,7 +2196,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * M59.A7 (#825): the 1-based line of a syntax node, or `undefined` when the
+   * the 1-based line of a syntax node, or `undefined` when the
    * node is absent. Never 0 — a site that cannot be named is OMITTED from the
    * edge (the #820 rule), so a reader can tell "no line" from "line 1".
    */
@@ -2206,7 +2206,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * M59.A7 (#825): the node that NAMES a call. A `selector_expression` starts at
+   * the node that NAMES a call. A `selector_expression` starts at
    * its RECEIVER, and a receiver-continued chain is valid Go — `.` does not
    * insert a semicolon, so `builder.` + newline + `Reset()` parses — which makes
    * the selector's own start the wrong site exactly as the c lane measured on a
@@ -2222,7 +2222,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * M59.A7 (#825): the callee leaf of a STATEMENT-level call — `defer`/`go`
+   * the callee leaf of a STATEMENT-level call — `defer`/`go`
    * statements. The statement starts at its keyword (and `defer` does not insert
    * a semicolon, so `defer` + newline + `cleanup()` is valid Go), so the keyword
    * is not where the target is named.
@@ -2538,7 +2538,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
-          // M59.A7 (#825): the member's own declaration line (its name node, so
+          // the member's own declaration line (its name node, so
           // a wrapped declaration reports where the name is written).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
@@ -2580,7 +2580,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * hiding one without re-deriving the signature.
    *
    * CONFIDENCE 0.95, BELOW 1.0 AND NOT 1.0, with a reason code per the M14
-   * contract §4: the two declarations are read from this file, but the outer
+   * contract : the two declarations are read from this file, but the outer
    * type's promoted set is resolved against the embedding closure as THIS FILE
    * declares it. A method promoted from another file of the same package is not
    * in the closure, so this edge's absence is not evidence of absence — see the
@@ -2701,13 +2701,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${embedder}.${em.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
-          // M59.A7 (#825): the SHADOWING declaration's own line — the site that
+          // the SHADOWING declaration's own line — the site that
           // makes `x.M` select this method rather than the promoted one.
           ...(m.range?.startLine ? { line_number: m.range.startLine } : {}),
           metadata: {
             relationshipType: "go_method_promotion_shadowing",
             isOverride: true,
-            // contract §4: confidence < 1.0 carries a machine-readable reason.
+            // contract : confidence < 1.0 carries a machine-readable reason.
             reasonCode: "promoted-method-shadowed-by-outer-declaration",
             // True when the two signatures match, i.e. this is a substitutable
             // override; false when the outer method merely HIDES the promoted one
@@ -2794,7 +2794,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // label move rather than a distribution change.
                 type: ASTEngine.RelationshipType.MixesIn,
                 confidence: 0.8,
-                // M59.A7 (#825): the EMBEDDED TYPE's line — the site the
+                // the EMBEDDED TYPE's line — the site the
                 // embedded declaration is written on.
                 ...(this.nodeLine(embeddedType) ? { line_number: this.nodeLine(embeddedType)! } : {}),
                 metadata: {
@@ -2846,7 +2846,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: leaf,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 0.8,
-                // M59.A7 (#825): the embedded interface reference's own line.
+                // the embedded interface reference's own line.
                 ...(this.nodeLine(inner) ? { line_number: this.nodeLine(inner)! } : {}),
                 metadata: {
                   relationshipType: "go_interface_embedding",
@@ -2903,7 +2903,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * LINE: the OPERAND's line — the rendered symbol's own name at the call site.
    * A method selector can wrap (`pageTemplate.\n\tExecute(...)`), so the Execute
-   * token's line is a different, wrong site (M59.A7: a row's line is the
+   * token's line is a different, wrong site (a row's line is the
    * name-bearing node's line).
    *
    * CONFIDENCE 0.9 / usage_contextual, the render family's tier: both ends are
@@ -3200,7 +3200,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // FOUND BY THE FULL-EXTENT READ, NOT BY A GATE: `go-799-surface.ts` over
     // go-tools (1,931 files) crashed on
     // `go/callgraph/vta/vta.go`, whose `constructor` type is exactly the name in
-    // the oracle's comment. See reviews/go/sixth-review.md §12.
+    // the oracle's comment. See reviews/go/sixth-review.md .
     const embeddedOf: Record<string, string[]> = Object.create(null)
     for (const r of relationships) {
       // Same relabel discipline as the promotion-shadowing pass above: the
@@ -3229,7 +3229,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // method list at every embedding hop while re-deriving every method
     // signature on every comparison. Measured on synthetic files: 80×80 with
     // embedding cost 17.4 s, and ms/KB climbed 35 → 64 → 361 → 662 as the file
-    // doubled, i.e. superlinear in a way LANE-AUDIT-FORMULA §9's "flat ms/KB
+    // doubled, i.e. superlinear in a way LANE-AUDIT-FORMULA 's "flat ms/KB
     // means linear" check exists to catch. Hoisting it below makes the closure
     // O(candidates × embedding depth) instead of O(interfaces × candidates ×
     // depth), which is the same set for every interface by construction.
@@ -3297,7 +3297,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: interfaceSymbol.name,
             type: ASTEngine.RelationshipType.Implements,
             confidence: valueImpl.confidence,
-            // M59.A7 (#825): the interface declaration's own line — the site
+            // the interface declaration's own line — the site
             // that NAMES the target (the struct's line would name the source).
             ...(interfaceSymbol.range?.startLine ? { line_number: interfaceSymbol.range.startLine } : {}),
             metadata: {
@@ -3530,7 +3530,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const ownPackageName = this.goOwnPackageName(rootNode)
     forEachSymbol(functions, (func) => {
       const qualifiedCalls = func.qualified_calls || []
-      // M59.A7 (#825): the callee leaf recorded by findGoFunctionCalls, keyed by
+      // the callee leaf recorded by findGoFunctionCalls, keyed by
       // the enclosing symbol's startIndex (file-local, so it cannot collide).
       const callSites = this.goCallSites.get(func.range?.startIndex ?? -1)
       forEachSymbol(qualifiedCalls, (call) => {
@@ -3733,7 +3733,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: leaf,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
-              // M59.A7 (#825): the package-scope walk holds the callee node
+              // the package-scope walk holds the callee node
               // directly — its LEAF's line, not the statement's.
               ...(this.nodeLine(this.goCalleeNameNode(fn)) ? { line_number: this.nodeLine(this.goCalleeNameNode(fn))! } : {}),
               metadata: {
@@ -3876,7 +3876,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.8,
-              // M59.A7 (#825): the constructed TYPE's line.
+              // the constructed TYPE's line.
               ...(this.nodeLine(typeNode) ? { line_number: this.nodeLine(typeNode)! } : {}),
               metadata: {
                 relationshipType: "go_composite_literal_construction",
@@ -3940,7 +3940,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: functionCall,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
-              // M59.A7 (#825): the callee leaf of the `go` statement.
+              // the callee leaf of the `go` statement.
               ...(this.nodeLine(this.goStatementCalleeNode(node)) ? { line_number: this.nodeLine(this.goStatementCalleeNode(node))! } : {}),
               metadata: {
                 relationshipType: "go_goroutine",
@@ -4001,7 +4001,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: channelVar.name,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.8,
-              // M59.A7 (#825): the send/receive statement's line.
+              // the send/receive statement's line.
               ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
               metadata: {
                 relationshipType: "go_channel_operation",
@@ -4027,7 +4027,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: deferredFunction,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
-            // M59.A7 (#825): the callee leaf of the `defer` statement.
+            // the callee leaf of the `defer` statement.
             ...(this.nodeLine(this.goStatementCalleeNode(node)) ? { line_number: this.nodeLine(this.goStatementCalleeNode(node))! } : {}),
             metadata: {
               relationshipType: "go_defer",
@@ -4418,7 +4418,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: name,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
-              // M59.A7 (#825): the identifier's own line.
+              // the identifier's own line.
               ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
               metadata: { relationshipType: "identifier_usage", nodeType: node.type },
             })
@@ -4494,7 +4494,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: tgt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.7,
-              // M59.A7 (#825): the FIELD identifier's line, not the receiver's —
+              // the FIELD identifier's line, not the receiver's —
               // the c lane's receiver-start lesson applied to `a.b`.
               ...(this.nodeLine(field) ? { line_number: this.nodeLine(field)! } : {}),
               metadata: { relationshipType: "go_selector_use", selectorExpression: key },
@@ -5344,7 +5344,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * The embedded fields of a struct, as NODES. M59.A7 (#825): the `extends`
+   * The embedded fields of a struct, as NODES. the `extends`
    * edge these feed carries the embedded TYPE's own line, so the walk has to
    * return the node the name is written on and not just its text.
    *

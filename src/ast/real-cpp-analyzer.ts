@@ -30,7 +30,7 @@
  * cannot be claimed here. The arbiter verifies the declared root against the committed vocabulary and
  * counts a match as `extOK` / `verifiedBy: "namespace"` — NEVER a resolution; an unlisted claimed root
  * would REFUTE (extFAIL), which is why the vocabulary test is the analyzer-side guard. `absl`/`json`/
- * `testing` are deliberately NOT admitted (vendoring caveat, Lead ruling §18.23).
+ * `testing` are deliberately NOT admitted (vendoring caveat, Lead ruling ).
  */
 const CPP_CITATION_STDLIB_ROOTS: ReadonlySet<string> = new Set([
   "move", "string", "max", "infinity", "min", "quiet_NaN", "make_pair", "isnan", "signaling_NaN",
@@ -50,7 +50,7 @@ function cppCitationFacts(qualified: string, leaf: string): Record<string, unkno
   const lt = t.indexOf("<")          // template arguments are not part of the root
   if (lt > 0) t = t.slice(0, lt)
   if (t.split("::")[0]?.trim() !== "std") return {}
-  // NARROWING CONTRACT (Lead §18.27, importedName precedent): the companion policy marker says this
+  // NARROWING CONTRACT (Lead , importedName precedent): the companion policy marker says this
   // citation may speak ONLY for a row the NAME MODEL has nothing to say about (project declaration
   // count 0). The Lead adds the arbiter field that honors it for cpp rows; without it the claim is a
   // plain namespace claim, so the arm that measures the narrowing must carry the arbiter change.
@@ -162,7 +162,7 @@ function stripIncludeChars(text: string): string {
  * `package`, and this project declares that dependency". The evidence is the PROJECT'S OWN MANIFEST, so a
  * name from a package the project does not depend on cannot be claimed, and the checkout can refute it.
  *
- * WHY C++ NEEDS ITS OWN MEMBERSHIP TEST (the lane's ruling — CPP-PACKAGE-SCOPE-RULING.md §1). Dart's
+ * WHY C++ NEEDS ITS OWN MEMBERSHIP TEST (the lane's ruling — CPP-PACKAGE-SCOPE-RULING.md ). Dart's
  * import says `package:json_annotation/…`, so the package is IN the spelling. **A C++ translation unit
  * says which library a name comes from by the HEADER it includes**, and a header names a PATH, not a
  * package. So the C++ analogue of dart's `package:` URI is the `#include` directive, and the test is:
@@ -291,7 +291,7 @@ function cppExternalIncludeRoots(root: Node): Set<string> {
 
 
 /**
- * PART_OF (R3, owner-ruled 2026-10-21 — NO grammar change is taken, because `preproc_include` is a
+ * PART_OF (R3, per the measured ruling — NO grammar change is taken, because `preproc_include` is a
  * NAMED node type of the served build and the construct is C++'s own).
  *
  * A QUOTED include (`#include "x.h"`) is a FRAGMENT of the including unit: it shares that unit's
@@ -3118,11 +3118,11 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 target: raw,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.9,
-                // M59.A7 (#825): the written path names the edge, not the `using`
+                // the written path names the edge, not the `using`
                 // keyword — `using namespace\n  std;` would otherwise name the line
                 // above the module.
                 line_number: this.nodeLine(targetNode ?? node),
-                // M14-HONESTY-CONTRACT §4: an edge below 1.0 carries a
+                // M14-HONESTY-CONTRACT : an edge below 1.0 carries a
                 // machine-readable reason code, and `classifyEvidenceTier` defaults
                 // a MISSING confidence to 1 — so a 0.9 with no code is a number a
                 // consumer can bucket but not explain. Measured over 929 corpus
@@ -3401,7 +3401,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             const isQuotedPart = !isSystem
             relationships.push({
               source: "global",
-              // ★ THE TARGET IS A SYMBOL, NOT A PATH (owner-ruled 2026-10-22). MEASURED before this
+              // ★ THE TARGET IS A SYMBOL, NOT A PATH (per the measured ruling). MEASURED before this
               // change: emitting the PATH gave 0 resolved of 4,612 `part_of` edges — 100 % unresolved —
               // because the arbiter resolves TARGET STRINGS AGAINST SYMBOL NAMES and has no space for a
               // path. The contract permits either ("the part's file or its module symbol"); the symbol is
@@ -3409,7 +3409,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               target: isQuotedPart ? cppPartSymbol(includePath) : includePath,
               type: isQuotedPart ? ASTEngine.RelationshipType.PartOf : ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
-              // M59.A7 (#825), the C lane's rule: the include directive is the
+              // , the C lane's rule: the include directive is the
               // source construct and its WRITTEN NAME is the path token — take
               // that node's line, not the directive's (a multi-line include puts
               // the path last).
@@ -3814,7 +3814,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 target,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
-                // M59.A7 (#825): a type expression's start is not always the
+                // a type expression's start is not always the
                 // line of the names inside it (a specifier starts at its
                 // KEYWORD) — `nameLine` prefers the grammar's `name` field.
                 line_number: this.nameLine(typeNode),
@@ -4825,11 +4825,11 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
-              // M59.A7 (#825) / #870: the FIELD LEAF names this edge. This row
+              // / #870: the FIELD LEAF names this edge. This row
               // carried no line at all, which is the #870 measurement (a member
               // read reported at line 0 in the fmt lane).
               line_number: this.nodeLine(field),
-              // M14-HONESTY-CONTRACT §4, and the code says what the 0.9 means:
+              // M14-HONESTY-CONTRACT , and the code says what the 0.9 means:
               // the edge states that THIS SCOPE READS a member with this name, and
               // the RECEIVER'S TYPE is not resolved — nothing here carries C++ type
               // inference, so which class declares the member is unknown and a
@@ -4863,7 +4863,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           // Stops at identifier / field_identifier / type_identifier /
           // operator_name / destructor_name. The FULL qualified path stays in
           // qualifiedName (qc payload) — only the edge target is the leaf.
-          // M59.A7 (#825) contract, mirrored from the C lane: a row's line is the
+          // contract, mirrored from the C lane: a row's line is the
           // line of the node that NAMES the relationship. For a call that is the
           // CALLEE LEAF — a `call_expression` starts at its RECEIVER, so a
           // multi-line receiver (`return obj\n  .method()`) would stamp the call
@@ -5037,7 +5037,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               // and honestly, in `metadata.qualified` (the full callee path) — it
               // is not a confidence question.
               confidence: 1.0,
-              // M59.A7 (#825) / M60.P1 (#873): ONE line, ONE base, ONE node. The
+              // / M60.P1 (#873): ONE line, ONE base, ONE node. The
               // row's `line_number` is the callee leaf's line (the node that
               // names the edge) and the metadata mirror repeats THAT value
               // instead of the call node's — a mirror that named a different
@@ -5153,7 +5153,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               toSymbol: typeNode.text,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: typeNode.hasError ? 0.6 : 1.0,
-              // M59.A7 (#825): the constructed type's own node names this edge —
+              // the constructed type's own node names this edge —
               // `new` and its type can sit on different lines. Same value in the
               // #873 mirror, 1-based.
               line_number: this.nodeLine(typeNode),
@@ -5386,14 +5386,14 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             // symbol publishes only its leaf — `pool-worker.ts` normalises `qualifiedName` to
             // `name` for a symbol with no `scope`/`fqn`, so `Base.method` is a spelling no
             // declaration answers to. Measured before this spelling was restored: 1,875 of
-            // 1,875 `overrides` edges unresolved on the whole cpp population (CPP-RESIDUAL §1).
+            // 1,875 `overrides` edges unresolved on the whole cpp population (CPP-RESIDUAL ).
             // This is commit a29357562's landed fix ("the leaf spelling … WITH the owner carried
             // in metadata", measured there as 86 edges: 86 unresolved -> 0), which the
             // `0b597d2e4` take-main merge dropped and this iteration restores.
             target: pend.method,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: hit.confidence,
-            // M59.A7 (#825): the overriding method's own declaration site (the
+            // the overriding method's own declaration site (the
             // pending record carries the line captured where the method was
             // walked — a post-loop resolution has no node to ask).
             line_number: pend.line,
@@ -5410,7 +5410,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               // task-22 (flag-gated): does the INDEX's inheritance-closed member view confirm this
               // base declares the method? Absent when there is no complete index.
               ...indexOverridesFacts(hit.base, pend.method),
-              // M14-HONESTY-CONTRACT §4: any edge under 1.0 carries a
+              // M14-HONESTY-CONTRACT : any edge under 1.0 carries a
               // machine-readable reason code, and `override`/`final` is
               // recorded so a reader can tell an asserted override from an
               // inferred one without re-parsing the source.
@@ -5480,7 +5480,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           target,
           type: ASTEngine.RelationshipType.Exports,
           confidence: 1.0,
-          // M59.A7 (#825): the exported NAME's line, which is the declaration's
+          // the exported NAME's line, which is the declaration's
           // `nameLine`, not the attribute's — `__declspec` precedes the type.
           line_number: pend.line,
           metadata: {
@@ -5515,7 +5515,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
     //
     // `calls` is deliberately NOT deduped here, and that is a measured
     // distinction rather than an oversight: line N calling `foo` and line M
-    // calling `foo` are two facts, each carrying its own M59.A7 `line_number`,
+    // calling `foo` are two facts, each carrying its own `line_number`,
     // and the C, TypeScript and Java lanes all emit both. The family's
     // "one edge per pair" set (`emittedUseRelationships` in C, `usesSeen` here)
     // covers `uses`/`references` — the read/include shapes, where many sites
@@ -5541,10 +5541,10 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
         target: s.name,
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1.0,
-        // M59.A7 (#825) + #921 (M60): a contains edge takes the CHILD's line,
+        // + #921 (M60): a contains edge takes the CHILD's line,
         // and "the child's line" means the line that NAMES it — the rule every
         // other relationship type already follows (`nameLine`) and the rule the
-        // M59 Tier A oracle checks. The symbol's RANGE still starts at its whole
+        // Tier A oracle checks. The symbol's RANGE still starts at its whole
         // declaration node (search, edit anchors and the M73 line base read
         // that), so the two are no longer forced to agree: a wrapped return
         // type used to put the edge on the declaration's first line, where the
@@ -5574,7 +5574,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
     // 7,366 files re-parsed — `script/m14/cpp-scope-form-census.ts`, artifact
     // `.tmp-cpp/scope-form-fmt2.json`): the "::" form DECIDES 22,770 of 871,129 residual rows
     // (2.61 %) — 7,670 unique-leaf and 15,100 many-leaf. A DECIDED class is a class-like OWNER
-    // that declares the member, so the deciding instrument's falsifier (the Lead's wording:
+    // that declares the member, so the deciding instrument's falsifier (the wording:
     // "if bucket (B) > 0 … then W4's falsifier applies and you publish `qualifiedName` for cpp
     // members and re-measure") IS IN SCOPE. Bucket (B) > 0. ⇒ THIS BLOCK IS THAT FALSIFIER.
     //
@@ -6234,10 +6234,10 @@ private functionDeclaratorOf(node: Node | null): Node | null {
   }
 
   /**
-   * M59.A7 (#825): the line of the node that NAMES a relationship, 1-based, or
+   * the line of the node that NAMES a relationship, 1-based, or
    * `undefined` when the site is not attributable — never a fabricated 0 and
    * never an enclosing declaration's line. The C lane carries the identical
-   * helper; the contract is "call-site line or NULL" (M59.O2).
+   * helper; the contract is "call-site line or NULL" ().
    */
   private nodeLine(node: Node | null | undefined): number | undefined {
     if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
@@ -6245,7 +6245,7 @@ private functionDeclaratorOf(node: Node | null): Node | null {
   }
 
   /**
-   * M59.A7 (#825): a type expression's start is not the line of the names inside
+   * a type expression's start is not the line of the names inside
    * it. A specifier starts at its KEYWORD, and a wrapped declaration puts the
    * name on the following line:
    *
@@ -6344,7 +6344,7 @@ private functionDeclaratorOf(node: Node | null): Node | null {
    *      above are ACTUALLY used. Measured over the corpus: 11 macro definitions
    *      name `dllexport` and 0 declarations spell it inline except through one.
    *      Reading that needs macro expansion, which is a DECLARED limitation of
-   *      this lane (M14-HONESTY-CONTRACT §3, "macro/template expansion
+   *      this lane (M14-HONESTY-CONTRACT , "macro/template expansion
    *      boundaries (c, cpp, rust, hcl)"), so the macro-mediated population is
    *      reported with its count rather than resolved.
    *

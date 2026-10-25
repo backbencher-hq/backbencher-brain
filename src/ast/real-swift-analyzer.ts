@@ -223,7 +223,7 @@ interface OverrideTask {
   methodName: string
   ownerFqn: string
   /**
-   * M59.A7 (#825 lineage, swift lane): the override DECLARATION's own line —
+   * (#825 lineage, swift lane): the override DECLARATION's own line —
    * the method NAME's line, checkable against the source. Never a guess: an
    * edge whose declaration has no range stays unlined (the field's ruled
    * absence state) rather than borrowing the enclosing type's line.
@@ -337,7 +337,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // leave a dangling edge when the other site is gone). Counted per site, the
     // post-walk retires the edge only when no non-construction site remains.
     const callSiteCounts = new Map<string, number>()
-    // M59.A7 (#825 lineage): the LINES of those sites, per (source, leaf).
+    // (#825 lineage): the LINES of those sites, per (source, leaf).
     // `emittedCalls` keeps the FIRST site's edge, which after a #942
     // conversion may be a site that no longer emits a call — so a surviving
     // `calls` edge must be re-lined onto a site that is STILL a call, or the
@@ -450,7 +450,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (caseName && caseName !== "case") {
             // The IDENTIFIER node carries the range, exactly as functions use
             // their name node: a decorated declaration's line is its own `case`
-            // line, never the decorator's (the M59 #861 decorated-range ruling,
+            // line, never the decorator's (the #861 decorated-range ruling,
             // applied to swift).
             this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, caseNode ?? curr, parentSymbol, symbols, { enumCase: true })
           }
@@ -621,7 +621,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         // Re-line the SURVIVING calls edges onto a site that is still a call
-        // (#942 + M59.A7): the edge kept by the dedupe is the first site's, and
+        // (#942 + ): the edge kept by the dedupe is the first site's, and
         // that site may be exactly the one this conversion retired — the
         // construction edge above already carries it.
         if (callSiteLines.size > 0) {
@@ -811,7 +811,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           weight: 0.9,
           confidence: 1.0,
           // The MODULE NAME's own line — the site a reader checks, the same node
-          // the ImportInfo row and the references edge are lined at (M59.A7:
+          // the ImportInfo row and the references edge are lined at (
           // `@_exported\nimport Basic` lines the edge at the module name, 11,
           // never the attribute's line, 10).
           ...(typeof reLine === "number" ? { line_number: reLine } : {}),
@@ -2461,7 +2461,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * Polled by the export emission only: the symbol table already carries these
    * names, but the export LINE must come from the declaration's own name node
-   * (M59.A7: a decorated declaration's line is its NAME's line, never the
+   * (a decorated declaration's line is its NAME's line, never the
    * decorator's — pinned by the `Decorated` row of swift/exports-visibility and
    * mutant SW-EXP-14).
    */
@@ -2526,7 +2526,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `swiftExport: true` is the marker the CLASSIFICATION keys on indirectly
    * (`reExport` absent -> structural): the access level is a grammar clause read
    * off the declaration's own `modifiers` node, so nothing here is inferred and
-   * no reason code is owed (honesty contract §4).
+   * no reason code is owed (honesty contract ).
    */
   private emitDeclarationExport(
     node: Node,
@@ -2560,7 +2560,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ENDPOINT INTEGRITY: the name node must lie INSIDE the declaration node it
     // was read from. A resolver that returned a node from another subtree would
     // publish a name — and a LINE — belonging to a different declaration, and
-    // the line is the one field a reader checks against the source (M59.A7:
+    // the line is the one field a reader checks against the source (
     // `Decorated`'s edge must carry the NAME's line, 73, never the
     // `@available` declaration's, 71). A foreign node is withheld, not published.
     if (nameNode.startIndex < node.startIndex || nameNode.endIndex > node.endIndex) return
@@ -2672,7 +2672,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       break
     }
     if (moduleName) {
-      // M59.A7: the range is the MODULE NAME's site, not the whole import
+      // the range is the MODULE NAME's site, not the whole import
       // declaration — an attribute on its own line (`@testable
       // \nimport Alamofire`) made the declaration start one line above the
       // `import`, so the references edge claimed a line holding only
@@ -3069,7 +3069,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * M59.A7 (#825 lineage): base sites WITH their name nodes, because a heritage
+   * (#825 lineage): base sites WITH their name nodes, because a heritage
    * edge must name the base specifier's own line — the declaration's line is a
    * different site, and borrowing it is the fabrication the line rule forbids.
    */
@@ -3088,7 +3088,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * The store's `line_number` for a node: its 1-based start row.
    * `undefined` when there is no node — the field's ruled absence state, never
-   * a fabricated 0 and never an enclosing declaration's line (M59.A7 / R6).
+   * a fabricated 0 and never an enclosing declaration's line (/ R6).
    */
   private nodeLine(node: Node | null | undefined): number | undefined {
     if (!node) return undefined

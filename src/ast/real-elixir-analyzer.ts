@@ -17,7 +17,7 @@
 // (`.ex`/`.exs`) · the BEAM sibling src/ast/real-erlang-analyzer.ts (keep the tier model in step). NOTE:
 // elixir HAS its `LANG_CONFIG` row in script/m14/completeness-inventory.ts (`--lang elixir` answers
 // "47 types classified; lane-pass 8/8 (A-H)"); the stale "unknown language elixir" note is corrected here.
-// ROUND-2 (fleet phase): X14 skips capture-placeholder/special-variable field reads as calls, and X15
+// ROUND-2 : X14 skips capture-placeholder/special-variable field reads as calls, and X15
 // skips operator macro leaves after `Kernel.` — both were publishing fake `calls` targets (`&1.status`,
 // `__ENV__.lexical_tracker`, `Kernel.<>`); fixture pair `x14-capture-and-operator-calls` pins both directions.
 // Grammar: tree-sitter-elixir (wasm/tree-sitter-elixir.wasm; engine.ts maps node_modules/tree-sitter-elixir).
@@ -113,7 +113,7 @@ interface ElixirContext {
   // never a struct-field read, so it is dropped from the `uses` surface even
   // when the leaf happens to be a declared struct field elsewhere in the file.
   mapBoundByScope: Map<string, Set<string>>
-  // Countable reasons, reported in `metadata` (§4's third clause): how many
+  // Countable reasons, reported in `metadata` ('s third clause): how many
   // staged reads were verified, how many were published as contextual, and how
   // many were dropped because the receiver was provably a map.
   usesVerified: number
@@ -147,7 +147,7 @@ const EXPORTED_KINDS = new Set<string>([
   ASTEngine.SymbolKind.Type,
 ])
 
-// ELX-ONTOLOGY-VOCAB (owner's ruling, 2026-10-10) — the evidence class each
+// ELX-ONTOLOGY-VOCAB  — the evidence class each
 // label claims when its emitting site does not name one. The vocabulary is the
 // WAVE/TIER set the rest of the corpus pins: `structural` for an edge read off
 // declaration nodes, `reference_qualified` for a target resolved through a
@@ -167,10 +167,10 @@ const EXPORTED_KINDS = new Set<string>([
 // is retired with its EX-EX rulings kept in the fixtures' rationales.
 //
 // A site that names its OWN class keeps doing so — those are deliberate and
-// pinned by passing fixtures: the `use` mixin row is `structural` (§13,
+// pinned by passing fixtures: the `use` mixin row is `structural` (,
 // "the evidence is syntax, not context"), and the member-field read is
 // `struct_field_read` at 0.9 / `usage_contextual` at 0.7 so the two claims stay
-// countable apart (§4).
+// countable apart ().
 const DEFAULT_EVIDENCE_CLASS: Record<string, string> = {
   contains: "structural",
   exports: "structural",
@@ -473,7 +473,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // (fixture otp-messaging).
                   let meta: any = {}
                   if (t === "Task.async" || t === "Task.start" || t === "Task.start_link" || t === "Agent.start" || t === "Agent.start_link") meta = { isProcessSpawn: true }
-                  // M59: the callee name-bearing node's line + the call's arity.
+                  // : the callee name-bearing node's line + the call's arity.
                   const callArgs = this.findChild(node, (c) => c?.type === "arguments")
                   this.recordCall(t, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), meta, targetNode ? targetNode.startPosition.row + 1 : node.startPosition.row + 1, callArgs ? callArgs.namedChildCount : 0)
                 }
@@ -1135,7 +1135,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     //     against; a field of a struct declared in another file is not a
     //     fabrication, and `member-read-uses` requires these reads to exist.
     //     They stay at 0.7 `usage_contextual` — the weaker label is the honest
-    //     one, and it keeps the two populations countable apart (§4 clause 3).
+    //     one, and it keeps the two populations countable apart ( clause 3).
     //
     // The MAP gates apply in BOTH branches, because they do not depend on the
     // declared-field vocabulary: `%{} = m` then `m.id` is a map-key read whether
@@ -1233,7 +1233,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         detectedFrameworks: frameworks, frameworkPatterns,
         architecturalScore: Math.min(100, Math.max(0, 100 - ctx.errors.length * 5)), codeQuality: ctx.errors.length === 0 ? "Excellent" : "Fair", hasTypeInference: false, hasFrameworkIntelligence: true, analysisVersion: "10.0.0-elixir-dfs-strict",
         // EX-EX3 × ELIXIR_FIX2-U1: the countable split of the `uses` surface
-        // (§4 clause 3 — a ratio is only countable if the populations are named).
+        // ( clause 3 — a ratio is only countable if the populations are named).
         usesCandidates: ctx.usesCandidates.length, usesVerified: ctx.usesVerified, usesContextual: ctx.usesContextual, mapKeyReceiverDropped: ctx.mapKeyReceiverDropped,
       }
     }
@@ -1296,13 +1296,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
 const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callArity ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
-    // ELIXIR_FIX2-C1 — M14-HONESTY-CONTRACT §4, first clause: "Any relationship
+    // ELIXIR_FIX2-C1 — M14-HONESTY-CONTRACT , first clause: "Any relationship
     // or symbol emitted with confidence < 1.0 must carry a machine-readable
     // reason code (not just a number)". Measured on this lane's corpus BEFORE
     // this line: 49,007/49,007 calls edges at 0.8, 930/930 references at 0.9,
     // 1,187/1,187 instantiates at 0.9 and 73/73 implements at 0.9 carried NO
     // reason code, and `evidenceClass` was absent on 100% of edges of every
-    // type (61,188/61,188). §4's third clause wants the ratio countable, and a
+    // type (61,188/61,188). 's third clause wants the ratio countable, and a
     // per-site code is only countable if every sub-1.0 site HAS one — so the
     // default is filled in HERE, at the single choke point every edge passes
     // through, rather than at 14 call sites where one omission would be invisible.
@@ -1325,7 +1325,7 @@ const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callA
       }
       if (needClass) md.evidenceClass = evidenceClassFor(type, confidence, target)
     }
-    // M59 (#825): the NAME-BEARING node's 1-based line — the callee, the
+    // (#825): the NAME-BEARING node's 1-based line — the callee, the
     // module named by use/import/alias, the behaviour/protocol atom, the
     // struct alias. Never an enclosing declaration's line, never 0. NULL
     // when underivable. Carried at construction: M60.P1's emit surface
@@ -3026,7 +3026,7 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
             // Plug.Conn` on a PASSING row, and the module view reads the
             // dependency edge. Both edges come from the same directive because they
             // are two true statements (the module-dep reference and the name-
-            // bringing import), exactly as §13 of this lane's doc rules for `use`.
+            // bringing import), exactly as  of this lane's doc rules for `use`.
             if (dep.name !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.References, 0.9,
               { reasonCode: `elixir_directive_${target}`, directive: target }, dep.line)
             // ELX-EXPORTS `uses`: `use Mod` is Elixir's MIXIN APPLICATION —
@@ -3043,7 +3043,7 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
             // `elx4-uses-mixin` records the pushRel DEFAULT (`usage_contextual`)
             // for the same construct, so the two pins disagree about this one
             // field and the disagreement is recorded rather than smoothed over —
-            // see §13 of docs/analyzers/real-elixir-analyzer.md.
+            // see  of docs/analyzers/real-elixir-analyzer.md.
             if (target === "use" && dep.name !== currentScope?.name) {
               this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.Uses, 0.9,
                 { elixirSpecific: true, isMixin: true, via: "use", evidenceClass: "structural", reasonCode: "elixir_use_mixin_application" }, dep.line)

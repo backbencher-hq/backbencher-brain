@@ -181,7 +181,7 @@ const VUE_COMPILER_MACROS = new Set([
 ])
 
 /**
- * F31 (2026-10-12). The REGISTRY NAME of a template tag, and the lookup order
+ * F31 . The REGISTRY NAME of a template tag, and the lookup order
  * Vue itself uses to get from the tag to it.
  *
  * The defect this closes was measured, not argued. On the 1,162-file vue draw the
@@ -232,7 +232,7 @@ function vueRegistryName(tag: string): { target: string; candidates: string[]; n
   // number a first pass got wrong by generalizing it: the two-sided class was measured
   // only for HYPHENLESS tags, where the kebab side of the same table reads +1,433 / -16.)
   const kebab = tag.includes("-")
-  // NO-REGEX (owner's sixth condition; the svelte §12 precedent): the camel-shape test
+  // NO-REGEX : the camel-shape test
   // "does the tag hold an UPPERCASE letter after position 0" was `/[A-Z]/.test(tag.slice(1))`,
   // replaced by a character walk with the IDENTICAL accept set — every ASCII A..Z at any
   // index >= 1. The first character is deliberately EXCLUDED in both forms (a leading
@@ -292,7 +292,7 @@ function peelTypeWrappers(node: Node): Node {
   return cur
 }
 
-/** F21 (2026-10-12): is this module specifier Vue's own runtime package? A
+/** F21 : is this module specifier Vue's own runtime package? A
  *  component writing `inject` gets it from `vue` (or a subpath), so a name bound
  *  by any other module is that module's function under Vue's name. */
 function isVueModuleSpecifier(specifier: string): boolean {
@@ -482,7 +482,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
               // edge is gained or lost.
               type: ASTEngine.RelationshipType.Renders,
               confidence: 0.95,
-              // M59 (#825): the `<Child/>` tag as written in the template.
+              // (#825): the `<Child/>` tag as written in the template.
               ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
               metadata: {
                 // F9(b): the leaf of a dotted tag — see the comment at the filter.
@@ -589,7 +589,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }> = []
     // F2: keys of an inline `provide(K, { … })` value. Annotated onto the symbols
     // the sub-analyzer already emitted, never duplicated, because the store's
-    // SYMBOL key excludes owner (VSD25).
+    // SYMBOL key excludes owner .
     const pendingProvided: Array<{ name: string; owner: string; line: number; column: number }> = []
     let scriptCyclomaticSum = 0
     // F7 (master review 2026-09-30): the fact the pipeline already computes.
@@ -702,7 +702,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         const namePair = defaultObject.namedChildren.find(
           (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
         )
-        // F17 (2026-10-31): the value of `name:` is not always a string literal.
+        // F17 : the value of `name:` is not always a string literal.
         // It can be an IMPORTED IDENTIFIER — `name: COMPONENT_NAME`, where
         // COMPONENT_NAME comes from another module and this lane cannot read its
         // value without cross-file resolution it does not do. The old code took
@@ -828,7 +828,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const r of sub.relationships ?? []) {
         const tgt = (r.target ?? "") as string
         if (VUE_COMPILER_MACROS.has(tgt)) continue
-        // F19 (2026-10-04, VUE_FIX): an `exports` row whose target is the
+        // F19 : an `exports` row whose target is the
         // KEYWORD `default` names a symbol that exists in no file, ever, so the
         // seam does not publish it. The TypeScript delegate already refuses to
         // build this row (real-typescript-analyzer.ts:5744, M4: "`module ->
@@ -856,13 +856,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // A NAMED default export is unaffected: `export default class Widget`
         // yields the target `Widget`, which is a real symbol, and it still ships.
         if (String(r.type ?? r.relationshipType) === ASTEngine.RelationshipType.Exports && tgt === "default") continue
-        // M59 (#825): the delegate's lines are SCRIPT-RELATIVE, and this loop is
+        // (#825): the delegate's lines are SCRIPT-RELATIVE, and this loop is
         // the seam where they become FILE lines — every other script artifact
         // (symbols, imports, exports, errors) is shifted right below/above, and
         // the relationships were pushed raw. Harmless only while the delegate
         // emitted NO line at all (the pre-#825 state); the moment the JS/TS
         // analyzers began emitting `line_number`, every delegated edge claimed a
-        // line above the top of the file. Measured by the M59 oracle on the same
+        // line above the top of the file. Measured by the oracle on the same
         // pinned 40-file sample: vue 562 of 585 line-bearing edges INCONSISTENT
         // (svelte 19 of 58) — the near-miss look of a real defect.
         if (typeof r.line_number === "number") r.line_number += lineOffset
@@ -973,7 +973,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
               // runtime argument — the contract lives in the type_arguments
               // node. Extract it when the runtime form is absent (the standard
               // Vue 3.3+ shape).
-              // M59 (#825) follow-up, measured on element-plus split-bar.vue:
+              // (#825) follow-up, measured on element-plus split-bar.vue:
               // each prop/event symbol ranges at its own KEY's line, not the
               // `defineProps({` line — the old nodeToRange(call) stamped the
               // call for all of index/layout/resizable/... on lines 18-30.
@@ -1177,7 +1177,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (n.type === "call_expression") {
               const callee = n.childForFieldName("function")?.text
               if (callee === "provide" || callee === "inject") {
-                // F21 (2026-10-12): the NAME test needed a BINDING test.
+                // F21 : the NAME test needed a BINDING test.
                 //
                 // The pass matches a call by its CALLEE TEXT alone, which is
                 // sound only while `provide`/`inject` still denote Vue's own
@@ -1228,7 +1228,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
                       if (value) {
                         for (let i = 0; i < value.namedChildCount; i++) {
                           const c = value.namedChild(i)
-                          // F18 (2026-10-31): a SHORTHAND property is a provided
+                          // F18 : a SHORTHAND property is a provided
                           // member and was skipped. `provide(k, { contentRef })`
                           // shares the local `contentRef`, and a consumer reads it
                           // as `inject(k).contentRef` — so the name belongs to the
@@ -1403,7 +1403,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // F2: attach ownership to the symbols a provided value's keys produced.
     // Annotated IN PLACE, never re-pushed: the store's symbol key is
     // `${fileId}:${name}:${startLine}` with owner NOT in it, so a second symbol at
-    // the same name and line would REPLACE this one (VSD25) — annotation is the
+    // the same name and line would REPLACE this one  — annotation is the
     // only non-lossing shape, and it is why `provide(tourKey, { onClose() {} })`
     // no longer publishes an unowned method indistinguishable from a
     // module-level function.
@@ -1537,7 +1537,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: name,
           type: ASTEngine.RelationshipType.Uses,
           confidence: 0.95,
-          // M59 (#825): the line the identifier is WRITTEN on (the fragment's
+          // (#825): the line the identifier is WRITTEN on (the fragment's
           // base plus its offset inside it).
           line_number: line,
           metadata: { isTemplateExpression: true },
@@ -1624,7 +1624,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
-          // M59 (#825): the MEMBER's declaration line (its symbol range, already
+          // (#825): the MEMBER's declaration line (its symbol range, already
           // shifted to SFC coordinates) — the edge names the member.
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
@@ -1749,7 +1749,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       return this.findChildByType(n, "property_identifier")?.text
     }
 
-    // ONTOLOGY (2026-10-03): the `extends`/`mixins` bases this options object
+    // ONTOLOGY : the `extends`/`mixins` bases this options object
     // names, resolved to an options OBJECT where — and only where — this parse tree
     // can read one. See `sameTreeOptionsObject` for why that is a narrow rule.
     const mergeBases: Array<{ name: string; isMixin: boolean; node: Node; optionsObject: Node | undefined }> = []
@@ -1809,7 +1809,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: pn,
             kind: ASTEngine.SymbolKind.Property,
-            // M59 (#825): the prop KEY's own node — the line and column a
+            // (#825): the prop KEY's own node — the line and column a
             // navigation to this prop must land on.
             range: this.offsetRange(this.nodeToRange(pnode), lineOffset, colOffset, indexOffset),
             scope: componentName,
@@ -1865,7 +1865,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isMixin, isOptionsApi: true },
           })
         }
-        // ONTOLOGY (2026-10-03): remember the merge so the `overrides` pass below
+        // ONTOLOGY : remember the merge so the `overrides` pass below
         // can compare this component's members against the BASE's, for a base this
         // tree can read. Collected here because the base can appear before the
         // member-bearing options (`mixins` is conventionally written first) and the
@@ -1953,7 +1953,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // ONTOLOGY (2026-10-03) — `overrides`, the Options-API merge.
+    // ONTOLOGY  — `overrides`, the Options-API merge.
     //
     // WHAT THIS IS. For the options whose merge STRATEGY REPLACES a same-named
     // key — `methods`, `computed`, `props`, `emits`, `inject`, and the colliding
@@ -2066,7 +2066,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
               baseOption: base.name,
               isMixin: base.isMixin,
               isOptionsApi: true,
-              // Honesty contract §4.1: a sub-1.0 confidence carries a
+              // Honesty contract : a sub-1.0 confidence carries a
               // machine-readable reason, not just a number.
               reasonCode: "verified-in-file",
             },
@@ -2077,7 +2077,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * ONTOLOGY (2026-10-03): the options OBJECT a `mixins`/`extends` base names,
+   * ONTOLOGY : the options OBJECT a `mixins`/`extends` base names,
    * when this parse tree can read one, and `undefined` when it cannot.
    *
    * Two accepted shapes, both resolved WITHOUT leaving the tree:
@@ -2122,7 +2122,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * ONTOLOGY (2026-10-03, CORRECTED 2026-10-05): the member names an options
+   * ONTOLOGY : the member names an options
    * object declares — restricted to the options Vue's OWN MERGE TABLE REPLACES,
    * and to nothing else.
    *
@@ -2651,10 +2651,10 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * F32 (2026-10-12). The component name a `name:` option declares, resolved one
+   * F32 . The component name a `name:` option declares, resolved one
    * step further than a string literal.
    *
-   * WHY. F17 (2026-10-31) ruled that a non-literal `name:` keeps the file stem and
+   * WHY. F17  ruled that a non-literal `name:` keeps the file stem and
    * records `declaredNameUnreadable`, because the value is "an IMPORTED IDENTIFIER,
    * whose value lives in another module". That ruling is right about an import and
    * wrong about the shape this corpus is full of — element-plus declares almost
@@ -2773,7 +2773,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * F21 (2026-10-12). Does `name` at this call site still denote Vue's
+   * F21 . Does `name` at this call site still denote Vue's
    * `provide`/`inject`? Ordered narrowest-first, and the ORDER is the contract:
    * a decorator is a syntactic position, so it decides before any name lookup; a
    * bound name is decided by its module; only an UNBOUND name reaches the local
@@ -2852,7 +2852,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * The prop/emit names WITH the node that writes each one (M59 #825).
+   * The prop/emit names WITH the node that writes each one (#825).
    *
    * The string-only walk was enough while nothing asked WHERE a prop is
    * declared, and the caller then stamped every prop with the `props: { … }`
@@ -2989,7 +2989,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * M59 (#825) follow-up: genericMacroNames carrying the name node, so macro
+   * (#825) follow-up: genericMacroNames carrying the name node, so macro
    * symbols range at their own key lines (same contract as the runtime form).
    */
   /**
@@ -3190,7 +3190,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * same-named member.
    */
   /** Counts the line breaks before `end` — how many lines into the fragment a
-   *  match sits. M59 (#825): a template expression's identifier has a REAL line
+   *  match sits. (#825): a template expression's identifier has a REAL line
    *  (the line of the text fragment it is written in, plus its own offset within
    *  that fragment when the fragment wraps), and the collector is the only place
    *  that still knows it — a `Set<string>` throws that away, which is why vue's
