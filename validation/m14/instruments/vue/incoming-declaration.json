@@ -1,0 +1,454 @@
+{
+  "meta": {
+    "lang": "vue",
+    "instrument": "script/m14/incoming-gate.ts (single whole-population measurement; the declaration is DERIVED from its own TABLE 1 by script/m14/vue-declaration.ts, which refuses on any non-closure)",
+    "sample": 1155,
+    "corpusTotal": 1155,
+    "corpusRepos": 6,
+    "parsed": 1155,
+    "population": "parsed=1155/1155 admitted=1155 exts=vue index=no",
+    "populationRule": {
+      "rule": "the admitted set is the GIT-TRACKED set: per-checkout `git ls-files` over $PWD/.corpus, extension .vue from the router's ONE table, present on disk, <= 512 KB cap, detected as vue",
+      "root": "$PWD/.corpus",
+      "scope": "6 repositories carry an admitted file: element-plus 1,008 · vue-element-admin 131 · vue-core 11 · nvim-treesitter 3 · gql-graphql-eslint 1 · snacks.nvim 1",
+      "censusAgreement": "script/m14/vue-extended-census.ts independently admitted 1155 files over 6 repos and parsed 1,155 of 1,155 with 0 failures — the two instruments agree"
+    },
+    "measurementForm": "ONE arm run over the whole admitted population (1,155 files, single process, index=no — under the ~7,600-parse WASM abort point the dart lane measured, and the engine frees every tree). NO chunking, so there is no chunk-resolution bias and no mixed-index arm to caveat.",
+    "grammarDigests": {
+      "rule": "sha256 of the bytes the registry serves (L-11/§6 — never a path, never a log line); the repo wasm/ candidate is FIRST in the engine's list for every spelling",
+      "vue": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250",
+      "typescript": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335",
+      "javascript": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+      "tsx": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6"
+    },
+    "artifacts": {
+      "armTable1": "validation/m14/measurements/vue-head-incoming-table1-20261024.txt",
+      "residualGate": "validation/m14/measurements/vue-head-residual-gate-20261024.txt",
+      "census": "validation/m14/measurements/vue-extended-census.json"
+    },
+    "generator": "script/m14/vue-declaration.ts"
+  },
+  "types": {
+    "calls": {
+      "edges": 7956,
+      "resolved": 1350,
+      "external": 427,
+      "ambiguous": 302,
+      "otherUnresolved": 5877,
+      "unclassed": 0,
+      "_ambKind": 153,
+      "_collRes": 0,
+      "closure": {
+        "edges": 7956,
+        "resolved": 1350,
+        "collRes": 0,
+        "ambDecl": 302,
+        "ambKind": 153,
+        "unresolved": 2243,
+        "extOK": 427,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 3634,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "uses": {
+      "edges": 5584,
+      "resolved": 4165,
+      "external": 194,
+      "ambiguous": 40,
+      "otherUnresolved": 1185,
+      "unclassed": 0,
+      "_ambKind": 5,
+      "_collRes": 0,
+      "closure": {
+        "edges": 5584,
+        "resolved": 4165,
+        "collRes": 0,
+        "ambDecl": 40,
+        "ambKind": 5,
+        "unresolved": 350,
+        "extOK": 194,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 835,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "contains": {
+      "edges": 1469,
+      "resolved": 1469,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 965,
+      "closure": {
+        "edges": 1469,
+        "resolved": 1469,
+        "collRes": 965,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "imports": {
+      "edges": 3898,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 3898,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 3898,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 3896,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 2,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "references": {
+      "edges": 3569,
+      "resolved": 2070,
+      "external": 374,
+      "ambiguous": 21,
+      "otherUnresolved": 1104,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 3569,
+        "resolved": 2070,
+        "collRes": 0,
+        "ambDecl": 21,
+        "ambKind": 0,
+        "unresolved": 707,
+        "extOK": 374,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 397,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "exports": {
+      "edges": 2,
+      "resolved": 2,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 2,
+        "resolved": 2,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "extends": {
+      "edges": 10,
+      "resolved": 7,
+      "external": 1,
+      "ambiguous": 0,
+      "otherUnresolved": 2,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 10,
+        "resolved": 7,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 2,
+        "extOK": 1,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "implements": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "overrides": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "instantiates": {
+      "edges": 16,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 1,
+      "otherUnresolved": 15,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 16,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 1,
+        "ambKind": 0,
+        "unresolved": 9,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 6,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "decorates": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "renders": {
+      "edges": 2261,
+      "resolved": 1501,
+      "external": 0,
+      "ambiguous": 28,
+      "otherUnresolved": 732,
+      "unclassed": 0,
+      "_ambKind": 16,
+      "_collRes": 0,
+      "closure": {
+        "edges": 2261,
+        "resolved": 1501,
+        "collRes": 0,
+        "ambDecl": 28,
+        "ambKind": 16,
+        "unresolved": 709,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 23,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    }
+  },
+  "causeRulings": {
+    "imports_module_path_targets": {
+      "population": "parsed=1155/1155 admitted=1155 exts=vue index=no",
+      "count": 3898,
+      "what": "the imports row's unresolved targets are MODULE PATHS and specifier:item pairs (`./mixins/resize:resize`, `element-plus:ElButton`) — an import names a module and creates binding scope, so no per-file declaration can answer it and the row is stated rather than resolved. The delegate's `${modulePath}:${item}` form is the JS family contract, and the seam re-glues it when the module half rides metadata (VUE-SVELTE-REGRESSION).",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts vue 0 --dump (the whole-population arm; TABLE 1's imports unresolved column is the count)",
+        "wouldFail": "an imports row whose target IS a bare name the project declares — the arbiter's key space is the project's symbols and a bare imported name would resolve, so the unresolved column would fall below the path-shaped share the dump shows"
+      }
+    },
+    "renders_registry_name_seam": {
+      "population": "parsed=1155/1155 admitted=1155 exts=vue index=no",
+      "count": 732,
+      "what": "renders' unresolved tail is the REGISTRY-NAME SEAM measured before the relabel and unchanged by it (the three-arm differential cross-check in the census artifact): the analyzer publishes Vue's RESOLVED registry name (`ElButton` for `<el-button>` — the F31 rule, vue's own resolveAsset order), while most components resolve in neither denominator because they are globally registered in a `components: {}` map or a UI library. The oracle-vs-analyzer normalization gap predates the 2026-10-24 relabel: same rows, same counts, before and after (pre instantiates=448+imports=150 → post renders=458+imports=150 on the 200-file draw; 297→297 EXACT on vue-element-admin).",
+      "falsifier": {
+        "run": "npx tsx script/m14/differential.ts --lang vue --sample 200 (the three-arm cross-check recorded in validation/m14/measurements/vue-extended-census.json relabel.renders.differentialCrossCheck)",
+        "wouldFail": "a renders row whose target is NOT the registry name for the tag the template wrote — the analyzer's `resolution: registry-name` + `tagAsWritten` metadata would disagree with the written spelling, and the differential's unexplained count would move"
+      }
+    },
+    "corpus_zero_extended_types": {
+      "population": "parsed=1155/1155 admitted=1155 exts=vue index=no",
+      "count": 0,
+      "what": "FOUR types are IMPLEMENTED AND CORPUS-UNEXERCISED (csharp's class — counted once inside implemented, never exclusions): implements, overrides, decorates, part_of. Each carries a construct census of 0 sites over the whole 1,155-file population and a LIVE positive control in validation/m14/measurements/vue-extended-census.json (all five control arms PASS): a ts class heritage in a script block emits `implements` through the full production path; a decorated class emits `decorates`; a `/// <reference path=…>` in a `<script lang=\"ts\">` block emits `part_of` with the mandatory partRole:'path' (§8) — the served typescript build produces a REAL reference_directive node, measured on the parse tree. The corpus simply writes none of these constructs.",
+      "falsifier": {
+        "run": "npx tsx script/m14/vue-extended-census.ts (the construct leg's per-construct counters and the five control arms; exit 5 if any control fails)",
+        "wouldFail": "an admitted .vue script block carrying a class heritage / an applied decorator / a triple-slash reference directive — the census's construct count would rise above 0 and the arm's row would leave zero"
+      }
+    },
+    "mixes_in_adjudication": {
+      "population": "parsed=1155/1155 admitted=1155 exts=vue index=no",
+      "count": 9,
+      "what": "mixes_in is RULED (adjudication, Lead-ruled 2026-10-24), not implemented: Vue's `mixins:` option composes NO supertype chain — vue-core's own runtime merges each mixin's options into a FLAT options object by per-option merge strategy, recursively (componentOptions.ts resolveMergedOptions → mergeOptions(resolved, base, strats) with `mixins.forEach((m) => mergeOptions(to, m, strats, true))`, corpus checkout f8975657d7451d8e4291406427e6a8ae5e50c8d5). The types.ts:155 contract says `mixes_in` = 'a class COMPOSES a mixin into its supertype chain' — the word 'mixins' is in Vue's API but the measured semantics are an options merge. All 9 sites are ALREADY published as `extends{isMixin:true}` under VSD28, the relation the semantics support.",
+      "falsifier": {
+        "run": "grep -n 'mixins.forEach' .corpus/vue-core/packages/runtime-core/src/componentOptions.ts (the runtime's own merge loop — the citation is vue-core's source, measured not asserted)",
+        "wouldFail": "a vue construct that composes behaviour into a supertype chain — the runtime merges options instead; were Vue to gain class-based mixin composition, this ruling needs re-measurement"
+      }
+    },
+    "instantiates_delegate_only": {
+      "population": "parsed=1155/1155 admitted=1155 exts=vue index=no",
+      "count": 16,
+      "what": "instantiates is DELEGATE-ONLY after the 2026-10-24 renders relabel: its 16 rows are the JS/TS sub-analyzer's script-`new` constructions — the only `instantiates` the language's source contains. The 2,235 SFC template component-tag rows moved to `renders` with the two-label total UNCHANGED (pre instantiates 2,251 + renders 26 = post instantiates 16 + renders 2,261 = 2,277 — no edge gained or lost, the cross-check recorded in the census artifact).",
+      "falsifier": {
+        "run": "npx tsx script/m14/vue-extended-census.ts (the emission leg's instantiatesSplit: sfcTemplate must be 0 and delegateNew 16)",
+        "wouldFail": "a template component tag emitting instantiates again — the census's instantiatesSplit.sfcTemplate would rise above 0 and the relabel's control arm (template-tag-emits-renders) would go red"
+      }
+    }
+  },
+  "resolution_caveats": [
+    "A CAUSE IS STATED, NOT RESOLVED: unresolved rows live in otherUnresolved, never in resolved, and the analyzer's scope is PER FILE with index=no — a target declared in another file of the project is genuinely out of its reach and the arbiter (which holds the project) is what answers it.",
+    "amb(kind) IS A SUBSET OF amb(decl), printed beside it and NEVER added to the closure.",
+    "collRes IS A SUBSET OF resolved (a tie-break pick among colliding declarations), printed beside it and NEVER added.",
+    "THE RENDERS RELABEL IS A LABEL MOVE, NOT AN EDGE MOVE: 2,235 template rows moved from instantiates to renders with the two-label total UNCHANGED at 2,277 (pre 2,251+26 = post 16+2,261), cross-checked in the census artifact; the residual gate's TOTAL closes at the same 24,765 the pre-relabel population published plus the relabel's own label split.",
+    "THE REGISTRY-NAME SEAM IS THE LANE'S KNOWN OPEN RESOLUTION LIMIT, not a wrong target: `<el-button>` publishes `ElButton` because that is the name Vue's own resolveAsset order resolves and the registry holds; `tagAsWritten` carries the written spelling and `resolution: registry-name` says the target was normalized, so nothing is lost and a reader can tell a normalized target from a literal one.",
+    "39 of 392 ambiguous edges carry an OWN-FILE-SILENT claim (the residual gate's claim census): only ANOTHER file declares the target, which is not a refutation — the count is published beside the column and never subtracted from it.",
+    "imports' targets are module paths by the JS family contract (`${modulePath}:${item}`); they land in otherUnresolved rather than resolved because no per-file declaration can answer a module path, and the bindOK rows are targets SPELLED as bindings, which no declaration can answer by construction.",
+    "THE SIX CORPUS-ZERO TYPES CARRY THEIR ZEROS AS ROW PROPERTIES (implements, overrides, decorates, part_of, mixes_in ruled, renders' delegate-JSX 26 rows aside): each zero is a census count over the whole population with a live positive control, not an absence — csharp's class, counted once inside implemented, never an exclusion."
+  ]
+}
