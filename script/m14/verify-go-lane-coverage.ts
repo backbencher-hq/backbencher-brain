@@ -312,7 +312,7 @@ async function main() {
   // by the next person who tidies up, and an oracle whose only exerciser is a
   // throwaway is not exercised. `go-oracle-audit.ts` and
   // `go-ontology-census.ts` are the committed instruments.
-  const committedInstruments = ["script/m14/go-oracle-audit.ts", "script/m14/go-ontology-census.ts", "script/m14/go-endpoint-resolution.ts", "script/m14/go-construct-gap-probe.ts"]
+  const committedInstruments = ["script/m14/go-oracle-audit.ts", "script/m14/go-ontology-census.ts", "script/m14/go-endpoint-resolution.ts", "script/m14/go-construct-gap-probe.ts", "script/m14/go-census.ts"]
   const instrumentText = committedInstruments
     .map((f) => { try { return fs.readFileSync(path.join(ROOT, f), "utf8") } catch { return "" } })
     .join("\n")
