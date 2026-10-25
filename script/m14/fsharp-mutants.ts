@@ -473,11 +473,27 @@ export const FSHARP_MUTANTS: Mutant[] = [
     description:
       "M60 ontology lane pass 2. `calls` was gated on `fnName.length > 1`, which no property of the program justifies: by the time the branch runs, the grammar has already said the callee is a NAME node. The gate removed every call to a ONE-LETTER function, of which instrument B counts 5,313 over the 6,619-file corpus in 735 files — 2.2% of the label against its 246,327 full-extent edges — and the dropped population is better connected than the emitted one (32.4% in-file resolution on a 120-file draw against 22.2%). The mutant drops the edges a one-character target carries, which is the honest pre-fix state: the application is in the tree and nothing is published about it. Caught by fsharp/one-char-calls, whose `composed -> f` row exists for this and nothing else. It is a REGRESSION guard in the strict sense — the gate was in the lane since M12 and no fixture asserted its absence, which is why 5,313 real calls could sit unread behind a green suite.",
     transform: (r: any) => {
-      const short = (r.relationships ?? []).filter(
-        (x: any) => String(x.type) === "calls" && String(x.target).length === 1,
-      )
+      // ★ REPAIRED 2026-10-22 — THE OLD TRANSFORM WAS A MEASURED NO-OP, NOT A DEFECT MODEL.
+      // It dropped `calls` edges whose WHOLE TARGET was one character long. The lane publishes
+      // a LOCAL callee as the BINDING SPELLING `<callable>\u0000<binding>` (BINDING_SEP,
+      // src/ast/types.ts), so the one-character callee's published target is `composed\0f` —
+      // NINE characters — and the old filter removed nothing. The mutant therefore could not
+      // fail, and it was reported as a survivor rather than as a defect it never modelled.
+      // THE DEFECT IS ABOUT THE CALLEE'S NAME: the pre-fix analyzer refused a callee whose
+      // NAME was one character long. The edge that carries such a callee is the one whose
+      // BINDING (the part after the last BINDING_SEP) is one character, or whose target has
+      // no separator at all and is itself one character.
+      const SEP = "\u0000"
+      const shortCallee = (x: any): boolean => {
+        if (String(x.type) !== "calls") return false
+        const t = String(x.target)
+        const i = t.lastIndexOf(SEP)
+        const binding = i >= 0 ? t.slice(i + 1) : t
+        return binding.length === 1
+      }
+      const short = (r.relationships ?? []).filter(shortCallee)
       if (short.length === 0) return r
-      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && String(x.target).length === 1)) }
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !shortCallee(x)) }
     },
   },
   {
@@ -713,14 +729,31 @@ export const FSHARP_MUTANTS: Mutant[] = [
     description:
       "M60 ontology lane pass 8, FS-P8. `incoming-gate.ts fsharp fs` asked this lane's incoming question for the first time and the answer was 42,116 edges, 12,208 resolving to exactly one declaration in the file's own PROJECT, 28,862 unresolved and **zero external claims** — so a genuinely-external target and a broken edge were indistinguishable, which is the one thing the workstream's standard forbids. The marker is `metadata.isExternalTarget`, a key the gate already recognises, and the gate verifies it: the target's OWNER (everything before the last dot) must be absent from the project, or the claim is REFUTED and counted against the lane. On a 400-file draw the marker converts 705 unresolved edges to verified claims and is refuted 6 times. The mutant deletes the key from every relationship — same edges, same endpoints, one payload field gone — which is the only way a deleted claim can be caught, since the unmarked edge is exactly what the lane shipped for its whole life.",
     transform: (r: any) => {
-      const hit = (r.relationships ?? []).filter((x: any) => x.metadata?.isExternalTarget !== undefined)
+      // ★ REPAIRED 2026-10-22 — THE OLD TRANSFORM WAS A MEASURED NO-OP, NOT A DEFECT MODEL.
+      // It deleted `metadata.isExternalTarget`, a key THIS LANE NEVER EMITS: the lane's external
+      // claim is carried by `metadata.targetResolution`, whose external values are
+      // `external-type`, `external-namespace`, `external-type-or-module`, `bare-external`,
+      // `base-member-external` and `interface-member-external`. The old transform therefore
+      // changed NOTHING and the mutant was reported as a survivor. The defect it means to
+      // model is real and the fixtures already pin it: fsharp/call-ownership and
+      // fsharp/call-target-spelling assert `meta.targetResolution: "external-type"` and
+      // `"external-type-or-module"` rows, and a lane that stopped saying "this target is
+      // EXTERNAL" would make a genuinely-external target and a broken edge indistinguishable —
+      // the one thing the workstream's standard forbids. The repaired transform deletes the
+      // claim from the EXTERNAL rows only, which is the narrow, honest pre-fix state.
+      const EXTERNAL_RESOLUTIONS = new Set([
+        "external-type", "external-namespace", "external-type-or-module",
+        "bare-external", "base-member-external", "interface-member-external",
+      ])
+      const isExternal = (x: any): boolean => EXTERNAL_RESOLUTIONS.has(String(x.metadata?.targetResolution ?? ""))
+      const hit = (r.relationships ?? []).filter(isExternal)
       if (hit.length === 0) return r
       return {
         ...r,
         relationships: (r.relationships ?? []).map((x: any) => {
-          if (x.metadata?.isExternalTarget === undefined) return x
+          if (!isExternal(x)) return x
           const metadata = { ...x.metadata }
-          delete metadata.isExternalTarget
+          delete metadata.targetResolution
           return { ...x, metadata }
         }),
       }
