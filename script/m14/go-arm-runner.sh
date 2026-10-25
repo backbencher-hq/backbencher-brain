@@ -246,7 +246,9 @@ while [ "$off" -lt "$POP" ]; do
   elapsed=$(( $(date +%s) - start_epoch ))
   bash script/m14/arm-token.sh beat go >/dev/null 2>&1 || true
   measured="$(slice_measured "$f.tmp" "$off" "$end")"
-  if [ "$rc" -eq 0 ] && grep -q "^TOTAL" "$f.tmp" 2>/dev/null && [ "${measured:-0}" = "$((end - off))" ]; then
+  # The gate's exit 1 is its NORMAL verdict code (a failing resolution clause), not a
+  # failed run — the TOTAL row plus the measured width is the completion test either way.
+  if [ "$rc" -le 1 ] && grep -q "^TOTAL" "$f.tmp" 2>/dev/null && [ "${measured:-0}" = "$((end - off))" ]; then
     mv "$f.tmp" "$f"
     slices_done=$((slices_done + 1))
     echo "  slice [$off, $end) complete in ${elapsed}s — measured ${measured}/${end-off}"
