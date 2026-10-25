@@ -104,6 +104,57 @@ if tot["bindOK"] != 13217 or tot["extOK"] != 133044 or tot["extQ"] != 29136:
 if tot["extF"] or tot["bindF"] or tot["causeF"]:
     raise SystemExit("a FAIL term is non-zero")
 
+# ---- ONE SOURCE OF TRUTH FOR EVERY LINE CITATION ----
+# A "file:line" citation is a claim about a file's content at a moment, and this lane
+# EDITS the pages it cites, so a line number ROTS. It has rotted twice here, silently,
+# and the second time it was because the VERIFIED number and the PUBLISHED number were
+# two different literals: the checker verified a table entry while the artifact carried
+# a hand-typed ":1155" that nothing checked. **A CHECK NOT WIRED TO THE ARTIFACT IS
+# THEATRE.** So the `from` strings are now BUILT from this table: the number that is
+# VERIFIED is the number that is PUBLISHED, and there is no second literal to drift.
+CELL = "validation/m14/measurements/python-cell-noindex-2026-10-21.txt"
+D7 = "validation/m14/verification/PYTHON-D7-WALLS.md"
+PAGE = "validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md"
+REF = {
+    # key: (file, line, marker that MUST be on that line)
+    "W1":       (D7, 59, "W1"),
+    "W2":       (D7, 143, "W2"),
+    "W3":       (D7, 182, "W3"),
+    "W4":       (D7, 262, "W4"),
+    "W5":       (D7, 275, "W5"),
+    "W12":      (PAGE, 1254, "W12"),
+    "cell_hdr": (CELL, 59, "type"),
+    "calls":    (CELL, 60, "calls"),
+    "uses":     (CELL, 61, "uses"),
+    "imports":  (CELL, 63, "imports"),
+    "total":    (CELL, 74, "TOTAL"),
+}
+
+
+def cite(key):
+    """The published citation for a verified line: 'file:line'. BUILT, never typed."""
+    f, ln, _ = REF[key]
+    return "%s:%d" % (f, ln)
+
+
+def verify_citations():
+    for key, (rel, lineno, marker) in REF.items():
+        path = os.path.join(REPO, rel)
+        if not os.path.exists(path):
+            raise SystemExit("CITATION TO A FILE THAT DOES NOT EXIST: %s (%s)" % (rel, key))
+        with open(path, encoding="utf-8") as fh:
+            all_lines = fh.read().split("\n")
+        if lineno > len(all_lines):
+            raise SystemExit("CITATION PAST THE END OF THE FILE: %s:%d (%d lines)"
+                             % (rel, lineno, len(all_lines)))
+        text = all_lines[lineno - 1]
+        if marker not in text:
+            raise SystemExit("CITATION ROT: %s:%d (%s) does not contain %r; it reads %r"
+                             % (rel, lineno, key, marker, text[:110]))
+    print("  citations  : %d verified, and every published from-string is BUILT from them"
+          % len(REF))
+
+
 # ---- the cause rulings: the D7 ledger's walls, each with THIS ARM's count ----
 def falsifier(run, would_fail):
     return {"run": run, "wouldFail": would_fail}
@@ -117,8 +168,7 @@ cause = {
         "disposition": "RULED UNDECIDABLE (python has no static receiver typing; the class of the "
                        "object a call is made on is a RUNTIME fact, and no rung of the grammar "
                        "ladder can add one)",
-        "from": "validation/m14/verification/PYTHON-D7-WALLS.md:59 (W1) + "
-                "validation/m14/measurements/python-cell-noindex-2026-10-21.txt:60 (calls) and :61 (uses)",
+        "from": cite("W1") + " (W1) + " + cite("calls") + " (calls) and :%d (uses)" % REF["uses"][1],
         "evidenceClass": "measured whole-population",
         "falsifier": falsifier(
             CORPUS + " bun run script/m14/python-type-census.ts --corpus --out /tmp/python-w1.json",
@@ -135,8 +185,7 @@ cause = {
                        "run's scope is not a declaration the run can reach; the import names a "
                        "module, and no grammar change can make a module resolve to a file the run "
                        "does not carry)",
-        "from": "validation/m14/verification/PYTHON-D7-WALLS.md:143 (W2) + "
-                "validation/m14/measurements/python-cell-noindex-2026-10-21.txt:63 (imports)",
+        "from": cite("W2") + " (W2) + " + cite("imports") + " (imports)",
         "evidenceClass": "measured whole-population",
         "falsifier": falsifier(
             CORPUS + " bun run script/m14/py-project-local-imports-census.ts --out /tmp/python-w2.json",
@@ -156,8 +205,7 @@ cause = {
                        "package the project does not carry; the arbiter can neither verify nor refute "
                        "membership from bytes it does not have, and silence about a package is not "
                        "evidence about its membership)",
-        "from": "validation/m14/verification/PYTHON-D7-WALLS.md:182 (W3) + "
-                "validation/m14/measurements/python-cell-noindex-2026-10-21.txt:74 (TOTAL ext?)",
+        "from": cite("W3") + " (W3) + " + cite("total") + " (TOTAL ext?)",
         "evidenceClass": "measured whole-population",
         "falsifier": falsifier(
             CORPUS + " bun run script/m14/python-type-census.ts --corpus --out /tmp/python-w3.json",
@@ -173,8 +221,7 @@ cause = {
         "disposition": "RULED UNDECIDABLE, with a MEASURED FALSIFIER THAT WAS DISCHARGED: the claim "
                        "is that an ambiguous row in these two types carries no owner or static "
                        "receiver proof, and the measurement found 0 such rows",
-        "from": "validation/m14/verification/PYTHON-D7-WALLS.md:262 (W4) + "
-                "validation/m14/measurements/python-tiebreak-price-2026-10-21.json (per-label price)",
+        "from": cite("W4") + " (W4) + " + "validation/m14/measurements/python-tiebreak-price-2026-10-21.json (per-label price)",
         "evidenceClass": "measured whole-population",
         "falsifier": falsifier(
             CORPUS + " bun run script/m14/py-tiebreak-price.ts --out /tmp/python-w4.json",
@@ -190,8 +237,7 @@ cause = {
         "disposition": "CLAIMED, NOT RESOLVED: the arbiter binds these to a local binding with a "
                        "declaration-level claim. A claim is not a resolution and is never folded into "
                        "`resolved`; the gate counts it in its own bucket",
-        "from": "validation/m14/verification/PYTHON-D7-WALLS.md:275 (W5) + "
-                "validation/m14/measurements/python-cell-noindex-2026-10-21.txt:60 (calls.bindOK)",
+        "from": cite("W5") + " (W5) + " + cite("calls") + " (calls.bindOK)",
         "evidenceClass": "measured whole-population",
         "falsifier": falsifier(
             CORPUS + " bun run script/m14/py-owner-absent-join.ts --out /tmp/python-w5.json",
@@ -210,7 +256,7 @@ cause = {
                        "the emitted direction. The lane moved no edge. The measured price of the "
                        "REJECTED direction is the record: 31,602 of 32,251 rows (98.0 %) change "
                        "class, and it would have left 31,484 unresolved",
-        "from": "validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md:1155 (W12) + "
+        "from": cite("W12") + " (W12) + "
                 "src/ast/types.ts:120-135 (the corrected direction) + "
                 "validation/m14/measurements/python-decorates-direction-2026-10-21.json",
         "evidenceClass": "measured whole-population, both directions",
@@ -341,37 +387,7 @@ decl = {
 BEFORE = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
 # (the citation check above runs BEFORE this, so BEFORE==AFTER also means the
 #  citations were re-verified against the files as they are NOW.)
-# ---- EVERY CITATION IS VERIFIED, NOT TRUSTED ----
-# A "file:line" citation is a claim about a file's content at a moment. This lane
-# EDITS the page it cites, so a bare line number ROTS the moment the page moves --
-# and it rots SILENTLY, which is worse than being wrong. Each citation below names
-# a marker that must be ON that line; the generator refuses to write otherwise.
-CITES = [
-    ("validation/m14/verification/PYTHON-D7-WALLS.md", 59, "W1"),
-    ("validation/m14/verification/PYTHON-D7-WALLS.md", 143, "W2"),
-    ("validation/m14/verification/PYTHON-D7-WALLS.md", 182, "W3"),
-    ("validation/m14/verification/PYTHON-D7-WALLS.md", 262, "W4"),
-    ("validation/m14/verification/PYTHON-D7-WALLS.md", 275, "W5"),
-    ("validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md", 1155, "W12"),
-    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 59, "type"),
-    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 60, "calls"),
-    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 61, "uses"),
-    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 63, "imports"),
-    ("validation/m14/measurements/python-cell-noindex-2026-10-21.txt", 74, "TOTAL"),
-]
-for rel, lineno, marker in CITES:
-    path = os.path.join(REPO, rel)
-    if not os.path.exists(path):
-        raise SystemExit("CITATION TO A FILE THAT DOES NOT EXIST: %s:%d" % (rel, lineno))
-    with open(path, encoding="utf-8") as fh:
-        all_lines = fh.read().split("\n")
-    if lineno > len(all_lines):
-        raise SystemExit("CITATION PAST THE END OF THE FILE: %s:%d (%d lines)" % (rel, lineno, len(all_lines)))
-    text = all_lines[lineno - 1]
-    if marker not in text:
-        raise SystemExit("CITATION ROT: %s:%d does not contain %r; it now reads %r"
-                         % (rel, lineno, marker, text[:110]))
-print("  citations  : %d verified, every one still says what it claims" % len(CITES))
+verify_citations()
 
 with open(OUT, "w", encoding="utf-8") as fh:
     json.dump(decl, fh, indent=2, ensure_ascii=True)
