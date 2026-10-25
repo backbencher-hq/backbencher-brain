@@ -25626,7 +25626,11 @@ async function main() {
           // FLEET PHASE (2026-10-19): elixir's three mature-but-unwired oracles are now pushed above,
           // so the labels become comparable; overrides is REMOVED until its oracle lands (named D4
           // residual in the verdict rather than a compared-with-no-truth disclosure).
-          ...(lang === "elixir" ? ["contains", "exports", "uses", "imports"] : []),
+          // elixir's `use Mod` is `mixes_in` (the relabel landed with its oracle half; both
+          // halves are written and this entry makes them comparable — the allowlist filters the
+          // ANALYZER side while truth pushes unfiltered, so omitting it would read every truth
+          // row MISSING).
+          ...(lang === "elixir" ? ["contains", "exports", "uses", "imports", "mixes_in"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
