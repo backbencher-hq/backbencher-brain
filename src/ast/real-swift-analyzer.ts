@@ -6,8 +6,11 @@
  * extension declaring its type's companion is resolved once rather than re-derived at every call site;
  * protocol conformance makes this lane one of the family's `implements` lanes.
  *
- * Relationship types it covers (all ten): calls, extends, implements, instantiates, uses, references,
- * contains, overrides, exports, imports.
+ * Relationship types it covers (all ten plus one extended): calls, extends, implements, instantiates,
+ * uses, references, contains, overrides, exports, imports, and — the extended value landed
+ * 2026-10-23 at rung R3, no grammar change — renders (a View type's `var body: some View` names the
+ * component the type renders; see extractRenderRelationships below and the census at
+ * validation/m14/fixtures/swift/m14-swift-extended-census-output.txt).
  * Grammar: `wasm/tree-sitter-swift.wasm` (pinned; grammar probes under validation/m14/fixtures/swift/).
  *
  * Where the rest of the lane lives: docs/analyzers/real-swift-analyzer.md · spec
@@ -1268,7 +1271,115 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // `renders` — A COMPONENT RENDERS ANOTHER COMPONENT (R3, no grammar change).
+    //
+    // THE CONTRACT (`src/ast/types.ts:145-154`): *"A component RENDERS another
+    // component: source = the rendering symbol, target = the rendered
+    // component."* The fleet's four `renders` lanes all use this shape, and the
+    // dart lane's is the one this copies (`real-dart-analyzer.ts:4274`,
+    // extractRenderRelationships): the COMPONENT is the source and the RENDERED
+    // COMPONENT'S NAME is the target, with the DECLARED TYPE as the host
+    // discriminator — because A FILTER ON THE NAME DOES NOT SEPARATE THE
+    // CONSTRUCT FROM ITS IMPOSTORS; A FILTER ON THE DECLARED TYPE DOES (the
+    // dart lane measured 5,893 `build` methods, 5,578 returning something that
+    // is not a component, 5,350 returning Widget).
+    //
+    // FOR SWIFT THE CONSTRUCT IS SWIFTUI'S `var body: some View` — the
+    // rendering entry point, exactly what Flutter's `build` method is:
+    //   struct ContentView: View {
+    //     var body: some View { VStack { Text("hi") } }
+    //   }
+    // `ContentView` IS the component and `VStack` IS the component it renders —
+    // the structural analogue of a React component returning `<VStack/>`.
+    // Tree-dump-proven on the served build (41c4fdb2…): the shape parses as
+    // property_declaration > pattern[body] + type_annotation > opaque_type[some
+    // View] + computed_property > statements > call_expression[VStack].
+    //
+    // THE TRIGGER, AND BOTH HALVES ARE MEASURED (the census,
+    // validation/m14/fixtures/swift/m14-swift-extended-census-output.txt, whole
+    // admitted 1,507-file population):
+    //   · the enclosing type CONFORMS TO `View` (72 conformances over 38
+    //     files) — the framework's own marker, so a `body` property on a
+    //     non-View type is not a rendering host (the protobuf-builder shape);
+    //   · the property is named `body` AND its type_annotation is `some View`
+    //     (85 sites over 38 files) — SwiftUI's own rendering-entry convention.
+    // Requiring BOTH the conformance and the typed `body` keeps the dart
+    // lesson: neither half alone separates the construct from its impostors.
+    //
+    // WHAT DOES NOT FIRE, each pinned by the fixture:
+    //   · a construction DEEPER than the body's top-level expression — an
+    //     argument (`NavigationLink(destination: DetailView())`) is an
+    //     ordinary instantiates/calls row; only the top-level DSL call names
+    //     what the body RENDERS (dart's "a construction that is NOT the
+    //     returned expression" refusal);
+    //   · a `body` on a type that does not conform to View — not a host;
+    //   · a lowercase or non-DSL top-level call — a `calls` row, unchanged
+    //     (a SwiftUI intrinsic that builds no component, the JS lane's
+    //     lowercase-tag convention);
+    //   · `some View` on a NON-body member (a helper returning a view) — the
+    //     helper is not the type's rendering entry point.
+    if (kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Struct || kind === ASTEngine.SymbolKind.Extension) {
+      if (bases.includes("View")) {
+        this.extractRenderRelationships(node, symbol.name, relationships)
+      }
+    }
+
     return symbol
+  }
+
+  /**
+   * `renders` — the rendered component named by a View body's TOP-LEVEL DSL
+   * call. Swift's rendering entry point is `var body: some View { … }` on a
+   * type conforming to `View`; the component the body's outermost
+   * `call_expression` names is what the type renders (the dart lane's
+   * `build`-returns-`Widget` shape, `real-dart-analyzer.ts:4274`). Deeper
+   * constructions stay their existing `calls`/`instantiates` rows — only the
+   * top-level expression is the rendered tree's root, and every other
+   * construction inside it is an ARGUMENT or a CHILD, not the render.
+   */
+  private extractRenderRelationships(
+    node: Node,
+    className: string,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const classBody = this.findChildByType(node, "class_body")
+    if (!classBody) return
+    for (let i = 0; i < classBody.namedChildCount; i++) {
+      const member = classBody.namedChild(i)
+      if (!member || member.type !== "property_declaration") continue
+      // THE PROPERTY IS NAMED `body` and its declared type is `some View` —
+      // both read from nodes, never text-matched in the aggregate (the
+      // type_annotation's own text IS the node's text, which is the grammar's
+      // spelling of `: some View`).
+      const pattern = this.findChildByType(member, "pattern")
+      if (!pattern || pattern.text !== "body") continue
+      const typeAnno = this.findChildByType(member, "type_annotation")
+      if (!typeAnno || typeAnno.text.trim() !== ": some View") continue
+      const computed = this.findChildByType(member, "computed_property")
+      if (!computed) continue
+      const statements = this.findChildByType(computed, "statements")
+      if (!statements) continue
+      // THE TOP-LEVEL EXPRESSION — the body's outermost statement. Only a
+      // call_expression names a component; a `calls`-shaped top level is the
+      // fleet's shared non-component refusal (a lowercase or non-DSL call).
+      const expr = statements.namedChild(0)
+      if (!expr || expr.type !== "call_expression") continue
+      const callee = this.findChildByType(expr, "simple_identifier") || this.findChildByType(expr, "identifier")
+      if (!callee) continue
+      const target = callee.text
+      // A component name is a TYPE NAME — Swift's capitalization convention,
+      // the same test the JS lane applies to a JSX tag (`<div>` is an
+      // intrinsic, not a component). `some View` itself names no component.
+      if (!/^[A-Z]/.test(target) || target === "View" || target === "Self") continue
+      relationships.push({
+        source: className,
+        target,
+        type: ASTEngine.RelationshipType.Renders,
+        confidence: 0.9,
+        line_number: this.nodeLine(callee),
+        metadata: { isRenderHost: true, renderHost: "body", renderTarget: target },
+      })
+    }
   }
 
   private handleFunction(

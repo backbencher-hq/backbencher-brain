@@ -88,7 +88,8 @@ construct the corpus cannot produce.
 | uses | EMITTED · 2,080 / 3,216 / 32 (files: 112 / 716 / 4) | script-side identifier reads from the delegate PLUS template-expression reads (`{{ count }}`, `:label`, `@click`, `v-model`, `v-if`) emitted from the component to its member; template tokens are a hand-written stack machine, chain roots only, v-for/slot locals shadow same-named members (V4), an object-literal key is not a read (F10) | 0.95 template · **0.6 for 1,616 of the vue-element-admin rows** — see the honesty note below |
 | contains | EMITTED · 826 / 631 / 12 (files: 112 / 163 / 2) | Options-API members owned by the component (`ownerName`), plus every shape a `provide(key, …)` publishes; setup-scope top-levels stay module-scope | 1.0 |
 | references | EMITTED · 0 / 3,621 / 21 (files: 0 / 376 / 3) | component-contract family only: `defineProps`/`defineEmits` naming a declaration, `provide`/`inject` naming a key, plus the delegate's own type-level rows (`declared_type`, `type_argument`, `cast_target`, `instanceof_check`, …) | 0.8–1.0 |
-| instantiates | EMITTED · 342 / 2,346 / 10 (files: 102 / 877 / 3) | template pass: every non-builtin element tag → leaf tag name; builtin HTML/SVG tags and Vue builtins (`component`, `transition`, `keep-alive`, `teleport`, `suspense`) filtered; a known namespace (`svg:circle`) is markup, an unknown one is a component | 0.95 |
+| renders | EMITTED · the template pass's own component-tag rows (2,235 over the whole 1,155-file population, 2026-10-24 census) + 26 delegate JSX rows from `<script lang="tsx">` docs files | template pass: every non-builtin element tag → leaf tag name; builtin HTML/SVG tags and Vue builtins (`component`, `transition`, `keep-alive`, `teleport`, `suspense`) filtered; a known namespace (`svg:circle`) is markup, an unknown one is a component. **RENDERED, NOT INSTANTIATED (2026-10-24 relabel, the svelte precedent, Lead-ruled)**: the host renderer mounts the component, nothing is `new`ed — the types.ts Renders contract. Cross-check EXACT: pre `instantiates 2,251 + renders 26` = post `instantiates 16 + renders 2,261` = 2,277 for the two labels, no edge gained or lost (validation/m14/measurements/vue-extended-census.json) | 0.95 template · 0.9 delegate JSX |
+| instantiates | EMITTED · 16 rows over the whole population (2026-10-24 census) — **DELEGATE-ONLY after the renders relabel**: the JS/TS sub-analyzer's script-`new` rows, the only `instantiates` the language's source contains; the 2,235 template rows moved to `renders` | script `new Widget()` constructions, carried by the seam | 0.95–1.0 |
 | exports | EMITTED · 0 / 2 / 0 after F19 | a **named** export → `module -> name`, target a real symbol: the two surviving corpus rows are `export interface StepItemState` / `export interface IStepsInject` in `packages/components/steps/src/item.vue`, both resolving 100%. The anonymous Options-API form `export default { … }` publishes NO edge (F19): `default` is a keyword, and that row resolved 0 of 121 both per-file and corpus-wide | 1.0 |
 | extends | EMITTED · 9 / 1 / 0 (files: 9 / 1 / 0) | Options-API heritage: `mixins: [M]` → `extends` with `metadata.isMixin: true`, `extends: Base` with `isMixin: false`, so the two stay distinguishable (F1). 9 corpus rows, all mixins, 0 `extends:` options; the single element-plus row is the TS delegate's interface extension (`interface ActivityType extends Partial<TimelineItemProps>`) | 0.9 |
 | imports | EMITTED · 197 / 3,685 / 25 relationship rows | the JS/TS delegates' import rows, carried by the seam. **The off-enum wording this row used to carry was stale and is corrected 2026-10-05**: `RelationshipType.Imports` read `"brain_import"` (the name of a TABLE) until `src/ast/types.ts:84` was repaired to `"imports"`, so the delegates were never off-enum in any sense a consumer could observe — they were emitting the value the enum has held since. `ParseResult.imports[]` is the SECOND channel and carries the same rows: 209 / 3,685 / 25 | 1.0 |
@@ -177,12 +178,12 @@ distinction is the reason the two types are labelled CONSTRUCTIBLE rather than
 RULED. A ruling asserts the construct does not occur; the construct does occur,
 the corpus just has none.
 
-### `instantiates` resolution, measured against the corpus and not against the file
+### `renders` resolution (the template component usage; `instantiates` before the 2026-10-24 relabel), measured against the corpus and not against the file
 
 Per-file resolution is the wrong question for a template component usage — a
 `<Card/>` names a component declared in ANOTHER file by definition. Against all
 symbol names the draw publishes (599 on vue-element-admin, 739 on the
-element-plus draw) `instantiates` targets resolve **4.4%** and **1.5%**
+element-plus draw) the template targets resolve **4.4%** and **1.5%**
 respectively, against 0.3% / 0% per-file. The endpoints are real
 (`el-tag`, `ElIcon`, `ClientOnly`, `i-ri-external-link-line`); most are globally
 registered in a `components: {}` map or a UI library, so they resolve in neither
@@ -202,7 +203,8 @@ no oracle exists, that is stated rather than papered over. Counts are
 | uses | YES — 2,080 / 3,216 / 32 | **NO.** `uses` is NOT in the vue compared-label allowlist, so the differential never sees a single row of it; the template half is asserted only by fixtures. 2,080 rows stored and compared against nothing | YES — template rows carry `isTemplateExpression`, delegated rows the JS family's own labels | 41.6% / 94.8% / 100% per-file | `usage_contextual`; **0.6 on 1,616 of the vue-element-admin rows** (the delegate's `isFieldAccess`/`bareRead` reads) — below 0.7, therefore a heuristic, with machine-readable reasons in metadata | 0 empty, 0 placeholder (after correcting my own word list — below), 18 self-loops |
 | contains | YES — 826 / 631 / 12 | **YES, measured, 88.5%**: the lane-owned oracle derives 470 component-owned rows over the 1,151-file draw and the analyzer agrees on 416. The 54 disagreements are the ORACLE's false positives (a nested `name:` key read as the component identity), not the analyzer's. element-plus 253/253 and vuejs 12/12 | YES — `structural`, owner-derived | **100% / 99.8% / 100%** per-file and corpus-wide | `structural`, 1.0 | 0 empty, 0 placeholder, 0 self-loops |
 | references | YES — 0 / 3,621 / 21 | **PARTIAL.** Only the component-contract family (F12/F2) is mirrored; the delegate's other producers (`declared_type`, `type_argument`, `cast_target`, `instanceof_check`, …) are audited for typescript/javascript, not for this lane | YES — `reference_qualified` | 59.1% / 60% on the full element-plus draw; per-file source 99.5%, target 59.1% | `reference_qualified`, 0.8 / 0.9 / 0.95 (all ≥0.7) | 0 empty, 0 placeholder, 18 self-loops |
-| instantiates | YES — 342 / 2,346 / 10 | YES — the F1/F5 oracle derives them and `instantiates` is in the compared-label allowlist | YES — leaf tag name; `member`/`componentPath` in metadata for a dotted tag; a known namespace (`svg:circle`) is markup | source 100%; target 4.4% / 5.6% corpus-wide (most targets are globally registered in a `components: {}` map or a UI library, so they resolve in neither denominator) | `usage_contextual` 0.95, `structural` 1.0 for the 9 delegated rows | 0 empty, 0 placeholder |
+| renders | YES — 2,235 template rows over the whole 1,155-file population (2026-10-24 census; + 26 delegate JSX rows from `<script lang="tsx">` docs files) | YES — the F1/F5 oracle (deriveVueComponentUsages) moved to `renders` WITH the analyzer's 2026-10-24 relabel, and `renders` is in the compared-label allowlist. The oracle-vs-analyzer normalization seam (oracle target as-written `el-button`, analyzer target the registry name `ElButton`, F31) predates the relabel: same rows, same counts, before and after — the three-arm cross-check is in validation/m14/measurements/vue-extended-census.json relabel.differentialCrossCheck | YES — leaf tag name; `member`/`componentPath` in metadata for a dotted tag; a known namespace (`svg:circle`) is markup; target normalized by Vue's registry rule (F31) with `resolution: "registry-name"` + `tagAsWritten` kept | source 100%; target low in both denominators (most targets are globally registered in a `components: {}` map or a UI library, so they resolve in neither) | `usage_contextual` 0.95 template · 0.9 delegate JSX | 0 empty, 0 placeholder |
+| instantiates | YES — 16 rows over the whole population (2026-10-24 census), **DELEGATE-ONLY after the renders relabel**: script `new` constructions, the only `instantiates` the language's source contains; the 2,235 template rows moved to `renders` with the two-label total UNCHANGED (pre 2,251+26 = post 16+2,261 = 2,277) | audited as before — the delegates' own rows through the seam | YES — the JS/TS family's construction rows | source 100% | `structural` 1.0 | 0 empty, 0 placeholder |
 | exports | YES — 0 / 2 / 0 after F19 (was 121 on vue-element-admin, every one `-> default`) | NO oracle derives it for this lane; `exports` is not in the compared-label allowlist | YES after F19: the surviving rows name real symbols and resolve 100%. Before F19, 121 of 121 targeted the keyword `default` | before F19 **0 of 121**, per-file AND corpus-wide; after F19 the 2 surviving corpus rows resolve 100% | `structural`, 1.0 | F19 removed 121 keyword endpoints |
 | extends | YES — 9 / 1 / 0 | **NO in practice, and the harness says so.** The differential prints `COMPARED WITH NO TRUTH: extends (N comparable, 0 truth)` and then `unexplained-by-label: extends=N` (2 on one run, 6 on another — the lane's file sample rotates, so the count moves). Reproduced through production `parseFile` (`script/vue-fix/vue-extends-unexplained.ts`): all 9 vue-element-admin rows are `BarChart -> resize`, `SidebarItem -> FixiOSBug`, `Layout -> ResizeMixin` …, every one a `mixins:`/`extends:` option naming an IMPORTED module. The vue oracle reads the embedded script trees only, and in those trees the fact is an identifier plus the word `mixins` — no `class_heritage`, no `extends X` clause, nothing that states what the base declares. **The rows are correct**; the oracle cannot see them, because the fact lives in another file | YES — `isMixin` distinguishes the two forms (mutant `vue/mixin-label-swap` proves the distinction is pinned, not just present) | 77.8% corpus-wide on vue-element-admin (the mixin modules live outside the 131-file draw, so per-file 0% is expected); the element-plus row resolves 0% because `Partial` is a TypeScript built-in utility type with no symbol in any file | `usage_contextual` 0.9 / `structural` 1.0 | 0 |
 | imports | YES — 197 relationship rows + 209 `imports[]` (vue-element-admin); 3,685 + 3,685 (element-plus full) | NO for this lane. The typescript/javascript oracle derives imports/exports from the DECLARED name while the delegate publishes the LOCAL BINDING, so switching it on would report every aliased import as MISSING. Aliasing is rare (4 of 622 on the 400-file draw) but the convention mismatch is a harness artefact, not a defect | YES — target is `${modulePath}:${item}` | n/a — a module-path endpoint is external by design | `import_based`, 1.0 | 0 |
@@ -214,7 +216,7 @@ here rather than asserted.** `script/m60/rel-type-coverage-gate.ts` CHECK 1 at
 HEAD reports `vue 4 un-audited: ["contains","exports","references","uses"]`, plus
 `imports`, which is invisible to that check because it rides `ParseResult.imports[]`
 — a channel the gate does not read. The differential's compared-label allowlist
-for `vue` is `["extends", "implements", "instantiates", "overrides", "calls"]`
+for `vue` is `["extends", "implements", "instantiates", "renders", "overrides", "calls"]`
 (`differential.ts:23153`), so **five of the ten types sit outside it.**
 
 As a fraction of this lane's real payload (production `parseFile`, every tracked
@@ -309,7 +311,7 @@ one and the reason is given.
 **What the differential says, and what it cannot say here.** The lane reads
 `MISSING=0 / unexplained=0` on its compared labels (200-file draw, 2026-09-30),
 and the compared-label set is only
-`["extends", "implements", "instantiates", "overrides", "calls"]`
+`["extends", "implements", "instantiates", "renders", "overrides", "calls"]`
 (`differential.ts:23153`). Everything else this lane emits is outside the
 comparison, which is the DERIVATION debt quantified above.
 
@@ -384,8 +386,9 @@ items in this lane, in order: (1) the template `calls` mirror in the vue oracle,
   event, `data` → method, `computed` → property, `methods` → method,
   lifecycle hooks → method — `Card.vue`
 - Template components: PascalCase (`<Card />`) and kebab-case
-  (`<router-link />`, `<router-view />`) → instantiates (leaf tag name;
-  builtin HTML/Vue tags filtered) — `UserList.vue`, `App.vue`
+  (`<router-link />`, `<router-view />`) → renders (leaf tag name;
+  builtin HTML/Vue tags filtered; the host mounts the component, nothing is
+  `new`ed — the 2026-10-24 relabel) — `UserList.vue`, `App.vue`
 - Calls: leaf targets, member-expression chains, `this.$emit(...)`,
   `await fetch(...)` → `fetch`, `more.json()` → `json` — all fixtures
 - Negative fixtures: template bindings (`v-if`/`v-for`/`v-model`/`@input`/
@@ -499,7 +502,7 @@ check to be re-run after adding edges and this is the state that check found.
 Hot-path audit: SFC tree walked once (explicit stack); script subtree
 delegated to the JS analyzer (single iterative traversal, scope per-frame
 snapshots); Options-API extraction is a single pass over the `export default`
-object's direct named children; template instantiates resolved with
+object's direct named children; template renders resolved with
 O(1) name lookups (import map + builtin-tag set); containment from
 `ownerName` in one pass. No O(n²) or per-symbol O(n) scans.
 

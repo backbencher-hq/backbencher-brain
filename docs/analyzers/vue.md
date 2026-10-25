@@ -5,10 +5,13 @@
   Options-API component symbol (`name:` option identity), props (`isProp`),
   events (`isEmit`), data fields, methods, computed, watch handlers,
   lifecycle hooks — plus everything the script sub-analyzer (JS/TS) emits
-- **Relationships**: instantiates (non-builtin template component usages),
+- **Relationships**: renders (non-builtin template component usages — the
+  host renderer mounts the component, nothing is `new`ed; the 2026-10-24
+  relabel from `instantiates`, the svelte precedent),
   contains (component → members), template decision points (v-if/v-for) folded
   into complexity — plus script-side edges (imports, calls, uses, references,
-  contains, exports, overrides) merged from the JS/TS sub-analyzer
+  contains, exports, overrides, and the `new`-constructions the JS/TS
+  sub-analyzer publishes as `instantiates`) merged from the JS/TS sub-analyzer
 - **Payloads**: complexity (script cyclomatic + template decision points)
 
 ## Architecture
@@ -17,7 +20,8 @@
 - Options-API default-export objects are extracted into component-owned
   members (parity with class-based frameworks, #383)
 - Template pass: every non-builtin element tag is a component usage →
-  `instantiates` (leaf tag name as written)
+  `renders` (leaf tag name as written; target normalized by Vue's own registry
+  rule — kebab/camel → PascalCase, F31)
 
 ## Evidence tiers
 Central classifier at end of analyze(): every relationship carries
@@ -60,7 +64,8 @@ these as "pending wave", and `vue-completeness.json` has had them `CLOSED` since
   **6,227 audited edges over all 829 files** and 1,571 over the canonical 200-file
   draw — and 891 edges over vue-element-admin's 131 files at both. **Sized to the
   audited labels**, which are `calls`, `extends`, `implements`, `instantiates`,
-  `overrides`, the contract-marked `references` and the delegated `contains`.
+  `renders`, `overrides`, the contract-marked `references` and the delegated
+  `contains`.
   The full 829-file draw is the stronger evidence and is what the final review
   measured: three defects (F13, F14 and the `withDefaults` interaction) were
   invisible at 200 files.

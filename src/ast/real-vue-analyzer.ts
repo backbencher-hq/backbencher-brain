@@ -4,8 +4,10 @@
  * Author: Muhammad Ishaq Khan.
  *
  * THE RELATIONSHIP TYPES THIS FILE COVERS: `contains`, `imports`, `references`, `uses`, `extends`,
- * `implements`, `overrides`, `instantiates`, `exports` — plus the internal `Provides` relationship
- * that is not one of the ten ontology kinds. THE SEAM THAT MATTERS: an SFC's `<script>` block is
+ * `implements`, `overrides`, `renders`, `exports` — plus the internal `Provides` relationship
+ * that is not one of the ten ontology kinds (the SFC's own template component tags emit
+ * `renders`, the 2026-10-24 relabel; `instantiates` is DELEGATE-ONLY: the JS/TS seam's
+ * script-`new` rows, never a template tag). THE SEAM THAT MATTERS: an SFC's `<script>` block is
  * DELEGATED to `RealTypeScriptAnalyzer` (`src/ast/real-typescript-analyzer.ts`), so some kinds on a
  * .vue file are minted by the TypeScript analyzer — a `vue` header that lists only this file's own
  * literals would be wrong, and a change in the delegate can change vue's edges.
@@ -54,8 +56,10 @@
 //     component (methods → Method, computed → Property, data → Method,
 //     props → Property, emits → Event, lifecycle hooks → Method).
 //     Template elements/attributes/directives are NEVER symbols.
-//   - Relationships: template component usages → instantiates (leaf tag
-//     names, HTML/Vue builtins filtered); script imports/calls/extends/
+//   - Relationships: template component usages → renders (leaf tag
+//     names, HTML/Vue builtins filtered; the host renderer mounts the
+//     component, nothing is `new`ed — instantiates keeps only the
+//     delegate's script `new` rows); script imports/calls/extends/
 //     overrides via the JS/TS contract; compiler macros (defineProps,
 //     defineEmits, defineExpose, withDefaults) filtered; contains from
 //     ownerName.
@@ -372,7 +376,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { isVueComponent: true, isSfc: true },
     })
 
-    // --- 2. Template pass: component usages → instantiates --------------------
+    // --- 2. Template pass: component usages → renders -------------------------
     // Walk the SFC tree; skip <script>/<style> subtrees; every non-builtin
     // element tag is a component usage (leaf tag name as written).
     const templateStack: Node[] = [rootNode]
@@ -450,7 +454,21 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             const row: ASTEngine.UniversalRelationship = {
               source: moduleName,
               target: registry.target,
-              type: ASTEngine.RelationshipType.Instantiates,
+              // RENDERS, NOT INSTANTIATES (2026-10-24, extended vocabulary; the svelte
+              // precedent, Lead-ruled). A template component tag mounts an element the
+              // HOST RENDERER creates — the source contains no `new`, so an
+              // `instantiates` edge claimed an allocation site the file does not have
+              // (types.ts' Renders contract: "NOT `instantiates`: nothing is `new`ed —
+              // the host renderer constructs the element"). `instantiates` keeps its
+              // OWN rows: the JS/TS delegate's script `new` rows, copied by the seam
+              // below — the two relations stay distinct, exactly as svelte's migration
+              // kept 191 delegate `new` rows while moving 11,512 template rows.
+              // Measured before the relabel over the whole 1,155-file admitted
+              // population: 2,235 template rows (isComponentUsage:true) and 16
+              // delegate `new` rows = the 2,251 `instantiates` the last whole-
+              // population run published — so the relabel moves 2,235 rows and no
+              // edge is gained or lost.
+              type: ASTEngine.RelationshipType.Renders,
               confidence: 0.95,
               // M59 (#825): the `<Child/>` tag as written in the template.
               ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
@@ -3475,8 +3493,19 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (t === "instantiates") {
-        // vue: template tag usages are component REFERENCES, not constructions
+        // vue: after the 2026-10-24 relabel only the DELEGATE's script `new` rows
+        // reach this arm (template tags are `renders` below), and a construction
+        // IS structural — but the arm keeps its isComponentUsage branch because
+        // store rows written before the relabel still carry the flag.
         md.evidenceClass = md.isComponentUsage ? "usage_contextual" : "structural"
+        continue
+      }
+      if (t === "renders") {
+        // vue: a template tag usage is a RENDER (the host mounts the component),
+        // evidence-wise a component usage by tag name — the same class the arm
+        // above assigned these rows when they were `instantiates`, so the relabel
+        // moves the label and not the evidence class.
+        md.evidenceClass = "usage_contextual"
         continue
       }
       md.evidenceClass = "usage_contextual"
