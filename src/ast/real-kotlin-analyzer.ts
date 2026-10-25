@@ -4500,6 +4500,68 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
+
+        // ── THE `renders` EDGE — THE COMPOSE DSL, R3, CORPUS-UNEXERCISED (2026-10-25) ─────────────
+        //
+        // THE SHAPE SURVIVES THE GRAMMAR AS REAL NODES, probe-measured: a `@Composable`
+        // function parses as modifiers > annotation > user_type on a function_declaration,
+        // and a rendered component is a call_expression in that function's body. NO grammar
+        // change is needed (R3): both node types already exist. The value's contract
+        // (src/ast/types.ts: A component RENDERS another component; NOT `instantiates`) is
+        // satisfied by the call site, not by an allocation.
+        //
+        // THE CORPUS IS ZERO, measured over the WHOLE admitted population (2,346 files,
+        // 8 repos, 0 failed): 0 @Composable-named annotation sites and 0
+        // androidx.compose imports — the corpus is server-side/library Kotlin, not Compose
+        // UI. So the value is published as IMPLEMENTED AND CORPUS-UNEXERCISED (the csharp
+        // shape: counted once, in implemented, with the overlap printed) and its proof is
+        // the behavioural fixture validation/m14/fixtures/kotlin/composable-renders.kt,
+        // not a population.
+        //
+        // THE IMPOSTOR STOPS, each measured rather than assumed:
+        //   · the TARGET must name a SAME-FILE symbol that is ITSELF declared with the
+        //     Composable marker — a plain helper called inside a composable body is not a
+        //     rendered component (`formatLabel(...)`), and a composable called from a PLAIN
+        //     function is not a rendering symbol. No cross-file annotation resolution exists
+        //     here, so an imported component (`Text`) is out of scope: the marker on the
+        //     SOURCE side is what makes the call site a render.
+        //   · NO SELF EDGE: a composable calling itself is recursion, not a render.
+        if (isComposable && nameNode) {
+          const renderBody = this.findChildByType(n, ["function_body"])
+          if (renderBody) {
+            const composableNames = new Set<string>()
+            for (let si = 0; si < symbols.length; si++) {
+              const sym = symbols[si]
+              const symAnns = (sym.metadata as any)?.annotations
+              if (!Array.isArray(symAnns) || symAnns.indexOf("Composable") < 0) continue
+              if (sym.name === nameNode.text) continue // no self edge
+              if (sym.kind !== ASTEngine.SymbolKind.Function && sym.kind !== ASTEngine.SymbolKind.Method) continue
+              composableNames.add(sym.name)
+            }
+            if (composableNames.size > 0) {
+              const renderCalls = this.extractFunctionCalls(renderBody)
+              for (let ri = 0; ri < renderCalls.length; ri++) {
+                if (!composableNames.has(renderCalls[ri].name)) continue
+                relationships.push({
+                  source: nameNode.text,
+                  target: renderCalls[ri].name,
+                  // The rendered component is named at its call site.
+                  line_number: renderCalls[ri].node.startPosition.row + 1,
+                  type: ASTEngine.RelationshipType.Renders,
+                  confidence: 0.9,
+                  metadata: {
+                    relationshipType: "compose_render",
+                    isComposableMarker: true,
+                    isComponentCall: true,
+                    // The marker on the source and the target's OWN declaration are both
+                    // read from the tree — structural, unlike the PascalCase heuristic above.
+                    evidenceClass: "structural",
+                  },
+                })
+              }
+            }
+          }
+        }
       }
 
       if (n.type === "call_expression") {
