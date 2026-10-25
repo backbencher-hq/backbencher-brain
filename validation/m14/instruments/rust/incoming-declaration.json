@@ -14,6 +14,17 @@
       "censusAgreement": "script/m14/rust-extended-types-census.ts independently admitted 2532 files over 9 repos — the two instruments agree"
     },
     "measurementForm": "ONE arm run over the whole admitted population (2,532 files, single process, index=no — under the ~7,600-parse WASM abort point the dart lane measured, and the arm frees every tree). NO chunking, so there is no chunk-resolution bias and no mixed-index arm to caveat.",
+    "armCommand": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts rust rs 0 --dump   (stdout+stderr captured to armLog; BB_DUMP_LIMIT must exceed the 196,062 DUMP rows the report carries — the tool's own default is 40)",
+    "armLog": "validation/m14/measurements/rust-gate-whole-2026-10-23.txt",
+    "artifacts": {
+      "armLog": "validation/m14/measurements/rust-gate-whole-2026-10-23.txt",
+      "extendedCensus": "validation/m14/measurements/rust-extended-census.json",
+      "completenessSpec": "script/m14/spec/rust-completeness.json",
+      "fixtures": "validation/m14/fixtures/rust/",
+      "fixtureSummary": "34 pass / 0 fail (bun script/m14/run-fixtures.ts --lang rust)"
+    },
+    "analyzerDigest": "sha256:d8f032930f23a070ed9e811a72fc362662d90809873971510dbcaa40c01241e9",
+    "analyzerDigestNote": "THE DIGEST NAMES THE BYTES THE ARM MEASURED: src/ast/real-rust-analyzer.ts at the arm's analyzer commit d52c665be, byte-identical at the closure commit b613d0d99 and at arm time. A later fix commit (the lane's D1 + D5) changes that file in TWO ways and NEITHER moves an edge or a bucket: (1) refusal counters that only fill metadata.unattributedEdges (decorates:inner_attribute, decorates:unnamed_declaration, decorates:attribute_without_name, decorates:no_declaration_sibling) and (2) a derive line-number index correction that only changes metadata.line_number, which the arbiter never reads. Proved rather than asserted: the four fixtures that pin these emitters are 34 pass / 0 fail both before and after the fix, and no edge-count assertion in them moved.",
     "generator": "script/m14/rust-declaration.ts"
   },
   "types": {
@@ -385,11 +396,11 @@
   "causeRulings": {
     "R1_qualified_and_foreign_targets": {
       "population": "parsed=2532/2532 admitted=2532 exts=rs index=no",
-      "count": 61048,
-      "what": "unresolved rows whose targets are qualified paths, foreign-crate leaves or file paths — a per-file analyzer's structural reach, stated rather than resolved. The census's per-construct counts are the evidence classes: derive args 11,176 (the mixes_in rows' targets are TRAIT names, resolved only when the file declares them), attribute names 16,195 (the decorates rows' targets are attribute names, not symbols), include paths 3 (the part_of target is a PATH by construction — §8: a fragment has no symbol).",
+      "count": 77932,
+      "what": "EVERY UNRESOLVED ROW IN THE POPULATION, partitioned per type: calls 42,689 · references 11,852 · mixes_in 9,451 · decorates 7,395 · imports 3,220 · uses 1,720 · implements 1,012 · instantiates 528 · exports 38 · extends 27 = 77,932 — the sum of TABLE 1's unresolved column, and the arm log's 196,062 DUMP rows are exactly the same set split the other way (77,932 unresolved + 110,581 ambiguous + 7,549 extOK = 196,062), so the table and the dump agree. These are the rows whose targets are qualified paths, foreign-crate leaves, attribute/trait names or file paths — a per-file analyzer's structural reach, stated rather than resolved. The census's per-construct counts are the evidence classes: derive args 11,176 (the mixes_in rows' targets are TRAIT names, resolved only when the file declares them), attribute names 16,195 outer + 202 inner (the decorates rows' targets are attribute names, not symbols), include paths 3 (the part_of target is a PATH by construction — §8: a fragment has no symbol). THE EARLIER COUNT 61,048 WAS THE SEVEN-ORIGINAL-TYPE SUBTOTAL (calls+uses+imports+references+extends+implements+instantiates) and is SUPERSEDED: the extended types' 16,846 unresolved rows (mixes_in 9,451 + decorates 7,395) and exports' 38 sat outside it, which is the rust lane's D2 finding.",
       "falsifier": {
-        "run": "bun run script/m14/incoming-gate.ts rust rs 0 --dump (the whole-population arm; TABLE 1's per-type unresolved column is the count)",
-        "wouldFail": "a per-type unresolved count that exceeds the census's construct count for that type, or a resolved row whose target the project does not declare — the arbiter's key space is the project's symbols and the census counts the shapes"
+        "run": "BB_CORPUS_ROOT=$PWD/.corpus BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts rust rs 0 --dump   → arm log validation/m14/measurements/rust-gate-whole-2026-10-23.txt; the count is TABLE 1's unresolved column summed, and it must equal the log's own count of `DUMP <type> unresolved` rows (77,932)",
+        "wouldFail": "the per-type unresolved counts failing to sum to the DUMP's unresolved row count, a per-type unresolved count exceeding the census's construct count for that type, or a resolved row whose target the project does not declare — the arbiter's key space is the project's symbols and the census counts the shapes"
       }
     },
     "renders_corpus_unexercised": {
@@ -397,7 +408,7 @@
       "count": 0,
       "what": "renders is IMPLEMENTED and CORPUS-UNEXERCISED (csharp's class — counted once inside implemented, never an exclusion): the census measured 0 render-macro invocations over all 2,532 files and the probe PROVED the shape parses (hasError:false, the tag identifiers are structural children of the macro's token_tree). The fixture rust/renders-component-tag pins the emission fires when the construct exists.",
       "falsifier": {
-        "run": "bun script/m14/rust-extended-types-census.ts --json=<out> (the render_macro_invocations counter, whole population)",
+        "run": "bun script/m14/rust-extended-types-census.ts --json=validation/m14/measurements/rust-extended-census.json (the render_macro_invocations counter, whole population)",
         "wouldFail": "a corpus file carrying a declared render macro (view!/html!/rsx!/render!/maud!/markup!) whose angle-tag identifier names a same-file callable or type — the census counts exactly that shape and the arm's renders row would leave 0"
       }
     },
@@ -406,7 +417,7 @@
       "count": 3,
       "what": "part_of's 3 rows are UNRESOLVED BY CONSTRUCTION and their 3 extOK edges are project-CONFIRMED file claims: the target is the include! PATH because a fragment has no symbol (fleet §8), and the importProjectFile claim is statted before it is written, so the arbiter confirms the file exists rather than resolving a declaration. NOT `mod` (fleet ruling L-2026-10-21-06: ownership/split; the census counts the rejected near miss at mod_file_declarations 1,898 + mod_inline 227 for the record).",
       "falsifier": {
-        "run": "bun script/m14/rust-extended-types-census.ts --json=<out> (include_string_literal 3, include_non_literal 1, include_str_sites 20, include_bytes_sites 2)",
+        "run": "bun script/m14/rust-extended-types-census.ts --json=validation/m14/measurements/rust-extended-census.json (include_string_literal 3, include_non_literal 1, include_str_sites 20, include_bytes_sites 2)",
         "wouldFail": "an include_string_literal census count that differs from the arm's part_of edge count, or a mod file-declaration appearing as a part_of row"
       }
     }

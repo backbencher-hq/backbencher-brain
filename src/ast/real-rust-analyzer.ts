@@ -1001,6 +1001,14 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         currentParent = this.handleMod(node, ctx, parent) ?? parent
       } else if (node.type === "attribute_item") {
         this.handleAttribute(node, ctx)
+      } else if (node.type === "inner_attribute_item") {
+        // AN INNER ATTRIBUTE (`#![allow(…)]`) DECORATES THE MODULE ITSELF, and the module is not a
+        // declaration this file can name — there is no following declaration sibling, and the
+        // file-scope source is not an item symbol. The relation is REFUSED AND COUNTED rather than
+        // silently dropped: the owner's rule is that an omission must be countable, and the census
+        // measures 202 inner attribute sites over the 2,532-file population. Previously this node
+        // type had NO handler at all, so all 202 were invisible (the rust lane's D1).
+        this.noOwner(ctx, "decorates:inner_attribute")
       } else if (node.type === "call_expression") {
         this.handleCallExpression(node, ctx, parent)
       } else if (node.type === "field_expression") {
@@ -2300,8 +2308,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     //
     // SOURCE = the DECORATED DECLARATION (the attribute_item's next named sibling — an outer
     // attribute precedes its item in Rust's grammar, measured in the probe tree), TARGET = the
-    // attribute's own name. An inner attribute (`#![…]`, decorating the module) has no following
-    // sibling in this file and is REFUSED AND COUNTED, never silently dropped.
+    // attribute's own name. An INNER attribute (`#![…]`, decorating the module) is refused and
+    // counted in the WALK DISPATCH (`decorates:inner_attribute`) — it never reaches this handler,
+    // and the three outer drop paths (no declaration sibling / unnamed declaration / attribute
+    // without a readable name) are each counted in metadata.unattributedEdges, because an omission
+    // must be countable (the census measures 16,195 outer + 202 inner attribute sites).
     {
       const decorated: Node | null = (() => {
         let sib: Node | null = node.nextSibling
@@ -2326,11 +2337,22 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             return null
           })()
-        if (declName) {
+        if (!declName || !declName.text || declName.text.length === 0) {
+          // THE DECORATED NODE IS NOT A DECLARATION THIS WALKER CAN NAME — a `use` tree, an
+          // `extern` block, a statement: the attribute is REAL and its declaration has no name node
+          // to source the edge from. REFUSED AND COUNTED. These were 265 of the 16,195 outer
+          // attribute sites over the whole population and every one of them used to vanish silently
+          // (the rust lane's D1: an omission must be countable).
+          this.noOwner(ctx, "decorates:unnamed_declaration")
+        } else {
           const attr = node.namedChild(0)
           const nameNode = attr ? (attr.childForFieldName?.("path") ?? attr.namedChild(0)) : null
           const attrName = nameNode ? String(nameNode.text) : ""
-          if (attrName.length > 0 && declName.text && declName.text.length > 0) {
+          if (attrName.length === 0) {
+            // An attribute node with no readable path spelling: refused and counted rather than
+            // dropped (a parse-recovery shape, not a construct this lane can name).
+            this.noOwner(ctx, "decorates:attribute_without_name")
+          } else {
             const BUILTIN = new Set([
               "derive","allow","deny","warn","cfg","cfg_attr","inline","test","repr","doc",
               "path","no_mangle","cold","deprecated","must_use","feature","macro_use","macro_export",
@@ -2362,9 +2384,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       } else {
-        // An inner attribute (`#![…]`) decorates the MODULE, and a module-scoped source is not a
-        // declaration in this file — REFUSED AND COUNTED so the wall is a number.
-        this.noOwner(ctx, "decorates:inner_attribute_no_sibling")
+        // AN OUTER ATTRIBUTE WITH NO FOLLOWING SIBLING AT ALL — a partial parse, or an attribute at
+        // EOF. REFUSED AND COUNTED. This branch used to be misnamed `decorates:inner_attribute
+        // _no_sibling` while `inner_attribute_item` was not routed to this handler at all: the name
+        // claimed a class the code never counted (the rust lane's D1). Inner attributes now have
+        // their own refusal in the walk dispatch.
+        this.noOwner(ctx, "decorates:no_declaration_sibling")
       }
     }
     // Attribute-based framework detection (family contract: python/cpp
@@ -2429,12 +2454,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             // anonymous — the `::` separators are anonymous `::` tokens), group identifiers
             // joined by a `::` separator into ONE path, and take the RIGHTMOST segment as the
             // composed trait (M59.A7's rule: the name, not the path's leftmost segment).
-            const args: { text: string; isIdent: boolean }[] = []
+            const args: { text: string; isIdent: boolean; node: Node }[] = []
             for (let k = 0; k < ttMix.childCount; k++) {
               const c: Node | null = ttMix.child(k)
               if (!c) continue
               const isIdent = String(c.type) === "identifier"
-              args.push({ text: String(c.text), isIdent })
+              args.push({ text: String(c.text), isIdent, node: c })
             }
             let k2 = 0
             while (k2 < args.length) {
@@ -2443,7 +2468,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               let pathEnd = k2
               while (pathEnd + 2 < args.length && args[pathEnd + 1].text === "::" && args[pathEnd + 2].isIdent) pathEnd += 2
               const traitName = args[pathEnd].text
-              const lineNode: Node | null = ttMix.namedChild(k2) // the run's first node carries the line
+              // THE LINE OF THE NODE THAT NAMES THE EDGE (M59.A7) — the RIGHTMOST segment's own
+              // node, carried through the collection pass. It used to be `ttMix.namedChild(k2)`,
+              // i.e. an ALL-CHILDREN index passed to the NAMED-child accessor: for a qualified
+              // derive path (`serde::Serialize`) and for any argument past the named count that
+              // read the wrong node or null, which is why the arm's dump shows `mixes_in …
+              // Serialize … :null` (the rust lane's D5).
+              const lineNode: Node | null = args[pathEnd].node
               if (traitName.length > 0 && !seenMix.has(traitName)) {
                 seenMix.add(traitName)
                 ctx.relationships.push({

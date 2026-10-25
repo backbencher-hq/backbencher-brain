@@ -516,65 +516,86 @@
         "falsifier": "a corpus file carrying a declared render macro whose angle-tag identifier names a same-file callable or type \u2014 the census instrument counts exactly that shape, and the fixture asserts the emission fires when one exists"
       }
     ],
-    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path (`npx tsx script/m14/residual-gate.ts --lane rust`): 2,532 parsed of 2,532 admitted .rs files across 9 repos, 0 parse failures; artifact validation/m14/measurements/task105/rust-whole-population-gate.txt. ALL TEN types fire, each measured with its own count: calls 178,084 \u00b7 uses 28,019 \u00b7 contains 21,702 \u00b7 imports 11,685 \u00b7 references 38,648 \u00b7 exports 4,571 \u00b7 extends 29 \u00b7 implements 1,793 \u00b7 overrides 2,169 \u00b7 instantiates 6,019 \u2014 TOTAL 292,719, exactly the sum of the ten rows. THE RUN IS A LOWER BOUND AND SAYS SO, which is the part that must not be smoothed: of the 303 files returning no symbols and no relationships, 253 hold NO CONTENT AT ALL (0 bytes or whitespace \u2014 the run missed nothing) and 50 HOLD CONTENT AND RETURNED NOTHING, named in the artifact (cargo's `cargo-test-support` container stubs, `rustfix` no_main fixtures, `cargo_add` fixtures). The gate explicitly REFUSES to decide whether those 50 are parse failures or content that cannot declare anything, and this block does not decide for it. ONE file was DEGRADED (regex fallback) and one analyzer TIMEOUT was logged and aborted (`ripgrep/crates/core/flags/defs.rs`, engine timeout, basic parse result). Every count above is therefore a FLOOR over the files the run could measure, not a ceiling. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim to make and no zero-sites entry to file. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 \u2212 0 grammar-absence \u2212 0 unclassified. THE 120-FILE FIRING LOG AGREES HERE rather than being refuted \u2014 validation/m14/results/firing-laptop-b.current.log line 6-7 reads `RUST 10 types fired 110/110 parsed` with every type counted \u2014 and the earlier lane measurement in RUST-D14 (7 labels, 74,584 relationships over 450 files, 2026-09-29) is a SAMPLE whose counts this whole-population run is not comparable with. Every implemented type carries its own `_implemented_measured` count, so the per-type silence attribution has a pointer for each of the ten.",
+    "_from": "DERIVATION, RE-DERIVED 2026-10-23 AND THIS BLOCK NOW DESCRIBES THE FOURTEEN-TYPE LANE. CURRENT MEASUREMENT: ONE whole-population arm run over the git-tracked admitted set (parsed=2532/2532 admitted=2532 exts=rs index=no, 9 repositories, 0 parse failures, 0 degraded) \u2014 validation/m14/measurements/rust-gate-whole-2026-10-23.txt, whose TABLE 1 rows are the source of every count below; total 326,101 edges = resolved 130,039 + ambDecl 110,581 + unresolved 77,932 + extOK 7,549 (imports 7,546 + part_of 3), unclassed 0. ALL FOURTEEN types are IMPLEMENTED; thirteen fire and `renders` is implemented and CORPUS-UNEXERCISED (0 render macros, 0 UI-framework manifests over the whole population; the emission is fixture-pinned and the shape is probe-proved expressible). NOTHING IS EXCLUDED: 14 implemented with the renders overlap counted once + 0 gaps = 14 applicable = 14 \u2212 0 grammar-absence \u2212 0 unclassified. THE FOUR EXTENDED TYPES ARE THE R3 SET: part_of from include! (3 rows, all extOK file claims; NOT mod \u2014 fleet ruling L-2026-10-21-06), decorates from attribute_item (15,930 rows, both classes published via metadata.attributeKind; csharp's falsifier FIRES in rust), mixes_in from derive composition (11,176 rows, exactly the census's derive_args_total), renders corpus-unexercised. THE SUPERSEDED MEASUREMENT IS RECORDED, NOT ERASED: the 2026-10-14 ten-type run at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd (validation/m14/measurements/task105/rust-whole-population-gate.txt) is preserved under _implemented_measured._superseded with its own counts (total 292,719): it predates the four extended emitters, the TOML-reader rewrite and the D1/D5 fixes, so its per-type counts are NOT comparable with the current ones and must not be quoted as current. THE ONE THING THAT RUN AND THIS ONE BOTH SAY, and it must not be smoothed: the arm counts files that hold content and return nothing (48 in this run, 50 in the old one) and the instrument EXPLICITLY REFUSES to decide whether they are parse holes or content that cannot declare anything; this block does not decide for it. Every implemented type carries its own _implemented_measured count, so the per-type silence attribution has a pointer for each of the fourteen.",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE admitted 2,532-file rust population (9 repos, 0 parse failures, 1 degraded, 50 content-bearing files returning nothing \u2014 so a LOWER BOUND) \u2014 CLOSURE block of validation/m14/measurements/task105/rust-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 292,719",
+      "_unit": "edges published through the production path over the WHOLE admitted 2,532-file rust population (9 repos, 0 parse failures, 0 degraded, 48 content-bearing files returning nothing \u2014 so a LOWER BOUND) \u2014 TABLE 1 of validation/m14/measurements/rust-gate-whole-2026-10-23.txt, whose fourteen per-type rows sum to its own TOTAL of 326,101",
       "calls": {
-        "edges": 178084
+        "edges": 180486
       },
       "uses": {
-        "edges": 28019
+        "edges": 28323
       },
       "contains": {
-        "edges": 21702
+        "edges": 22507
       },
       "imports": {
-        "edges": 11685
+        "edges": 11822
       },
       "references": {
-        "edges": 38648
+        "edges": 38680
       },
       "exports": {
-        "edges": 4571
+        "edges": 6185
       },
       "extends": {
         "edges": 29
       },
       "implements": {
-        "edges": 1793
+        "edges": 1901
       },
       "overrides": {
-        "edges": 2169
+        "edges": 2910
       },
       "instantiates": {
-        "edges": 6019
+        "edges": 6149
       },
       "part_of": {
         "_note": "R3 from include!(\"...\") \u2014 TEXTUAL file inclusion, measured at 4 sites over the 2,532-file admitted population (3 single-string-literal, 1 non-literal REFUSED and counted). NOT `mod` (fleet ruling L-2026-10-21-06: ownership/split; a resolvable unit is the opposite of a fragment). Near misses refused and counted: include_str! 20 + include_bytes! 2 (data inclusion), mod 1,898 + inline 227 (ownership). Target = the PATH with the importProjectFile claim (a fragment has no symbol), so confirmed rows land extOK.",
         "_emissionSite": "handleMacroInvocation \u2014 real-rust-analyzer.ts, the include! branch before the R7 file-scope guard",
         "_fixture": "rust/part-of-include-macro (pins the causal edge, the partRole, and BOTH near-miss refusals at equals:0)",
-        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (pending the whole-population arm; the 4-site count is from the lane's whole-population construct census)"
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no \u2014 the arm publishes 3 part_of edges, ALL extOK (the 3 include_string_literal sites, project-confirmed importProjectFile claims); the 1 non-literal site is refused and counted (part_of:include_non_literal), and include_str! 20 + include_bytes! 2 are the data-inclusion near miss (whole-population construct census, validation/m14/measurements/rust-extended-census.json)"
       },
       "decorates": {
         "_note": "R3 from attribute_item. csharp's ontological ruling NAMED ITS FALSIFIER ('a runtime callable-wrapper construct \u2014 none in the grammar') and IN RUST IT FIRES: #[proc_macro_attribute] pub fn cargo_test (.corpus/cargo/crates/cargo-test-macro/src/lib.rs:61) takes the item and returns a replacement; #[derive]/#[tokio::main]/#[tracing::instrument] transform the declaration. A RULING TRANSFERS ONLY WHEN ITS FALSIFIER DOES NOT FIRE (fleet form 16). BOTH classes published, split by metadata.attributeKind: builtin_directive and applied_callable_candidate \u2014 the nim shape one better (nim ruled the directive class away; this publishes it so a reader can discount it).",
         "_emissionSite": "handleAttribute \u2014 real-rust-analyzer.ts, the decorates block at the head of the handler",
         "_fixture": "rust/decorates-attribute-application (4 rows, both kinds, the derive/allow/inline builtins and the tokio::main candidate; dead_code at equals:0 pins the argument-not-attribute refusal)",
-        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (site counts from the lane's 422-file stride sample: attribute_item 2,378 + inner_attribute_item 117; whole-population count pending the arm)",
-        "_refusedClass": "decorates:inner_attribute_no_sibling \u2014 an inner attribute decorates the module and has no declaration sibling in this file; counted in metadata.unattributedEdges"
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no \u2014 the arm publishes 15,930 decorates edges (resolved 1,968 \u00b7 amb 6,567 \u00b7 unresolved 7,395) against the census's 16,195 outer attribute sites + 202 inner sites. THE ACCOUNTING CLOSES: 15,930 emitted + 265 counted outer refusals (no nameable declaration sibling) = 16,195 outer sites, and all 202 inner sites are counted in their own class \u2014 the rust lane's D1 fix.",
+        "_refusedClass": "FOUR COUNTED REFUSAL CLASSES, EACH IN metadata.unattributedEdges (the D1 fix). MEASURED over the whole admitted population after the fix (2,532/2,532 files parsed, 0 failures) \u2014 the two populations are kept SEPARATE and each closes exactly: OUTER 16,195 sites = 15,930 emitted decorates rows + 265 counted (`decorates:unnamed_declaration` \u2014 the following sibling is not a nameable declaration: a `use` tree, an `extern` block, a statement); INNER 202 sites = 202 counted (`decorates:inner_attribute` \u2014 an `#![\u2026]` inner attribute decorates the MODULE and has no declaration sibling; the walk previously had NO handler for the node type, so all 202 were invisible). The other two classes fired on 0 sites and are defence-in-depth: `decorates:attribute_without_name` (a parse-recovery attribute node with no readable path spelling) and `decorates:no_declaration_sibling` (an outer attribute at EOF with no following sibling). The same probe re-measured the EMITTED edge count at 15,930 \u2014 exactly the arm's number \u2014 so this fix moves no edge."
       },
       "mixes_in": {
         "_note": "R3 from #[derive(A, B)]. The contract's discriminator: a mixin composes behaviour into a type's supertype chain WITHOUT declaring conformance \u2014 #[derive(Serialize)] composes trait implementations the source never declares. MEASURED (422-file stride): 372 derive sites over 17 distinct traits (Debug 339, Clone 297, Serialize 204, PartialEq 192, Deserialize 162, Eq 127, Default 79, OpenDd 58...). THE MEASURED ALTERNATIVE REJECTED BY COUNT: `use Trait as _` (67 use_as_clause, 21 `as _`) mixes names into a SCOPE, not a type's chain. QUALIFIED PATHS: serde::Serialize flattens to TWO sibling identifier nodes in the token_tree (probe-measured); the emitter groups identifier runs joined by `::` and takes the RIGHTMOST segment \u2014 one row per derive argument.",
         "_emissionSite": "handleAttribute \u2014 real-rust-analyzer.ts, the derive block before the framework detection",
         "_fixture": "rust/mixes-in-derive-composition (4 rows incl. the qualified Serialize at exactly 1 and the path segment serde at equals:0; the `use as _` alternative at equals:0)",
-        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (site counts from the lane's 422-file stride; whole-population count pending the arm)",
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no \u2014 the arm publishes 11,176 mixes_in edges, EXACTLY the census's derive_args_total 11,176 (resolved 695 \u00b7 amb 1,030 \u00b7 unresolved 9,451): one row per derive argument, qualified paths grouped to the RIGHTMOST segment (probe-measured grammar flattening), so one argument never publishes a path segment and a trait as two rows.",
         "_refusedClass": "mixes_in:derive_no_traits \u2014 a derive with an empty or unreadable argument list, counted in metadata.unattributedEdges"
       },
       "renders": {
         "_note": "R3, CORPUS-UNEXERCISED (csharp's class \u2014 counted once inside implemented, never an exclusion). The shape survives the grammar as real nodes (probe-measured hasError:false): the UI framework macros (view!/html!/rsx!/render!/maud!/markup!) parse to a macro_invocation whose token_tree carries the tag identifiers as structural children. MEASURED: 0 of 2,532 files carry a render-shaped macro and 0 Cargo.toml name leptos/yew/dioxus/maud/askama. The three must-nots: macro leaf in the DECLARED render list (dart impostor lesson), an angle-tag shape in the token_tree, the tag identifier names a SAME-FILE callable/type (clojure's impostor stop) \u2014 bare HTML tags and undeclared tags are refused and counted.",
         "_emissionSite": "handleMacroInvocation \u2014 real-rust-analyzer.ts, the renders block before the R7 guard",
         "_fixture": "rust/renders-component-tag (1 row from view!; div/Other/println! each at equals:0)",
-        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (corpus-unexercised: 0 render-macro sites in the whole admitted set)",
+        "_population": "parsed=2532/2532 admitted=2532 exts=rs index=no (corpus-unexercised: 0 render-macro sites in the whole admitted set; the arm's renders row is 0 edges and the 1-row fixture rust/renders-component-tag pins the emission when the construct exists)",
         "_corpusUnexercised": true
+      },
+      "_superseded": {
+        "_what": "THE 2026-10-14 TEN-TYPE MEASUREMENT, KEPT WITH ITS NUMBERS RATHER THAN EDITED AWAY. It predates the four extended emitters (decorates/mixes_in/part_of/renders), the TOML-reader rewrite and the D1/D5 fixes, so it describes a different analyzer over the same population and is NOT comparable with the CURRENT counts above. Its artifact is tracked; its per-type rows are preserved here so a reader comparing an old quotation with the current declaration can see which is which.",
+        "measuredAt": "2026-10-14",
+        "head": "3759640979f78953ad04a89a06d6006f47de4ccd",
+        "instrument": "npx tsx script/m14/residual-gate.ts --lane rust",
+        "artifact": "validation/m14/measurements/task105/rust-whole-population-gate.txt",
+        "counts": {
+          "calls": 178084,
+          "uses": 28019,
+          "contains": 21702,
+          "imports": 11685,
+          "references": 38648,
+          "exports": 4571,
+          "extends": 29,
+          "implements": 1793,
+          "overrides": 2169,
+          "instantiates": 6019
+        },
+        "total": 292719,
+        "note": "THREE NUMBERS, THREE POPULATIONS OF LABELS, EACH LABELLED: the superseded ten-type total 292,719; the current ten-type total 298,992; the current fourteen-type total 326,101. Adding or comparing them without their label is the defect the fleet's ruling page exists for."
       }
     },
     "_claims": {
