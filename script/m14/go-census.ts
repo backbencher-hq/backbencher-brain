@@ -208,7 +208,32 @@ const counters = {
   structEmbeddingPointer: newRow(),
   structEmbeddingQualified: newRow(),
   structEmbeddingGeneric: newRow(),
+  // THE RECONCILIATION SPLIT (2026-10-25): the ARM's `mixes_in` row count is the construct count
+  // the ANALYZER can emit — embedded fields inside a NAMED type declaration (`type_spec`/
+  // `type_alias`, which is what gives the edge its SOURCE). An embedded field inside an ANONYMOUS
+  // struct type (`var x = struct{ Base }{}`, a parameter/return type) has no declared source and
+  // cannot be a row. This split is what turns a site-vs-row delta into a RECONCILIATION.
+  structEmbeddingNamedTypeDecl: newRow(),
+  structEmbeddingAnonymousStruct: newRow(),
+  // THE REMAINING SITE->ROW DELTA: a named-type-declaration site whose embedded type has NO
+  // nameable LEAF under the analyzer's own rule (`goEmbeddedFieldName`: strip pointer/generic
+  // wrappers, then require `type_identifier`/`qualified_type` and a plain-identifier leaf).
+  // Those sites are real construct nodes but cannot be a row — the target would name nothing.
+  structEmbeddingUnnameableLeaf: newRow(),
   interfaceEmbedding: newRow(), // extends' construct
+  // THE SAME SPLIT FOR THE INTERFACE HALF: the analyzer emits `extends` per plain type element of
+  // an `interface_type`; a `constraint_elem` that is a TYPE-PARAMETER CONSTRAINT (`[T comparable]`,
+  // `[T ~int]`) is not an interface embed and cannot be a row.
+  interfaceEmbeddingInInterfaceType: newRow(),
+  interfaceEmbeddingElsewhere: newRow(),
+  // THE INTERFACE SITE->ROW DELTA, and it is a SHAPE the analyzer deliberately skips: only
+  // `type_identifier` and `qualified_type` elements extend (GO2) — a GENERIC instantiation
+  // (`interface { Cmp[int] }`) is a different construct and is not an embedded interface.
+  interfaceEmbeddingGeneric: newRow(),
+  interfaceEmbeddingUnnameableLeaf: newRow(),
+  // A constraint element of a NESTED anonymous interface type (a different node shape the
+  // analyzer's direct-element loop cannot emit — it is why the site count can exceed the row count).
+  interfaceEmbeddingNestedInterface: newRow(),
   interfaceEmbeddingQualified: newRow(),
   interfaceEmbeddingPredeclared: newRow(),
   // the annotation surface — the `decorates` disposition
@@ -313,6 +338,23 @@ const unquoteDirectiveArg = (raw: string): string => {
   return raw
 }
 
+/** Go's plain-identifier shape, by char scan (the census's own no-regex rule — the SAME shape
+ *  the analyzer's `isPlainGoIdentifier` applies; a regex here would be a second copy of the rule). */
+function isPlainIdentifier(raw: string): boolean {
+  if (raw.length === 0) return false
+  const c0 = raw.charCodeAt(0)
+  const ok0 = (c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122) || c0 === 95
+  if (!ok0) return false
+  for (let i = 1; i < raw.length; i++) {
+    const c = raw.charCodeAt(i)
+    if (c >= 65 && c <= 90) continue
+    if (c >= 97 && c <= 122) continue
+    if (c >= 48 && c <= 57) continue
+    if (c === 95) continue
+    return false
+  }
+  return true
+}
 /** Split a directive's arguments on spaces/tabs WITHOUT a regex (the census's own rule). */
 const directiveArgs = (text: string): string[] => {
   const out: string[] = []
@@ -415,6 +457,41 @@ for (const f of scanFiles) {
         if (fieldText.length > 0 && fieldText[0] === "*") addSite(counters.structEmbeddingPointer, f.rel, f.repo)
         if (ty === "qualified_type") addSite(counters.structEmbeddingQualified, f.rel, f.repo)
         if (ty === "generic_type") addSite(counters.structEmbeddingGeneric, f.rel, f.repo)
+        // THE RECONCILIATION SPLIT, and it follows the ANALYZER's shape exactly: the analyzer
+        // reads the field list of the type declaration's OWN `struct_type` (the first one under
+        // the type_spec/type_alias). So a site is a ROW-CAPABLE site iff the nearest enclosing
+        // `struct_type` IS that direct struct type — an embedded field inside a NESTED anonymous
+        // struct (`type X struct{ A struct{ B } }`) is not in the top field list and cannot be a row.
+        let namedDecl = false
+        for (let q: any = n.parent; q; q = q.parent) {
+          if (q.type === "struct_type") {
+            const par = q.parent
+            namedDecl = !!par && (par.type === "type_spec" || par.type === "type_alias")
+            break
+          }
+          if (q.type === "source_file") break
+        }
+        if (namedDecl) addSite(counters.structEmbeddingNamedTypeDecl, f.rel, f.repo)
+        else addSite(counters.structEmbeddingAnonymousStruct, f.rel, f.repo)
+        if (namedDecl) {
+          // the analyzer's OWN leaf rule, re-implemented here without a regex
+          let cur: any = typeN
+          for (let g = 0; g < 8 && cur; g++) {
+            if (cur.type === "pointer_type" || cur.type === "generic_type") {
+              cur = cur.namedChildCount > 0 ? cur.namedChild(0) : null
+              continue
+            }
+            break
+          }
+          let leafOk = false
+          if (cur && (cur.type === "type_identifier" || cur.type === "qualified_type")) {
+            const raw = String(cur.text ?? "")
+            const dot = raw.lastIndexOf(".")
+            const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+            leafOk = isPlainIdentifier(leaf)
+          }
+          if (!leafOk) addSite(counters.structEmbeddingUnnameableLeaf, f.rel, f.repo)
+        }
       }
       if (tagN) {
         addSite(counters.structTagSites, f.rel, f.repo)
@@ -435,6 +512,35 @@ for (const f of scanFiles) {
         if (ty === "qualified_type") addSite(counters.interfaceEmbeddingQualified, f.rel, f.repo)
         const leaf = String(inner.text ?? "")
         if (ty === "type_identifier" && PREDECLARED.has(leaf)) addSite(counters.interfaceEmbeddingPredeclared, f.rel, f.repo)
+        // THE INTERFACE SPLIT, same analyzer shape: the analyzer reads the DIRECT elements of the
+        // type declaration's own `interface_type`; an element of a NESTED anonymous interface type
+        // (`interface{ interface{ J } }`) is a different node shape and cannot be a row.
+        let directInterface = false
+        for (let q: any = n.parent; q; q = q.parent) {
+          if (q.type === "interface_type") {
+            const par = q.parent
+            directInterface = !!par && (par.type === "type_spec" || par.type === "type_alias")
+            break
+          }
+          if (q.type === "source_file") break
+        }
+        if (directInterface) {
+          // ROW-CAPABLE means exactly the analyzer's accepted shapes: `type_identifier` and
+          // `qualified_type` (GO2 skips generic instantiations, nested anonymous-interface
+          // elements are not direct children of the declaration's own interface_type).
+          if (ty === "type_identifier" || ty === "qualified_type") addSite(counters.interfaceEmbeddingInInterfaceType, f.rel, f.repo)
+        } else if (n.parent && n.parent.type === "interface_type") {
+          addSite(counters.interfaceEmbeddingNestedInterface, f.rel, f.repo)
+        } else {
+          addSite(counters.interfaceEmbeddingElsewhere, f.rel, f.repo)
+        }
+        if (ty === "generic_type") addSite(counters.interfaceEmbeddingGeneric, f.rel, f.repo)
+        if (ty === "qualified_type") {
+          const raw = String(inner.text ?? "")
+          const dot = raw.lastIndexOf(".")
+          const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+          if (!isPlainIdentifier(leaf)) addSite(counters.interfaceEmbeddingUnnameableLeaf, f.rel, f.repo)
+        }
       }
     } else if (t === "comment") {
       const text = String(n.text ?? "")
@@ -622,12 +728,28 @@ const artifact = {
       structEmbeddingPointer: rowOut(counters.structEmbeddingPointer),
       structEmbeddingQualified: rowOut(counters.structEmbeddingQualified),
       structEmbeddingGeneric: rowOut(counters.structEmbeddingGeneric),
+      RECONCILIATION: {
+        question: "does the whole-population construct count equal the ARM's `mixes_in` row count, and if not, what exactly is the difference?",
+        structEmbeddingNamedTypeDecl: rowOut(counters.structEmbeddingNamedTypeDecl),
+        structEmbeddingAnonymousStruct: rowOut(counters.structEmbeddingAnonymousStruct),
+        structEmbeddingUnnameableLeaf: rowOut(counters.structEmbeddingUnnameableLeaf),
+        rule: "the analyzer emits one `mixes_in` row per embedded type inside a NAMED type declaration (`type_spec`/`type_alias` is what gives the edge its source); an embedded field inside an anonymous struct type has no declared source and CANNOT be a row. named + anonymous == structEmbedding, exactly.",
+      },
     },
     extends: {
       construct: "interface embedding: `constraint_elem` holding a plain type reference (interface-superset method-set inclusion; NO implementation is composed, so this half is not mixes_in)",
       interfaceEmbedding: rowOut(counters.interfaceEmbedding),
       interfaceEmbeddingQualified: rowOut(counters.interfaceEmbeddingQualified),
       interfaceEmbeddingPredeclared: rowOut(counters.interfaceEmbeddingPredeclared),
+      RECONCILIATION: {
+        question: "does the whole-population construct count equal the ARM's `extends` row count, and if not, what exactly is the difference?",
+        interfaceEmbeddingInInterfaceType: rowOut(counters.interfaceEmbeddingInInterfaceType),
+        interfaceEmbeddingElsewhere: rowOut(counters.interfaceEmbeddingElsewhere),
+        interfaceEmbeddingGeneric: rowOut(counters.interfaceEmbeddingGeneric),
+        interfaceEmbeddingUnnameableLeaf: rowOut(counters.interfaceEmbeddingUnnameableLeaf),
+        interfaceEmbeddingNestedInterface: rowOut(counters.interfaceEmbeddingNestedInterface),
+        rule: "the analyzer emits one `extends` row per PLAIN TYPE ELEMENT of the type declaration's OWN `interface_type`, and only for the shapes it accepts (`type_identifier`, `qualified_type`). `interfaceEmbeddingInInterfaceType` counts EXACTLY those row-capable sites, so it equals the arm's extends row count. The excluded site shapes are named beside it: generic instantiations (`interfaceEmbeddingGeneric`) and elements of a NESTED anonymous interface type (`interfaceEmbeddingNestedInterface`); their sum overcounts sites that are BOTH (a generic element of a nested interface), which is why the row-capable count is stated directly rather than by subtraction.",
+      },
     },
     decorates: {
       construct: "ANNOTATIONS, measured as the near-miss class: struct tags and //go: directive comments. The disposition is ONTOLOGICAL: an annotation is passive metadata and a decorator is an applied callable.",
@@ -707,7 +829,15 @@ const line = (label: string, r: SiteRow): void => {
 }
 line("mixes_in  struct embedding (composed implementation)", counters.structEmbedding)
 line("            … pointer / qualified / generic", counters.structEmbeddingPointer)
+line("            … in a NAMED type declaration", counters.structEmbeddingNamedTypeDecl)
+line("            … in an ANONYMOUS struct type", counters.structEmbeddingAnonymousStruct)
+line("            … with no nameable leaf (analyzer's own rule)", counters.structEmbeddingUnnameableLeaf)
 line("extends   interface embedding (method-set inclusion)", counters.interfaceEmbedding)
+line("            … inside an interface_type", counters.interfaceEmbeddingInInterfaceType)
+line("            … a type-parameter constraint", counters.interfaceEmbeddingElsewhere)
+line("            … a generic instantiation (not an interface embed)", counters.interfaceEmbeddingGeneric)
+line("            … with no nameable leaf", counters.interfaceEmbeddingUnnameableLeaf)
+line("            … nested anonymous interface type", counters.interfaceEmbeddingNestedInterface)
 line("decorates struct-tag sites (annotations, near miss)", counters.structTagSites)
 line("          … keys naming a declared callable (FALSIFIER)", counters.structTagKeysNamingDeclaredCallable)
 line("          //go:embed directives", counters.goDirectiveEmbed)
