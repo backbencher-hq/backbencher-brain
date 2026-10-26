@@ -296,6 +296,29 @@ const hasTrailingExtension = (text: string): boolean => {
   return true
 }
 
+/**
+ * THE SOURCED FILE'S OWN NAME — the `part_of` target for a dot-source.
+ *
+ * A dot-source names a FILE, and the file's module symbol is its basename WITH the
+ * extension (PS1 keeps the extension: `Build.psm1` and `Build.ps1` are different
+ * files). A `part_of` target is resolved against SYMBOL names, so this returns the
+ * basename as the sourced file declares it — `./lib.ps1` -> `lib.ps1`,
+ * `.\modules\Wdu.psm1` -> `Wdu.psm1`, `$PSScriptRoot\tools\start.ps1` -> `start.ps1`.
+ * The extension is NOT stripped: stripping it (`lib`) would match no symbol at all,
+ * which is the cpp lane's measured failure mode for path targets (0 of 4,612 rows
+ * resolved). The WRITTEN path is kept separately in `metadata.partPath`.
+ *
+ * A separator-only tail or a name no symbol can carry yields null, so the caller
+ * falls back to the `calls` reading rather than publishing an unresolvable target.
+ * Both separators are handled because PowerShell accepts either on every platform.
+ */
+const sourcedPartName = (target: string): string | null => {
+  const normalized = target.split("\\").join("/")
+  const base = normalized.slice(normalized.lastIndexOf("/") + 1)
+  if (base.length === 0) return null
+  return isPlausibleSymbolName(base) ? base : null
+}
+
 /** `/^\s*<#/` — leading whitespace then the block-comment opener. */
 const stripOpenCommentDelim = (line: string): string => {
   let i = 0
@@ -1036,6 +1059,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         case ASTEngine.RelationshipType.Exports:
           return "structural"
         case ASTEngine.RelationshipType.References:
+        // `part_of` is read from a DIRECTIVE — the dot-source operator is syntax that
+        // names the part, and the edge exists because the directive exists. That is
+        // the fleet's `import_based` class (erlang ER-D46: "both are directives"), and
+        // it is the class css's plain-file `@import` relabel carries. The branch is
+        // LIVE rather than dead: the `isImport` short-circuit above fires only for
+        // rows that pass `import: true`, which a `part_of` row does not.
+        case ASTEngine.RelationshipType.PartOf:
           return "import_based"
         default:
           return "usage_contextual"
@@ -2721,9 +2751,54 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // variable reading. Controls for both are asserted.
             const target = unquoteTarget(leaf)
             if (looksLikeModulePath(target)) {
-              addRel(top().scope, target, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
-                powershellSpecific: true, invokationOperator: op.text,
-              })
+              // THE DOT-SOURCE IS AN INCLUSION, NOT A CALL — the `part_of` contract's
+              // positive test.
+              //
+              // `. ./lib.ps1` and `& ./run.ps1` run the SAME file, but in DIFFERENT
+              // scopes. The dot-source operator runs the script in the CALLER's scope:
+              // the sourced file's functions and variables land in the caller's session
+              // state, so the file becomes PART of the calling unit — exactly
+              // `src/ast/types.ts:PartOf` ("a part shares the including unit's single
+              // scope, imports nothing, and cannot be resolved as a separate module").
+              // The call operator `&` runs a script in a CHILD scope of its own, which
+              // is an invocation and stays `calls`. `Import-Module`/`using module` load
+              // a module into its OWN scope, which is why those are `imports` (read by
+              // `addImport`) and must never be relabelled here.
+              //
+              // SO THE DOT HALF RELABELS AND THE AMP HALF DOES NOT. The operator's own
+              // text is the discriminator — not a file name, not a path shape — so a
+              // relabel that widens to `&` fails the fixture's forbid rows.
+              //
+              // 1:1 RELABEL, the fleet's precedent: nim `include`, erlang `-include`,
+              // fsharp `#load`, php include/require and css's plain-file `@import` all
+              // moved this construct to `part_of` with `partRole` and no other change.
+              // The same site, the same line, the same confidence, one label.
+              //
+              // THE TARGET IS THE SOURCED FILE'S OWN NAME, NOT THE PATH. A `part_of`
+              // target is resolved against SYMBOL names, and the module symbol a
+              // PowerShell file declares is its basename WITH the extension (PS1 above:
+              // "The extension is kept: `Build.psm1` and `Build.ps1` are different
+              // files"). The cpp lane measured a path-target `part_of` resolving 0 of
+              // 4,612 rows for exactly this reason, so the path is kept on the row as
+              // `metadata.partPath` and the TARGET is the basename — `./lib.ps1` names
+              // `lib.ps1`, which is the symbol the sourced file itself declares.
+              const part = sourcedPartName(target)
+              if (op.text === "." && part !== null) {
+                addRel(top().scope, part, ASTEngine.RelationshipType.PartOf, 0.9, nameLine, {
+                  powershellSpecific: true,
+                  invokationOperator: op.text,
+                  // MANDATORY on every `part_of` row (src/ast/types.ts:170-183): this
+                  // file carries the directive and names the part, so it is the
+                  // library side of the pair. A dot-sourced file does not know it is
+                  // being sourced, so PowerShell has only the one role.
+                  partRole: "library",
+                  partPath: target,
+                })
+              } else {
+                addRel(top().scope, target, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
+                  powershellSpecific: true, invokationOperator: op.text,
+                })
+              }
             } else if (target.startsWith("$")) {
               // F9: guard the name. `$type::$method()` leaves the command-name node
               // holding `$method()` plus the rest of the recovered line, so the
