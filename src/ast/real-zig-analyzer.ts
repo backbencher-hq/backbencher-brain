@@ -4,9 +4,12 @@
  * Author: Muhammad Ishaq Khan.
  *
  * THE RELATIONSHIP TYPES THIS FILE COVERS: `contains`, `imports`, `references`, `uses`, `calls`,
- * `instantiates`, `exports`. The lane deliberately does NOT emit `extends`/`implements`/`overrides`:
- * Zig has no inheritance clause, an interface is an `opaque` container plus function POINTERS, and a
- * same-scope duplicate declaration is a compiler diagnostic rather than a feature (ZIG.O.1-O.3). The
+ * `instantiates`, `exports`, and `mixes_in` — the last from `usingnamespace`, which merges another
+ * struct's declarations into the enclosing container (member-set composition; rung R3, the grammar
+ * already carries the node type). The lane deliberately does NOT emit
+ * `extends`/`implements`/`overrides`: Zig has no inheritance clause, an interface is an `opaque`
+ * container plus function POINTERS, and a same-scope duplicate declaration is a compiler diagnostic
+ * rather than a feature (ZIG.O.1-O.3). The
  * admitted extension list below is READ FROM the arbiter's own detection map rather than assumed,
  * because a file claim against an extension the population cannot hold could never verify.
  *
@@ -275,6 +278,138 @@ function zigNamedChildren(n: Node): Node[] {
     if (c) out.push(c)
   }
   return out
+}
+
+/**
+ * THE MODULE SYMBOL a specifier names — the file STEM, without directories and
+ * without a `.zig` suffix: `"../src/App.zig"` ⇒ `App`, `"std"` ⇒ `std`.
+ *
+ * A composition edge's target must be a name the index can bind, and a PATH is
+ * not one: the arbiter resolves target strings against SYMBOL NAMES, so a row
+ * whose target is `"../src/App.zig"` binds nothing while the same row with the
+ * stem `App` binds wherever the stem names exactly one declaration. The written
+ * path stays on the row as `metadata.module` — the path is the evidence, the
+ * stem is the target. This is a character scan, not a pattern: the analyzer is
+ * zero-regex and must not grow one for a two-character test.
+ */
+function zigModuleSymbol(specifier: string): string {
+  const slash = specifier.lastIndexOf("/")
+  const base = slash >= 0 ? specifier.slice(slash + 1) : specifier
+  const dot = base.lastIndexOf(".")
+  const stem = dot > 0 ? base.slice(0, dot) : base
+  return stem.trim()
+}
+
+/** The `@import` module path reached anywhere under `node`, or null. Used for
+ *  the member form `@import("x.zig").Members`, where the import is the base of a
+ *  field expression rather than the whole argument. */
+function zigImportModuleInSubtree(node: Node): string | null {
+  let found: string | null = null
+  const walk = (n: Node): void => {
+    if (found !== null) return
+    if (n.type === "builtin_function") {
+      const lit = zigImportModuleLiteral(n)
+      if (lit) {
+        found = lit.module
+        return
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(node)
+  return found
+}
+
+/** The last identifier a member expression names: `a.b.C` ⇒ `C`. The merged-unit
+ *  form `@import("x.zig").Members` composes the MEMBER's declaration set, so the
+ *  member is the target and the module is evidence. Only shapes that can name a
+ *  declaration are read — a struct literal or a call would hand over a value,
+ *  and a value name is not a declaration set. */
+function zigMergedMemberLeaf(expr: Node): string | null {
+  if (expr.type === "identifier") return stripZigQuoting(String(expr.text ?? ""))
+  if (expr.type === "field_expression") {
+    const last = expr.namedChildCount > 0 ? expr.namedChild(expr.namedChildCount - 1) : null
+    return last ? zigMergedMemberLeaf(last) : null
+  }
+  if (expr.type === "parenthesized_expression") {
+    for (let i = expr.namedChildCount - 1; i >= 0; i--) {
+      const c = expr.namedChild(i)
+      const leaf = c ? zigMergedMemberLeaf(c) : null
+      if (leaf) return leaf
+    }
+  }
+  return null
+}
+
+/**
+ * THE MERGED UNIT OF A `usingnamespace` DECLARATION — Zig's member-set
+ * composition, spelled as the vocabulary's `mixes_in`.
+ *
+ * `usingnamespace X;` merges the DECLARATIONS of the struct value `X` into the
+ * enclosing container: the host's member set becomes its own members plus X's.
+ * That is composition, not conformance — no interface clause exists in the
+ * declaration — and the target is the merged unit, while the source is the
+ * composing container. Rung R3 of the grammar ladder: the pinned grammar already
+ * carries `using_namespace_declaration`, so no grammar change is involved. The
+ * import fact is untouched: the caller emits the import record and its
+ * `references` edge exactly as before; this helper only answers "which
+ * declaration set was merged, and in what written form".
+ *
+ * THE ARGUMENT'S FORMS, each read off the tree:
+ *   `usingnamespace @import("x.zig");`    the merged unit is the imported MODULE,
+ *                                         so the target is that module's symbol
+ *                                         (the stem), with the path as metadata.
+ *   `usingnamespace @import("x.zig").M;`  the merged unit is the MEMBER the
+ *                                         expression names; the module stays as
+ *                                         metadata.
+ *   `const a = @import("x.zig"); usingnamespace a;`
+ *                                         the merged unit is the alias BINDING,
+ *                                         which is published as a symbol, so the
+ *                                         alias name is the target.
+ *   `usingnamespace SomeStruct;`          the merged unit is the named struct, and
+ *                                         the written name is the target.
+ *
+ * `usingnamespace @cImport(...)` merges a C translation unit's declarations,
+ * which have no module symbol to name: it stays an import fact and is
+ * deliberately not a `mixes_in` row rather than inventing a target. A
+ * declaration whose argument names no declaration set returns null.
+ */
+function zigUsingNamespaceMergedUnit(node: Node): { target: string; form: string; module?: string } | null {
+  let arg: Node | null = null
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && c.type !== "comment") {
+      arg = c
+      break
+    }
+  }
+  if (!arg) return null
+  if (arg.type === "builtin_function") {
+    let builtin = ""
+    for (let i = 0; i < arg.namedChildCount; i++) {
+      const c = arg.namedChild(i)
+      if (c && c.type === "builtin_identifier") {
+        builtin = String(c.text ?? "")
+        break
+      }
+    }
+    if (builtin !== "@import") return null
+    const lit = zigImportModuleLiteral(arg)
+    if (!lit) return null
+    const target = zigModuleSymbol(lit.module)
+    return target ? { target, form: "import", module: lit.module } : null
+  }
+  if (arg.type === "identifier") {
+    const target = stripZigQuoting(String(arg.text ?? ""))
+    return target ? { target, form: "identifier" } : null
+  }
+  const target = zigMergedMemberLeaf(arg)
+  if (!target) return null
+  const module = zigImportModuleInSubtree(arg)
+  return { target, form: module ? "import_member" : "identifier", ...(module ? { module } : {}) }
 }
 
 export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
@@ -761,6 +896,37 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // import record, no references edge). The @import sits in a
       // builtin_function child — same shape as the plain-import branch.
       if (type === "using_namespace_declaration") {
+        // ─── MIXES_IN: the declaration set this declaration composes ───
+        // `usingnamespace X;` merges X's declaration set into the enclosing
+        // container, which is member-set composition: the host is the composing
+        // unit and X's struct is the merged one. The edge therefore runs
+        // container -> merged unit. A FILE is a struct in Zig, so a file-scope
+        // `usingnamespace` composes into the file's own unit and its source is
+        // the file-scope marker this lane already uses for scoped relationships.
+        // Inside an executable body or an anonymous container there is no
+        // nameable composing container (an anonymous container owns nothing), so
+        // no composition edge is attributable and none is written — the import
+        // fact below is still recorded.
+        {
+          const merged = zigUsingNamespaceMergedUnit(node)
+          const mixinSource = !inFunction && !anonContainer ? (container ? container.name : "(global)") : null
+          if (merged && mixinSource) {
+            relationships.push({
+              source: mixinSource,
+              target: merged.target,
+              type: ASTEngine.RelationshipType.MixesIn,
+              confidence: 1.0,
+              ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
+              metadata: {
+                relationshipType: "zig_usingnamespace",
+                isMixin: true,
+                mixinForm: merged.form,
+                ...(merged.module ? { module: merged.module } : {}),
+                ...(mixinSource === "(global)" ? { fileLevel: true } : {}),
+              },
+            })
+          }
+        }
         const bf = this.anyChild(node, (n) => n.type === "builtin_function")
         const bi = bf ? this.anyChild(bf, (n) => n.type === "builtin_identifier") : null
         if (bf && bi && (bi.text === "@import" || bi.text === "@cImport")) {
@@ -3201,6 +3367,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // asking the question nothing was asking — does a NEW class survive the
       // pipeline? — not by any gate on this lane.
       if (t === "imports" || t === "exports") { md.evidenceClass = "import_based"; continue }
+      // A member-set composition is a DECLARATION-LEVEL fact, read off the
+      // declaration's own argument — the same tier the family gives a mixin
+      // application (`with M`), not a usage observation.
+      if (t === "mixes_in") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
   }

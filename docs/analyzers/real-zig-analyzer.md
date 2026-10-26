@@ -109,6 +109,23 @@ its name alone:
   400 corpus files contain a path separator, which no Zig declaration name can
   hold), on the line of the literal. A module-prefixed form (`@import("x").T`) is
   the same site — the import names a MODULE, not a symbol.
+- **`mixes_in`** — `usingnamespace X;` merges X's declaration **set** into the
+  enclosing container: the host's members become its own plus X's, with no
+  conformance declared anywhere. Source is the composing container (a file is a
+  struct in Zig, so a file-scope declaration composes into the file's own unit and
+  uses the `(global)` file-scope source); target is the merged unit, resolved from
+  the written argument: the imported module's SYMBOL (the file stem — never the
+  path, which binds nothing; the path stays in `metadata.module`), the last name of
+  a `@import(...).Member` expression, the import-binding alias, or a same-file
+  struct name. `metadata.mixinForm` records which form, and `usingnamespace
+  @cImport(...)` stays an import fact with no `mixes_in` row because a C
+  translation unit has no module symbol to name. The pinned grammar already
+  carries `using_namespace_declaration`, so this is rung R3 — no grammar change.
+  The construct has been removed from the language, so the whole admitted
+  population exercises it **0** times (`script/m14/zig-extended-census.ts`,
+  `validation/m14/measurements/zig-extended-census.json`); all five positive
+  shapes are pinned by `validation/m14/fixtures/zig/mixes-in-usingnamespace.zig`,
+  i.e. the zero is a corpus fact rather than a missing emission site.
 - **`instantiates`** — two statically derivable forms: a **construction** of a
   type this file names (`var x: Foo = .{}`, `Foo{ … }`), and an **application** of a
   generic function (`fn make(T: type) T`, called `make(Bar)`). Both carry the
@@ -143,7 +160,9 @@ family rule, and gated by `zigw-evidence-tier.ts` so the assignment is a propert
 that can FAIL rather than a comment: `contains` → `structural`; a declared type
 → `reference_qualified`; `imports`/`exports`/the import `references` twin →
 `import_based`; a **proven** `instantiates` → `structural` (it is derived from the
-grammar, not guessed) and an unproven one → `inferred`; calls/uses →
+grammar, not guessed) and an unproven one → `inferred`; `mixes_in` → `structural`
+(a declaration-level composition read off the declaration's own argument, like a
+mixin application in the sibling lanes); calls/uses →
 `usage_contextual`, or `inferred` below threshold. Confidence: 1.0 for contains/declared-type/bare reads, 0.85
 for a call, 0.75 for a field read, 0.9 for a declared type — every heuristic
 edge carries a machine-readable `metadata.relationshipType` reason code.

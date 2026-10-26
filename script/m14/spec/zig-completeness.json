@@ -702,7 +702,8 @@
       "imports",
       "references",
       "exports",
-      "instantiates"
+      "instantiates",
+      "mixes_in"
     ],
     "excluded": [
       {
@@ -721,7 +722,21 @@
         "from": "ZIG.O.3 IS RULED THE OTHER WAY, and this entry had paraphrased it as 'expressible': the ruling reads 'NO. A same-scope duplicate declaration in zig is a COMPILER DIAGNOSTIC (\"duplicate struct member name\"), not a language feature.' RE-MEASURED 2026-10-14 (task-120/121): a one-file git-init'd corpus whose whole content is that duplicate (`const S = struct { x: u32, x: u32 };`) parses (contains 2, exports 1) and emits `overrides 0` — so the zero is not a parse artefact, and the construct is not a language feature to implement. Two independent readings agree: the lane's own ZIG.O.3 ruling and this run. RECLASSIFIED zero-sites -> grammar-absence; applicable drops by one (zig 7/8 -> 7/7)."
       }
     ],
-    "corpusUnexercised": [],
-    "_from": "ZIG.O.4 gives `instantiates` EMITTED ('ZIG.D.1's claim that it could not was FALSIFIED by measurement … Production parseFile emits instantiates for a construction of a type the file names')."
+    "corpusUnexercised": [
+      {
+        "label": "mixes_in",
+        "evidence": "corpus-unexercised",
+        "from": "IMPLEMENTED AND CORPUS-UNEXERCISED, measured on the whole admitted population: the analyzer publishes `mixes_in` from `usingnamespace` (rung R3 — the pinned grammar already carries `using_namespace_declaration`, so no grammar change and no invented node type), the fixture validation/m14/fixtures/zig/mixes-in-usingnamespace.zig pins all five positive shapes (the same-file struct, the `@import` module stem, the import-binding alias, the `@import(...).Member` member form, and the file-scope form whose source is the lane's file-scope marker), and the CONSTRUCT-SITE CENSUS over the whole population counts `usens_total` 0 over 3,844 admitted .zig files in 4 repositories (validation/m14/measurements/zig-extended-census.json) — the language removed `usingnamespace`, so the corpus cannot exercise it and the emission is measured through its fixture instead. The census's own control runs the SAME classifier over a synthetic `pub usingnamespace @import(\"x.zig\");` inside a container and a file-scope declaration and refuses the run if either is not found, so the corpus zero is a measured zero rather than a blind probe."
+      }
+    ],
+    "_from": "ZIG.O.4 gives `instantiates` EMITTED ('ZIG.D.1's claim that it could not was FALSIFIED by measurement … Production parseFile emits instantiates for a construction of a type the file names'). MIXES_IN: implemented at R3 from `usingnamespace` (member-set composition: the merged struct's declarations become the host container's members, with no conformance declared), and declared corpus-unexercised because the construct-site census reads 0 over the whole admitted population (validation/m14/measurements/zig-extended-census.json).",
+    "_implemented_measured": {
+      "_unit": "whole admitted population: 3,844 .zig files over 4 repositories, git-tracked, <= 1 MiB, 0 parse failures (validation/m14/measurements/zig-extended-census.json)",
+      "mixes_in": {
+        "edges": 0,
+        "files": 0,
+        "_why": "The construct a `mixes_in` row is read from is `usingnamespace`, and the whole-population construct census counts `usens_total` 0 over 3,844 admitted files: the declaration-set composition construct was removed from the language and this corpus is newer than the removal. The analyzer still publishes the edge — five positive shapes are pinned in validation/m14/fixtures/zig/mixes-in-usingnamespace.zig — so the zero is a corpus fact, not a missing emission site. Counter decomposition and the control that proves the classifier can see the construct: validation/m14/measurements/zig-extended-census.json."
+      }
+    }
   }
 }
