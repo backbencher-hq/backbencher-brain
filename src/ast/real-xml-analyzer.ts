@@ -360,6 +360,15 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // needs nothing outside the file to be read — but it is not a symbol
     // reference, because the target is a file, not a declaration.
     xinclude_part: "import_based",
+    // XSLT's `<xsl:include href>` — the SAME inclusion contract in the stylesheet
+    // vocabulary (XSLT 1.0 §2.6.1: the included stylesheet's content is treated as
+    // if it were written at the include's position), so the same tier.
+    xslt_include_part: "import_based",
+    // XSLT's `<xsl:import href>` — a MODULE import with import precedence
+    // (XSLT 1.0 §2.6.2), not a textual splice: the imported definitions are in
+    // scope but may be overridden by the importing stylesheet's own. That is the
+    // `imports` relation, and it shares `imports`' tier.
+    xslt_stylesheet_import: "import_based",
   }
 
   /**
@@ -1058,32 +1067,43 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // The document element is the file's own symbol — see `documentElementName`.
           if (documentElementName === undefined && ownerName === undefined) documentElementName = symbolName
 
-          // ── XINCLUDE: the ONE textual-inclusion construct in XML ─────────────
+          // ── INCLUSION: the `part_of` construct, in TWO XML vocabularies ───────
           //
-          // `<xi:include href="x2.xml"/>` replaces ITSELF with the content of the
-          // named document (XInclude 1.0 §4.1: "the inclusion is performed by
-          // replacing the include element with the included content"). The
-          // included document is therefore a FRAGMENT of the including one: it
-          // shares the including document's single scope, contributes no module of
-          // its own, and cannot be resolved as a separate unit once included.
-          // That is the `part_of` contract in `src/ast/types.ts` word for word, and
-          // it is the same construct class as cpp's `#include "…"`, fsharp's
-          // `#load`, php's `include`/`require`, erlang's `-include` and
-          // typescript's `/// <reference path>` — every one a directive that
-          // splices a FILE into this unit.
+          // XInclude (`<xi:include href="x2.xml"/>`) and XSLT's stylesheet inclusion
+          // (`<xsl:include href="part.xsl"/>`) are the SAME relation written in two
+          // vocabularies: the named document's content is SPLICED INTO this document
+          // at the directive's position — XInclude 1.0 §4.1 replaces the include
+          // element with the included content, and XSLT 1.0 §2.6.1 treats the
+          // included stylesheet's content "as if it were literally included" at that
+          // point. In both cases the included document is a FRAGMENT of the including
+          // one: it shares the including document's single scope, contributes no
+          // module of its own, and cannot be resolved as a separate unit once
+          // included. That is the `part_of` contract in `src/ast/types.ts` word for
+          // word, and it is the same construct class as cpp's `#include "…"`,
+          // fsharp's `#load`, php's `include`/`require`, erlang's `-include` and
+          // typescript's `/// <reference path>` — every one a directive that splices
+          // a FILE into this unit.
           //
-          // RUNG R3, NO GRAMMAR CHANGE: XInclude is a NAMESPACED ELEMENT, so the
-          // pinned grammar already parses it as an ordinary `element` with an
-          // `Attribute` href — the same nodes every other element uses. Nothing
-          // about the construct is invisible to the parser (unlike, say, a
-          // directive the grammar lexes as a comment), so the ladder stops here:
-          // R1/R2 would buy nothing.
+          // RUNG R3, NO GRAMMAR CHANGE, for BOTH: each construct is a NAMESPACED
+          // ELEMENT, so the pinned grammar already parses it as an ordinary `element`
+          // with an `Attribute` href — the same nodes every other element uses.
+          // Nothing about either is invisible to the parser (unlike, say, a directive
+          // the grammar lexes as a comment), so the ladder stops here: R1/R2 would
+          // buy nothing.
           //
-          // THE ATTRIBUTE IS `href`, and only `href`: XInclude 1.0 §5.1 gives the
-          // include element four attributes — `href` (the target), `parse`
-          // (xml|text), `xpointer` (a FRAGMENT selector within the target), and
-          // `encoding` (for text). `xpointer` selects a PART OF the included file;
-          // it is not the file, so it is not a second target and is not read here.
+          // DETECTION IS BY RESOLVED NAMESPACE AND ELEMENT NAME, never by the written
+          // prefix: `xi` and `xsl` are conventions, not syntax. `effectiveNamespace`
+          // is computed from the document's own `xmlns` declarations
+          // (`rememberNamespaces`), so a document binding the vocabulary to any
+          // prefix, or to the default namespace, is read the same way — and an
+          // `<include>` in NO namespace is read as nothing, which is what it is.
+          //
+          // ── XInclude's `href`, and only `href` ────────────────────────────────
+          // XInclude 1.0 §5.1 gives the include element four attributes — `href`
+          // (the target), `parse` (xml|text), `xpointer` (a FRAGMENT selector within
+          // the target), and `encoding` (for text). `xpointer` selects a PART OF the
+          // included file; it is not the file, so it is not a second target and is
+          // not read here.
           //
           // `parse="text"`: DECIDED — still `part_of`. A text inclusion splices the
           // target's BYTES as character data instead of its element content, but it
@@ -1091,6 +1111,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // document at this point, shares its scope, and contributes no module.
           // The distinction is recorded on the row as `parseMode`, so a consumer
           // that needs parsed content can filter, and nothing is silently mixed.
+          //
+          // ── XSLT's `xsl:import` is NOT this relation ──────────────────────────
+          // XSLT 1.0 §2.6.2: an IMPORTED stylesheet is a separate module whose
+          // definitions are available with LOWER import precedence and may be
+          // overridden by the importing stylesheet's own — a module import that
+          // creates binding scope, which is the `imports` relation and not a splice.
+          // The two are distinguished HERE, at the one place that sees both, because
+          // a graph that reads both as one label sees a coupling twice and cannot say
+          // which is which. `xsl:import` therefore emits `imports` with its file path
+          // as the target (a path is what an import names), and never `part_of`.
           //
           // THE DIRECTION IS THE DIRECTIVE'S OWN (types.ts:167-190): source is the
           // file carrying the directive — here the DOCUMENT ELEMENT, since XML
@@ -1100,35 +1130,47 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `-include` and fsharp's `#load` rows are. XML has no `part of` spelling,
           // so XML never produces the `"part"` half.
           //
-          // THE TARGET IS A SYMBOL, NOT A PATH — the measured ruling the cpp lane
-          // paid for: a PATH target resolved 0 of 4,612 `part_of` edges (100%
-          // unresolved) because the arbiter resolves TARGET STRINGS AGAINST SYMBOL
-          // NAMES and has no space for a path. The contract permits either ("the
-          // part's file or its module symbol"); only the symbol can bind. So the
-          // target is the included document's module STEM — basename without
-          // directory and extension (`sections/intro.xml` -> `intro`) — and the
-          // written path is kept in `metadata.partPath` so file identity survives.
+          // THE TARGET IS A SYMBOL, NOT A PATH — the measured cpp result: a PATH
+          // target resolved 0 of 4,612 `part_of` edges (100% unresolved) because the
+          // arbiter resolves TARGET STRINGS AGAINST SYMBOL NAMES and has no space for
+          // a path. The contract permits either ("the part's file or its module
+          // symbol"); only the symbol can bind. So the target is the included
+          // document's module STEM — basename without directory and extension
+          // (`sections/intro.xml` -> `intro`) — and the written path is kept in
+          // `metadata.partPath` so file identity survives.
           //
           // A REMOTE href is REFUSED, on the same rule the `imports` edges use: a
           // target outside this project cannot be a file claim the arbiter could
           // ever confirm, and the stem of a URL names nothing here. The refusal is
-          // counted in the lane's census rather than converted to a dangling row.
-          if (effectiveNamespace === RealXmlAnalyzer.XINCLUDE_NAMESPACE && localName === "include") {
+          // counted in the census rather than converted to a dangling row.
+          const isXIncludeElement =
+            effectiveNamespace === RealXmlAnalyzer.XINCLUDE_NAMESPACE && localName === "include"
+          const isXsltIncludeElement =
+            effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "include"
+          const isXsltImportElement =
+            effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "import"
+          if (isXIncludeElement || isXsltIncludeElement) {
             const hrefAttr = this.findDirectAttribute(tagNode, "href")
             const hrefPath = (this.attributeValueOf(tagNode, "href") ?? "").trim()
             if (hrefAttr && hrefPath.length > 0 && !this.isRemoteUri(hrefPath)) {
-              const partSymbol = RealXmlAnalyzer.xincludePartSymbol(hrefPath)
+              const partSymbol = RealXmlAnalyzer.includedModuleStem(hrefPath)
               if (partSymbol.length > 0) {
-                const parseMode = (this.attributeValueOf(tagNode, "parse") ?? "") === "text" ? "text" : "xml"
                 addRelationship(documentElementName ?? symbolName, partSymbol, ASTEngine.RelationshipType.PartOf, {
-                  role: "xinclude_part",
+                  // The VOCABULARY rides on the role, so a consumer can tell the two
+                  // inclusion channels apart without re-deriving namespace bindings.
+                  role: isXIncludeElement ? "xinclude_part" : "xslt_include_part",
                   // Mandatory, per `src/ast/types.ts` — see the block above.
                   partRole: "library",
                   // THE PATH IS EVIDENCE, THE STEM IS THE TARGET. Keeping both is
                   // what makes the difference checkable instead of inferred.
                   partPath: hrefPath,
                   partSymbol,
-                  parseMode,
+                  // XInclude alone can spell a TEXT inclusion; XSLT's include is
+                  // always a parsed stylesheet, so the field is present only where
+                  // the vocabulary gives it a value.
+                  ...(isXIncludeElement
+                    ? { parseMode: (this.attributeValueOf(tagNode, "parse") ?? "") === "text" ? "text" : "xml" }
+                    : {}),
                   // The written element, so the construct is identified on the row
                   // without the consumer having to know the namespace URI.
                   elementName: name,
@@ -1139,6 +1181,24 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
                   isImport: false,
                 }, this.findDirectChild(hrefAttr, "AttValue"))
               }
+            }
+          } else if (isXsltImportElement) {
+            // `xsl:import` is a MODULE IMPORT (XSLT 1.0 §2.6.2): the imported
+            // stylesheet's definitions are in scope with lower precedence, which is
+            // an import and not a splice. Target is the written file PATH — the one
+            // relationship whose target is a path (`kindRulings.imports`) — and the
+            // resolvability class is stamped exactly as `schemaLocation` stamps it.
+            const hrefAttr = this.findDirectAttribute(tagNode, "href")
+            const hrefPath = (this.attributeValueOf(tagNode, "href") ?? "").trim()
+            if (hrefAttr && hrefPath.length > 0 && !this.isRemoteUri(hrefPath)) {
+              addRelationship(documentElementName ?? symbolName, hrefPath, ASTEngine.RelationshipType.Imports, {
+                role: "xslt_stylesheet_import",
+                attributeName: "href",
+                // A module import, and the row says so rather than leaving a consumer
+                // to infer it from the element name.
+                importKind: "stylesheet",
+                resolvable: this.importTargetClass(hrefPath),
+              }, this.findDirectChild(hrefAttr, "AttValue"))
             }
           }
 
@@ -3294,14 +3354,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * THE INCLUDED DOCUMENT'S MODULE STEM — the `part_of` target.
+   * THE INCLUDED DOCUMENT'S MODULE STEM — the `part_of` target, for BOTH inclusion
+   * vocabularies this analyzer reads: XInclude's `<xi:include href>` and XSLT's
+   * `<xsl:include href>`.
    *
    * `part_of`'s contract allows "the part's file OR its module symbol", and this
-   * lane emits the SYMBOL because that is the only half the arbiter can bind: a
-   * PATH target resolved 0 of 4,612 `part_of` edges (100% unresolved) in the cpp
-   * lane's measurement, because targets are resolved against SYMBOL NAMES. The
-   * path is kept on the row as `metadata.partPath`; this is the symbol-shaped
-   * spelling of the same fact.
+   * analyzer emits the SYMBOL because that is the only half the arbiter can bind: a
+   * PATH target resolved 0 of 4,612 `part_of` edges (100% unresolved) in cpp's
+   * measurement, because targets are resolved against SYMBOL NAMES. The path is kept
+   * on the row as `metadata.partPath`; this is the symbol-shaped spelling of the same
+   * fact.
    *
    * An href is a URI reference (RFC 3986): a `#fragment` selects a part of the
    * target, and a `?query` is not part of a file name, so both are cut BEFORE the
@@ -3311,10 +3373,10 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * which is what a consumer sees. A dot at position 0 (`.hidden`) is not an
    * extension separator, so that name is kept whole.
    *
-   * PURE CHARACTER SCAN, never a pattern: the no-regex criterion is a committed
-   * gate, and this is string arithmetic on a path, not a shape search.
+   * PURE CHARACTER SCAN, never a pattern: the analyzer's no-regex rule is a
+   * committed gate, and this is string arithmetic on a path, not a shape search.
    */
-  private static xincludePartSymbol(href: string): string {
+  private static includedModuleStem(href: string): string {
     let end = href.length
     const hash = href.indexOf("#")
     if (hash >= 0 && hash < end) end = hash
