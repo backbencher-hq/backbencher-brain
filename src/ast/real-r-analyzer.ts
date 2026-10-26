@@ -874,6 +874,63 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports.push({ name, kind: this.isAllCapsName(name) ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable })
   }
 
+  /**
+   * Declare an R5 reference class from its constructor call, for BOTH spellings.
+   *
+   * R5's `setRefClass("Name", fields=, methods=, contains=)` registers a generator under
+   * the DECLARED name whether or not the call is bound to a variable — reference classes
+   * are registered in the package's namespace at evaluation time. The corpus says so
+   * plainly: `r-Rcpp/R/00_classes.R` declares `C++Field`, `C++OverloadedMethods` and
+   * `C++Constructor` as BARE statements, and the analyzer published none of them, because
+   * the only path that recognised the constructor was the assignment-RHS one. The loss is
+   * not only three symbols: a statement-form class's `contains=` clause produced no
+   * `extends`/`mixes_in` edge either.
+   *
+   * `rangeNode` is the node the symbol's range is taken from: the assignment when the call
+   * is bound to a name (the declaration begins at the binding), the CALL itself when it is
+   * a statement.
+   *
+   * The class name must be a literal string in the first positional argument. An R5 class
+   * whose name is computed at runtime (`setRefClass(Class, ...)` in a factory) has no
+   * publishable identity, and naming it after a variable would fabricate a declaration —
+   * so those publish nothing, deliberately.
+   */
+  private declareR5Class(
+    rangeNode: Node,
+    name: string,
+    callNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    exports: ASTEngine.ExportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+    declaredTypes: Set<string>,
+    doc: string | undefined,
+    patterns: string[] | undefined,
+  ): void {
+    const baseClasses = this.extractNamedArguments(callNode, "contains")
+    const composesList = this.compositionClauseIsList(callNode, "contains")
+    symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Class,
+      range: this.getRange(rangeNode),
+      docstring: doc,
+      metadata: { rSpecific: true, type: "R5", isR5Class: true, baseClasses },
+    })
+    declaredTypes.add(name)
+    if (patterns) this.pushIfUnique(patterns, "R5 Reference Classes")
+    for (const bc of baseClasses) {
+      // Same split as S4's `setClass`: the keyword is the same, so the shape decides the
+      // label — one class is a supertype (`extends`), a list composes member providers
+      // (`mixes_in`). R5's `contains=` is the reference-class spelling of S4's.
+      const type = composesList
+        ? ASTEngine.RelationshipType.MixesIn
+        : ASTEngine.RelationshipType.Extends
+      const subType = composesList ? "r5_composes" : "r5_inherits"
+      this.pushRel(relationships, name, bc, type, 1.0, { relationshipSubType: subType }, this.namedArgumentNode(callNode, "contains", bc))
+    }
+    this.extractR5Members(callNode, name, symbols, relationships, doc)
+    if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name, kind: ASTEngine.SymbolKind.Class })
+  }
+
   /** Returns true when the call was recognized as a class-system constructor. */
   private handleClassSystemAssignment(
     node: Node,
@@ -909,28 +966,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     if (fnName === "setRefClass") {
-      const baseClasses = this.extractNamedArguments(callNode, "contains")
-      const composesList = this.compositionClauseIsList(callNode, "contains")
-      symbols.push({
-        name,
-        kind: ASTEngine.SymbolKind.Class,
-        range: this.getRange(node),
-        docstring: doc,
-        metadata: { rSpecific: true, type: "R5", isR5Class: true, baseClasses },
-      })
-      declaredTypes.add(name)
-      for (const bc of baseClasses) {
-        // Same split as S4's `setClass`: the keyword is the same, so the shape decides the
-        // label — one class is a supertype (`extends`), a list composes member providers
-        // (`mixes_in`). R5's `contains=` is the reference-class spelling of S4's.
-        const type = composesList
-          ? ASTEngine.RelationshipType.MixesIn
-          : ASTEngine.RelationshipType.Extends
-        const subType = composesList ? "r5_composes" : "r5_inherits"
-        this.pushRel(relationships, name, bc, type, 1.0, { relationshipSubType: subType }, this.namedArgumentNode(callNode, "contains", bc))
-      }
-      this.extractR5Members(callNode, name, symbols, relationships, doc)
-      if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name, kind: ASTEngine.SymbolKind.Class })
+      this.declareR5Class(node, name, callNode, symbols, exports, relationships, declaredTypes, doc, metadata.patterns)
       return true
     }
 
@@ -2275,6 +2311,41 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (fnName === "setClass") {
       this.pushIfUnique(metadata.patterns, "S4 Object System")
       this.handleSetClass(node, args, symbols, exports, relationships, declaredTypes)
+      return
+    }
+
+    if (fnName === "setRefClass") {
+      // THE STATEMENT FORM IS A DECLARATION, and it was invisible.
+      //
+      // `setRefClass("Name", ...)` registers the generator under the DECLARED name whether
+      // or not the call is assigned, and the corpus writes it bare at file level
+      // (`r-Rcpp/R/00_classes.R:27,37,58`). The assignment spelling is owned by
+      // `handleClassSystemAssignment` — so three guards keep this branch from
+      // double-publishing it, from declaring a function-local class as a file-level one,
+      // and from inventing an identity for a class whose name is computed at runtime.
+      const parent = node.parent
+      // `sameNode`, not `===`: tree-sitter builds a fresh JS wrapper per access, so two
+      // references to the SAME node are different objects. The analyzer already compares
+      // by index range everywhere else for this reason, and an identity test here silently
+      // failed and double-published every assigned R5 class.
+      const isAssignmentValue =
+        parent?.type === "binary_operator" && this.sameNode(this.assignmentSides(parent).value, node)
+      if (!isAssignmentValue && fnStack.length === 0 && !this.hasLocalBoundary(node)) {
+        const declared = this.firstStringArgumentOf(node, 0)
+        if (declared) {
+          this.declareR5Class(
+            node,
+            declared,
+            node,
+            symbols,
+            exports,
+            relationships,
+            declaredTypes,
+            this.extractDocstring(node),
+            metadata.patterns,
+          )
+        }
+      }
       return
     }
 
