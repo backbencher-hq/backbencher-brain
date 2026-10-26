@@ -96,6 +96,38 @@ const TERM_NAMES = [
 ] as const
 
 function main(): void {
+  // ── DECLARED EXCLUSIONS ────────────────────────────────────────────────────────────────────────
+  // A merge may not average its way over a hole, and it must not pretend a hole is a measurement.
+  // It MAY accept a gap that is DECLARED, NAMED and FALSIFIABLE: one file whose cost is measured,
+  // whose in-process behaviour is recorded, and whose exclusion carries a falsifier that would
+  // retire it. The record is a JSON file beside the lane's measurements, and the merge READS it
+  // rather than trusting a range on the command line: without a record there is no exclusion.
+  //
+  //   --exclude 6773..6774:validation/m14/measurements/cpp-named-exclusion.json
+  type Exclusion = { start: number; end: number; record: string; file: string; why: string }
+  const exclusions: Exclusion[] = []
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] !== "--exclude") continue
+    const spec = argv[i + 1] ?? ""
+    const m = spec.match(/^(\d+)\.\.(\d+):(.+)$/)
+    if (!m) { console.error(`merge-arm-slices: bad --exclude "${spec}" (want start..end:record.json)`); process.exit(2) }
+    const start = Number(m[1]), end = Number(m[2]), record = m[3]
+    if (!(end > start)) { console.error(`merge-arm-slices: bad --exclude range ${start}..${end}`); process.exit(2) }
+    if (!fs.existsSync(record)) { console.error(`merge-arm-slices: REFUSED — the exclusion ${start}..${end} has NO RECORD at ${record}; an unnamed exclusion is a hole`); process.exit(5) }
+    let rec: any
+    try { rec = JSON.parse(fs.readFileSync(record, "utf8")) } catch (e: any) { console.error(`merge-arm-slices: REFUSED — the exclusion record will not parse (${String(e?.message ?? e)})`); process.exit(5) }
+    const named = typeof rec?.file === "string" && rec.file.trim().length > 0
+    const counted = Number.isFinite(Number(rec?.bytes)) && Number(rec.bytes) > 0
+    const measured = rec?.measured && (rec.measured.in_process_total_ms !== undefined || rec.measured.gate_solo_attempts !== undefined)
+    const falsifier = typeof rec?.falsifier === "string" && rec.falsifier.trim().length > 0
+    const disposition = typeof rec?.disposition === "string" && rec.disposition.trim().length > 0
+    if (!named || !counted || !measured || !falsifier || !disposition) {
+      console.error(`merge-arm-slices: REFUSED — the exclusion record for ${start}..${end} is HOLLOW (needs file, bytes, measured, disposition, falsifier): ${JSON.stringify({ named, counted, measured, falsifier, disposition })}`)
+      process.exit(5)
+    }
+    if (end - start !== 1) { console.error(`merge-arm-slices: REFUSED — an exclusion must be ONE file (got ${end - start})`); process.exit(5) }
+    exclusions.push({ start, end, record, file: rec.file, why: rec.disposition })
+  }
   const dir = arg("--dir")
   const popArg = arg("--population")
   const write = arg("--write")
@@ -154,7 +186,18 @@ function main(): void {
 
   // ── (b) CONTIGUOUS FROM 0, NO OVERLAP, NO SHORTFALL ─────────────────────────────────────────────
   let cursor = 0
+  const skipped: Exclusion[] = []
+  const exAt = (pos: number): Exclusion | undefined => exclusions.find((x) => x.start === pos)
+  const consumeExclusions = (upto: number): void => {
+    while (cursor < upto) {
+      const ex = exAt(cursor)
+      if (!ex) return
+      skipped.push(ex)
+      cursor = ex.end
+    }
+  }
   for (const s of slices) {
+    consumeExclusions(s.start)
     if (s.start !== cursor) {
       const kind = s.start < cursor ? "OVERLAP" : "GAP"
       console.error(`merge-arm-slices: REFUSED — the tiling is ${kind === "GAP" ? "INCOMPLETE" : "OVERLAPPING"}: ${kind} at ${cursor}..${s.start}`)
@@ -165,6 +208,7 @@ function main(): void {
     }
     cursor = s.end
   }
+  consumeExclusions(population)
   if (cursor !== population) {
     console.error(`merge-arm-slices: REFUSED — the tiling is INCOMPLETE: covered ${cursor} of ${population}, shortfall ${population - cursor}`)
     console.error("  A merge may not write a partial population, and it may not average its way over a hole.")
@@ -173,11 +217,21 @@ function main(): void {
 
   // ── THE MERGED TOTAL ────────────────────────────────────────────────────────────────────────────
   const merged = {
+    ...(skipped.length > 0
+      ? { excluded: skipped.map((x) => ({ range: [x.start, x.end], file: x.file, record: x.record, disposition: x.why })) }
+      : {}),
     edges: 0, resolved: 0, collRes: 0, ambDecl: 0, ambKind: 0, unresolved: 0,
     extOK: 0, extPending: 0, extFAIL: 0, bindOK: 0, bindPending: 0, bindFAIL: 0,
     causeOK: 0, causeFAIL: 0,
   }
-  for (const s of slices) for (const k of Object.keys(merged) as (keyof typeof merged)[]) merged[k] += s.terms[k]
+  // the accumulator is the TERM set only — the `excluded` record rides on the closure's meta and
+  // must not be added into the arithmetic (a type error there is the compiler doing its job).
+  // `edges` is the ROW TOTAL, not one of the eleven terms — it is accumulated on its own, and the
+  // eleven-term check below is what proves the two agree.
+  for (const s of slices) {
+    merged.edges += s.terms.edges
+    for (const k of TERM_NAMES) merged[k] += s.terms[k]
+  }
 
   // ── (c) THE ELEVEN TERMS SUM TO THE MERGED EDGE COUNT ──────────────────────────────────────────
   const sum = TERM_NAMES.reduce((n, k) => n + merged[k], 0)

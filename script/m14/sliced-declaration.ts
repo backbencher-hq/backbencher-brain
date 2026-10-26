@@ -51,10 +51,15 @@ for (const l of LABELS) samples[l] = { amb: [], unres: [] }
 const files = readdirSync(slicesDir).filter((f) => f.endsWith(".txt")).sort()
 if (files.length === 0) { console.error("REFUSED (4): no slices"); process.exit(4) }
 const rowRe = /^(calls|uses|contains|imports|references|exports|extends|implements|overrides|instantiates|decorates|renders|mixes_in|part_of)\s+((?:\d+\s+){13}\d+)\s*$/gm
+// A file is a SLICE only when it carries both a CHUNK line and a TOTAL row; anything else is a
+// dead process's artifact or a non-slice file, and the merge ignores it the same way. What matters
+// is CONTIGUITY, which is walked below against the closure's own declared exclusions.
+const parsedSlices: { start: number; end: number; file: string }[] = []
 for (const f of files) {
   const text = readFileSync(join(slicesDir, f), "utf8")
-  if (!/^TOTAL\s+((?:\d+\s+){13}\d+)\s*$/m.test(text)) { console.error(`REFUSED (4): slice ${f} has no TOTAL row — the union would have a hole`); process.exit(4) }
-  sliceCount++
+  const chunk = text.match(/admitted files \[(\d+), (\d+)\)/)
+  if (!chunk || !/^TOTAL\s+((?:\d+\s+){13}\d+)\s*$/m.test(text)) continue
+  parsedSlices.push({ start: Number(chunk[1]), end: Number(chunk[2]), file: f })
   let m: RegExpExecArray | null
   rowRe.lastIndex = 0
   while ((m = rowRe.exec(text)) !== null) {
@@ -79,6 +84,56 @@ for (const f of files) {
   }
 }
 
+// ── CONTIGUITY, WALKED HERE TOO (the generator does not take the merge's word for the tiling) ──
+// `keptSlices` is the UNION's participants: a slice contained inside another is NOT part of the
+// union and must not be summed twice (that is the overlap the merge refuses and this walk removes).
+let keptSlices: { start: number; end: number; file: string }[] = []
+{
+  parsedSlices.sort((a, b) => a.start - b.start)
+  keptSlices = []
+  const excluded: { range: [number, number] }[] = (closure?.closure?.excluded ?? []) as any
+  let cursor = 0
+  const skipExcluded = (pos: number): number => {
+    const ex = excluded.find((x) => x.range[0] === pos)
+    return ex ? ex.range[1] : pos
+  }
+  cursor = skipExcluded(cursor)
+  for (const s of parsedSlices) {
+    // a slice that ends before the cursor is a CONTAINED duplicate — the union does not need it
+    if (s.end <= cursor) continue
+    if (s.start > cursor) { console.error(`REFUSED (4): GAP at ${cursor}..${s.start} — the union would not cover the population`); process.exit(4) }
+    if (s.start < cursor) { console.error(`REFUSED (4): OVERLAP at ${cursor}..${s.start} (${s.file})`); process.exit(4) }
+    keptSlices.push(s)
+    cursor = s.end
+    cursor = skipExcluded(cursor)
+  }
+  if (cursor !== Number(closure?.meta?.population?.admitted)) {
+    console.error(`REFUSED (4): the slices cover ${cursor} of ${closure?.meta?.population?.admitted} — a partial union is not a population declaration`)
+    process.exit(4)
+  }
+}
+
+// ── the SUMS, over the UNION's participants only (each file read once, in the kept set) ────────
+for (const l of LABELS) sum[l] = { edges:0,resolved:0,collRes:0,ambDecl:0,ambKind:0,unresolved:0,extOK:0,extUnk:0,extFAIL:0,bindOK:0,bindUnk:0,bindFAIL:0,causeOK:0,causeFAIL:0 }
+{
+  fleet = 0
+  const rowRe2 = new RegExp(rowRe.source, "gm")
+  for (const s of keptSlices) {
+    const text = readFileSync(join(slicesDir, s.file), "utf8")
+    let m: RegExpExecArray | null
+    rowRe2.lastIndex = 0
+    while ((m = rowRe2.exec(text)) !== null) {
+      const v = m[2].trim().split(/\s+/).map(Number)
+      const r = sum[m[1]]
+      r.edges += v[0]; r.resolved += v[1]; r.collRes += v[2]; r.ambDecl += v[3]; r.ambKind += v[4]; r.unresolved += v[5]
+      r.extOK += v[6]; r.extUnk += v[7]; r.extFAIL += v[8]; r.bindOK += v[9]; r.bindUnk += v[10]; r.bindFAIL += v[11]; r.causeOK += v[12]; r.causeFAIL += v[13]
+    }
+    const t = text.match(/^TOTAL\s+((?:\d+\s+){13}\d+)\s*$/m)!
+    fleet += Number(t[1].trim().split(/\s+/)[0])
+  }
+  sliceCount = keptSlices.length
+}
+
 // ── refuse unless the slices' sums ARE the closure's numbers ─────────────────
 const c = closure.closure
 const sumEdges = LABELS.reduce((n, l) => n + sum[l].edges, 0)
@@ -96,7 +151,10 @@ if (fail > 0) { console.error(`REFUSED (5): a refusal counter fired (${fail})`);
 const pop = closure.meta?.population
 const admitted = Number(pop?.admitted)
 const parsed = Number(pop?.parsed)
-const censusAdmitted = Number(census?.population?.admitted)
+// THE CENSUS POPULATION, under either spelling a lane actually uses: `population.admitted`
+// (go, kotlin, css) or `population.filesAdmitted` (cpp, whose census counts files). A disagreement
+// between the closure and the census is still a refusal — the spelling is the only thing that varies.
+const censusAdmitted = Number(census?.population?.admitted ?? census?.population?.filesAdmitted ?? census?.filesAdmitted)
 if (parsed !== admitted) { console.error(`REFUSED (4): the closure's parsed ${parsed} != admitted ${admitted}`); process.exit(4) }
 if (admitted !== censusAdmitted) { console.error(`REFUSED (4): the closure's admitted ${admitted} != the census's ${censusAdmitted} — two instruments over two populations`); process.exit(4) }
 const POP = `parsed=${admitted}/${admitted} admitted=${admitted} exts=${exts} index=no`
