@@ -1,0 +1,463 @@
+{
+  "meta": {
+    "lang": "lua",
+    "instrument": "script/m14/incoming-gate.ts over 1 DISJOINT slices (a union, merged by script/m14/merge-arm-slices.ts and cross-checked here); this declaration is DERIVED from the slices' own TABLE 1 by script/m14/sliced-declaration.ts, which refuses on any non-closure",
+    "sample": 3255,
+    "corpusTotal": 3255,
+    "parsed": 3255,
+    "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+    "populationRule": {
+      "rule": "the admitted set is the GIT-TRACKED set: per-checkout `git ls-files` over $PWD/.corpus, extensions lua from the router's one table, files present on disk and at most 1 MiB"
+    },
+    "resolvedScope": "the file's OWN PROJECT (production's scope; index=no — the analyzer sees one file at a time, and the arbiter holds the project)",
+    "measuredEdges": 220114,
+    "slices": 1,
+    "closure": {
+      "resolved": 137508,
+      "external": 7101,
+      "ambiguous": 45818,
+      "otherUnresolved": 29687,
+      "unclassed": 0,
+      "exact": true
+    },
+    "generatedBy": "script/m14/sliced-declaration.ts"
+  },
+  "types": {
+    "calls": {
+      "edges": 57512,
+      "resolved": 25323,
+      "external": 3153,
+      "ambiguous": 18600,
+      "otherUnresolved": 10436,
+      "unclassed": 0,
+      "_ambKind": 9953,
+      "_collRes": 0,
+      "closure": {
+        "edges": 57512,
+        "resolved": 25323,
+        "collRes": 0,
+        "ambDecl": 18600,
+        "ambKind": 9953,
+        "unresolved": 10436,
+        "extOK": 3153,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "uses": {
+      "edges": 55031,
+      "resolved": 41231,
+      "external": 56,
+      "ambiguous": 10413,
+      "otherUnresolved": 3331,
+      "unclassed": 0,
+      "_ambKind": 1194,
+      "_collRes": 0,
+      "closure": {
+        "edges": 55031,
+        "resolved": 41231,
+        "collRes": 0,
+        "ambDecl": 10413,
+        "ambKind": 1194,
+        "unresolved": 3331,
+        "extOK": 56,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "contains": {
+      "edges": 55369,
+      "resolved": 55369,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 41614,
+      "closure": {
+        "edges": 55369,
+        "resolved": 55369,
+        "collRes": 41614,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "imports": {
+      "edges": 6605,
+      "resolved": 720,
+      "external": 3851,
+      "ambiguous": 240,
+      "otherUnresolved": 1794,
+      "unclassed": 0,
+      "_ambKind": 108,
+      "_collRes": 0,
+      "closure": {
+        "edges": 6605,
+        "resolved": 720,
+        "collRes": 0,
+        "ambDecl": 240,
+        "ambKind": 108,
+        "unresolved": 1794,
+        "extOK": 3851,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "references": {
+      "edges": 40065,
+      "resolved": 12283,
+      "external": 41,
+      "ambiguous": 14738,
+      "otherUnresolved": 13003,
+      "unclassed": 0,
+      "_ambKind": 3515,
+      "_collRes": 0,
+      "closure": {
+        "edges": 40065,
+        "resolved": 12283,
+        "collRes": 0,
+        "ambDecl": 14738,
+        "ambKind": 3515,
+        "unresolved": 13003,
+        "extOK": 41,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "exports": {
+      "edges": 5171,
+      "resolved": 2275,
+      "external": 0,
+      "ambiguous": 1821,
+      "otherUnresolved": 1075,
+      "unclassed": 0,
+      "_ambKind": 81,
+      "_collRes": 0,
+      "closure": {
+        "edges": 5171,
+        "resolved": 2275,
+        "collRes": 0,
+        "ambDecl": 1821,
+        "ambKind": 81,
+        "unresolved": 1075,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "extends": {
+      "edges": 171,
+      "resolved": 118,
+      "external": 0,
+      "ambiguous": 5,
+      "otherUnresolved": 48,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 171,
+        "resolved": 118,
+        "collRes": 0,
+        "ambDecl": 5,
+        "ambKind": 0,
+        "unresolved": 48,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "implements": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "overrides": {
+      "edges": 67,
+      "resolved": 66,
+      "external": 0,
+      "ambiguous": 1,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 67,
+        "resolved": 66,
+        "collRes": 0,
+        "ambDecl": 1,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "instantiates": {
+      "edges": 122,
+      "resolved": 122,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 122,
+        "resolved": 122,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "decorates": {
+      "edges": 1,
+      "resolved": 1,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 1,
+        "resolved": 1,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0,
+      "closure": {
+        "edges": 0,
+        "resolved": 0,
+        "collRes": 0,
+        "ambDecl": 0,
+        "ambKind": 0,
+        "unresolved": 0,
+        "extOK": 0,
+        "extUnk": 0,
+        "extFAIL": 0,
+        "bindOK": 0,
+        "bindUnk": 0,
+        "bindFAIL": 0,
+        "causeOK": 0,
+        "causeFAIL": 0
+      }
+    }
+  },
+  "causeRulings": {
+    "calls_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 29036,
+      "what": "calls: 25323 of 57512 edges resolved; the remaining 29036 are 18600 ambiguous + 10436 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). a call edge whose target is a NAME ONLY (`Clone`, `Errorf`, `Encode`, `Do`): the language lets many types declare the same method name and a call is disambiguated by its RECEIVER, which the published target spelling does not carry — so the arbiter sees several declarations of that name and the row is ambiguous, not wrong. The unresolved tail is calls into packages outside the admitted set. The arm's worklist samples the ambiguous/unresolved names for this type: `Para`, `dir`, `find`, `load`, `Proto`, `uint8`, `uint32`, `string`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for calls are the count",
+        "wouldFail": "a run in which one of those 29036 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "uses_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 13744,
+      "what": "uses: 41231 of 55031 edges resolved; the remaining 13744 are 10413 ambiguous + 3331 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). a `uses` edge whose target name is declared in several files of the project or in none of them (a field or package-level name read across files): the analyzer's scope is PER FILE, so a name it cannot see declared here is stated rather than resolved. The arm's worklist samples the ambiguous/unresolved names for this type: `data`, `str`, `t`, `config`, `pinfo`, `tree`, `PI_DISSECTOR_BUG`, `PI_ERROR`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for uses are the count",
+        "wouldFail": "a run in which one of those 13744 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "imports_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 2034,
+      "what": "imports: 720 of 6605 edges resolved; the remaining 2034 are 240 ambiguous + 1794 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). an import specifier naming a package the admitted set does not carry (a standard-library or third-party module path): an import names a MODULE and creates binding scope, so no per-file declaration can answer it. The arm's worklist samples the ambiguous/unresolved names for this type: `lyaml`, `cjson`, `socket`, `ffi`, `luacov.stats`, `luacov.reporter`, `luacov.runner`, `pl.utils`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for imports are the count",
+        "wouldFail": "a run in which one of those 2034 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "references_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 27741,
+      "what": "references: 12283 of 40065 edges resolved; the remaining 27741 are 14738 ambiguous + 13003 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). a reference whose target name is declared several times in the project, or nowhere in it: the read is a NAME, and the file-scoped analyzer can only answer for names it can see. The arm's worklist samples the ambiguous/unresolved names for this type: `header`, `format`, `name`, `file`, `DEC`, `HEX`, `NONE`, `prefs`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for references are the count",
+        "wouldFail": "a run in which one of those 27741 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "exports_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 2896,
+      "what": "exports: 2275 of 5171 edges resolved; the remaining 2896 are 1821 ambiguous + 1075 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). an export whose target name collides across the project: the exported declaration exists, but the arbiter cannot pick which one the name means. The arm's worklist samples the ambiguous/unresolved names for this type: `json`, `execute`, `getenv`, `unsetenv`, `nav`, `_infer`, `_combine`, `_decode_arg`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for exports are the count",
+        "wouldFail": "a run in which one of those 2896 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "extends_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 53,
+      "what": "extends: 118 of 171 edges resolved; the remaining 53 are 5 ambiguous + 48 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). the target names nothing this file declares. The arm's worklist samples the ambiguous/unresolved names for this type: `self`, `cjson.array_mt`, `conf_constants._NOP_TOSTRING_MT`, `configuration.global_mt`, `configuration.sandbox_mt`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for extends are the count",
+        "wouldFail": "a run in which one of those 53 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "overrides_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=3255/3255 admitted=3255 exts=lua index=no",
+      "count": 1,
+      "what": "overrides: 66 of 67 edges resolved; the remaining 1 are 1 ambiguous + 0 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). an override whose target names a method declared on several types. The arm's worklist samples the ambiguous/unresolved names for this type: `M.io.lines`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts lua 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for overrides are the count",
+        "wouldFail": "a run in which one of those 1 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    }
+  },
+  "resolution_caveats": [
+    "A CAUSE IS STATED, NOT RESOLVED: unresolved rows live in otherUnresolved (which also holds the binding-spelled and declared-cause rows), never in resolved, and the analyzer's scope is PER FILE with index=no — a target declared in another file of the project is genuinely out of its reach and the arbiter (which holds the project) is what answers it.",
+    "THE POPULATION IS A UNION OF DISJOINT SLICES, not one process: the merge refuses a hole, an overlap and a closure whose eleven terms do not sum, and this generator re-checks the union against the closure artifact before writing.",
+    "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: a resolved edge whose target had more than one declaration in the project, so production's own-file tie-break chose the row. The resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+    "`amb(kind)` IS A SUBSET OF `amb(decl)`: it counts distinct KINDS among the colliding declarations, while amb(decl) counts distinct DECLARATIONS.",
+    "THE WALL COUNTS ARE TABLE 1's EXACT COLUMNS, summed over the slices; the NAMES quoted in each ruling are the arm's own 25-name-capped worklist, cited as evidence of WHICH cause and never as a count."
+  ]
+}
