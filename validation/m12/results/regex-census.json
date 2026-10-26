@@ -2,177 +2,20 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-23T22:46:06.864Z",
+  "generatedAt": "2026-10-26T15:39:23.911Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 17,
+  "totalRegexUsages": 3,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 16,
-    "unavoidable": 1
+    "needs_review": 3
   },
   "byReceiverCategory": {
-    "identifier": 12,
-    "other": 4,
-    "string_literal": 1
+    "identifier": 2,
+    "other": 1
   },
   "perFile": [
-    {
-      "file": "real-rust-analyzer.ts",
-      "count": 10,
-      "usages": [
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 191,
-          "column": 43,
-          "source": "/^[A-Z]/",
-          "operation": "test",
-          "receiver": "parts[parts.length - 1]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 203,
-          "column": 52,
-          "source": "/^[A-Z]/",
-          "operation": "test",
-          "receiver": "eff[1]",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 322,
-          "column": 16,
-          "source": "/\\n\\s*name\\s*=\\s*\"([A-Za-z_][A-Za-z0-9_-]*)\"/",
-          "operation": "test",
-          "receiver": "\"\\n\" + text",
-          "receiverCategory": "string_literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 323,
-          "column": 51,
-          "source": "/-/g",
-          "operation": "replace",
-          "receiver": "name",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 328,
-          "column": 22,
-          "source": "/\\[lib\\]([\\s\\S]*?)(?:\\n\\[|$)/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 329,
-          "column": 19,
-          "source": "/\\bpath\\s*=\\s*\"([^\"]+)\"/",
-          "operation": "test",
-          "receiver": "libSection",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 376,
-          "column": 11,
-          "source": "/^\\s*\\[workspace\\]/m",
-          "operation": "test",
-          "receiver": "readManifest(dir)",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 403,
-          "column": 24,
-          "source": "/(?:^|\\n)\\s*members\\s*=\\s*\\[([\\s\\S]*?)\\]/",
-          "operation": "test",
-          "receiver": "rootText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 405,
-          "column": 43,
-          "source": "/[\"']([^\"']+)[\"']/g",
-          "operation": "other",
-          "receiver": "membersBlock",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 2250,
-          "column": 13,
-          "source": "/^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/",
-          "operation": "test",
-          "receiver": "q",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-xml-analyzer.ts",
-      "count": 3,
-      "usages": [
-        {
-          "file": "real-xml-analyzer.ts",
-          "line": 3372,
-          "column": 40,
-          "source": "/\\\\/g",
-          "operation": "replace",
-          "receiver": "trimmed",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-xml-analyzer.ts",
-          "line": 3377,
-          "column": 26,
-          "source": "/^\\.\\//",
-          "operation": "replace",
-          "receiver": "normalised",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-xml-analyzer.ts",
-          "line": 3378,
-          "column": 26,
-          "source": "/^\\.\\.\\//",
-          "operation": "replace",
-          "receiver": "normalised",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
     {
       "file": "real-julia-analyzer.ts",
       "count": 1,
@@ -218,23 +61,6 @@
           "source": "/[/\\\\]|^[a-z][a-z0-9+.-]*:/i",
           "operation": "test",
           "receiver": "pathValue",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 231,
-          "column": 27,
-          "source": "/[A-Z]/",
-          "operation": "test",
-          "receiver": "tag",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
