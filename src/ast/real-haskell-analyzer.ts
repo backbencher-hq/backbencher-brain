@@ -73,6 +73,17 @@ interface HaskellContext {
   // so unqualified calls resolve even to LATER-defined functions (forward
   // references) and to class/instance methods.
   declaredFunctions: Set<string>
+  // Every TYPE-level name declared at module scope in this file (data, newtype,
+  // type synonym, class, pattern synonym). Collected by a pre-pass for the same
+  // reason as `declaredFunctions`: a Template Haskell splice routinely appears
+  // BEFORE the declaration it decorates in source order is irrelevant — the
+  // quote must resolve against the file's own declarations whatever the order.
+  declaredTypes: Set<string>
+  // `{-# ANN ... #-}` pragma sites. The pragma attaches METADATA to its target;
+  // it runs no callable and applies no decorator, so it publishes no edge. It is
+  // COUNTED here so the class is a number the spec can disclose rather than an
+  // omission a reader has to infer.
+  annPragmas: number
   // class name -> the method names its body declares, collected by a pre-pass so
   // an INSTANCE can be matched against its class regardless of declaration order
   // (Haskell permits `instance` before `class` in a file, and a second pass over
@@ -116,6 +127,8 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       typeSignatures: {},
       functionSymbolIndex: {},
       declaredFunctions: new Set(),
+      declaredTypes: new Set(),
+      annPragmas: 0,
       classMethods: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
       // A file with no `module` header is module `Main` — the language rule.
@@ -135,6 +148,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Where/let locals are NOT module-level callables — they are resolved
     // lexically (collectLocalScopes), so this prepass skips local blocks.
     this.collectDeclaredFunctions(rootNode, ctx.declaredFunctions)
+    this.collectDeclaredTypes(rootNode, ctx.declaredTypes)
     this.collectClassMethods(rootNode, ctx.classMethods)
     this.collectLocalScopes(rootNode, ctx.localScopes)
 
@@ -402,6 +416,21 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // A `prefix_id` can also occur in pattern position (`(<+>) p`), and the
         // shared helper gates on that and on type position.
         this.emitOperatorApplication(node, ctx, scopeStack)
+      } else if (node.type === "top_splice") {
+        // A DECLARATION-position Template Haskell splice. The grammar gives it
+        // its own node type — `$(...)` AND the bare declaration form both parse
+        // as `top_splice` — so this dispatch cannot fire on an ordinary
+        // application: a value-level splice inside a body is a `splice` under a
+        // `bind`/`match`, and a plain `f x` is an `apply`. That node-type gate
+        // is the first half of the decorator test; `decorateFromSplice` applies
+        // the second (a TH quote naming a declaration of THIS file).
+        this.decorateFromSplice(node, ctx)
+      } else if (node.type === "pragma") {
+        // `{-# ANN ... #-}` is the passive-metadata pragma. It is counted, not
+        // emitted: the pragma attaches a value to a target and applies no
+        // callable, which is the class every attribute-shaped language rules
+        // ontological. The counter is carried into `metadata.annPragmaSites`.
+        this.countPragmas(node, ctx)
       }
 
       if (pushedScope) stack.push({ node, isExit: true })
@@ -577,6 +606,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasTypeInference: true,
         hasFrameworkIntelligence: true,
         analysisVersion: "10.1.0-haskell-pure-ast",
+        // The passive-metadata pragma class, disclosed as a count. `{-# ANN #-}`
+        // attaches a value to a target and applies no callable, so it emits no
+        // relationship; the number is here so the omission is a stated class and
+        // not a silence a reader has to interpret.
+        ...(ctx.annPragmas > 0 ? { annPragmaSites: ctx.annPragmas } : {}),
       },
     }
   }
@@ -625,6 +659,189 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!node) return undefined
     const line = node.startPosition.row + 1
     return line > 0 ? line : undefined
+  }
+
+  // ==========================================================================
+  // Template Haskell: `decorates` from a declaration-position splice.
+  //
+  // WHY THIS IS `decorates` AND NOT A RULING. Template Haskell runs code at
+  // COMPILE TIME. `$(makeLenses ''Widget)` applies the function `makeLenses` to
+  // the named declaration `Widget` and the function GENERATES accessor
+  // declarations for it; the declaration therefore CARRIES the decorator in
+  // exactly the sense the vocabulary means (`decorates`: a decorator is applied
+  // to a declaration). The measured population has 420 declaration-position
+  // splices, 177 of which name a declaration this file declares.
+  //
+  // THE DISCRIMINATOR IS ON THE DECORATED DECLARATION, NEVER ON THE HEAD.
+  // TH decorators are LIBRARY functions — `makeLenses` is imported from
+  // `Control.Lens.TH`, `deriveJSON` from `Data.Aeson.TH` — exactly as Python's
+  // `@dataclass` is imported from `dataclasses`. Requiring the HEAD to be
+  // declared in the file would exclude the construct and publish nothing; the
+  // test that identifies the construct is the `th_quoted_name` argument naming a
+  // declaration of THIS file. Measured near misses that must therefore stay
+  // silent: a splice quoting an IMPORTED declaration (33 sites — the quoted
+  // name is declared in another module, so this file cannot source an edge from
+  // it), and a declaration-position splice with no callable head (77 sites —
+  // `$(do ... [d| ... |])` generators and C-preprocessor macro lines such as
+  // `INSTANCE_CLUMP_1(...)`, which the grammar parses as a bare top-level
+  // expression splice).
+  //
+  // THE EDGE, per the lane's brief: source is the ENCLOSING MODULE SCOPE and the
+  // target is the DECORATED DECLARATION's own symbol. The decorator name is
+  // often external and unresolvable, so it is carried in
+  // `metadata.decoratorName` rather than emitted as a dangling endpoint — an
+  // edge to a name nothing declares would be a claim the index cannot answer.
+  //
+  // `{-# ANN #-}` IS NOT THIS CONSTRUCT. It attaches a value to a target
+  // (`{-# ANN getEnvironment ("HLINT: ..." :: String) #-}`) and applies no
+  // callable, so it is the passive-metadata class and publishes no edge; its
+  // sites are counted in `metadata.annPragmaSites` so the class is disclosed
+  // rather than silently dropped.
+  // ==========================================================================
+  private decorateFromSplice(node: Node, ctx: HaskellContext): void {
+    ctx.patterns["Template Haskell"] = true
+
+    // The splice's expression: `$( expr )` unwraps splice -> parens -> expr;
+    // the bare declaration form (`makeLenses ''Foo`) IS the expression.
+    let expr: Node | null = node.namedChildCount > 0 ? node.namedChild(0) : null
+    for (let guard = 0; guard < 6 && expr; guard++) {
+      if (expr.type === "splice" || expr.type === "parens") {
+        expr = expr.namedChildCount > 0 ? expr.namedChild(0) : null
+        continue
+      }
+      break
+    }
+    if (!expr) return
+
+    // The applied callable: the left spine of an application. A `let`/`do`/
+    // quoted-declaration expression has no callable head and emits nothing.
+    let head: Node | null = expr
+    let decoratorName: string | undefined
+    let decoratorQualified = false
+    for (let guard = 0; guard < 12 && head; guard++) {
+      if (head.type === "variable" || head.type === "name") {
+        decoratorName = head.text
+        break
+      }
+      if (head.type === "qualified") {
+        const mod = this.findNamedChildByType(head, ["module"])
+        const v = this.findNamedChildByType(head, ["variable", "constructor"])
+        const modText = this.stripTrailingDot(mod?.text ?? "")
+        decoratorName = modText && v?.text ? `${modText}.${v.text}` : head.text
+        decoratorQualified = true
+        break
+      }
+      if (head.type === "apply") {
+        head = head.namedChildCount > 0 ? head.namedChild(0) : null
+        continue
+      }
+      break
+    }
+    if (!decoratorName) return
+
+    // The decorated declaration: a `th_quoted_name` argument that names a
+    // declaration of THIS file. `''Foo` quotes a type, `'foo` quotes a value;
+    // both resolve against the module-scope sets, and the FIRST resolvable
+    // quote wins (a TH decorator takes one primary declaration).
+    const quotes = this.thQuotedNames(expr)
+    let decorated: { name: string; raw: string } | undefined
+    for (const q of quotes) {
+      if (ctx.declaredTypes.has(q.name) || ctx.declaredFunctions.has(q.name)) {
+        decorated = q
+        break
+      }
+    }
+    if (!decorated) return
+
+    // The enclosing scope is the module the splice sits in. A `top_splice` is a
+    // declaration, so it can never be inside a callable body; `currentModule`
+    // is the module header's name or the language-default `Main`.
+    const scope = ctx.currentModule || "Main"
+    this.pushRel(
+      ctx,
+      scope,
+      decorated.name,
+      ASTEngine.RelationshipType.Decorates,
+      1.0,
+      {
+        decoratorName,
+        isQualifiedDecorator: decoratorQualified,
+        thQuotedForm: decorated.raw,
+        isTemplateHaskell: true,
+        haskellSpecific: true,
+      },
+      this.lineOf(node),
+    )
+  }
+
+  /**
+   * Every `th_quoted_name` under a subtree, with the quotes stripped.
+   *
+   * The grammar puts the quoted name in a `name` child (`''Foo` -> `''` token +
+   * `name` "Foo"); the raw text is kept so the edge's metadata can say which
+   * quote form was used. A quote with no readable name is skipped rather than
+   * published with its ticks — a name that is not a name is not an endpoint.
+   */
+  private thQuotedNames(node: Node): { name: string; raw: string }[] {
+    const out: { name: string; raw: string }[] = []
+    const visit = (n: Node): void => {
+      if (n.type === "th_quoted_name") {
+        const raw = n.text ?? ""
+        const nameNode = this.findNamedChildByType(n, ["name", "variable", "constructor"])
+        const name = (nameNode?.text ?? "").trim()
+        if (name.length > 0) out.push({ name, raw })
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) visit(c)
+      }
+    }
+    visit(node)
+    return out
+  }
+
+  /**
+   * Count the passive-metadata pragma family (`{-# ANN ... #-}`).
+   *
+   * The pragma node's body is OPAQUE to the grammar (the node carries no named
+   * children — measured over the whole population), so the keyword is read from
+   * the text between `{-#` and the first whitespace, with no regular
+   * expression: the analyzer's no-regex criterion forbids a pattern literal and
+   * a keyword test does not need one.
+   */
+  private countPragmas(node: Node, ctx: HaskellContext): void {
+    const text = (node.text ?? "").trim()
+    if (!text.startsWith("{-#")) return
+    let i = 3
+    while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
+    const keyword = text.slice(i, i + 3).toUpperCase()
+    if (keyword === "ANN") ctx.annPragmas++
+  }
+
+  // ==========================================================================
+  // Pre-pass: declared TYPE names at module scope (forward-reference resolution
+  // for TH quotes). A `data`/`newtype`/`type`/`class`/`pattern` declaration is
+  // the thing a Template Haskell decorator is applied to, and the splice may
+  // appear before or after it in source order.
+  // ==========================================================================
+  private collectDeclaredTypes(node: Node, out: Set<string>): void {
+    const t = node.type
+    if (t === "data_type" || t === "newtype" || t === "type_synomym" || t === "class" || t === "pattern_synonym") {
+      const nameNode = this.findNamedChildByType(node, ["name"])
+      if (nameNode?.text) out.add(nameNode.text)
+      // A pattern synonym's form is `pattern P = ...` where the name may be a
+      // constructor; the `name` child is the declared name in every shape the
+      // pinned grammar produces, so no second spelling is needed.
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      // Local blocks hold no type declarations; skip for the same reason the
+      // callable prepass does (scoped identity, never module-level).
+      if (child.type === "local_binds" || child.type === "let" || child.type === "let_in") continue
+      this.collectDeclaredTypes(child, out)
+    }
   }
 
   // ==========================================================================
@@ -2511,6 +2728,10 @@ private processPatternSynonym(node: Node, ctx: HaskellContext): boolean {
       if (t === "references") { md.evidenceClass = md.isHaskellImport ? "import_based" : "reference_qualified"; continue }
       if (t === "extends" || t === "implements") { md.evidenceClass = "structural"; continue }
       if (t === "overrides") { md.evidenceClass = md.isInstanceMethod ? "structural" : md.evidenceClass ?? "structural"; continue }
+      // `decorates` is the tree-read splice shape: the node type (`top_splice`),
+      // the applied head, and the quoted name are all structural children of the
+      // declaration, so the tier is structural rather than inferred.
+      if (t === "decorates") { md.evidenceClass = "structural"; continue }
       if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication || md.isQualifiedConstructorApplication || md.isInfixConstructorApplication || md.isTickedConstructorApplication ? "usage_contextual" : "structural"; continue }
       md.evidenceClass = conf >= 0.85 ? "usage_contextual" : "inferred"
     }
