@@ -498,23 +498,43 @@ const isRelativeScriptPath = (t: string): boolean => {
   // TIME, against a directory the project does not know, so this file is NOT in a position to judge
   // whether the project owns it. A rule that kept the claim on that shape, and a rule that dropped
   // it, were BOTH measured over the whole population (1,181 files / 30 repos), by RESOLVING each
-  // released path against the corpus and asking the FILESYSTEM whether the file is there:
+  // released path against the PROJECT'S ADMITTED FILE LIST and asking the ARBITER's own
+  // `pathTargetInProject` what it says about the result:
   //
-  //   37 of the 55 rows of that shape point at a file that EXISTS  -> the externality claim was FALSE
-  //   18 of them point at a file that does NOT exist             -> the externality claim was TRUE
+  //     58  the resolved path IS IN THE PROJECT'S ADMITTED LIST   -> the externality claim is FALSE
+  //     18  the resolved path is NOT in the admitted list         -> and THE PROJECT CANNOT TELL AN
+  //         EXTERNAL MODULE FROM A DANGLING PATH — the arbiter's own case 2, a REFUSAL, and a
+  //         refusal is not a verification: these are NOT known-true claims
+  //     30  the variable is $PSHOME — a POWERSHELL BUILT-IN, the INSTALLATION directory, and the
+  //         file it names is the installation's own (26 x `pwsh`, 3 x `pwsh.exe`, 1 x
+  //         `RegisterManifest.ps1`) — so the claim is TRUE and no project owns the installation
+  //     12  the variable IS ASSIGNED IN THE ROW'S OWN FILE — a ONE-FILE question, and therefore
+  //         the ANALYZER's question rather than the gate's; and 11 of the 12 name a file that is
+  //         NOT A SOURCE FILE (pwsh, pwsh.exe, dotnet.exe, a .dll) while the admitted set is a set
+  //         of SOURCE files, so those 11 are not project files BY KIND, and only ONE ($ProjectRoot\
+  //         build.ps1) names a source file and so needs a one-file rule
+  //      5  the variable is neither the file's own directory nor assigned in the file ($env: x2,
+  //         $ShimDirectory, $TestDrive, $testdrive) — a built-in or a received value
   //
-  // So dropping the claim on that shape removes 37 FALSE claims and loses 18 TRUE ones, and keeping
-  // it does the reverse. **THE VERIFIED CLASS IS THE SAME EITHER WAY** — (resolved + extOK) / edges
-  // is 60.4361 % under both, and so is the TOTAL wall — so the choice is not a rate, it is a
-  // question of what a lane is for: **A PUBLISHED FALSE CLAIM IS A LIE, AND A LOST TRUE CLAIM IS A
-  // MISSED OPPORTUNITY, AND THE FLEET'S FIRST REFUTED-CLAIM INCIDENT WAS A LIE.** 37 lies for 18
-  // opportunities is the right trade, and the price is a NUMBER rather than an argument.
+  // So dropping the claim on that shape removes 58 FALSE claims and loses 48 claims the ARBITER
+  // cannot verify (30 true-but-unverifiable and 18 case-2), and keeping it does the reverse.
+  // **THE VERIFIED CLASS IS THE SAME EITHER WAY** — (resolved + extOK) / edges is 60.4361 % under
+  // both, and so is the TOTAL wall — and the reason it is the same is WORTH NAMING: these rows are
+  // the arbiter's case 2 (or a built-in the admitted list can never hold), so they were never
+  // `extOK`-eligible at all, and the rule cannot have been leaving a verified class behind.
+  // So the choice is not a rate, it is a question of what a lane is for: **A PUBLISHED FALSE CLAIM IS
+  // A LIE, AND A LOST SETTLEABLE CLAIM IS A MISSED OPPORTUNITY, AND THE FLEET'S FIRST REFUTED-CLAIM
+  // INCIDENT WAS A LIE.** 58 lies for 48 unverifiable claims is the right trade, and the price is a
+  // NUMBER rather than an argument. (AND THE 12 THAT ARE ASSIGNED IN THEIR OWN FILE ARE NOT LOST
+  // EITHER: a ONE-FILE rule in this very file could settle them — that is the lane's next
+  // token-free item, and it is NAMED here so the next reader does not have to re-derive it.)
   //
-  // AND THE 18 ARE NOT LOST FOREVER: the GATE knows the row's own directory AND the project's
-  // admitted file list, so IT can resolve a `$PSScriptRoot` path and settle all 55 — turning the 37
-  // false claims into VISIBLE refutations and the 18 true ones into VERIFIED claims. The arbiter
-  // does not do that today, which is why all 55 read as "unverifiable" (wall W9, the Lead's
-  // instrument, filed as a proposal with its number).
+  // AND THE 48 ARE NOT LOST FOREVER: the GATE knows the row's own directory AND the project's
+  // admitted file list, so IT can resolve a `$PSScriptRoot` path and settle all 76 derivable rows —
+  // turning the 58 false claims into VISIBLE refutations, and the 18 into NAMED REFUSALS. The arbiter
+  // does not do that today, which is why all 123 rows of the shape read as "unverifiable" (wall W9,
+  // the Lead's instrument, filed as a proposal WITH THE PATCH AND ITS MEASURED EFFECT).
+
   // A PATH THAT NAMES SOMETHING OUTSIDE ANY PROJECT — and so can never be one of the project's
   // own files. The shapes mirror the arbiter's own `WINDOWS_DRIVE` and `URI_SCHEME` tests, because
   // the question is the same one: "can the project's own file list answer this spelling?"
@@ -535,6 +555,48 @@ const isRelativeScriptPath = (t: string): boolean => {
   }
   return true
 }
+/**
+ * W9 — A RUNTIME-VARIABLE TARGET, AND WHETHER THE REST OF IT IS A PATH.
+ *
+ * A PowerShell path may begin with a variable: `$PSScriptRoot\..\..\X.psm1` is the file's own
+ * directory, `$PSHOME\pwsh` is the INSTALLATION, `$publishPath\pwsh` is a directory the file
+ * assigns for itself. The variable is the whole difference between "a path the project may own"
+ * and "a path it cannot", and this file can see the variable but NOT the project's file list —
+ * so what this file CAN do is say which SHAPE the target is, and let the arbiter ask the question
+ * the project can answer.
+ *
+ * THE TWO SHAPES, AND THEY ARE DIFFERENT QUESTIONS:
+ *
+ *   `$name\rest` / `$name/rest`  A PATH. The rest begins with a separator.
+ *   `$env:NAME` / `$TestDrive:x`  A NAMESPACE OR A DRIVE. The rest begins with a COLON, which in
+ *                                 PowerShell is the namespace/drive separator and NEVER a path
+ *                                 separator. A runtime value is not an external path, so a claim
+ *                                 that names nothing that can be a path is not a claim to verify,
+ *                                 and this file publishes NONE for it.
+ *
+ * MEASURED over the same population (1,181 parsed files / 30 repos): of the 123 targets of this
+ * shape, 118 are paths (58 resolvable to a project file, 30 to the installation, 12 to a
+ * directory the row's own file assigns, 18 to a path the project cannot place) and 5 are
+ * namespaces or drives.
+ */
+const runtimeVariableTarget = (t: string): { name: string; isPath: boolean } | null => {
+  if (t.length < 2) return null
+  if (t.charCodeAt(0) !== 36 /* $ */) return null
+  let i = 1
+  while (i < t.length) {
+    const c = t.charCodeAt(i)
+    const isWord = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+    if (!isWord) break
+    i++
+  }
+  if (i === 1) return null
+  const name = t.slice(1, i)
+  const sep = t.charCodeAt(i)
+  if (sep === 58 /* : */) return { name, isPath: false }
+  if (sep === 47 /* / */ || sep === 92 /* \ */) return { name, isPath: true }
+  return null
+}
+
 const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
   // PS-RELATIVE-PATH (fleet baseline 2026-10-19, the two whole-population refutations; WIDENED
@@ -3132,7 +3194,37 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // partition is worth bytes — measured over the same 1,181-file walk, publishing both on
       // every row costs 3,888,591 B (+11.15% of the lane's relationship payload) where the
       // partition costs 2,808,952 B: `noDeclarationInFile` alone was 2,466,639 B of it.
-      const via = externalReadingOf(target)
+      // W9 — A RUNTIME-VARIABLE PATH GETS THE PATH CLAIM, AND A RUNTIME NAMESPACE GETS NO CLAIM.
+      //
+      // The claim published here is the arbiter's EXISTING path claim (`sourcePathClaim`): "nothing
+      // the project ADMITS resolves to this written source string". Its polarity is the inverse of
+      // the file claim: a candidate resolving in the project's file list REFUTES it, and nothing
+      // resolving VERIFIES it — so the verdict is a pure function of the project's OWN list, and an
+      // independent actor adding the file flips it. That is the claim a runtime-variable path
+      // deserves: the project, not this file, is the only thing that can answer it.
+      //
+      // WHY IT MATTERS, AND THE PRICE, MEASURED:
+      //
+      //   the 58  the path resolves to a file the project HAS, so the claim is REFUTED — a VISIBLE
+      //           refutation, where the previous behaviour published a FALSE external claim and
+      //           the gate could not see it at all.
+      //   the 30  the path is under the PowerShell INSTALLATION, which no project admits, so the
+      //           claim VERIFIES — a VERIFIED external claim, where the previous behaviour could
+      //           only refuse it.
+      //   the 12  the variable is assigned in the row's OWN file, so the path is derivable; the
+      //           claim then answers on the project's own list, which is the question the project
+      //           can answer and this file cannot.
+      //   the 18  the project cannot tell an external module from a dangling path, and the claim
+      //           says exactly that much: nothing the project admits resolves to it.
+      //   the 5   a namespace or a drive — NOT a path — and this file publishes no claim for it
+      //           at all, because a claim that names nothing that can be a path is not a claim.
+      const runtime = runtimeVariableTarget(target)
+      if (runtime !== null) {
+        if (runtime.isPath) {
+          rel.metadata.sourcePathClaim = [target]
+        }
+      }
+      const via = runtime !== null ? null : externalReadingOf(target)
       if (via) {
         rel.metadata.externalTarget = true
         rel.metadata.externalVia = via
