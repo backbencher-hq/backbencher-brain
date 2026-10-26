@@ -2,8 +2,9 @@
 // Author: Muhammad Ishaq Khan
 //
 // WHAT THIS FILE IS. tree-sitter-lua in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
-// no regex fallback. It covers nine relationship types by name: calls, uses, contains, imports, references,
-// exports, extends, overrides and instantiates.
+// no regex fallback. It covers ten relationship types by name: calls, uses, contains, imports, references,
+// exports, extends, overrides, instantiates and decorates. The other four extended values are ruled in
+// script/m14/spec/lua-completeness.json (part_of, renders and mixes_in by their measurements there).
 // WHERE ITS CONTRACT LIVES: docs/analyzers/real-lua-analyzer.md (long form); machine-readable classification
 // in script/m14/spec/lua-completeness.json; fixtures in validation/m14/fixtures/lua/; measured clause and
 // ambiguity records under validation/m14/verification/ (FOUR-CLAUSE-lua.md and the calls split).
@@ -256,6 +257,24 @@ interface LuaContext {
    * rather than re-splitting the key is what stops this map being confused with
    * `supertypeLinks`, which holds two other conventions. */
   factorySupertypeLines: Map<string, { derived: string; base: string; line: number }>
+  /**
+   * THE NAMES THIS FILE DECLARES AS FUNCTIONS, collected before the walk so a
+   * decoration site is order-independent. Lua's decorator idiom is the Python
+   * desugaring written out (`X = f(X)` after the declaration), and the decorated
+   * name must be a declaration for the relation to be about a DECLARATION rather
+   * than a value — see `extractDecoratorApplication`.
+   */
+  declaredFunctions: Set<string>
+  /**
+   * THE WRAPPER FACTORIES of this file: declared functions whose own body RETURNS a
+   * function definition (`function cache(f) ... return function(x) ... end end`).
+   * That is the only STRUCTURAL evidence a `X = f(X)` site is a decorator
+   * application and not a value transform — the 186 measured in-function
+   * rebindings of a name that happens to be declared somewhere in the file are
+   * value assignments (`value = sub(value, ...)`), and a name filter would count
+   * them all.
+   */
+  wrapperFactories: Set<string>
   /** M60 LUA-54: edges whose TARGET is the field of a member read whose RECEIVER
    *  names a documented Lua 5.4 standard table, held back until every symbol this
    *  file declares is known. See `markStdlibExternal`. */
@@ -318,6 +337,8 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       membersByOwner: new Map(),
       supertypeLinks: new Map(),
       factorySupertypeLines: new Map(),
+      declaredFunctions: new Set<string>(),
+      wrapperFactories: new Set<string>(),
       stdlibCandidates: [],
       stdlibGlobalCandidates: [],
       ...(rooted ? { projectRoot: projectRootRaw, filePath: filePathRaw } : {}),
@@ -334,6 +355,11 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // M60 LUA-51: same reason, and it is a separate convention from the three
     // `collectSupertypeLinks` reads. Also BEFORE the walk.
     this.collectFactorySupertypeLinks(rootNode, ctx)
+    // THE DECORATOR IDIOM'S TWO ENDS, collected before the walk for the same
+    // reason: a wrapper factory may be declared AFTER the site that applies it, and
+    // a decoration is a relation between two DECLARATIONS that the traversal order
+    // must not decide. See `collectDecoratorFacts`.
+    this.collectDecoratorFacts(rootNode, ctx)
     const rootFrame: LuaFrame = { localNames: new Set<string>(), inFunction: false }
     const stack: { node: Node; frame: LuaFrame }[] = [{ node: rootNode, frame: rootFrame }]
 
@@ -490,9 +516,14 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       case "variable_declaration":
         if (this.isLocalVariableDeclaration(node)) this.extractLocalDeclaration(node, frame, ctx)
+        // The decorator idiom is an ASSIGNMENT, and a `local X = f(X)` is the same
+        // shape as `X = f(X)`; both are accepted and deduplicated by
+        // `addRelationship`, so the site is published once either way.
+        this.extractDecoratorApplication(node, frame, ctx)
         break
       case "assignment_statement":
         this.extractAssignment(node, frame, ctx)
+        this.extractDecoratorApplication(node, frame, ctx)
         break
       case "function_call":
         this.processCall(node, frame, ctx)
@@ -1661,6 +1692,156 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         { confidence: 0.95, symbolRange: { startLine: line } },
       )
     }
+  }
+
+  /**
+   * `decorates` — THE LUA DECORATOR IDIOM, and the measurement that made it a
+   * relation instead of a ruling.
+   *
+   * ## What the construct is
+   *
+   * Lua has no annotation syntax. Its decorator idiom is the PYTHON DESUGARING
+   * WRITTEN OUT: a declared function is wrapped by a declared higher-order
+   * function and rebound to the same name at file scope.
+   *
+   *     function fib(n) ... end
+   *     function cache(f)                -- a WRAPPER FACTORY: returns a function
+   *       local c = {}
+   *       return function(x) ... end
+   *     end
+   *     fib = cache(fib)                 -- redis/deps/lua/test/fib.lua:39
+   *
+   * `@cache def fib` in Python compiles to exactly this sequence — the function
+   * object is created, then `cache` is applied to it, then the name is rebound. So
+   * the relation is a real runtime application to a DECLARATION, and the edge is
+   * `fib -> cache` (the vocabulary's direction: decorated declaration -> decorator).
+   *
+   * ## Why the discriminator is structural, and what each clause excludes
+   *
+   * MEASURED over the whole admitted population (3,255 tracked files, artifact
+   * validation/m14/measurements/lua-extended-census.json): 1,185 `X = f(X)` sites;
+   * 186 whose name is declared somewhere in the file; 3 at file scope; **1** that is
+   * a decoration. The clauses below are what separate that one from the other 1,184:
+   *
+   *   FILE SCOPE ONLY. A decorator is applied while the declaration is created, and
+   *   in Lua that is chunk scope. An in-function `X = f(X)` is a value assignment —
+   *   measured class: `value = sub(value, 2, -2)`, `payload = json_encode(payload)`.
+   *   Publishing those would attach a decoration to a local parameter.
+   *
+   *   X IS A DECLARED FUNCTION. The decorated endpoint must be a declaration this
+   *   file writes (`function X(...)`, including `local function X`). A rebinding of
+   *   a table or a scalar is not a declaration being decorated.
+   *
+   *   f IS A DECLARED WRAPPER FACTORY. `f`'s own body must RETURN a function
+   *   definition — that is the structural evidence it is a decorator and not a
+   *   transform. `cache` returns `function(x) ... end`; `sub`, `concat`,
+   *   `json_encode` return values. This clause is the whole difference between the
+   *   185 value rebindings and the 1 decoration, and a name-based filter would not
+   *   find it (the dart lane's lesson: a filter on the NAME does not separate the
+   *   construct from its impostors).
+   *
+   *   THE ARGUMENT IS THE DECORATED NAME. `f(X)` with the same identifier that is
+   *   rebound; `fib = cache(x)` decorates `x`'s value, not `fib`.
+   *
+   * ## Confidence and tier
+   *
+   * 0.95 and `usage_contextual`, NOT 1.0 and NOT `structural`. The application is a
+   * real call site and both names are written in the file; what is a CONVENTION is
+   * the READING — that a wrapper-factory application to a declaration is a
+   * decoration rather than a memoization rebinding. Same number and tier this
+   * analyzer already assigns its two other convention edges (`lua_factory_supertype`,
+   * `lua_inherited_member`), and the same reason: "a 0.95 edge must not claim
+   * `structural`" (see `addFactorySupertypeEdges`).
+   */
+  private extractDecoratorApplication(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    if (frame.inFunction) return
+    const inner = node.type === "variable_declaration" ? node.namedChild(0) : node
+    if (inner?.type !== "assignment_statement") return
+    const list = this.childOfType(inner, "variable_list")
+    const values = this.childOfType(inner, "expression_list")
+    const lhs = list?.namedChild(0)
+    const call = values?.namedChild(0)
+    if (lhs?.type !== "identifier" || call?.type !== "function_call") return
+    const callee = call.childForFieldName("name")
+    if (callee?.type !== "identifier") return
+    const args = call.childForFieldName("arguments")
+    const arg0 = args?.namedChild(0)
+    if (arg0?.type !== "identifier" || arg0.text !== lhs.text) return
+    if (callee.text === lhs.text) return
+    if (!ctx.declaredFunctions.has(lhs.text)) return
+    if (!ctx.wrapperFactories.has(callee.text)) return
+    this.addRelationship(
+      ctx,
+      lhs.text,
+      callee.text,
+      ASTEngine.RelationshipType.Decorates,
+      {
+        luaSpecific: true,
+        relationshipType: "lua_decorator_application",
+        decorator: callee.text,
+        evidenceClass: "usage_contextual",
+      },
+      call,
+      { confidence: 0.95 },
+    )
+  }
+
+  /**
+   * THE PRE-PASS for `decorates`: the file's declared function names and, of those,
+   * the ones whose body RETURNS a function (wrapper factories).
+   *
+   * Order-independent by construction, for the same reason `collectDeclaredTables`
+   * and `collectSupertypeLinks` are: a file may apply a factory declared below the
+   * site, and a relation that depends on traversal order is a fact about the
+   * traversal, not the program.
+   *
+   * `function X()` and `local function X()` both parse as `function_declaration` with
+   * an `identifier` name (verified on the pinned build), so both are declarations for
+   * this purpose. A `function M.x()` binds a FIELD — reachable only through the
+   * table and not a bare name a decoration site could rebind — and is not collected.
+   */
+  private collectDecoratorFacts(root: Node, ctx: LuaContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "function_declaration") {
+        const nm = node.childForFieldName("name")
+        if (nm?.type === "identifier") {
+          ctx.declaredFunctions.add(nm.text)
+          if (this.returnsFunctionDefinition(node)) ctx.wrapperFactories.add(nm.text)
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack.push(c) }
+    }
+  }
+
+  /**
+   * Does this function's own body RETURN a function definition, at ITS OWN level?
+   *
+   * The walk stops at a nested function body, because a return inside it belongs to
+   * that inner function. `function cache(f) ... return function(x) ... end end`
+   * answers true; `function sub(s, i) return s end` answers false; a factory whose
+   * inner wrapper itself returns a value (`return function(x) return f(x) end end`)
+   * answers true from the OUTER return, which is the one that matters.
+   */
+  private returnsFunctionDefinition(fn: Node): boolean {
+    const body = fn.childForFieldName("body")
+    if (!body) return false
+    const visit = (n: Node): boolean => {
+      if (n.type === "return_statement") {
+        // LUA-00's shape note applies here too: the expression list is a CHILD of
+        // `return_statement` in this grammar, never a field.
+        const list = this.childOfType(n, "expression_list")
+        const first = list?.namedChild(0) ?? n.namedChild(0)
+        if (first && (first.type === "function_definition" || first.type === "function_declaration")) return true
+        return false
+      }
+      if (n.type === "function_definition" || n.type === "function_declaration") return false
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && visit(c)) return true }
+      return false
+    }
+    for (let i = 0; i < body.namedChildCount; i++) { const c = body.namedChild(i); if (c && visit(c)) return true }
+    return false
   }
 
   private extractExport(node: Node, frame: LuaFrame, ctx: LuaContext): void {
