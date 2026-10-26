@@ -52,6 +52,22 @@ function collapseWhitespace(text: string): string {
   return out
 }
 
+/**
+ * THE PART'S MODULE SYMBOL — the file STEM of a specifier, without directories or extension.
+ *
+ * `"util/Service.h"` ⇒ `Service`. This is the name a C translation unit's module is conventionally
+ * addressed by, and it is SYMBOL-SHAPED, so the arbiter can bind it when the stem names exactly one
+ * declaration in the project. The PATH remains in the row's metadata as `partPath`: the path is
+ * evidence, the stem is the target. Pure string scan — this file's no-regex contract.
+ */
+function cPartSymbol(specifier: string): string {
+  const slash = specifier.lastIndexOf("/")
+  const base = slash >= 0 ? specifier.slice(slash + 1) : specifier
+  const dot = base.lastIndexOf(".")
+  const stem = dot > 0 ? base.slice(0, dot) : base
+  return stem.trim()
+}
+
 // Strip `<`, `>`, and `"` characters from an include-path node text
 // (`<stddef.h>` → `stddef.h`, `"CoreApi.h"` → `CoreApi.h`). Pure-String
 // scan — replaces the legacy `/[<>"']/g` regex used by getIncludePath and
@@ -2892,22 +2908,41 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // relationship KIND now says what it is. `module` and `fileLevel`
             // let the store name the importing file on a row whose source is
             // file-scope (see parallel-indexer `importerExternal`).
+            // PART_OF vs IMPORTS, BY THE WRITTEN FORM. A QUOTED `#include "x.h"` is the
+            // translation unit's OWN fragment: the preprocessor splices the header's text into
+            // this unit, so the included file shares this unit's SINGLE scope — which is the
+            // vocabulary contract's part_of ("a part shares the library's single scope"). An
+            // ANGLE include `<x.h>` is another module's interface, and that stays `imports`.
+            //
+            // THE TARGET IS THE PART'S MODULE SYMBOL, NOT THE PATH. MEASURED on the cpp lane
+            // (the same construct, one grammar apart): emitting the PATH gave 0 resolved of
+            // 4,612 rows, because the arbiter resolves TARGET STRINGS AGAINST SYMBOL NAMES and
+            // has no space for a path. The contract permits either half ("the part's file or its
+            // module symbol"); the symbol is the only one that can bind. `"util/Service.h"` ⇒
+            // `Service`, and the path stays in metadata (`partPath`) so the file identity is not
+            // lost: the path is evidence, the stem is the target.
+            const isQuotedPart = !isSystemInclude
             relationships.push({
               source: scopeManager.getRelationshipSource(),
-              target: includePath,
-              type: ASTEngine.RelationshipType.Imports,
+              target: isQuotedPart ? cPartSymbol(includePath) : includePath,
+              type: isQuotedPart ? ASTEngine.RelationshipType.PartOf : ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
               // M59.A7 (#825): the include directive is the source construct and
               // its written name is the path token — take THAT node's line, not
               // the directive's (multi-line directives put the path last).
               line_number: this.nodeLine(rawPathNode ?? node),
               metadata: {
-                relationshipType: "include_dependency",
+                relationshipType: isQuotedPart ? "include_part_of" : "include_dependency",
                 isSystem: isSystemInclude,
                 isSystemInclude,
                 isImport: true,
                 module: includePath,
                 fileLevel: true,
+                // MANDATORY ON EVERY part_of ROW (the vocabulary contract): this unit is the
+                // LIBRARY — it carries the directive naming its own part.
+                ...(isQuotedPart
+                  ? { partRole: "library", partPath: includePath, partSymbol: cPartSymbol(includePath), isQuotedInclude: true }
+                  : {}),
               },
             })
           }
