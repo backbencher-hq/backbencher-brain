@@ -111,10 +111,16 @@ export const PERL_BUILTINS = new Set([
  *                        the same-named method (in-file or companion index)
  *   first-parent-guess   the base does not declare it anywhere visible; the edge
  *                        is the deterministic first-parent guess
- *   code-reference      the target is a sub named by a CODE REFERENCE (`\&name`),
- *                        so the name is written and bound to the code slot, but
- *                        whether the slot is ever invoked as a plain call is not
- *                        decided at this edge
+ *   code-reference      the target is a sub named as a CODE SLOT — `\&name`, or
+ *                        a `&`-prefixed callee with NO argument list such as
+ *                        `defined &builtin::is_bool`. The name is written and
+ *                        bound to the slot, but nothing is invoked: a `calls`
+ *                        edge would say a sub ran.
+ *   qualified-variable-read  the target is another package's DECLARED VARIABLE
+ *                        read as a value (`$Pkg::name`, `@Pkg::name`,
+ *                        `%Pkg::name`). The written name is the identity — two
+ *                        packages may declare the same leaf, so the target keeps
+ *                        its full qualification.
  *   type-query-literal  the target is a class / role / method named as a LITERAL
  *                        inside a runtime query (`->isa('C')`, `->DOES('R')`,
  *                        `->can('m')`), so the name is written and nothing is
@@ -144,6 +150,7 @@ export const PERL_REASON_CODES = {
   firstParentGuess: "first-parent-guess",
   magicTokenInvocant: "magic-token-invocant",
   codeReference: "code-reference",
+  qualifiedVariableRead: "qualified-variable-read",
   typeQueryLiteral: "type-query-literal",
 } as const
 
@@ -753,7 +760,33 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       //                               a DEFINEDNESS TEST on a code slot.
       // Suppressing on the `&` alone cost 323 truth rows across perl5, so the
       // narrower rule is the one that is actually right.
-      if (target.startsWith("&") && !hasArgumentSyntax(callNode ?? calleeNode)) return
+      //
+      // A REFERENCE IS NOT NOTHING, THOUGH, AND THE FIRST VERSION OF THIS RULE
+      // STOPPED AT THE SUPPRESSION. The source NAMES a code slot as a value —
+      // the fact `uses` carries everywhere else — so the edge belongs here and
+      // not in no label at all. `defined &builtin::is_bool` is perl's most
+      // idiomatic conditional probe and it was invisible: the construct has no
+      // `refgen_expression` in it, the call branch refused it (correctly), and
+      // nothing else looked. The panic cases are the same construct: `new
+      // POSIX::SigSet &SIGINT` passes a handler slot as an argument.
+      //
+      // The target is the LEAF with the written package in `metadata.qualifiedAs`
+      // — the rule the `\&name` branch has applied since its first version, and
+      // its reason is measured: `\&Pkg::helper` and `\&helper` are ONE edge to
+      // one sub, while the corpus writes 3,618 reference sites whose target is
+      // COMPUTED (`\&$cb`, `\&{"Pkg::sub"}`) and carries no name at all, so a
+      // target that trusted the text would have to fabricate one for those.
+      if (target.startsWith("&") && !hasArgumentSyntax(callNode ?? calleeNode)) {
+        const source = state.functionName || state.ownerName || state.packageName || "global"
+        const leaf = this.leafName(named)
+        // Same self-reference refusal as the `\&name` branch: `defined &run`
+        // inside `sub run` is true of the source and useless in a graph.
+        if (leaf && leaf !== source) {
+          const qualifier = named.includes("::") ? named.slice(0, named.lastIndexOf("::")) : undefined
+          addRelationship(source, leaf, ASTEngine.RelationshipType.Uses, { reasonCode: REASON.codeReference, ...(qualifier ? { qualifiedAs: named, qualifier } : {}) }, 0.9, calleeNode)
+        }
+        return
+      }
       addRelationship(
         state.functionName || state.ownerName || state.packageName || "global",
         this.leafName(named),
@@ -972,6 +1005,39 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // it is in the metadata where a reader can ask for it.
           const qualifier = name.includes("::") ? name.slice(0, name.lastIndexOf("::")) : undefined
           addRelationship(source, leaf, ASTEngine.RelationshipType.Uses, { reasonCode: REASON.codeReference, ...(qualifier ? { qualifiedAs: name, qualifier } : {}) }, 0.9, varname)
+          break
+        }
+
+        case "scalar":
+        case "array":
+        case "hash": {
+          // `$Pkg::name` / `@Pkg::name` / `%Pkg::name` — a READ of another
+          // package's declared variable, written as a name. Perl has no field
+          // syntax, so this is the language's member read, and a variable read
+          // is exactly `uses`'s contract: a name the code READS and does not
+          // invoke. (`$self`, a lexical, and every unqualified read stay silent:
+          // the label is about a name this file QUALIFIES, because only a
+          // qualified name identifies a declaration another file owns.)
+          //
+          // THE TARGET KEEPS ITS FULL QUALIFICATION, and that is the opposite of
+          // the code-slot rows on purpose. A code slot names ONE sub — `\&helper`
+          // and `\&Pkg::helper` are the same sub, so the leaf is the identity and
+          // the package rides in metadata. A package VARIABLE has no such
+          // per-sub binding: `$Foo::LIMIT` and `$Bar::LIMIT` are two different
+          // globals, and folding both to `LIMIT` is the leaf-collapse that makes
+          // one package's counter look like the other's.
+          //
+          // REFUSED, measured: an unqualified read (`$TIMEOUT`) is not this
+          // construct; and a COMPUTED package half (`$Config{ $key }::SSL_ERROR`)
+          // does not parse as this shape at all — the grammar produces a
+          // hash_element_expression followed by an ERROR node, so nothing written
+          // can be resolved and no target is invented.
+          const varname = this.findChildByType(node, "varname")
+          const qualified = varname?.text || ""
+          if (!qualified || !qualified.includes("::")) break
+          if (!this.isWrittenCalleeName(qualified)) break
+          const readSource = state.functionName || state.ownerName || state.packageName || "global"
+          addRelationship(readSource, qualified, ASTEngine.RelationshipType.Uses, { reasonCode: REASON.qualifiedVariableRead }, 0.9, varname)
           break
         }
 
