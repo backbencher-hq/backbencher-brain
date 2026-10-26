@@ -6,9 +6,64 @@
   "_lane": "R_LANG (firing-check name) / r (engine language id), corpus ggplot2 (360 .R files per script/m14/firing-check.mjs LANES)",
   "coverage": {
     "_why_declared_now": "DECLARED 2026-10-09 by this lane, on a WHOLE-CORPUS measurement that declares its own `degraded` count, per HANDOFF §5.1/§7.1. It replaces the firing-log-only reading `r 8/10 from=firing-log` the board printed while coverageDeclared=false. `implemented` is ALL TEN types because all ten are emitted over THIS LANE'S CORPUS (2,184 .R files, 16 repositories — docs/analyzers/r.md's declared corpus, sha256 953c0314...). The two types the firing instrument reads SILENT are substantiated PER TYPE in `_implemented_measured` below — the fleet's prescribed route for a silent-but-declared type (bash's exports/overrides, julia's overrides, hcl's calls/overrides have the same shape).",
-    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "mixes_in"],
     "excluded": [],
     "corpusUnexercised": [],
+    "_extended_types_measured": {
+      "_unit": "THE CONSTRUCT CENSUS over the SAME admitted population the gate measures: `admitted files [0,2184) of 2184`, 16 repositories, 0 excluded, 0 over the 1 MiB engine cap, corpus file-set sha256 cb4f14c08035e85c3c616b28d641fc9350d0dde012b77a8facb56d778faec4e0; production parseTree, 2184/2184 parsed, 0 failures (2 files needed a retry of the engine's known intermittent `memory access out of bounds` wasm trap — the attempt budget is declared in the artifact). THE ADMISSION RULE IS THE GATE'S OWN PREDICATE (`script/m14/incoming-gate.ts:367`): the router table's `.r` spelling, plus a bare basename equal to it only when the router's detection names this lane, at the 1 MiB engine cap. A content-based walk is a DIFFERENT population (the c lane measured 16,854 vs 20,824) and every ruling measured on the wrong set is void. Instrument: `validation/m14/fixtures/r/census-extended-constructs.ts`; artifact: `validation/m14/fixtures/r/measurements/r-extended-constructs.txt`.",
+      "mixes_in": {
+        "state": "IMPLEMENTED",
+        "rung": "R3 — expressed on node types the pinned build already has (`call`, `argument`, `string`, `identifier`); NO grammar change. The construct is a call argument, so the ladder's R1/R2 rungs are not needed and not claimed.",
+        "construct": "R's composition clause `contains=` on BOTH class spellings — `setClass` (S4) and `setRefClass` (R5) — when the clause is LIST-SHAPED (`contains = c(\"A\", \"B\")`, two or more entries). Source = the composing class, target = each composed class's SYMBOL (bare name; a `pkg::Class` qualifier is dropped, because a symbol spelled `pkg::Class` binds to nothing). No `partRole`: that key is mandatory on `part_of` rows only, and a wrong marker is worse than a missing one. Emitted with `relationshipSubType` `s4_composes`/`r5_composes`.",
+        "why_the_split": "The one-class shape is a SUPERtype and stays `extends`: R's own `is()`/`extends()` answer TRUE for a single named `contains=`, and R6's `inherit=` and S7's `parent=` are single-base conformance too. Relabelling those would publish a false edge. What makes the LIST shape `mixes_in` is the fleet's own definition (`src/ast/types.ts:156-160`: 'no single base and the `with` list is not an inheritance clause') and the Scala `extends A with B, C` precedent that labels the later positions `mixes_in`.",
+        "caveat": "STATED, NOT HIDDEN: R's `contains=` also makes `is()` TRUE for the composed classes, so the list-shape label is the fleet's composition-clause reading, NOT a claim that no conformance exists. A single-base clause is never relabelled.",
+        "emitted": {
+          "edges": 206,
+          "files": 5,
+          "subtypes": { "mixes_in:s4_composes": 206 },
+          "source": "validation/m14/fixtures/r/measurements/r-emission-census.txt (production parseFile over the same gate-admitted 2,184 files; 2,184 parsed, 1 degraded r-testthat/R/evaluate-promise.R [intermittent wasm trap], 0 failures) AND script/m14/incoming-gate.ts r 0 -> TABLE 1 `mixes_in 206 edges / 176 resolved / 30 unresolved` (artifact validation/m14/fixtures/r/measurements/r-gate-mixesin.txt). THE TWO INSTRUMENTS AGREE ON 206 EXACTLY.",
+          "the_label_moved_no_edge_was_lost": "the same whole-population gate run reads `extends 145` where the pre-change run read 351, and `mixes_in 206` where it read 0; TOTAL is unchanged at 80,101. 351 = 145 + 206 exactly, so the change is a relabel of the list-shaped `contains=` half, not a new or deleted relation.",
+          "reconciliation": "84 construct sites are list-shaped (83 S4 + 1 R5) and they produce 206 edges in 5 files — a site names two or more classes, so edges exceed sites by construction. The ONE R5 list-shape site does not publish, and that is stated rather than silently dropped: it is `setRefClass(Class, contains = c(contains, \"RcppClass\"), ...)` inside a function in r-Rcpp/R/RcppClass.R:65, where the composed class is named by a RUNTIME VARIABLE and the class itself is bound to `value`, so there is no named source symbol for an edge to leave."
+        },
+        "population_counts": {
+          "setClass_contains_sites": 151,
+          "setClass_contains_files": 15,
+          "setClass_contains_single_base_sites": 68,
+          "setClass_contains_list_shape_sites": 83,
+          "setClass_contains_list_shape_files": 5,
+          "setRefClass_contains_sites": 4,
+          "setRefClass_contains_files": 2,
+          "setRefClass_contains_single_base_sites": 3,
+          "setRefClass_contains_list_shape_sites": 1,
+          "R6Class_inherit_sites_STAYS_EXTENDS": 108,
+          "R6Class_inherit_files_STAYS_EXTENDS": 32,
+          "R6Class_inherit_naming_one_class": 108,
+          "R6Class_include_sites": 0,
+          "S7_new_class_parent_sites_STAYS_EXTENDS": 49,
+          "S7_new_class_parent_files_STAYS_EXTENDS": 20,
+          "setIs_sites": 0
+        },
+        "falsifier": {
+          "run": "the census's `setClass(contains=)`/`setRefClass(contains=)` list-shape counters, and the fixture r/F23-mixes-in-split (mixes_in fire on both spellings; forbid rows that an `R6Class(inherit=)`, a one-class `contains=` or an S7 `parent=` ever carries mixes_in)",
+          "wouldFail": "a list-shape `contains=` that names ONE composable class (the split's boundary), or an `inherit=`/one-class `contains=` that publishes mixes_in (the widening this split exists to prevent)"
+        }
+      },
+      "decorates": {
+        "state": "PENDING — measured, not yet implemented",
+        "measured_construct_sites": { "roxygen_comment_sites": 59334, "roxygen_files": 779, "export_tag_sites": 3695, "export_tag_files": 718, "import_tag_sites": 75, "import_tag_files": 31 },
+        "reading": "roxygen `#'` forms are COMMENTS a tool reads; the honest class is likely ONTOLOGICAL (the same class the csharp lane set for annotations), with the falsifier naming a tool-invoked annotation production parsed as a NODE. Sites are counted so the ruling carries a number."
+      },
+      "part_of": {
+        "state": "PENDING — measured, not yet implemented",
+        "measured_construct_sites": { "source_calls": 36, "source_files": 26, "sys_source_calls": 2, "sys_source_files": 1, "local_false": 0, "local_globalenv": 1, "local_true_or_default": 32, "no_local_given": 28, "local_other": 5 },
+        "reading": "`source()`/`sys.source()` are RUNTIME CALLS, not a parse-level inclusion directive; the default (`local=TRUE`) evaluates the included file in a NEW environment, which fails the contract's 'shares the library's single scope'. The ladder is walked before any ruling: a CALL is not a grammar construct, so the honest class is expected to be ONTOLOGICAL (or grammar-absence with a parse-level directive as the falsifier), never 'zero-sites' — the sites are counted above."
+      },
+      "renders": {
+        "state": "PENDING — measured, not yet implemented",
+        "measured_construct_sites": { "Rmd": 0, "Rnw": 0, "rmd_lower": 0, "rnw_lower": 0 },
+        "reading": "`.Rmd`/`.Rnw` are knitr/rmarkdown spellings, and the ROUTER'S ONE TABLE gives this lane `.r` only, so a `.Rmd` file is not this lane's file; the corpus tree carries zero of all four spellings. No component model exists in R to host the construct."
+      }
+    },
     "_implemented_measured": {
       "_unit": "WHOLE R corpus, no stride: 2,184 admitted .R files across the 16 git repositories rooted at $HOME/fixtures/repositories, production parseFile (4 workers), 0 files excluded; corpus file-set sha256 953c03149397dc86ba1b64e1d4b91d01aa5fc11b5b10d59610e26f670d6261d9; degraded (regex fallback) 1 (r-testthat/R/edition.R, a real [BB-PARSE-ERR] trap: `memory access out of bounds`), parse failures 0, [BB-PARSE-ERR] traps 1. THE COUNTS BELOW ARE UNAFFECTED BY THAT ONE DEGRADED FILE: edition.R emits neither `overrides` nor `instantiates` -- it is absent from the per-file account in validation/m14/fixtures/r/probe-overrides-edge-accounting.txt -- so a regex fallback on it cannot move either count. THIS LINE READ `degraded 0, traps 0` IN THE TWO EARLIER RUNS of the same instrument on the same corpus digest (20:03 load 12.71, and the 22:15 run), and trapped on the third at load 4.68 -- the LOWEST load of the three, which is why the lane records the trap as intermittent and NOT load-correlated. Artifact: validation/m14/fixtures/r/measurements/r-census-overrides-instantiates.current.txt",
       "calls": { "edges": 48233, "files": 1294 },

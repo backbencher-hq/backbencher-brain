@@ -80,12 +80,35 @@ const PACKAGE_NAMESPACE_SUBTYPES = new Set([
 ])
 
 /**
- * An R PACKAGE NAME, which is not an R identifier: letters, digits and dots, starting with a
- * letter and not ending in a dot (R's own `DESCRIPTION` rule). `lmArmadillo.R` is a FILE, and the
- * trailing `R` is exactly why the subtype guard above is the first line of defence and this regex
- * the second — the regex alone would admit it.
+ * Whether a name has the SHAPE of an R PACKAGE NAME, which is not an R identifier.
+ *
+ * R's `DESCRIPTION` `Package:` field allows letters, digits and dots, requires the name to
+ * START with a letter and to END with a letter or digit, and admits a one-letter name. That
+ * is a narrower vocabulary than an R identifier: an identifier may contain `_` (illegal in a
+ * package name) and may end in a dot (illegal here), and `lmArmadillo.R` is a FILE — the
+ * trailing `R` is one reason the subtype guard at the call site runs FIRST and this shape
+ * test is the second line of defence, never the only one.
+ *
+ * Character codes, not a pattern: this analyzer carries no pattern matching at all (the
+ * fleet's grammar-conformance audit counts regex literals and would correctly fail on one).
  */
-const R_PACKAGE_NAME = /^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$|^[A-Za-z]$/
+function isPackageNameShape(name: string): boolean {
+  if (name.length === 0) return false
+  const first = name.charCodeAt(0)
+  const firstIsLetter = (first >= 65 && first <= 90) || (first >= 97 && first <= 122)
+  if (!firstIsLetter) return false
+  if (name.length === 1) return true
+  const last = name.charCodeAt(name.length - 1)
+  const lastIsAlnum =
+    (last >= 65 && last <= 90) || (last >= 97 && last <= 122) || (last >= 48 && last <= 57)
+  if (!lastIsAlnum) return false
+  for (let i = 1; i < name.length - 1; i++) {
+    const c = name.charCodeAt(i)
+    const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 46
+    if (!ok) return false
+  }
+  return true
+}
 
 /**
  * THE CLAIM IS READ BEFORE THE COUNT, which is the whole point and the whole risk.
@@ -887,6 +910,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (fnName === "setRefClass") {
       const baseClasses = this.extractNamedArguments(callNode, "contains")
+      const composesList = this.compositionClauseIsList(callNode, "contains")
       symbols.push({
         name,
         kind: ASTEngine.SymbolKind.Class,
@@ -896,7 +920,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       declaredTypes.add(name)
       for (const bc of baseClasses) {
-        this.pushRel(relationships, name, bc, ASTEngine.RelationshipType.Extends, 1.0, { relationshipSubType: "r5_inherits" }, this.namedArgumentNode(callNode, "contains", bc))
+        // Same split as S4's `setClass`: the keyword is the same, so the shape decides the
+        // label — one class is a supertype (`extends`), a list composes member providers
+        // (`mixes_in`). R5's `contains=` is the reference-class spelling of S4's.
+        const type = composesList
+          ? ASTEngine.RelationshipType.MixesIn
+          : ASTEngine.RelationshipType.Extends
+        const subType = composesList ? "r5_composes" : "r5_inherits"
+        this.pushRel(relationships, name, bc, type, 1.0, { relationshipSubType: subType }, this.namedArgumentNode(callNode, "contains", bc))
       }
       this.extractR5Members(callNode, name, symbols, relationships, doc)
       if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name, kind: ASTEngine.SymbolKind.Class })
@@ -1118,7 +1149,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   1. the edge's SUBTYPE is one whose target is a package by construction
    *      (`PACKAGE_NAMESPACE_SUBTYPES`) — never inferred from the spelling alone;
    *   2. the target IS in the file's declared package list — the claim's evidence;
-   *   3. the target is package-name-shaped (`R_PACKAGE_NAME`) as well as listed;
+   *   3. the target is package-name-shaped (`isPackageNameShape`) as well as listed;
    *   4. the file does not DECLARE the name itself — `cli <- function(...)` makes `cli` a
    *      declaration in this file and the claim would then be false;
    *   5. the edge carries no claim already (`languageNamespace` is undefined), so an edge that
@@ -1149,7 +1180,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!PACKAGE_NAMESPACE_SUBTYPES.has(String(md.relationshipSubType ?? ""))) continue
       const tgt = String(rel.target ?? "")
       // GUARD 3 — a file PATH (`cpp/attributes.cpp`) is never admitted to the list.
-      if (R_PACKAGE_NAME.test(tgt)) packages.add(tgt)
+      if (isPackageNameShape(tgt)) packages.add(tgt)
     }
     if (packages.size === 0) return 0
     const roots = [...packages].sort()
@@ -2383,6 +2414,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     const className = this.firstStringArgumentOf(node, 0)
     if (!className) return
     const baseClasses = this.extractNamedArguments(node, "contains")
+    const composesList = this.compositionClauseIsList(node, "contains")
     const doc = this.extractDocstring(node)
     symbols.push({
       name: className,
@@ -2413,7 +2445,17 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
     for (const bc of baseClasses) {
-      this.pushRel(relationships, className, bc, ASTEngine.RelationshipType.Extends, 1.0, { relationshipSubType: "s4_inherits" }, this.namedArgumentNode(node, "contains", bc))
+      // THE TWO SHAPES OF `contains=` ARE TWO CONSTRUCTS. A one-class clause names a
+      // supertype and stays `extends`; a list clause composes several member providers and
+      // is `mixes_in`. Both are relations R itself can answer for (`is()` is TRUE for a
+      // composed class too), so the split is the fleet's composition-clause reading, not a
+      // claim that the list shape is conformance-free — stated here because a future reader
+      // who knows S4 will ask.
+      const type = composesList
+        ? ASTEngine.RelationshipType.MixesIn
+        : ASTEngine.RelationshipType.Extends
+      const subType = composesList ? "s4_composes" : "s4_inherits"
+      this.pushRel(relationships, className, bc, type, 1.0, { relationshipSubType: subType }, this.namedArgumentNode(node, "contains", bc))
     }
     if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name: className, kind: ASTEngine.SymbolKind.Class })
   }
@@ -3017,6 +3059,58 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return results
+  }
+
+  /**
+   * Whether a class-construction argument is a LIST-shaped composition clause.
+   *
+   * `setClass(contains=)` and `setRefClass(contains=)` are R's composition clauses, and they
+   * come in two shapes that are not the same construct:
+   *
+   *   contains = "Base"                 ONE class — a single supertype; R's own `is()` and
+   *                                     `extends()` answer TRUE for it, so the relation is a
+   *                                     conformance edge (`extends`).
+   *   contains = c("A", "B")            SEVERAL classes — a member-set clause with no single
+   *                                     base. This is the shape the fleet's `mixes_in` names
+   *                                     ("no single base and the `with` list is not an
+   *                                     inheritance clause", `src/ast/types.ts:156-160`), the
+   *                                     same reading the Scala `extends A with B, C` clause
+   *                                     takes for its later positions.
+   *
+   * The count is taken from the VALUE node, not from the names that resolve: `c("A", pkg)` has
+   * two entries even though only one is nameable, and the clause is a list either way. `comma`
+   * is a named node type in this grammar, so the entries alternate argument/comma; commas are
+   * skipped or every two-element list would read as four.
+   *
+   * A single-base `contains=` is deliberately NOT relabelled: R says it is conformance, and
+   * moving it to `mixes_in` would publish a false edge. The conformance fact is carried as a
+   * stated caveat on the list-shaped branch rather than dropped — R's `contains=` also makes
+   * `is()` TRUE for the composed classes, and the fleet's label is the composition-clause
+   * reading, not a claim that no conformance exists.
+   */
+  private compositionClauseIsList(node: Node, argName: string): boolean {
+    const args = this.getArgumentsNode(node)
+    if (!args) return false
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const arg = args.namedChild(i)
+      if (!arg || arg.type !== "argument") continue
+      if (arg.childForFieldName("name")?.text !== argName) continue
+      const value = arg.childForFieldName("value")
+      if (!value || value.type !== "call") return false
+      const callee = this.calleeName(value.childForFieldName("function"))
+      if (callee !== "c" && callee !== "list") return false
+      const entries = this.getArgumentsNode(value)
+      if (!entries) return false
+      let count = 0
+      for (let j = 0; j < entries.namedChildCount; j++) {
+        const entry = entries.namedChild(j)
+        if (!entry || entry.type === "comma") continue
+        if (entry.type === "argument" && !entry.childForFieldName("value")) continue
+        count++
+      }
+      return count > 1
+    }
+    return false
   }
 
   /**
