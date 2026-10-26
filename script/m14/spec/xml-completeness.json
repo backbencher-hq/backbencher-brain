@@ -381,7 +381,8 @@
     "imports",
     "calls",
     "extends",
-    "overrides"
+    "overrides",
+    "part_of"
   ],
   "ontologyRelationshipsRuled": [
     "uses",
@@ -466,6 +467,7 @@
       "extends",
       "imports",
       "overrides",
+      "part_of",
       "references",
       "uses"
     ],
@@ -500,6 +502,13 @@
         "files": 11567,
         "_why": "IMPLEMENTED 2026-10-16 AND FIRING: 21,414 edges over 11,567 of 11,611 admitted files. The construct is the NAMESPACE-PREFIX USE of an in-document `xmlns:` declaration - the analyzer already publishes that declaration as a symbol (name = the prefix, kind = namespace), so the use resolves to a real in-document declaration. Emission sites: element half at real-xml-analyzer.ts:845-881, attribute half at :2418-2436. THREE REFUSALS HOLD BY CONSTRUCTION: an undeclared prefix, the spec-bound xml/xmlns prefixes, and the declaration attribute itself. XPATH BUILT-INS WERE REFUSED, NOT SKIPPED - count() and substring() are declared nowhere in the file, the project or any corpus repo, so every edge would be dangling; implementing that would have made the type look implemented while pouring dangling edges in. The edit is PURELY ADDITIVE (+56 lines, 0 deletions) and every pre-existing type is BYTE-IDENTICAL to the pre-change run: calls 438, references 11,108, contains 189,310, imports 473, extends 1,429, overrides 3. Fixture uses-namespace-prefix with two forbid controls (an undeclared prefix, and the spec-bound xml:lang); xml fixtures 31/0 -> 32/0. Evidence: validation/m14/verification/XML-USES-GAP.md",
         "_unit": "validation/m14/verification/XML-USES-GAP.md"
+      },
+      "part_of": {
+        "edges": 5,
+        "occurrences": 6,
+        "files": 3,
+        "_why": "IMPLEMENTED 2026-10-25 AND FIRING, at rung R3 with NO grammar change: XInclude is a NAMESPACED ELEMENT and the pinned grammar already parses it as an ordinary `element` with an `Attribute` href, so R1/R2 would buy nothing. THE CONSTRUCT: `<xi:include href=\"...\"/>` is REPLACED by the named document's content at that point (XInclude 1.0 4.1), so the included document is a FRAGMENT of the including one - it shares the including document's single scope, contributes no module, and cannot be resolved as a separate unit once included: the `part_of` contract in src/ast/types.ts, and the same construct class as the fleet's five implemented rows (cpp #include \"...\", fsharp #load, php include/require, erlang -include, typescript /// <reference path>). THE TARGET IS A SYMBOL, NOT A PATH - the measured cpp ruling: a path target resolved 0 of 4,612 rows (100% unresolved) because the arbiter resolves target strings against SYMBOL NAMES; the target is the included document's module STEM (basename, no directory, no extension), the written href rides in metadata.partPath. `partRole` is mandatory and is \"library\" (this document carries the directive, like erlang -include and fsharp #load); XML has no `part of` spelling so it never produces the \"part\" half. THE DIRECTION IS THE DIRECTIVE'S OWN: source is the file carrying the directive - the DOCUMENT ELEMENT, because XML publishes no file-level symbol - target is what it names. parse=\"text\" IS STILL part_of (decided): a text inclusion splices bytes as character data instead of element content, but another file's content still becomes part of THIS document and contributes no module; recorded as metadata.parseMode so the two are never silently mixed. A REMOTE href is REFUSED on the same rule imports uses (no file claim outside the project can be confirmed). MEASURED over the WHOLE admitted population (11,593 git-tracked files <= 512 KiB with a routed extension, 202 repos, root .corpus): the construct screen found 16 candidate files, all parsed; 6 XInclude SITES in 3 files through parseFile, collapsing to 5 edges because two identical hrefs in configuration_xinclude.xml share one (source,type,target) key (occurrences 6). HREF CLASSES, the wall this row carries: 5 of 6 name an ADMITTED file (libxslt/tests/xinclude/x2.xml, phpunit/tests/_files/configuration.xml x2, configuration_codecoverage.xml, configuration_logging.xml); 1 names something ABSENT (otp/lib/odbc/doc/src/specs.xml references ../specs/specs_odbc.xml, which is not in this corpus); 0 exist-but-not-admitted; 0 remote; 0 empty. In the same files 6 sites are parse=\"xml\" because the corpus's ONLY parse=\"text\" site (libxslt/doc/tutorial2/libxslt_pipes.xml:655) sits in the 2003 draft namespace and is a DocBook `<programlisting>` DISPLAYING the directive as example text - carried as a NEAR MISS, not an emission. OTHER NEAR MISSES MEASURED, not claimed absent: xsl:include 89 sites / 11 files (XSLT 1.0 2.6.1 splices an included stylesheet - the SAME contract, NOT implemented this turn), xsl:import (module import with precedence - belongs to imports), RELAX NG `<include href>` (schema merge), the entity channel (`<!ENTITY % n SYSTEM \"file.dtd\">` + `%n;`; its ExternalID already emits imports). Fixture xinclude-part-of pins both sides: two part_of rows (one parse=\"xml\" with full metadata, one parse=\"text\") and THREE forbids - a plain `<a href>`, an `xsi:schemaLocation` (a reference/import, not an inclusion), and an `<include>` outside the XInclude namespace. Cross-check: the census tree-walk and the analyzer's own occurrence sum AGREE at 6. Instruments: validation/m14/fixtures/xml/xinclude-census.mts (whole-population census, JSON printed) and the fixture suite (xml 34/0).",
+        "_instrument": "validation/m14/fixtures/xml/xinclude-census.mts; BB_CORPUS_ROOT=$PWD/.corpus npx tsx validation/m14/fixtures/xml/xinclude-census.mts - the census is a CONSTRUCT census (route + parse of candidates), not the incoming-gate arm; the whole-population edge/closure arm is still owed, and the declaration is still to be DERIVED from it."
       }
     },
     "corpusUnexercised": [],

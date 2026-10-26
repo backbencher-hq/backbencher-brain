@@ -354,7 +354,26 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the same claim an XSLT named-template call makes.
     entity_reference: "reference_qualified",
     xslt_named_template_reference: "reference_qualified",
+    // An XInclude directive. `import_based` is the tier for a FILE inclusion
+    // directive (the same tier cpp's `#include`, fsharp's `#load` and erlang's
+    // `-include` carry): the clause names another FILE, and the fact
+    // needs nothing outside the file to be read — but it is not a symbol
+    // reference, because the target is a file, not a declaration.
+    xinclude_part: "import_based",
   }
+
+  /**
+   * THE XINCLUDE NAMESPACE — the W3C XML Inclusions vocabulary (XInclude 1.0,
+   * https://www.w3.org/TR/xinclude/).
+   *
+   * This is the only XML construct that says "splice the named document's content
+   * INTO this one at this point". It is identified by NAMESPACE, never by the
+   * written prefix: `xi` is a convention, not syntax, and a document may bind the
+   * vocabulary to any prefix or to the default namespace. The analyzer already
+   * resolves the element's effective namespace from the document's own `xmlns`
+   * declarations (`rememberNamespaces`), so the test is on that URI.
+   */
+  private static readonly XINCLUDE_NAMESPACE = "http://www.w3.org/2001/XInclude"
 
   private static readonly BUILTIN_NAMESPACE_URIS: ReadonlySet<string> = new Set([
     "http://www.w3.org/2001/XMLSchema",
@@ -673,6 +692,22 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let errorNodes = 0
     let missingNodes = 0
+
+    /**
+     * THE DOCUMENT ELEMENT'S SYMBOL NAME — the file's own identity in the graph.
+     *
+     * `part_of`'s contract says the SOURCE is "the file carrying the directive".
+     * XML has no file-level symbol, so the document's ROOT ELEMENT is the closest
+     * thing it does have: it is the one symbol that stands for the whole document,
+     * and every other element is reached through it. The worklist guarantees it is
+     * visited before any descendant (a child is only pushed when its parent is
+     * popped), so this is set by the time an inclusion directive is processed.
+     *
+     * Only an element with no enclosing element can be the document element, which
+     * is why the assignment is guarded on `ownerName === undefined` rather than on
+     * "is first": the prolog's declarations are not elements at all.
+     */
+    let documentElementName: string | undefined
 
     const publish = (symbol: ASTEngine.UniversalSymbol, identity: string) => {
       symbols.push(symbol)
@@ -1020,6 +1055,93 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           publish(elementSymbol, ownerName ? `${ownerName}\u0000${symbolName}` : symbolName)
           declaredNames.add(symbolName)
+          // The document element is the file's own symbol — see `documentElementName`.
+          if (documentElementName === undefined && ownerName === undefined) documentElementName = symbolName
+
+          // ── XINCLUDE: the ONE textual-inclusion construct in XML ─────────────
+          //
+          // `<xi:include href="x2.xml"/>` replaces ITSELF with the content of the
+          // named document (XInclude 1.0 §4.1: "the inclusion is performed by
+          // replacing the include element with the included content"). The
+          // included document is therefore a FRAGMENT of the including one: it
+          // shares the including document's single scope, contributes no module of
+          // its own, and cannot be resolved as a separate unit once included.
+          // That is the `part_of` contract in `src/ast/types.ts` word for word, and
+          // it is the same construct class as cpp's `#include "…"`, fsharp's
+          // `#load`, php's `include`/`require`, erlang's `-include` and
+          // typescript's `/// <reference path>` — every one a directive that
+          // splices a FILE into this unit.
+          //
+          // RUNG R3, NO GRAMMAR CHANGE: XInclude is a NAMESPACED ELEMENT, so the
+          // pinned grammar already parses it as an ordinary `element` with an
+          // `Attribute` href — the same nodes every other element uses. Nothing
+          // about the construct is invisible to the parser (unlike, say, a
+          // directive the grammar lexes as a comment), so the ladder stops here:
+          // R1/R2 would buy nothing.
+          //
+          // THE ATTRIBUTE IS `href`, and only `href`: XInclude 1.0 §5.1 gives the
+          // include element four attributes — `href` (the target), `parse`
+          // (xml|text), `xpointer` (a FRAGMENT selector within the target), and
+          // `encoding` (for text). `xpointer` selects a PART OF the included file;
+          // it is not the file, so it is not a second target and is not read here.
+          //
+          // `parse="text"`: DECIDED — still `part_of`. A text inclusion splices the
+          // target's BYTES as character data instead of its element content, but it
+          // is the same relation: another file's content becomes part of THIS
+          // document at this point, shares its scope, and contributes no module.
+          // The distinction is recorded on the row as `parseMode`, so a consumer
+          // that needs parsed content can filter, and nothing is silently mixed.
+          //
+          // THE DIRECTION IS THE DIRECTIVE'S OWN (types.ts:167-190): source is the
+          // file carrying the directive — here the DOCUMENT ELEMENT, since XML
+          // publishes no file-level symbol — and the target is what it names.
+          // `partRole` is MANDATORY on every `part_of` row: `"library"` because
+          // this document is the host that includes the part, exactly as erlang's
+          // `-include` and fsharp's `#load` rows are. XML has no `part of` spelling,
+          // so XML never produces the `"part"` half.
+          //
+          // THE TARGET IS A SYMBOL, NOT A PATH — the measured ruling the cpp lane
+          // paid for: a PATH target resolved 0 of 4,612 `part_of` edges (100%
+          // unresolved) because the arbiter resolves TARGET STRINGS AGAINST SYMBOL
+          // NAMES and has no space for a path. The contract permits either ("the
+          // part's file or its module symbol"); only the symbol can bind. So the
+          // target is the included document's module STEM — basename without
+          // directory and extension (`sections/intro.xml` -> `intro`) — and the
+          // written path is kept in `metadata.partPath` so file identity survives.
+          //
+          // A REMOTE href is REFUSED, on the same rule the `imports` edges use: a
+          // target outside this project cannot be a file claim the arbiter could
+          // ever confirm, and the stem of a URL names nothing here. The refusal is
+          // counted in the lane's census rather than converted to a dangling row.
+          if (effectiveNamespace === RealXmlAnalyzer.XINCLUDE_NAMESPACE && localName === "include") {
+            const hrefAttr = this.findDirectAttribute(tagNode, "href")
+            const hrefPath = (this.attributeValueOf(tagNode, "href") ?? "").trim()
+            if (hrefAttr && hrefPath.length > 0 && !this.isRemoteUri(hrefPath)) {
+              const partSymbol = RealXmlAnalyzer.xincludePartSymbol(hrefPath)
+              if (partSymbol.length > 0) {
+                const parseMode = (this.attributeValueOf(tagNode, "parse") ?? "") === "text" ? "text" : "xml"
+                addRelationship(documentElementName ?? symbolName, partSymbol, ASTEngine.RelationshipType.PartOf, {
+                  role: "xinclude_part",
+                  // Mandatory, per `src/ast/types.ts` — see the block above.
+                  partRole: "library",
+                  // THE PATH IS EVIDENCE, THE STEM IS THE TARGET. Keeping both is
+                  // what makes the difference checkable instead of inferred.
+                  partPath: hrefPath,
+                  partSymbol,
+                  parseMode,
+                  // The written element, so the construct is identified on the row
+                  // without the consumer having to know the namespace URI.
+                  elementName: name,
+                  isFileInclusion: true,
+                  // A part is NOT an import (the contract keeps them distinct): the
+                  // included content does not create an import binding, it becomes
+                  // this document's content.
+                  isImport: false,
+                }, this.findDirectChild(hrefAttr, "AttValue"))
+              }
+            }
+          }
+
           // An `xsl:template name="X"` is the only thing a `calls` edge may name.
           if (declaration && effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "template") {
             declaredTemplateNames.add(symbolName)
@@ -3172,6 +3294,41 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * THE INCLUDED DOCUMENT'S MODULE STEM — the `part_of` target.
+   *
+   * `part_of`'s contract allows "the part's file OR its module symbol", and this
+   * lane emits the SYMBOL because that is the only half the arbiter can bind: a
+   * PATH target resolved 0 of 4,612 `part_of` edges (100% unresolved) in the cpp
+   * lane's measurement, because targets are resolved against SYMBOL NAMES. The
+   * path is kept on the row as `metadata.partPath`; this is the symbol-shaped
+   * spelling of the same fact.
+   *
+   * An href is a URI reference (RFC 3986): a `#fragment` selects a part of the
+   * target, and a `?query` is not part of a file name, so both are cut BEFORE the
+   * basename is taken — otherwise `intro.xml#sec2` would yield `xml#sec2`. The
+   * directory segments are dropped and the extension is dropped, so
+   * `sections/intro.xml` and `../shared/intro.xml` both name the module `intro`,
+   * which is what a consumer sees. A dot at position 0 (`.hidden`) is not an
+   * extension separator, so that name is kept whole.
+   *
+   * PURE CHARACTER SCAN, never a pattern: the no-regex criterion is a committed
+   * gate, and this is string arithmetic on a path, not a shape search.
+   */
+  private static xincludePartSymbol(href: string): string {
+    let end = href.length
+    const hash = href.indexOf("#")
+    if (hash >= 0 && hash < end) end = hash
+    const query = href.indexOf("?")
+    if (query >= 0 && query < end) end = query
+    const pathOnly = href.slice(0, end)
+    const slash = pathOnly.lastIndexOf("/")
+    const base = slash >= 0 ? pathOnly.slice(slash + 1) : pathOnly
+    const dot = base.lastIndexOf(".")
+    const stem = dot > 0 ? base.slice(0, dot) : base
+    return stem.trim()
+  }
+
+  /**
    * A named `Attribute` child of a tag node, by attribute name.
    *
    * Read off the TREE rather than off the tag's text: an attribute name is a `Name`
@@ -3366,16 +3523,25 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * It is a REFUSAL, never a resolution: it returns true only when nothing was found, and its only
    * effect is to suppress a claim.
+   *
+   * PURE CHARACTER SCANS, no patterns. Each of the three normalisations below is a shape test on a
+   * FIXED PREFIX or a single character, which is what a pattern would be doing too — only a pattern
+   * reaches back into the source text to do it, and this analyzer's no-regex rule is a committed
+   * gate (script/m14/no-regex-gate.sh). The three replacements are behaviour-identical to the
+   * patterns they replace, stated here so the equivalence is checkable: every backslash becomes a
+   * slash; a leading `./` is dropped; a leading `../` is dropped (and `./../x` therefore becomes
+   * `../x`, exactly as `.replace(/^\.\//, "")` did).
    */
   private isFileAbsentFromProject(projectRoot: string, written: string): boolean {
     const trimmed = written.trim()
-    const normalised = trimmed.replace(/\\/g, "/")
+    let normalised = ""
+    for (const ch of trimmed) normalised += ch === "\\" ? "/" : ch
     const segments = normalised.split("/").filter((s) => s.length > 0 && s !== "." && s !== "..")
     const candidates = new Set<string>([
       trimmed,
       normalised,
-      normalised.replace(/^\.\//, ""),
-      normalised.replace(/^\.\.\//, ""),
+      normalised.startsWith("./") ? normalised.slice(2) : normalised,
+      normalised.startsWith("../") ? normalised.slice(3) : normalised,
       segments.join("/"),
       segments.length > 0 ? segments[segments.length - 1]! : "",
     ])
