@@ -119,9 +119,16 @@ export const PERL_MUTANTS: Mutant[] = [
     defectClass: "edge-absence",
     description:
       "PERL-ONTOLOGY: a code-slot REFERENCE written where the grammar types a CALL. `defined &builtin::is_bool` parses as `func1op_call_expression(defined, function_call_expression(&builtin::is_bool))` — there is no `refgen_expression` in it at all, so a `refgen_expression`-only branch cannot see perl's most idiomatic conditional probe. The discriminator is the ARGUMENT LIST and never the leading `&`, because `&foo(@args)` is perl's explicit-call syntax; suppressing on the `&` alone cost 323 truth rows across perl5 when the lane tried it the other way. Caught by perl/ontology-uses, whose third row is a bare `&` reference and whose last forbid row is the same spelling WITH an argument list.",
+    // RE-POINTED 2026-10-26, and the old filter is the reason why: it removed
+    // `uses` rows whose TARGET carried `::`, which after the supersession names
+    // the QUALIFIED-VARIABLE-READ family and NOT the code-slot family (a code
+    // slot now publishes its LEAF). A transform that removes a different
+    // observable than the defect it claims is an invalid probe — the verdict's
+    // class (ii) — so the probe now removes exactly the rows the defect produces:
+    // the `code-reference` reasonCode on a `uses` edge.
     transform: (r: any) => ({
       ...r,
-      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "uses" && String(x.target ?? "").includes("::") && !String(x.target ?? "").includes("$"))),
+      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "uses" && String(x.metadata?.reasonCode) === "code-reference")),
     }),
   },
   {

@@ -48,10 +48,65 @@ for (const name of names) {
   for (const r of expected) {
     console.log(`  ${r.type} ${r.from ?? r.source} -> ${r.target} @${r.line_number ?? "?"} conf=${r.confidenceMin ?? r.confidence ?? "-"}${fmtMeta(r.meta)}`)
   }
+  // Row verdict: a fixture row fails for exactly one of two reasons, and the
+  // difference decides whether the ANALYZER owes work or the FIXTURE is stale.
+  //   MISSING   no emitted edge matches type + from + target at all
+  //   META-DIFF an edge matches type + from + target, but a metadata/confidence
+  //             key differs — printed with the key so it is one row, not a guess
+  //   MATCHED   the row matches in full
+  const actual = rels.map((r: any) => ({
+    type: String(r.type),
+    from: String(r.source),
+    target: String(r.target),
+    line_number: r.line_number,
+    confidence: r.confidence,
+    metadata: r.metadata ?? {},
+  }))
+  const metaVal = (a: any, k: string) => (k.startsWith("meta.") ? (a.metadata ?? {})[k.slice(5)] : a[k])
+  const rowVerdict = (want: any): string => {
+    const shape = actual.filter((a) => a.type === want.type && a.from === (want.from ?? a.from) && a.target === want.target)
+    if (shape.length === 0) return "MISSING"
+    for (const a of shape) {
+      let differs: string | undefined
+      for (const [k, v] of Object.entries(want)) {
+        if (k === "note" || k === "comment" || k === "confidenceMin" || k === "confidenceMax") continue
+        if (k === "line_number" && v === null) { if (a.line_number != null) differs = `line_number:${a.line_number}!=null`; continue }
+        const av = metaVal(a, k)
+        if (Array.isArray(v)) { if (stableJson(av) !== stableJson(v)) differs = `${k}:${stableJson(av)}!=${stableJson(v)}`; continue }
+        if (av !== v) differs = `${k}:${String(av)}!=${String(v)}`
+        if (differs) break
+      }
+      if (want.confidenceMin !== undefined && a.confidence < want.confidenceMin) differs = `confidence:${a.confidence}<${want.confidenceMin}`
+      if (want.confidenceMax !== undefined && a.confidence > want.confidenceMax) differs = `confidence:${a.confidence}>${want.confidenceMax}`
+      if (!differs) return "MATCHED"
+    }
+    return "META-DIFF"
+  }
+  const stableJson = (v: any): string => JSON.stringify(v)
+  console.log(`ROW VERDICTS:`)
+  for (const r of expected) {
+    const v = rowVerdict(r)
+    console.log(`  ${v} ${r.type} ${r.from ?? r.source} -> ${r.target}@${r.line_number ?? "?"}${v === "META-DIFF" ? explainDiff(r) : ""}`)
+  }
+  function explainDiff(want: any): string {
+    const out: string[] = []
+    for (const a of actual.filter((x) => x.type === want.type && x.from === (want.from ?? x.from) && x.target === want.target)) {
+      for (const [k, v] of Object.entries(want)) {
+        if (k === "note" || k === "comment" || k === "confidenceMin" || k === "confidenceMax") continue
+        const av = metaVal(a, k)
+        if (av !== v && !Array.isArray(v)) out.push(`${k}: emitted=${JSON.stringify(av)} want=${JSON.stringify(v)}`)
+      }
+      if (out.length) break
+    }
+    return out.length ? " {" + out.join("; ") + "}" : ""
+  }
   const forb = exp.expectForbiddenRelationships ?? []
   if (forb.length) {
     console.log(`FORBIDDEN (${forb.length}):`)
-    for (const r of forb) console.log(`  ${r.type} ${r.from ?? "?"} -> ${r.target ?? "?"}`)
+    for (const r of forb) {
+      const hit = actual.find((a) => a.type === r.type && (r.from === undefined || a.from === r.from) && (r.target === undefined || a.target === r.target))
+      console.log(`  ${hit ? "VIOLATED" : "clear"} ${r.type} ${r.from ?? "*"} -> ${r.target ?? "*"}`)
+    }
   }
   const syms = exp.expectSymbols ?? []
   if (syms.length) {

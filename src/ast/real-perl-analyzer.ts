@@ -146,11 +146,23 @@ export const PERL_REASON_CODES = {
   // and never became RELATIONSHIPS ✓✓. These two codes are the receipt ✓✓.
   moduleImport: "module-import",
   exportedSymbol: "exported-symbol",
+  exportedArrayPush: "exporter-array-push",
+  exportedArrayDeclaration: "exporter-array-declaration",
+  exporterSurface: "exporter-surface",
+  useModuleLoad: "use-module-load",
+  runtimeRequire: "runtime-require",
+  isaArrayPush: "isa-array-push",
   baseDeclaresMethod: "base-declares-method",
   firstParentGuess: "first-parent-guess",
   magicTokenInvocant: "magic-token-invocant",
   codeReference: "code-reference",
   qualifiedVariableRead: "qualified-variable-read",
+  qualifiedNameAccess: "qualified-name-access",
+  blessClassLiteral: "bless-class-literal",
+  refClassComparison: "ref-class-comparison",
+  universalIsaLiteral: "universal-isa-literal",
+  isaClassLiteral: "isa-class-literal",
+  doesRoleLiteral: "does-role-literal",
   typeQueryLiteral: "type-query-literal",
 } as const
 
@@ -302,6 +314,29 @@ function unquote(text: string): string {
   }
   return text
 }
+
+/**
+ * Is this `use`d module a PRAGMA? A pragma changes how the REST OF THIS FILE
+ * compiles (`use strict`, `use integer`, `use feature 'class'`); it does not
+ * export symbols into the caller. The distinction is metadata because the EDGE is
+ * the same fact either way — the file loads the module — while a consumer asking
+ * "which imported names are callable here" must not be told a pragma exported
+ * any. Read from perl's own pragma module set; an unknown name is not a pragma.
+ */
+function isPerlPragma(module: string): boolean {
+  return PERL_PRAGMAS.has(module)
+}
+
+const PERL_PRAGMAS = new Set([
+  "strict", "warnings", "integer", "feature", "lib", "utf8", "bytes", "constant",
+  "vars", "parent", "base", "overload", "bigint", "bignum", "bigrat", "open",
+  "charnames", "autodie", "re", "attributes", "sigtrap", "sort", "subs", "threads",
+  "fields", "if", "less", "locale", "mro", "ops", "version", "vmsish", "arybase",
+  "deprecated", "experimental", "diagnostics", "sigtrap", "class", "builtin",
+])
+
+/** The words `ref()` returns for a BUILTIN container, not a class name. */
+const PERL_BUILTIN_REF_TYPES = new Set(["ARRAY", "HASH", "SCALAR", "CODE", "REF", "GLOB", "LVALUE", "REGEXP", "IO", "VSTRING", "UNKNOWN"])
 
 function splitWords(text: string): string[] {
   const result: string[] = []
@@ -635,6 +670,26 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(typeof line === "number" && line > 0 ? { line_number: line } : {}),
         metadata: { perlSpecific: true, ...metadata },
       })
+    }
+
+    /**
+     * A NAME a runtime QUERY names — not invoked, not called. The label is
+     * `references` (the fleet's split: `uses` is a value the code reads,
+     * `references` is a name a query tests), the target is the LEAF with the
+     * written package in `metadata.qualifiedAs`, and the line is the literal's
+     * own line.
+     *
+     * The leaf rule is the one the `\&name` branch documents and it applies here
+     * for the same reason: one class is one node whether the query wrote it
+     * qualified or not. A SELF-REFERENCE (querying the enclosing sub's own name)
+     * is refused, exactly as the other reference sites refuse it.
+     */
+    const addReferenceName = (rawName: string, nameNode: Node, state: WalkState, reasonCode: string) => {
+      const leaf = this.leafName(rawName)
+      const source = state.functionName || state.ownerName || state.packageName || "global"
+      if (!leaf || leaf === source) return
+      const qualifier = rawName.includes("::") ? rawName.slice(0, rawName.lastIndexOf("::")) : undefined
+      addRelationship(source, leaf, ASTEngine.RelationshipType.References, { reasonCode, ...(qualifier ? { qualifiedAs: rawName, qualifier } : {}) }, 0.9, nameNode)
     }
 
     /**
@@ -1041,6 +1096,79 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        case "equality_expression": {
+          // `ref($x) eq 'Class'` — perl's type test written as a COMPARISON. The
+          // grammar types it `equality_expression`, NOT `binary_expression` —
+          // a reader that looked for the latter reported 0 occurrences of a
+          // construct mojo writes 67 times. The class is the written literal; a
+          // BUILTIN reference type (`ref($x) eq 'ARRAY'`) names no class and is
+          // refused.
+          const kids: Node[] = []
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c) kids.push(c)
+          }
+          const isRefCall = (n: Node) => n.type === "func1op_call_expression" && String(n.child(0)?.text ?? "") === "ref"
+          const refKid = kids.find(isRefCall)
+          const litKid = kids.find((k) => k.type === "string_literal" || k.type === "interpolated_string_literal")
+          if (refKid && litKid) {
+            const word = this.wordValues(litKid)[0]
+            if (word && this.isWrittenCalleeName(word) && !PERL_BUILTIN_REF_TYPES.has(word)) addReferenceName(word, litKid, state, REASON.refClassComparison)
+          }
+          break
+        }
+
+        case "bareword": {
+          // `my $own = Ontology::VERSION;` — a package-qualified name in VALUE
+          // position. Perl has no field syntax and no sigil'd form for a class,
+          // so a qualified bareword in a value slot is the language's read of
+          // that name. The target keeps its FULL qualification: `Config::Limits`
+          // names a package, and a leaf would collapse `Foo::Bar` with `Baz::Bar`.
+          //
+          // REFUSED: a bareword in a position that DECLARES or INVOKES it — a
+          // callee, a method invocant, a package statement's name, a `use`/
+          // `require` module — because those belong to other labels; a TRAILING
+          // `::` (an invocant spelling); and an UNQUALIFIED bareword, which is a
+          // hash key or a string as often as it is a name. Only a value slot
+          // (`= RHS`, a list element, a return) is read.
+          const text = String(node.text ?? "")
+          if (!text.includes("::") || text.endsWith("::")) break
+          const parent = node.parent
+          const parentType = parent ? String(parent.type) : ""
+          // A HASH KEY IS NOT A NAME, and the two spellings both carry `::`:
+          //   (Config::Only::Key => 1)   a bareword followed by a `=>` token —
+          //                              a KEY/VALUE slot, not a value
+          //   $only{Config::Only::Key}   a subscript key
+          // Reading either as a package read published a name nothing declares.
+          // The KEY test is the `=>` that FOLLOWS the node, which is the only
+          // thing in the source that says so — the same positional rule the
+          // import harvester uses one level up.
+          if (parentType === "hash_element_expression" || parentType === "slice_container_variable") break
+          if (parent) {
+            let nextIsFatComma = false
+            for (let i = 0; i < parent.childCount; i++) {
+              const child = parent.child(i)
+              if (!child || child.id !== node.id) continue
+              const next = parent.child(i + 1)
+              if (next && !next.isNamed && next.type === "=>") nextIsFatComma = true
+              break
+            }
+            if (nextIsFatComma) break
+          }
+          const VALUE_PARENT = new Set(["assignment_expression", "return_expression", "list_expression", "expression_statement", "keyval_expression"])
+          if (!VALUE_PARENT.has(parentType)) break
+          let ancestor = parent
+          let insideDirective = false
+          for (let depth = 0; ancestor && depth < 4; depth++) {
+            if (ancestor.type === "use_statement" || ancestor.type === "require_expression" || ancestor.type === "require_version_expression") { insideDirective = true; break }
+            ancestor = ancestor.parent
+          }
+          if (insideDirective) break
+          const source = state.functionName || state.ownerName || state.packageName || "global"
+          addRelationship(source, text, ASTEngine.RelationshipType.Uses, { reasonCode: REASON.qualifiedNameAccess }, 0.9, node)
+          break
+        }
+
         case "use_statement": {
           // `no` is an UNNAMED first token of the same node type as `use`:
           // `no strict;` parses as a use_statement whose first child is `no`.
@@ -1086,7 +1214,22 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `no strict;` never reaches here ✓✓ (it breaks out above ✓✓) and
           // `use constant` never reaches here ✓✓ (it breaks out above ✓✓) ✓✓,
           // because neither loads a module ✓✓.
-          addRelationship(state.packageName || "global", module, ASTEngine.RelationshipType.Imports, { reasonCode: REASON.moduleImport, perlSpecific: true, items: imports[imports.length - 1]?.items ?? [] }, 0.9, node)
+          // A WRITTEN LOAD IS CERTAIN, and its metadata says which kind it is.
+          // The authored-ahead ontology fixtures pin this surface — the kind
+          // (`use_module` vs `require_module` vs `require_file`), whether the
+          // module is a PRAGMA (its effects are lexical, not imported symbols),
+          // and that a module load is a FILE-LEVEL fact whatever sub body wrote
+          // it — and the previous emission carried none of it, so every such row
+          // read as a metadata gap while the EDGE itself was right.
+          addRelationship(state.packageName || "global", module, ASTEngine.RelationshipType.Imports, {
+            reasonCode: REASON.useModuleLoad,
+            perlSpecific: true,
+            relationshipType: "use_module",
+            isImport: true,
+            fileLevel: true,
+            isPragma: isPerlPragma(module),
+            items: imports[imports.length - 1]?.items ?? [],
+          }, 1.0, node)
           if (module === "Moose" || module === "Moo" || module === "Mojo::Base") frameworks.add(module === "Mojo::Base" ? "Mojolicious" : "Moose/Moo OOP")
           if (module === "parent" || module === "base") {
             const parents = args.filter((arg) => !this.isOption(arg))
@@ -1170,8 +1313,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `require Some::Module` — a runtime load. It IS a dependency (the
           // file cannot run without it) but imports nothing into the namespace,
           // so isDefault is false.
+          // The payload is a MODULE NAME (bareword/package) or a FILE PATH (a
+          // string literal). The old reader accepted only the name form, so
+          // `require ./lib/Bootstrap.pm` published NO dependency at all — a
+          // real load missing from the graph. The two are separated in
+          // metadata.relationshipType because a resolver can chase a module name
+          // and can only display a path.
           const moduleNode = this.findChildByType(node, "bareword") || this.findChildByType(node, "package")
-          const module = moduleNode?.text || ""
+          // ONLY a plain string literal is a WRITTEN path. A double-quoted
+          // `require "./lib/Late$stage.pm"` interpolates at runtime: the specifier
+          // is computed, so nothing written can be resolved and the rule is the
+          // presence of a written literal, not the presence of a quote.
+          const pathNode = this.findChildByType(node, "string_literal")
+          const module = pathNode ? this.wordValues(pathNode)[0] ?? "" : moduleNode?.text ?? ""
           if (!module) break
           imports.push({
             module,
@@ -1186,7 +1340,16 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (the file cannot run without it ✓✓), and the analyzer's own comment
           // says so ✓✓ — but the fact went into the output shape ✓✓ and never
           // became a relationship ✓✓, so the ARM's TABLE 1 carried `imports 0` ✓✓.
-          addRelationship(state.packageName || "global", module, ASTEngine.RelationshipType.Imports, { reasonCode: REASON.moduleImport, perlSpecific: true, items: [] }, 0.9, node)
+          addRelationship(state.packageName || "global", module, ASTEngine.RelationshipType.Imports, {
+            reasonCode: REASON.runtimeRequire,
+            perlSpecific: true,
+            relationshipType: pathNode ? "require_file" : "require_module",
+            ...(pathNode ? { specifier: "path" } : {}),
+            isImport: true,
+            fileLevel: true,
+            isPragma: false,
+            items: [],
+          }, 0.9, node)
           patterns.add("Module Includes")
           return
         }
@@ -1227,7 +1390,11 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // THE SHAPE IS THE FLEET'S ✓✓: the source is the OWNING MODULE and the
               // target is the EXPORTED NAME ✓✓ — the same shape the bash lane
               // publishes `Exports` with ✓✓.
-              addRelationship(state.packageName || "global", exported, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exportedSymbol, perlSpecific: true, exportArray: leftName }, 0.9, node)
+              // The NAME's own line, not the assignment's: a wrapped
+              // `@EXPORT_OK = ( \n gamma, \n delta )` writes the names on lines the
+              // assignment never touches, and M59's rule is that an edge carries
+              // the line that names it.
+              addRelationship(state.packageName || "global", exported, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exportedArrayDeclaration, perlSpecific: true, exportArray: leftName }, 1.0, node, this.lineOfNameWithin(right, exported))
             }
             patterns.add("Exports")
           }
@@ -1236,7 +1403,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // opt-in tag names callers pass to `import`.
             for (const tag of this.fatCommaKeys(right)) {
               exports.push({ name: tag.text, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), metadata: { perlSpecific: true, exportTag: "EXPORT_TAGS" } })
-              addRelationship(state.packageName || "global", tag.text, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exportedSymbol, perlSpecific: true, exportTag: "EXPORT_TAGS" }, 0.9, node)
+              addRelationship(state.packageName || "global", tag.text, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exporterSurface, perlSpecific: true, exportTag: "EXPORT_TAGS" }, 1.0, node, tag.startPosition.row + 1)
             }
             patterns.add("Exports")
           }
@@ -1251,11 +1418,101 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // text is a method call the grammar typed as a function call, not a
           // callee name — measured as `calls -> DemolishAll->new`.
           if (!this.isWrittenCalleeName(target)) break
+          if (target === "bless") {
+            // `bless $self, 'Class'` — the CLASS is the last written literal of
+            // the argument list. The grammar hands the whole list to the call's
+            // `arguments` field, so a reader that looked for a literal on the
+            // carrier found a `list_expression` and nothing else, and the
+            // construct the `references` label rests on produced NO edge. The
+            // elements are read one by one. A COMPUTED class
+            // (`bless $self, $class`) states no name and is refused.
+            const els = this.compositionElements(node)
+            let cls: string | undefined
+            let clsNode: Node | undefined
+            for (const el of els) {
+              if (el.type !== "string_literal" && el.type !== "interpolated_string_literal") continue
+              const word = this.wordValues(el)[0]
+              if (word && this.isWrittenCalleeName(word)) { cls = word; clsNode = el }
+            }
+            if (cls && clsNode) addReferenceName(cls, clsNode, state, REASON.blessClassLiteral)
+            break
+          }
+          if (target === "UNIVERSAL::isa") {
+            // The FUNCTION spelling of the type test. The class is the LAST
+            // written literal — the three-argument form
+            // `UNIVERSAL::isa($x, ref($x), 'C')` still ends with the class, which
+            // is the fact this reader shares with the method spelling. The CALL
+            // itself stays a `calls` edge (it invokes a UNIVERSAL builtin), so
+            // this branch does not break.
+            const els = this.compositionElements(node)
+            let cls: string | undefined
+            let clsNode: Node | undefined
+            for (const el of els) {
+              if (el.type !== "string_literal" && el.type !== "interpolated_string_literal") continue
+              const word = this.wordValues(el)[0]
+              if (word && this.isWrittenCalleeName(word)) { cls = word; clsNode = el }
+            }
+            if (cls && clsNode) addReferenceName(cls, clsNode, state, REASON.universalIsaLiteral)
+          }
+          if (target === "push") {
+            // `push @EXPORT_OK, qw(a b)` and `push @ISA, 'Base'` — perl builds
+            // two of its DECLARATIONS with `push`, and the assignment-only reader
+            // published neither: a module's exported API was the assignment half
+            // only, and inheritance by `push` published no `extends` edge (and,
+            // because it bypassed `addBase`, left the override resolver blind to
+            // the base). The elements are read one by one because the call's
+            // `arguments` field holds the whole `list_expression` — the same
+            // shape the `with` reader had to learn.
+            //
+            // The array being pushed onto is the FIRST element and it names the
+            // DECLARATION; a qualified varname (`@Pkg::ISA`) names the OWNER, so
+            // the edge is sourced from the package the source wrote.
+            //
+            // REFUSED, and each refusal is a shape the fixture pins:
+            //   push @EXPORT_OK, @Other::EXPORT_OK   copies ANOTHER module's
+            //       array; its contents are not written here, so nothing is
+            //       invented.
+            //   push \@ISA, __FILE__                 a REFERENCE to the array is
+            //       not a declaration of a base.
+            const elements = this.compositionElements(node)
+            const targetEl = elements[0]
+            const arrayVar = targetEl && targetEl.type === "array" ? this.findChildByType(targetEl, "varname")?.text ?? "" : ""
+            const arrayName = this.leafName(arrayVar)
+            const owner = arrayVar.includes("::") ? arrayVar.slice(0, arrayVar.lastIndexOf("::")) : state.packageName || "global"
+            const NAMED_ELEMENT = new Set(["quoted_word_list", "string_literal", "interpolated_string_literal", "autoquoted_bareword", "bareword"])
+            if (arrayName === "EXPORT" || arrayName === "EXPORT_OK") {
+              for (const el of elements.slice(1)) {
+                if (!NAMED_ELEMENT.has(el.type)) continue
+                for (const value of this.wordValues(el)) {
+                  if (!value || this.isOption(value)) continue
+                  exports.push({ name: value, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), metadata: { perlSpecific: true, exportArray: arrayName } })
+                  addRelationship(owner, value, ASTEngine.RelationshipType.Exports, { reasonCode: REASON.exportedArrayPush, perlSpecific: true, exportArray: arrayName }, 1.0, node, this.lineOfNameWithin(el, value))
+                }
+              }
+              patterns.add("Exports")
+            } else if (arrayName === "ISA") {
+              const bases: string[] = []
+              const lines = new Map<string, number>()
+              for (const el of elements.slice(1)) {
+                if (!NAMED_ELEMENT.has(el.type)) continue
+                for (const value of this.wordValues(el)) {
+                  if (!value || this.isOption(value)) continue
+                  bases.push(value)
+                  const line = this.lineOfNameWithin(el, value)
+                  if (line !== undefined) lines.set(value, line)
+                }
+              }
+              // Routed through `addBase` so the OVERRIDE resolver reads the
+              // base too — the same reason the bare-`extends` spelling routes
+              // there instead of emitting directly.
+              if (bases.length) addBase(owner, bases, REASON.isaArrayPush, targetEl, lines)
+            }
+            break
+          }
           if (target === "has") {
             // `has 'name' => (...)` — the attribute NAME is the first argument;
             // the symbol's range must be that name, not the whole statement.
-            const nameNode = this.firstArgumentNameNode(node)
-            const property = nameNode ? this.wordValues(nameNode)[0] : undefined
+            //
             // **AND `has [qw(a b c)]` DECLARES SEVERAL ATTRIBUTES, AND THE ANALYZER
             // PUBLISHED ONLY THE FIRST — A REAL EMISSION GAP, FOUND BY THE LANE'S OWN
             // ORACLE AND NOT BY A MUTANT.**
@@ -1270,44 +1527,54 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `helpers`, `shortcuts`, `defaults` and `types` were DECLARED MEMBERS THAT
             // NO EDGE NAMED.
             //
-            // The first name is published by the code below, exactly as it was; the
-            // REMAINING names are published here, so the one-name forms are unchanged
-            // and only a multi-name declaration gains rows.
-            if (nameNode) {
-              for (const extra of this.wordValues(nameNode).slice(1)) {
-                if (!extra) continue
-                if (state.packageName && !symbolKeys.has(`${ASTEngine.SymbolKind.Property}\u001f${state.packageName}\u001f${extra}`)) {
-                  addSymbol(extra, ASTEngine.SymbolKind.Property, nameNode, { ...state, ownerName: state.packageName, ownerKind: ASTEngine.SymbolKind.Class }, { isMooseProperty: true }, state.packageName)
-                }
-              }
-            }
-            if (property && state.packageName && !symbolKeys.has(`${ASTEngine.SymbolKind.Property}\u001f${state.packageName}\u001f${property}`)) {
-              addSymbol(property, ASTEngine.SymbolKind.Property, nameNode ?? node, { ...state, ownerName: state.packageName, ownerKind: ASTEngine.SymbolKind.Class }, { isMooseProperty: true }, state.packageName)
+            // AND A QUOTED NAME IS ONE NAME: `has 'has spaces'` was split at the
+            // space by the shared word splitter, publishing a member named `has`
+            // (a real perl function, so `bb_impact` on it would reach every Moose
+            // class) while the declared member got nothing. `attributeNames` keeps
+            // the split for the shapes that ARE lists and never for a literal.
+            const attrs = this.attributeNames(node)
+            for (const attr of attrs) {
+              if (!attr.name || !state.packageName) continue
+              if (symbolKeys.has(`${ASTEngine.SymbolKind.Property}\u001f${state.packageName}\u001f${attr.name}`)) continue
+              addSymbol(attr.name, ASTEngine.SymbolKind.Property, attr.node, { ...state, ownerName: state.packageName, ownerKind: ASTEngine.SymbolKind.Class }, { isMooseProperty: true }, state.packageName)
             }
             frameworks.add("Moose/Moo OOP")
             patterns.add("Declarative Properties")
           } else if (target === "with" || target === "extends") {
+            // `with 'Role'` / `with qw(A B)` / `with 'A', { -excludes => [...] },
+            // 'B'` / `with 'A' => { ... }, 'B' => { ... }` — all four shapes the
+            // fleet measured, and the reader below is element-wise for that reason:
+            // the call's `arguments` field holds ONE `list_expression`, so reading
+            // `wordValues(arg)[0]` read the first word of the WHOLE list and dropped
+            // every name after it. That is the `with qw(A B)` defect the fixture's
+            // rationale prices at 6 of 94 implements rows and 5 of 109 extends rows
+            // on 142 Moo files, and it silently lost the third element of the mixed
+            // form too.
             const isWith = target === "with"
-            for (const arg of this.argumentNodes(node)) {
-              const value = this.wordValues(arg)[0]
-              if (!value) continue
-              if (isWith) {
-                addRelationship(
-                  state.packageName || "global",
-                  this.leafName(value),
-                  ASTEngine.RelationshipType.Implements,
-                  { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
-                  0.9,
-                  arg,
-                  // `arg` is the right NODE but the wrong LINE for a `qw` list that
-                  // wraps: the list starts on the `with` line and the role names
-                  // are on the lines after it. Prefer the name's own line and keep
-                  // the node as the fallback, so a shape the offset search cannot
-                  // resolve keeps its previous (correct) line.
-                  this.lineOfNameWithin(arg, value),
-                )
-                continue
-              }
+            for (const arg of this.compositionElements(node)) {
+              // A bare `{ ... }` among the names is a MODIFIER SPECIFICATION: its
+              // keys are OPTION names (`-excludes`, `-alias`), and publishing them
+              // as roles was measured on Moose's role_conflict_detection.t.
+              if (arg.type === "anonymous_hash_expression" || arg.type === "hash_expression" || arg.type === "anonymous_array_expression") continue
+              for (const value of this.wordValues(arg)) {
+                if (!value || this.isOption(value)) continue
+                if (isWith) {
+                  addRelationship(
+                    state.packageName || "global",
+                    this.leafName(value),
+                    ASTEngine.RelationshipType.Implements,
+                    { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
+                    0.9,
+                    arg,
+                    // `arg` is the right NODE but the wrong LINE for a `qw` list that
+                    // wraps: the list starts on the `with` line and the role names
+                    // are on the lines after it. Prefer the name's own line and keep
+                    // the node as the fallback, so a shape the offset search cannot
+                    // resolve keeps its previous (correct) line.
+                    this.lineOfNameWithin(arg, value),
+                  )
+                  continue
+                }
               // A bare `extends 'Base::Class';` is the Moose spelling of
               // `use parent`. It used to call addRelationship DIRECTLY, which
               // emitted a correct `extends` edge and left `packageBases` empty —
@@ -1332,6 +1599,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // same leaf target, same 0.9 — and the line comes from
               // `packageBaseLine`, the same argument node.
               addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg, new Map([[value, this.lineOfNameWithin(arg, value) ?? arg.startPosition.row + 1]]))
+              }
             }
             frameworks.add("Moose/Moo OOP")
           } else if (target === "new") {
@@ -1519,7 +1787,11 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
                   source,
                   leaf,
                   ASTEngine.RelationshipType.References,
-                  { reasonCode: REASON.typeQueryLiteral, query: method },
+                  // The written package rides in `qualifiedAs` for the same
+                  // reason the other reference sites record it: the target is the
+                  // LEAF (one class, one node) and the qualification the source
+                  // wrote is not lost, it is metadata a reader can ask for.
+                  { reasonCode: REASON.typeQueryLiteral, query: method, ...((queried.includes("::")) ? { qualifiedAs: queried } : {}) },
                   0.9,
                   nameNode,
                 )
@@ -1726,6 +1998,12 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const md: any = r.metadata ?? {}
       r.metadata = md
       if (type === "contains") { md.evidenceClass = "structural"; continue }
+      // `src/lsp/evidence_tier.ts` rule 2 names `imports` as `import_based`, and
+      // the fallthrough here was overriding the fleet's own derivation with
+      // `inferred` — a stored tier must not contradict the single derivation.
+      // `exports` is the same import surface (the module's declared API), so it
+      // takes the same tier rather than falling to "a guess".
+      if (type === "imports" || type === "exports") { md.evidenceClass = "import_based"; continue }
       if (type === "instantiates" || type === "extends" || type === "implements") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
@@ -1978,31 +2256,94 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
-  /** The node carrying an argument's NAME — `has 'x' => ...` / `has x => ...`. */
-  private firstArgumentNameNode(node: Node): Node | undefined {
+  /**
+   * The ELEMENTS of a role-composition argument list — the shapes `with` and
+   * `extends` are written in, as separate elements rather than as one blob.
+   *
+   * The call's `arguments` field holds ONE `list_expression` for every
+   * multi-argument form, so a reader that treated that field as a single argument
+   * read the first word of the WHOLE list and dropped the rest. Expanding the list
+   * into its named children restores the element boundary: in
+   * `with A, { -excludes => [...] }, B` the elements are A, the modifier hash
+   * and B, which is exactly the information the role reader needs.
+   */
+  private compositionElements(node: Node): Node[] {
+    const out: Node[] = []
+    for (const arg of this.argumentNodes(node)) {
+      if (arg.type === "list_expression") {
+        for (let i = 0; i < arg.namedChildCount; i++) {
+          const child = arg.namedChild(i)
+          if (child) out.push(child)
+        }
+      } else out.push(arg)
+    }
+    return out
+  }
+
+  /**
+   * The names a `has` declaration declares — ONE per element of its name list.
+   *
+   * TWO facts live here and each was a measured defect. (1) A QUOTED name is ONE
+   * name whatever it contains: `has 'has spaces' => (is => 'ro')` is a legal
+   * attribute whose name has a space in it, and the old reader ran the name
+   * through `wordValues`, whose whitespace splitter exists for `qw(a b)` (a real
+   * LIST) and truncated this to `has` — publishing a member named `has`, which is
+   * a real perl function, while the declared member got no symbol at all. (2) A
+   * `qw`/array list declares SEVERAL attributes: `has [qw(handlers helpers)]` is
+   * two members, and reading only the first dropped the rest.
+   *
+   * The splitter is therefore applied to the shapes that ARE lists
+   * (`quoted_word_list`, each element of an array), and never to a string
+   * literal's own content.
+   */
+  private attributeNames(node: Node): { name: string; node: Node }[] {
     const args = this.argumentNodes(node)
     const first = args[0]
-    if (!first) return undefined
-    if (first.type === "string_literal") return first.childForFieldName("content") || this.findChildByType(first, "string_content") || first
-    // **THE ARGUMENT CARRIER IS A LIST, AND ITS FIRST ELEMENT IS THE NAME ✓✓.**
-    //
-    // MEASURED (2026-10-21, script/m14/perl-contains-shape.mts): the carrier is the
-    // `list_expression` that holds `has name => value`, so reading the CARRIER's words
-    // read the VALUE — `has default_format => 'html'` published a member named `html`
-    // and did not publish `default_format` at all. That is a REAL DEFECT: a declared
-    // member with no edge, and an edge naming something that was never declared.
-    //
-    // The first element of the list is the name, in every spelling: a bareword
-    // (`has attr => ...`), a string (`has 'attr' => ...`) or a qw list
-    // (`has [qw(a b)]`), and `wordValues` of a qw list returns EVERY name it holds ✓✓.
-    if (first.type === "list_expression" && first.namedChildCount > 0) {
-      const head = first.namedChild(0)
-      if (head) {
-        if (head.type === "string_literal") return head.childForFieldName("content") || this.findChildByType(head, "string_content") || head
-        return head
-      }
+    if (!first) return []
+    const head = first.type === "list_expression" && first.namedChildCount > 0 ? first.namedChild(0) : first
+    if (!head) return []
+    return this.namesOfDeclarator(head)
+  }
+
+  private namesOfDeclarator(head: Node): { name: string; node: Node }[] {
+    if (head.type === "string_literal") {
+      const content = head.childForFieldName("content") || this.findChildByType(head, "string_content")
+      const name = content ? content.text : unquote(head.text)
+      return name ? [{ name, node: content ?? head }] : []
     }
-    return first
+    if (head.type === "quoted_word_list") {
+      const content = head.childForFieldName("content") || this.findChildByType(head, "string_content")
+      if (!content) return []
+      return splitWords(content.text).filter(Boolean).map((name) => ({ name, node: content }))
+    }
+    // `has [qw(a b)]` / `has [ 'a', 'b' ]` — an array of names.
+    if (head.type === "anonymous_array_expression" || head.type === "array_expression") {
+      const out: { name: string; node: Node }[] = []
+      for (let i = 0; i < head.namedChildCount; i++) {
+        const child = head.namedChild(i)
+        if (child) out.push(...this.namesOfDeclarator(child))
+      }
+      return out
+    }
+    if (head.type === "interpolated_string_literal") {
+      // A DOUBLE-quoted literal. With no interpolated variable it is one name,
+      // verbatim exactly like the single-quoted case; with one it names nothing
+      // resolvable and the word pieces are all the file writes.
+      const pieces: string[] = []
+      let interpolates = false
+      for (let i = 0; i < head.namedChildCount; i++) {
+        const child = head.namedChild(i)
+        if (!child) continue
+        if (child.type === "string_content") pieces.push(...splitWords(child.text))
+        else if (child.type === "scalar" || child.type === "array" || child.type === "hash") interpolates = true
+      }
+      if (interpolates) return pieces.filter(Boolean).map((name) => ({ name, node: head }))
+      const content = head.childForFieldName("content") || this.findChildByType(head, "string_content")
+      const verbatim = content ? content.text : ""
+      return verbatim ? [{ name: verbatim, node: content ?? head }] : []
+    }
+    // A bareword (`has attr => ...`) — one name.
+    return this.wordValues(head).filter(Boolean).map((name) => ({ name, node: head }))
   }
 
   private argumentValues(node: Node): string[] {
@@ -2251,8 +2592,15 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private leafName(name: string): string {
-    const colon = name.lastIndexOf("::")
-    return colon >= 0 ? name.slice(colon + 2) : name
+    // A TRAILING `::` is perl's "this class, unambiguously" spelling
+    // (`Config::Limits::->new`), NOT an empty final segment. Taking the text
+    // after the last `::` gave the empty string, so the edge published
+    // `.constructor` — an endpoint with no owner at all, the one shape a target
+    // can be that nobody could name.
+    let trimmed = name
+    while (trimmed.length >= 2 && trimmed.charAt(trimmed.length - 1) === ":" && trimmed.charAt(trimmed.length - 2) === ":") trimmed = trimmed.slice(0, -2)
+    const colon = trimmed.lastIndexOf("::")
+    return colon >= 0 ? trimmed.slice(colon + 2) : trimmed
   }
 
   /**
