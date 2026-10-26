@@ -33,12 +33,19 @@ const closurePath = arg("--closure")
 const censusPath = arg("--census")
 const exts = arg("--exts")
 const write = argv.includes("--write")
-if (!lang || !slicesDir || !closurePath || !censusPath || !exts) {
-  console.error("usage: sliced-declaration.ts --lang <l> --slices <dir> --closure <json> --census <json> --exts <exts> [--write]")
+if (!lang || !slicesDir || (!censusPath && !arg("--expect-population")) || !exts) {
+  console.error("usage: sliced-declaration.ts --lang <l> --slices <dir> [--closure <json>] (--census <json> | --expect-population <n>) --exts <exts> [--write]")
   process.exit(2)
 }
-const closure = JSON.parse(readFileSync(closurePath, "utf8"))
-const census = JSON.parse(readFileSync(censusPath, "utf8"))
+// A WHOLE-POPULATION SINGLE RUN HAS NO MERGE: its own TOTAL row IS the closure (the union of one
+// slice), and the per-type sums below are checked against it exactly as they are checked against a
+// merge artifact. `--closure` is therefore optional; when it is absent the arm's TOTAL supplies the
+// same numbers the merge would have written, and `meta.instrument` says so.
+const HAS_CLOSURE_DECL = closurePath !== undefined
+const closure = closurePath
+  ? JSON.parse(readFileSync(closurePath, "utf8"))
+  : { meta: { population: {} }, closure: {} }
+const census = censusPath ? JSON.parse(readFileSync(censusPath, "utf8")) : {}
 const LABELS = ["calls","uses","contains","imports","references","exports","extends","implements","overrides","instantiates","decorates","renders","mixes_in","part_of"]
 
 type Row = { edges: number; resolved: number; collRes: number; ambDecl: number; ambKind: number; unresolved: number; extOK: number; extUnk: number; extFAIL: number; bindOK: number; bindUnk: number; bindFAIL: number; causeOK: number; causeFAIL: number }
@@ -57,9 +64,22 @@ const rowRe = /^(calls|uses|contains|imports|references|exports|extends|implemen
 const parsedSlices: { start: number; end: number; file: string }[] = []
 for (const f of files) {
   const text = readFileSync(join(slicesDir, f), "utf8")
+  const hasTotal = /^TOTAL\s+((?:\d+\s+){13}\d+)\s*$/m.test(text)
   const chunk = text.match(/admitted files \[(\d+), (\d+)\)/)
-  if (!chunk || !/^TOTAL\s+((?:\d+\s+){13}\d+)\s*$/m.test(text)) continue
-  parsedSlices.push({ start: Number(chunk[1]), end: Number(chunk[2]), file: f })
+  if (chunk && hasTotal) {
+    parsedSlices.push({ start: Number(chunk[1]), end: Number(chunk[2]), file: f })
+  } else if (!chunk && hasTotal) {
+    // A WHOLE-POPULATION SINGLE RUN, not a chunk: its own population line says how many files it
+    // measured, and the absence of a CHUNK line is what tells the two shapes apart (vue, elixir and
+    // swift all measured this way). It covers [0, population) by definition.
+    const p = text.match(/population: (\d+) parsed of (\d+) sampled/)
+    if (!p) { console.error(`REFUSED (4): ${f} has a TOTAL row but neither a CHUNK line nor a population line — it is not a measurement this generator can read`); process.exit(4) }
+    const n = Number(p[1])
+    if (n !== Number(p[2])) { console.error(`REFUSED (4): ${f} is a SAMPLE (${p[1]} of ${p[2]}) — a sample cannot back a whole-population declaration`); process.exit(4) }
+    parsedSlices.push({ start: 0, end: n, file: f })
+  } else {
+    continue
+  }
   let m: RegExpExecArray | null
   rowRe.lastIndex = 0
   while ((m = rowRe.exec(text)) !== null) {
@@ -107,8 +127,9 @@ let keptSlices: { start: number; end: number; file: string }[] = []
     cursor = s.end
     cursor = skipExcluded(cursor)
   }
-  if (cursor !== Number(closure?.meta?.population?.admitted)) {
-    console.error(`REFUSED (4): the slices cover ${cursor} of ${closure?.meta?.population?.admitted} — a partial union is not a population declaration`)
+  const unionPopulation = Number(closure?.meta?.population?.admitted ?? parsedSlices[parsedSlices.length - 1]?.end ?? NaN)
+  if (cursor !== unionPopulation) {
+    console.error(`REFUSED (4): the slices cover ${cursor} of ${unionPopulation} — a partial union is not a population declaration`)
     process.exit(4)
   }
 }
@@ -134,10 +155,18 @@ for (const l of LABELS) sum[l] = { edges:0,resolved:0,collRes:0,ambDecl:0,ambKin
   sliceCount = keptSlices.length
 }
 
+// ── a whole-population single run: its TOTAL is the closure (the union of one slice) ──────────
+if (!HAS_CLOSURE_DECL) {
+  closure.closure = { edges: fleet, resolved: sumL("resolved"), ambDecl: sumL("ambDecl"), unresolved: sumL("unresolved"), extOK: sumL("extOK"), exact: true }
+  const firstPop = readFileSync(join(slicesDir, parsedSlices[0].file), "utf8").match(/population: (\d+) parsed of (\d+) sampled \(corpus has (\d+)/)
+  closure.meta.population = { parsed: Number(firstPop?.[1]), admitted: Number(firstPop?.[3]) }
+}
+
 // ── refuse unless the slices' sums ARE the closure's numbers ─────────────────
 const c = closure.closure
 const sumEdges = LABELS.reduce((n, l) => n + sum[l].edges, 0)
 if (sumEdges !== fleet) { console.error(`REFUSED (5): per-type sums ${sumEdges} != the slices' TOTAL ${fleet}`); process.exit(5) }
+
 if (fleet !== c.edges) { console.error(`REFUSED (5): the slices' edges ${fleet} != the closure's ${c.edges}`); process.exit(5) }
 if (sumL("resolved") !== c.resolved) { console.error(`REFUSED (5): resolved ${sumL("resolved")} != closure ${c.resolved}`); process.exit(5) }
 if (sumL("ambDecl") !== c.ambDecl) { console.error(`REFUSED (5): amb(decl) ${sumL("ambDecl")} != closure ${c.ambDecl}`); process.exit(5) }
@@ -154,9 +183,16 @@ const parsed = Number(pop?.parsed)
 // THE CENSUS POPULATION, under either spelling a lane actually uses: `population.admitted`
 // (go, kotlin, css) or `population.filesAdmitted` (cpp, whose census counts files). A disagreement
 // between the closure and the census is still a refusal — the spelling is the only thing that varies.
-const censusAdmitted = Number(census?.population?.admitted ?? census?.population?.filesAdmitted ?? census?.filesAdmitted)
+// A NUMBER ON THE COMMAND LINE IS A CHECK, NOT AN ESCAPE (kotlin's runner phrasing): a lane whose
+// census is a TEXT artifact passes --expect-population, and the generator still requires the ARM's own
+// population line to agree with it. Two sources or the refusal stands.
+const expectPopulation = arg("--expect-population")
+const censusAdmitted = Number(
+  census?.population?.admitted ?? census?.population?.filesAdmitted ?? census?.filesAdmitted ?? NaN,
+) || (expectPopulation !== undefined ? Number(expectPopulation) : NaN)
 if (parsed !== admitted) { console.error(`REFUSED (4): the closure's parsed ${parsed} != admitted ${admitted}`); process.exit(4) }
-if (admitted !== censusAdmitted) { console.error(`REFUSED (4): the closure's admitted ${admitted} != the census's ${censusAdmitted} — two instruments over two populations`); process.exit(4) }
+if (!Number.isFinite(censusAdmitted)) { console.error("REFUSED (4): no population source — pass --census or --expect-population"); process.exit(4) }
+if (admitted !== censusAdmitted) { console.error(`REFUSED (4): the arm's admitted ${admitted} != the declared population ${censusAdmitted} — two instruments over two populations`); process.exit(4) }
 const POP = `parsed=${admitted}/${admitted} admitted=${admitted} exts=${exts} index=no`
 
 const types: Record<string, any> = {}

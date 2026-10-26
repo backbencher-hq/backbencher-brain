@@ -1370,7 +1370,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // A component name is a TYPE NAME — Swift's capitalization convention,
       // the same test the JS lane applies to a JSX tag (`<div>` is an
       // intrinsic, not a component). `some View` itself names no component.
-      if (!/^[A-Z]/.test(target) || target === "View" || target === "Self") continue
+      //
+      // The test is a CHARACTER test, not a pattern: the first code unit is an ASCII
+      // capital (A..Z), which is the whole convention. `View` and `Self` are excluded by
+      // name because they are view-protocol vocabulary, not components.
+      const firstCode = target.length > 0 ? target.charCodeAt(0) : 0
+      if (!(firstCode >= 65 /* A */ && firstCode <= 90 /* Z */) || target === "View" || target === "Self") continue
       relationships.push({
         source: className,
         target,
