@@ -558,6 +558,43 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "code_block_under_heading" }, range.startLine)
         patterns.push("Markdown code blocks")
+        // MD-G5 — `part_of` from a brace-directive inclusion fence, at R3.
+        //
+        // THE CONSTRUCT. MyST and the docutils-fenced dialects spell file inclusion as a
+        // fenced code block whose INFO STRING is a brace directive:
+        //
+        //     ```{include} ../client/README.md
+        //     ```
+        //     ```{literalinclude} ../../src/example.rs
+        //     ```
+        //
+        // The pinned block grammar models that as `fenced_code_block > info_string >
+        // language`, with `{include}` as the `language` child — the same named nodes the
+        // arm above already reads — so the construct is AST-visible with NO grammar
+        // change: rung R3. The directive INSERTS the named file's content into THIS
+        // document at render time, so the included file shares this document's single
+        // scope, imports nothing, and cannot be resolved as a separate unit: exactly the
+        // `part_of` contract (src/ast/types.ts, PartOf), and the same relabel the
+        // erlang/php/fsharp lanes made for their textual-inclusion constructs.
+        //
+        // THE DISCRIMINATORS, each of which excludes a measured near miss:
+        //   - the info string must begin `{` and name an INCLUSION directive (`include`,
+        //     `literalinclude`). A fence with a language (```python) is CODE; a brace
+        //     directive that is not an inclusion (`{note}`, `{toctree}`) is an
+        //     admonition/nav node, not a file.
+        //   - the directive must carry a NON-EMPTY, PATH-SHAPED argument. `{include}`
+        //     with no argument names nothing.
+        //   - the fence must carry NO FRAGMENT OPTION. `{literalinclude} x :lines: 1-10`
+        //     quotes a FRAGMENT of the file rather than splicing the whole file in, so
+        //     the file does not become part of this document's scope — it is a quote
+        //     source. Those sites are counted in the census and excluded here.
+        //
+        // THE TARGET IS SYMBOL-SHAPED, not a path. The cpp lane measured that a path
+        // target resolves 0 of 4,612 rows because the arbiter resolves target strings
+        // against symbol names, so the edge targets the included file's MODULE STEM —
+        // the name a document symbol publishes (`README.md` -> `README`) — and the path
+        // as written stays on the row as `metadata.partPath`.
+        this.emitIncludeFencePartOf(node, addRel, owner, range.startLine, patterns)
         continue
       }
 
@@ -792,6 +829,14 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `import_based` means. It is not `structural` — nothing here was read off the
         // block tree — and it is not `usage_contextual` — the argument was not matched
         // against a name appearing in context. It was read verbatim out of a directive.
+        md.evidenceClass = "import_based"
+        continue
+      }
+      if (t === "part_of") {
+        // MD-G5. A brace-directive inclusion fence names a file the same way the
+        // template include does — verbatim out of a directive — and erlang/php/fsharp
+        // gave their `part_of` relabels `import_based` for exactly that reason: the
+        // evidence is a path the document's own directive declares.
         md.evidenceClass = "import_based"
         continue
       }
@@ -1565,6 +1610,126 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (c >= 97 && c <= 102) return c - 87
     if (c >= 65 && c <= 70) return c - 55
     return -1
+  }
+
+  /**
+   * `part_of` from a brace-directive inclusion fence (MD-G5) — the emission half.
+   *
+   * The whole argument is at the call site; this method is the mechanism. It is
+   * called from the fenced-code-block arm for EVERY fence, so the first thing it
+   * does is decline everything that is not a splice inclusion, by a rule a reader
+   * can check against the measured census
+   * (validation/m14/fixtures/markdown/measurements/extended-construct-census.json):
+   *
+   *   1. the info string must exist and begin `{` — else this is an ordinary fence
+   *      with a language or no info at all (the census counted 72,786 fences and
+   *      317 brace rows, so 99.6% of fences decline here);
+   *   2. the directive inside the braces must be `include` or `literalinclude` —
+   *      else this is an admonition/nav/etc. brace directive (`{note}` 93 sites,
+   *      `{contents}` 84, `{eval-rst}` 79, `{code-block}` 20, ... — all counted,
+   *      all declined);
+   *   3. the argument must be a non-empty path — `{include}` bare names nothing;
+   *   4. the fence must carry no FRAGMENT option (`:lines:`, `:start-after:`,
+   *      `:end-before:`, ...) — a fragment-quoted include is a QUOTE of part of a
+   *      file, not a splice of the file into this document's scope, and the census
+   *      counts that split (1 splice / 1 fragment-quoted over the whole population).
+   *
+   * THE TARGET IS SYMBOL-SHAPED. A path target resolves 0 rows — the cpp lane
+   * measured 0 of 4,612 — because the arbiter resolves target strings against
+   * symbol names. The edge therefore targets the included file's MODULE STEM (the
+   * basename without its extension, which is the name a document symbol of that
+   * file would publish), and the path as written is kept on the row as
+   * `metadata.partPath`.
+   *
+   * `metadata.partRole: "library"` is MANDATORY on every `part_of` row the
+   * vocabulary's own contract defines (src/ast/types.ts): this file is the
+   * including document — the library — and the directive names the part.
+   */
+  private emitIncludeFencePartOf(
+    node: Node,
+    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
+    source: string,
+    line: number,
+    patterns: string[],
+  ): void {
+    const infoNode = this.findChildByType(node, new Set(["info_string"]))
+    if (!infoNode) return
+    const info = infoNode.text.trim()
+    // 1. The brace-directive family: the info string itself begins `{`.
+    if (info.charCodeAt(0) !== 123 /* { */) return
+    const closeBrace = info.indexOf("}")
+    if (closeBrace < 2) return
+    const directive = info.slice(1, closeBrace).trim()
+    // 2. Only the inclusion directives. The family census measured the other
+    //    brace directives the corpus carries (`note`, `contents`, `eval-rst`,
+    //    `code-block`, `warning`, `toctree`, ...) and they are not file inclusions.
+    if (directive !== "include" && directive !== "literalinclude") return
+    const argument = info.slice(closeBrace + 1).trim()
+    // 3. A non-empty, path-shaped argument. `{include}` with nothing after it
+    //    names no file; a bare token with no `/` and no `.` is a macro word, not
+    //    a path (the template-include half measures that class at 1,030+ sites
+    //    in the corpus and this is the same discriminator).
+    if (!argument || !this.namesAFile(argument)) return
+    // 4. No FRAGMENT option. The options are the fence's OWN CONTENT — the lines
+    //    between the two delimiters — and the measured grammar shape puts them in
+    //    `code_fence_content`'s OWN TEXT, not in its named children (a content node
+    //    carrying `:lines: 1-10` has exactly one named child, an empty
+    //    `block_continuation` — the option line is the prefix of the content node's
+    //    text). So the scan reads the content node's text, by position: an option
+    //    line is a line beginning `:`, and the fragment options are the ones the
+    //    census counted.
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child || child.type !== "code_fence_content") continue
+      const body = String(child.text ?? "")
+      // Scan the content line by line, by character code. The fence's own trailing
+      // delimiter is part of this text in the measured shape, and it does not begin
+      // with `:` so it cannot be mistaken for an option.
+      let lineStart = 0
+      while (lineStart < body.length) {
+        let lineEnd = lineStart
+        while (lineEnd < body.length && body.charCodeAt(lineEnd) !== 10 /* \n */) lineEnd++
+        const line = body.slice(lineStart, lineEnd).trim()
+        if (line.length > 0 && line.charCodeAt(0) === 58 /* : */) {
+          const key = line.slice(1).split(":")[0].split(" ")[0].trim().toLowerCase()
+          if (
+            key === "lines" || key === "start-after" || key === "end-before" ||
+            key === "start-line" || key === "end-line" || key === "lineno-start" ||
+            key === "lineno-end" || key === "lineno-match" || key === "lineno" ||
+            key === "start" || key === "end"
+          ) {
+            // A fragment-quoted include is measured, not silently dropped: the
+            // pattern line is what makes it visible in a document's own metadata.
+            patterns.push("Markdown fragment-quoted include (not part_of)")
+            return
+          }
+        }
+        lineStart = lineEnd + 1
+      }
+    }
+    // The TARGET is the included file's module stem: the basename without its
+    // extension — `README.md` -> `README`, `wagtail_icons_table.txt` -> ... no,
+    // the stem is the name a document symbol of the TARGET FILE would publish,
+    // and a non-markdown target publishes no symbol here; the edge still names
+    // the stem, which is the symbol-shaped spelling of the file itself.
+    const slash = argument.lastIndexOf("/")
+    const base = slash >= 0 ? argument.slice(slash + 1) : argument
+    const dot = base.lastIndexOf(".")
+    const stem = dot > 0 ? base.slice(0, dot) : base
+    if (!stem) return
+    patterns.push("Markdown include fences (part_of)")
+    addRel(
+      source,
+      ASTEngine.RelationshipType.PartOf,
+      stem,
+      {
+        role: "markdown_include_fence",
+        directive,
+        partPath: argument,
+        partRole: "library",
+      },
+      line,
+    )
   }
 
   private headingLevel(node: Node): number {
