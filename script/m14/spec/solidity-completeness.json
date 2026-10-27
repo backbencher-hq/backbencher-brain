@@ -208,7 +208,8 @@
       "implements",
       "overrides",
       "instantiates",
-      "imports"
+      "imports",
+      "decorates"
     ],
     "excluded": [],
     "corpusUnexercised": [],
@@ -247,6 +248,13 @@
         "files": 421,
         "_population": "421 of 421 admitted .sol files across 2 repos (npx tsx script/m14/incoming-gate.ts solidity sol 421), ONE RUN 2026-10-14",
         "_unresolved": "all 932 are unresolved: the target is a module SPECIFIER naming a FILE, not a declaration"
+      },
+      "decorates": {
+        "edges": 31,
+        "files": 12,
+        "_population": "421 of 421 admitted .sol files across 2 repos, ONE whole-population run of `npx tsx script/m14/incoming-gate.ts solidity sol 421` after the relabel; labels: calls 6,703 + decorates 31 = 6,734 = the pre-relabel calls total EXACTLY, so the label move is 1:1 with total unchanged",
+        "_derivation": "A `modifier_invocation` whose target RESOLVES to a declared `modifier_definition` (in-file set from a pre-walk declaration prepass; project member/symbol when an index is supplied) is `decorates`; one whose target resolves to a contract/interface/library is a base-constructor call and stays `calls` (metadata.isBaseConstructorCall, calleeKind baseConstructorCall); neither stays `calls` unresolved. MEASURED construct population over the whole admitted set (script/m14/solidity-extended-census.ts, validation/m14/measurements/solidity-extended-census.json): 222 modifier_invocation sites — 144 resolve to a declared modifier (31 in-file, 113 project-only), 78 resolve to a declared type (all base-constructor calls), 0 ambiguous, 0 unresolved. The per-file production path resolves the 31 in-file band; the 113 cross-file applications stay `calls` unresolved without a project index, the same cross-file wall SOL-21 already documents for inheritance-kind.",
+        "_relabeled_from": "calls (metadata.isModifierInvocation). The fleet's relabel precedent is 1:1 — nim include, erlang -include, fsharp #load. Fixtures: modifiers-sol17 and all-kinds-sol re-pinned (each old calls row became a decorates row plus a forbid row so a revert goes red); new fixture modifier-decorates-relabel fires the in-file band and forbids the base-constructor impostor in both directions plus the unresolved-name shape."
       }
     }
   }

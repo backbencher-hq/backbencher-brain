@@ -737,6 +737,26 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      *  `initializer()` is the corpus's clearest case: 24 rows, all of them the
      *  `Initializable` modifier, none of them a function. */
     const modifierNamesInFile = new Set<string>()
+    /**
+     * THE DECORATES DISCRIMINATOR IS RESOLUTION-BASED, so its declaration name space is collected
+     * BEFORE the walk: a base-constructor call may name a type declared LATER in the file, and a
+     * modifier may be applied ABOVE its own declaration — both legal Solidity. Deliberately
+     * SEPARATE from `typeNamesInFile`: that set is filled DURING the walk and feeds SOL-5's
+     * in-file interface decision, which must keep seeing only declarations read so far. Prefilling
+     * it would silently re-decide the kind of a forward-declared base.
+     *
+     * MEASURED on the whole admitted population (script/m14/solidity-extended-census.ts): 222
+     * `modifier_invocation` sites, 144 resolving to a declared `modifier_definition` and 78 to a
+     * declared contract/interface/library, 0 ambiguous, 0 unresolved. The two classes are DISJOINT,
+     * and no test on the invocation's spelling could have separated them — the tree is identical.
+     */
+    const declaredTypeNamesForCalls = new Set<string>()
+    /** Built once per file, and only when a header name actually needs the project's key space. */
+    let projectResolutionTables: ReturnType<typeof buildResolutionTables> | null = null
+    const projectTables = (): ReturnType<typeof buildResolutionTables> => {
+      if (projectResolutionTables === null) projectResolutionTables = buildResolutionTables(projectIndex!)
+      return projectResolutionTables
+    }
     /** Deferred `overrides`: resolved after the whole file is read. */
     const overrideCandidates: {
       memberName: string; owner: string; line: number; explicit: string[]; anyBase: string[]
@@ -1605,6 +1625,38 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // -------------------------------------------------------------- traversal
 
+    // MODIFIER / TYPE DECLARATION PREPASS — the name space the decorates discriminator resolves
+    // against. Recovery regions are skipped exactly as the walk skips them: a name the parser
+    // invented while recovering from damage cannot become a resolution.
+    {
+      const prepass: Node[] = [rootNode]
+      while (prepass.length > 0) {
+        const n = prepass.pop()!
+        if (n.type === "ERROR" || n.isMissing) continue
+        switch (n.type) {
+          case "modifier_definition": {
+            const nameNode = n.childForFieldName("name")
+            if (nameNode) modifierNamesInFile.add(nameNode.text)
+            break
+          }
+          case "contract_declaration":
+          case "interface_declaration":
+          case "library_declaration":
+          case "struct_declaration":
+          case "enum_declaration":
+          case "user_defined_type_definition": {
+            const nameNode = n.childForFieldName("name")
+            if (nameNode) declaredTypeNamesForCalls.add(nameNode.text)
+            break
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) prepass.push(c)
+        }
+      }
+    }
+
     const work: { node: Node; exit: boolean }[] = [{ node: rootNode, exit: false }]
     /** Nodes already claimed as a callee, so SOL-2 does not also read them. */
     const claimedCallees = new Set<number>()
@@ -2421,11 +2473,62 @@ const meta = modifiersOf(node)
         // header. grammar.js:765 — `modifier_invocation` is `$._identifier_path`
         // plus optional arguments, with NO field, so the name is the first
         // `identifier` child. `descend` stays TRUE so the arguments are read.
+        //
+        // TWO CONSTRUCTS WEAR ONE NODE TYPE, and the tree cannot tell them apart:
+        // an APPLIED MODIFIER (`function f() onlyOwner`) and a BASE-CONSTRUCTOR CALL
+        // (`constructor() Base(1)`). They are the same node with the same field-less
+        // `identifier` child, so a test on the spelling cannot separate them — the
+        // discriminator is RESOLUTION against the declaration name space (the prepass
+        // above, plus the project index when one is present):
+        //
+        //   target resolves to a declared `modifier_definition` → DECORATES.
+        //     The modifier is applied code that runs around the declaration's body;
+        //     the decorated declaration is the source and the modifier is the target,
+        //     the direction the vocabulary states ("a decorated declaration is
+        //     decorated BY the decorator"). NOT a `calls` edge: an application is not
+        //     a call site, and the fleet's relabel precedent is one site, one label.
+        //   target resolves to a declared contract/interface/library → stays `calls`.
+        //     It is the base constructor being invoked, not an annotation.
+        //   neither → stays `calls` with `isModifierInvocation`, unresolved: the file
+        //     and the index cannot say what the name is, so no decorates claim is made.
+        //
+        // MEASURED, whole admitted population (script/m14/solidity-extended-census.ts):
+        // 144 decorates sites, 78 base-constructor calls, 0 ambiguous, 0 unresolved.
+        // The 78 all sit in constructor definitions, and the 4 modifier applications
+        // that also sit there are separated by the same resolution rule, not by the
+        // enclosing declaration.
         case "modifier_invocation": {
           const id = findFirstChild(node, "identifier")
           if (id) {
-            addRel(top().scope, id.text, ASTEngine.RelationshipType.Calls, 0.85,
-              id.startPosition.row + 1, { isModifierInvocation: true })
+            const name = id.text
+            const line = id.startPosition.row + 1
+            // in-file first: it is the strongest claim and needs no index.
+            const inFileModifier = modifierNamesInFile.has(name)
+            const inFileType = declaredTypeNamesForCalls.has(name)
+            let projectType = false
+            let projectMember = false
+            let projectSymbol = false
+            if (!inFileModifier && !inFileType && projectIndex) {
+              projectType = projectIndex.typeKinds.has(name)
+              if (!projectType) {
+                projectMember = projectTables().memberOwners.has(name)
+                projectSymbol = !projectMember && projectIndex.symbolNames.has(name)
+              }
+            }
+            if (inFileModifier || projectMember || projectSymbol) {
+              addRel(top().scope, name, ASTEngine.RelationshipType.Decorates,
+                inFileModifier || projectMember ? 0.9 : 0.8, line, {
+                  isModifierInvocation: true,
+                  isAppliedModifier: true,
+                  modifierResolution: inFileModifier ? "in-file"
+                    : projectMember ? "project-member" : "project-symbol",
+                })
+            } else {
+              addRel(top().scope, name, ASTEngine.RelationshipType.Calls, 0.85, line, {
+                isModifierInvocation: true,
+                ...((inFileType || projectType) ? { isBaseConstructorCall: true } : {}),
+              })
+            }
           }
           break
         }
@@ -2716,7 +2819,7 @@ const meta = modifiersOf(node)
     for (const owner of membersByType.keys()) closures.set(owner, memberClosure(owner))
 
     const callKinds: Record<string, number> = {
-      conversion: 0, namespaceBuiltin: 0, modifierInvocation: 0,
+      conversion: 0, namespaceBuiltin: 0, modifierInvocation: 0, baseConstructorCall: 0,
       localFunction: 0, inheritedMember: 0, inFileTypeMember: 0,
       crossFileInheritedMember: 0, projectMemberCandidate: 0,
       eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0, localBinding: 0,
@@ -2759,6 +2862,10 @@ const meta = modifiersOf(node)
       if (md.isEventEmission === true) return "eventEmission"
       if (md.isCustomErrorRevert === true) return "errorRevert"
       if (md.isStructConstructor === true) return "structConstructor"
+      // A `modifier_invocation` whose target RESOLVED to a contract/interface/library is the
+      // base constructor being invoked (`constructor() Base(1)`), not a modifier application —
+      // the decorates discriminator split the node type by resolution before this pass runs.
+      if (md.isBaseConstructorCall === true) return "baseConstructorCall"
         // A conversion's callee IS a primitive type word, which the reserved-token
         // module already recognises MECHANICALLY (`uint`/`int`/`bytes` + digits, or
         // a fixed type word) — so this needs no list of type names.
