@@ -147,6 +147,33 @@ const PUBLISH_SURFACE_KEYS = new Set([
  * A WRONG claim is worse than no claim: the gate counts a refutation against the lane exactly as it
  * counts an unresolved edge, and a fabricated candidate would manufacture the refutation.
  */
+/**
+ * Is this import TARGET shaped like a path or a URI rather than a bare name?
+ *
+ * The `sourcePathClaim` this lane emits is a statement about a PATH ("the source
+ * string resolves to no file in the project's admitted population"), and a bare
+ * name has no shape to check, so the claim is only for values that carry a
+ * directory separator or begin with a URI scheme (`scheme:`, RFC 3986). The test
+ * is pure String because this analyzer's resolution uses no regex: a path test
+ * written as a pattern is one more thing to audit, and the tree/text form is the
+ * same decision stated in the language the rest of this file is written in.
+ */
+function isPathOrUriShaped(value: string): boolean {
+  if (value.includes("/") || value.includes("\\")) return true
+  // RFC 3986 scheme: ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":"
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i)
+    const letter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    if (i === 0) {
+      if (!letter) return false
+      continue
+    }
+    if (c === 58 /* : */) return true
+    if (!(letter || (c >= 48 && c <= 57) || c === 43 /* + */ || c === 45 /* - */ || c === 46 /* . */)) return false
+  }
+  return false
+}
+
 function dependencyFileClaim(written: string, filePath: string, projectRoot: string | null, base: string | null): string | null {
   // ON THE SHARED GUARD since 2026-10-11. The arithmetic stays TOML's own — a `path` dependency names
   // a DIRECTORY, and the file the project can confirm is the manifest inside it — while the admitting
@@ -1614,7 +1641,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // and is never claimed — that is the laundering vector yaml's shape rule exists to refuse, and
           // 27 of this lane's unresolved targets are bare. They stay `unresolved`, which is the honest
           // outcome for a target nothing can check.
-          ...(fileClaim === null && /[/\\]|^[a-z][a-z0-9+.-]*:/i.test(pathValue)
+          ...(fileClaim === null && isPathOrUriShaped(pathValue)
             ? { sourcePathClaim: [pathValue] }
             : {}),
           // THE TIER IS `import_based`, NOT `structural` — section D of the completeness
