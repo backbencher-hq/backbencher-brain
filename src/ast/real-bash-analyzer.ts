@@ -1,7 +1,7 @@
 // BASH LANE — the pure-AST analyzer for shell scripts (.sh/.bash/.zsh).
 // Author: Muhammad Ishaq Khan
 // What this file is: parses the pinned tree-sitter-bash grammar and publishes the
-// shell lane's symbols and relationship types: calls, uses, contains, imports,
+// shell lane's symbols and relationship types: calls, uses, contains, part_of,
 // references, exports and overrides. `instantiates` is NEVER emitted — bash has
 // no construction form; fixtures/bash/no-instantiation pins the absence.
 // Grammar: wasm/tree-sitter-bash.wasm (sha256 f55f3f6c780e79fa…).
@@ -103,6 +103,23 @@ function bashFileScopeOf(filePath: string): string {
  *  - BD6  `unset` is ruled, not emitted: no relationship type in the ontology
  *    expresses unbinding a binding, so a `uses` edge would assert a read that
  *    does not happen and an `imports` edge would assert a dependency.
+ *  - BD16 `source`/`.` is TEXTUAL INCLUSION into the CALLING shell's scope, so
+ *    the relationship is `part_of`, not `imports`: the sourced file's text runs
+ *    in this shell, its definitions ARE this file's, and it is a part of this
+ *    library unit, not a module loaded into a namespace of its own. The edge's
+ *    source is the FILE (the module symbol, because the directive is the file's,
+ *    not an enclosing function's) and its target is the PART'S MODULE SYMBOL
+ *    (`source ./lib/helpers.sh` -> `helpers.sh`, the name this lane publishes for
+ *    that file per BD2); the written path stays in `metadata.partPath` because a
+ *    path is evidence and the arbiter resolves targets against SYMBOL NAMES.
+ *    `metadata.partRole` is mandatory and is `"library"` on every row: this file
+ *    carries the directive and names the part. Two shapes are NOT `part_of`:
+ *    an inclusion inside a child-process boundary (`( … )`, `$( … )`, `<( … )`),
+ *    where the included text shares that child's scope and not this shell's, and
+ *    `bash x.sh`/`sh x.sh`, which EXECUTE a file in a new process and never
+ *    include it (fixtures/bash/part-of-source-inclusion pins both directions).
+ *    The `references` mention row is unchanged and stays beside it: it names the
+ *    path the file reads, which is a different fact from what the file becomes.
  */
 
 // Shell builtins and reserved words that do not represent project-level command
@@ -1700,6 +1717,75 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Is this node inside a CHILD-PROCESS boundary — a subshell, a command
+   * substitution, or a process substitution?
+   *
+   * BD16: `part_of` asserts that the included text shares THIS file's single
+   * shell scope. `( source lib.sh )` runs the inclusion in a forked shell, so
+   * the definitions live and die in that child and the outer file's scope never
+   * sees them; the claim would be false. The boundary is read from the tree
+   * (ancestor node types), never from the text, so `source lib.sh` inside a
+   * function — which DOES run in this shell, because a function is not a
+   * process — is unaffected.
+   *
+   * `bash x.sh` / `sh x.sh` never reach this helper: they are not the
+   * `source`/`.` command at all, they EXECUTE a file and the analyzer already
+   * publishes a `calls` edge to the interpreter.
+   */
+  private isInsideChildProcess(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (
+        cur.type === "subshell" ||
+        cur.type === "command_substitution" ||
+        cur.type === "process_substitution"
+      ) {
+        return true
+      }
+      if (cur.type === "program") return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /**
+   * THE PART'S MODULE SYMBOL — the only `part_of` target the arbiter can bind.
+   *
+   * The argument of a `source` is a PATH, and a path is not in the arbiter's
+   * target space: it resolves target STRINGS against SYMBOL NAMES, so a path
+   * target can only ever be unresolved (`partPath` keeps the path as evidence).
+   * The symbol this lane publishes for a file is BD2's module symbol — its
+   * basename WITH its extension — so `source ./lib/helpers.sh` names the part
+   * `helpers.sh`. The stem (`helpers`) is deliberately NOT used: it is the
+   * spelling another lane's module symbol may have, and here it names no symbol
+   * this analyzer publishes.
+   *
+   * Returns "" when the last path segment is an EXPRESSION rather than a name
+   * (`source "$lib"`, `source "$(pick)"`, `source lib/*.sh`). A name that a
+   * symbol can carry is: non-empty, and free of the characters that mark an
+   * unexpanded value or shell syntax. Index arithmetic over code points, which
+   * is the same non-syntactic shape the lane's other text tests use.
+   */
+  private partSymbolOfPath(pathText: string): string {
+    const slash = pathText.lastIndexOf("/")
+    const base = slash >= 0 ? pathText.slice(slash + 1) : pathText
+    if (base.length === 0) return ""
+    for (let i = 0; i < base.length; i++) {
+      const c = base.charCodeAt(i)
+      // whitespace/control, `"` `'` `` ` `` `$` `(` `)` `{` `}` `[` `]` `*` `?`
+      // `;` `|` `&` `<` `>` are expression or syntax characters, never a name.
+      if (
+        c <= 32 || c === 34 || c === 39 || c === 96 || c === 36 || c === 40 || c === 41 ||
+        c === 123 || c === 125 || c === 91 || c === 93 || c === 42 || c === 63 ||
+        c === 59 || c === 124 || c === 38 || c === 60 || c === 62 || c === 92
+      ) {
+        return ""
+      }
+    }
+    return base
+  }
+
+  /**
    * Is this `command` a `case` arm's PATTERN that the grammar could not close?
    *
    * `if ! case "$t" in binary) … ;; source) … ;; esac; then` is a construct the
@@ -2692,6 +2778,12 @@ private extractAssignment(
         // pinned corpus, one row seen from both sides because the two
         // implementations de-quoted differently.
         const normalized = this.dequotePath(arg)
+
+        // The brain_import row is NOT a relationship label: it is the
+        // file-dependency record the migration surface reads, so it stays even
+        // though the relationship below is `part_of`. This is the family's own
+        // split (a `source` dependency is a file dependency whatever its
+        // vocabulary value is called).
         imports.push({
           module: normalized,
           items: ["*"],
@@ -2703,11 +2795,51 @@ private extractAssignment(
             resolution: dynamic ? "dynamic" : "literal",
           },
         })
-        ctx.addRel(ctx.relSource(), normalized, ASTEngine.RelationshipType.Imports, 1.0, line, {
-          isSourceImport: true,
-          resolution: dynamic ? "dynamic" : "literal",
-          bashSpecific: true,
-        })
+
+        // BD16: the INCLUSION relation is `part_of`, and its target is the
+        // PART'S MODULE SYMBOL, never the path. Measured in the cpp lane and
+        // carried here: the arbiter resolves a target STRING against SYMBOL
+        // NAMES and has no space for a filesystem path, so a path target is
+        // 100 % unresolved by construction. The symbol this lane publishes for
+        // the part file is BD2's spelling — its basename WITH its extension
+        // (`./lib/helpers.sh` -> `helpers.sh`) — which is also why the stem
+        // alone is not used here: `helpers` names no module symbol this lane
+        // publishes. The written path is kept in `metadata.partPath`, where it
+        // is evidence a reader can check against the source line.
+        //
+        // The source is the FILE, not the enclosing function: the directive is
+        // the file's (its text is included into the file's unit), and the
+        // module symbol is a key the store can bind.
+        //
+        // Two shapes are excluded and recorded rather than emitted:
+        //   * a child-process boundary — `( source x )`, `$( source x )`,
+        //     `<( source x )` — runs the inclusion in a NEW shell, so its
+        //     definitions never reach this file's scope and the
+        //     single-shared-scope fact `part_of` asserts is FALSE here;
+        //   * a path whose last segment is an EXPRESSION rather than a name
+        //     (`source "$lib"`), where no module symbol can be named at all.
+        const inChildProcess = this.isInsideChildProcess(node)
+        const partSymbol = inChildProcess ? "" : this.partSymbolOfPath(normalized)
+        if (partSymbol.length > 0) {
+          ctx.addRel(ctx.scriptName, partSymbol, ASTEngine.RelationshipType.PartOf, 1.0, line, {
+            // MANDATORY on every `part_of` row: the direction is the
+            // directive's own, and this file carries it and names the part.
+            partRole: "library",
+            partPath: normalized,
+            partSymbol,
+            resolution: dynamic ? "dynamic" : "literal",
+            isSourcePart: true,
+            isSourceInclusion: true,
+            bashSpecific: true,
+            evidenceClass: "import_based",
+          })
+        } else {
+          patterns.add(inChildProcess ? "Child-Process Inclusion" : "Dynamic Source Path")
+        }
+
+        // The MENTION row: this file names that path. It is a different fact
+        // from what the file becomes (the row above), so it is unchanged —
+        // same source, same target, same line.
         ctx.addRel(ctx.relSource(), normalized, ASTEngine.RelationshipType.References, 1.0, line, {
           isSourceDependency: true,
           resolution: dynamic ? "dynamic" : "literal",
