@@ -376,13 +376,14 @@
     "imports"
   ],
   "ontologyRelationshipsEmitted": [
-    "contains",
-    "references",
-    "imports",
     "calls",
+    "contains",
     "extends",
+    "imports",
+    "mixes_in",
     "overrides",
-    "part_of"
+    "part_of",
+    "references"
   ],
   "ontologyRelationshipsRuled": [
     "uses",
@@ -466,6 +467,7 @@
       "contains",
       "extends",
       "imports",
+      "mixes_in",
       "overrides",
       "part_of",
       "references",
@@ -510,6 +512,13 @@
         "files": 14,
         "_why": "IMPLEMENTED 2026-10-25/26 AT RUNG R3 WITH NO GRAMMAR CHANGE, in the TWO vocabularies that have a textual-inclusion construct. THE CONSTRUCT: `<xi:include href>` (XInclude 1.0 4.1) and `<xsl:include href>` (XSLT 1.0 2.6.1) both REPLACE the directive with the named document's content, so the included document is a FRAGMENT of the including one - it shares the including document's single scope, contributes no module, and cannot be resolved as a separate unit once included: the part_of contract in src/ast/types.ts, and the same construct class as cpp #include \"...\", fsharp #load, php include/require, erlang -include and typescript /// <reference path>. R3 because each construct is a NAMESPACED ELEMENT the pinned grammar already parses as an ordinary element with an Attribute href; R1/R2 would buy nothing. DETECTION IS BY RESOLVED NAMESPACE AND ELEMENT NAME, never by the written prefix (the fixture pins an `<include>` outside every inclusion vocabulary, which emits nothing). THE TARGET IS A SYMBOL, NOT A PATH (the measured cpp result: a path target resolved 0 of 4,612 rows because the arbiter resolves target strings against SYMBOL NAMES): the target is the included document's module STEM (basename, no directory, no extension), the written href rides in metadata.partPath. `partRole` is mandatory and is \"library\" on every row (this document carries the directive; XML has no `part of` spelling, so XML never produces the \"part\" half). THE DIRECTION IS THE DIRECTIVE'S OWN: source is the file carrying the directive - the DOCUMENT ELEMENT, because XML publishes no file-level symbol. XInclude's parse=\"text\" IS STILL part_of (decided): a text inclusion splices bytes as character data instead of element content, but another file's content still becomes part of THIS document and contributes no module; recorded as metadata.parseMode. A REMOTE href is REFUSED on the same rule imports uses. MEASURED over the WHOLE admitted population (11,593 git-tracked files <= 512 KiB with a routed extension, 202 repos, root .corpus): 50 candidate files screened, all parsed; 95 SITES in 14 files through parseFile, emitting 94 EDGES / 95 OCCURRENCES. CHANNEL SPLIT: xinclude_include 6 sites / 3 files -> 5 rows / 6 occurrences (two identical hrefs share one source|type|target key); xslt_include 89 sites / 11 files -> 89 rows / 89 occurrences. HREF CLASSES, the wall this row carries: 92 of 95 name an ADMITTED file; 2 name a file that EXISTS but is not admitted by the router's extension set (libxslt's docbook stylesheets include `../VERSION`, an extensionless file); 1 names something ABSENT (otp/lib/odbc/doc/src/specs.xml -> ../specs/specs_odbc.xml, not in this corpus); 0 remote; 0 empty. NEAR MISSES MEASURED, not claimed absent: xsl:import 43 sites / 36 files - a MODULE IMPORT with import precedence (XSLT 1.0 2.6.2) that emits `imports` (42 rows after 1 remote refusal), NEVER part_of (a fixture forbids its stem as a part_of target); RELAX NG `<include href>` = 0 sites, so the schema-merge class (which belongs to imports beside XSD xs:include) is EMPTY in this corpus, stated rather than claimed absent; the pre-REC 2003 XInclude namespace 1 site (libxslt/doc/tutorial2/libxslt_pipes.xml:655, a DocBook `<programlisting>` DISPLAYING the directive) and `<include>` in no namespace 1 site are adjudicated near misses. CROSS-CHECK: each channel's census site count equals the analyzer's own summed occurrences (xinclude 6=6, xslt_include 89=89, xslt_import 42=42 after its 1 declared refusal) - instruments validation/m14/fixtures/xml/inclusion-census.mts + .json. Fixtures xml/xinclude-part-of and xml/xsl-include-part-of pin both channels and both boundaries. The DERIVED declaration and the whole-population closure arm are still owed and are named as owed here, not claimed.",
         "_instrument": "validation/m14/fixtures/xml/inclusion-census.mts; BB_CORPUS_ROOT=$PWD/.corpus npx tsx validation/m14/fixtures/xml/inclusion-census.mts -> validation/m14/fixtures/xml/inclusion-census.json. A CONSTRUCT census (route + parse of every candidate), not the incoming-gate arm; the closure arm and the derived declaration are still owed."
+      },
+      "mixes_in": {
+        "edges": 415,
+        "occurrences": 420,
+        "files": 52,
+        "_why": "IMPLEMENTED 2026-10-26 AT RUNG R3: XSD definition composition is the one construct in this language that composes reusable definitions into a type WITHOUT declaring a supertype relation. `<xs:group ref=\"G\"/>` inside a complexType composes G's content model into the type (XSD 1.0 3.8.2: the containing type's content model IS the referenced group's) and `<xs:attributeGroup ref=\"G\"/>` composes G's attribute declarations (3.6.2). The composed definitions BECOME PART OF the type, and the type neither extends the group nor declares any conformance to it - the mixes_in contract in src/ast/types.ts. R3 because `ref=` is an ordinary attribute the grammar already parses. THE DISCRIMINATOR IS THE CARRIER, never the attribute name: only xs:group and xs:attributeGroup in the XSD namespace compose; a `ref=` on an ELEMENT is a reference (the impostor class, measured 326 substitutionGroup sites + element refs and pinned by the fixture's forbid rows). DIRECTION: source = the class composing the mixin = the NEAREST NAMED DECLARATION above the carrier (the carrier xs:group is a vocabulary tag no document declares - the same 438/438 fabricated-source defect extends measured), target = the composed group's LOCAL name. Collected then decided after the walk, because a group may be declared after the type that composes it. REFUSED when the name resolves nowhere (M60.R10). MEASURED over the WHOLE admitted population (11,593 git-tracked files <= 512 KiB, 202 repos, root .corpus): 518 construct SITES measured by the discriminator census (296 group ref / 55 files: 256 in-file, 17 cross-file, 23 absent; 222 attributeGroup ref / 60 files: 109 in-file, 110 cross-file, 3 absent) -> through parseFile 415 EDGES / 420 OCCURRENCES / 52 FILES, resolvability split 360 in-document + 55 external (the cross-file half: a composition whose target this document's own xs:include/xs:import brings in). The 518-vs-420 difference is the refusal class plus edge collapse, and both halves are stated rather than netted. NEAR MISSES MEASURED, not claimed absent: substitutionGroup 326 sites / 37 files - XSD's IS-A for elements, whose TYPE-level relation is derivation and stays `extends` (the impostor class the Lead's instruction names); xs:redefine 1 site (a merge channel); use-attribute-sets 38 sites / 9 files (XSLT 1.0 7.1.4 attribute-set composition - the same mixin shape in the XSLT vocabulary, DECLINED this turn and named as the open candidate because its lane ruling XML-ONTOLOGY-USES already measures it); RELAX NG combine 12 sites / 1 file (definition MERGE, not composition into a type). Fixture xml/xsd-definition-composition fires both carriers and FORBIDS the element-ref impostor, the type= use, the base= derivation (one construct one label) and the XSD built-in. xml fixtures 35/0 -> 36/0.",
+        "_instrument": "validation/m14/fixtures/xml/mixin-discriminator.mts (construct census + resolution split) -> validation/m14/fixtures/xml/mixin-discriminator.json; production-path counts re-run after the edit. The DERIVED declaration and the whole-population closure arm are still owed and named as owed here, not claimed."
       }
     },
     "corpusUnexercised": [],

@@ -364,6 +364,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // vocabulary (XSLT 1.0 §2.6.1: the included stylesheet's content is treated as
     // if it were written at the include's position), so the same tier.
     xslt_include_part: "import_based",
+    // XSD definition composition: `<xs:group ref="G"/>` / `<xs:attributeGroup ref="G"/>`
+    // inside a type composes G's definitions into THIS type with no base and no
+    // conformance declared. `reference_qualified` because the document names the
+    // composed definition — the same reading a QName reference gets — and the
+    // relation the edge asserts (composition into this type) is decided by the
+    // vocabulary construct, not inferred.
+    xsd_definition_composition: "reference_qualified",
     // XSLT's `<xsl:import href>` — a MODULE import with import precedence
     // (XSLT 1.0 §2.6.2), not a textual splice: the imported definitions are in
     // scope but may be overridden by the importing stylesheet's own. That is the
@@ -602,6 +609,41 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       nameNode: Node
     }
     const derivationCandidates: DerivationCandidate[] = []
+
+    /**
+     * XSD DEFINITION COMPOSITION — `<xs:group ref="G"/>` / `<xs:attributeGroup ref="G"/>`.
+     *
+     * THE CONSTRUCT: inside a complexType (or a group nesting another), these elements
+     * compose the named group's definitions INTO the composing type — §3.8.2 for groups
+     * ("the content model of the containing type is the referenced group's"), §3.6.2 for
+     * attribute groups. The composed definitions BECOME PART OF the type, and the type
+     * neither extends the group nor declares any conformance to it: a composition with
+     * no supertype relation, which is the `mixes_in` contract in `src/ast/types.ts` —
+     * a mixin composed into a class without a base and without conformance. The
+     * derivation construct (`base=`) is what `extends` is; `substitutionGroup=` is XSD's
+     * IS-A for elements, also not this; `type=` is a reference. This is the one XSD
+     * construct that composes reusable definitions into a type while declaring nothing
+     * about subtyping.
+     *
+     * Collected not decided, for the same reason the derivation queue is: a group may
+     * be declared after the type that composes it.
+     *
+     * Measured over the whole admitted population:
+     * `validation/m14/fixtures/xml/mixin-discriminator.json` — 518 sites (296 group +
+     * 222 attributeGroup) across 65 files, 365 resolving in-file, 127 cross-file, 26
+     * resolving nowhere this corpus holds.
+     */
+    type CompositionCandidate = {
+      /** The type or element the definitions are composed INTO — nearest named declaration. */
+      ownerName: string
+      /** The written QName, kept verbatim for the edge metadata. */
+      value: string
+      binding: string | undefined
+      kind: "group" | "attributeGroup"
+      valueNode: Node
+      nameNode: Node
+    }
+    const compositionCandidates: CompositionCandidate[] = []
 
     /**
      * TEMPLATE NAMES THIS STYLESHEET DECLARES.
@@ -1273,6 +1315,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               effectiveNamespace,
               callCandidates,
               derivationCandidates,
+              compositionCandidates,
               ownerName,
               nearestNamedDeclaration,
               isNamedVocabularyDeclaration ? symbolName : undefined,
@@ -2237,6 +2280,49 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }, cand.valueNode)
     }
 
+    // ── XSD DEFINITION COMPOSITION (XSD 1.0 §3.8.2 groups · §3.6.2 attribute groups) ──
+    //
+    // The `mixes_in` half of the XSD picture, decided after the walk for the same reason
+    // the derivation queue is: a group may be declared after the type that composes it.
+    //
+    // The four resolvability classes are the reference pass's, because this is the
+    // reference decision with a more precise label — the question "does the composed
+    // definition resolve?" is the question a `references` candidate answers, and the
+    // relation is the vocabulary's, not the resolution's. REFUSED when the name resolves
+    // nowhere this document knows: a composed definition that nothing declares is the
+    // M60.R10 "a value where a name belongs" class, and publishing it would put a name in
+    // the graph no file supports.
+    for (const cand of compositionCandidates) {
+      const qname = this.asQName(cand.value)
+      if (!qname) continue
+      const resolvableInDocument = declaredNames.has(qname.local)
+      const isBuiltin = cand.binding !== undefined && RealXmlAnalyzer.BUILTIN_NAMESPACE_URIS.has(cand.binding)
+      const imported = !resolvableInDocument && !isBuiltin && cand.binding !== undefined
+        ? importedNamespaces.get(cand.binding)
+        : undefined
+      if (!resolvableInDocument && !isBuiltin && !imported) continue
+      // The XSD built-ins contain no group or attributeGroup definitions, so `isBuiltin`
+      // firing would mean the document composes `xs:...` itself — an unusual but legal
+      // shape the classes below still describe honestly.
+      if (resolvableInDocument) {
+        ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, cand.nameNode, { isReferencedDeclaration: true })
+      }
+      addRelationship(cand.ownerName, qname.local, ASTEngine.RelationshipType.MixesIn, {
+        role: "xsd_definition_composition",
+        attributeName: "ref",
+        qname: cand.value,
+        prefix: qname.prefix,
+        namespaceUri: cand.binding,
+        // WHICH carrier, because the two constructs compose different things: a group
+        // composes a content model, an attributeGroup composes attribute declarations.
+        // A consumer filtering on the kind does not have to re-derive it from the tag.
+        composedKind: cand.kind,
+        resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : "external",
+        ...(isBuiltin || !resolvableInDocument ? { isExternalTarget: true } : {}),
+        ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
+      }, cand.valueNode)
+    }
+
     // ── entity uses, decided now that every declaration is known ─────────────
     for (const cand of entityReferenceCandidates) {
       const declared = declaredNames.has(cand.name)
@@ -2498,6 +2584,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       binding: string | undefined
       ownerNs: string | undefined
       kind: "extension" | "restriction"
+      valueNode: Node
+      nameNode: Node
+    }[],
+    // The XSD composition queue — same collection-then-decide shape as the two above,
+    // for `ref=` on `xs:group` / `xs:attributeGroup` (the `mixes_in` construct).
+    compositionCandidates: {
+      ownerName: string
+      value: string
+      binding: string | undefined
+      kind: "group" | "attributeGroup"
       valueNode: Node
       nameNode: Node
     }[],
@@ -2871,6 +2967,40 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         binding,
         ownerNs,
         kind: this.derivationKind,
+        valueNode,
+        nameNode,
+      })
+      return
+    }
+
+    // ── XSD DEFINITION COMPOSITION — `ref=` on `xs:group` / `xs:attributeGroup` ──
+    //
+    // Not a reference, for the same reason `base=` is not: the vocabulary construct
+    // declares a RELATION, and a name-mention label understates it. `t -references-> m`
+    // says the type mentions the group; `t -mixes_in-> m` says the group's content model
+    // IS COMPOSED INTO the type (XSD 1.0 §3.8.2 / §3.6.2), with no base and no conformance
+    // declared — the composition the `mixes_in` contract exists to spell.
+    //
+    // THE DISCRIMINATOR IS THE CARRIER, NOT THE ATTRIBUTE NAME: only `xs:group` and
+    // `xs:attributeGroup` in the XSD namespace compose definitions. The `ref=` on an
+    // ELEMENT (`<xs:element ref="e"/>`) is a reference to a declared element and stays in
+    // the generic QName path below — that is the impostor class this branch must not
+    // swallow, and the fixture forbids it as a mixes_in row.
+    if (
+      attributeName === "ref"
+      && ownerNs === "http://www.w3.org/2001/XMLSchema"
+      && (ownerLocalName === "group" || ownerLocalName === "attributeGroup")
+    ) {
+      compositionCandidates.push({
+        // Same rule as derivation: the composed-INTO type is the nearest named
+        // declaration above the carrier — the carrier itself is `xs:group`, a vocabulary
+        // tag no document declares. `selfNamedDeclaration` is undefined here in practice
+        // (a composing group/attributeGroup has no `name=` of its own), and the nearest
+        // named ancestor is the type or nesting group the definitions become part of.
+        ownerName: selfNamedDeclaration ?? nearestNamedDeclaration ?? ownerName,
+        value: collapsed,
+        binding,
+        kind: ownerLocalName as "group" | "attributeGroup",
         valueNode,
         nameNode,
       })
