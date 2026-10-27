@@ -46,17 +46,39 @@
  *              declared (go struct embedding, zig `usingnamespace`, dart `with`).
  *              PowerShell has exactly one declaration-level composition construct —
  *              the class base list — and it IS conformance (`extends` + `implements`,
- *              already emitted). The runtime member-attachment cmdlets are the
- *              impostor class and each is counted:
+ *              already emitted). The runtime cmdlets are the impostor class, and they
+ *              are NOT ONE CONSTRUCT, so they are not one number:
  *                Add-Member        attaches members to an OBJECT VALUE at runtime
  *                Update-TypeData   attaches members to a TYPE NAME at runtime
- *                Update-FormatData attaches view definitions at runtime
- *                Add-Type          compiles C#/VB source at runtime
- *              The FALSIFIER: a site where the composed member set is a NAMED
- *              DECLARATION (a symbol the population declares) rather than an inline
- *              script block or value. Members attached to a VALUE are not a
- *              composition of a member set into a type; they are mutation of one
- *              object, and the contract's source is a DECLARATION.
+ *                → these two ARE member attachment: 144 sites, the construct the
+ *                  ruling is about
+ *                Add-Type          compiles C#/VB SOURCE at runtime (172 sites). Its
+ *                                  argument is a source string by construction, so a
+ *                                  tally that added it to "the member set is inline
+ *                                  text" would be true for the wrong reason
+ *                Update-FormatData attaches a DISPLAY VIEW (10 sites), not members
+ *              The FALSIFIER reads the `-Value` / `-NotePropertyValue` ARGUMENT of a
+ *              member attachment — not `-Name` / `-MemberName`, which name ONE member
+ *              and are tallied separately (`memberNameArguments`), and not any name
+ *              anywhere in the command. The falsifier fires if such an argument is a
+ *              NAMED DECLARATION (a symbol this population declares) rather than an
+ *              inline script block, string or value: members attached to a VALUE are
+ *              mutation of one object, not composition of a member set into a type,
+ *              and the contract's source is a DECLARATION.
+ *              NOTHING IS LEFT UNCOUNTED, AND THE RESIDUALS ARE LISTED RATHER THAN
+ *              ASSUMED: an attachment with no `-Value` at all is counted in
+ *              `attachmentSitesWithNoValueArgument` and listed in
+ *              `attachmentSitesWithoutValue` WITH THE PARAMETERS IT USED INSTEAD
+ *              (measured: 23 sites — 18 parameter-shape and error tests in
+ *              `Add-Member.Tests.ps1`, an `Update-TypeData -AppendPath`, a bare
+ *              `-PassThru`, an `Update-TypeData` naming only serialization
+ *              parameters, and two commands with no arguments; NO
+ *              `-NotePropertyMembers` hashtable form occurs in the population at
+ *              all, which the first draft of this comment guessed it did), and every
+ *              member-set argument whose shape is none of block/string/declared-name
+ *              is listed in `memberSetUnshapedArgs` (measured: bare value tokens like
+ *              `$value`, `$null`, `(Get-ExpectedComputerInfoValue $propertyName)`) so
+ *              the residual is inspectable rather than a number a reader has to trust.
  *
  * NO REGEX. Every classifier reads node types, fields and a hash-set membership
  * test; command names are compared as exact strings after a lowercase fold.
@@ -139,11 +161,20 @@ if (admitted.length === 0) {
 }
 
 const parser = await getParser(LANG as any)
-const probe = parser.parse("class A : B { }").rootNode
-if (probe.type !== "program") {
+// THE PARSER IS NULLABLE AND THE GUARD IS THE CONTROL, not a convenience: `getParser` returns
+// `null` when the grammar cannot be loaded, and a run that continued would parse nothing and print
+// zeros about a language it never read. The probe below is the second half of the same control.
+if (!parser) {
+  console.error(`CONTROL FAILURE: getParser("${LANG}") returned null — there is no parser, so every count below would be a false zero.`)
+  process.exit(2)
+}
+const probeTree = parser.parse("class A : B { }")
+const probe = probeTree?.rootNode ?? null
+if (!probe || probe.type !== "program") {
   console.error("CONTROL FAILURE: the powershell parser did not load; every count below would be a false zero.")
   process.exit(2)
 }
+probeTree?.delete()
 
 // ───────────────────────────── helpers ─────────────────────────────
 const firstChild = (n: Node, type: string): Node | null => {
@@ -194,7 +225,15 @@ const trees: Node[] = []
 for (const a of admitted) {
   let root: Node
   try {
-    root = parser.parse(a.text).rootNode
+    const tree = parser.parse(a.text)
+    const treeRoot = tree?.rootNode ?? null
+    if (!treeRoot) {
+      // A NULL TREE OR A TREE WITH NO ROOT IS A FAILED PARSE, not an empty file: it is counted.
+      filesFailed++
+      tree?.delete()
+      continue
+    }
+    root = treeRoot
     filesParsed++
   } catch {
     filesFailed++
@@ -234,30 +273,85 @@ const counters = {
   mixes_in: {
     classStatements: 0,
     classBaseListEntries: 0,
+    /**
+     * FOUR CMDLETS, THREE DIFFERENT CONSTRUCTS — counted apart, because the population of the
+     * construct the ruling is about must not be a sum that includes shapes the ruling never claims.
+     *
+     *   Add-Member / Update-TypeData   attach MEMBERS to an object or to a type: this, and only
+     *                                  this, is the construct `mixes_in` would denote.
+     *   Add-Type                       COMPILES A SOURCE STRING (`-TypeDefinition 'public class C'`).
+     *                                  It is not a member attachment at all, and its argument is a
+     *                                  string by construction, so a tally that mixed it in would
+     *                                  make "the member set is inline text" true for the wrong reason.
+     *   Update-FormatData              attaches a display FORMAT VIEW, not members.
+     */
     addMember: 0,
     updateTypeData: 0,
     updateFormatData: 0,
     addType: 0,
+    /** Add-Member + Update-TypeData — the construct the ruling is about. */
+    memberAttachmentSites: 0,
     candidateSites: 0,
     /**
-     * WHAT THE MEMBER-SET ARGUMENT IS, by grammar shape — this is the falsifier, and it is the
-     * argument of `-Value`/`-MemberName`/`-Name` rather than any name anywhere in the command.
-     * The contract's target is a member set that is a DECLARATION; these cmdlets take an inline
-     * script block or a string, so the honest question is which shape actually arrives.
+     * THE FALSIFIER'S SUBJECT: the `-Value` argument of a MEMBER ATTACHMENT, by grammar shape.
+     * Not `-Name`/`-MemberName` (those name ONE member, never a set — they are tallied in
+     * `memberNameArguments`), and not any name anywhere in the command.
      */
     memberSetArgumentShapes: {} as Record<string, number>,
-    /** Sites whose member-set argument is a DECLARATION (a name resolving to one of this population's symbols). */
+    /** Member-attachment `-Value` arguments that are a DECLARATION (a name this population declares). */
     memberSetNamesADeclaration: 0,
     /** EVERY such site, in full, so the falsifier is inspectable rather than a number. */
     memberSetDeclaredSites: [] as { file: string; line: number; command: string; param: string; argument: string; declarationKinds: string[] }[],
+    /** `-Name` / `-MemberName` / `-NotePropertyName` arguments, keyed by parameter AND shape: a name is not a set. */
+    memberNameArguments: {} as Record<string, number>,
+    /** Every member-set argument whose shape is none of block / string / declared-name, in full (capped). */
+    memberSetUnshapedArgs: [] as { file: string; line: number; command: string; param: string; shape: string; argument: string }[],
+    /** `Add-Type -TypeDefinition` shapes — a compiled source string, counted so it is not claimed as a member set. */
+    typeCompilationDefinitionShapes: {} as Record<string, number>,
+    /** Member-set-shaped parameters on a command that is NOT a member attachment (should be 0; stated, not assumed). */
+    memberSetOnNonAttachment: {} as Record<string, number>,
     /** The HOST: `-TypeName`, counted separately so a host name is never read as a member set. */
     hostTypeArgumentSites: 0,
     hostTypeIsPrimitiveOrWildcard: 0,
+    /**
+     * MEMBER ATTACHMENTS WITH NO `-Value` ARGUMENT AT ALL — the residual that would otherwise be an
+     * unclassified hole. `Add-Member -NotePropertyMembers @{…}` carries its members in a hashtable
+     * instead of a `-Value`, and such a site cannot be classified by this reader; it is counted here
+     * rather than left to look like a site that was read and found clean.
+     */
+    attachmentSitesWithNoValueArgument: 0,
+    /** Those sites, WITH THE PARAMETERS THEY USED INSTEAD — so the residual is named, not inferred. */
+    attachmentSitesWithoutValue: [] as { file: string; line: number; command: string; params: string[] }[],
     filesWithAnyCandidate: 0,
+    /** Files carrying a real member attachment (Add-Member / Update-TypeData). */
+    filesWithAnyMemberAttachment: 0,
     exampleSites: [] as { file: string; line: number; command: string }[],
   },
   /** Members declared INSIDE a class body — containment, not composition. Reported so the two are not confused. */
   classMembers: { methods: 0, properties: 0 },
+}
+
+/**
+ * EVERY CLASSIFIED PARAMETER HAS A ROLE, AND THE ROLE DECIDES WHICH TALLY IT FEEDS.
+ *
+ * The first version put `-Value`, `-MemberName` and `-Name` in one "member set" bucket and then
+ * claimed "every member-set argument is inline" from it — a sum in which the parameter that names
+ * ONE member (and `Add-Type -Name`, which names the TYPE BEING COMPILED) sat beside the argument
+ * that carries the member body. MEASURED WRONG BECAUSE THE ARITHMETIC DID NOT CLOSE: 232 arguments
+ * against 326 command sites, and the three declaration-shaped hits were `-Name` arguments. THE LABEL
+ * WAS MEASURING A DIFFERENT POPULATION FROM THE ONE IT NAMED. A name is not a set.
+ *
+ * Declared at module scope because the CONTROL below classifies the same parameters, and two copies
+ * of a role table are two answers to the same question.
+ */
+const MIXIN_ARG_ROLE: Record<string, "host" | "memberSet" | "memberName" | "typeCompilation"> = {
+  "-typename": "host",
+  "-value": "memberSet",
+  "-notepropertyvalue": "memberSet",
+  "-membername": "memberName",
+  "-notepropertyname": "memberName",
+  "-name": "memberName",
+  "-typedefinition": "typeCompilation",
 }
 
 let fileIndex = -1
@@ -266,6 +360,7 @@ for (const root of trees) {
   const a = admitted[fileIndex]
   let renderInFile = false
   let mixinInFile = false
+  let attachmentInFile = false
 
   walk(root, (n) => {
     if (n.type === "class_method_definition") counters.classMembers.methods++
@@ -325,6 +420,14 @@ for (const root of trees) {
       else if (cmd === "update-typedata") counters.mixes_in.updateTypeData++
       else if (cmd === "update-formatdata") counters.mixes_in.updateFormatData++
       else counters.mixes_in.addType++
+      const isAttachment = cmd === "add-member" || cmd === "update-typedata"
+      if (isAttachment) {
+        counters.mixes_in.memberAttachmentSites++
+        if (!attachmentInFile) {
+          attachmentInFile = true
+          counters.mixes_in.filesWithAnyMemberAttachment++
+        }
+      }
       if (counters.mixes_in.exampleSites.length < 12) {
         counters.mixes_in.exampleSites.push({ file: `${a.repo}/${a.rel}`, line: n.startPosition.row + 1, command: cmd })
       }
@@ -342,23 +445,27 @@ for (const root of trees) {
       // the wrong level and measured 0 member-set arguments over 326 sites).
       const elements = firstChild(n, "command_elements")
       if (!elements) return
+      // Whether this SITE carried a member-set argument at all. A site with none is counted after
+      // the loop rather than left to look like a site that was read and found clean: `Add-Member
+      // -NotePropertyMembers @{…}` carries its members in a hashtable, which this reader cannot
+      // classify, and an uncounted hole is the one thing this census refuses to leave.
+      let sawMemberSetArgument = false
+      const paramsSeen: string[] = []
       let pending: string | null = null
       for (let i = 0; i < elements.childCount; i++) {
         const c = elements.child(i)
         if (!c) continue
         if (c.type === "command_parameter") {
           pending = c.text.trim().toLowerCase()
+          paramsSeen.push(pending)
           continue
         }
         if (c.type === "command_argument_sep" || c.type === "command_name") continue
         if (pending === null) continue
         const param = pending
         pending = null
-        // Only the parameters that carry the HOST or the MEMBER SET are classified.
-        // `-MemberType ScriptMethod` names a member KIND, not a member set, so it is
-        // consumed and not counted either way.
-        if (param !== "-typename" && param !== "-value" && param !== "-membername" && param !== "-name") continue
-        const isHost = param === "-typename"
+        const role = MIXIN_ARG_ROLE[param]
+        if (!role) continue
         let shape = c.type
         let namesADeclaration = false
         let sawBlock = false
@@ -382,11 +489,31 @@ for (const root of trees) {
         if (sawBlock) shape = "script_block"
         else if (sawString) shape = "string_literal"
         else if (namesADeclaration) shape = "declared_name"
-        if (isHost) {
+        if (role === "host") {
           counters.mixes_in.hostTypeArgumentSites++
           if (shape !== "declared_name") counters.mixes_in.hostTypeIsPrimitiveOrWildcard++
-        } else {
+        } else if (role === "memberSet") {
+          if (!isAttachment) {
+            // A member-set-shaped argument on a command this ruling does not claim. Counted, never
+            // folded in: `[]` here is a statement, whereas silence would be an assumption.
+            const k = `${cmd} ${param}`
+            counters.mixes_in.memberSetOnNonAttachment[k] = (counters.mixes_in.memberSetOnNonAttachment[k] ?? 0) + 1
+            continue
+          }
+          sawMemberSetArgument = true
           counters.mixes_in.memberSetArgumentShapes[shape] = (counters.mixes_in.memberSetArgumentShapes[shape] ?? 0) + 1
+          if (shape !== "script_block" && shape !== "string_literal" && shape !== "declared_name") {
+            if (counters.mixes_in.memberSetUnshapedArgs.length < 40) {
+              counters.mixes_in.memberSetUnshapedArgs.push({
+                file: `${a.repo}/${a.rel}`,
+                line: n.startPosition.row + 1,
+                command: cmd,
+                param,
+                shape,
+                argument: c.text.slice(0, 120),
+              })
+            }
+          }
           if (shape === "declared_name") {
             counters.mixes_in.memberSetNamesADeclaration++
             if (counters.mixes_in.memberSetDeclaredSites.length < 40) {
@@ -401,6 +528,27 @@ for (const root of trees) {
               })
             }
           }
+        } else if (role === "memberName") {
+          const k = `${param} ${shape}`
+          counters.mixes_in.memberNameArguments[k] = (counters.mixes_in.memberNameArguments[k] ?? 0) + 1
+        } else {
+          if (cmd === "add-type") {
+            counters.mixes_in.typeCompilationDefinitionShapes[shape] = (counters.mixes_in.typeCompilationDefinitionShapes[shape] ?? 0) + 1
+          } else {
+            const k = `${cmd} ${param}`
+            counters.mixes_in.memberSetOnNonAttachment[k] = (counters.mixes_in.memberSetOnNonAttachment[k] ?? 0) + 1
+          }
+        }
+      }
+      if (isAttachment && !sawMemberSetArgument) {
+        counters.mixes_in.attachmentSitesWithNoValueArgument++
+        if (counters.mixes_in.attachmentSitesWithoutValue.length < 40) {
+          counters.mixes_in.attachmentSitesWithoutValue.push({
+            file: `${a.repo}/${a.rel}`,
+            line: n.startPosition.row + 1,
+            command: cmd,
+            params: paramsSeen,
+          })
         }
       }
     }
@@ -425,7 +573,12 @@ const controlText = [
   "class Base { }",
   "class Derived : Base { [void] M() { } [int]$P }",
 ].join("\n")
-const cRoot = parser.parse(controlText).rootNode
+const cTree = parser.parse(controlText)
+const cRoot = cTree?.rootNode ?? null
+if (!cRoot) {
+  console.error("CONTROL FAILURE: the control text did not parse, so no count below is demonstrably able to fire.")
+  process.exit(2)
+}
 const control = {
   addMember: 0,
   updateTypeData: 0,
@@ -438,6 +591,13 @@ const control = {
   classBaseListEntries: 0,
   classMethods: 0,
   classProperties: 0,
+  // THE NEW BUCKETS GET THEIR OWN CONTROL. A counter the synthetic site cannot trip reports 0 over
+  // any corpus, and the role split is exactly the part of this instrument that was wrong once.
+  memberAttachmentSites: 0,
+  memberSetArgs: 0,
+  memberNameArgs: 0,
+  typeDefinitionArgs: 0,
+  memberSetArgsOnAttachment: 0,
 }
 walk(cRoot, (n) => {
   if (n.type === "class_method_definition") control.classMethods++
@@ -467,6 +627,36 @@ walk(cRoot, (n) => {
   else if (cmd === "convertto-html") control.convertToHtml++
   else if (cmd === "out-gridview") control.outGridView++
   else if (cmd === "show-command") control.showCommand++
+
+  // THE ARGUMENT-LEVEL CONTROL, on the same parameters the census classifies, through the SAME
+  // role table — so a role that stops matching the grammar goes red here rather than quietly
+  // producing a corpus-wide zero.
+  if (cmd === "add-member" || cmd === "update-typedata" || cmd === "add-type") {
+    const isAttachment = cmd !== "add-type"
+    if (isAttachment) control.memberAttachmentSites++
+    const elements = firstChild(n, "command_elements")
+    if (elements) {
+      let pending: string | null = null
+      for (let i = 0; i < elements.childCount; i++) {
+        const c = elements.child(i)
+        if (!c) continue
+        if (c.type === "command_parameter") {
+          pending = c.text.trim().toLowerCase()
+          continue
+        }
+        if (c.type === "command_argument_sep" || c.type === "command_name") continue
+        if (pending === null) continue
+        const role = MIXIN_ARG_ROLE[pending]
+        pending = null
+        if (!role) continue
+        if (role === "memberSet") {
+          control.memberSetArgs++
+          if (isAttachment) control.memberSetArgsOnAttachment++
+        } else if (role === "memberName") control.memberNameArgs++
+        else if (role === "typeCompilation") control.typeDefinitionArgs++
+      }
+    }
+  }
 })
 const controlFailures: string[] = []
 for (const [k, v] of Object.entries(control)) if (v === 0) controlFailures.push(k)

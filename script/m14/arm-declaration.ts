@@ -161,7 +161,18 @@ for (const row of rows) {
 }
 
 const extList = EXTS
-const POP = `parsed=${parsed}/${corpusTotal} admitted=${corpusTotal} exts=${extList} index=no`
+/**
+ * THE INDEX ARM IS READ OFF THE COMMAND THAT RAN, NEVER ASSUMED.
+ *
+ * The first version hardcoded `index=no`, and the solidity arm WAS indexed
+ * (`--index`, because production builds SOLIDITY_DECLARATION_SPEC and the analyzer
+ * consumes it). That put `index=no` in the population string beside a caveat that
+ * says `index=yes` — the declaration would have contradicted itself about the one
+ * fact that decides what `resolved` MEANS. Deriving it from the instrument string
+ * is still a claim, so `--indexed` exists for a caller whose command line does not
+ * spell it; the generator never guesses. */
+const INDEXED = argv.includes("--indexed") || (argOf("--instrument") ?? "").includes("--index")
+const POP = `parsed=${parsed}/${corpusTotal} admitted=${corpusTotal} exts=${extList} index=${INDEXED ? "yes" : "no"}`
 
 /** Per-lane caveats. A lane that has none gets the generic ones; a claimed one must be true of THIS arm. */
 const LANE_CAVEATS: Record<string, Record<string, string>> = {
@@ -218,6 +229,7 @@ const declaration = {
     analyzer: analyzerDigest ? path.relative(ROOT, analyzerPath) : null,
     analyzerDigest,
     arm: ARM,
+    indexArm: INDEXED,
     armVerdict: arm?.verdict ?? null,
     armReason: arm?.reason ?? null,
     instrumentSelfTest: arm?.instrumentSelfTest ?? null,

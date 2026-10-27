@@ -158,9 +158,21 @@ wrong about" is the vacuous pass this repo refuses elsewhere.
 
 ## The ten ontology types
 
-Every one of the ten types is **EMITTED**. There is no RULED type in this lane, so there
-is no ruling to state, no probe to name and no overturn condition to publish — the table
-below is the positive measurement that replaces them.
+The ten types in the table below are **EMITTED**, and every count in it is a positive
+measurement. **This section previously read "there is no RULED type in this lane", and
+that is no longer true**: the lane's applicable set is fourteen, and it reads **11
+implemented / 11 applicable / 3 excluded** in the coverage gate
+(`script/m14/spec/powershell-completeness.json`, which is the denominator and the
+authoritative wording). The three it does not emit — `decorates`, `renders`, `mixes_in` —
+are **RULED**, each with a population, a falsifier and an overturn ladder: `renders` and
+`mixes_in` were ruled on 2026-10-27 and are recorded under "PS-B20" below, and
+`decorates`' ruling is stated in that same spec block. Their two rows are in the table
+because a reader who scans it must see that these types are absent **by ruling and not by
+omission**; the `0` in each is a measured zero over the whole admitted population, not a
+cell that was never filled.
+
+`part_of` is implemented as well — which is why the gate reads 11/11 — and it is **not
+one of the ten rows below**; this document does not restate its counts.
 
 **Instrument, corpus, admission.** `validation/m14/fixtures/powershell/census.ts`, run
 through production `parseFile` from `src/ast/pool-worker.ts` (not `analyze()`, which is a
@@ -222,6 +234,8 @@ example list; `distinctFiles` in the census JSON is the uncapped set.
 | `implements` | EMITTED | 3 | 2 | 83.33% | **0.00%** | 0.00% | `structural` | every name after the first in the same header list. 3 edges over 2 files, both in the `powershell` repo's own inheritance test suite; `intraBoth 0.00%` because a base or interface declared in another file is not declared in the same file — this is the expected rate for a cross-file type reference, not a resolution failure. |
 | `overrides` | EMITTED | 12 | 1 | 100.00% | 100.00% | 0.00% | `inferred` | a subclass member that overrides a member of its resolved base: same name, same kind, base member neither `hidden` nor `static`. PowerShell has no `override` keyword — class methods are virtual by default — so this is the lane's only genuinely INFERRED edge type, which is why it is the only one on tier `inferred` and the only one at 0.9 rather than 1.0. All 12 edges are in ONE file, and pass 1 published 2 of them. |
 | `instantiates` | EMITTED | 1,227 | 256 | 61.53% | 15.97% | 0.00% | `usage_contextual` | an object construction: `[Type]::new(...)` (854 edges) or `New-Object` in its three spellings (373 after PS29). Type-accelerator names are suppressed — they construct nothing the graph should name — and a **type name held in a VARIABLE is not published as an `instantiates` target at all**, since the edge would assert the variable is a type. |
+| `renders` | RULED — not applicable | 0 | — | — | — | — | — | **0 sites over 1,181 admitted files.** The vocabulary's relation is *a component renders another component*, and **0 of the 32 `SymbolKind` values name a component**; `ConvertTo-Html` (15 sites, 1 file) is a serializer of objects to HTML **text**, `Out-GridView`/`Show-Command` display data (0/0), and `[Windows.Markup.XamlReader]::Parse` builds UI from XAML **text**. All are already published as `calls`, which is the true relation. Population, falsifier and ladder: "PS-B20". |
+| `mixes_in` | RULED — not applicable | 0 | — | — | — | — | — | **0 sites over 1,181 admitted files.** `mixes_in` is member-set composition with **no conformance declared**; PowerShell's one declaration-level composition construct is the class base list (50 entries), which **is** conformance and is already emitted as `extends`/`implements`. The runtime family is the impostor and it is **not one construct**: 144 real member attachments (`Add-Member` 127 + `Update-TypeData` 17, in 34 files) beside 172 `Add-Type` sites (which compile a source string) and 10 `Update-FormatData` sites (a display view), all published as `calls`. Over the 144 attachments the `-Value`/`-NotePropertyValue` arguments are **121 — 0 of them a named declaration** (script block 25, string literal 49, array-literal value expression 33, bare value token 14), plus 23 attachments that supply no `-Value` at all (18 of them parameter-shape tests), and 121 + 23 = 144. The 3 declaration-shaped arguments are all `-Name` (a member's own name, and the type `Add-Type` compiles), which is a name and not a set. Population, falsifier and ladder: "PS-B20". |
 
 `corpusBoth` is the share of edges whose BOTH endpoints name a symbol declared in ANY of
 the 1,108 sampled files; `intraBoth` is the share whose both endpoints are declared in
@@ -1100,11 +1114,11 @@ file in its row; none is carried forward from a previous wave without one.
 
 | Claim | Instrument | Result |
 | --- | --- | --- |
-| Fixtures | `validation/m14/fixtures/powershell/` | **17/17** — 15 at pass 2, plus `new-object-variable-psb14` (PS29) and `export-flag-psb15` (PS30) |
+| Fixtures | `validation/m14/fixtures/powershell/` | **22 pass / 0 fail** measured 2026-10-27 (`script/m14/run-fixtures.ts --lang powershell`). The ledger at PS-B20 read **17/17** (15 at pass 2, plus `new-object-variable-psb14` (PS29) and `export-flag-psb15` (PS30)); the suite has grown since, and today's addition is `ruled-extended-types.ps1` — the both-directions control for the `renders` and `mixes_in` rulings. The runner is the count, not this sentence |
 | Mutation coverage | `script/m60/powershell-mutants.ts`, **now reachable** | **55/55 caught, 0 survivors** — 51 from passes 1-2 plus 4 label mutants added for PS29/PS30. `BB_MUTANT_ONLY="powershell/" npx tsx script/m14/mutate-analyzer.ts`; a scoped run, so it writes no canonical evidence |
 | **The 5 pass-3 fixes, by SOURCE revert** | `validation/m14/fixtures/powershell/mutant-proof-psb14.sh` | **5/5 CAUGHT**, control clean, source restored byte-identical |
 | The 6 pass-2 fixes, by SOURCE revert | `validation/m14/fixtures/powershell/mutant-proof-psb12.sh` | **6/6 CAUGHT** at pass 2; not re-run this pass, and the fixtures it depends on are among the 17 still passing |
-| Ontology census | `validation/m14/fixtures/powershell/census.ts` | **10/10 types EMITTED** over 1,108/1,108 admitted files, **156,221 relationships** (156,225 before PS29/PS30) |
+| Ontology census | `validation/m14/fixtures/powershell/census.ts` | **10/10 types EMITTED** over 1,108/1,108 admitted files, **156,221 relationships** (156,225 before PS29/PS30). This is the census over the **ten registered types**; the lane's applicable set is now fourteen and the coverage gate reads **11/11 with 3 excluded** — see "PS-B20", whose population is the grown 1,181-file set |
 | Census reproducibility | the same command, re-run at HEAD | **every pass-2 figure reproduced EXACTLY** — 10 edge counts, 10 `distinctFiles`, both resolution columns, both intra columns, the heuristic count, the missing-line count, and both histograms. The admitted set did not move either: the same 1,108 files from the same 20 repos |
 | **Adversarial probes (pass 2)** | `validation/m14/fixtures/powershell/adversarial-probes.ts` | **11 probes**, 4 defects found; each carries its argument, instrument, count and overturn condition |
 | **Adversarial probes (pass 3)** | `validation/m14/fixtures/powershell/pass3-probes.ts` | **7 probes**, 2 defects fixed, 1 declared-open question settled with a number, 1 fix declined with a number, 1 new grammar limit, and **3 of the probe's own readings corrected** (a false positive, a 3x over-count, and a duplicate object key) |
@@ -1700,21 +1714,42 @@ conformance, already published:
 | `Add-Type` | 172 | `calls` |
 | `Update-TypeData` / `Update-FormatData` | 17 / 10 | `calls` |
 
-The runtime family is the impostor, and its **member set is always inline**:
-script block 25, array-wrapped script block 33, string literal 61. The falsifier
-asks whether any member-set argument is a **named declaration**, and the answer
-is **3 sites**, every one disposed by name rather than rounded to zero:
+The runtime family is the impostor — and it is **not one construct, so it is not one
+number**. Splitting it was not tidiness: the first version summed all 326 sites into
+one "member attachment" bucket and tallied `-Value`, `-MemberName` and `-Name`
+arguments as one "member set", which made 232 arguments against 326 sites and put
+the `-Name` hits inside the member-set number.
+
+| bucket | sites | is it member attachment? |
+| --- | --- | --- |
+| `Add-Member` + `Update-TypeData` | **144** (in 34 files) | **yes** — the construct the ruling is about |
+| `Add-Type` | 172 | no — it **compiles a source string** |
+| `Update-FormatData` | 10 | no — a display **view** |
+
+The falsifier reads the `-Value`/`-NotePropertyValue` **argument** of a member
+attachment. Over the 144: **121 member-set arguments, 0 of them a named
+declaration** — script block 25, string literal 49, array-literal value expression
+33, bare value token 14 (the 14 are listed verbatim in the artifact: `$value`,
+`$module.ExportedAliases.Keys`, `$null`, `(Get-ExpectedComputerInfoValue $propertyName)`,
+a literal `something`, `Length`). **23 attachments supply no `-Value` at all**, and
+they are listed rather than inferred — 18 parameter-shape and error tests in
+`Add-Member.Tests.ps1` (`-Name` alone, `-MemberType` alone, `-InputObject`,
+`-PassThru`), an `Update-TypeData -AppendPath`, a bare `-PassThru`, an
+`Update-TypeData` naming only serialization parameters, and two commands with no
+arguments. `121 + 23 = 144` closes exactly, and no `-NotePropertyMembers` hashtable
+form occurs anywhere in the population.
+
+The three declaration-shaped arguments in the whole family are all `-Name`, and
+`-Name` is not the member-set parameter:
 
 - `Add-Type -Name TestClass` (`powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1:7,14`) — the name of the type being **compiled**, not a composed set;
 - `Add-Member -Name Build` (`kubernetes/cluster/gce/windows/k8s-node-setup.psm1:146`) — a member **name** that collides with a function declared elsewhere in the corpus.
 
-`-Name` is not the member-set parameter; every `-Value`/`-MemberName` argument
-over the whole population is an inline block or string. **Ladder:** R1 unavailable
-(no mixin/trait/composition node in the served grammar); R2 unavailable (a patch
-would have to invent member-set composition; PowerShell's answer to reuse is
-single inheritance plus interfaces, and the runtime glue is cmdlet invocation);
-R3 unavailable (the candidates that could be misread are the 326 counted sites,
-and their member sets are inline).
+**Ladder:** R1 unavailable (no mixin/trait/composition node in the served grammar);
+R2 unavailable (a patch would have to invent member-set composition; PowerShell's
+answer to reuse is single inheritance plus interfaces, and the runtime glue is cmdlet
+invocation); R3 unavailable (the candidates that could be misread are the 144 member
+attachments, whose 121 member-set arguments are inline and name no declaration).
 
 ### Pins
 

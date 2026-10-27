@@ -789,6 +789,31 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     let extendsUnresolvedAsInterface = 0
 
     /**
+     * SOL-24 (2026-10-27) — the `mixes_in` counters, declared here so every
+     * `using_directive` the walk sees ends in a NAMED bucket rather than a silent
+     * `break`. The construct is `using L for T`: L's member set is attached to T
+     * with NO conformance declared, which is the vocabulary's mixin (go struct
+     * embedding, zig `usingnamespace`, dart `with`).
+     *
+     * WHAT EACH COUNTER IS FOR. A site is not a row for three different reasons,
+     * and a single "skipped" number would hide which one:
+     *   · no host             — `using L for *` (the wildcard form): there is no
+     *                           type being composed into, so there is no source.
+     *   · host not declared   — `using L for uint256`: the host is a primitive or a
+     *                           type this file and the project index cannot name, so
+     *                           a row would source an edge from a symbol nothing
+     *                           declares.
+     *   · braced set          — `using {f, g} for T`: the composed set is several
+     *                           FUNCTIONS, not one named member set, so there is no
+     *                           single target to name.
+     */
+    let mixesInUsingSites = 0
+    let mixesInRows = 0
+    let mixesInSkippedNoHost = 0
+    let mixesInSkippedHostNotDeclared = 0
+    let mixesInSkippedBracedSet = 0
+
+    /**
      * The EVIDENCE TIER, emitted CENTRALLY so no call site can forget it and
      * none can drift: the same shape as bash's `evidenceClassFor`.
      *
@@ -819,6 +844,9 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         case ASTEngine.RelationshipType.Implements:
         case ASTEngine.RelationshipType.Exports:
         case ASTEngine.RelationshipType.Instantiates:
+        // SOL-24 — `using L for T` states BOTH names in the tree, so the tier is
+        // structural for the same reason `extends` is: nothing is inferred.
+        case ASTEngine.RelationshipType.MixesIn:
           // SOL-19 — the tier is a function of the TYPE, and the first attempt made it
           // a function of CONFIDENCE as well ("below 1.0 is not structural"). That rule
           // is wrong, and the fixture suite said so within one run: `instantiates` is
@@ -1771,6 +1799,81 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             isDefault: names.length === 0 && !alias,
             metadata: { soliditySpecific: true, namedImports: names, isNamespaceImport: anySource },
           } as ASTEngine.ImportInfo)
+          break
+        }
+
+        // ------------------------------------------------------ SOL-24: mixes_in
+        //
+        // `using L for T;` ATTACHES library L's member set to type T, and declares
+        // NO conformance. That is the vocabulary's `mixes_in` verbatim: source = the
+        // type the member set is composed INTO, target = the member set's owner. It
+        // is not `extends`/`implements` (nothing is conformed to), and it is not
+        // `uses` (a use SAYS a name; this ATTACHES a member set). The edge is
+        // ADDITIVE to the `references` row the identifier pass already publishes for
+        // the library name — the same "distinct facts, both true" split the go lane
+        // records for `renders` beside `calls`.
+        //
+        // THE HOST MUST BE A DECLARED TYPE, and that is not a convenience: the
+        // contract's source is a composing TYPE, so `using SafeMath for uint256`
+        // has no source symbol to name — uint256 is a language primitive. Those
+        // sites are counted, not silently dropped, and the count is in the result
+        // metadata (mixesInSkippedHostNotDeclared). The population this splits is
+        // measured: 39 primitive-host sites and 54 wildcard sites of 124 in the
+        // corpus census (validation/m14/measurements/solidity-extended-census.json).
+        case "using_directive": {
+          mixesInUsingSites++
+          const line = node.startPosition.row + 1
+          const hostNode = node.childForFieldName("source")
+          if (!hostNode) {
+            mixesInSkippedNoHost++        // `using L for *`
+            break
+          }
+          const hostUdt = findFirstChild(hostNode, "user_defined_type")
+          const hostName = udtName(hostUdt) || hostNode.text.trim()
+          if (hostName === "" || hostName === "*") {
+            mixesInSkippedNoHost++
+            break
+          }
+          // The braced form has NO `type_alias`: its member set is a list of
+          // `using_alias` function names, and several functions are not one mixin.
+          const libraryNode = findFirstChild(node, "type_alias")
+          if (!libraryNode) {
+            mixesInSkippedBracedSet++
+            break
+          }
+          const libraryName =
+            (findFirstChild(libraryNode, "identifier")?.text ?? libraryNode.text.trim()).trim()
+          if (libraryName === "") {
+            mixesInSkippedBracedSet++
+            break
+          }
+          // Declared in THIS file, or settled by the project index. Absent both, a
+          // row would mint a source symbol the project does not declare.
+          //
+          // THE IN-FILE SET IS `declaredTypeNamesForCalls`, NOT `typeNamesInFile`:
+          // the latter carries the CONFORMANCE kinds only (contract/interface/
+          // library/UDVT) because SOL-5 uses it to decide extends-vs-implements, and
+          // a struct or enum can never be a base. A struct is a perfectly good mixin
+          // HOST (`using MathLib for Amount`), so the mixin test needs the type
+          // namespace, not the inheritance namespace — measured on this lane's own
+          // fixture, where the struct-host row was skipped until it read this set.
+          const hostDeclaredInFile = declaredTypeNamesForCalls.has(hostName)
+          const hostDeclared =
+            hostDeclaredInFile ||
+            (projectIndex !== undefined && projectIndex.typeKinds.has(hostName))
+          if (!hostDeclared) {
+            mixesInSkippedHostNotDeclared++
+            break
+          }
+          addRel(hostName, libraryName, ASTEngine.RelationshipType.MixesIn, 1.0, line, {
+            isUsingDirective: true,
+            // The DIRECTIVE'S OWN SHAPE, so a consumer can tell how the member set
+            // was named; `library` is the only form that becomes a row.
+            usingForm: "library",
+            isMemberSetComposition: true,
+            hostDeclaredInFile,
+          })
+          mixesInRows++
           break
         }
 
@@ -3086,6 +3189,16 @@ const meta = modifiersOf(node)
         // wants: which lines of this file the parser could not handle.
         recoveryLinesList: [...recoveryLines].sort((a, b) => a - b),
         implementsCrossFileUnresolved: extendsUnresolvedAsInterface,
+        // SOL-24 — every `using_directive` the walk saw, split into the one bucket
+        // that becomes rows and the three that cannot, so an absent row is always
+        // an accounted-for site rather than an unread node type.
+        mixesIn: {
+          usingSites: mixesInUsingSites,
+          rows: mixesInRows,
+          skippedNoHost: mixesInSkippedNoHost,
+          skippedHostNotDeclared: mixesInSkippedHostNotDeclared,
+          skippedBracedSet: mixesInSkippedBracedSet,
+        },
       // Not `Partial<FileMetadata>`: the declared return type is
         // `FileMetadata & Partial<FileMetadata>`, and casting to the Partial half made
         // `complexity` optional even though it is set two lines into this literal, which
