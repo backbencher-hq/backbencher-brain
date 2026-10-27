@@ -1643,3 +1643,87 @@ this one, and the 9th is a control that does not. Two mutants, both CAUGHT, each
 fixture: `relative-path-psb18-escape-narrowed` (the 2026-10-19 rule VERBATIM) and
 `relative-path-psb18-escape-widened`. Arms, the row-level reconciliation and the wall dispositions:
 `validation/m14/verification/POWERSHELL-VERDICT-2026-10-20.md`.
+
+## PS-B20 (append-only record, 2026-10-27) — `renders` and `mixes_in` RULED, and the lane reads 11/11
+
+**Population for every number below:** the whole admitted set — **1,181**
+`.ps1`/`.psm1`/`.psd1` files over **30** repositories, per-repo `git ls-files`,
+≤ 512 KiB (this lane's census cap), routed by `detectLanguageFromPath`. Instrument:
+`script/m14/powershell-extended-census.ts`; artifact:
+`validation/m14/measurements/powershell-extended-census.json`. Its **control
+PASSED**: every counter trips on a synthetic site before any corpus number is
+reported, so a zero below is a measured zero rather than a probe that never ran.
+Both types are recorded in `script/m14/spec/powershell-completeness.json`
+(`coverage.excluded`), which is what the coverage gate reads.
+
+### `renders` — RULED (ontological), 0 sites
+
+The vocabulary's relation is *a component renders another component*: source =
+the rendering symbol, target = the rendered **component**, and the host renderer
+constructs the element. Three facts settle it here:
+
+| fact | measured |
+| --- | --- |
+| component symbol kinds in the vocabulary | **0 of 32** `SymbolKind` values (read from `src/ast/types.ts` by the instrument) |
+| `ConvertTo-Html` (objects → HTML text) | **15** sites, 1 file |
+| `Out-GridView` / `Show-Command` / `XamlReader` | **0 / 0 / 1** mention |
+
+`ConvertTo-Html` is a **serializer**: it turns an object into text. `Out-GridView`
+and `Show-Command` display *data*, not a component. `[Windows.Markup.XamlReader]::Parse`
+constructs UI from XAML **text**, so what it renders is a document, not a
+component a source declaration names. All of them are **already published as
+`calls`** at their own sites — the true relation, and not a relation to relabel.
+
+**Falsifier:** a site where a declaration renders a component and the target is a
+declared component symbol — **0** over 1,181 files. (Four of the fifteen sites name
+a declaration anywhere in their own arguments; every one is the **object being
+serialized**, which is a `uses`/`calls` fact.) **Ladder:** R1 unavailable (the
+served grammar's 152 distinct named types carry no render/component/view node);
+R2 unavailable (a patch would have to invent a component model and a host
+renderer — PowerShell's rendering surfaces are .NET types and cmdlets invoked at
+runtime, not declaration syntax); R3 unavailable (no node type carries a
+component→component relation).
+
+### `mixes_in` — RULED (ontological), 0 sites
+
+`mixes_in` is the fleet's **member-set composition**: implementation attached to a
+type with **no conformance declared** (go struct embedding, zig `usingnamespace`,
+dart `with`, scss `@include`, elixir `use`). PowerShell has exactly **one**
+declaration-level composition construct — the class base list — and it **is**
+conformance, already published:
+
+| construct | sites | published as |
+| --- | --- | --- |
+| class statements | 273 | `contains` |
+| class base-list entries | **50** | `extends` (first name) / `implements` (rest) |
+| `Add-Member` | 127 | `calls` |
+| `Add-Type` | 172 | `calls` |
+| `Update-TypeData` / `Update-FormatData` | 17 / 10 | `calls` |
+
+The runtime family is the impostor, and its **member set is always inline**:
+script block 25, array-wrapped script block 33, string literal 61. The falsifier
+asks whether any member-set argument is a **named declaration**, and the answer
+is **3 sites**, every one disposed by name rather than rounded to zero:
+
+- `Add-Type -Name TestClass` (`powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1:7,14`) — the name of the type being **compiled**, not a composed set;
+- `Add-Member -Name Build` (`kubernetes/cluster/gce/windows/k8s-node-setup.psm1:146`) — a member **name** that collides with a function declared elsewhere in the corpus.
+
+`-Name` is not the member-set parameter; every `-Value`/`-MemberName` argument
+over the whole population is an inline block or string. **Ladder:** R1 unavailable
+(no mixin/trait/composition node in the served grammar); R2 unavailable (a patch
+would have to invent member-set composition; PowerShell's answer to reuse is
+single inheritance plus interfaces, and the runtime glue is cmdlet invocation);
+R3 unavailable (the candidates that could be misread are the 326 counted sites,
+and their member sets are inline).
+
+### Pins
+
+Fixture `powershell/ruled-extended-types` contains, in one file, every shape a
+wrong rule would fire on: a class base list (`extends` + `implements` fire), a
+param-block function calling a declared function, `ConvertTo-Html` **and**
+`[Windows.Markup.XamlReader]::Parse` (both published as `calls`, **forbidden** as
+`renders`), and `Add-Member` **and** `Update-TypeData` (both published as `calls`,
+**forbidden** as `mixes_in`). `expectRelationshipCount` pins **0** `renders`,
+**0** `mixes_in`, and **exactly 1** `extends` / **1** `implements` — the last two
+stop a rule that reads every base-list entry as a superclass. Suite:
+**22 pass / 0 fail** (`bun run script/m14/run-fixtures.ts --lang powershell`).

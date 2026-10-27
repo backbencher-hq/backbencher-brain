@@ -2,9 +2,14 @@
 // What this file is: the pure-AST analyzer for PowerShell (.ps1/.psm1/.psd1, routed by
 // src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores,
 // and string logic runs only on AST-extracted values, never as a regex on source.
-// Relationship types covered (ten): calls, uses, contains, imports, references, exports, extends,
-// implements, overrides, instantiates — per-type rulings and emission sites in
+// Relationship types covered (eleven): calls, uses, contains, imports, references, exports, extends,
+// implements, overrides, instantiates, part_of — per-type rulings and emission sites in
 // script/m14/spec/powershell-completeness.json; lane doc docs/analyzers/real-powershell-analyzer.md.
+// `renders` and `mixes_in` are RULED with whole-population counts (PS-B20, 2026-10-27) and this
+// analyzer does not emit them: a serializer/UI-reader is a `calls` site (never a component render),
+// and the class base list is conformance (extends/implements) while runtime member attachment carries
+// an INLINE member set, never a declaration. Pinned both ways by the fixture
+// powershell/ruled-extended-types.
 // Where its scripts and validations live: script/m14/spec/powershell-completeness.json · fixtures
 // validation/m14/fixtures/powershell/** (`bun run script/m14/run-fixtures.ts --lang powershell`).
 // WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-powershell-analyzer.md,
