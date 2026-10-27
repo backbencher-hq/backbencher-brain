@@ -32,21 +32,29 @@
  *
  *   decorates — Zig's declaration attributes: `callconv(...)` on a callable,
  *              `align(...)` on a variable/field, `linksection(...)` on a callable or
- *              variable, `addrspace(...)` in a pointer type. The frog is classified by
- *              its ARGUMENT (enum literal / string / integer / identifier), and the
- *              falsifier is counted as its own site: an attribute argument whose leaf
- *              is an identifier that names a FUNCTION DECLARED IN THE SAME FILE. That
- *              is the shape a decorator would need (the compiler invoking a declared
- *              callable on the decorated declaration); if it is ever non-zero, this
- *              disposition is wrong, and an instrument counts it.
+ *              variable, `addrspace(...)` in a pointer type. The FORM is classified
+ *              by its ARGUMENT (enum literal / string / integer / identifier), and
+ *              the falsifier is counted as its own site — then SPLIT by shape, because
+ *              a count alone would mislead: an attribute argument whose leaf names a
+ *              FUNCTION DECLARED IN THE SAME FILE is either
+ *                (a) a CALL of that function (the compiler evaluates it to compute the
+ *                    attribute's argument value), or
+ *                (b) a NAME COLLISION (`.c` / `A` spelled like a declared function).
+ *              The decorator contract needs even more than (a): the call must be passed
+ *              the DECORATED DECLARATION, which `attr_arg_call_argument_sites` counts —
+ *              a call with at least one argument is the only shape that could do it.
+ *              All three counters are declared; a non-zero on the last overturns the
+ *              disposition and an instrument counts it.
  *
  *   part_of — the contract test is "a part shares the library's single scope and
  *              cannot be resolved as a separate module". Zig's inclusion vocabulary is
  *              counted in full: `@import` (names a module and evaluates to a struct),
  *              `@embedFile` (data inclusion), `@cImport` (C headers), and the
- *              usingnamespace sites above. There is no textual-splice construct to
- *              count because the language has none; the near misses are named and
- *              counted so the ruling's population is not just "the imports".
+ *              usingnamespace sites above. The textual-splice family is counted over the
+ *              produced node types (`textual_splice_node_types`, against the vocabulary a
+ *              spliced language would need: include / splice / preproc / part_of); Zig's
+ *              grammar produces none, and the near misses above are named and counted so
+ *              the ruling's population is not just "the imports".
  *
  *   renders — no component model. The census records the whole population's distinct
  *              node types (so a component/production family present in the grammar and
@@ -54,7 +62,9 @@
  *              ordinary calls to functions whose leaf name belongs to a render
  *              vocabulary. A declarative component construct would be a node type the
  *              node-type scan reports; the impostor counter is what keeps that scan
- *              honest about the code that EXISTS.
+ *              honest about the code that EXISTS, and `render_call_declared_type_receiver`
+ *              narrows it to the one shape that would be a component render — a
+ *              render-verb call whose receiver ROOT is a container this file declares.
  *
  * THE CONTROL, and why it is not decoration. A probe that reads zero everywhere is
  * indistinguishable from a probe that cannot see. Every classifier used here is also
@@ -115,6 +125,21 @@ const RENDER_VOCAB = ["render", "draw", "view", "paint", "compose"]
 /** Substrings that would name a declarative component family in a node type. */
 const COMPONENT_WORDS = ["jsx", "component", "element", "template", "fragment"]
 
+/** Substrings that would name a TEXTUAL-INCLUSION family in a node type. A language
+ *  whose unit is spliced into another carries a node for the directive that does the
+ *  splicing (`preproc_include`, `part_of_directive`, ...); Zig's grammar has none, and
+ *  the census counts produced node types against this vocabulary so the zero is a
+ *  measured absence rather than an assertion. */
+const TEXTUAL_SPLICE_WORDS = ["include", "splice", "preproc", "part_of", "partof"]
+
+/** The predicate the `textual_splice_node_types` counter is built from, exposed so the
+ *  run can prove it fires on the vocabulary it looks for (a zero from a matcher that
+ *  cannot match is not a zero). */
+function textualSpliceName(typeName: string): boolean {
+  const t = typeName.toLowerCase()
+  return TEXTUAL_SPLICE_WORDS.some((w) => t.includes(w))
+}
+
 type Counters = Record<string, number>
 
 function freshCounters(): Counters {
@@ -140,6 +165,21 @@ function freshCounters(): Counters {
     "addrspace_sites",
     "attr_arg_identifier_sites",
     "attr_arg_declared_callable",
+    // THE FALSIFIER'S SPLIT. A declared callable can reach an attribute argument two
+    // ways, and only one of them is even shaped like an applied callable:
+    //   call       — the argument contains a CALL whose callee is a declared function
+    //                (the compiler evaluates it to compute the argument value);
+    //   collision  — the declared name appears only as a literal/enum spelling (`.c`,
+    //                an identifier that happens to share a function's name), i.e. the
+    //                declared-callable test fired on a NAME COINCIDENCE.
+    // The decorator contract additionally needs the declaration itself to be passed
+    // to the callable, which no Zig attribute does: `attr_arg_call_argument_sites`
+    // counts attribute-argument calls that carry at least one argument (the only
+    // shape that could pass a declaration), so a non-zero there overturns the ruling.
+    "attr_arg_declared_callable_call",
+    "attr_arg_declared_callable_collision",
+    "attr_arg_call_expression_sites",
+    "attr_arg_call_argument_sites",
     // part_of — Zig's inclusion vocabulary, every construct counted
     "at_import_sites",
     "at_import_module_string",
@@ -148,10 +188,12 @@ function freshCounters(): Counters {
     "at_import_zig_file",
     "at_embed_file_sites",
     "at_c_import_sites",
-    // renders — the impostor class
+    // renders — the impostor class, and the component-receiver discriminator
     "render_call_sites",
+    "render_call_declared_type_receiver",
     "named_node_types",
     "component_node_types",
+    "textual_splice_node_types",
     // population accounting
     "filesAdmitted",
     "filesRead",
@@ -170,6 +212,7 @@ function freshSets() {
     distinctNodeTypesAll: new Set<string>(),
     distinctNodeTypesNamed: new Set<string>(),
     componentTypeNames: new Set<string>(),
+    textualSpliceTypeNames: new Set<string>(),
   }
 }
 type Sets = ReturnType<typeof freshSets>
@@ -222,18 +265,18 @@ function declaredName(n: any): string | null {
   return null
 }
 
-/** The RHS of a `const X = ...` declaration: the named child after the `=`. The grammar
- *  puts the initializer as the child after the identifier; the `type` field, when
- *  present, is the annotation and never the initializer. */
+/** The RHS of a `const X = ...` declaration: the LAST named child, which is the
+ *  initializer by the grammar's own child order (name, optional type annotation,
+ *  value). Reading the POSITION rather than one node type is what lets the same
+ *  function answer both questions this census asks of a declaration — "is this an
+ *  @import binding" and "is this declaration a container" — and one reader is what
+ *  keeps those two answers from drifting apart. */
 function declarationValue(n: any): any {
   const named: any[] = []
   for (let i = 0; i < n.namedChildCount; i++) named.push(n.namedChild(i))
-  // struct_declaration/enum_declaration/enum etc are values too, but for @import aliases
-  // the RHS is a builtin_function — find it by node type rather than by position.
-  for (let i = 1; i < named.length; i++) {
-    if (String(named[i].type) === "builtin_function") return named[i]
-  }
-  return null
+  if (named.length < 2) return null
+  const last = named[named.length - 1]
+  return last && String(last.type) !== "identifier" ? last : null
 }
 
 /** Every identifier inside an attribute's argument subtree (the falsifier's site shape).
@@ -252,7 +295,7 @@ function attributeArgIdentifiers(attr: any): string[] {
   return out
 }
 
-/* ── THE CLASSIFIER, USEc BY BOTH THE CORPUS RUN AND THE CONTROL ─────────────────────
+/* ── THE CLASSIFIER, USED BY BOTH THE CORPUS RUN AND THE CONTROL ─────────────────────
  *
  * `scanTree` is the one implementation of every count. The control and the corpus run
  * call it with different recorders, so a control hit can never land in the published
@@ -264,12 +307,17 @@ function scanTree(root: any, c: Counters, s: Sets): void {
   // the alias set must be complete before the usingnamespace classification runs.
   const aliasImports = new Set<string>()
   const declaredFunctions = new Set<string>()
+  // The container types this file DECLARES — the renders discriminator reads it: a
+  // render-vocabulary call whose receiver ROOT is a declared container is the shape a
+  // component-model render would take; a call on a variable/instance is not.
+  const declaredContainers = new Set<string>()
   const prepass = (n: any): void => {
     const t = String(n.type)
     if (t === "variable_declaration") {
       const name = declaredName(n)
       const rhs = declarationValue(n)
       if (name && rhs && builtinName(rhs) === "@import") aliasImports.add(name)
+      if (name && rhs && CONTAINERS.has(String(rhs.type))) declaredContainers.add(name)
     } else if (t === "function_declaration") {
       const name = declaredName(n)
       if (name) declaredFunctions.add(name)
@@ -283,6 +331,7 @@ function scanTree(root: any, c: Counters, s: Sets): void {
     s.distinctNodeTypesAll.add(t)
     if (n.isNamed) s.distinctNodeTypesNamed.add(t)
     if (n.isNamed && COMPONENT_WORDS.some((w) => t.toLowerCase().includes(w))) s.componentTypeNames.add(t)
+    if (n.isNamed && textualSpliceName(t)) s.textualSpliceTypeNames.add(t)
 
     if (t === "using_namespace_declaration") {
       c.usens_total++
@@ -351,7 +400,33 @@ function scanTree(root: any, c: Counters, s: Sets): void {
       const argIdents = attributeArgIdentifiers(n)
       if (argIdents.length > 0) {
         c.attr_arg_identifier_sites++
-        if (argIdents.some((name) => declaredFunctions.has(name))) c.attr_arg_declared_callable++
+        if (argIdents.some((name) => declaredFunctions.has(name))) {
+          c.attr_arg_declared_callable++
+          // Split the hit by SHAPE: a declared function reached through a call (the
+          // compiler evaluates it to produce the attribute's argument) versus a
+          // declared name that only shares a spelling with a literal (`.c`, `A`).
+          let viaCall = false
+          const scanCalls = (node: any): void => {
+            if (String(node.type) === "call_expression") {
+              c.attr_arg_call_expression_sites++
+              const callee = node.namedChild(0)
+              const calleeName = callee && String(callee.type) === "identifier" ? String(callee.text) : null
+              if (calleeName && declaredFunctions.has(calleeName)) viaCall = true
+              for (let a = 0; a < node.namedChildCount; a++) {
+                const argsNode = node.namedChild(a)
+                // An `arguments` node with a named child is a call that PASSES a value;
+                // the decorator contract needs the decorated declaration among them.
+                if (argsNode && String(argsNode.type) === "arguments" && argsNode.namedChildCount > 0) {
+                  c.attr_arg_call_argument_sites++
+                }
+              }
+            }
+            for (let i = 0; i < node.namedChildCount; i++) scanCalls(node.namedChild(i))
+          }
+          for (let i = 0; i < n.namedChildCount; i++) scanCalls(n.namedChild(i))
+          if (viaCall) c.attr_arg_declared_callable_call++
+          else c.attr_arg_declared_callable_collision++
+        }
       }
     } else if (t === "call_expression") {
       // the impostor class: an ordinary call to a member whose leaf is render vocabulary
@@ -369,6 +444,15 @@ function scanTree(root: any, c: Counters, s: Sets): void {
       if (RENDER_VOCAB.includes(leaf)) {
         c.render_call_sites++
         c[`render_call_${leaf}`]++
+        // The component-model discriminator: a render-vocabulary call whose receiver
+        // ROOT is a container this file DECLARES would be a component-typed render; a
+        // call on a variable/instance (`w.render()`, an immediate-mode draw context) is
+        // the ordinary call the near-miss class counts.
+        let base = callee.namedChild(0)
+        while (base && String(base.type) === "field_expression") base = base.namedChild(0)
+        if (base && String(base.type) === "identifier" && declaredContainers.has(String(base.text))) {
+          c.render_call_declared_type_receiver++
+        }
       }
     }
     const childInContainer = inContainer || CONTAINERS.has(t)
@@ -418,6 +502,25 @@ const CONTROL_SNIPPETS: { name: string; src: string; expect: (c: Counters) => st
       c.at_import_sites === 1 && c.at_embed_file_sites === 1 && c.at_c_import_sites === 1 && c.at_import_zig_file === 1
         ? null
         : `inclusion { import=${c.at_import_sites} embed=${c.at_embed_file_sites} cImport=${c.at_c_import_sites} zig=${c.at_import_zig_file} }`,
+  },
+  {
+    name: "the decorates falsifier's split: a comptime call versus a name collision",
+    src: `fn deco() void {}\nfn cc() void {}\nfn a() callconv(deco) void {}\nfn b() callconv(cc()) void {}\n`,
+    expect: (c) =>
+      c.attr_arg_declared_callable === 2 &&
+      c.attr_arg_declared_callable_call === 1 &&
+      c.attr_arg_declared_callable_collision === 1 &&
+      c.attr_arg_call_argument_sites === 0
+        ? null
+        : `split { declared_callable=${c.attr_arg_declared_callable} via_call=${c.attr_arg_declared_callable_call} collision=${c.attr_arg_declared_callable_collision} call_args=${c.attr_arg_call_argument_sites} }`,
+  },
+  {
+    name: "a render call on a declared container type (the renders discriminator)",
+    src: `const Widget = struct { fn render(self: Widget) void { _ = self; } };\nfn f() void { Widget.render(Widget{}); }\n`,
+    expect: (c) =>
+      c.render_call_sites === 1 && c.render_call_declared_type_receiver === 1
+        ? null
+        : `render-type { total=${c.render_call_sites} component_receiver=${c.render_call_declared_type_receiver} }`,
   },
   {
     name: "a render-vocabulary member call (the renders impostor counter)",
@@ -475,6 +578,15 @@ async function main(): Promise<void> {
   /* THE CONTROL RUNS FIRST, through the same classifier, with its own recorder. */
   const controlParser: any = await getParser("zig")
   const controlFails: string[] = []
+  // The textual-splice FAMILY matcher is a predicate over node-type NAMES, so it
+  // cannot be exercised by a source snippet; it is proved directly instead. A zero
+  // from a matcher that cannot match would certify nothing.
+  const spliceSelfTest =
+    textualSpliceName("preproc_include") && textualSpliceName("part_of_directive") && !textualSpliceName("field_expression")
+  if (!spliceSelfTest) {
+    console.error("CONTROL FAILED — the textual-splice node-type matcher cannot match the vocabulary it looks for")
+    process.exit(5)
+  }
   for (const ctl of CONTROL_SNIPPETS) {
     const c = freshCounters()
     const s = freshSets()
@@ -558,6 +670,7 @@ async function main(): Promise<void> {
   counters.filesRead = filesRead
   counters.named_node_types = sets.distinctNodeTypesNamed.size
   counters.component_node_types = sets.componentTypeNames.size
+  counters.textual_splice_node_types = sets.textualSpliceTypeNames.size
 
   const result = {
     instrument: "zig-extended-census.ts",
@@ -582,6 +695,8 @@ async function main(): Promise<void> {
       distinct_named: sets.distinctNodeTypesNamed.size,
       component_family: [...sets.componentTypeNames].sort(),
       component_words: COMPONENT_WORDS,
+      textual_splice_family: [...sets.textualSpliceTypeNames].sort(),
+      textual_splice_words: TEXTUAL_SPLICE_WORDS,
     },
   }
   writeJSONAtomic(OUT, result)
@@ -593,7 +708,7 @@ async function main(): Promise<void> {
   for (const k of Object.keys(counters)) console.log(`  ${k}: ${counters[k]}`)
   console.log(`  distinct_import_modules: ${sets.distinctImportModules.size}`)
   console.log(`  distinct_zig_modules: ${sets.distinctZigModules.size}`)
-  console.log(`  node_types: ${sets.distinctNodeTypesAll.size} distinct (${sets.distinctNodeTypesNamed.size} named), component family ${sets.componentTypeNames.size}`)
+  console.log(`  node_types: ${sets.distinctNodeTypesAll.size} distinct (${sets.distinctNodeTypesNamed.size} named), component family ${sets.componentTypeNames.size}, textual-splice family ${sets.textualSpliceTypeNames.size}`)
 }
 
 main().catch((e) => {
