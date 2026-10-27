@@ -1255,14 +1255,28 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const argNode of this.argumentNodes(node)) {
               for (const value of this.wordValues(argNode)) {
                 if (this.isOption(value)) continue
+                const roleName = this.leafName(value)
+                const roleLine = this.lineOfNameWithin(argNode, value)
+                // The same TWO facts the `with` branch states: conformance and
+                // composition. `use role 'R'` is the pre-`with` spelling of the
+                // same composition, so it carries the same pair.
                 addRelationship(
                   state.packageName || "global",
-                  this.leafName(value),
+                  roleName,
                   ASTEngine.RelationshipType.Implements,
                   { reasonCode: REASON.useRoleComposition },
                   0.9,
                   undefined,
-                  this.lineOfNameWithin(argNode, value),
+                  roleLine,
+                )
+                addRelationship(
+                  state.packageName || "global",
+                  roleName,
+                  ASTEngine.RelationshipType.MixesIn,
+                  { reasonCode: REASON.useRoleComposition, compositionSite: "role-composition" },
+                  0.9,
+                  undefined,
+                  roleLine,
                 )
               }
             }
@@ -1559,9 +1573,20 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               for (const value of this.wordValues(arg)) {
                 if (!value || this.isOption(value)) continue
                 if (isWith) {
+                  const roleName = this.leafName(value)
+                  const roleLine = this.lineOfNameWithin(arg, value)
+                  // TWO DIFFERENT FACTS, and a role composition states both. The
+                  // class CONFORMS to the role's declared interface (its required
+                  // methods, the fact `DOES` answers) — that is `implements`. It
+                  // also takes the role's IMPLEMENTATION into itself without
+                  // declaring an is-a relation — Perl roles are copied in, not
+                  // inherited — and that is `mixes_in`. Publishing one and not the
+                  // other would be choosing which half of the same statement to
+                  // believe; the two labels are separable on the same source by the
+                  // definitions the fleet assigns them.
                   addRelationship(
                     state.packageName || "global",
-                    this.leafName(value),
+                    roleName,
                     ASTEngine.RelationshipType.Implements,
                     { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
                     0.9,
@@ -1571,7 +1596,16 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
                     // are on the lines after it. Prefer the name's own line and keep
                     // the node as the fallback, so a shape the offset search cannot
                     // resolve keeps its previous (correct) line.
-                    this.lineOfNameWithin(arg, value),
+                    roleLine,
+                  )
+                  addRelationship(
+                    state.packageName || "global",
+                    roleName,
+                    ASTEngine.RelationshipType.MixesIn,
+                    { reasonCode: REASON.mooRoleComposition, mooseKeyword: target, compositionSite: "role-composition" },
+                    0.9,
+                    arg,
+                    roleLine,
                   )
                   continue
                 }

@@ -12,47 +12,85 @@
       "extends",
       "overrides",
       "instantiates",
-      "implements"
+      "implements",
+      "mixes_in"
     ],
-    "excluded": [],
-    "corpusUnexercised": [],
-    "_from": "SEVEN OF TEN MEASURED, ONE CORPUS-UNEXERCISED WITH A LIVE CONTROL, TWO GAPS — and all three classes were reached by measurement rather than by preference. Reading: .tmp-covb/census.mts --lane perl, the production path (engine.getParser -> RealPerlAnalyzer.analyze) over the WHOLE admitted population — 427 files (234 .t + 154 .pm + 28 .pl + 11 .pod) across 8 repos, 427 parsed of 427, 0 read failures, 0 parse throws, 0 analyze throws. FIRED: calls 8,397 edges in 395 files · contains 1,664 in 163 · overrides 1,280 in 146 · instantiates 378 in 165 · extends 183 in 158 · uses 52 in 15 · references 43 in 30. GAP, not excluded: `imports` (0 relationship edges against 3,539 `use`/`require` sites in 422 of 427 files and 15 matching grammar node types) and `exports` (0 edges against 33 `@EXPORT`/`EXPORT_OK` conventions in 11 files and 18 matching grammar node types) — both are constructs the LANGUAGE and the CORPUS express and the analyzer has no relationship emission site for, which is a GAP by definition and keeps both in the denominator. CORPUS-UNEXERCISED: `implements`, and this one is control-backed rather than assumed — the analyzer HAS two live emission sites (src/ast/real-perl-analyzer.ts, `use role 'R'` at the role-composition branch and Moo/Moose `with 'Role'` in the call-statement branch), and a PLANTED CONTROL through the same production analyzer fires on all three shapes (`use role 'Bar'` -> implements 1, `with 'Bar'` -> implements 1, `with qw(Bar Baz)` -> implements 1). The corpus fires ZERO because the construct is absent from it, and that was checked rather than inferred: a shape census over all 427 files found 52 `with '…'`-shaped sites in 18 files, and reading EVERY one of those 18 files showed all of them are comments, POD prose or string VALUES (e.g. `value => 'with'`, `a comment naming the svg namespace`), never a role-composition statement; `use role` occurs 0 times. So this is the board's `corpus-unexercised` class exactly: implemented, with no corpus construct to fire on. RECONCILIATION WITH `design_decision` PERLD12, RECORDED RATHER THAN SILENTLY EDITED: PERLD12's question says the lane 'emits no `uses`, `references`, `imports` or `exports` EDGE' and names six emitted (calls, contains, extends, implements, instantiates, overrides). The IMPORTS/EXPORTS half is confirmed by this walk (0 edges each); the USES/REFERENCES half is NOT — the code has live sites (`\\&name` code references emit uses at src/ast/real-perl-analyzer.ts:908; `->isa('Type')` type-query literals emit references at :1309) and the walk measured uses 52 / references 43 edges. PERLD7's narrower ruling (a VARIABLE READ is not a `uses` edge) is not contradicted — the 52 uses edges are code references, not container reads — but PERLD12's broader sentence does not match the code or the corpus, and it is reported rather than rewritten here. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `PERL 0 types fired  NO CORPUS under perl5` with all ten SILENT, a claim about the pin `perl5` (it admits 0 files at this HEAD) and not about the 427-file population measured here. PERL `implements` IS PROMOTED TO IMPLEMENTED: a bare string with no evidence class, while both planted controls fire and the corpus holds zero role-composition sites. Zero-sites is the honest class and capability is proven, so it belongs in implemented, not parked. · SUPERSESSION (2026-10-21, the perl lane’s whole-population arm, commit 4790ab1af): the “the analyzer has no relationship emission-site for imports/exports” claim in this note is NO LONGER TRUE, and it is superseded rather than erased — the arm measures imports 2,936 edges (1,282 resolved) and exports 94 (86) over the whole population (656 files, 9 repos; analyzer 301f1916…, gate 2c103e6b…, arbiter 1c744fe1…, spec f8edd661…, oracle fe78825b…; the qualified-name join’s price in this language: 0 rows). Both labels therefore move from `coverage.excluded` to `coverage.implemented`, and what remains open is the COMPARISON, not the emission — the differential allowlist drops both labels, so their rows are compared by nothing; that is declared in `label_coverage.declared_gaps` with the numbers.",
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "ontological",
+        "count": 408,
+        "from": "RULED ONTOLOGICAL for perl — the label's contract needs a COMPONENT SYMBOL as the target, and perl's rendering vocabulary names a TEMPLATE, not a component. MEASURED over the whole admitted population (parsed=656/656 admitted=656 exts=pl,pm,t,pod,perl index=no; 9 repos; corpus root BB_CORPUS_ROOT=$PWD/.corpus): 408 `->render(` method-call sites over 101 files, and the ARM's TABLE 1 reads renders 0 edges. The 408 are the NAMED NEAR MISS, not an implementation: a method named `render` on a view/template object is a `calls` edge to a METHOD — the fleet's dart filter (the DECLARED RETURN TYPE) does not exist here, and no site names a component symbol. Artifact: validation/m14/measurements/perl-extended-census.json (the construct census this ruling is read from).",
+        "falsifier": {
+          "run": "BB_CORPUS_ROOT=$PWD/.corpus bun script/m14/perl-extended-census.mts",
+          "wouldFail": "a `->render(...)` call whose RECEIVER resolves to a DECLARED component/view CLASS in the same project AND whose arguments name a component symbol would be a renders edge; the census would report it, and this ontological ruling would be wrong."
+        }
+      },
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "count": 0,
+        "from": "RULED ONTOLOGICAL for perl — the contract demands an APPLIED CALLABLE (a wrapper invoked ON the declaration), and perl's attribute syntax is a MARKER at the declaration site. MEASURED over the whole admitted population (parsed=656/656 admitted=656 exts=pl,pm,t,pod,perl index=no; 9 repos): 0 `attribute`/`attrlist`/`attribute_value` nodes on ANY declaration, and 0 sites of `use Attribute::Handlers` or a MODIFY_CODE_ATTRIBUTES registration — so the construct that WOULD be an applied callable (a handler package registered elsewhere and invoked on the declaration) is not exercised at all, and a bare `:name` marker is exactly what the label must not credit. The grammar DOES express attributes (R1/R2 are not needed); what the declaration site cannot state is the APPLICATION, which is a runtime fact in another file. Artifact: validation/m14/measurements/perl-extended-census.json (0 attribute nodes over the population).",
+        "falsifier": {
+          "run": "BB_CORPUS_ROOT=$PWD/.corpus bun script/m14/perl-extended-census.mts",
+          "wouldFail": "a file that loads Attribute::Handlers (or registers MODIFY_CODE_ATTRIBUTES) AND declares a sub/method carrying an attribute whose name matches an applied handler would make the applied callable statically provable; the census counts both shapes (0 today) and this ruling must then become an R3 implementation."
+        }
+      },
+      {
+        "label": "part_of",
+        "evidence": "ontological",
+        "count": 0,
+        "from": "RULED ONTOLOGICAL for perl — the label's contract is an inclusion whose text SHARES THE INCLUDING FILE'S SINGLE SCOPE (C #include, erlang -include, nim include), and perl's inclusion forms do not. MEASURED LIVE with perl 5.36: `my $x = 42; our $g = 7; do './b.pl';` sees `$g` 7 but `$x` undef inside b.pl — `do FILE` executes in the caller's PACKAGE but in a FRESH lexical scope, and a `my` in the caller is invisible to the included text. `require` is a MODULE LOAD (its own package scope, once per %INC) and is the `imports` label's construct, not an inclusion. MEASURED over the whole admitted population (parsed=656/656 admitted=656 exts=pl,pm,t,pod,perl index=no; 9 repos): 0 `do '<file>'` sites (all 28 `do` expressions in the population are `do { }` BLOCKS), 73 `require` module loads (imports), 28 `use lib` sites (a SEARCH-PATH statement, no inclusion), 1 interpolated require path (computed, refused). Artifact: validation/m14/measurements/perl-extended-census.json.",
+        "falsifier": {
+          "run": "BB_CORPUS_ROOT=$PWD/.corpus bun script/m14/perl-extended-census.mts",
+          "wouldFail": "a `do 'FILE'` site in the admitted population whose INCLUDED TEXT reads a lexical the includer declares would satisfy the contract's scope test; the census counts do-file sites (0 today), and this ruling must then become an R3 implementation on the do_expression node."
+        }
+      }
+    ],
+    "corpusUnexercised": [
+      {
+        "label": "mixes_in",
+        "evidence": "corpus-unexercised",
+        "count": 0,
+        "from": "0 role-composition sites over the WHOLE admitted perl population (parsed=656/656 admitted=656 exts=pl,pm,t,pod,perl index=no; 9 repositories; corpus root BB_CORPUS_ROOT=$PWD/.corpus): the arm's TABLE 1 reads mixes_in 0 edges, and the construct census (validation/m14/measurements/perl-extended-census.json) read 0 `with` statement sites and 0 `use role` sites — every `with` in the corpus is POD prose or a string VALUE (52 shape matches, all prose), and `use Moose::Role`/`Moo::Role`/`Mojolicious::Plugin` role-composition sites are 0. THE EMISSION IS IMPLEMENTED and proved live by the fixture perl/ontology-mixin-composition, which fires implements AND mixes_in on `with 'Role'`, `with qw(A B)` and `use role 'R'` (a planted control authored BEFORE the run). The type is counted ONCE inside implemented; the overlap is printed, never read as an exclusion.",
+        "falsifier": "a corpus file containing a `with <name>` statement or `use role '<name>'` whose argument is a written role name — the construct census counts exactly that shape (0 today), and the fixture asserts the emission fires when one exists."
+      }
+    ],
+    "_from": "THE MEASURED STATE (2026-10-26), instrument by instrument.\n\nTHE ARM (whole admitted population): BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts perl 0 — parsed=656/656 admitted=656 exts=pl,pm,t,pod,perl index=no, 9 repositories, 0 parse failures, 0 degraded, 17,630 edges. TABLE 1: calls 10,096 · uses 156 · contains 2,095 · imports 2,936 · references 64 · exports 94 · extends 243 · implements 0 · overrides 1,419 · instantiates 527 · decorates 0 · renders 0 · mixes_in 0 · part_of 0. extFAIL 0 · bindFAIL 0 · causeFAIL 0. The arm log is validation/m14/fixtures/perl/arm-whole-2026-10-26.log.\n\nTHE FIXTURE SUITE: bun script/m14/run-fixtures.ts --lang perl — 23 pass / 0 fail. The eight ontology-* fixtures that were RED at the start of this lane are all covered: five were fixed by IMPLEMENTING the constructs (composition name lists and verbatim `has` names; push-built @EXPORT/@ISA; require paths; bless/ref-comparison/UNIVERSAL::isa references; qualified variable and bareword reads; the `::`-suffixed constructor leaf; the imports/exports metadata regime), and three were superseded with byte-identical predecessors kept beside them where the authored-ahead row was stale against the tree (the leaf+qualifiedAs code-slot contract; the `calls -> isa` ruling; the reference target leaves).\n\nTHE TEN CANONICAL TYPES are all implemented and measured: the arm's TABLE 1 publishes each one. implements reads 0 edges and that is a CORPUS fact with a LIVE CONTROL (the planted controls in the fixture suite fire it through `with`/`use role`), which is why it is declared corpus-unexercised rather than excluded.\n\nTHE FOUR EXTENDED TYPES: mixes_in IMPLEMENTED (with/use role publish the composition fact beside the conformance fact), corpus-unexercised at 0 sites with the fixture control; renders, decorates and part_of RULED ONTOLOGICAL with their measurements, counts, artifacts and falsifiers above — the ladder for each: R1 (a different grammar build) and R2 (a patched grammar) add nothing because the constructs the label would need are not a GRAMMAR absence (attributes parse; `do`/`require` parse; `->render` parses); R3 (an existing node type) is AVAILABLE and is used by the implemented types, so the three rulings rest on the CONTRACT, not on an unavailable rung: perl's rendering names a template not a component, its attributes are markers whose application is a runtime fact, and its inclusion forms do not share the includer's lexical scope (measured live).",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE admitted perl population — 427 files (234 .t + 154 .pm + 28 .pl + 11 .pod) across 8 repos, 427 parsed of 427, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane perl, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+      "_unit": "edges published through the PRODUCTION path over the WHOLE admitted perl population (parsed=656/656 admitted=656 exts=pl,pm,t,pod,perl index=no — 9 repositories, 0 parse failures, 0 degraded); 17,630 edges total. Instrument: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts perl 0 (the arm log is validation/m14/fixtures/perl/arm-whole-2026-10-26.log); per-type FILE counts are in the arm log's worklist and marker-set tables.",
+      "_arm": "validation/m14/fixtures/perl/arm-whole-2026-10-26.log",
       "calls": {
-        "edges": 8397,
-        "files": 395
-      },
-      "contains": {
-        "edges": 1664,
-        "files": 163
-      },
-      "overrides": {
-        "edges": 1280,
-        "files": 146
-      },
-      "instantiates": {
-        "edges": 378,
-        "files": 165
-      },
-      "extends": {
-        "edges": 183,
-        "files": 158
+        "edges": 10096
       },
       "uses": {
-        "edges": 52,
-        "files": 15
+        "edges": 156
+      },
+      "contains": {
+        "edges": 2095
+      },
+      "imports": {
+        "edges": 2936
       },
       "references": {
-        "edges": 43,
-        "files": 30
+        "edges": 64
+      },
+      "exports": {
+        "edges": 94
+      },
+      "extends": {
+        "edges": 243
+      },
+      "overrides": {
+        "edges": 1419
+      },
+      "instantiates": {
+        "edges": 527
       },
       "implements": {
         "edges": 0,
-        "files": 415,
-        "_population": "415-file census; ZERO sites of use Moose/Moo, statement-level `with <name>`, use role, or :does(/ :isa(",
-        "_prose_route": "both planted controls FIRE through the production path; the pinned grammar declares role_statement",
-        "_why": "PROMOTED 2026-10-15 ON CAPABILITY PLUS A CONTROLLED ZERO. The entry was a BARE STRING with no evidence class. The construct is Moose/Moo role composition (`with`, `use role`) and the 5.38 `:does()` method, with two emission sites in real-perl-analyzer.ts; BOTH planted controls fire, so the analyzer emits it. The 415-file census reads ZERO sites, and that is a CORPUS fact: the honest class is zero-sites, not an unevidenced corpusUnexercised. Recommended by EXCLUSION-AUDIT-S2, which also discarded its own first census after finding every one of 14 role-shaped files was English prose in a comment."
+        "_class": "corpus-unexercised",
+        "_why": "The analyzer emits it and the corpus does not contain the construct. LIVE CONTROL: the fixture perl/ontology-mixin-composition (authored before the run) fires `implements` through both role-composition spellings — `with 'Role'`, `with qw(A B)`, `use role 'R'` — and the corpus census read 0 role-composition sites over the admitted population (validation/m14/measurements/perl-extended-census.json). Counted ONCE in implemented with the overlap printed, never an exclusion."
       }
     }
   },
