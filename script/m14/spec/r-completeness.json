@@ -6,8 +6,26 @@
   "_lane": "R_LANG (firing-check name) / r (engine language id), corpus ggplot2 (360 .R files per script/m14/firing-check.mjs LANES)",
   "coverage": {
     "_why_declared_now": "DECLARED 2026-10-09 by this lane, on a WHOLE-CORPUS measurement that declares its own `degraded` count, per HANDOFF §5.1/§7.1. It replaces the firing-log-only reading `r 8/10 from=firing-log` the board printed while coverageDeclared=false. `implemented` is ALL TEN types because all ten are emitted over THIS LANE'S CORPUS (2,184 .R files, 16 repositories — docs/analyzers/r.md's declared corpus, sha256 953c0314...). The two types the firing instrument reads SILENT are substantiated PER TYPE in `_implemented_measured` below — the fleet's prescribed route for a silent-but-declared type (bash's exports/overrides, julia's overrides, hcl's calls/overrides have the same shape).",
-    "implemented": ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "mixes_in"],
-    "excluded": [],
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates",
+      "mixes_in"
+    ],
+    "excluded": [
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL — the csharp-annotation precedent: an annotation is PASSIVE METADATA a tool reads, and a decorator is an APPLIED CALLABLE; a decorates row for a roxygen tag would assert an application the vocabulary does not credit). THE LADDER WAS WALKED FIRST AND THE RUNGS ARE UNAVAILABLE BY MEASUREMENT, NOT BY PREFERENCE: the served grammar's own inventory (validation/m14/measurements/r-grammar-nodes.json, served digest ea825fd3812b) carries 41 named node types, of which the annotation/decorator/attribute/roxygen/tag family is 0 — the production this ruling would need IS NOT IN THE GRAMMAR, and what the corpus exercises is a `comment` node, which IS in the served list. An R2 grammar patch that invented an annotation production roxygen does not have would make the analyzer disagree with the language; R3 (express on an existing node type) has only the comment node to express on, and a comment is exactly the class the adjudicated ontology holds to be passive metadata — so R3 exists and is not taken for the ONTOLOGICAL reason, never for difficulty. MEASURED SITES (whole admitted population, parsed=2184/2184 admitted=2184, gate admission, instrument validation/m14/fixtures/r/census-decorates-falsifier.ts, artifact validation/m14/fixtures/r/measurements/r-decorates-falsifier.txt): roxygen `#'` comment sites 59,334 in 779 files; tag sites (@export/@import*/@param/...) 12,791; roxygen sites whose next named sibling is a DECLARATION shape 45,830 in 732 files — the opportunity is counted so the ruling does not treat all sites as one undifferentiated class. THE PASSIVE-METADATA FACTS ARE ALREADY PUBLISHED, NOT LOST: roxygen `@export` publishes an `exports` edge (3,695 @export tag sites in 718 files, counted in validation/m14/fixtures/r/measurements/r-extended-constructs.txt) and the roxygen block is carried on the declaration's `docstring`. FALSIFIER (an instrument in the tree counts it, both halves measured): (1) an annotation production in the SERVED grammar whose node wraps a DECLARATION — counted 0 among the served 41 named types; the falsifier is that census line turning non-zero; (2) a roxygen tag a tool INVOKES on the declaration AT BUILD TIME — counted 45,830 sites adjacent to a declaration, every one a comment roxygen2 reads from SOURCE TEXT; the falsifier is a grammar production attaching the tag to the declaration as a NODE rather than as text preceding it."
+      }
+    ],
     "corpusUnexercised": [],
     "_r5_statement_form": {
       "state": "FIXED",
@@ -27,7 +45,9 @@
         "emitted": {
           "edges": 206,
           "files": 5,
-          "subtypes": { "mixes_in:s4_composes": 206 },
+          "subtypes": {
+            "mixes_in:s4_composes": 206
+          },
           "source": "validation/m14/fixtures/r/measurements/r-emission-census.txt (production parseFile over the same gate-admitted 2,184 files; 2,184 parsed, 1 degraded r-testthat/R/evaluate-promise.R [intermittent wasm trap], 0 failures) AND script/m14/incoming-gate.ts r 0 -> TABLE 1 `mixes_in 206 edges / 176 resolved / 30 unresolved` (artifact validation/m14/fixtures/r/measurements/r-gate-mixesin.txt). THE TWO INSTRUMENTS AGREE ON 206 EXACTLY.",
           "the_label_moved_no_edge_was_lost": "the same whole-population gate run reads `extends 145` where the pre-change run read 351, and `mixes_in 206` where it read 0; TOTAL is unchanged at 80,101. 351 = 145 + 206 exactly, so the change is a relabel of the list-shaped `contains=` half, not a new or deleted relation.",
           "reconciliation": "84 construct sites are list-shaped (83 S4 + 1 R5) and they produce 206 edges in 5 files — a site names two or more classes, so edges exceed sites by construction. The ONE R5 list-shape site does not publish, and that is stated rather than silently dropped: it is `setRefClass(Class, contains = c(contains, \"RcppClass\"), ...)` inside a function in r-Rcpp/R/RcppClass.R:65, where the composed class is named by a RUNTIME VARIABLE and the class itself is bound to `value`, so there is no named source symbol for an edge to leave."
@@ -56,33 +76,77 @@
         }
       },
       "decorates": {
-        "state": "PENDING — measured, not yet implemented",
-        "measured_construct_sites": { "roxygen_comment_sites": 59334, "roxygen_files": 779, "export_tag_sites": 3695, "export_tag_files": 718, "import_tag_sites": 75, "import_tag_files": 31 },
-        "reading": "roxygen `#'` forms are COMMENTS a tool reads; the honest class is likely ONTOLOGICAL (the same class the csharp lane set for annotations), with the falsifier naming a tool-invoked annotation production parsed as a NODE. Sites are counted so the ruling carries a number."
+        "state": "RULED UNDECIDABLE (ontological) — published in coverage.excluded",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL — the csharp-annotation precedent: an annotation is PASSIVE METADATA a tool reads, and a decorator is an APPLIED CALLABLE; a decorates row for a roxygen tag would assert an application the vocabulary does not credit). THE LADDER WAS WALKED FIRST AND THE RUNGS ARE UNAVAILABLE BY MEASUREMENT, NOT BY PREFERENCE: the served grammar's own inventory (validation/m14/measurements/r-grammar-nodes.json, served digest ea825fd3812b) carries 41 named node types, of which the annotation/decorator/attribute/roxygen/tag family is 0 — the production this ruling would need IS NOT IN THE GRAMMAR, and what the corpus exercises is a `comment` node, which IS in the served list. An R2 grammar patch that invented an annotation production roxygen does not have would make the analyzer disagree with the language; R3 (express on an existing node type) has only the comment node to express on, and a comment is exactly the class the adjudicated ontology holds to be passive metadata — so R3 exists and is not taken for the ONTOLOGICAL reason, never for difficulty. MEASURED SITES (whole admitted population, parsed=2184/2184 admitted=2184, gate admission, instrument validation/m14/fixtures/r/census-decorates-falsifier.ts, artifact validation/m14/fixtures/r/measurements/r-decorates-falsifier.txt): roxygen `#'` comment sites 59,334 in 779 files; tag sites (@export/@import*/@param/...) 12,791; roxygen sites whose next named sibling is a DECLARATION shape 45,830 in 732 files — the opportunity is counted so the ruling does not treat all sites as one undifferentiated class. THE PASSIVE-METADATA FACTS ARE ALREADY PUBLISHED, NOT LOST: roxygen `@export` publishes an `exports` edge (3,695 @export tag sites, 718 files, in validation/m14/fixtures/r/measurements/r-extended-constructs.txt) and the roxygen block is carried on the declaration's `docstring`. FALSIFIER (an instrument in the tree counts it, both halves measured): (1) an annotation production in the SERVED grammar whose node wraps a DECLARATION — counted 0 among the served 41 named types; the falsifier is that census line turning non-zero; (2) a roxygen tag a tool INVOKES on the declaration AT BUILD TIME — counted 45,830 sites adjacent to a declaration, every one a comment roxygen2 reads from SOURCE TEXT; the falsifier is a grammar production attaching the tag to the declaration as a NODE rather than as text preceding it."
       },
       "part_of": {
         "state": "PENDING — measured, not yet implemented",
-        "measured_construct_sites": { "source_calls": 36, "source_files": 26, "sys_source_calls": 2, "sys_source_files": 1, "local_false": 0, "local_globalenv": 1, "local_true_or_default": 32, "no_local_given": 28, "local_other": 5 },
+        "measured_construct_sites": {
+          "source_calls": 36,
+          "source_files": 26,
+          "sys_source_calls": 2,
+          "sys_source_files": 1,
+          "local_false": 0,
+          "local_globalenv": 1,
+          "local_true_or_default": 32,
+          "no_local_given": 28,
+          "local_other": 5
+        },
         "reading": "`source()`/`sys.source()` are RUNTIME CALLS, not a parse-level inclusion directive; the default (`local=TRUE`) evaluates the included file in a NEW environment, which fails the contract's 'shares the library's single scope'. The ladder is walked before any ruling: a CALL is not a grammar construct, so the honest class is expected to be ONTOLOGICAL (or grammar-absence with a parse-level directive as the falsifier), never 'zero-sites' — the sites are counted above."
       },
       "renders": {
         "state": "PENDING — measured, not yet implemented",
-        "measured_construct_sites": { "Rmd": 0, "Rnw": 0, "rmd_lower": 0, "rnw_lower": 0 },
+        "measured_construct_sites": {
+          "Rmd": 0,
+          "Rnw": 0,
+          "rmd_lower": 0,
+          "rnw_lower": 0
+        },
         "reading": "`.Rmd`/`.Rnw` are knitr/rmarkdown spellings, and the ROUTER'S ONE TABLE gives this lane `.r` only, so a `.Rmd` file is not this lane's file; the corpus tree carries zero of all four spellings. No component model exists in R to host the construct."
       }
     },
     "_implemented_measured": {
       "_unit": "WHOLE R corpus, no stride: 2,184 admitted .R files across the 16 git repositories rooted at $HOME/fixtures/repositories, production parseFile (4 workers), 0 files excluded; corpus file-set sha256 953c03149397dc86ba1b64e1d4b91d01aa5fc11b5b10d59610e26f670d6261d9; degraded (regex fallback) 1 (r-testthat/R/edition.R, a real [BB-PARSE-ERR] trap: `memory access out of bounds`), parse failures 0, [BB-PARSE-ERR] traps 1. THE COUNTS BELOW ARE UNAFFECTED BY THAT ONE DEGRADED FILE: edition.R emits neither `overrides` nor `instantiates` -- it is absent from the per-file account in validation/m14/fixtures/r/probe-overrides-edge-accounting.txt -- so a regex fallback on it cannot move either count. THIS LINE READ `degraded 0, traps 0` IN THE TWO EARLIER RUNS of the same instrument on the same corpus digest (20:03 load 12.71, and the 22:15 run), and trapped on the third at load 4.68 -- the LOWEST load of the three, which is why the lane records the trap as intermittent and NOT load-correlated. Artifact: validation/m14/fixtures/r/measurements/r-census-overrides-instantiates.current.txt",
-      "calls": { "edges": 48233, "files": 1294 },
-      "uses": { "edges": 4810, "files": 584 },
-      "contains": { "edges": 17634, "files": 1874 },
-      "imports": { "edges": 2095, "files": 1112 },
-      "references": { "edges": 2137, "files": 1116 },
-      "exports": { "edges": 3592, "files": 711 },
-      "extends": { "edges": 351, "files": 61 },
-      "implements": { "edges": 1133, "files": 221 },
-      "overrides": { "edges": 95, "files": 8 },
-      "instantiates": { "edges": 3, "files": 2 }
+      "calls": {
+        "edges": 48233,
+        "files": 1294
+      },
+      "uses": {
+        "edges": 4810,
+        "files": 584
+      },
+      "contains": {
+        "edges": 17634,
+        "files": 1874
+      },
+      "imports": {
+        "edges": 2095,
+        "files": 1112
+      },
+      "references": {
+        "edges": 2137,
+        "files": 1116
+      },
+      "exports": {
+        "edges": 3592,
+        "files": 711
+      },
+      "extends": {
+        "edges": 351,
+        "files": 61
+      },
+      "implements": {
+        "edges": 1133,
+        "files": 221
+      },
+      "overrides": {
+        "edges": 95,
+        "files": 8
+      },
+      "instantiates": {
+        "edges": 3,
+        "files": 2
+      }
     },
     "_from": "CLASS DECISION, FROM THE MEASUREMENT, for the two types the firing instrument reads SILENT (`overrides`, `instantiates`): NEITHER exclusion class is available, so both are `implemented`. `grammar-absence` is REFUTED by emission — production parseFile emits overrides 95 edges in 8 files and instantiates 3 edges in 2 files over the lane's corpus, so R expresses both and this analyzer resolves both. `zero-sites` — HANDOFF §2.6: 'the construct exists but occurs 0x in our corpus' — is REFUTED for THIS LANE'S CORPUS, which docs/analyzers/r.md declares as 2,184 git-tracked .R files across 16 repositories (sha256 953c0314...): the construct occurs there, in 8 and in 2 files. The 0x reading holds ONLY for the instrument's SINGLE-REPO sample: script/m14/firing-check.mjs pins one repository per lane (LANES.R_LANG = ggplot2, 360 of the lane's 2,184 files), and the instrument's own comment records that lesson from json ('the row is structurally a SINGLE-REPO claim'). THE CENSUS FIGURE IS REPRODUCED, not a single reading: the same instrument ran TWICE on the same corpus digest — 20:03 (146 s wall, load 12.71; first-run artifact validation/m14/fixtures/r/census-overrides-instantiates.txt) and 22:15 (78 s wall, load 5.40) — and both runs read the SAME counts (overrides 95 edges in 8 files, instantiates 3 edges in 2 files, degraded 0, parse failures 0, traps 0). Whole-population run, this lane, 2026-10-09 at load 5.12: BB_PICK_CAP=2000 NFILES=400 bun script/m14/firing-check.mjs R_LANG -> 'R_LANG 8 types fired 360/360 parsed of 360 admitted (even stride) [corpus=ggplot2 WHOLE]', SILENT overrides instantiates; DEGRADED 0 — declared, not inferred: the row carries no [N DEGRADED] marker, and firing-check.mjs `continue`s a degraded file BEFORE `parsed++`, so 360/360 parsed means 0 degraded under either reading. Every override/instantiation site in the corpus lies OUTSIDE ggplot2: R6 77 overrides in 5 files + 2 instantiates in 1 file, r-testthat 17 in 2 + 1 in 1, S7 1 in 1; ggplot2 contributes 0 of both, which is exactly why the single-repo instrument cannot see them. TWO OPEN ITEMS TRAVEL WITH THE COUNT rather than being hidden: the analyzer's own overridesEdgesEmitted sums to 95 against the census's 95 (AGREE -- RECONCILED 2026-10-09, see the note below), and 62 bases were DECLINED by the file-scoped overrides pass (overridesBasesNotDeclaredEarlierInFile) — the pass requires the base to be declared earlier in the same file. RECONCILIATION OF 118 vs 95, CLOSED 2026-10-09. The gap was the analyzer's own counter, not the collapse and not the production filter. `overridesEdgesEmitted` counted the pass's EMISSIONS -- one per (class, base, member) triple -- while the result list is collapsed on (type, source, target); two bases declaring the same member name for one class emit the same edge twice, and the second is correctly dropped as one semantic fact. MEASURED by validation/m14/fixtures/r/probe-overrides-edge-accounting.ts over the three repositories that emit either type (354 files, 0 degraded): self-report 118, analyze() 95, production parseFile 95. Stage 1 (the analyzer's own collapse) accounts for ALL 23 -- 14 in R6/tests/testthat/test-clone.R, 8 in R6/tests/testthat/test-finalizer.R, 1 in R6/tests/testthat/test-portable-inheritance.R; stage 2 (filterNoiseRelationships) removes 0. The counter now publishes the post-collapse count and carries the emission count and the collapse beside it (`overridesEmissionsBeforeDedup` = 118, `overridesEmissionsCollapsedByDedup` = 23), so nothing is dropped and the name is true. The probe is now a GUARD that exits non-zero if the three counts drift; its control is that restoring the pre-fix line reproduces 118/95/95 and the guard fails. SCOPE ALTERNATIVE, recorded so a later reader does not have to re-derive it: if this block were re-scoped to the instrument's ONE-repo population instead of the lane's declared corpus, these two types would become `zero-sites` and the row would read 8/10 — the counts that decide it are the ones above.",
     "_firingLog": {
