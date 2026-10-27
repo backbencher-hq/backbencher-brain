@@ -2,8 +2,14 @@
 // WHAT THIS FILE IS: the Haskell analyzer — pure tree-sitter AST extraction over modules,
 //   data/newtype/type declarations, classes and instances, function bindings and local scopes,
 //   publishing symbols and relationships from the tree with no regex over source text.
-// RELATIONSHIP SURFACE: all ten the ontology declares — contains, calls, uses, imports,
-//   references, exports, extends, implements, overrides, instantiates.
+// RELATIONSHIP SURFACE: all ten canonical values — contains, calls, uses, imports,
+//   references, exports, extends, implements, overrides, instantiates — plus the two extended
+//   values this language can honestly express: `decorates` (declaration-position Template
+//   Haskell splices, R3) and `part_of` (a CPP `#include`, R3). `renders` and `mixes_in` are
+//   RULED with whole-population counts, not omitted: this analyzer does not emit them, and
+//   validation/m14/fixtures/haskell/ruled-extended-types.hs pins that in both directions.
+//   See script/m14/spec/haskell-completeness.json (coverage.excluded) and the doc's
+//   "renders and mixes_in — the two rulings (2026-10-27)" section.
 // DOCS: docs/analyzers/real-haskell-analyzer.md (the lane's measured record).
 // SPEC + FIXTURES: script/m14/spec/haskell-completeness.json · validation/m14/fixtures/haskell/.
 // CO-EDIT LIST — edit these when this file changes: the doc above; the completeness spec's

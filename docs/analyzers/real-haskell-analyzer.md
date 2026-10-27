@@ -65,6 +65,8 @@
 | overrides | ✅ | `instance C T where m ...` → `overrides T.m -> C.m`, matched against a class→methods pre-pass (**M60-HK**) |
 | uses | ✅ | a type synonym → the `name`/`constructor` leaves of its right-hand side; a `variable` there is a type PARAMETER and is excluded (**M60-HK**) |
 | references | ✅ | FFI entity edges only — an `imports` edge now carries the module dependency (**M60-HK**; 7 edges corpus-wide) |
+| renders | ❌ RULED 2026-10-27 | no component model: **0** template-loader sites over 3,702 files, and the 4,201 quasiquote sites produce markup VALUES rather than rendering a declared component. Ladder R1/R2/R3 all unavailable — see `## renders and mixes_in — the two rulings (2026-10-27)` | — |
+| mixes_in | ❌ RULED 2026-10-27 | no member-set composition: the conformance family is already published (extends 189 · implements 13,721 · overrides 1,274), and DerivingVia (493 sites) obtains an instance THROUGH a carrier type rather than attaching members to one. See the section below | — |
 
 ## Noise-elimination contract (what produces NO edges)
 
@@ -707,3 +709,94 @@ The shared-grammar caveat applies and is not papered over: the oracle reads the
 same tree-sitter-haskell grammar, so a grammar bug common to both paths is
 invisible to this comparison. It measures RULE agreement — position gates, name
 resolution, attribution, label — and claims nothing about the grammar.
+
+## renders and mixes_in — the two rulings (2026-10-27)
+
+**Population for every number below:** the whole admitted population — **3,702**
+`.hs`/`.lhs` files over **6** repositories, through the production path
+(`engine.getParser` → `parse` → `RealHaskellAnalyzer.analyze`), **3,702 parsed
+of 3,702**, 0 read failures, 0 parse or analyze throws. Construct evidence:
+`script/m14/haskell-extended-census.ts` →
+`validation/m14/measurements/haskell-extended-census.json`; grammar inventory:
+`validation/m14/measurements/haskell-grammar-nodes.json` (served digest
+`37a6b07b1a83`, **174 distinct named types** in 253 named slots of 552 ids).
+Both types are recorded in `script/m14/spec/haskell-completeness.json`
+(`coverage.excluded`), which is what the coverage gate reads: the lane now
+reports **12 of 12 applicable**.
+
+### `renders` — RULED, 0 sites
+
+The vocabulary's `renders` needs three things: a declaration that denotes a
+**component**, a **host renderer** that constructs the element, and a target that
+is another component. Haskell has none of the three. No declaration denotes a
+component; nothing constructs an element; and the element is not a node in the
+language at all.
+
+| family measured | sites | why it is not a render |
+| --- | --- | --- |
+| Template Haskell template **loaders** (nearest analogue) | **0** | would name a template FILE, and a file is not a component symbol — the vocabulary has nothing to bind |
+| quasiquotes (`[hamlet\|…\|]`, `[blaze\|…\|]`, `[sql\|…\|]`) | **4,201** | an expression evaluating to markup; it **applies no component**, and 0 of them names a declared component |
+| `{-# ANN #-}` pragmas | **30** (24 files) | passive metadata (21 target a module, 9 a declaration) — already the `decorates` question, and it is not an application |
+| declaration-position TH splices | **420** | already the `decorates` population (177 rows); none names a component |
+
+**Falsifier:** a corpus site where a declaration produces a component value a
+host renderer constructs **and** whose target is a declared component — **0**
+measured. **Ladder:** R1 unavailable (no published build carries such a node;
+the served build is the newest release of a dormant grammar and its inventory
+has none — the only render-family stem match is `view_pattern`, a GHC
+view-pattern node carrying no relation). R2 unavailable because a patch would
+have to **invent** a component model and a host renderer, i.e. syntax and
+semantics the language does not have; a grammar change alters what a file can
+SAY, never what the language MEANS. R3 unavailable because no existing node type
+carries a component→component relation (`apply`, `quasiquote`, `top_splice` are
+counted above and carry value production).
+
+### `mixes_in` — RULED, 0 sites
+
+`mixes_in` is the fleet's **member-set composition**: go's struct embedding, zig's
+`usingnamespace`, dart's `with`, elixir's `use` — implementation attached to a
+type with **no conformance declared**. Haskell's only route to an implementation
+is to **declare conformance**, and that family is already published as three
+canonical values:
+
+| construct | sites | already published as |
+| --- | --- | --- |
+| class declarations | 360 | `contains` / `extends` (superclass constraint) |
+| instance declarations | 12,451 | `implements` (+ `overrides` for its methods) |
+| deriving clauses | 7,454 | `implements` |
+| **DerivingVia** | **493** | `implements` with `metadata.derived` |
+| standalone deriving instances | 596 | `implements` |
+
+**DerivingVia is the one construct that looks like a mixin and is not**, which is
+why the ruling is pinned in a fixture: `deriving (Semigroup, Monoid) via (Sum Int)`
+obtains an implementation **through a carrier type**. The carrier supplies the
+*instance*; the type must still **declare** the conformance; **no member set is
+attached**; and the carrier is not a supertype. The analyzer reads it as
+`implements`, which is the honest reading.
+
+**Falsifier:** a corpus site where a declaration attaches a member set to a type
+without declaring conformance — **0** measured over 3,702 files. **Ladder:** R1
+unavailable (no published build carries the construct). R2 unavailable because a
+patch would invent syntax and semantics the language does not have — GHC's own
+answer to implementation reuse is a library plus `deriving`, a value-level and
+conformance-level mechanism, not a declaration a grammar could expose. R3
+unavailable because no node type carries a member-set composition; the two
+candidates that could be **misread** as one are counted above.
+
+### The fixture that gives both rulings teeth
+
+`validation/m14/fixtures/haskell/ruled-extended-types.hs` (+ its expectation)
+contains, in one file, the shapes a wrong rule would fire on:
+
+- a **superclass constraint** → pinned as `extends` (exactly 1 row);
+- an **instance** → `implements`; its method → `overrides`;
+- **DerivingVia** → `implements` with `metadata.derived`, **forbidden** as
+  `mixes_in`, including the specific wrong edge (`Gadget` → `Sum`);
+- a function that **assembles a markup String** → the `calls` row it really is,
+  **forbidden** as `renders`, including the specific wrong edge
+  (`renderWidget` → `String`);
+- `expectRelationshipCount` pins **0** `renders` and **0** `mixes_in`.
+
+Suite: **8 pass / 0 fail** (`bun run script/m14/run-fixtures.ts --lang haskell`).
+A relabel of the 493 deriving-via sites, or a value-shape render rule, would
+fail on this file rather than pass on a corpus zero.
