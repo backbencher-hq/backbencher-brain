@@ -24,6 +24,11 @@
         "label": "decorates",
         "evidence": "ontological",
         "from": "RULED UNDECIDABLE (ONTOLOGICAL — the csharp-annotation precedent: an annotation is PASSIVE METADATA a tool reads, and a decorator is an APPLIED CALLABLE; a decorates row for a roxygen tag would assert an application the vocabulary does not credit). THE LADDER WAS WALKED FIRST AND THE RUNGS ARE UNAVAILABLE BY MEASUREMENT, NOT BY PREFERENCE: the served grammar's own inventory (validation/m14/measurements/r-grammar-nodes.json, served digest ea825fd3812b) carries 41 named node types, of which the annotation/decorator/attribute/roxygen/tag family is 0 — the production this ruling would need IS NOT IN THE GRAMMAR, and what the corpus exercises is a `comment` node, which IS in the served list. An R2 grammar patch that invented an annotation production roxygen does not have would make the analyzer disagree with the language; R3 (express on an existing node type) has only the comment node to express on, and a comment is exactly the class the adjudicated ontology holds to be passive metadata — so R3 exists and is not taken for the ONTOLOGICAL reason, never for difficulty. MEASURED SITES (whole admitted population, parsed=2184/2184 admitted=2184, gate admission, instrument validation/m14/fixtures/r/census-decorates-falsifier.ts, artifact validation/m14/fixtures/r/measurements/r-decorates-falsifier.txt): roxygen `#'` comment sites 59,334 in 779 files; tag sites (@export/@import*/@param/...) 12,791; roxygen sites whose next named sibling is a DECLARATION shape 45,830 in 732 files — the opportunity is counted so the ruling does not treat all sites as one undifferentiated class. THE PASSIVE-METADATA FACTS ARE ALREADY PUBLISHED, NOT LOST: roxygen `@export` publishes an `exports` edge (3,695 @export tag sites in 718 files, counted in validation/m14/fixtures/r/measurements/r-extended-constructs.txt) and the roxygen block is carried on the declaration's `docstring`. FALSIFIER (an instrument in the tree counts it, both halves measured): (1) an annotation production in the SERVED grammar whose node wraps a DECLARATION — counted 0 among the served 41 named types; the falsifier is that census line turning non-zero; (2) a roxygen tag a tool INVOKES on the declaration AT BUILD TIME — counted 45,830 sites adjacent to a declaration, every one a comment roxygen2 reads from SOURCE TEXT; the falsifier is a grammar production attaching the tag to the declaration as a NODE rather than as text preceding it."
+      },
+      {
+        "label": "renders",
+        "evidence": "ontological",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL — R's only component-shaped model is Shiny's, and Shiny's UI is a CONTAINER TREE OF WIDGET CALLS, not a component model: nothing in it names a rendered component symbol). THE LADDER WAS WALKED FIRST, AND THE RUNGS ARE UNAVAILABLE BY MEASUREMENT: the served grammar (validation/m14/measurements/r-grammar-nodes.json, digest ea825fd3812b, 41 named types) has 0 render/component/template/markup/widget-family node types, so R1/R2 have nothing to build on; R3 could express `plotOutput('plot')` as a `call` node (the construct IS a call), and R3 is NOT TAKEN because the edge it would publish has NO VALID TARGET — the contract is 'a component RENDERS another component' (source = the rendering symbol, target = the RENDERED COMPONENT), and the census measured that 0 of the population's *Output widget calls name a component by an IDENTIFIER: the 5 real Shiny `plotOutput` sites carry a STRING OUTPUT ID ('plot') that the SERVER wires at runtime through `output$plot <- renderPlot(...)`, a dynamic binding a file-scoped analyzer cannot resolve to a symbol — publishing `renders ui -> plot` would target a STRING ID, which is the fleet's PATH-TARGET lesson (a path or ID string is never a published name). THE MEASURED POPULATION (whole admitted, parsed=2184/2184 admitted=2184, gate admission, instrument validation/m14/fixtures/r/census-renders-falsifier.ts, artifact validation/m14/fixtures/r/measurements/r-renders-falsifier.txt): renderY(...) call sites 7 (5 renderPlot in the r-cli Shiny demo apps + 2 renderDependencies in r-pkgdown, an HTML-dependency helper that renders nothing); output$X <- renderY(...) wiring sites 5; *Output(...) UI-widget call sites 7 — 5 plotOutput (the real widgets), 1 jobAddOutput (rstudioapi's job-log API, first arg a JOB ID) and 1 .printVerboseOutput (an internal Rcpp helper) — container sites (shinyUI/basicPage/...) 17; distinct files 10 of 2184. THE DISCRIMINATOR, counted (the csharp render-host test applied to R): first argument a STRING output ID 5, an IDENTIFIER 1 (the Rcpp helper's `context` argument — an object, not a component), none/other 1. THE TWO NON-SHINY SPELLINGS ARE FALSE FRIENDS AND ARE EXCLUDED BY THE COUNT, not by assumption: jobAddOutput and .printVerboseOutput appear in the artifact with their sites. FALSIFIER (an instrument in the tree counts it): a *Output widget call whose first argument is an IDENTIFIER naming a DECLARED component symbol — counted 1 of 7 and that 1 is `context`, an argument object, so the count that would refute the ruling is 'identifier-shaped first argument that names a component: >0'; the census line is in the artifact. The .Rmd/.Rnw route is DISCLOSED and does not reach this lane: 0 of all four spellings on the corpus tree, and the ROUTER'S ONE TABLE gives this lane .r only."
       }
     ],
     "corpusUnexercised": [],
@@ -95,12 +100,18 @@
         "reading": "`source()`/`sys.source()` are RUNTIME CALLS, not a parse-level inclusion directive; the default (`local=TRUE`) evaluates the included file in a NEW environment, which fails the contract's 'shares the library's single scope'. The ladder is walked before any ruling: a CALL is not a grammar construct, so the honest class is expected to be ONTOLOGICAL (or grammar-absence with a parse-level directive as the falsifier), never 'zero-sites' — the sites are counted above."
       },
       "renders": {
-        "state": "PENDING — measured, not yet implemented",
+        "state": "RULED UNDECIDABLE (ontological) — published in coverage.excluded",
         "measured_construct_sites": {
-          "Rmd": 0,
-          "Rnw": 0,
-          "rmd_lower": 0,
-          "rnw_lower": 0
+          "renderY_call_sites": 7,
+          "renderY_sites_note": "5 renderPlot (r-cli Shiny demos) + 2 renderDependencies (r-pkgdown HTML-dependency helper)",
+          "output_wiring_sites": 5,
+          "Output_widget_call_sites": 7,
+          "Output_first_arg_string_id": 5,
+          "Output_first_arg_identifier": 1,
+          "Output_first_arg_none_or_other": 1,
+          "container_sites": 17,
+          "distinct_files": 10,
+          "Rmd_Rnw_on_tree": 0
         },
         "reading": "`.Rmd`/`.Rnw` are knitr/rmarkdown spellings, and the ROUTER'S ONE TABLE gives this lane `.r` only, so a `.Rmd` file is not this lane's file; the corpus tree carries zero of all four spellings. No component model exists in R to host the construct."
       }
