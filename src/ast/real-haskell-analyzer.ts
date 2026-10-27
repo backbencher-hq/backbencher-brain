@@ -431,6 +431,17 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // callable, which is the class every attribute-shaped language rules
         // ontological. The counter is carried into `metadata.annPragmaSites`.
         this.countPragmas(node, ctx)
+      } else if (node.type === "cpp") {
+        // The C-preprocessor directive node. Under `{-# LANGUAGE CPP #-}` a
+        // `#include "x.h"` line is a TEXTUAL FILE INCLUSION — the named file's
+        // text is spliced into this module before parsing, it shares the
+        // module's single scope, and it is not a module anything can resolve as
+        // `Module.item`. That is exactly the `part_of` contract, and `cpp` is a
+        // named node type of the served grammar, so this is an R3 emission on an
+        // existing node (the fleet's cpp `#include` precedent). The `#if`/
+        // `#else`/`#endif`/shebang members of the same node type name no file
+        // and emit nothing.
+        this.processCppDirective(node, ctx)
       }
 
       if (pushedScope) stack.push({ node, isExit: true })
@@ -817,6 +828,147 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
     const keyword = text.slice(i, i + 3).toUpperCase()
     if (keyword === "ANN") ctx.annPragmas++
+  }
+
+  // ==========================================================================
+  // `part_of` FROM A CPP `#include` — THE R3 EMISSION ON AN EXISTING NODE TYPE.
+  //
+  // WHY THIS IS `part_of` AND NOT AN `imports`. Haskell has no textual include
+  // of its own: `import Module` is a MODULE LOAD — it creates binding scope for
+  // the module's exports and can be resolved as `Module.item`, which is the
+  // OPPOSITE of a fragment. The ONE textual-inclusion construct a Haskell file
+  // can carry is the C preprocessor's `#include`, available under
+  // `{-# LANGUAGE CPP #-}`: the named file's text is spliced into this module
+  // BEFORE parsing, it shares this module's single scope, and it has no module
+  // identity at all. That is the contract's `part_of` verbatim ("a part shares
+  // the library's single scope, imports nothing, and cannot be resolved as a
+  // separate module"), and the fleet's implemented `part_of` set is unanimously
+  // textual file inclusion (cpp `#include`, fsharp `#load`, php include/require,
+  // erlang `-include`, typescript reference directives).
+  //
+  // RUNG WALKED: R1 and R2 are UNNECESSARY — `cpp` is already a NAMED node type
+  // of the SERVED grammar (253 named of 552 ids, digest 37a6b07b1a83; measured
+  // in validation/m14/measurements/haskell-grammar-nodes.json), so R3 is live
+  // and no grammar build or patch is needed.
+  //
+  // THE TARGET IS THE PART'S MODULE SYMBOL (its file STEM), NOT A PATH, and the
+  // written path is kept in `metadata.partPath`. The arbiter resolves TARGET
+  // STRINGS AGAINST SYMBOL NAMES and has no space for a path — the cpp lane
+  // measured that emitting paths gave 0 resolved of 4,612 rows — while the
+  // contract permits either ("the part's file OR ITS MODULE SYMBOL"). The stem
+  // is symbol-shaped, so it can bind when it names something.
+  //
+  // MEASURED over the whole admitted population (3,702 files): FOUR real
+  // directive sites, every one a quoted `#include "MachDeps.h"` (three Cabal
+  // Cmm test-suite files, one hasura-engine module), 0 non-literal. The SEVEN
+  // other `#include` strings in the corpus are NOT directives and emit nothing:
+  // a string-built line `["#include \"" ++ hdr ++ "\""]`, the `-#include` ghc
+  // FLAG as a string, a Haddock comment mentioning the flag, and a JSON
+  // quasiquote carrying the text. All four are pinned as negatives by the
+  // fixture. `MachDeps.h` is a GHC SYSTEM header, so its stem resolves to
+  // nothing in the admitted set — the system-header case the cpp lane handles,
+  // and it reads unresolved rather than wrong.
+  // ==========================================================================
+  private processCppDirective(node: Node, ctx: HaskellContext): void {
+    const include = this.readCppInclude(node.text ?? "")
+    if (!include) return
+    ctx.patterns["CPP"] = true
+    const scope = ctx.currentModule || "Main"
+    // A QUOTED include names the unit's OWN fragment (part_of); an ANGLE
+    // include names another module's header (imports) — the cpp lane's
+    // by-written-form rule, the same node and the same parse. No angle site
+    // exists in this lane's admitted population (measured 0); the branch is
+    // here so the form is classified by the construct, not by the corpus.
+    if (include.form === "quoted") {
+      this.pushRel(
+        ctx,
+        scope,
+        include.stem,
+        ASTEngine.RelationshipType.PartOf,
+        1.0,
+        {
+          // MANDATORY on every part_of row (src/ast/types.ts): "library" because
+          // THIS file is the library/unit and the directive names its part.
+          partRole: "library",
+          // The written path is EVIDENCE; the stem is the target. Keeping both
+          // is what makes the difference between them checkable.
+          partPath: include.specifier,
+          partSymbol: include.stem,
+          isQuotedInclude: true,
+          isCppDirective: true,
+          relationshipType: "part_of_directive",
+          haskellSpecific: true,
+        },
+        this.lineOf(node),
+      )
+    } else {
+      this.pushRel(
+        ctx,
+        scope,
+        include.specifier,
+        ASTEngine.RelationshipType.Imports,
+        1.0,
+        {
+          isSystemInclude: true,
+          isCppDirective: true,
+          relationshipType: "include_dependency",
+          haskellSpecific: true,
+        },
+        this.lineOf(node),
+      )
+    }
+  }
+
+  /**
+   * Read a `#include` directive's specifier from a `cpp` node's text.
+   *
+   * Returns undefined unless the directive's keyword is EXACTLY `include` and it
+   * names a quoted or angle specifier. `#if`, `#else`, `#endif` and a shebang
+   * share the `cpp` node type and name no file, so every one of them falls out
+   * here. PURE STRING SCAN — the analyzer's no-regex contract forbids a pattern
+   * literal, and a keyword test does not need one.
+   */
+  private readCppInclude(text: string): { form: "quoted" | "angle"; specifier: string; stem: string } | undefined {
+    const isSpace = (c: string): boolean => c === " " || c === "\t" || c === "\n" || c === "\r"
+    let i = 0
+    while (i < text.length && isSpace(text[i])) i++
+    if (i >= text.length || text[i] !== "#") return undefined
+    i++
+    while (i < text.length && (text[i] === " " || text[i] === "\t")) i++
+    const keyword = "include"
+    if (i + keyword.length > text.length) return undefined
+    if (text.slice(i, i + keyword.length).toLowerCase() !== keyword) return undefined
+    let j = i + keyword.length
+    // The keyword must end at a separator; `#include_next`/`#included` are other directives.
+    if (j < text.length && !(text[j] === " " || text[j] === "\t" || text[j] === '"' || text[j] === "<")) return undefined
+    while (j < text.length && (text[j] === " " || text[j] === "\t")) j++
+    if (j >= text.length) return undefined
+    const open = text[j]
+    if (open === '"') {
+      const end = text.indexOf('"', j + 1)
+      if (end < 0) return undefined
+      const specifier = text.slice(j + 1, end).trim()
+      if (specifier.length === 0) return undefined
+      return { form: "quoted", specifier, stem: this.cppIncludeStem(specifier) }
+    }
+    if (open === "<") {
+      const end = text.indexOf(">", j + 1)
+      if (end < 0) return undefined
+      const specifier = text.slice(j + 1, end).trim()
+      if (specifier.length === 0) return undefined
+      return { form: "angle", specifier, stem: this.cppIncludeStem(specifier) }
+    }
+    return undefined
+  }
+
+  /** A specifier's module stem: no directories, no extension (`util/Service.h` -> `Service`). */
+  private cppIncludeStem(specifier: string): string {
+    const slash = specifier.lastIndexOf("/")
+    let base = slash >= 0 ? specifier.slice(slash + 1) : specifier
+    const backslash = base.lastIndexOf("\\")
+    if (backslash >= 0) base = base.slice(backslash + 1)
+    const dot = base.lastIndexOf(".")
+    return (dot > 0 ? base.slice(0, dot) : base).trim()
   }
 
   // ==========================================================================
@@ -2732,6 +2884,9 @@ private processPatternSynonym(node: Node, ctx: HaskellContext): boolean {
       // the applied head, and the quoted name are all structural children of the
       // declaration, so the tier is structural rather than inferred.
       if (t === "decorates") { md.evidenceClass = "structural"; continue }
+      // `part_of` from a `cpp` include is the directive node's own text scan —
+      // the path is written in the source, so the tier is structural.
+      if (t === "part_of") { md.evidenceClass = "structural"; continue }
       if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication || md.isQualifiedConstructorApplication || md.isInfixConstructorApplication || md.isTickedConstructorApplication ? "usage_contextual" : "structural"; continue }
       md.evidenceClass = conf >= 0.85 ? "usage_contextual" : "inferred"
     }
