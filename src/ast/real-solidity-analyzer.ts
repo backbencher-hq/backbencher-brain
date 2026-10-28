@@ -3202,7 +3202,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
-      // W13 — THE IMPLICIT-`this` CALL: a bare callee that the analyzer has already placed in an
+      // W15 — THE IMPLICIT-`this` CALL: a bare callee that the analyzer has already placed in an
       // ancestor's member set (`crossFileInheritedMember`). The site proves the ENCLOSING TYPE, and
       // that type's inheritance closure names exactly one declarer — so the declaration is
       // determined by the site even though the bare spelling collides with every other type in the
