@@ -2951,6 +2951,19 @@ const meta = modifiersOf(node)
         return "external"
       })()
       md.calleeKind = kind
+      // W2 — A LANGUAGE NAMESPACE IS A CLAIM THE GATE CAN CHECK, not a bare name it must
+      // guess at. `abi.encode` / `type(T).interfaceId` were published with target `encode` /
+      // `interfaceId`, so the gate saw a bare name that names no declaration and counted it
+      // unresolved (or ambiguous against an unrelated project `encode`). The namespace is
+      // PART OF THE TARGET: publish `abi.encode` and the arbiter's list-verified
+      // `languageNamespace` claim reads the root and verifies it. `super`/`this` are NOT
+      // language namespaces — they are the receiver keywords of a real member call — so
+      // they keep the bare target and their existing class.
+      const namespaceObject = typeof md.calleeObject === "string" ? md.calleeObject : ""
+      if (kind === "namespaceBuiltin" && (namespaceObject === "abi" || namespaceObject === "type") && target !== "" && !target.includes(".")) {
+        rel.target = `${namespaceObject}.${target}`
+        md.languageNamespace = [namespaceObject]
+      }
       callKinds[kind] = (callKinds[kind] ?? 0) + 1
     }
 
