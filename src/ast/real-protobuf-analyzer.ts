@@ -770,7 +770,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // namespaces above — i.e. exactly the class that used to read `unresolved` with no claim
           // at all. The `declaredTypeIds` guard is what keeps the lane from certifying a reference
           // its own file already answers; it is also why this adoption moves no `resolved` edge.
-          ...(type === ASTEngine.RelationshipType.Uses
+          ...(type === ASTEngine.RelationshipType.References
             && !declaredTypeIds.has(target)
             && protobufExternalNamespaceOf(target) !== null
             ? { languageNamespace: [...PROTOBUF_EXTERNAL_NAMESPACES] }
@@ -1126,7 +1126,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       viaExtension: boolean
     }
     const RelationshipTypeContains = ASTEngine.RelationshipType.Contains
-    const RelationshipTypeUses = ASTEngine.RelationshipType.Uses
+    const RelationshipTypeReferences = ASTEngine.RelationshipType.References
     const RelationshipTypeImports = ASTEngine.RelationshipType.Imports
     const RelationshipTypeExports = ASTEngine.RelationshipType.Exports
     const RelationshipTypeOverrides = ASTEngine.RelationshipType.Overrides
@@ -1214,7 +1214,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
           })
           if (ctx.owner) addRel(ctx.owner, fieldId, RelationshipTypeContains, lineOf(node), { member: "field", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
-          addRel(fieldId, typeId, RelationshipTypeUses, lineOf(node), { role: "groupType" })
+          addRel(fieldId, typeId, RelationshipTypeReferences, lineOf(node), { role: "groupType" })
           // the group's own body
           const inner: Ctx = {
             ...ctx,
@@ -1239,7 +1239,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(label ? { label } : {}),
       })
       if (fieldId && ref) {
-        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "fieldType" })
+        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeReferences, lineOf(node), { role: "fieldType" })
       }
     }
 
@@ -1258,7 +1258,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         fieldNumber: numNode?.text ?? null,
       })
       if (fieldId && valRef) {
-        addRel(fieldId, resolveRef(valRef, ctx.scope), RelationshipTypeUses, lineOf(node), {
+        addRel(fieldId, resolveRef(valRef, ctx.scope), RelationshipTypeReferences, lineOf(node), {
           role: "mapValueType",
         })
       }
@@ -1275,7 +1275,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         fieldNumber: firstOfType(node, "field_number")?.text ?? null,
       })
       if (fieldId && ref) {
-        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "oneofFieldType" })
+        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeReferences, lineOf(node), { role: "oneofFieldType" })
       }
     }
 
@@ -1337,8 +1337,8 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "rpc", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
-      if (request) addRel(id, resolveRef(request, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "rpcRequest" })
-      if (response) addRel(id, resolveRef(response, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "rpcResponse" })
+      if (request) addRel(id, resolveRef(request, ctx.scope), RelationshipTypeReferences, lineOf(node), { role: "rpcRequest" })
+      if (response) addRel(id, resolveRef(response, ctx.scope), RelationshipTypeReferences, lineOf(node), { role: "rpcResponse" })
     }
 
     /**
