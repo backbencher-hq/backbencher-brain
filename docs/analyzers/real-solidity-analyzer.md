@@ -112,7 +112,10 @@ decorates (the modifier adjudication, SOL-R3), renders, mixes_in, part_of.
 modifier-invocation relabel; `mixes_in` was implemented from `using_directive` (SOL-24), published 27 rows,
 and was **WITHDRAWN the same day** when the vocabulary's own contract failed on it. **`renders`, `part_of`
 and `mixes_in` are all RULED now**, each carrying a count and a falsifier in
-`script/m14/spec/solidity-completeness.json` — `renders` and `part_of` as grammar-absence, `mixes_in` as
+`script/m14/spec/solidity-completeness.json` — `renders` and `part_of` as **grammar-remedy-ruled** (the
+ladder was walked: R1, the latest published build is npm 1.2.13 and its 124 named types contain no such
+node; R2, a clone+patch could add a node but would have to invent the component model/part-file semantics
+the language does not have; R3, no existing node type carries the relation), `mixes_in` as
 ontological (an emission tried and refused, so the claim is measured rather than argued): the served grammar's 124 named types contain 0
 template/component/element/render/markup nodes and the vocabulary has 0 component `SymbolKind`s among
 its 32, so there is no node a rendering edge could be read from (a contract is DEPLOYED, not rendered);
@@ -583,7 +586,7 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
 | Completeness | **126/126** classified exactly once, **0 gaps** | `script/m60/solidity-completeness-spec.ts --verify-silence` |
 | Fixtures | **34**, all passing (0 fail), every row read off measured output — including `using-directive-is-not-a-mix-in`, the control for the withdrawn `mixes_in` emission | `bun run script/m14/run-fixtures.ts --lang solidity` |
-| Applicable set | **11 implemented / 11 applicable / 3 excluded** (renders, part_of — grammar-absence; mixes_in — ontological) | `bun run script/m14/coverage-block-gate.ts --json` |
+| Applicable set | **11 implemented / 11 applicable / 3 excluded** (renders, part_of — grammar-remedy-ruled after R1/R2/R3; mixes_in — ontological, emission tried and withdrawn) | `bun run script/m14/coverage-block-gate.ts --json` |
 | `mixes_in` ruling | **0 rows.** The emission published **27** (all resolved, from 124 `using_directive` sites in 76 files; 54 no-host + 39 primitive host + 4 braced set skipped and counted) and was withdrawn the same day: 0 of the 27 adds a member to the host. The 27 `references` rows to the same libraries remain | `validation/m14/measurements/solidity-extended-census.json`; `script/m14/tmp/sol24-mixes-counters.mts`; `bun run script/m14/run-fixtures.ts --lang solidity` |
 | Mutants | **49**, all caught (0 survivors; `modifiers-every-scope` was a no-op keyed on the pre-relabel `calls` shape and is now fixed to read `decorates` too) | `BB_MUTANT_ONLY="solidity/" bun run script/m14/mutate-analyzer.ts`; log `validation/m14/fixtures/solidity/measurements/mutants-solidity-2026-10-27.txt` |
 | Zero regex | 0 operations, 0 literals, 4/4 helpers; gate verified to fail 3 ways | `bun run script/m60/solidity-zero-regex.ts --selftest` |
