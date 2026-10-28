@@ -27,6 +27,7 @@
  */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { fileClaimForTarget } from "./file-claim"
 import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, EVM_BUILTIN_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
 import { buildResolutionTables } from "./project-index"
 // SOL-W8 (depth campaign, D7 CLAIMED): the fleet BINDING_SEP. A function-scope binding has no
@@ -2998,9 +2999,26 @@ const meta = modifiersOf(node)
       for (const e of importEdges) {
         if (!e.path || seenImportPath.has(e.path)) continue
         seenImportPath.add(e.path)
+        // THE FILE CLAIM, WHERE THE FILE IS REALLY THERE. An `imports` target is a module
+        // SPECIFIER, so the gate's declaration key space cannot resolve it — 932 rows read
+        // `unresolved` by construction. That is not the same as "says nothing checkable":
+        // the project can be asked whether it carries the file the specifier names, and
+        // `fileClaimForTarget` answers that from the filesystem in this lane's admitted
+        // extension. The guard writes the claim only when the file exists, so it can never
+        // refute and can never excuse a missing dependency. The written path stays in
+        // `importPath`; the claim is a separate, project-relative fact.
+        const claim = typeof context?.projectRoot === "string" && context.projectRoot.length > 0
+          ? fileClaimForTarget({
+              projectRoot: context.projectRoot,
+              filePath,
+              admittedExtensions: ["sol"],
+              written: e.path,
+            })
+          : null
         addRel(fileName, e.path, ASTEngine.RelationshipType.Imports, 1.0, e.line, {
           import: true,
           importPath: e.path,
+          ...(claim !== null ? { importProjectFile: claim } : {}),
           ...(e.isNamespace ? { isNamespaceImport: true } : {}),
         }, { pathTarget: true })
       }

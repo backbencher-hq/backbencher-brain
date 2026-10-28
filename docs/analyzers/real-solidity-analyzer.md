@@ -129,7 +129,7 @@ same 421 files (per-file on 2026-10-27; the whole-population arm re-run 2026-10-
 implements 107, and the per-file run reads calls 6,703 · decorates 31 · extends 588 ·
 implements 7 — 113 cross-file modifier applications and 100 base-list entries change
 label, and **no other type moves by one row**. (Both arms carried `mixes_in` 27 on the day it waspublished; that type is withdrawn — SOL-24.) `validation/m14/measurements/solidity-gate-whole-2026-10-28.json`
-and `validation/m14/measurements/solidity-gate-perfile-2026-10-27.json` carry both, and the same A→B delta is what D3 below already recorded for the heritage kinds. The 2026-10-28 whole-population run reads **contains 6,531 · references 1,452 · exports 526 · TOTAL 35,099** — the 61-row contains/references pair returned to its 2026-10-14 value by measurement, and exports fell 8 with the SOL-12 nested-UDVT fix; clause 1 is 1,823 ambiguous + 2,230 unresolved.
+and `validation/m14/measurements/solidity-gate-perfile-2026-10-27.json` carry both, and the same A→B delta is what D3 below already recorded for the heritage kinds. The 2026-10-28 whole-population run reads **contains 6,531 · references 1,452 · exports 526 · TOTAL 35,099** — the 61-row contains/references pair returned to its 2026-10-14 value by measurement, and exports fell 8 with the SOL-12 nested-UDVT fix. **The internal-import file claim then moved 798 of the 932 `imports` edges to project-verified `extOK` (0 refuted), leaving 134 the project does not carry** — clause 1 is 1,823 ambiguous + 1,432 unresolved, plus those 798 verified claims.
 
 **The value rulings, each settled by a measurement (full text in the spec table's `rulings`):**
 
