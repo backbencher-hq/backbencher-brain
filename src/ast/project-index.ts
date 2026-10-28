@@ -1999,13 +1999,26 @@ export async function buildProjectIndexStreaming(
  *  closure — the two facts a cross-file resolution question actually needs. Built
  *  once from the shallow index so no consumer re-walks the inheritance graph. */
 export function buildResolutionTables(index: ProjectIndex): {
-  /** member name -> the types declaring it, transitively closed over bases. */
+  /** member name -> the types EXPOSING it, transitively closed over bases. NOTE: the
+   *  recipients, not the declarers — `IERC20.transfer` puts every contract that inherits
+   *  the member in this set, so it cannot answer "which type DECLARES this". Use
+   *  `memberDeclarer` for that; the two are different questions and conflating them once
+   *  made a uniqueness test over recipient types, which no inherited member can pass. */
   memberOwners: Map<string, Set<string>>
   /** every member any declared type exposes, inheritance-closed. */
   allMembers: Map<string, Set<string>>
+  /** typeName -> (member -> the ONE type in its inheritance closure that DECLARES it, or
+   *  `null` when two types in that closure declare the same name). A member inherited from
+   *  two bases is a real Solidity conflict, so "null" is a fact, not a miss. */
+  memberDeclarer: Map<string, Map<string, string | null>>
+  /** member name -> how many DISTINCT declared types declare it directly. The count that
+   *  says whether a bare member spelling can name one declaration at all. */
+  memberDeclarers: Map<string, number>
 } {
   const allMembers = new Map<string, Set<string>>()
   const memberOwners = new Map<string, Set<string>>()
+  const memberDeclarer = new Map<string, Map<string, string | null>>()
+  const memberDeclarers = new Map<string, number>()
 
   const closure = (typeName: string, seen = new Set<string>()): Set<string> => {
     const cached = allMembers.get(typeName)
@@ -2020,15 +2033,44 @@ export function buildResolutionTables(index: ProjectIndex): {
     return out
   }
 
+  /** the type and every type it inherits from — the set a declarer can be found in. */
+  const lineage = (typeName: string, seen = new Set<string>()): Set<string> => {
+    const out = new Set<string>()
+    if (seen.has(typeName)) return out
+    seen.add(typeName)
+    out.add(typeName)
+    for (const b of index.typeBases.get(typeName) ?? []) {
+      for (const t of lineage(b, seen)) out.add(t)
+    }
+    return out
+  }
+
   for (const typeName of index.typeKinds.keys()) {
     for (const m of closure(typeName)) addTo(memberOwners, m, typeName)
+  }
+  for (const [typeName, members] of index.typeMembers) {
+    for (const m of members) memberDeclarers.set(m, (memberDeclarers.get(m) ?? 0) + 1)
+  }
+  for (const typeName of index.typeKinds.keys()) {
+    const byName = new Map<string, string | null>()
+    const line = lineage(typeName)
+    for (const m of closure(typeName)) {
+      let declarer: string | null = null
+      for (const t of line) {
+        if (!(index.typeMembers.get(t)?.has(m) ?? false)) continue
+        if (declarer === null) declarer = t
+        else if (declarer !== t) { declarer = null; break }
+      }
+      byName.set(m, declarer)
+    }
+    memberDeclarer.set(typeName, byName)
   }
   // Attached so a caller that runs a truth oracle AND an analyzer over the same
   // corpus can hand both the SAME closed map. Two consumers resolving against two
   // separately-built cross-file views produce disagreements that are uninterpretable:
   // neither side is wrong, they were just asked different questions.
   ;(index as any).__closedMembers = allMembers
-  return { memberOwners, allMembers }
+  return { memberOwners, allMembers, memberDeclarer, memberDeclarers }
 }
 
 /**

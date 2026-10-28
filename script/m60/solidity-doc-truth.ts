@@ -206,8 +206,13 @@ const checks: Check[] = [
   { doc: "**262** derived", what: "reserved token count", actual: 262, expect: (v) => v === 262 },
   { doc: "**15 of 17** builtins", what: "identifier-spelled engine builtins", actual: 15, expect: (v) => v === 15 },
   // ── counts the doc asserts about the lanes' own gates
-  { doc: "**34**, all passing", what: "fixtures", actual: FIXTURE_COUNT, expect: (v) => v === 34 },
-  { doc: "**49**, all caught", what: "mutants", actual: MUTANT_COUNT, expect: (v) => v === 49 },
+  // DERIVED, not frozen. The two rows above carry a literal because the pair `(doc phrase, expected
+  // value)` was written once and then went stale on both sides: the gate demanded the string
+  // `**34**, all passing` and the number 34, so a lane that grew to 36 reported NOT IN DOC while
+  // the doc was right. The phrase is now built FROM the measured count, which is what makes the
+  // check "the doc states the number the artifact has" rather than "the doc still says 34".
+  { doc: `**${FIXTURE_COUNT}**, all passing`, what: "fixtures", actual: FIXTURE_COUNT, expect: (v) => v === FIXTURE_COUNT },
+  { doc: `**${MUTANT_COUNT}**, all caught`, what: "mutants", actual: MUTANT_COUNT, expect: (v) => v === MUTANT_COUNT },
 ]
 
 const failures: string[] = []

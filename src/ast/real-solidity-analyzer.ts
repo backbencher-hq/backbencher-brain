@@ -733,6 +733,15 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      * and no test on the invocation's spelling could have separated them — the tree is identical.
      */
     const declaredTypeNamesForCalls = new Set<string>()
+    /** W7 — variable name -> the types it is declared with. A name declared with two types in one
+     *  file is NOT resolved by this map; the pass skips it rather than choosing one. */
+    const declaredVariableTypes = new Map<string, Set<string>>()
+    const noteVariableType = (name: string, type: string | undefined): void => {
+      if (name === "" || type === undefined || type === "") return
+      const set = declaredVariableTypes.get(name)
+      if (set === undefined) declaredVariableTypes.set(name, new Set([type]))
+      else set.add(type)
+    }
     /** Built once per file, and only when a header name actually needs the project's key space. */
     let projectResolutionTables: ReturnType<typeof buildResolutionTables> | null = null
     const projectTables = (): ReturnType<typeof buildResolutionTables> => {
@@ -1571,7 +1580,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       ])
       let bindings: Set<string> = new Set()
       if (CALLABLE_DEFINITION_TYPES.has(node.type)) {
-        for (const p of collectParameters(node)) bindings.add(p.name)
+        for (const p of collectParameters(node)) {
+          bindings.add(p.name)
+          noteVariableType(p.name, p.type)
+        }
       }
       frames.push({ owner, scope, containerLine: line, yul, isType, branches: 1, sym, qualifiedCalls: [], bindings })
     }
@@ -2093,8 +2105,9 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!nameNode) break
           const name = nameNode.text
           const line = nameNode.startPosition.row + 1
-const meta = modifiersOf(node)
+          const meta = modifiersOf(node)
           meta.declaredType = typeTextOf(node.childForFieldName("type"))
+          noteVariableType(name, typeof meta.declaredType === "string" ? meta.declaredType : "")
           if (node.childForFieldName("location")) {
             meta.stateLocation = node.childForFieldName("location")!.text
           }
@@ -2203,10 +2216,12 @@ const meta = modifiersOf(node)
           if (!nameNode) break
           const line = nameNode.startPosition.row + 1
           const isImmutable = findFirstChild(node, "immutable") !== null
+          const declaredType = typeTextOf(node.childForFieldName("type"))
+          noteVariableType(nameNode.text, declaredType)
           declareSymbol(nameNode.text,
             isImmutable ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
             node, line, {
-              declaredType: typeTextOf(node.childForFieldName("type")),
+              declaredType,
               ...(node.childForFieldName("value") ? { hasInitialiser: true } : {}),
               isImmutable,
             })
@@ -2851,6 +2866,7 @@ const meta = modifiersOf(node)
       localFunction: 0, inheritedMember: 0, inFileTypeMember: 0,
       crossFileInheritedMember: 0, projectMemberCandidate: 0,
       eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0, localBinding: 0,
+      receiverTypedMember: 0, inheritedMemberQualified: 0,
     }
     // SOL-21 — the index's inheritance-closed member set per type, and the
     // name -> declaring-types table. Built once per file from the shared index rather
@@ -2858,10 +2874,17 @@ const meta = modifiersOf(node)
     // quadratic pass and this classifier runs on every call in the file.
     const projectAllMembers = new Map<string, Set<string>>()
     const projectMemberOwners = new Map<string, Set<string>>()
+    /** W7 — the DECLARER of a member within a type's own inheritance closure, and how many
+     *  project types declare that member name at all. `null` declarer = two bases declare it,
+     *  which is a real conflict and not a resolution. */
+    const projectMemberDeclarer = new Map<string, Map<string, string | null>>()
+    const projectMemberDeclarers = new Map<string, number>()
     if (projectIndex) {
-      const { memberOwners, allMembers } = buildResolutionTables(projectIndex)
+      const { memberOwners, allMembers, memberDeclarer, memberDeclarers } = buildResolutionTables(projectIndex)
       for (const [t, ms] of allMembers) projectAllMembers.set(t, ms)
       for (const [m, ts] of memberOwners) projectMemberOwners.set(m, ts)
+      for (const [t, byName] of memberDeclarer) projectMemberDeclarer.set(t, byName)
+      for (const [m, n] of memberDeclarers) projectMemberDeclarers.set(m, n)
     }
     for (const rel of relationships) {
       if (rel.type !== ASTEngine.RelationshipType.Calls) continue
@@ -2879,7 +2902,7 @@ const meta = modifiersOf(node)
       for (const b of basesByContract.get(owner) ?? []) {
         for (const m of memberClosure(b)) ownInherited.add(m)
       }
-      const kind = ((): string => {
+      let kind = ((): string => {
         // SOL-W8 — a CLAIMED function-scope binding callee is its own kind. Without this the
         // binding-spelled target (`f<NUL>op`) matches no declaration and falls through to
         // `external`, which would state something false about the row; the claim column and the
@@ -2920,9 +2943,21 @@ const meta = modifiersOf(node)
         //    `using X for T` directive. Named `inFileTypeMember` rather than
         //    `libraryFunction` because a receiver can be a CONTRACT or a STRUCT too,
         //    and calling that "library" would state something the tree does not say.
-        for (const [otherOwner, set] of membersByType) {
-          if (otherOwner === owner) continue
-          if (set.has(target)) return "inFileTypeMember"
+        //
+        // AND ONLY WHEN THERE IS A RECEIVER. A BARE callee is `this.f`-shaped: it can be declared
+        // on the enclosing type, on its ancestors, or nowhere — it can NOT be a member of an
+        // unrelated type in the same file. The first version ran this loop for bare callees too,
+        // so `inherited()` on a contract whose base is in ANOTHER FILE was labelled
+        // `inFileTypeMember` the moment any sibling type declared the same name, which both stated
+        // something false and hid the row from the cross-file branch below. Measured on the SOL-25
+        // fixture: `inherited()` in `Child is BaseA` read `inFileTypeMember` while `unique()` — the
+        // name no sibling declares — read `crossFileInheritedMember`. The receiver-bearing shapes
+        // (`x.twice()`, `Helpers.twice()`) are unchanged, which is what the SOL-15 fixture pins.
+        if (obj !== "") {
+          for (const [otherOwner, set] of membersByType) {
+            if (otherOwner === owner) continue
+            if (set.has(target)) return "inFileTypeMember"
+          }
         }
         // SOL-21 — CROSS-FILE RESOLUTION, in two grades, and the grades are NOT
         // interchangeable. The project-wide census measured the split before this was
@@ -2964,7 +2999,81 @@ const meta = modifiersOf(node)
         rel.target = `${namespaceObject}.${target}`
         md.languageNamespace = [namespaceObject]
       }
+      // W7 — RECEIVER-TYPED MEMBER RESOLUTION, where the evidence is a DECLARED type and the
+      // DECLARER that type's own inheritance closure names. `token.transfer(...)` is a bare
+      // `transfer` today, so the gate has to choose among every project declaration of that
+      // name; when the receiver is a state variable, local or parameter with ONE declared type,
+      // and that type's closure contains the member, the owning declaration is determined by
+      // the site, not guessed. The target becomes `<DeclaringType>.<member>` — the spelling the
+      // project's own `qualifiedName` index resolves — and `receiverType` records the evidence.
+      //
+      // TWO GUARDS, EACH A MEASURED FAILURE:
+      //  * `memberDeclarers > 1` — the name is declared by more than one project type, i.e. the
+      //    bare spelling CAN be ambiguous. Rewriting a name that only one type declares would
+      //    churn a row that already resolved, and a qualified spelling can collide where the
+      //    bare one did not (two same-named types in different files), so the pass stays out.
+      //  * a `null` declarer — two bases in the receiver's closure declare the member. Solidity
+      //    requires an override to disambiguate that, so no single owner can be named here.
+      if (projectIndex && typeof md.calleeObject === "string" && target !== "" && !target.includes(".")) {
+        const types = declaredVariableTypes.get(md.calleeObject)
+        if (types !== undefined && types.size === 1 && (projectMemberDeclarers.get(target) ?? 0) > 1) {
+          const receiverType = [...types][0]
+          const declarer = projectMemberDeclarer.get(receiverType)?.get(target)
+          if (declarer !== undefined && declarer !== null) {
+            rel.target = `${declarer}.${target}`
+            md.receiverType = receiverType
+            md.ownerType = declarer
+            md.calleeKind = "receiverTypedMember"
+            kind = "receiverTypedMember"
+          }
+        }
+      }
+      // W13 — THE IMPLICIT-`this` CALL: a bare callee that the analyzer has already placed in an
+      // ancestor's member set (`crossFileInheritedMember`). The site proves the ENCLOSING TYPE, and
+      // that type's inheritance closure names exactly one declarer — so the declaration is
+      // determined by the site even though the bare spelling collides with every other type in the
+      // project that declares the same member name. Publishing `<DeclaringType>.<member>` is the
+      // spelling the project's own `qualifiedName` index resolves.
+      //
+      // THE GUARDS ARE THE SAME MEASURED ONES AS W7: the name must be declared by more than one
+      // project type (otherwise the bare spelling already names one declaration, and a qualified
+      // spelling can collide where the bare one did not), and the closure must name exactly one
+      // declarer (two bases declaring the member is a Solidity conflict, not a resolution).
+      if (projectIndex && (kind === "crossFileInheritedMember" || kind === "inheritedMember") && owner !== "" && target !== "" && !target.includes(".")) {
+        if ((projectMemberDeclarers.get(target) ?? 0) > 1) {
+          const declarer = projectMemberDeclarer.get(owner)?.get(target)
+          if (declarer !== undefined && declarer !== null && declarer !== owner) {
+            rel.target = `${declarer}.${target}`
+            md.ownerType = declarer
+            md.calleeKind = "inheritedMemberQualified"
+            kind = "inheritedMemberQualified"
+          }
+        }
+      }
       callKinds[kind] = (callKinds[kind] ?? 0) + 1
+    }
+
+    // W7 — the same receiver-typed resolution for member READS (`obj.m`), through the `viaObject`
+    // the member_expression case already records. Kept separate from the calls loop because a read
+    // has no calleeKind and must not be counted as one. The guards are the CALLS loop's guards,
+    // for the same measured reasons.
+    if (projectIndex) {
+      for (const rel of relationships) {
+        if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+        const md = rel.metadata as Record<string, unknown>
+        if (md.isMemberReference !== true || typeof md.viaObject !== "string") continue
+        const target = rel.target ?? ""
+        if (target === "" || target.includes(".")) continue
+        if ((projectMemberDeclarers.get(target) ?? 0) <= 1) continue
+        const types = declaredVariableTypes.get(md.viaObject)
+        if (types === undefined || types.size !== 1) continue
+        const receiverType = [...types][0]
+        const declarer = projectMemberDeclarer.get(receiverType)?.get(target)
+        if (declarer === undefined || declarer === null) continue
+        rel.target = `${declarer}.${target}`
+        md.receiverType = receiverType
+        md.ownerType = declarer
+      }
     }
 
     // ---------------------------------------------------------- SOL-12 exports

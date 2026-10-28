@@ -12,9 +12,11 @@
  * claimKind`. The lane's causes are the analyzer's OWN metadata markers (`calleeKind` for calls — the
  * SOL-15 taxonomy; `isVariableReference` / `isYulPathSegment` / `isMemberReference` / `isYulVariableRead`
  * for uses; `isImport` for references; `reasonCode` / `externalBase` for extends/overrides). So each
- * distinct dumped file is re-analysed ONCE through the PRODUCTION entry (`parseFile`) and every dump row
- * is joined by `label + target + line`. The JOIN RATE is printed and a miss is a CONTROL FAILURE, not a
- * shrug — an unjoinable row would make its cause a guess.
+ * distinct dumped file is re-analysed ONCE through the PRODUCTION entry (`parseFile`) WITH the project
+ * index the arm ran with, and every dump row is joined by `label + target + line`. The JOIN RATE is
+ * printed and a miss is a CONTROL FAILURE, not a shrug — an unjoinable row would make its cause a guess.
+ * A SAMPLED dump is refused: the arm indexed only the sample, so a rebuilt index is a different
+ * project view and the table would describe a configuration no arm ran.
  *
  * THE CONTROL (three assertions, all printed):
  *   A. TABLE PARITY — per type: dumped rows == edges − resolved; dumped unresolved == TABLE 1
@@ -34,10 +36,12 @@
  *
  * EXIT: 0 classified · 2 usage/environment · 3 CONTROL DID NOT FIRE.
  */
-import { createReadStream, readFileSync } from "node:fs"
+import { createReadStream, readFileSync, readdirSync } from "node:fs"
 import * as path from "node:path"
 import { createInterface } from "node:readline"
 import { parseFile } from "../../src/ast/pool-worker"
+import { buildProjectIndexStreaming, SOLIDITY_DECLARATION_SPEC } from "../../src/ast/project-index"
+import { resolveWasmAsset } from "../../src/util/wasm"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
@@ -169,32 +173,95 @@ if (!table1Seen || table1.size === 0) {
 }
 
 // ── pass 2: join each row to the analyzer's own edge (markers) ────────────────────────────────
+
+/**
+ * THE ARM'S CONFIGURATION IS PART OF THE ROW. Every recorded class on this lane was produced by an
+ * INDEXED arm (`--index`), and this join used to re-analyse each file with NO project index. The
+ * markers are not index-independent: `parseFile` without an index reports an inherited project
+ * member call as `calleeKind: "external"`, and WITH the index the same row is
+ * `crossFileInheritedMember`. The join key (label + target + line) is identical either way, so the
+ * control — "every dumped row joins exactly one analysed edge" — passed while the CAUSE was read
+ * from a different configuration than the run. MEASURED: `AccessControl.sol` `_msgSender` reads
+ * `external` without the index and `crossFileInheritedMember` with it, and 1,849 `calls` rows were
+ * charged to W3 (cross-file/unvendored) on the strength of a no-index re-analysis.
+ *
+ * THE INDEX IS REBUILT FROM THE POPULATION THE DUMP NAMES, because a whole-run arm's index IS the
+ * repository's index. A SAMPLED dump cannot be reconstructed this way — the arm indexed a slice —
+ * so this refuses instead of producing a table from a different project view.
+ */
+const POP = /population:\s+(\d+) parsed of (\d+) sampled \(corpus has (\d+) /;
+let indexFiles = 0
+let indexRepos = 0
+let indexRefused: string | null = null
+const dumpText = readFileSync(FILE, "utf8")
+const pop = POP.exec(dumpText)
+if (pop === null) {
+  indexRefused = "the dump carries no population line — its index cannot be reconstructed"
+} else if (pop[1] !== pop[3]) {
+  indexRefused = `SAMPLEd dump (${pop[1]} of a corpus of ${pop[3]}): the arm indexed only the sample, and a rebuilt index would be a different project view`
+}
 const joinKey = (label: string, target: string, line: number) => `${label}\u0000${target}\u0000${line}`
 const markIndex = new Map<string, any[]>()
 /**
- * INDEX-ONLY LABEL FALLBACK. The dump is the INDEXED arm; this join re-analyses each file with
- * `parseFile(abs, repoRoot)` and no project index, so a cross-file modifier application is
- * published by the analyzer as `calls` (calleeKind `modifierInvocation`) while the arm, which has
- * the index, publishes it as `decorates`. The label is therefore DIFFERENT BY THE ARM'S OWN
- * SCOPE, not by a marker mismatch. The fallback is narrow and checkable: `decorates` may join a
- * `calls` row at the same target+line only when that row's own marker says `modifierInvocation`.
- * Anything else is still a join miss and still fails the control.
+ * INDEX-ONLY LABEL FALLBACK. The fallback exists for a join that runs WITHOUT the index, where a
+ * cross-file modifier application is published as `calls` (calleeKind `modifierInvocation`) while
+ * the arm publishes `decorates`. Now that the join carries the arm's index, the fallback should
+ * read ZERO — and it is kept as a measurable line rather than deleted, because a fallback that
+ * starts firing again says the join and the arm have diverged. A `decorates` row may join a
+ * `calls` row at the same target+line only when that row's own marker says `modifierInvocation`;
+ * anything else is still a join miss and still fails the control.
  */
 const anyIndex = new Map<string, Array<{ label: string; md: any }>>()
 const files = [...new Set(rows.map((r) => r.src))].sort()
+const repoOf = (abs: string) => path.join(CR, abs.slice((CR + path.sep).length).split(path.sep)[0])
+const repoFiles = new Map<string, string[]>()
+for (const repoRoot of [...new Set(files.map(repoOf))].sort()) {
+  const out: string[] = []
+  const walk = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (e.name.endsWith(".sol")) out.push(p)
+    }
+  }
+  walk(repoRoot)
+  repoFiles.set(repoRoot, out.sort())
+}
+const indexes = new Map<string, any>()
+if (indexRefused === null) {
+  const wasm = resolveWasmAsset("tree-sitter-solidity.wasm")
+  for (const [repoRoot, fsPaths] of repoFiles) {
+    indexes.set(repoRoot, await buildProjectIndexStreaming(wasm, fsPaths, SOLIDITY_DECLARATION_SPEC))
+    indexFiles += fsPaths.length
+  }
+  indexRepos = indexes.size
+  if (pop !== null && indexFiles !== Number(pop[3])) {
+    indexRefused = `rebuilt index covers ${indexFiles} file(s), the arm's corpus is ${pop[3]} — not the same project view`
+    indexes.clear()
+    indexFiles = 0
+    indexRepos = 0
+  }
+}
+if (indexRefused !== null) {
+  console.error(`CONTROL DID NOT FIRE: ${indexRefused}.\nThe class table would be read from a DIFFERENT configuration than the arm; re-run the gate with --index over 0 (whole) and classify THAT dump.`)
+  process.exit(3)
+}
 let reanalyzed = 0
 let reanalyzeFailed = 0
+let indexSuppliedMissing = 0
 for (const abs of files) {
-  const repoRoot = path.join(CR, abs.slice((CR + path.sep).length).split(path.sep)[0])
+  const repoRoot = repoOf(abs)
   let result: any
   try {
-    result = await parseFile(abs, repoRoot)
+    result = await parseFile(abs, repoRoot, { projectIndex: indexes.get(repoRoot), projectRoot: repoRoot } as any)
   } catch {
     reanalyzeFailed++
     continue
   }
   reanalyzed++
   for (const r of (result.relationships ?? []) as any[]) {
+    const md = r.metadata ?? {}
+    if (md.projectIndexSupplied !== true) indexSuppliedMissing++
     const label = String(r.type ?? "")
     const target = String(r.target ?? "")
     const line = Number(r.line_number ?? r.line ?? 0)
@@ -361,6 +428,7 @@ if (unclassifiedLabels.size > 0) failures.push(`unclassified labels: ${[...uncla
 if (unclassifiedOutcomeRows > 0) failures.push(`unclassified outcome rows: ${unclassifiedOutcomeRows}`)
 if (malformed > 0) failures.push(`malformed DUMP rows: ${malformed}`)
 if (reanalyzeFailed > 0) failures.push(`files that could not be re-analysed for the marker join: ${reanalyzeFailed}`)
+if (indexSuppliedMissing > 0) failures.push(`edges without projectIndexSupplied in the join: ${indexSuppliedMissing} — the join did not run in the arm's configuration`)
 if (joinMisses > 0) failures.push(`JOIN misses: ${joinMisses} of ${rows.length} dumped rows did not join to an analysed edge`)
 if (dumpLines !== rows.length + claimRows + bindingRows + causeRows + unclassifiedOutcomeRows + unclassifiedLabelRows + malformed) {
   failures.push(`dump lines ${dumpLines} != classified ${rows.length}+claims ${claimRows}+bindings ${bindingRows}+causes ${causeRows}+unclassified ${unclassifiedOutcomeRows}+unclassifiedLabel ${unclassifiedLabelRows}+malformed ${malformed}`)
@@ -432,11 +500,12 @@ if (JSON_OUT) {
 } else {
   const w = (s: string | number, n: number) => String(s).padEnd(n)
   console.log(`solidity-dump-classify — ${path.relative(ROOT, FILE)}`)
-  console.log(`control: PASS — table parity per type; join ${rows.length}/${rows.length} (${indexOnlyDecorates} index-only decorate fallback(s)); claims ${claimRows}, bindings ${bindingRows}, causes ${causeRows}, unclassified-label 0`)
+  console.log(`control: PASS — table parity per type; join ${rows.length}/${rows.length} (${indexOnlyDecorates} index-only decorate fallback(s)); claims ${claimRows}, bindings ${bindingRows}, causes ${causeRows}, unclassified-label 0; index supplied on every joined edge`)
   console.log(`closure: population ${tableEdges} == resolved ${tableResolved} + classified ${classified} + claims ${claimRows} + bindings ${bindingRows} + causes ${causeRows}`)
   console.log(`classes: ${sumClasses} row(s) over ${classTotals.size} named class(es) — ${closureOk ? "equals" : "DOES NOT EQUAL"} classified ${classified}`)
   if (intentTwin !== null) console.log(`arbitraryTwin (intent table): ${intentTwin}`)
   console.log(`files re-analysed for the marker join: ${reanalyzed} · join misses: ${joinMisses}`)
+  console.log(`index: REBUILT over ${indexFiles} file(s) / ${indexRepos} repo(s), supplied to every re-analysis (the arm's own configuration)`)
   console.log()
   printClasses(perType)
   console.log("CLASS TOTALS")
