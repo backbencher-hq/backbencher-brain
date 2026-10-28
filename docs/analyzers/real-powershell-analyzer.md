@@ -2109,3 +2109,55 @@ Two new mutants — `powershell/dotnet-shorthand-root-unclaimed` and
 `powershell/letterless-target-marked` — both CAUGHT: **67 of 67 caught, 0 survivors**
 (`BB_MUTANT_ONLY="powershell/" npx tsx script/m14/mutate-analyzer.ts`). Suite **25 pass / 0 fail**.
 Zero-regex PASS (0 operations / 0 literals). Spec-shape audit PASS (152 named types).
+
+## PS-B28 (append-only record, 2026-10-28) — a numeric index is not a dependency, and the 2,377 "resolutions" it produced were FALSE BINDINGS
+
+**THE DEFECT WAS PUBLISHED DELIBERATELY, WITH A DEFENCE THAT THE MEASUREMENT DOES NOT SUPPORT.**
+PS-B10 emitted `uses -> <digits>` for `$tags[0]`, carrying `metadata.isNumericIndex: true`, on the
+argument that *"a numeric index is a read of an ELEMENT, not of a name: there is no symbol to point
+at, so the honest record is the site itself."* The row does not record a site — it records a
+**dependency on a symbol named `0`**, and every consumer that reads `target` sees exactly that.
+
+**MEASURED over the whole admitted population: 3,734 such rows, and 3,731 of them were still there
+when this record was written.** The reframing — PS-B24's sentence, applied to the element access —
+is that a target no declaration can have is a fabrication, and the name model will bind it to
+whatever it finds. What it found:
+
+```
+repo          numeric sites   target declared in the project
+powershell         3,100              3,039          (target "0" alone: 1,819 rows)
+ansible              268                266
+PSScriptAnalyzer     407                 54
+```
+
+The `powershell` repository declares **exactly one** symbol named `0` — a hashtable PROPERTY
+(`Parsing.Tests.ps1`) — so 1,819 array indices in unrelated files bound to that one property. **Those
+are not resolutions, they are the arbitrary-pick class the gate reports separately for `contains`.**
+
+**THE FIX REMOVES THE ROW.** The `element_access` case keeps its two real branches — the STRING KEY
+(`$h['Retries']`, a name in the hashtable sense) and the VARIABLE KEY (`$a[$i]`, a read of `$i`) —
+and publishes nothing for an integer or real index. A graph that wants "who indexes" needs a SITE
+record, which is not a relationship between symbols and must not be spelled as one.
+
+**MEASURED, same population, A/B by analyzer digest:**
+
+| column | before PS-B28 | after |
+|---|---:|---:|
+| edges | 197,028 | **193,297** |
+| resolved | 101,352 | **98,975** |
+| ambiguous(decl) | 17,762 | **17,030** |
+| unresolved | 49,207 | **48,585** |
+| extOK / ext? / extFAIL | 25,285 / 3,362 / 60 | **25,285 / 3,362 / 60** |
+
+**THE RESOLVED COUNT FALLS BY 2,377, AND THAT IS THE POINT**: 2,377 of the removed rows were bound
+to a declaration that provably could not be their target (the single property named `0` above, plus
+its siblings `1`/`2`/…). The verified-class RATE moves 51.44% → 51.20%, and the honest reading of that
+number is that a *false* resolution was counted as a success while it was being published. The WALL
+(ambiguous + unresolved) falls 66,969 → **65,615**, and no claim, no external bucket and no `contains`
+row is touched.
+
+**PINS.** `data-shapes-psb10` loses its `uses -> 0` expectation row and gains a `forbidRelationships`
+row for it; the string-key and variable-key rows in the SAME fixture are the controls, so a rule that
+silenced the whole element-access branch fails them. New mutant
+`powershell/numeric-index-published` re-derives the pre-fix rows from the source text and is CAUGHT
+by that forbid row: **68 of 68 caught, 0 survivors**. Suite **25 pass / 0 fail**, `tsc` 0.

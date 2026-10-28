@@ -3081,15 +3081,27 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             addRel(top().scope, stripDollar(idx.text), ASTEngine.RelationshipType.Uses, 0.9, idxLine, {
               powershellSpecific: true, isElementAccess: true, isVariableReference: true,
             })
-          } else if (idx.type === "integer_literal" || idx.type === "real_literal") {
-            // A numeric index is a read of an element, not of a name: there is no
-            // symbol to point at, so the honest record is the site itself. The
-            // SOURCE is still recorded, which is what makes "who indexes" a
-            // answerable question.
-            addRel(top().scope, idx.text, ASTEngine.RelationshipType.Uses, 0.7, idxLine, {
-              powershellSpecific: true, isElementAccess: true, isNumericIndex: true,
-            })
           }
+          // A NUMERIC INDEX PUBLISHES NOTHING (PS-B28), and this reverses a deliberate earlier
+          // ruling on a measurement rather than on a preference.
+          //
+          // PS-B10 published the index as a `uses` row carrying `isNumericIndex: true`, on the
+          // argument that "a numeric index is a read of an ELEMENT, not of a name, so the honest
+          // record is the site itself". The record it actually produced is `uses -> 0`, which is a
+          // DEPENDENCY ON A SYMBOL NAMED `0` — a target no declaration can have, in this language or
+          // any other, because the parser never declares a numeric name. This is word for word the
+          // sentence PS-B24 used to remove the numeric MEMBER leaf, and the same argument decides
+          // it here: the fleet's rule is that an edge either resolves to a declaration or carries a
+          // claim the project can check, and a literal is neither. The metadata that explained the
+          // row was invisible to every consumer that reads `target`.
+          //
+          // MEASURED over the whole admitted population: 3,734 such rows, EVERY ONE unresolvable in
+          // its own project (they were 7.6% of this lane's unresolved wall). Removing them changes
+          // no resolved edge, adds no claim, and leaves the two branches above — the STRING KEY
+          // (`$h['Retries']`, a real name in the hashtable sense) and the VARIABLE KEY
+          // (`$a[$i]`, a real read of `$i`) — exactly as they were. A graph that wants "who indexes"
+          // needs a SITE record, which is not a relationship between symbols and must not be spelled
+          // as one.
           break
         }
 

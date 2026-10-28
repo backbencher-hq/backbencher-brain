@@ -114,9 +114,22 @@ grammar, not a reason to rule.
   (`POWERSHELL-DEPTH-PASS-2026-10-28.md` §4).
 - Gates from the committed tree: suite **25 pass / 0 fail**, mutants **67 of 67 caught, 0
   survivors**, zero-regex **0/0**, spec-shape audit PASS, `tsc -p tsconfig.json` 0.
+- **PS-B28 then removed a fabrication with a defence**: PS-B10 published `uses -> <digits>` for
+  `$tags[0]` with `isNumericIndex: true` (3,734 rows). A numeric index is not a dependency on a
+  symbol named `0`, and the name model proved it — the `powershell` repo declares exactly ONE symbol
+  named `0` (a hashtable property in `Parsing.Tests.ps1`), and 1,819 array indices bound to it. The
+  row is gone; the string key and the variable key in the same `element_access` case stay.
+- **Current whole-population state (2026-10-28, after PS-B27 + PS-B28):** 193,297 edges · resolved
+  98,975 · ambiguous 17,030 · unresolved 48,585 · extOK 25,285 · ext? 3,362 · **extFAIL 60**.
+  The wall is **65,615**, down from 80,051 when the lane was declared done. The resolved COUNT fell by
+  2,377 with PS-B28 and every one of those was a false binding, so the verified-class rate reads
+  51.20% and NOT a higher number that counted them.
+- Gates: suite **25 pass / 0 fail**, mutants **68 of 68 caught, 0 survivors**, zero-regex **0/0** PASS.
 - **Clause 4 is NOT met** (extFAIL 60) and the lane does not claim it is. Next: the `using
   namespace` list (22 rows) and the quoted-literal provenance (2 rows) are lane-side and each needs
   its own measurement; the other 36 wait on the arbiter patch or on a resolver the lane does not own.
+  The big remaining classes are `calls` 34,591 unresolved (cmdlets and aliases that no shape-based
+  reading may claim — PSD10) and `uses` 13,487 unresolved.
 
 ### haskell — committed DONE, clean tree
 

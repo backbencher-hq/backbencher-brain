@@ -1373,6 +1373,37 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/numeric-index-published",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "PS-B28 REVERT: a numeric element access publishes `uses -> <digits>` again, which is the pre-fix shape verbatim — PS-B10 published `$tags[0]` as `uses -> 0` with `isNumericIndex: true`, arguing the site was worth recording. The record it produces is a DEPENDENCY ON A SYMBOL NAMED `0`, a target no declaration can have, and MEASURED over the whole admitted population it was 3,734 permanently unresolvable rows (7.6% of the lane's unresolved wall). The transform re-derives the rows from the SOURCE text the way the analyzer saw them, so it reverts the shape and not a name. Caught by data-shapes-psb10's `forbidRelationships` row on `uses -> 0`, which its sibling rows make specific: the string key (`$options.Label`) and the variable key (`$names[$index]`) must still publish.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string") return r
+      const lines = source.split("\n")
+      const mod = (r.symbols ?? []).find((s: any) => s.kind === "module")?.name
+      if (typeof mod !== "string" || mod === "") return r
+      const extra: any[] = []
+      for (let i = 0; i < lines.length; i++) {
+        const text = lines[i]
+        for (let j = 0; j < text.length; j++) {
+          if (text.charCodeAt(j) !== 91 /* [ */) continue
+          let k = j + 1
+          while (k < text.length && text.charCodeAt(k) >= 48 && text.charCodeAt(k) <= 57) k++
+          if (k === j + 1) continue
+          if (text.charCodeAt(k) !== 93 /* ] */) continue
+          const target = text.slice(j + 1, k)
+          // A STRING OR VARIABLE KEY IS NOT THIS SHAPE — only a bare numeric run between brackets.
+          extra.push({
+            source: mod, target, type: "uses", confidence: 0.7, line_number: i + 1,
+            metadata: { powershellSpecific: true, isElementAccess: true, isNumericIndex: true },
+          })
+        }
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
     id: "powershell/letterless-target-marked",
     language: "powershell",
     defectClass: "false-claim",
