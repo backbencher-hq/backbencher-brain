@@ -546,6 +546,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
                   const litLine = child.startPosition.row + 1
                   imports.push({ module: lit, items: [], importType: "make_include", lineNumber: litLine, line: litLine, range: this.nodeToRange(node), isExternal: false, isOptional })
                   addRel(module, ASTEngine.RelationshipType.Imports, lit, litLine, { isMakeInclude: true, isOptional })
+                  this.addIncludePartOf(addRel, module, lit, litLine, { isOptional, evidenceClass: "include_literal" })
                 }
                 continue
               }
@@ -581,6 +582,10 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // includes `hooks` produced the same edge and two files could
                 // not be told apart in the graph.
                 addRel(module, ASTEngine.RelationshipType.Imports, mod, refLine, { isMakeInclude: true, isOptional, evidenceClass: "include_literal" })
+                // NO part_of on this branch: it fires for a path GLUED from
+                // expansions (`include lib$(ARCH).mk`), where the collected
+                // name is the EXPRESSION's operand, not a file this parse can
+                // name — the same expression-segment exclusion bash applies.
               })
             }
           } else {
@@ -1079,6 +1084,70 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
       end--
     }
     return filePath.slice(end) || "makefile"
+  }
+
+  /**
+   * The module-symbol name an included path would carry, or "" when the path's
+   * last segment is an expression or syntax rather than a name.
+   *
+   * Every makefile is given ONE module symbol named for its file (the same
+   * spelling `moduleName()` produces), so the symbol-shaped target for an
+   * include is the INCLUDED FILE'S BASENAME — never the written path, which
+   * the resolver has no space for. The path is kept in `metadata.partPath`
+   * where a reader can check it against the source line. A glob (`*.mk`) or a
+   * path whose last segment contains `$`, quotes or shell metacharacters names
+   * no file this parse can know, so it is refused rather than guessed at.
+   */
+  private includePartSymbol(pathText: string): string {
+    const slash = pathText.lastIndexOf("/")
+    const base = slash >= 0 ? pathText.slice(slash + 1) : pathText
+    if (base.length === 0) return ""
+    for (let i = 0; i < base.length; i++) {
+      const c = base.charCodeAt(i)
+      // whitespace/control, `"` `'` `` ` `` `$` `(` `)` `{` `}` `[` `]` `*` `?`
+      // `;` `|` `&` `<` `>` `\` `~` are expression or syntax characters, never
+      // a file's name. `~` is excluded because `~/x.mk` expands at USE time,
+      // not here.
+      if (
+        c <= 32 || c === 34 || c === 39 || c === 96 || c === 36 || c === 40 || c === 41 ||
+        c === 123 || c === 125 || c === 91 || c === 93 || c === 42 || c === 63 ||
+        c === 59 || c === 124 || c === 38 || c === 60 || c === 62 || c === 92 || c === 126
+      ) {
+        return ""
+      }
+    }
+    return base
+  }
+
+  /**
+   * `include` IS the textual-inclusion construct: make splices the included
+   * file's text into THIS make instance's scope — the same single-shared-scope
+   * fact bash's `source` asserts — so a literal include earns a `part_of` edge
+   * from this file's module to the INCLUDED file's module symbol.
+   *
+   * Computed includes (`include $(shell …)`) and glob operands name no file
+   * this parse can know, so they earn no edge here: the `imports` row already
+   * records the expression, and a `part_of` whose target is an expression
+   * string would be an edge to nothing.
+   */
+  private addIncludePartOf(
+    addRel: (source: string, type: ASTEngine.RelationshipType, target: string, line: number, metadata?: Record<string, unknown>) => void,
+    source: string,
+    pathText: string,
+    line: number,
+    extra: Record<string, unknown>,
+  ): void {
+    const partSymbol = this.includePartSymbol(pathText)
+    if (!partSymbol) return
+    addRel(source, ASTEngine.RelationshipType.PartOf, partSymbol, line, {
+      // MANDATORY on every `part_of` row: the direction is the directive's own,
+      // and this file carries it and names the part.
+      partRole: "library",
+      partPath: pathText,
+      partSymbol,
+      isMakeIncludePart: true,
+      ...extra,
+    })
   }
 
   private isPlainIdentifier(s: string): boolean {
