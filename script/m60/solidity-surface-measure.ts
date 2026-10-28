@@ -206,6 +206,14 @@ let overridesAmbiguousBaseCount = 0
 let implementsCrossFileUnresolved = 0
 let engineCallsSuppressed = 0
 let storeRefusedDeclarations = 0
+// SOL-3 DELIVERED — the two edges the getter needs, counted ON THE PRODUCTION PATH.
+// A symbol count is not delivery: the analyzer emitted both rows and
+// `filterNoiseRelationships` deleted them because a leaf carrying `(` was taken for a
+// snippet, so `getterSymbols` read 58 while the store received neither half. These two
+// counters are the difference between "emitted" and "delivered", and they are the
+// reason the surface artifact can now state both.
+let getterContainsDelivered = 0
+let getterReferencesDelivered = 0
 
 // PASS 1 — every symbol name declared anywhere in the draw. Solidity inheritance is
 // cross-file by nature, so SOME kinds need a project-wide resolvability universe.
@@ -270,6 +278,8 @@ for (const f of files) {
     kinds[t] = (kinds[t] ?? 0) + 1
     const tier = String(meta.evidenceClass ?? "")
     tiers[tier] = (tiers[tier] ?? 0) + 1
+    if (meta.isSynthesisedGetter === true) getterContainsDelivered += 1
+    if (meta.isGetterFor === true) getterReferencesDelivered += 1
     if (typeof x.line_number === "number" && x.line_number > 0) withLine++
     const target = String(x.target ?? "")
     if (t === "calls" && isReservedTarget(t, target, meta)) reserved.push(`${f.rel}:${x.line_number} calls -> ${target}`)
@@ -397,6 +407,9 @@ const out = {
     analyzerDecisions: {
       publicStateVariables: getterSymbols,
       getterSymbols,
+      getterContainsDelivered,
+      getterReferencesDelivered,
+      getterDeliveryNote: "SOL-3, measured at the DELIVERY seam rather than the emit seam. `getterSymbols` counts published getters; the two delivered counts must equal it, because each getter contributes exactly one `contains` from its owner and one `references` from its variable. They were 0 and 0 before the shared noise filter answered its parenthesis ban with the declaration itself (`declaredNames`): the resolver emitted `contains Vault -> balance()` and `references balance -> balance()` and the store received neither, the silent-absence class. A fixture cannot catch this: `run-fixtures` calls `analyze()` directly, so it never crosses the worker boundary.",
       commentsRead,
       commentsAttached,
       documentedSymbols,

@@ -234,10 +234,19 @@ const r2 = runGate(`MUTANT 2: required helper '${firstHelper}' replaced by a stu
 // A real regex OPERATION. The first draft injected `target.split(" ")` and
 // `.split` is not a regex operation at all, so the gate correctly reported 0 —
 // the mutant tested nothing. `String.prototype.replace` with a pattern IS one.
-const operationMutant = original.replace(
-  "if (!isPlausibleSymbolName(target)) return",
-  'if (target.replace(/[^a-zA-Z0-9_$.()]/g, "").length === 0) return',
-)
+//
+// THE INJECTION IS SELF-ANCHORED, and that correction is the second time this
+// selftest has caught itself. It used to hardcode an anchor line from the
+// analyzer (`if (!isPlausibleSymbolName(target)) return`); a later change wrapped
+// that guard in `!opts.pathTarget &&`, so `String.replace` found nothing, the
+// mutant was byte-identical to the original, and the gate reported 0 operations
+// while READING AS A FAILED GATE RATHER THAN A STALE TEST. Prepending the
+// operation needs no anchor and cannot alias, and the assertion below refuses a
+// mutant that did not change the source.
+const operationMutant = `const _smuggledOp = "x".replace(/${String.fromCharCode(92)}s+/g, "")\n${original}`
+if (operationMutant === original) {
+  throw new Error("selftest could not build the operation mutant — the gate is measuring a mutant it did not build")
+}
 const r3 = runGate("MUTANT 3: a regex OPERATION injected (String.prototype.replace)", operationMutant, HELPERS.map((h) => h.name))
 
 const checks: { name: string; ok: boolean; detail: string }[] = [

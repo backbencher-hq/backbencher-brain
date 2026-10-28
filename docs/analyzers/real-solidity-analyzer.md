@@ -76,7 +76,7 @@ the index.
 | SOL-18 | Per-symbol `complexity` and `ownerKind` | Every function, modifier, constructor and fallback/receive carries a cyclomatic `complexity` attributed through the FRAME stack (1 + branch nodes inside that frame, nested declarations excluded); `ownerKind` is the kind of the enclosing type — `contract`, `interface` or **`library`** — read from the declaration table, and is ABSENT for a local whose owner is a function. | Before SOL-18 **every** Solidity symbol reported complexity 1: `pool-worker` defaults to `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither, so the field was populated corpus-wide with a constant that reads as a measurement. It now reaches **25**, with 690 symbols above 1 and a mean of 1.214. The frame attribution costs one increment per branch node and no second traversal, which is the cost the TypeScript lane measured and removed. `else` is PART of `if_statement` in this grammar, so an if/else pair is ONE branch. |
 | SOL-16 | NatSpec documentation | `///` and the slash-star block form attach to the **next** declaration and are published as `docstring` (first-class, persisted to `brain_symbol.docstring`), `comments` (per-comment array, the shape the TypeScript lane uses), `docstringKind` (`natspec-line` / `natspec-block` / `line`) and `docTags`. Markers stripped with `startsWith`/`slice`. A run of line-ADJACENT comments is one docstring; a blank line ends the run. | Solidity's documentation system, and the lane read none of it: 5,254 `comment` nodes, zero reaching a symbol. Attachment is measured, not assumed — a comment's `prevNamedSibling` is NULL, and only the LAST comment of a run has the declaration as its next sibling, so per-comment attachment keeps one line in three. A comment before an expression, or a trailing remark, documents nothing and is dropped. |
 | SOL-17 | Applied modifiers are `decorators` | `function f() public onlyOwner nonReentrant` publishes `decorators: ["onlyOwner","nonReentrant"]` on the symbol; a DECLARED modifier with nothing applying it carries none. | Solidity's annotation mechanism is what the TypeScript lane calls a decorator, and this is the FAMILY CONTRACT: C#, Java and F# all treat decorators as metadata on the thing they decorate, and the `modifier_invocation` case already emits the one edge that carries meaning — a `calls` edge, because invoking a modifier IS calling it. Measured: 188 of 5,976 symbols, over 40 distinct names. **The INVOCATION half moved after this row was written:** a `modifier_invocation` that resolves to a declared modifier is published as `decorates`, a 1:1 relabel of the rows that used to be `calls` (`metadata.isModifierInvocation` kept), so the sentence above describes the state before that relabel and `decorates` is now IMPLEMENTED in this lane. |
-| SOL-24 | `using L for T` is `mixes_in` | A `using_directive` whose composed set is ONE library and whose host is a **declared** type publishes `mixes_in`: source = the host type `T`, target = the library `L`, 1.0/`structural`, carrying `isUsingDirective`, `usingForm: "library"`, `isMemberSetComposition` and `hostDeclaredInFile`. The braced function-set form, the `for *` form, and a primitive or undeclared host are **counted, not dropped** (`metadata.mixesIn`). | The directive ATTACHES a named member set to a type with **no conformance declared** — not `extends`/`implements` (nothing is conformed to) and not `uses` (a use READS a name; this ATTACHES a set). That is the composition this fleet already publishes as `mixes_in` for PHP trait `use` (`isTraitUse`), ruby `include`/`extend`, go struct embedding and zig `usingnamespace` — hence `isMemberSetComposition` on the row, so a consumer that reads `mixes_in` as "the supertype chain" can filter it out. **MEASURED, whole 421-file population:** 124 `using_directive` sites in 76 files = **27 rows** + 54 no-host (`for *`) + 39 primitive host + 4 braced function set — the census's own split is 120 − 54 − 39 = 27, and the analyzer's per-file buckets reproduce it (0 rows + 54 + 66 + 4 without the project index, the 66 being 39 primitives plus the 27 project-declared hosts). All 27 rows resolve. |
+| SOL-24 | `using L for T` is **NOT** `mixes_in` — tried, shipped, withdrawn | A `using_directive` whose composed set is ONE library and whose host is a declared type was published as `mixes_in` (source = host `T`, target = library `L`, 1.0/`structural`, carrying `isUsingDirective`, `usingForm: "library"`, `isMemberSetComposition`, `hostDeclaredInFile`), and the emission was **REMOVED the same day**. The braced function-set form, the `for *` form and a primitive or undeclared host stay counted, not dropped. | **THE VOCABULARY'S CONTRACT IS THE REASON, AND IT FAILED HERE.** `mixes_in` is "a class COMPOSES a mixin into its SUPERTYPE CHAIN … the mixin is a supertype MEMBER" (`src/ast/types.ts`), and every other user of the value satisfies that: PHP trait `use` flattens the trait's methods into the class's table where subclasses inherit them, Go embedding PROMOTES the embedded type's methods and fields into the outer struct's method set, ruby `include` and zig `usingnamespace` likewise. **Solidity adds no member:** after `using MathLib for Price`, `Price` is still `uint128`, has no `double`, and its ABI and inheritance chain are untouched — `p.double()` binds as `MathLib.double(p)` only where a directive is in scope, and `global` widens the SCOPE, not the type. So the composing actor is the SCOPE, not the type, and the refused row had the wrong source as well as the wrong relation. The cost was concrete: `graph-engine.ts` ranks `mixes_in` as supertype composition between `implements` and `renders` and `complexity.ts` carries it in the coupling set, so `Price -> MathLib` read as a supertype Price does not have. **MEASURED, whole 421-file population:** 124 `using_directive` sites in 76 files = 27 with a declared host and one library (23 struct, 3 interface, 1 struct+type) + 54 no-host (`for *`) + 39 primitive host + 4 braced function set, and **0 of the 27 adds a member to the host** — the census's own split is 120 − 54 − 39 = 27, and the analyzer's per-file buckets reproduce it (0 rows + 54 + 66 + 4 without the project index, the 66 being 39 primitives plus the 27 project-declared hosts). **NO DEPENDENCY WAS LOST:** the `type_alias` case already publishes a `references` edge to the library for every one of these directives (all 27 resolve), and `validation/m14/fixtures/solidity/using-directive-is-not-a-mix-in.sol` forbids `mixes_in` on all five forms including the two declared-host ones while firing that `references` row as the positive half. |
 | SOL-15 | Every `calls` edge carries a `calleeKind` | `localFunction` (declared on the enclosing type) · `inheritedMember` (reached through an in-file base) · `inFileTypeMember` (a member of another in-file type, via a receiver or `using X for T`) · `modifierInvocation` · `eventEmission` · `errorRevert` (a custom error) · `namespaceBuiltin` (`abi.` / `type.` / `super.` / `this.`) · `external` (declared in another file). Derived from the grammar and this file's declarations; **no hand-written list of builtin member names**. | A call edge used to be emitted from the callee NAME alone, so the census reported one undifferentiated "1,786 unresolved" class mixing a conversion, a language namespace, a custom error and a genuinely cross-file member. There is deliberately no builtin-name list: the first measurement had one containing `at`, `contains` and `length`, which are user-defined `EnumerableSet` methods — it would have silently reclassified live project edges. A conversion (`uint256(x)`) emits **no** edge at all, because `calleeNameOf` has no `primitive_type` case and a conversion is not a call. |
 | SOL-14 | Store-refused names | Not declared. | `pool-worker.ts`'s `UNIVERSAL` denylist says such names are "never legitimate declarations in any language". For Solidity that is false: `self` (CrosschainLinked.sol:59) and `root` (MerkleTreeMock.sol:15) are both real. Measured as 2 unknown `contains` targets before the rule existed. |
 | F9 | Edge targets | An edge target must be a name a stored symbol could have. | A target carrying `/` names nothing, and would sit at **zero** `unknownTargets` for as long as it existed — the metric asks whether a target *matches* a symbol, and a name matching nothing is no more detectable than one matching something. |
@@ -106,12 +106,14 @@ contains 11 · imports 1 · references 7 · exports 7 · extends 4 · implements
 instantiates 1 (baseline 32 pass / 0 fail) — with **four** types ruled not applicable at that gate:
 decorates (the modifier adjudication, SOL-R3), renders, mixes_in, part_of.
 
-**THAT IS NOT THE CURRENT APPLICABLE SET, AND TWO OF THE FOUR RULINGS FELL.** As of 2026-10-27 the lane
-is **12 implemented / 12 applicable / 2 excluded** (`bun run script/m14/coverage-block-gate.ts --json`):
-`decorates` was implemented as the 1:1 modifier-invocation relabel, and `mixes_in` is implemented from
-`using_directive` (SOL-24) — 27 rows over the whole population, all resolved. **`renders` and `part_of`
-remain RULED, both as grammar-absence**, each carrying a count and a falsifier in
-`script/m14/spec/solidity-completeness.json`: the served grammar's 124 named types contain 0
+**THAT IS NOT THE CURRENT APPLICABLE SET, AND TWO OF THE FOUR RULINGS CHANGED.** As of
+2026-10-27 the lane is **11 implemented / 11 applicable / 3 excluded**
+(`bun run script/m14/coverage-block-gate.ts --json`): `decorates` was implemented as the 1:1
+modifier-invocation relabel; `mixes_in` was implemented from `using_directive` (SOL-24), published 27 rows,
+and was **WITHDRAWN the same day** when the vocabulary's own contract failed on it. **`renders`, `part_of`
+and `mixes_in` are all RULED now**, each carrying a count and a falsifier in
+`script/m14/spec/solidity-completeness.json` — `renders` and `part_of` as grammar-absence, `mixes_in` as
+ontological (an emission tried and refused, so the claim is measured rather than argued): the served grammar's 124 named types contain 0
 template/component/element/render/markup nodes and the vocabulary has 0 component `SymbolKind`s among
 its 32, so there is no node a rendering edge could be read from (a contract is DEPLOYED, not rendered);
 and `part_of` in this vocabulary is a PART-FILE directive — a compilation unit that SHARES another
@@ -119,13 +121,12 @@ library's single scope — where a Solidity file dependency is an `import` namin
 emitted per path as `imports` (932 edges). Declaration nesting — a struct inside a contract — is
 `contains`, and 0 of the grammar's 124 named types names a part construct.
 
-**The scope is stated because the numbers move with it.** Both arm artifacts were taken today over the
-same 421 files: `--index` (production's scope, SOL-21) reads calls 6,590 · decorates 144 · extends 488 ·
-implements 107 · mixes_in 27, and the per-file run reads calls 6,703 · decorates 31 · extends 588 ·
-implements 7 · mixes_in 0 — 113 cross-file modifier applications and 100 base-list entries change
-label, and **no other type moves by one row**. `validation/m14/measurements/solidity-gate-whole-2026-10-27.json`
-and `validation/m14/measurements/solidity-gate-perfile-2026-10-27.json` carry both, and the same A→B
-delta is what D3 below already recorded for the heritage kinds.
+**The scope is stated because the numbers move with it.** Both arm artifacts were taken over the
+same 421 files (per-file on 2026-10-27; the whole-population arm re-run 2026-10-28): `--index` (production's scope, SOL-21) reads calls 6,590 · decorates 144 · extends 488 ·
+implements 107, and the per-file run reads calls 6,703 · decorates 31 · extends 588 ·
+implements 7 — 113 cross-file modifier applications and 100 base-list entries change
+label, and **no other type moves by one row**. (Both arms carried `mixes_in` 27 on the day it waspublished; that type is withdrawn — SOL-24.) `validation/m14/measurements/solidity-gate-whole-2026-10-28.json`
+and `validation/m14/measurements/solidity-gate-perfile-2026-10-27.json` carry both, and the same A→B delta is what D3 below already recorded for the heritage kinds. The 2026-10-28 whole-population run reads **contains 6,531 · references 1,452 · exports 526 · TOTAL 35,099** — the 61-row contains/references pair returned to its 2026-10-14 value by measurement, and exports fell 8 with the SOL-12 nested-UDVT fix; clause 1 is 1,823 ambiguous + 2,230 unresolved.
 
 **The value rulings, each settled by a measurement (full text in the spec table's `rulings`):**
 
@@ -146,9 +147,10 @@ delta is what D3 below already recorded for the heritage kinds.
 - **SOL-R5 `uses`** — positional read (SOL-2); measured 2026-10-19: assignment LHS is a uses
   (write-as-use), `return bal;` is a uses, parameter reads are uses by position (the binding wall).
 - **SOL-R6 `imports`** — `import_directive` only (module path); imported bindings and using-directories
-  are `references`. Since SOL-24 a using-directory ALSO publishes one `mixes_in` row when its composed set
-  is a single library and its host is a declared type: the `references` row says the file READ the
-  library's name, the `mixes_in` row says the type ACQUIRED its member set, and both are true.
+  are `references`. A using-directory publishes **no** composition edge (SOL-24): the `references` row says
+  the file READ the library's name, which is the whole of what `using L for T` does to the file, and the
+  host type acquires nothing — a member-set composition whose members do not enter the composing type is
+  not this vocabulary's `mixes_in`.
 - **SOL-R7 `instantiates`** — `new_expression` only; struct construction is `calls` (SOL-10).
 - **SOL-R8 the synthesised getter** is a relationship (contains + references, SOL-3), not metadata.
 
@@ -173,8 +175,8 @@ modifier_definition 23/invocation 222; pragma 421 / comment 5,787 ruled no-relat
 `SOLIDITY-D2.md`. **THESE ROWS ARE THE CENSUS'S OWN AND TWO RELABELS CAME AFTER IT, so they are not the
 current per-type counts:** 31 in-file modifier applications became `decorates` (calls 6,734 → 6,703 per
 file), and at index scope 113 more cross-file applications and 100 base-list entries move as well (calls
-6,590 · decorates 144 · extends 488 · implements 107) with `mixes_in` 27 — see the D1 correction above and
-`validation/m14/measurements/solidity-gate-whole-2026-10-27.json`.
+6,590 · decorates 144 · extends 488 · implements 107) — see the D1 correction above and
+`validation/m14/measurements/solidity-gate-whole-2026-10-28.json`.
 
 **D3 — resolution, BOTH whole-population arms.** Arm A (`incoming-gate solidity sol 0 --dump`,
 `BB_DUMP_LIMIT=1000000`): **421/421 parsed · 2 repos · self-test PASS** · **TOTAL 35,107 = resolved 17,186 +
@@ -299,8 +301,11 @@ short circuits only, with the operator read **structurally** rather than by matc
 source text.
 
 Measured: `bun run script/m60/solidity-surface-measure.ts` →
-`20.28 ms/file, 4,156 facts/ms` over 389 files at `loadAvg1 13.68` on 8 cores, with
-`perfIsQualified: false` because of it. A separate best-of-N run — **ms/file best-of-3**, median
+`10.41 ms/file, 8,299 facts/ms` over 389 files at `loadAvg1 4.68` on 8 cores, with
+`perfIsQualified: true` — the box was quiet for this run, and the row says so rather than leaning on a
+claim it cannot keep. THAT is the honest shape of a perf figure: the same unchanged analyzer measured
+**28.42 ms/file at `loadAvg1 9.53`** an hour earlier on the same box, which is the contention the single
+number always carried. A separate best-of-N run — **ms/file best-of-3**, median
 98.545, worst 101.168, **spread x1.69** on an
 UNCHANGED analyzer — is in `script/m60/solidity-perf.ts`, and the spread is the contention the single figure has
 been carrying all along. Contention only ever adds time, so the fastest trial is an UPPER BOUND on the unloaded
@@ -341,10 +346,15 @@ Re-derive: `bun run script/m60/solidity-zero-regex.ts --selftest`
 ## Supported constructs
 
 All 126 named node types the gate's universe contains are classified exactly once in
-`script/m14/spec/solidity-completeness.json`: **98 handled, 21 internal_silent,
-0 gaps, 7 design_decision.** The 21 silences are wrappers and payloads whose content
+`script/m14/spec/solidity-completeness.json`: **102 handled, 17 internal_silent,
+0 gaps, 7 design_decision.** The 17 silences are wrappers and payloads whose content
 is read by their children, and each names which child — "it is a wrapper" is not a
-reason until you say which wrapper.
+reason until you say which wrapper. (Four node types moved from silent to handled
+when the analyzer began naming them: `binary_expression` and `ternary_expression`
+through the complexity/read passes, and `yul_if_statement` / `yul_switch_statement`
+through the Yul branch walk. The bucket is DERIVED — `script/m60/solidity-completeness-spec.ts`
+reads the analyzer's own `case` labels — so the counts move with the source, and this
+sentence is checked against the artifact by `script/m60/solidity-doc-truth.ts`.)
 
 Yul is analysed as a **first-class sub-language**, and that is a measured decision
 rather than a preference. The handoff proposed ruling it out on the grounds that the
@@ -390,9 +400,10 @@ Named, with their measured size. None of these is hidden in a percentage.
    list precisely when more than one base declares a member, so the keyword says one
    of them does and not which. Reported as `overridesUnresolved` /
    `overridesAmbiguousBaseCount`.
-3. **1,849 `calls` targets resolve to no local symbol** (543 distinct), and every one
-   is now CLASSIFIED rather than pooled — `external` 1,642 (a member or free function
-   declared in another file), `errorRevert` 148, `eventEmission` 59. Two kinds are
+3. **1,849 `calls` targets resolve to no local symbol** (553 distinct), and every one
+   is now CLASSIFIED rather than pooled — `external` 1,625 (a member or free function
+   declared in another file), `errorRevert` 148, `eventEmission` 59, `localBinding` 17.
+   Two kinds are
    EXCLUDED from the figure because their target is not a project symbol by
    construction: `namespaceBuiltin` 269 (`abi.encode`, `type(X).y`, `super.f()`) and
    `conversion`. **Expected, and not meant to be 0**: Solidity has no syntax that
@@ -558,22 +569,23 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Parse damage | **0** damaged, 0 ERROR, 0 MISSING, 0 damage classes | same |
 | Type coverage | **112 of 124** declared named exercised; **12** never | same |
 | Never-exercised reachability | **12/12** probes reached their type; **8/8** negative controls correct | same, `--verify-silence` on the spec |
-| Symbols / relationships | **5,976** / **26,807** | `script/m60/solidity-surface-measure.ts` |
-| **Line coverage** | **26,807 / 26,807 = 100.00%** | same |
+| Symbols / relationships | **5,976** / **27,625** | `script/m60/solidity-surface-measure.ts` |
+| **Line coverage** | **27,625 / 27,625 = 100.00%** | same |
 | `unknownTargets` | **0** | same |
 | `dupKeys` | **0** | same |
 | `reservedTargets` | **0** | same, via the imported predicate |
-| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4331 · `extends` 537 · `exports` 487 · `references` 1307 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
-| Evidence tiers | structural 6112 · usage_contextual 18867 · import_based 899 · inferred 929 | same, read from the analyzer's own central emitter. The 507 SOL-19 rows moved from `structural` to `inferred`, which is the point of that ruling. |
-| Perf | 20.28 ms/file, 4,156 facts/ms, at `loadAvg1 13.68` / 8 cores — **`perfIsQualified: false`** | best-of-3 **59.738 ms/file** (median 98.545, worst 101.168, spread x1.69); `script/m60/solidity-perf.ts` |
+| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4300 · `extends` 537 · `exports` 479 · `references` 1307 · `imports` 826 · `implements` 7 · `overrides` 422 · `decorates` 31 · `instantiates` 1 | same. Three movements from the previous row, each accounted: `imports` is now published as its OWN kind (**+826**) instead of being described as import-annotated `references`; `decorates` was split out of `calls` (**31** modifier applications, `calls` 4331 → 4300); `exports` fell by **8** because a `type` declared inside a contract or library is a nested type, not a member of the compilation unit's export surface (the UDVT ruling, oracle-verified — see `solidity-type-census`). The net **+818** is 826 + 31 − 31 − 8, and it closes to the row above exactly. |
+| Evidence tiers | structural 6104 · usage_contextual 18867 · import_based 1725 · inferred 929 | same, read from the analyzer's own central emitter. The 507 SOL-19 rows moved from `structural` to `inferred`, which is the point of that ruling. `import_based` is 899 import-annotated `references` **plus** the 826 rows now labelled `imports` (899 + 826 = 1,725) — one fact, two spellings, and the tier is the same for both. |
+| Perf | 10.41 ms/file, 8,299 facts/ms, at `loadAvg1 4.68` / 8 cores — **`perfIsQualified: true`** | best-of-3 **59.738 ms/file** (median 98.545, worst 101.168, spread x1.69); `script/m60/solidity-perf.ts`. The unqualified 28.42 ms/file at `loadAvg1 9.53` is the figure the LANE budgets against: contention only ever adds time, so the unqualified number is the conservative one and the qualified one is not a budget. |
+| Synthesised getters, both halves | **58** getters published, and **58 `contains` + 58 `references`** delivered through `parseFile` | `validation/m60/results/solidity-surface.json`. Measured, not assumed: the direct `analyze()` arm and the production arm were compared on one contract and disagreed by exactly these two rows. `filterNoiseRelationships` refuses a leaf carrying `(` because a call expression is the canonical SNIPPET — right about source text, wrong about `bal()`, which is a NAME this analyzer declares. The filter now answers that one shape test with the declaration itself (`declaredNames`), and the controls hold: an UNDECLARED `foo()` is still refused, `f(a, b)` and `f (a)` are still refused, and the 116 corpus rows came back on the same draw. The 58 `contains`/`references` in the kinds row above **are** this fix: before it, the analyzer emitted them and the store never received them. Controls: `script/m14/tmp/declared-signature-controls.mts` — a declared `balance()` kept, the SAME shape undeclared refused, `f(a, b)` / `f (a)` / `f(a)` refused; probe: `script/m14/tmp/sol-getter-probe.mts`, which runs `analyze()` and `parseFile` on one file and prints both counts. **F5 cannot see this class, and saying so is part of the row:** its production arm calls `ASTEngine.parseFile`, which does not pass through `filterNoiseRelationships` at all, so a deletion made by the shared filter is invisible to the differential BY CONSTRUCTION — which is why this fact is pinned in the surface artifact's `getterContainsDelivered` / `getterReferencesDelivered` instead. |
 | Reserved tokens | **262** derived from `grammar.json`, byte-equal to the shared module; **28/28** negative controls | `script/m60/solidity-reserved-words.ts` |
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
 | Completeness | **126/126** classified exactly once, **0 gaps** | `script/m60/solidity-completeness-spec.ts --verify-silence` |
-| Fixtures | **34**, all passing (0 fail), every row read off measured output — including the `mixes-in-using-directive` control | `bun run script/m14/run-fixtures.ts --lang solidity` |
-| Applicable set | **12 implemented / 12 applicable / 2 excluded** (renders, part_of — both grammar-absence) | `bun run script/m14/coverage-block-gate.ts --json` |
-| `mixes_in` rows | **27**, all resolved, from 124 `using_directive` sites in 76 files; 54 no-host + 39 primitive host + 4 braced set skipped and counted | `validation/m14/measurements/solidity-gate-whole-2026-10-27.json`; `validation/m14/measurements/solidity-gate-perfile-2026-10-27.json`; `validation/m14/measurements/solidity-extended-census.json` |
-| Mutants | **24**, all caught | `BB_MUTANT_ONLY="solidity/" bun run script/m14/mutate-analyzer.ts` |
+| Fixtures | **34**, all passing (0 fail), every row read off measured output — including `using-directive-is-not-a-mix-in`, the control for the withdrawn `mixes_in` emission | `bun run script/m14/run-fixtures.ts --lang solidity` |
+| Applicable set | **11 implemented / 11 applicable / 3 excluded** (renders, part_of — grammar-absence; mixes_in — ontological) | `bun run script/m14/coverage-block-gate.ts --json` |
+| `mixes_in` ruling | **0 rows.** The emission published **27** (all resolved, from 124 `using_directive` sites in 76 files; 54 no-host + 39 primitive host + 4 braced set skipped and counted) and was withdrawn the same day: 0 of the 27 adds a member to the host. The 27 `references` rows to the same libraries remain | `validation/m14/measurements/solidity-extended-census.json`; `script/m14/tmp/sol24-mixes-counters.mts`; `bun run script/m14/run-fixtures.ts --lang solidity` |
+| Mutants | **49**, all caught (0 survivors; `modifiers-every-scope` was a no-op keyed on the pre-relabel `calls` shape and is now fixed to read `decorates` too) | `BB_MUTANT_ONLY="solidity/" bun run script/m14/mutate-analyzer.ts`; log `validation/m14/fixtures/solidity/measurements/mutants-solidity-2026-10-27.txt` |
 | Zero regex | 0 operations, 0 literals, 4/4 helpers; gate verified to fail 3 ways | `bun run script/m60/solidity-zero-regex.ts --selftest` |
 | F5 differential | coverage **99.9%**, MISSING **2**, unexplained **21** (1.2%) | `bun run script/m14/differential.ts --lang solidity` |
 | F5 adjudication | **0** unclassifiable in either direction | `script/m60/solidity-unexplained-adjudication.ts` |
@@ -621,3 +633,36 @@ plain `identifier` — a token only appears where the grammar expects that liter
 obviously true and is wrong for **15 of 17** builtins. The first draft of
 `solidity-reserved-words.ts` asserted the opposite split in its own header and the
 instrument's negative control refuted it.
+## Gate repairs, 2026-10-27
+
+Four instruments in this lane were found measuring a stale subject while every lane gate was
+green. They are repaired here, because a gate that passes for the wrong reason is the failure
+mode this repo's own docs are loudest about.
+
+- **`script/m60/solidity-completeness-spec.ts` no longer eats the `coverage` block.** The
+  generator rebuilt the JSON from its four classification buckets and wrote it over the file;
+  `coverage` — the hand-authored block the coverage gate reads, carrying every exclusion's
+  evidence, count and falsifier — was not in the object it constructed, so the documented run
+  deleted it (measured: 126 lines). It also reverted `using_directive` to "internal_silent"
+  and restored the stale 20-fixture description. The generator now carries an existing
+  `coverage` block verbatim and REFUSES to write if it would drop one. The classification
+  counts are still derived: **126 types = 102 handled + 17 silent + 0 gaps + 7 decisions**,
+  each exactly once.
+- **`script/m60/solidity-doc-truth.ts` reads the lane's real counts.** It hardcoded
+  `fixtures: 22` and `mutants: 24` — the values when it was written — and reported `NOT IN
+  DOC` against a doc that says 34 and 49. The fixture count is now discovered recursively
+  (two sources live in `sol21/`) and the mutant count is `SOLIDITY_MUTANTS.length`, so the
+  instrument moves with its subject.
+- **`script/m60/solidity-zero-regex.ts --selftest` is not stale.** Its MUTANT 3 injected
+  `.replace(...)` by replacing a hardcoded analyzer line that a later change had rewrapped
+  (`if (!opts.pathTarget && !isPlausibleSymbolName(target))`), so the mutant was byte-identical
+  to the original and the gate reported 0 operations — reading as a failed gate rather than an
+  aged test. The injection is now prepended and asserts that it changed the source.
+- **The stale fixture allowance is gone.** `validation/m14/fixture-baseline.json` carried
+  `solidity: 2`; the scoped suite measures 0 and the two free passes were retired, so the
+  baseline now records `0`.
+
+Verified after the repairs: fixtures **34/34**, mutants **49/49**, coverage gate
+**11 implemented / 11 applicable / 3 excluded**, completeness **126/126 exactly once**,
+doc truth **72/72 numbers agree**, zero-regex selftest **8/8**, cross-file gate **15/15**,
+IPC-wiring gate **7/7**.

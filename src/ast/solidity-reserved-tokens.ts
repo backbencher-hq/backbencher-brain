@@ -242,6 +242,40 @@ export const ENGINE_FUNCTION_NAMES: ReadonlySet<string> = new Set([
  * gives for excluding it: it is a first-class declaration in TS/JS, and it is
  * Solidity's own constructor keyword (SOL-4).
  */
+/**
+ * SOL-8 — the EVM opcodes as the vendored grammar spells them in
+ * `yul_evm_builtin`. DECLARED, and re-derivable: every alphabetic anonymous
+ * token of `grammars/tree-sitter-solidity/src/grammar.json` that is not a
+ * primitive type and not a Solidity keyword. The derivation command is named in
+ * `docs/analyzers/real-solidity-analyzer.md` §Evidence, so this list can be
+ * checked against the grammar rather than trusted.
+ *
+ * WHY IT LIVES HERE RATHER THAN IN THE ANALYZER. A `yul_path` segment that spells
+ * an opcode is SILENT — the lexer always gives a bare `add` the builtin spelling,
+ * so a user-defined Yul function can never carry that name, and a read of it is
+ * not a read of anything a project declares. The truth oracle
+ * (`script/m14/oracles/solidity.ts`) has to skip exactly the same names or every
+ * `mload` in the corpus becomes a MISSING/UNEXPLAINED row, and the oracle's own
+ * rule is "two instruments that must agree may not each hold a copy". So the one
+ * table sits here and both sides import it; a divergence is then impossible by
+ * construction instead of being caught later.
+ */
+export const EVM_BUILTIN_NAMES: ReadonlySet<string> = new Set([
+  "stop", "add", "sub", "mul", "div", "sdiv", "mod", "smod", "exp", "not",
+  "lt", "gt", "slt", "sgt", "eq", "iszero", "and", "or", "xor", "byte",
+  "shl", "shr", "sar", "addmod", "mulmod", "signextend", "keccak256",
+  "pop", "mload", "mstore", "mstore8", "sload", "sstore", "mcopy", "tload",
+  "tstore", "msize", "gas", "address", "balance", "selfbalance", "caller",
+  "callvalue", "calldataload", "calldatasize", "calldatacopy", "extcodesize",
+  "extcodecopy", "extcodehash", "returndatasize", "returndatacopy",
+  "create", "create2", "call", "callcode", "delegatecall", "staticcall",
+  "return", "revert", "selfdestruct", "invalid", "log0", "log1", "log2",
+  "log3", "log4", "datasize", "dataoffset", "dataload", "setimmutable",
+  "loadimmutable", "linkersymbol", "memoryguard", "verbatim", "chainid",
+  "basefee", "blobbasefee", "blobhash", "origin", "gasprice", "blockhash",
+  "coinbase", "timestamp", "number", "difficulty", "prevrandao", "gaslimit",
+])
+
 export const STORE_REFUSED_SYMBOL_NAMES: ReadonlySet<string> = new Set([
   "this", "super", "self", "Self", "me", "My",
   "destructor",

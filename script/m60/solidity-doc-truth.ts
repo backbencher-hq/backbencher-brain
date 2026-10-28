@@ -27,8 +27,26 @@
  */
 import * as fs from "node:fs"
 import * as path from "node:path"
+import { SOLIDITY_MUTANTS } from "./solidity-mutants"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
+
+/** The lane's fixture count, derived the way the runner discovers sources: every
+ *  `.sol` under the fixture directory, recursively (two live in `sol21/`). The
+ *  checks below used to hardcode `22` and `24` — the values at the time the gate
+ *  was written — so a lane that grew to 34 fixtures and 49 mutants reported
+ *  NOT IN DOC while the doc was right and the GATE was stale. A number copied
+ *  into an instrument is a number that stops moving with its subject. */
+function countSolidityFixtures(dir: string): number {
+  let n = 0
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.isDirectory()) n += countSolidityFixtures(path.join(dir, e.name))
+    else if (e.name.endsWith(".sol")) n++
+  }
+  return n
+}
+const FIXTURE_COUNT = countSolidityFixtures(path.join(ROOT, "validation/m14/fixtures/solidity"))
+const MUTANT_COUNT = SOLIDITY_MUTANTS.length
 const DOC = path.join(ROOT, "docs/analyzers/real-solidity-analyzer.md")
 const read = (p: string) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"))
 
@@ -73,8 +91,8 @@ const checks: Check[] = [
   { doc: "447", what: "assembly_statement", actual: census.corpusCounts.assembly_statement, expect: (v) => v === 447 },
   // ── the surface, and the four numbers the lane standard is written in
   { doc: "5,976", what: "symbols", actual: t.symbols, expect: (v) => v === 5976 },
-  { doc: "26,807", what: "relationships", actual: t.relationships, expect: (v) => v === 26807 },
-  { doc: "**26,807 / 26,807 = 100.00%**", what: "line coverage", actual: t.lineNumber,
+  { doc: "27,625", what: "relationships", actual: t.relationships, expect: (v) => v === 27625 },
+  { doc: "**27,625 / 27,625 = 100.00%**", what: "line coverage", actual: t.lineNumber,
     expect: (v: any) => v.withLine === v.total && v.pct === "100.00" },
   { doc: "unknownTargets", what: "unknownTargets must be 0", actual: t.unknownTargets.count, expect: (v) => v === 0 },
   { doc: "dupKeys", what: "dupKeys must be 0", actual: t.dupKeys.count, expect: (v) => v === 0 },
@@ -94,7 +112,14 @@ const checks: Check[] = [
   { doc: `${t.perf.perFileMs.toFixed(2)} ms/file`, what: "perf perFileMs tracks the artifact", actual: t.perf.perFileMs, expect: (v) => v === t.perf.perFileMs },
   { doc: `${Math.round(t.perf.factsPerMs).toLocaleString("en-US")} facts/ms`, what: "perf factsPerMs tracks the artifact", actual: t.perf.factsPerMs, expect: (v) => Math.round(v as number) === Math.round(t.perf.factsPerMs) },
   { doc: `loadAvg1 ${surface.loadContext.loadAvg1.toFixed(2)}`, what: "load context tracks the artifact", actual: surface.loadContext.loadAvg1, expect: (v) => v === surface.loadContext.loadAvg1 },
-  { doc: "perfIsQualified: false", what: "perf qualification", actual: surface.perfIsQualified, expect: (v) => v === false },
+  // THE QUALIFICATION IS DERIVED, NOT PINNED — the perf figures above were already
+  // derived for this exact reason, and pinning the boolean reintroduced the tripwire one
+  // field over: a re-measure on a QUIET box (this one ran at `loadAvg1 4.68` and WAS
+  // qualified) failed a gate whose doc was right about the artifact. What must hold is
+  // that the doc reports whichever run produced the artifact, and that the lane's
+  // CONSERVATIVE figure — the best-of-N row, from `solidity-perf.json` — is still the
+  // unqualified one, which is pinned separately below and did not move.
+  { doc: `perfIsQualified: ${surface.perfIsQualified}`, what: "perf qualification tracks the artifact", actual: surface.perfIsQualified, expect: (v) => v === surface.perfIsQualified },
   // ── the project-wide census (M60.solidity-projectwide-census)
   { doc: "`ancestor-member` 430", what: "census ancestor-member", actual: projCensus.totals.counts["ancestor-member"], expect: (v) => v === 430 },
   { doc: "`project-declared` 1,134", what: "census project-declared", actual: projCensus.totals.counts["project-declared"], expect: (v) => v === 1134 },
@@ -123,28 +148,44 @@ const checks: Check[] = [
   // The invariant the census asserts internally, re-checked here because a gate that
   // trusts a sibling script's self-report is not a second opinion.
   { doc: "denominator is asserted equal to the sum of its routes", what: "census denominator equals its numerators", actual: projCensus.totals.routeSumMatchesAudited, expect: (v) => v === true },
-  // ── per-kind counts, all ten
+  // ── per-kind counts, all eleven. `imports` and `decorates` were added when they
+  //    became their own kinds: a per-kind list that checks nine of eleven lets the two
+  //    newest figures drift unchecked, which is the seam this whole gate exists to close.
   { doc: "contains` 5587", what: "kinds.contains", actual: t.kinds.contains, expect: (v) => v === 5587 },
   { doc: "uses` 14128", what: "kinds.uses", actual: t.kinds.uses, expect: (v) => v === 14128 },
-  { doc: "calls` 4331", what: "kinds.calls", actual: t.kinds.calls, expect: (v) => v === 4331 },
+  { doc: "calls` 4300", what: "kinds.calls", actual: t.kinds.calls, expect: (v) => v === 4300 },
   { doc: "extends` 537", what: "kinds.extends", actual: t.kinds.extends, expect: (v) => v === 537 },
-  { doc: "exports` 487", what: "kinds.exports", actual: t.kinds.exports, expect: (v) => v === 487 },
+  { doc: "exports` 479", what: "kinds.exports", actual: t.kinds.exports, expect: (v) => v === 479 },
   { doc: "references` 1307", what: "kinds.references", actual: t.kinds.references, expect: (v) => v === 1307 },
+  { doc: "imports` 826", what: "kinds.imports", actual: t.kinds.imports, expect: (v) => v === 826 },
   { doc: "implements` 7", what: "kinds.implements", actual: t.kinds.implements, expect: (v) => v === 7 },
   { doc: "overrides` 422", what: "kinds.overrides", actual: t.kinds.overrides, expect: (v) => v === 422 },
+  { doc: "decorates` 31", what: "kinds.decorates", actual: t.kinds.decorates, expect: (v) => v === 31 },
   { doc: "instantiates` 1", what: "kinds.instantiates", actual: t.kinds.instantiates, expect: (v) => v === 1 },
-  { doc: "899 import-annotated", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
   // ── tiers
-  { doc: "structural 6112", what: "tiers.structural", actual: t.tiers.structural, expect: (v) => v === 6112 },
+  { doc: "structural 6104", what: "tiers.structural", actual: t.tiers.structural, expect: (v) => v === 6104 },
   { doc: "usage_contextual 18867", what: "tiers.usage_contextual", actual: t.tiers.usage_contextual, expect: (v) => v === 18867 },
-  { doc: "import_based 899", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
+  // 899 import-annotated `references` + the 826 rows now labelled `imports`. The gate
+  // pins the SUM, because the sum is the fact; the split is prose and can move.
+  { doc: "import_based 1725", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 1725 },
   { doc: "inferred 929", what: "tiers.inferred", actual: t.tiers.inferred, expect: (v) => v === 929 },
   // ── the limitations, each with its measured size
   { doc: "507 edges", what: "implementsCrossFileUnresolved", actual: d.implementsCrossFileUnresolved, expect: (v) => v === 507 },
   { doc: "422/100 emitted/unresolved", what: "overrides emitted/unresolved", actual: `${d.overridesEmitted}/${d.overridesUnresolved}`, expect: (v) => v === "422/100" },
   { doc: "1,849 `calls` targets", what: "unresolvedCallTargets count", actual: t.unresolvedCallTargets.count, expect: (v) => v === 1849 },
-  { doc: "(543 distinct)", what: "unresolvedCallTargets distinct", actual: t.unresolvedCallTargets.distinct, expect: (v) => v === 543 },
+  { doc: "(553 distinct)", what: "unresolvedCallTargets distinct", actual: t.unresolvedCallTargets.distinct, expect: (v) => v === 553 },
   { doc: "58", what: "synthesised getters published", actual: d.getterSymbols, expect: (v) => v === 58 },
+  // BOTH HALVES, ON THE PRODUCTION PATH. `getterSymbols` counts what the analyzer
+  // PUBLISHED; these count what `parseFile` DELIVERED. They are equal only because each
+  // getter emits exactly one `contains` (its owner) and one `references` (its variable),
+  // and the check is written that way so a future filter that eats one half fails here
+  // instead of reading as a clean 58. The doc substring is DERIVED from the artifact for
+  // the reason the perf rows give: a hardcoded 116 would pin a number that moves with
+  // the corpus and teach the reviewer nothing about delivery.
+  { doc: `**${d.getterContainsDelivered} \`contains\` + ${d.getterReferencesDelivered} \`references\`**`,
+    what: "getter edges delivered through parseFile",
+    actual: `${d.getterContainsDelivered}/${d.getterReferencesDelivered}`,
+    expect: () => d.getterContainsDelivered === d.getterSymbols && d.getterReferencesDelivered === d.getterSymbols },
   { doc: "2 unknown `contains` targets", what: "SOL-14 measured before the rule", actual: d.storeRefusedDeclarations, expect: (v) => v === 2 },
   // ── F5, from the pinned baseline rather than a re-measured run, because a
   // re-measure rotates the draw and the baseline is the pinned row
@@ -159,14 +200,14 @@ const checks: Check[] = [
   // ── completeness
   { doc: "126", what: "completeness universe", actual: spec.handled_verified.types.length + spec.internal_silent.types.length + spec.gap.gaps.length + spec.design_decision.decisions.length,
     expect: (v) => v === 126 },
-  { doc: "98 handled, 21 internal_silent,\n0 gaps, 7 design_decision", what: "completeness buckets",
+  { doc: "102 handled, 17 internal_silent,\n0 gaps, 7 design_decision", what: "completeness buckets",
     actual: `${spec.handled_verified.types.length}/${spec.internal_silent.types.length}/${spec.gap.gaps.length}/${spec.design_decision.decisions.length}`,
-    expect: (v) => v === "98/21/0/7" },
+    expect: (v) => v === "102/17/0/7" },
   { doc: "**262** derived", what: "reserved token count", actual: 262, expect: (v) => v === 262 },
   { doc: "**15 of 17** builtins", what: "identifier-spelled engine builtins", actual: 15, expect: (v) => v === 15 },
   // ── counts the doc asserts about the lanes' own gates
-  { doc: "**22**, all passing", what: "fixtures", actual: 22, expect: (v) => v === 22 },
-  { doc: "**24**, all caught", what: "mutants", actual: 24, expect: (v) => v === 24 },
+  { doc: "**34**, all passing", what: "fixtures", actual: FIXTURE_COUNT, expect: (v) => v === 34 },
+  { doc: "**49**, all caught", what: "mutants", actual: MUTANT_COUNT, expect: (v) => v === 49 },
 ]
 
 const failures: string[] = []

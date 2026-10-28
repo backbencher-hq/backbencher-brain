@@ -63,11 +63,31 @@
 //               an independent derivation of WHICH member is meant, because the
 //               language does not say. Recorded here rather than claimed as more.
 //
-//   uses        INDEPENDENT. An identifier whose PARENT is an `expression` is a
+//   uses        INDEPENDENT in its POSITION rule; NOT independent in its
+//               re-spelling. An identifier whose PARENT is an `expression` is a
 //               read: the same positional rule the analyzer states, derived from
 //               grammar.js's `_primary_expression`, so it measures the POSITION
 //               rather than a name list. Also derives the `member_expression`
-//               property read, refusing a GLOBAL's members.
+//               property read, refusing a GLOBAL's members, and the `yul_path`
+//               segment read (SOL-8).
+//
+//               The part that is a MIRROR, stated rather than implied: a read of a
+//               FUNCTION-SCOPE BINDING (a parameter or a named return) is published
+//               under the fleet spelling `<callable>\u0000<binding>` (SOL-W8), and
+//               which callable owns a name is a frame-space fact this oracle can only
+//               reproduce — it cannot derive it independently, because the analyzer's
+//               rule IS the contract ("the nearest enclosing callable whose parameter
+//               list contains the name"). So this module re-implements that rule from
+//               the TREE (walking ancestors, reading `parameter` and
+//               `return_type_definition` nodes) rather than reading the analyzer's
+//               frames, but a shared misunderstanding of what encloses what would be
+//               invisible to the comparison. What it CAN catch, and did: a dropped
+//               claim, a claim attributed to the wrong callable, a claim made where
+//               the reserved-target gate refuses the bare read, and the whole class
+//               silently disappearing. Measured before this was written: 590 of 593
+//               unexplained `uses` rows on a 60-file draw, ALL of them binding claims
+//               (`balanceOf\u0000account`), i.e. an oracle that had nothing to say
+//               about a class the analyzer had been publishing since SOL-W8.
 //
 // No regex, no hand-typed name lists, AST only.
 import type { Node } from "web-tree-sitter"
@@ -109,7 +129,12 @@ const DECLARERS: Record<string, string> = {
 /** The one name the STORE refuses to hold, so no edge may target it (SOL-14).
  *  Imported from the analyzer's shared module rather than re-typed, for the same
  *  reason as above. */
-import { RESERVED_TOKENS, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "../../../src/ast/solidity-reserved-tokens"
+import { RESERVED_TOKENS, ENGINE_FUNCTION_NAMES, EVM_BUILTIN_NAMES, STORE_REFUSED_SYMBOL_NAMES, isReservedTarget } from "../../../src/ast/solidity-reserved-tokens"
+/** The fleet's binding separator. Imported, never re-typed: the analyzer builds
+ *  `<callable>\u0000<binding>` from this constant, and a hand-typed "\u0000" in the
+ *  oracle would agree today and drift the day the constant changes — a
+ *  disagreement that would read as 590 fabrications rather than as one typo. */
+import { BINDING_SEP } from "../../../src/ast/types"
 
 const children = (n: any): any[] => {
   const out: any[] = []
@@ -147,6 +172,81 @@ const udtName = (n: any): string => {
   return ""
 }
 
+/**
+ * SOL-W8 — the callable definitions whose parameters and named returns are
+ * FUNCTION-SCOPE BINDINGS. The list is the grammar's, and it excludes
+ * `yul_function_definition` deliberately: a Yul function's parameters are not part
+ * of this claim (the lane's W6 residual keeps them bare, pinned by
+ * `yul-subset-sol`), so an oracle that claimed them would report a fault the
+ * analyzer does not have.
+ */
+const CALLABLE_FRAME_TYPES = new Set([
+  "function_definition",
+  "constructor_definition",
+  "fallback_receive_definition",
+  "modifier_definition",
+])
+
+/**
+ * The SCOPE NAME a callable frame is opened with — the `owner` half of the binding
+ * spelling. Solidity writes `constructor`, `receive` and `fallback` as KEYWORD
+ * tokens rather than names, so those three are the language's own words (SOL-4);
+ * every other callable is named by its `name:` field. Returns null for a node that
+ * is not one of the four definitions.
+ */
+const callableFrameScope = (n: any): string | null => {
+  if (n.type === "constructor_definition") return "constructor"
+  if (n.type === "fallback_receive_definition") {
+    const first = children(n)[0]
+    return first && first.type === "receive" ? "receive" : "fallback"
+  }
+  if (n.type === "modifier_definition" || n.type === "function_definition") {
+    const nm = n.childForFieldName?.("name")
+    return nm ? nm.text : null
+  }
+  return null
+}
+
+/**
+ * The names a callable declares as bindings: every `parameter` child, plus every
+ * `parameter` under its `return_type_definition` (a NAMED return is a binding, an
+ * unnamed one is not). Derived from the tree — `collectParameters`' counterpart on
+ * the truth side.
+ */
+const callableBindings = (n: any): Set<string> => {
+  const out = new Set<string>()
+  const add = (p: any) => {
+    const nm = p?.childForFieldName?.("name")
+    if (nm && nm.text) out.add(nm.text)
+  }
+  for (const c of namedChildren(n)) {
+    if (c.type === "parameter") add(c)
+    else if (c.type === "return_type_definition") {
+      for (const p of namedChildren(c)) if (p.type === "parameter") add(p)
+    }
+  }
+  return out
+}
+
+/**
+ * The nearest enclosing callable that declares `name` as a binding, INNERMOST
+ * FIRST — the same order the analyzer's frame stack is scanned in, and the reason
+ * a shadowing inner callable wins. A type frame (contract/interface/library) and
+ * the file frame declare no bindings, so they cannot answer and are skipped
+ * structurally rather than by a list.
+ */
+const bindingOwnerOf = (node: any, name: string): string | null => {
+  let p: any = node?.parent ?? null
+  let guard = 0
+  while (p && guard++ < 64) {
+    if (CALLABLE_FRAME_TYPES.has(p.type) && callableBindings(p).has(name)) {
+      return callableFrameScope(p)
+    }
+    p = p.parent
+  }
+  return null
+}
+
 /** Any ERROR/MISSING ancestor within a bounded hop count. */
 const damaged = (n: any): boolean => {
   let p: any = n?.parent ?? null
@@ -167,7 +267,16 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
     target = (target ?? "").trim()
     if (!from || !target) return
     if (label === "contains" && (target === from || !from)) return
-    if (STORE_REFUSED_SYMBOL_NAMES.has(target) || STORE_REFUSED_SYMBOL_NAMES.has(from)) return
+    // NO `STORE_REFUSED_SYMBOL_NAMES` FILTER HERE, and the reason is a measured
+    // falsehood rather than a preference. That list is the shared STORE's denylist of
+    // DECLARATION names (`root`, `self`, `program`, …) — it says which names may not
+    // become SYMBOLS, not which names an edge may point AT. Used as an edge filter it
+    // deleted correct rows: `uses setup -> root` in MerkleTreeMock.sol (a state
+    // variable the analyzer refuses to DECLARE and still reads) and every
+    // `uses … -> <callable>\u0000self` binding claim whose leaf is `self`. The
+    // declaration-owned labels are refused where the DECLARATION is derived (the
+    // `contains`/`exports` walks below), which is the same place the analyzer refuses
+    // it, so removing the blanket filter changes no declaration row.
     // Site-agnostic matching in this harness (label + target, never the line), so
     // one row per (label, from, target) is the right grain. The per-site contract
     // is the fixture lane's to pin; F5 cannot see it.
@@ -426,11 +535,19 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
     if (damaged(d)) continue
     const parent = d.parent
     const ptype = parent ? parent.type : ""
-    // These four contexts own the mention elsewhere; staying silent here is what
+    // These contexts own the mention elsewhere; staying silent here is what
     // keeps one mention from becoming two edges.
+    //
+    // `meta_type_expression` is checked through the `type_name` wrapper as well: the
+    // grammar spells `type(I).interfaceId` as `user_defined_type < type_name <
+    // meta_type_expression`, so a test on the DIRECT parent alone never fired and this
+    // loop published `uses -> I` for a meta type the analyzer does not descend into
+    // (measured: 2 MISSING rows of the shape `uses supportsInterface -> IERC6909…`).
+    const inMetaType = ptype === "meta_type_expression" ||
+      (ptype === "type_name" && parent?.parent?.type === "meta_type_expression")
     if (ptype === "inheritance_specifier" || ptype === "override_specifier" ||
         ptype === "new_expression" || ptype === "struct_expression" ||
-        ptype === "catch_clause" || ptype === "meta_type_expression") continue
+        ptype === "catch_clause" || inMetaType) continue
     const nm = udtName(d)
     if (nm === "" || GLOBAL_OBJECTS.has(nm)) continue
     if (RESERVED_TOKENS.has(nm) || ENGINE_FUNCTION_NAMES.has(nm)) continue
@@ -444,7 +561,13 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
     if (damaged(d)) continue
     const name = d.text
     if (name === "" || GLOBAL_OBJECTS.has(name)) continue
-    if (STORE_REFUSED_SYMBOL_NAMES.has(name)) continue
+    // A name in STORE_REFUSED_SYMBOL_NAMES is NOT skipped here. The analyzer refuses
+    // to DECLARE `self`/`root` as symbols and still publishes their READS — and a read
+    // of a function-scope binding named `self` is published as the claim
+    // `<callable>\u0000self`, which the store never sees as a bare symbol at all.
+    // Skipping the name made the truth side blind to both classes: measured, 2 of the
+    // draw's 3 unexplained `uses` rows were `getFull\u0000self`/`unpack\u0000self` in
+    // Time.sol, where `self` is a `Delay` parameter.
     const parent = d.parent
     // The reserved/engine checks are DEFERRED to the non-member branch, and the
     // order matters. A member property is named by its object's TYPE, not by the
@@ -483,7 +606,45 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
     // AN EVENT EMISSION IS A CALL, NOT A READ — the same class, found the same way
     // as 25 MISSING rows of the shape `uses _propose -> ProposalCreated`.
     if (isEmitName(d)) continue
-    push("uses", scopeOf(d), name)
+    // SOL-W8 — a read of a FUNCTION-SCOPE BINDING is published under the fleet
+    // spelling `<callable>\u0000<binding>`, and the analyzer's own gate means the
+    // claim and the bare row are EXCLUSIVE: where the reserved-target test refuses
+    // the bare spelling the claim is refused too, so a reserved name publishes
+    // nothing at all (the `continue` above already dropped it). What is left is
+    // exactly `claimed ? binding : bare`, which is what this writes.
+    const bindOwner = bindingOwnerOf(d, name)
+    push("uses", scopeOf(d), bindOwner !== null ? `${bindOwner}${BINDING_SEP}${name}` : name)
+  }
+
+  // ── uses, YUL: a `yul_path`'s segments are READS (SOL-8), and the first segment
+  //    is the variable while the rest are members. The children are
+  //    `yul_identifier` (grammar.js:398 aliases it from `identifier`), so reading
+  //    `identifier` finds nothing — the same defect the analyzer records for its own
+  //    first draft, and it is why this loop reads BOTH spellings.
+  //
+  //    Measured before this existed: 3 of `Math.sol`'s 328 `uses` rows were
+  //    assembly-local reads (`mm`, `ptr`, `dataPtr`) that the analyzer published and
+  //    the truth side had no rule for. Small, and a leak every assembly-heavy file
+  //    carries, so it is derived rather than excused.
+  for (const d of descendants(root, "yul_path")) {
+    if (damaged(d)) continue
+    const segs = namedChildren(d).filter((c: any) => c.type === "yul_identifier" || c.type === "identifier")
+    segs.forEach((seg: any, i: number) => {
+      // An OPCODE is not a project name, and the skip is LOSSLESS: the lexer always
+      // spells a bare `add` as the builtin, so nothing user-defined can carry it.
+      if (EVM_BUILTIN_NAMES.has(seg.text)) return
+      // The claim is ONE-SEGMENT only: a multi-segment path's leaf is a MEMBER
+      // (`x.slot`), and a Yul `let` local is a published symbol that resolves, so
+      // neither may be re-spelled as a binding.
+      const owner = segs.length === 1 && i === 0 ? bindingOwnerOf(seg, seg.text) : null
+      const refused = isReservedTarget("uses", seg.text, { isYulPathSegment: true, isYulVariableRead: true })
+      if (owner !== null && !refused) {
+        push("uses", scopeOf(seg), `${owner}${BINDING_SEP}${seg.text}`)
+        return
+      }
+      if (refused) return
+      push("uses", scopeOf(seg), seg.text)
+    })
   }
 
   /** The nearest enclosing function, else the nearest enclosing type, else the file. */
@@ -715,7 +876,20 @@ export function deriveSolidityCallReferenceEdges(
     const fn = d.childForFieldName?.("function")
     const got = callee(fn)
     if (!got || got.name === "") continue
-    push("calls", nearestScope(d), got.name, got.viaMember)
+    // SOL-W8 — a BARE callee that names a function-scope binding is a call THROUGH a
+    // function-type parameter (`op(store.latest(), delta)`), published as
+    // `<callable>\u0000op`. MEMBER calls are never claimed (a member's name comes
+    // from its object's type, not from this frame), and the claim is refused where
+    // the analyzer's own gate refuses it — a reserved token or an engine function
+    // stays the bare spelling, because that is the spelling the analyzer emits.
+    let target = got.name
+    if (!got.viaMember) {
+      const owner = bindingOwnerOf(d, got.name)
+      const claimRefused = isReservedTarget("calls", got.name, { isSolidityCall: true })
+        || ENGINE_FUNCTION_NAMES.has(got.name)
+      if (owner !== null && !claimRefused) target = `${owner}${BINDING_SEP}${got.name}`
+    }
+    push("calls", nearestScope(d), target, got.viaMember)
   }
 
   for (const d of descendants(root, "emit_statement")) {
@@ -726,10 +900,30 @@ export function deriveSolidityCallReferenceEdges(
   }
 
   // `modifier_invocation` carries no field at all; the name is its first identifier.
+  //
+  // TWO CONSTRUCTS SHARE ONE NODE TYPE and the resolution is what separates them —
+  // this is SOL-17's discriminator, reproduced on the truth side. An APPLIED
+  // MODIFIER (`function f() onlyOwner`) is `decorates`: the decorated declaration is
+  // the source and the modifier is the target. A BASE-CONSTRUCTOR CALL
+  // (`constructor() Base(1)`) stays `calls`. A per-file derivation can only settle
+  // the IN-FILE half, and that is exactly the half the harness's analyzer can settle
+  // too (it is driven per file), so the two instruments resolve the same way: a name
+  // declared as a `modifier_definition` in this file is a decorator, anything else
+  // is a call. Measured before this existed: Pausable's `_pause -> whenNotPaused` and
+  // UUPSUpgradeable's `proxiableUUID -> notDelegated` were published as `calls` by
+  // this oracle while the analyzer published `decorates` — 2 MISSING rows on every
+  // draw that contains a modifier application, and the row it reported was a
+  // truth-side falsehood, not an analyzer error.
+  const modifierNames = new Set<string>()
+  for (const d of descendants(root, "modifier_definition")) {
+    const nm = d.childForFieldName?.("name")
+    if (nm && nm.text !== "") modifierNames.add(nm.text)
+  }
   for (const d of descendants(root, "modifier_invocation")) {
     if (damaged(d)) continue
     const id = namedChildOfType(d, "identifier")
-    if (id) push("calls", nearestScope(d), id.text)
+    if (!id) continue
+    push(modifierNames.has(id.text) ? "decorates" : "calls", nearestScope(d), id.text)
   }
 
   // `revert MyError(...)` — a custom error is a CALL.
@@ -756,10 +950,18 @@ export function deriveSolidityCallReferenceEdges(
       ? descendTo(first.childForFieldName?.("function"))
       : descendTo(first)
     if (!callee) continue
+    // A QUALIFIED error (`revert Errors.FailedCall()`) names its error through a
+    // `member_expression`, and the target is the MEMBER — the analyzer reads the same
+    // leaf through `calleeNameOf`, so an oracle that refused the shape would report
+    // two real calls per file in this corpus as MISSING. Measured on `Address.sol`:
+    // `calls -> InsufficientBalance` and `calls -> FailedCall` were analyzer-only
+    // until this branch read the property.
     const name = callee.type === "identifier" ? callee.text
       : callee.type === "user_defined_type" ? udtName(callee)
-        : ""
-    if (name !== "") push("calls", nearestScope(d), name)
+        : callee.type === "member_expression"
+          ? (callee.childForFieldName?.("property")?.text ?? "")
+          : ""
+    if (name !== "") push("calls", nearestScope(d), name, callee.type === "member_expression")
   }
 
   /** Descend through `expression` wrappers to the first name-bearing node. */
@@ -815,12 +1017,29 @@ export function deriveSolidityCallReferenceEdges(
     const id = namedChildOfType(d, "identifier")
     if (id) push("references", nearestScope(d), id.text)
   }
+  //
+  // The mention is a `references` row ONLY when the type is declared IN THIS FILE —
+  // the analyzer's `typeNamesInFile.has(name)` test, reproduced from the tree. A
+  // `type(I).interfaceId` where `I` is imported names a symbol this file does not
+  // declare, and the analyzer stays silent there (it publishes the IMPORT's own
+  // `references` row instead). Deriving it for every UDT made 1 unexplained row per
+  // file that asks an imported interface for its ERC-165 id — measured on
+  // ERC6909TokenSupply.sol.
+  const fileTypeNames = new Set<string>()
+  for (const kind of ["contract_declaration", "interface_declaration", "library_declaration", "user_defined_type_definition"]) {
+    for (const d of descendants(root, kind)) {
+      const nm = d.childForFieldName?.("name")
+      if (nm && nm.text !== "") fileTypeNames.add(nm.text)
+    }
+  }
   for (const d of descendants(root, "meta_type_expression")) {
     const udt = descendants(d, "user_defined_type")[0]
     const nm = udt ? udtName(udt) : ""
     // Only a USER-DEFINED type is a project reference; `type(uint256)` names a
-    // language type.
-    if (nm !== "" && !RESERVED_TOKENS.has(nm)) push("references", nearestScope(d), nm)
+    // language type, and an undeclared one names nothing this file can claim.
+    if (nm !== "" && fileTypeNames.has(nm) && !RESERVED_TOKENS.has(nm)) {
+      push("references", nearestScope(d), nm)
+    }
   }
 
   // SOL-3's getter link, REPRODUCED (a language fact, not a choice).

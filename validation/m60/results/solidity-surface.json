@@ -1,14 +1,14 @@
 {
   "gate": "M60.solidity-surface",
   "title": "Solidity analyzer surface over the pinned real corpus",
-  "at": "2026-10-01T03:43:04.076Z",
-  "commit": "cfe3fd76ddba6687234e4a9723b7710e13263cd5",
+  "at": "2026-10-28T16:08:48.312Z",
+  "commit": "f1065d916e2fcaf9d31f40e9f70e9ebcaf31a168",
   "loadContext": {
-    "loadAvg1": 13.68,
+    "loadAvg1": 4.68,
     "cores": 8,
     "memoryPsiFullAvg10": "0.00"
   },
-  "perfIsQualified": false,
+  "perfIsQualified": true,
   "perfIsQualifiedRule": "loadAvg1 < 8. A perFileMs taken above that is contention, not a lane budget — measured on a sibling lane whose artifact published 228 → 246 → 91 ms/file across three runs of an UNCHANGED analyzer. /proc/pressure/memory is recorded too, because load is the wrong signal when the box is memory-stalled: PSI, not loadavg, is what stalls.",
   "corpus": {
     "repo": "solidity",
@@ -36,31 +36,31 @@
       "missing": 0
     },
     "symbols": 5976,
-    "relationships": 26807,
+    "relationships": 27625,
     "kinds": {
       "contains": 5587,
       "extends": 537,
       "uses": 14128,
       "overrides": 422,
-      "exports": 487,
+      "exports": 479,
+      "imports": 826,
       "references": 1307,
-      "calls": 4331,
+      "calls": 4300,
       "implements": 7,
+      "decorates": 31,
       "instantiates": 1
     },
-    "notExercisedByThisDraw": [
-      "imports"
-    ],
+    "notExercisedByThisDraw": [],
     "notExercisedNote": "`imports` is expected here and is NOT a gap: imports are modelled as `references` edges carrying `metadata.import: true`, the settled convention for this repo (PowerShell PS-7 for the same reason). The count of those edges is `tiers.import_based`, and every one of them is checked by the fixtures' `expectImports`.",
     "tiers": {
-      "structural": 6112,
+      "structural": 6104,
       "inferred": 929,
       "usage_contextual": 18867,
-      "import_based": 899
+      "import_based": 1725
     },
     "lineNumber": {
-      "withLine": 26807,
-      "total": 26807,
+      "withLine": 27625,
+      "total": 27625,
       "pct": "100.00"
     },
     "unknownTargets": {
@@ -79,18 +79,19 @@
       "eventEmission": 168,
       "errorRevert": 453,
       "namespaceBuiltin": 269,
-      "external": 1677,
+      "external": 1660,
       "localFunction": 1721,
       "inheritedMember": 7,
       "inFileTypeMember": 5,
-      "modifierInvocation": 31,
+      "localBinding": 17,
       "_note": "SOL-15. Every `calls` edge carries a `calleeKind`, so the `unresolvedCallTargets` count below no longer mixes four unrelated things. `conversion` and `namespaceBuiltin` name a primitive type word or a member of `abi`/`type`/`super`/`this` — provably not project symbols, and excluded from it. `localFunction`/`inheritedMember`/`libraryFunction`/`modifierInvocation` resolve against THIS FILE's declarations and the inheritance closure. `external` is the real residue: a member or free function declared in another file, which a per-file analyzer cannot see — measured at 0 for localFunction and inheritedMember over the whole corpus, because OpenZeppelin is modularised so thoroughly that almost every call leaves the file."
     },
     "unresolvedCallTargets": {
       "byCalleeKind": {
-        "external": 1642,
+        "external": 1625,
         "errorRevert": 148,
         "eventEmission": 59,
+        "localBinding": 17,
         "_note": "The point of SOL-15: the unresolved count is no longer one undifferentiated class. `errorRevert` dominates because SOL-15 REPAIRED the `revert_statement` case, which had never fired for any input — so these 453 custom-error call edges did not exist in this lane at all before, and the unresolved count ROSE when the lane got more correct. `external` is the genuine residue: a member or free function declared in another file."
       },
       "excludedCalleeKinds": [
@@ -98,7 +99,7 @@
         "namespaceBuiltin"
       ],
       "count": 1849,
-      "distinct": 543,
+      "distinct": 553,
       "topTargets": [
         "_msgSender x88",
         "min x46",
@@ -134,6 +135,9 @@
     "analyzerDecisions": {
       "publicStateVariables": 58,
       "getterSymbols": 58,
+      "getterContainsDelivered": 58,
+      "getterReferencesDelivered": 58,
+      "getterDeliveryNote": "SOL-3, measured at the DELIVERY seam rather than the emit seam. `getterSymbols` counts published getters; the two delivered counts must equal it, because each getter contributes exactly one `contains` from its owner and one `references` from its variable. They were 0 and 0 before the shared noise filter answered its parenthesis ban with the declaration itself (`declaredNames`): the resolver emitted `contains Vault -> balance()` and `references balance -> balance()` and the store received neither, the silent-absence class. A fixture cannot catch this: `run-fixtures` calls `analyze()` directly, so it never crosses the worker boundary.",
       "commentsRead": 5254,
       "commentsAttached": 2895,
       "documentedSymbols": 2773,
@@ -185,9 +189,9 @@
       "storeRefusedDeclarations": 2
     },
     "perf": {
-      "wallMs": 7888,
-      "perFileMs": 20.278,
-      "factsPerMs": 4155.898
+      "wallMs": 4049,
+      "perFileMs": 10.408,
+      "factsPerMs": 8298.974
     }
   },
   "method": "Candidates are the corpus's production (non-test) tracked .sol files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a DIFFERENT set says so instead of being compared. Every file goes through the production `parseFile`. `damage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line — the analyzer REFUSES a non-positive line at its single emit helper, so this ratio is a completeness check on the emit path, not a quality score. `tiers` is read from the analyzer's own central `evidenceClassFor`, not recomputed here, so it cannot drift from the emit path. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — contains, overrides, extends, implements, exports. `calls`, `uses`, `instantiates` and `references` are excluded because their targets may be external, a Yul function, a language-supplied type, or an EVM member. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once; the owner IS part of the key, because a local declared in two functions is two correct declarations. `reservedTargets` uses the lane's own imported predicate (src/ast/solidity-reserved-tokens.ts) — one copy of the rule, because a sibling lane's two instruments each held their own and silently disagreed.",

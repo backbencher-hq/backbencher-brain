@@ -27,7 +27,7 @@
  */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
+import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, EVM_BUILTIN_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
 import { buildResolutionTables } from "./project-index"
 // SOL-W8 (depth campaign, D7 CLAIMED): the fleet BINDING_SEP. A function-scope binding has no
 // published declaration in this lane, so the family's claim is the SPELLING that can never be a
@@ -325,29 +325,10 @@ const unquote = (text: string): string => {
  */
 const GLOBAL_OBJECTS = new Set(["msg", "block", "tx", "super", "this"])
 
-/**
- * SOL-8 — the EVM opcodes as the vendored grammar spells them in
- * `yul_evm_builtin`. DECLARED, and re-derivable: every alphabetic anonymous
- * token of `grammars/tree-sitter-solidity/src/grammar.json` that is not a
- * primitive type and not a Solidity keyword. The derivation command is named in
- * `docs/analyzers/real-solidity-analyzer.md` §Evidence, so this list can be
- * checked against the grammar rather than trusted.
- */
-const EVM_BUILTIN_NAMES = new Set([
-  "stop", "add", "sub", "mul", "div", "sdiv", "mod", "smod", "exp", "not",
-  "lt", "gt", "slt", "sgt", "eq", "iszero", "and", "or", "xor", "byte",
-  "shl", "shr", "sar", "addmod", "mulmod", "signextend", "keccak256",
-  "pop", "mload", "mstore", "mstore8", "sload", "sstore", "mcopy", "tload",
-  "tstore", "msize", "gas", "address", "balance", "selfbalance", "caller",
-  "callvalue", "calldataload", "calldatasize", "calldatacopy", "extcodesize",
-  "extcodecopy", "extcodehash", "returndatasize", "returndatacopy",
-  "create", "create2", "call", "callcode", "delegatecall", "staticcall",
-  "return", "revert", "selfdestruct", "invalid", "log0", "log1", "log2",
-  "log3", "log4", "datasize", "dataoffset", "dataload", "setimmutable",
-  "loadimmutable", "linkersymbol", "memoryguard", "verbatim", "chainid",
-  "basefee", "blobbasefee", "blobhash", "origin", "gasprice", "blockhash",
-  "coinbase", "timestamp", "number", "difficulty", "prevrandao", "gaslimit",
-])
+// SOL-8 — `EVM_BUILTIN_NAMES` (the opcodes the grammar spells `yul_evm_builtin`)
+// now lives in `./solidity-reserved-tokens` beside the other tables the guards read,
+// because the truth oracle must skip exactly the same names and one shared table is
+// the only way two instruments cannot drift. See that module's doc for the rule.
 
 export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -789,31 +770,6 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     let extendsUnresolvedAsInterface = 0
 
     /**
-     * SOL-24 (2026-10-27) — the `mixes_in` counters, declared here so every
-     * `using_directive` the walk sees ends in a NAMED bucket rather than a silent
-     * `break`. The construct is `using L for T`: L's member set is attached to T
-     * with NO conformance declared, which is the vocabulary's mixin (go struct
-     * embedding, zig `usingnamespace`, dart `with`).
-     *
-     * WHAT EACH COUNTER IS FOR. A site is not a row for three different reasons,
-     * and a single "skipped" number would hide which one:
-     *   · no host             — `using L for *` (the wildcard form): there is no
-     *                           type being composed into, so there is no source.
-     *   · host not declared   — `using L for uint256`: the host is a primitive or a
-     *                           type this file and the project index cannot name, so
-     *                           a row would source an edge from a symbol nothing
-     *                           declares.
-     *   · braced set          — `using {f, g} for T`: the composed set is several
-     *                           FUNCTIONS, not one named member set, so there is no
-     *                           single target to name.
-     */
-    let mixesInUsingSites = 0
-    let mixesInRows = 0
-    let mixesInSkippedNoHost = 0
-    let mixesInSkippedHostNotDeclared = 0
-    let mixesInSkippedBracedSet = 0
-
-    /**
      * The EVIDENCE TIER, emitted CENTRALLY so no call site can forget it and
      * none can drift: the same shape as bash's `evidenceClassFor`.
      *
@@ -844,9 +800,6 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         case ASTEngine.RelationshipType.Implements:
         case ASTEngine.RelationshipType.Exports:
         case ASTEngine.RelationshipType.Instantiates:
-        // SOL-24 — `using L for T` states BOTH names in the tree, so the tier is
-        // structural for the same reason `extends` is: nothing is inferred.
-        case ASTEngine.RelationshipType.MixesIn:
           // SOL-19 — the tier is a function of the TYPE, and the first attempt made it
           // a function of CONFIDENCE as well ("below 1.0 is not structural"). That rule
           // is wrong, and the fixture suite said so within one run: `instantiates` is
@@ -1802,80 +1755,41 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
-        // ------------------------------------------------------ SOL-24: mixes_in
+        // ------------------------------------------------------ SOL-24: WITHDRAWN
         //
-        // `using L for T;` ATTACHES library L's member set to type T, and declares
-        // NO conformance. That is the vocabulary's `mixes_in` verbatim: source = the
-        // type the member set is composed INTO, target = the member set's owner. It
-        // is not `extends`/`implements` (nothing is conformed to), and it is not
-        // `uses` (a use SAYS a name; this ATTACHES a member set). The edge is
-        // ADDITIVE to the `references` row the identifier pass already publishes for
-        // the library name — the same "distinct facts, both true" split the go lane
-        // records for `renders` beside `calls`.
+        // `using L for T` was published as `mixes_in` for part of 2026-10-27 and the
+        // emission is WITHDRAWN. Why it looked right: the directive names a member set
+        // and declares no conformance, so `extends`/`implements` are false and `uses`
+        // (a name READ) seemed too weak.
         //
-        // THE HOST MUST BE A DECLARED TYPE, and that is not a convenience: the
-        // contract's source is a composing TYPE, so `using SafeMath for uint256`
-        // has no source symbol to name — uint256 is a language primitive. Those
-        // sites are counted, not silently dropped, and the count is in the result
-        // metadata (mixesInSkippedHostNotDeclared). The population this splits is
-        // measured: 39 primitive-host sites and 54 wildcard sites of 124 in the
-        // corpus census (validation/m14/measurements/solidity-extended-census.json).
-        case "using_directive": {
-          mixesInUsingSites++
-          const line = node.startPosition.row + 1
-          const hostNode = node.childForFieldName("source")
-          if (!hostNode) {
-            mixesInSkippedNoHost++        // `using L for *`
-            break
-          }
-          const hostUdt = findFirstChild(hostNode, "user_defined_type")
-          const hostName = udtName(hostUdt) || hostNode.text.trim()
-          if (hostName === "" || hostName === "*") {
-            mixesInSkippedNoHost++
-            break
-          }
-          // The braced form has NO `type_alias`: its member set is a list of
-          // `using_alias` function names, and several functions are not one mixin.
-          const libraryNode = findFirstChild(node, "type_alias")
-          if (!libraryNode) {
-            mixesInSkippedBracedSet++
-            break
-          }
-          const libraryName =
-            (findFirstChild(libraryNode, "identifier")?.text ?? libraryNode.text.trim()).trim()
-          if (libraryName === "") {
-            mixesInSkippedBracedSet++
-            break
-          }
-          // Declared in THIS file, or settled by the project index. Absent both, a
-          // row would mint a source symbol the project does not declare.
-          //
-          // THE IN-FILE SET IS `declaredTypeNamesForCalls`, NOT `typeNamesInFile`:
-          // the latter carries the CONFORMANCE kinds only (contract/interface/
-          // library/UDVT) because SOL-5 uses it to decide extends-vs-implements, and
-          // a struct or enum can never be a base. A struct is a perfectly good mixin
-          // HOST (`using MathLib for Amount`), so the mixin test needs the type
-          // namespace, not the inheritance namespace — measured on this lane's own
-          // fixture, where the struct-host row was skipped until it read this set.
-          const hostDeclaredInFile = declaredTypeNamesForCalls.has(hostName)
-          const hostDeclared =
-            hostDeclaredInFile ||
-            (projectIndex !== undefined && projectIndex.typeKinds.has(hostName))
-          if (!hostDeclared) {
-            mixesInSkippedHostNotDeclared++
-            break
-          }
-          addRel(hostName, libraryName, ASTEngine.RelationshipType.MixesIn, 1.0, line, {
-            isUsingDirective: true,
-            // The DIRECTIVE'S OWN SHAPE, so a consumer can tell how the member set
-            // was named; `library` is the only form that becomes a row.
-            usingForm: "library",
-            isMemberSetComposition: true,
-            hostDeclaredInFile,
-          })
-          mixesInRows++
-          break
-        }
+        // WHY IT IS FALSE, AND THE VOCABULARY'S OWN WORDS ARE THE TEST. `mixes_in`
+        // (src/ast/types.ts) is "a class COMPOSES a mixin into its SUPERTYPE CHAIN …
+        // the mixin is a supertype member" — the members enter the composing type, and
+        // the whole fleet uses it that way: PHP trait `use` flattens the trait's
+        // members into the class's method table (real-php-analyzer.ts isTraitUse), Go
+        // embedding promotes the embedded type's methods and fields into the struct
+        // (real-go-analyzer.ts), and the consumers of this value say so out loud
+        // (src/intelligence/graph/graph-engine.ts ranks `mixes_in` as a supertype
+        // composition, between `implements` and `renders`).
+        //
+        // SOLIDITY'S DIRECTIVE DOES NOT DO THAT. L's functions are never members of T:
+        // no member is added to T's declared surface, T's ABI and inheritance chain are
+        // untouched, and `t.f()` compiles as `L.f(t)` only where the directive is in
+        // scope (`global` widening the scope, not the type). The composing ACTOR is the
+        // SCOPE, not the type, so the row's source would be the wrong actor as well as
+        // the wrong relation. Publishing it would have put `Price -> MathLib` in a
+        // bucket two instruments read as "Price composes a supertype".
+        //
+        // THE DEPENDENCY IS NOT LOST: the `type_alias` case above already publishes the
+        // library as a `references` edge, which is the true relation (the file read the
+        // name). The construct population is measured, not dropped: 124 `using_directive`
+        // sites in 76 files, of which 27 have a declared host and one library, 0 of which
+        // add a member to the type — validation/m14/measurements/solidity-extended-census.json
+        // and script/m14/tmp/sol24-mixes-counters.mts. The ruling and its falsifier live
+        // in script/m14/spec/solidity-completeness.json (coverage.excluded.mixes_in).
+        //
+        // ⇒ A NODE TYPE WITH NO CASE HERE IS THE HONEST SHAPE OF THIS REFUSAL: an empty
+        // `case` would look like a counter that was meant to fire.
 
         // ------------------------------------------------------ declarations
         case "contract_declaration":
@@ -2268,7 +2182,17 @@ const meta = modifiersOf(node)
             underlyingType: findFirstChild(node, "primitive_type")?.text ?? "",
           })
           typeNamesInFile.add(name)
-          topLevelExports.push({ name, line })
+          // SOL-12 — the export is the COMPILATION-UNIT surface, so a UDVT declared
+          // inside a library is a MEMBER of that library, not an export of the file.
+          // The guard was missing here alone (the other five export-bearing kinds all
+          // test `atFileScope()`), and the row it published also asserted
+          // `isFileScopeDeclaration: true` about a nested declaration — a metadata
+          // field contradicting the tree it was read from. Measured: `exports
+          // Time.sol -> Delay` for `library Time { type Delay is uint112; }`, the one
+          // MISSING row of the 2026-10-27 draw that was an ANALYZER defect rather
+          // than an oracle gap. `contains Time -> Delay` and the symbol itself are
+          // unchanged — the type is still declared and still reachable.
+          if (atFileScope()) topLevelExports.push({ name, line })
           break
         }
 
@@ -3189,16 +3113,6 @@ const meta = modifiersOf(node)
         // wants: which lines of this file the parser could not handle.
         recoveryLinesList: [...recoveryLines].sort((a, b) => a - b),
         implementsCrossFileUnresolved: extendsUnresolvedAsInterface,
-        // SOL-24 — every `using_directive` the walk saw, split into the one bucket
-        // that becomes rows and the three that cannot, so an absent row is always
-        // an accounted-for site rather than an unread node type.
-        mixesIn: {
-          usingSites: mixesInUsingSites,
-          rows: mixesInRows,
-          skippedNoHost: mixesInSkippedNoHost,
-          skippedHostNotDeclared: mixesInSkippedHostNotDeclared,
-          skippedBracedSet: mixesInSkippedBracedSet,
-        },
       // Not `Partial<FileMetadata>`: the declared return type is
         // `FileMetadata & Partial<FileMetadata>`, and casting to the Partial half made
         // `complexity` optional even though it is set two lines into this literal, which

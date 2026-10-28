@@ -877,11 +877,16 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     description:
       "SOL-17 REVERT, the over-collection direction: publish EVERY modifier declared anywhere in the file as a decorator on EVERY function. This is the failure mode of reading modifiers from the enclosing contract instead of from the function's own header, and it is the reason modifiers-sol17 pins `single` as exactly `[\"onlyOwner\"]` — `single` applies one modifier while three are in scope, so this turn would make the fixture fail rather than quietly widen. Caught by modifiers-sol17's `single` and `paired` pins.",
     transform: (r: any) => {
+      // SOL-17's invocation half was RELABELLED from `calls` to `decorates` after
+      // this mutant was written, so a collector keyed only on calls saw an empty
+      // set and the mutant became a NO-OP. Read both spellings: `decorates` is the
+      // current emission, and the `calls` arm keeps the pre-relabel shape honest.
       const all: string[] = []
       for (const x of r.relationships ?? []) {
-        if (x.type === "calls" && (x.metadata ?? {}).calleeKind === "modifierInvocation") {
-          if (!all.includes(x.target)) all.push(x.target)
-        }
+        const isModifierInvocation =
+          x.type === "decorates" ||
+          (x.type === "calls" && (x.metadata ?? {}).calleeKind === "modifierInvocation")
+        if (isModifierInvocation && !all.includes(x.target)) all.push(x.target)
       }
       if (all.length === 0) return r
       return {

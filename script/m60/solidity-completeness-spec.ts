@@ -162,21 +162,44 @@ DECISIONS["MISSING"] = {
 
 const BUCKETS = ["handled_verified", "internal_silent", "gap", "design_decision"] as const
 
-const out = {
+/**
+ * THE `coverage` BLOCK IS HAND-AUTHORED AND THIS GENERATOR MUST NOT EAT IT.
+ *
+ * MEASURED 2026-10-27, the hard way: this script rebuilt the whole JSON from the
+ * four classification buckets, and `coverage` — the block the coverage gate reads,
+ * carrying every exclusion's evidence, count and falsifier, plus the per-type
+ * measurements — was not in the object it constructed. Running the plainly
+ * documented `bun run script/m60/solidity-completeness-spec.ts` therefore DELETED
+ * 126 lines of curated evidence in a file whose own header calls the numbers
+ * measured. It also reverted `using_directive` from "named, withdrawn emission"
+ * to "internal_silent" and restored the stale 20-fixture description, because
+ * those facts live in the file rather than in this script.
+ *
+ * The classification buckets are derived and owned here; everything else in an
+ * existing spec was written by a human reading a measurement and is PRESERVED.
+ * A missing `coverage` on a fresh checkout is allowed (the file is created from
+ * scratch), but a block that exists and is not carried is refused rather than
+ * silently dropped.
+ */
+const prior: any = fs.existsSync(SPEC) ? JSON.parse(fs.readFileSync(SPEC, "utf8")) : null
+
+const out: any = {
   language: "solidity",
   grammar: "tree-sitter-solidity.wasm",
   _authority:
     "EVERY ROW BELOW WAS DERIVED, NOT REMEMBERED, and the derivation is the interesting part. " +
-    "The audit asked the one question no gate in this repo was asking of this lane: of the grammar's 124 declared named node types, which ones does the analyzer NEVER NAME? The set came from the analyzer's own source — its `case` labels, read by " +
-    "script/m60/solidity-completeness-spec.ts — not from an inventory kept by hand. What it found is 99 named and 25 not, and the 25 turned out to be a WRAPPER/PASSTHROUGH population rather than a gap population: each one's content is read by its children. " +
-    "That is a strong claim and it is checked from both ends rather than asserted: the generator REFUSES to write a section whose buckets do not cover the 124 exactly once, and --verify-silence re-parses live sources to confirm each of the 25 really is silent and each wrapper's child really does the work. " +
+    `The audit asked the one question no gate in this repo was asking of this lane: of the grammar's ${declared.length} declared named node types (124 from node-types.json plus the universal ERROR/MISSING pair), which ones does the analyzer NEVER NAME? The set came from the analyzer's own source — its switch-case labels, read by ` +
+    "script/m60/solidity-completeness-spec.ts — not from an inventory kept by hand. " +
+    `The ${declared.filter((t) => !namedByAnalyzer.has(t)).length} the current analyzer does not name are a WRAPPER/PASSTHROUGH population rather than a gap population: each one's content is read by its children, is a literal/keyword, or is an operator spelling rather than an entity. ` +
+    `${declared.length} is the universe the completion gate asks about, not the 124 a reader sees in node-types.json — that difference is ERROR and MISSING, which every parser produces and neither inventory lists. ` +
+    "That is a strong claim and it is checked from both ends rather than asserted: the generator REFUSES to write a section whose buckets do not cover the universe exactly once, and --verify-silence re-parses live sources to confirm each silent type really is silent and each wrapper's child really does the work. " +
     "Three handoff claims for this lane were refuted by measurement and are recorded where they bite: the '27 never-exercised types' figure is a property of a 60-file DRAW (it is 12 over the full 389-file production corpus); 'the corpus under-represents Yul' is FALSE, so Yul is analysed as a first-class sub-language rather than ruled out; and '0 damage' was measured on the draw and also holds at full size. " +
     "Evidence: validation/m60/results/solidity-type-census.json.",
   _wave:
     "M60 Solidity lane. The grammar is pinned byte-identical to the npm tarball tree-sitter-solidity@1.2.13 with ZERO local patches (script/m14/verify-grammar-pins.ts, LANES.solidity), which is the only provenance kind structurally immune to the failure the PowerShell lane hit — a record claiming 8 patches against bytes containing 7. There is no build step and none is wanted: the package publishes a prebuilt wasm, so the bytes are the maintainer's own artifact, and a local rebuild's sha is not a function of its source across toolchain versions.",
   handled_verified: {
     _description:
-      "The analyzer has a case for the node type AND the case emits something — a symbol, an edge, or a payload field the store reads. 'Verified' means a fixture or the full-corpus census demonstrates it: the fixture set is validation/m14/fixtures/solidity/ (20 fixtures, all passing) and every corpus frequency in the corpusCounts map is measured over all 389 production files of solidity@32b5b8c4, draw digest c1531019, through the production parseFile.",
+      "The analyzer has a case for the node type AND the case emits something — a symbol, an edge, or a payload field the store reads. 'Verified' means a fixture or the full-corpus census demonstrates it: the fixture set is validation/m14/fixtures/solidity/ (34 fixtures, all passing — the runner's own count, script/m14/run-fixtures.ts --lang solidity) and every corpus frequency in the corpusCounts map is measured over all 389 production files of solidity@32b5b8c4, draw digest c1531019, through the production parseFile.",
     types: [] as string[],
   },
   internal_silent: {
@@ -194,6 +217,8 @@ const out = {
       "An owner ruling where silence or an unusual shape is a DECISION rather than a consequence of the grammar. Each entry states the decision and why, and each is load-bearing for the lane's shape: the public-getter publication, the compilation-unit export surface, the extends-vs-implements split, and the four node types whose silence is argued rather than derived.",
     decisions: [] as unknown[],
   },
+  // Carried, never derived (see the note above `prior`).
+  ...(prior?.coverage ? { coverage: prior.coverage } : {}),
 }
 
 const counts = (JSON.parse(fs.readFileSync(CENSUS, "utf8")) as any).corpusCounts as Record<string, number>
@@ -245,7 +270,7 @@ console.log(`  classified but not declared : ${notDeclared.length}${notDeclared.
 
 if (argv.includes("--print-unhandled")) {
   console.log("")
-  console.log("  the 25 the analyzer does NOT name, with the child that does the work:")
+  console.log(`  the ${declared.filter((t) => !namedByAnalyzer.has(t)).length} the analyzer does NOT name, with the child that does the work:`)
   for (const t of declared) {
     if (namedByAnalyzer.has(t)) continue
     const d = DECISIONS[t]
@@ -256,9 +281,12 @@ if (argv.includes("--print-unhandled")) {
 }
 
 if (!argv.includes("--check")) {
+  if (prior?.coverage && !out.coverage) {
+    throw new Error("refusing to write: the existing spec carries a `coverage` block and this run would drop it — the block holds hand-authored evidence, not derived rows")
+  }
   fs.mkdirSync(path.dirname(SPEC), { recursive: true })
   fs.writeFileSync(SPEC, JSON.stringify(out, null, 2) + "\n")
-  console.log(`\nwrote ${path.relative(ROOT, SPEC)}`)
+  console.log(`\nwrote ${path.relative(ROOT, SPEC)}${prior?.coverage ? " (coverage block preserved)" : ""}`)
 }
 
 // ── SILENCE VERIFICATION: the 25 must actually be silent, and the wrappers must
