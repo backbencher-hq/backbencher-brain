@@ -2,8 +2,8 @@
 // Author: Muhammad Ishaq Khan
 //
 // WHAT THIS FILE IS. tree-sitter-julia in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
-// no regex fallback. It covers nine relationship types by name: calls, uses, contains, imports, references,
-// exports, extends, overrides and instantiates.
+// no regex fallback. It covers ten relationship types by name: calls, uses, contains, imports, references,
+// exports, extends, overrides, instantiates and part_of (`include("…")`, R3).
 // WHERE ITS CONTRACT LIVES: docs/analyzers/real-julia-analyzer.md (long form); machine-readable classification
 // in script/m14/spec/julia-completeness.json; fixtures in validation/m14/fixtures/julia/; measured
 // clause/ambiguity records under validation/m14/verification/ (FOUR-CLAUSE-julia.md and the calls-ambiguity
@@ -1141,6 +1141,38 @@ export class RealJuliaAnalyzer {
           if (this.declSites.has(node.id)) break
           const callee = this.calleeName(node)
           if (!callee || IMPLICIT_OR_CONSTANT.has(callee)) break
+          // `include("path")` is Julia's FILE INCLUSION, not a call to a project function.
+          //
+          // The contract (`src/ast/types.ts`, PartOf): a library unit includes a part file; the
+          // part shares the including unit's single scope and has no module identity of its own.
+          // Julia's `include` is exactly that — it evaluates the file INSIDE the including module
+          // — and the lane's own closure arm already measures the population (1,034 include sites,
+          // 1,014 targets resolved over 1,985 files). It was published as `calls -> include`, a
+          // call to a builtin that names no dependency, so the file relation was absent.
+          //
+          // R3, NOT R2: the served grammar already carries the construct (`call_expression` with a
+          // `string_literal` argument), so no published build is missing it and no patch would add
+          // a fact the tree does not already hold. A literal path publishes `part_of`; an
+          // expression path (a variable, `joinpath(...)`) names no part and stays a CALL, marked
+          // `isDynamicInclude`, because the graph must not invent a file the source does not name.
+          if (callee === "include") {
+            const part = this.includePart(node)
+            if (part) {
+              relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.PartOf, part.target, node, 1.0, {
+                partRole: "library",
+                partPath: part.path,
+                partSymbol: part.target,
+                isJuliaInclude: true,
+              }))
+              break
+            }
+            relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Calls, callee, node, 1.0, {
+              juliaSpecific: true,
+              isInclude: true,
+              isDynamicInclude: true,
+            }))
+            break
+          }
           const isCtor = declaredTypes.has(callee) || TYPE_DECLARATIONS.has(callee)
           // The FUNCTION form of ccall: `ccall(:jl_getpid, Cint, ())` or
           // `ccall((:malloc, :libc), Ptr{Cvoid}, …)`. The callee here really is the Julia function
@@ -1517,6 +1549,35 @@ export class RealJuliaAnalyzer {
      * the gate can check independently. It reached 4 edges on its own — recorded because a rule that
      * was tried and measured small is a measurement, not a failure.
      */
+    // A FILE THAT DECLARES `include` SHADOWS THE BUILTIN: the rows above are then calls to that
+    // declaration, not file inclusions. This is a conservative whole-file test (a symbol named
+    // `include` anywhere in the file), and it is the safe direction: a false positive turns a real
+    // inclusion into a call, while the opposite publishes a `part_of` for a file the source never
+    // named. The fixture `julia/part-of-include` carries a planted shadow and a forbid row, so the
+    // guard is shown firing rather than assumed to be unreachable.
+    const includeOwners = new Set(
+      uniqueSymbols
+        .filter((s) => s.name === "include" && s.kind !== ASTEngine.SymbolKind.Module)
+        .map((s) => s.ownerName ?? ""),
+    )
+    if (includeOwners.size > 0) {
+      for (const r of uniqueRelationships) {
+        const md = r.metadata as Record<string, unknown> | undefined
+        if (!md || md.isJuliaInclude !== true) continue
+        // SCOPED, NOT FILE-WIDE: a module that declares `include` shadows the builtin for ITS
+        // OWN code, not for the file around it. The first version used a whole-file test and the
+        // fixture caught it — the nested `Shadowed.include` turned the module's two real
+        // inclusions into calls. The owner chain is the scope test: an empty owner is a file-scope
+        // declaration and shadows everything; otherwise the call's source must be that owner or
+        // one of its descendants.
+        const src = String(r.source ?? "")
+        const shadowed = [...includeOwners].some((owner) => owner === "" || src === owner || src.startsWith(owner + "."))
+        if (!shadowed) continue
+        r.type = ASTEngine.RelationshipType.Calls
+        r.target = "include"
+        r.metadata = { juliaSpecific: true, isInclude: true, isShadowedInclude: true }
+      }
+    }
     const declaredNames = new Set(uniqueSymbols.map((s) => s.name))
     for (const r of uniqueRelationships) {
       if (r.type !== ASTEngine.RelationshipType.Imports) continue
@@ -1817,6 +1878,37 @@ export class RealJuliaAnalyzer {
       line_number: node.startPosition.row + 1,
       metadata: { juliaSpecific: true, ...(metadata ?? {}) },
     } as ASTEngine.UniversalRelationship
+  }
+
+  /**
+   * The PART an `include("path")` names, or null when the argument is not one literal string.
+   *
+   * THE TARGET IS THE BASENAME WITH ITS EXTENSION (`b.jl`), the spelling bash's BD2 module symbol
+   * uses, and the path as written is kept in `metadata.partPath`. A path is not a symbol name; the
+   * arbiter resolves target STRINGS against symbols, so the basename is the only spelling a file's
+   * own module symbol could carry. The written path is evidence, never a silent replacement.
+   *
+   * REJECTED, each because it does not name a part: a string with an interpolation or an escape
+   * sequence (the bytes are not the path), a path ending at a separator (no basename), `.`/`..`, and
+   * every non-`string_literal` argument (`joinpath(...)`, a variable, a `raw"…"`). A rejected
+   * literal is a DYNAMIC include and stays a call with `isDynamicInclude` — a different, true fact.
+   */
+  private includePart(call: Node): { path: string; target: string } | null {
+    const args = this.namedChildren(call).find((c) => c.type === "argument_list")
+    if (!args) return null
+    const first = this.namedChildren(args)[0]
+    if (!first || first.type !== "string_literal") return null
+    if (this.namedChildren(first).some((c) => c.type === "string_interpolation" || c.type === "escape_sequence")) return null
+    const text = first.text
+    let body = ""
+    if (text.startsWith('"""') && text.endsWith('"""') && text.length >= 6) body = text.slice(3, -3)
+    else if (text.startsWith('"') && text.endsWith('"') && text.length >= 2) body = text.slice(1, -1)
+    else return null
+    if (!body || body.endsWith("/") || body.endsWith("\\")) return null
+    const cut = Math.max(body.lastIndexOf("/"), body.lastIndexOf("\\"))
+    const target = body.slice(cut + 1)
+    if (!target || target === "." || target === "..") return null
+    return { path: body, target }
   }
 
   private range(node: Node) {

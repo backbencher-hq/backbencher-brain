@@ -1356,6 +1356,42 @@ It read `contains`, `imports`/`exports`/`references`, `calls`/`uses`/`instantiat
 relationships by tier counted as unclassified. It now sets `structural`, pinned as a value in the
 fixture.
 
+## `part_of` — EMITTED at R3, whole-population count PENDING
+
+`include("path")` evaluates a file **inside the including module**. That is the `part_of` contract
+(`src/ast/types.ts`): the part shares the including unit's single scope and has no module identity
+of its own. Before this landing it was published as `calls -> include` — a call to a builtin that
+names no dependency — so the file relation was absent while the call was present.
+
+**THE LADDER STOPPED AT R3, AND THAT IS A MEASUREMENT, NOT A SHORTCUT.** The served grammar already
+carries the construct (`call_expression` + `string_literal`), so there is no newer published build
+to bump to (R1) and no fact a grammar patch could add (R2): the tree already holds the callee and
+the literal path. R3 is an existing node type, and the analyzer now reads it.
+
+**THE EDGE.** source = the enclosing scope (the module, or the callable for an include inside a
+function); target = the file's **basename with its extension** (`part.jl`) — the spelling bash's own
+module symbol uses, and the only spelling a file symbol could carry; `metadata.partRole: "library"`
+is mandatory on every row (this file carries the directive and names the part), `partPath` keeps the
+path as written, and `isJuliaInclude` identifies the rule. A literal path is a `part_of`; a variable
+or an expression (`joinpath(...)`) is a **dynamic include** and stays a `calls` row marked
+`isDynamicInclude`, because no file is named by the source. A module that declares `include`
+shadows the builtin **for its own scope**, and the row is converted back to a call to that local
+binding (`isShadowedInclude`) — the first version used a whole-file shadow test and the fixture
+caught it converting the module's two real inclusions.
+
+**THE FIXTURE IS THE CONTRACT, IN BOTH DIRECTIONS.**
+`validation/m14/fixtures/julia/part-of-include.jl` pins three fires (plain path, nested path, an
+include inside a callable) and three negatives (a variable, a `joinpath(...)` expression, and the
+planted shadow), with forbid rows for the three files no source text names. The lane's fixture
+suite reads **6 pass / 0 fail** after this landing; the five older fixtures are untouched.
+
+**WHAT IS NOT CLAIMED HERE.** The whole-population edge count is not measured yet, and this section
+will not borrow one. The closure arm's own population — 1,034 include sites, 1,014 targets resolved,
+over 1,985 files — is the prior, not this edge's count. The target is a file basename and not a
+published symbol, so the incoming arm may count these rows unresolved; that is the next measurement
+and it is the arm's verdict to give, not this doc's. The count and the arm belong in the next
+commit.
+
 ## INCOMING: can the graph walk TO the other end?
 
 `src/lsp/impact.ts` walks the graph backwards by scanning outgoing edges and matching **targets**,
