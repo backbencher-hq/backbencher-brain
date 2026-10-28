@@ -37,9 +37,15 @@ const rels = (r: any): any[] => (r?.relationships ?? []) as any[]
 const syms = (r: any): any[] => (r?.symbols ?? []) as any[]
 const role = (x: any): string | undefined => x?.metadata?.role
 
-/** Every `uses` edge, or only those carrying one role. */
+/**
+ * Every type-position `references` edge, or only those carrying one role.
+ * Re-pointed 2026-10-27 from `uses`: the analyzer retired that label (PB-REL-5),
+ * and a mutant keyed on a label the analyzer no longer emits is INERT — it
+ * survives without testing anything. Every relabel must re-point its mutants
+ * in the same commit or the battery reads live edges as dead ones.
+ */
 const usesEdges = (r: any, want?: string): any[] =>
-  rels(r).filter((x) => (x.type ?? x.relationshipType) === "uses" && (!want || role(x) === want))
+  rels(r).filter((x) => (x.type ?? x.relationshipType) === "references" && (!want || role(x) === want))
 
 export const PROTOBUF_MUTANTS: Mutant[] = [
   {
@@ -55,7 +61,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         ...r,
         relationships: rels(r).map((x) => {
           const t = x.type ?? x.relationshipType
-          if (t !== "uses") return x
+          if (t !== "references") return x
           const tgt = String(x.target ?? "")
           if (!tgt.includes(".") || tgt === pkg || tgt.startsWith(`${pkg}.`)) return x
           return { ...x, target: `${pkg}.${tgt}` }
@@ -77,7 +83,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         ...r,
         relationships: rels(r).map((x) => {
           const t = x.type ?? x.relationshipType
-          if (t !== "uses") return x
+          if (t !== "references") return x
           const tgt = String(x.target ?? "")
           if (!tgt.includes(".") || tgt === pkg || tgt.startsWith(`${pkg}.`) || declared.has(tgt)) return x
           return { ...x, target: `${pkg}.${tgt}` }
@@ -105,7 +111,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         ...r,
         relationships: rels(r).map((x) => {
           const t = x.type ?? x.relationshipType
-          if (t !== "uses") return x
+          if (t !== "references") return x
           const tgt = String(x.target ?? "")
           if (!tgt.startsWith(`${pkg}.`)) return x
           const rest = tgt.slice(pkg.length + 1)
@@ -130,8 +136,8 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         .map((s: any) => ({
           source: s.metadata.id,
           target: s.metadata.type,
-          type: "uses",
-          relationshipType: "uses",
+          type: "references",
+          relationshipType: "references",
           line_number: s.range?.startLine ?? 0,
           confidence: 1.0,
           metadata: { role: "fieldType" },
@@ -152,8 +158,8 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         .map((s: any) => ({
           source: s.metadata.id,
           target: s.metadata.mapKey,
-          type: "uses",
-          relationshipType: "uses",
+          type: "references",
+          relationshipType: "references",
           line_number: s.range?.startLine ?? 0,
           confidence: 1.0,
           metadata: { role: "mapKeyType" },
@@ -359,7 +365,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         ...r,
         relationships: rels(r).map((x) => {
           const t = x.type ?? x.relationshipType
-          if (t !== "uses") return x
+          if (t !== "references") return x
           const src = String(x.source ?? "")
           const tgt = String(x.target ?? "")
           // The pre-fix shape exactly: the field answers its own type reference,
@@ -641,7 +647,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       return {
         ...r,
         relationships: rels(r).map((x: any) => {
-          if ((x.type ?? x.relationshipType) !== "uses") return x
+          if ((x.type ?? x.relationshipType) !== "references") return x
           const tgt = String(x?.target ?? "")
           if (declared.has(tgt)) return x
           const tCut = tgt.lastIndexOf(".")
@@ -680,7 +686,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       return {
         ...r,
         relationships: rels(r).map((x: any) => {
-          if ((x.type ?? x.relationshipType) !== "uses") return x
+          if ((x.type ?? x.relationshipType) !== "references") return x
           const tgt = String(x?.target ?? "")
           if (declared.has(tgt)) return x
           const tCut = tgt.lastIndexOf(".")
@@ -797,7 +803,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       return {
         ...r,
         relationships: rels(r).map((x: any) => {
-          if ((x.type ?? x.relationshipType) !== "uses") return x
+          if ((x.type ?? x.relationshipType) !== "references") return x
           const src = String(x.source)
           const owner = ownerOf.get(src)
           // Only a reference written INSIDE an extend block is affected: that is
@@ -1208,7 +1214,7 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       // `protobuf/ancestor-scope-resolution` is not the fixture that catches this and
       // `protobuf/dotted-relative-sibling-package` is.
       const remapped = rels(r).map((e: any) => {
-        if ((e.type ?? e.relationshipType) !== "uses") return e
+        if ((e.type ?? e.relationshipType) !== "references") return e
         if (role(e) !== "fieldType") return e
         const t = e.target as string
         if (!t.includes(".")) return e
