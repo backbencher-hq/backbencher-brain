@@ -95,6 +95,15 @@ export const LANES_B: Record<string, string> = {
   // where the production router admits 697 (18.5%). Found by make-lane, which measured the router's
   // own predicate and found it disagreed with this table. The predicate now also matches a bare
   // basename equal to an admitted ext; see its docstring.
+  //
+  // GNUmakefile IS A MAKE BASENAME TOO, and the router says so itself:
+  // `BASENAME_LANGUAGE` maps both `makefile` and `gnumakefile` to `make`
+  // (src/ast/language-detection.ts). This table carried only `makefile`, so the admission's
+  // `base === e` clause could never match `GNUmakefile` and the instrument under-admitted the
+  // lane by exactly 14 corpus files (enumerated by the make lane with a two-walk diff:
+  // router-admits 807, gate-admitted 793 — 14 in router not gate, 0 the other way). The fix is
+  // the spelling, not the predicate: the basename clause is faithful already, it just had a
+  // table entry missing. MEASURED 2026-10-27 (make-lane pop-diff).
   // XML IS SEVEN SPELLINGS, and the router says so itself: `src/ast/language-detection.ts` maps
   // `.xml .xsd .dtd .svg .xsl .xslt .rng` all to the `xml` language. This table admitted only the
   // first, so every xml number from this instrument covered **2,081 of the lane's 11,552 files
@@ -102,7 +111,7 @@ export const LANES_B: Record<string, string> = {
   // xml-lane, which also noted that this table already records the identical defect and fix for
   // yaml one line above ("one language does not become a different population by being spelled
   // .yml"). The same sentence applies with six more spellings.
-  hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl",
+  hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile,gnumakefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl",
 }
 
 /**
