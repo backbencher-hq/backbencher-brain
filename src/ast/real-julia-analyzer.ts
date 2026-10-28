@@ -48,15 +48,48 @@ import { BINDING_SEP } from "./types"
  * edges this rule must not touch. Per-file conditions reproduce that split without a project pass.
  */
 const JULIA_PACKAGE_CACHE = new Map<string, string>()
+
+/**
+ * The TOP-LEVEL `name` of a Project.toml, read as lines — NO REGEX.
+ *
+ * The owner's rule is absolute and the fleet census counted this one regex literal in the whole
+ * tree, in this function. The value is a simple TOML string: a `name` key before the first table,
+ * quoted with `"` or `'`, optionally followed by a comment. A table header switches the reader out
+ * of the top level, because TOML has no way back to it; a key after `[deps]` is not the package
+ * name even when it is spelled `name`. Malformed input yields "" — the same outcome the regex's
+ * `catch` produced, and the caller already treats "" as "no package module to publish".
+ */
+function projectTomlName(text: string): string {
+  let inTable = false
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine
+    const t = line.trim()
+    if (!t || t.startsWith("#")) continue
+    if (t.startsWith("[")) { inTable = true; continue }
+    if (inTable) continue
+    const eq = t.indexOf("=")
+    if (eq < 0 || t.slice(0, eq).trim() !== "name") continue
+    let value = t.slice(eq + 1).trim()
+    if (!value) return ""
+    const quote = value[0]
+    if (quote === '"' || quote === "'") {
+      const close = value.indexOf(quote, 1)
+      return close > 0 ? value.slice(1, close).trim() : ""
+    }
+    const hash = value.indexOf("#")
+    if (hash >= 0) value = value.slice(0, hash)
+    return value.trim()
+  }
+  return ""
+}
+
 function juliaPackageName(projectRoot: string | undefined): string {
   if (!projectRoot) return ""
   const hit = JULIA_PACKAGE_CACHE.get(projectRoot)
   if (hit !== undefined) return hit
   let name = ""
   try {
-    const text = readFileSync(path.join(projectRoot, "Project.toml"), "utf8")
-    const m = /^[ 	]*name[ 	]*=[ 	]*"([^"]+)"/m.exec(text)
-    if (m && m[1]) name = m[1].trim()
+    name = projectTomlName(readFileSync(path.join(projectRoot, "Project.toml"), "utf8"))
   } catch { /* no Project.toml at the project root: no package module to publish */ }
   JULIA_PACKAGE_CACHE.set(projectRoot, name)
   return name
@@ -1246,6 +1279,24 @@ export class RealJuliaAnalyzer {
           // that form is handled in the call case below, library included.
           if (name === "ccall") this.markForeignCallees(node)
           if (!name) break
+          // A MACRO APPLIED TO A DECLARATION IS `decorates`, NOT A CALL. Julia's macros run at
+          // expansion time and are applied to the syntax they wrap: `@inline function f`, `@kwdef
+          // struct S`, `@doc "…" function g`, `@inline h(x) = x`. The direction is the contract's
+          // (`src/ast/types.ts`, Decorates): source = the DECORATED DECLARATION, target = the
+          // DECORATOR. The macro name is often imported (`Base.@kwdef`), so a target that does not
+          // resolve is a wall for the arm, not a reason to reverse the edge. A macro whose
+          // arguments contain no declaration is a real macro CALL and stays `calls`.
+          const decorated = this.decoratedDeclarations(node)
+          if (decorated.length > 0) {
+            for (const d of decorated) {
+              relationships.push(this.rel(d.name, ASTEngine.RelationshipType.Decorates, name, node, 1.0, {
+                decoratorName: name,
+                decoratedKind: d.kind,
+                isMacroDecorator: true,
+              }))
+            }
+            break
+          }
           relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Calls, name, node, 1.0, { juliaSpecific: true, isMacroCall: true }))
           break
         }
@@ -1878,6 +1929,48 @@ export class RealJuliaAnalyzer {
       line_number: node.startPosition.row + 1,
       metadata: { juliaSpecific: true, ...(metadata ?? {}) },
     } as ASTEngine.UniversalRelationship
+  }
+
+  /**
+   * The declarations a macro is APPLIED TO, read from its own `macro_argument_list`.
+   *
+   * `@doc "…" function g` puts the declaration after a string; `@kwdef mutable struct S` puts it
+   * first; `@inline h(x) = x` is the short form, whose declaration is the ASSIGNMENT's left-hand
+   * call. The scan is over the argument list, not the first child, because a macro that decorates a
+   * declaration can also carry a docstring or a configuration expression before it. A macro with no
+   * declaration argument returns [] and stays a `calls` edge — `@time f()` runs a call, it does not
+   * decorate a declaration.
+   */
+  private decoratedDeclarations(call: Node): { name: string; kind: string }[] {
+    const args = this.namedChildren(call).find((c) => c.type === "macro_argument_list")
+    if (!args) return []
+    const out: { name: string; kind: string }[] = []
+    const seen = new Set<string>()
+    const add = (name: string, kind: string): void => {
+      const n = name.trim()
+      if (!n || seen.has(n)) return
+      seen.add(n)
+      out.push({ name: n, kind })
+    }
+    for (const arg of this.namedChildren(args)) {
+      if (arg.type === "function_definition" || arg.type === "macro_definition") {
+        const sig = this.firstNamedChildOfType(arg, "signature")
+        add(sig ? this.signatureName(sig) : "", arg.type)
+      } else if (arg.type === "struct_definition" || arg.type === "abstract_definition" || arg.type === "primitive_definition") {
+        const head = this.firstNamedChildOfType(arg, "type_head")
+        add(head ? this.typeHeadName(head) : "", arg.type)
+      } else if (arg.type === "module_definition") {
+        const nameNode = arg.childForFieldName("name")
+        add(nameNode ? nameNode.text : "", arg.type)
+      } else if (arg.type === "assignment") {
+        // Short-form declaration `h(x) = x`; the LHS is a call_expression, and the function's name
+        // is its callee. A plain `x = 1` is a binding, not a declaration a decorator applies to.
+        const lhs = this.pos(arg, 0)
+        const u = lhs ? this.unwrapWhere(lhs) : null
+        if (u && u.type === "call_expression") add(this.calleeName(u) ?? "", "short_function")
+      }
+    }
+    return out
   }
 
   /**

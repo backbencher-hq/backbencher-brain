@@ -1356,7 +1356,94 @@ It read `contains`, `imports`/`exports`/`references`, `calls`/`uses`/`instantiat
 relationships by tier counted as unclassified. It now sets `structural`, pinned as a value in the
 fixture.
 
-## `part_of` — EMITTED at R3, whole-population count PENDING
+## `decorates` — EMITTED, 2,679 rows over the whole population
+
+**THE CONSTRUCT IS JULIA'S MACRO APPLIED TO A DECLARATION, AND THE DIRECTION IS THE CONTRACT'S.**
+`@inline function f`, `Base.@kwdef mutable struct S`, `@doc "…" function g` and `@inline h(x) = x`
+are applications of a macro to syntax, not calls to it. `src/ast/types.ts` fixes the direction as
+**decorated declaration → decorator**, and that is what this lane publishes: source = the declared
+symbol (`f`, `S`, `g`, `h`), target = the macro's own name (`inline`, `kwdef`, `doc`), with
+`decoratorName`, `decoratedKind` and `isMacroDecorator` on every row.
+
+**WHY THIS IS NOT A `calls` EDGE.** A macro runs at expansion time and is handed the syntax it
+wraps; no call site to `inline` exists in the source. The old behaviour published `calls -> inline`,
+which asserted a call the program never makes. The boundary is pinned negatively: `@time f(1)`
+contains no declaration, so it stays `calls -> time` (`isMacroCall`) and the call inside its
+argument remains `calls -> f`.
+
+**THE LADDER STOPPED AT R3, BECAUSE THE TREE ALREADY HOLDS THE FACT.** The served grammar carries
+`macrocall_expression` → `macro_identifier` + `macro_argument_list`, and the declaration is one of
+the argument nodes (`function_definition`, `struct_definition`, `assignment`, …). No newer build
+adds a node (R1), and a patch would add no fact the tree lacks (R2); R3 reads the existing nodes.
+The rule scans the **whole argument list**, not child 0, because `@doc "…"` puts a string first —
+the shape that would have been missed by the obvious implementation.
+
+**MEASURED, WHOLE POPULATION, 1,985 of 1,985 parsed, 0 failed**
+(`validation/m14/measurements/julia-gate-whole-2026-10-27.json`): **2,679 `decorates` edges — 389
+resolved, 1,576 ambiguous, 714 unresolved.** The unresolved half is mostly `Base.@kwdef`,
+`@inline` and `@doc`: the decorator is a `Base` binding that no file of the project declares, so a
+per-file analyzer cannot resolve it. Reversing the direction would make those rows resolve and
+would be false; the lane leaves them as walls and says so. `collRes` is 0 on this type.
+
+**FIXTURE.** `validation/m14/fixtures/julia/decorated-declarations.jl` pins four fires (qualified
+macro on a struct, long form, docstring-first form, short form) and the `@time` negative, with forbid
+rows for `decorates -> time` and `decorates -> Base`. `validation/m14/fixtures/julia/extended-values.jl`
+puts the nearest `renders` and `mixes_in` constructs beside an implemented `decorates` row and forbids
+both ruled values on those sites. The suite reads **8 pass / 0 fail**.
+
+## `renders` — RULED, ladder walked, 0 sites
+
+**THE CONSTRUCT DOES NOT EXIST IN JULIA, AND THE NEAREST ONE IS COUNTED.** `renders` requires a
+component element that constructs another component (`src/ast/types.ts`: target = the rendered
+COMPONENT). Julia has no component/element syntax; its nearest construct is an ordinary function
+named `render`.
+
+**THE LADDER, RUNG BY RUNG.** **R1** is unavailable: the served build is already the lane's vendored
+patched source (`grammars/tree-sitter-julia/PIN.md` P2–P5), and no published tree-sitter-julia build
+adds a construct the language does not have. **R2** is mechanically available — this repo rebuilds a
+patched grammar (P2–P5 is the proof) — but a patch would have to invent syntax Julia's own parser
+rejects, so the reason is the **language**, not the grammar's expressiveness. **R3** has no existing
+node to read: a call is a call, and a string is a string.
+
+**MEASURED.** The wired build declares **245 ids = 224 unique names**, and **0** name a render,
+component, element, JSX, template, vnode, fragment or slot construct
+(`validation/m14/measurements/julia-extended-census.json`, `grammar.candidateScan`). The whole
+1,985-file population produces **149 node types and 0 rendering node types**. The nearest construct
+is `render(...)`: **3 `calls -> render` edges in 2 files**, every one an ordinary call with a document
+argument, e.g. `Documenter.jl/src/writers.jl:22`
+`Selectors.runner(::Type{LaTeXFormat}, fmt, doc) = LaTeXWriter.render(doc, fmt)`. (A lexical scan
+finds 7 `render(` spellings; four are function DEFINITIONS or a deduped row, which is why the edge
+table — not the grep — is the count.) A `renders` row would name a component the source never declares.
+
+**FALSIFIER.** A Julia AST site in which a call, macro or literal constructs a component element
+whose tag denotes a declared component — or a served-build node type expressing rendering — retires
+the ruling and puts `renders` back in the denominator as a gap.
+
+## `mixes_in` — RULED, ladder walked, 0 sites
+
+**JULIA HAS NO MEMBER-SET COMPOSITION.** `mixes_in` requires a class that composes a mixin into its
+supertype chain, with the mixin's members entering the composing type (`src/ast/types.ts`). A Julia
+struct has **at most one supertype**, written `<:`; there is no `with` clause, no trait inclusion,
+and no copying of another type's fields or methods into it. The nearest construct is the declared
+supertype, which is already published as `extends`.
+
+**THE LADDER.** **R1** unavailable (no published build exposes a mixin clause; the served build is
+the patched clone). **R2** mechanically available but it would fabricate a language construct — the
+ladder is not a licence to invent syntax. **R3** unavailable: no existing node composes a member set
+into a type.
+
+**MEASURED.** **0 of 224** declared names express a mixin; **0 of 149** produced node types are a
+mixin clause. The nearest construct is counted: **1,706 `<:` clauses in a declared type's `type_head`
+across 390 files**, every one published as `extends`. The corpus contains exactly **one lexical
+mention of `mixin`** — a comment in `julia/Compiler/test/inference.jl:5423` describing an
+`abstract type … <: …` extension, not a member-set composition. A source-level `with`-like form
+does not parse as Julia.
+
+**FALSIFIER.** A Julia source form in which one type composes another type's member set into its own
+supertype chain (Dart `class C with M`, PHP trait `use`, Go embedding), or a served-build node type
+carrying a mixin application, retires the ruling and puts `mixes_in` back in the denominator.
+
+## `part_of` — EMITTED at R3, 826 rows over the whole population
 
 `include("path")` evaluates a file **inside the including module**. That is the `part_of` contract
 (`src/ast/types.ts`): the part shares the including unit's single scope and has no module identity
@@ -1383,14 +1470,48 @@ caught it converting the module's two real inclusions.
 `validation/m14/fixtures/julia/part-of-include.jl` pins three fires (plain path, nested path, an
 include inside a callable) and three negatives (a variable, a `joinpath(...)` expression, and the
 planted shadow), with forbid rows for the three files no source text names. The lane's fixture
-suite reads **6 pass / 0 fail** after this landing; the five older fixtures are untouched.
+suite reads **8 pass / 0 fail** after this landing; the older fixtures are untouched.
 
-**WHAT IS NOT CLAIMED HERE.** The whole-population edge count is not measured yet, and this section
-will not borrow one. The closure arm's own population — 1,034 include sites, 1,014 targets resolved,
-over 1,985 files — is the prior, not this edge's count. The target is a file basename and not a
-published symbol, so the incoming arm may count these rows unresolved; that is the next measurement
-and it is the arm's verdict to give, not this doc's. The count and the arm belong in the next
-commit.
+**MEASURED, WHOLE POPULATION, 1,985 of 1,985 parsed, 0 failed**
+(`validation/m14/measurements/julia-gate-whole-2026-10-27.json`): **826 `part_of` edges, 0 resolved,
+826 unresolved.** That zero is a property of the TARGET, not a defect to paper over: the target is a
+file basename (`part.jl`) and this lane publishes no file symbol, so no declaration key can answer
+it. The arm counts every row unresolved BY CONSTRUCTION rather than calling it resolved by spelling.
+The written path survives in `metadata.partPath`, and the fixture pins the basename rule. 826 is the
+edge count; it is not the closure arm's older 1,034 include SITES over a different population — the
+difference is dynamic and shadowed includes, which stay `calls`. The declaration
+(`validation/m14/instruments/julia/incoming-declaration.json`) carries this as a stated caveat, so a
+reader cannot mistake it for a resolution success.
+
+## The completion verdict, and the residual it does not claim
+
+The lane's coverage arithmetic is now **11 implemented / 11 applicable**: the ten canonical types
+that Julia expresses, plus `decorates` and `part_of`; the denominator is 14 minus three rulings
+(`implements`, `renders`, `mixes_in`). That is what the coverage gate certifies, and it is a
+statement about TYPES, not about edges.
+
+The whole-population arm (`validation/m14/measurements/julia-gate-whole-2026-10-27.json`, 1,985 of
+1,985 admitted files, 0 failed, 14 repositories) reads:
+
+| edges | resolved | ambiguous | external | otherUnresolved | unclassed |
+|---:|---:|---:|---:|---:|---:|
+| 238,671 | 109,123 (45.7%) | 65,774 | 1,243 | 62,531 | **0** |
+
+**THE ARM'S OWN VERDICT IS FAIL, AND THIS LANE DOES NOT RELABEL IT.** The five buckets partition
+the edges exactly and `unclassed` is 0, which is what the completion gate's `resolved` condition
+checks; the 45.7% is a FLOOR on correct resolution, not a claim that every resolved pick is right.
+`collRes` is 417 (a tie-break pick inside the resolved column) and the fleet's indexer measures a
+large share of such picks as wrong. The dominant wall is structural and priced in JUL-D7/JUL-D18:
+the analyzer is PER FILE with `index=no`, and Julia's method table holds one entry per
+`(name, signature)` across files, so a call in a function body cannot see the declaration it will
+dispatch to. The method-table pass that would move it belongs to `parallel-indexer.resolveRelationships`,
+outside this lane's write scope, and JUL-D19 refuted the first, too-wide pricing of it (28,530 -> 1,038
+sound edges).
+
+The per-file arm is the honest scope for a per-file analyzer. The declaration
+(`validation/m14/instruments/julia/incoming-declaration.json`) carries the caveats, including
+`part_of`'s 826 unresolved-by-construction rows and `decorates`' `Base`-binding wall, so a reader
+cannot mistake either for a resolution success.
 
 ## INCOMING: can the graph walk TO the other end?
 

@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "lang": "julia",
+    "instrument": "npx tsx script/m14/incoming-gate.ts --json julia jl 0",
+    "generator": "script/m14/arm-declaration.ts — transcribes the arm's own per-type buckets and REFUSES a sample, a non-whole population, a broken external split or a closure that does not sum",
+    "sample": 1985,
+    "corpusTotal": 1985,
+    "corpusRepos": 14,
+    "parsed": 1985,
+    "population": "parsed=1985/1985 admitted=1985 exts=jl index=no",
+    "metric": "edges counted once per (source, type, target, line) by the analyzer; buckets counted on the SAME edge in the SAME loop",
+    "analyzer": "src/ast/real-julia-analyzer.ts",
+    "analyzerDigest": "sha256:4db953f28e1b7d2ac1b2e9f693d6df159b6ee4ce6c02a96791bc18bf109d8ec1",
+    "arm": "validation/m14/measurements/julia-gate-whole-2026-10-27.json",
+    "indexArm": false,
+    "armVerdict": "FAIL",
+    "armReason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 127423 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  65774 ambiguous + 61649 unresolved of 238671 edges, resolved against the file's OWN PROJECT (production's scope)",
+    "instrumentSelfTest": {
+      "ok": true,
+      "failures": []
+    },
+    "absentFiles": 0,
+    "overCapFiles": 0,
+    "sizeCapBytes": 1048576
+  },
+  "causeRulings": {},
+  "causeRulingsNote": "EMPTY BECAUSE NO EDGE CARRIES A DECLARED CAUSE: the arm's cause columns read causeDeclared 0 and the residual is dispositioned by the WALL classes it does not name. An empty map here means 'the analyzer declares no cause that would need a ruling', which the completion gate reads as clause 3 SATISFIED — not as a missing section.",
+  "types": {
+    "calls": {
+      "edges": 121518,
+      "resolved": 47758,
+      "external": 0,
+      "ambiguous": 40378,
+      "otherUnresolved": 33382,
+      "unclassed": 0,
+      "_ambKind": 18504,
+      "_collRes": 0
+    },
+    "uses": {
+      "edges": 37004,
+      "resolved": 18258,
+      "external": 0,
+      "ambiguous": 10708,
+      "otherUnresolved": 8038,
+      "unclassed": 0,
+      "_ambKind": 6236,
+      "_collRes": 0
+    },
+    "contains": {
+      "edges": 14303,
+      "resolved": 14303,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 417
+    },
+    "imports": {
+      "edges": 3385,
+      "resolved": 969,
+      "external": 1243,
+      "ambiguous": 333,
+      "otherUnresolved": 840,
+      "unclassed": 0,
+      "_ambKind": 210,
+      "_collRes": 0
+    },
+    "references": {
+      "edges": 50148,
+      "resolved": 20621,
+      "external": 0,
+      "ambiguous": 11791,
+      "otherUnresolved": 17736,
+      "unclassed": 0,
+      "_ambKind": 7959,
+      "_collRes": 0
+    },
+    "exports": {
+      "edges": 2797,
+      "resolved": 1956,
+      "external": 0,
+      "ambiguous": 492,
+      "otherUnresolved": 349,
+      "unclassed": 0,
+      "_ambKind": 321,
+      "_collRes": 0
+    },
+    "extends": {
+      "edges": 2580,
+      "resolved": 1438,
+      "external": 0,
+      "ambiguous": 496,
+      "otherUnresolved": 646,
+      "unclassed": 0,
+      "_ambKind": 308,
+      "_collRes": 0
+    },
+    "implements": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "overrides": {
+      "edges": 3,
+      "resolved": 3,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "instantiates": {
+      "edges": 3428,
+      "resolved": 3428,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "decorates": {
+      "edges": 2679,
+      "resolved": 389,
+      "external": 0,
+      "ambiguous": 1576,
+      "otherUnresolved": 714,
+      "unclassed": 0,
+      "_ambKind": 871,
+      "_collRes": 0
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "part_of": {
+      "edges": 826,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 826,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    }
+  },
+  "resolution_caveats": {
+    "buckets": "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ARM'S ELEVEN TERMS, NOT THE ELEVEN TERMS: external = externalVerified + externalUnverified, and otherUnresolved carries unresolved + externalRefuted + the binding and cause columns. Every row's buckets sum to its edge count and `unclassed` is 0 by construction — the generator REFUSES to write a row that does not close.",
+    "indexNo": "INDEX=NO, AND THAT IS THE HONEST ARM: there is no INDEX_SPECS entry for julia in script/m14/incoming-gate.ts, so no production project index is built. `resolved` therefore means THE ANALYZER'S OWN FILE SCOPE — a key this lane found in the file — and NOT what a symbol-indexed lane means by the word. The per-file analyzer cannot know which file declares a method called in a function body; JUL-D7/JUL-D19 price that wall and the method-table pass that belongs to the resolver.",
+    "collResSubset": "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: 417 of 109,123 resolved edges are a tie-break pick among colliding declarations. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+    "ambKindSubset": "`amb(kind)` IS A SUBSET OF `amb(decl)`: 34,409 of 65,774. It counts distinct KINDS among the colliding declarations and is never added to any bucket.",
+    "externalIsAClaim": "EXTERNAL IS A CLAIM, NOT A RESOLUTION: 1,243 `imports` edges carry a bare-name external claim, all 1,243 are VERIFIED by the project's own facts, and 0 are unverified or refuted. The dotted claim was withdrawn on 2026-10-10 (JUL-D8): it was refuted 69% of the time, and the 108 true dotted claims it removed are reported as gaps rather than believed.",
+    "binding": "882 edges carry a BINDING claim (`BINDING_SEP`), all verified and 0 refuted. The claim is checked BEFORE the declaration count, so a binding that the project declares would land in the refuted column rather than quietly passing.",
+    "partOf": "`part_of` IS A DIRECTIVE RELATION AND ITS TARGET IS A FILE'S OWN NAME: 826 rows, ALL 826 unresolved, because the target is a basename (`part.jl`) and this lane publishes no file symbol; the written path is kept in `metadata.partPath`. The arm counts them unresolved by construction rather than calling them resolved by spelling. 826 is the whole-population count, not the 1,034 include SITES the closure arm measured over a different population — the difference is dynamic/shadowed includes, which stay `calls`.",
+    "decorates": "`decorates` IS A MACRO APPLIED TO A DECLARATION: 2,679 rows (389 resolved, 1,576 ambiguous, 714 unresolved), direction DECORATED DECLARATION -> DECORATOR. The unresolved half is mostly `Base.@kwdef`/`@inline`/`@doc`, whose decorator is a `Base` binding no file of the project declares; the direction is not reversed to make them resolve. `@time f()` is a macro CALL and stays `calls` (the fixture pins both sides).",
+    "ruledTypes": "`renders` AND `mixes_in` PUBLISH ZERO ROWS AND EACH IS A RULING WITH A WALKED LADDER, A COUNT AND A FALSIFIER (script/m14/spec/julia-completeness.json, `coverage.excluded`): the served build has 0 of 224 names expressing either construct, the 1,985-file population produces 0 of 149 node types for either, and the nearest constructs are ordinary calls (`render(...)`, 7 sites) and single-supertype declarations (`struct ... <:`, 1,706 sites), which are already published as `calls` and `extends`. They appear here as DECLARED ZEROS, so 'measured nothing' and 'never measured' are different rows."
+  }
+}

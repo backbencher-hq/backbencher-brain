@@ -194,6 +194,24 @@ const LANE_CAVEATS: Record<string, Record<string, string>> = {
     ruledTypes:
       "`renders` AND `mixes_in` PUBLISH ZERO ROWS AND THAT IS A RULING, NOT A BLIND SPOT: each has a whole-population construct census with a passing control (validation/m14/measurements/powershell-extended-census.json), a ladder walked (R1/R2/R3 unavailable), and a fixture that fires in both directions (validation/m14/fixtures/powershell/ruled-extended-types.ps1). They appear here as DECLARED ZEROS rather than absent keys, so 'measured nothing' and 'never measured' are different rows.",
   },
+  julia: {
+    indexNo:
+      "INDEX=NO, AND THAT IS THE HONEST ARM: there is no INDEX_SPECS entry for julia in script/m14/incoming-gate.ts, so no production project index is built. `resolved` therefore means THE ANALYZER'S OWN FILE SCOPE — a key this lane found in the file — and NOT what a symbol-indexed lane means by the word. The per-file analyzer cannot know which file declares a method called in a function body; JUL-D7/JUL-D19 price that wall and the method-table pass that belongs to the resolver.",
+    collResSubset:
+      "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: 417 of 109,123 resolved edges are a tie-break pick among colliding declarations. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+    ambKindSubset:
+      "`amb(kind)` IS A SUBSET OF `amb(decl)`: 34,409 of 65,774. It counts distinct KINDS among the colliding declarations and is never added to any bucket.",
+    externalIsAClaim:
+      "EXTERNAL IS A CLAIM, NOT A RESOLUTION: 1,243 `imports` edges carry a bare-name external claim, all 1,243 are VERIFIED by the project's own facts, and 0 are unverified or refuted. The dotted claim was withdrawn on 2026-10-10 (JUL-D8): it was refuted 69% of the time, and the 108 true dotted claims it removed are reported as gaps rather than believed.",
+    binding:
+      "882 edges carry a BINDING claim (`BINDING_SEP`), all verified and 0 refuted. The claim is checked BEFORE the declaration count, so a binding that the project declares would land in the refuted column rather than quietly passing.",
+    partOf:
+      "`part_of` IS A DIRECTIVE RELATION AND ITS TARGET IS A FILE'S OWN NAME: 826 rows, ALL 826 unresolved, because the target is a basename (`part.jl`) and this lane publishes no file symbol; the written path is kept in `metadata.partPath`. The arm counts them unresolved by construction rather than calling them resolved by spelling. 826 is the whole-population count, not the 1,034 include SITES the closure arm measured over a different population — the difference is dynamic/shadowed includes, which stay `calls`.",
+    decorates:
+      "`decorates` IS A MACRO APPLIED TO A DECLARATION: 2,679 rows (389 resolved, 1,576 ambiguous, 714 unresolved), direction DECORATED DECLARATION -> DECORATOR. The unresolved half is mostly `Base.@kwdef`/`@inline`/`@doc`, whose decorator is a `Base` binding no file of the project declares; the direction is not reversed to make them resolve. `@time f()` is a macro CALL and stays `calls` (the fixture pins both sides).",
+    ruledTypes:
+      "`renders` AND `mixes_in` PUBLISH ZERO ROWS AND EACH IS A RULING WITH A WALKED LADDER, A COUNT AND A FALSIFIER (script/m14/spec/julia-completeness.json, `coverage.excluded`): the served build has 0 of 224 names expressing either construct, the 1,985-file population produces 0 of 149 node types for either, and the nearest constructs are ordinary calls (`render(...)`, 3 call edges in 2 files) and single-supertype declarations (`struct ... <:`, 1,706 sites), which are already published as `calls` and `extends`. They appear here as DECLARED ZEROS, so 'measured nothing' and 'never measured' are different rows.",
+  },
   solidity: {
     indexYes:
       "THE RESOLUTION SCOPE IS PER PROJECT (index=yes): `projectIndexesFor` builds SOLIDITY_DECLARATION_SPEC and the analyzer CONSUMES it (SOL-21). `resolved` therefore means production's own project-scoped binding, and `kindUnresolved` rows are labelled per edge rather than guessed.",
@@ -204,9 +222,9 @@ const LANE_CAVEATS: Record<string, Record<string, string>> = {
     externalIsAClaim:
       "EXTERNAL IS A CLAIM, NOT A RESOLUTION: the verified half is confirmed by the project's declarations, the unverified half no check can reach, and the refuted half is charged to otherUnresolved and to clause 4.",
     mixesIn:
-      "`mixes_in` IS IMPLEMENTED AND ITS NON-ROWS ARE COUNTED: `using L for T` becomes a row only when T is a DECLARED type (in file or in the project index) and the composed member set is ONE library. The three forms that cannot be a row are counted in the analyzer's own metadata (mixesIn.skippedNoHost / skippedHostNotDeclared / skippedBracedSet) and pinned by validation/m14/fixtures/solidity/mixes-in-using-directive.sol.",
+      "`mixes_in` PUBLISHES ZERO ROWS AND THAT IS A RULING, NOT A BLIND SPOT \u2014 AND THE STRONGEST FORM OF THAT RULING ON THIS FLEET: `using L for T` WAS published as `mixes_in` for part of 2026-10-27 (27 rows over this whole population, all resolved) and the emission was WITHDRAWN the same day, because the vocabulary's mixin ENTERS the composing type's supertype chain (PHP trait `use`, Go embedding) and this directive adds no member to T \u2014 the composing actor is the SCOPE, not the type, so the vetoed row also named the wrong source. The construct is counted rather than dropped: 124 `using_directive` sites in 76 files = 27 with a declared host and one library + 54 `for *` + 39 primitive host + 4 braced function sets, and 0 of the 27 adds a member to the host. The 27 `references` rows to the same libraries remain, so no dependency was lost, and validation/m14/fixtures/solidity/using-directive-is-not-a-mix-in.sol forbids the value on ALL FIVE forms including the two that were published.",
     ruledTypes:
-      "`renders` AND `part_of` PUBLISH ZERO ROWS AND THAT IS A RULING: `renders` has 0 component symbol kinds in the vocabulary and no component model (nearest: new_expression, already `instantiates`); `part_of` is grammar-absence because a Solidity import creates its own module scope and imports SYMBOLS, where a part shares one scope and imports nothing. Both carry counts and falsifiers in script/m14/spec/solidity-completeness.json.",
+      "`renders`, `part_of` AND `mixes_in` PUBLISH ZERO ROWS AND EACH IS A RULING: `renders` has 0 component symbol kinds in the vocabulary and no component model (nearest: new_expression, already `instantiates`); `part_of` is grammar-absence because a Solidity import creates its own module scope and imports SYMBOLS, where a part shares one scope and imports nothing; `mixes_in` is ontological, with an emission tried and withdrawn. All three carry counts and falsifiers in script/m14/spec/solidity-completeness.json.",
   },
 }
 const caveats: Record<string, string> = {

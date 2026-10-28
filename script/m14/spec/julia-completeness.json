@@ -132,8 +132,8 @@
     "gaps": []
   },
   "coverage": {
-    "_rule": "THE CONTRACT for this lane. Implemented = the types the PRODUCTION path (parseFile) publishes edges for, each with its whole-corpus count in `_implemented_measured`; excluded = a type the language cannot express, classed `grammar-absence` (which leaves the denominator) and carrying a count and an existing artifact in `from`. There is no `zero-sites` exclusion and no `unclassified` one: both ruled types were re-decided by measurement on 2026-10-09 and one of them, `overrides`, turned out not to be an exclusion at all.",
-    "_from": "validation/m14/fixtures/julia/measurements/census-whole-corpus-2026-10-09.txt — 1,985 admitted .jl files, 36,704 symbols, 235,902 relationships across the ten ontology types, 0 files the grammar could not read, 0 degraded, 0 parseFile throws. Re-run: npx tsx validation/m14/fixtures/julia/census.ts",
+    "_rule": "THE CONTRACT for this lane. Implemented = the types the PRODUCTION path (parseFile) publishes edges for, each with its whole-corpus count in `_implemented_measured`; excluded = a type the language cannot express, classed with a NAMED reason that leaves the denominator and carrying a count and an existing artifact in `from`. The two extended types that ARE expressible — `decorates` (a macro applied to a declaration) and `part_of` (`include`) — are implemented, not ruled. `renders` and `mixes_in` are `grammar-remedy-ruled`: the ladder was walked, R1/R2 cannot create a construct the language does not have, and R3 has no existing node to read.",
+    "_from": "validation/m14/measurements/julia-gate-whole-2026-10-27.json — 1,985 admitted .jl files, 1,985 parsed, 0 failed, 0 degraded, across 14 repositories, measured by `npx tsx script/m14/incoming-gate.ts --json julia jl 0`. The per-type edges are the arm's own rows; the file counts for `decorates` and `part_of` are the lane's extended census over the same population (validation/m14/measurements/julia-extended-census.json).",
     "implemented": [
       "calls",
       "uses",
@@ -143,7 +143,9 @@
       "exports",
       "extends",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "decorates",
+      "part_of"
     ],
     "_implemented_measured": {
       "_unit": "edges published through parseFile over the whole 1,985-file population of 2026-10-09; `files` is the TRUE count of distinct files the type appeared in",
@@ -182,6 +184,14 @@
       "instantiates": {
         "edges": 3428,
         "files": 535
+      },
+      "decorates": {
+        "edges": 2679,
+        "files": 387
+      },
+      "part_of": {
+        "edges": 826,
+        "files": 211
       }
     },
     "excluded": [
@@ -190,6 +200,26 @@
         "evidence": "grammar-absence",
         "from": "JUL-D2, MEASURED: instrument A's LANGUAGE half — 0 of 224 declared vocabulary names in wasm/tree-sitter-julia.wasm express a protocol/interface conformance relation while the same scan over wasm/tree-sitter-typescript.wasm returns 6 (implements, implements_clause, implements_clause_repeat1, interface, interface_body, interface_declaration); corpus half — 0 of 12 candidate node types occur across 149 observed node types over 1,985 files. Raw: validation/m14/fixtures/julia/measurements/census-whole-corpus-2026-10-09.txt",
         "quote": "The nearest corpus construct is `<:` naming an `abstract type` declared in the same file: 449 occurrences across 87 files, every one published as `extends`, and `implements` reads 0 edges in the production table. The boundary this class does NOT cover is stated rather than implied: a package macro could CONVENTIONALLY encode conformance (Interfaces.jl and friends) and this lane would see it as a `calls` edge on a macrocall — the class is measured on the grammar's declared vocabulary, and no corpus site publishes an `implements` row."
+      },
+      {
+        "label": "renders",
+        "evidence": "grammar-remedy-ruled",
+        "count": 0,
+        "from": "THE LADDER WAS WALKED AND EVERY RUNG IS UNAVAILABLE, WITH THE NEAREST CONSTRUCT COUNTED RATHER THAN DISMISSED. R1: the SERVED build is already the lane's vendored patched source (`grammars/tree-sitter-julia`, PIN.md P2-P5), and no published tree-sitter-julia build adds a rendering construct the language does not have. R2: clone + patch + generate + build works in this repo (the P2-P5 rebuild is proof), but a patched node would have to be INVENTED for syntax Julia does not have — the reason is the LANGUAGE, not the grammar's expressiveness. R3: no existing node carries a rendered component. MEASURED: the wired build declares 245 ids = 224 unique names, and 0 of them name a render, component, element, JSX, template, vnode, fragment or slot construct (validation/m14/measurements/julia-extended-census.json, `grammar.candidateScan`; grammar artifact validation/m14/measurements/julia-grammar-nodes.json). Over the whole 1,985-file admitted population the census observed 149 node types and 0 rendering node types, while the nearest construct is an ordinary FUNCTION named `render`: 3 `calls -> render` edges in 2 files, every one a call with a document/argument (`Documenter.jl/src/writers.jl:22 Selectors.runner(::Type{LaTeXFormat}, fmt, doc) = LaTeXWriter.render(doc, fmt)`). The vocabulary's contract (`src/ast/types.ts`, Renders) requires source = the rendering symbol and target = the rendered COMPONENT; Julia has no component syntax and the vocabulary has no component SymbolKind, so a `renders` row would name a component that the source never declares.",
+        "falsifier": {
+          "run": "validation/m14/fixtures/julia/extended-census.ts --json validation/m14/measurements/julia-extended-census.json, plus `bun run script/m14/grammar-remedy.ts surface --wasm wasm/tree-sitter-julia.wasm --names`; a grep of the admitted population for a component element syntax is the lexical cross-check.",
+          "wouldFail": "a Julia AST site in which a call, macro or literal constructs a COMPONENT ELEMENT whose tag denotes a declared component (the shape all four working `renders` implementations agree on), or a node type in the served build whose name/inventory expresses rendering. Either would retire the ruling and put `renders` back in the denominator as a gap."
+        }
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-remedy-ruled",
+        "count": 0,
+        "from": "THE LADDER WAS WALKED AND EVERY RUNG IS UNAVAILABLE. R1: no published build of tree-sitter-julia exposes a mixin clause, and the served build is the lane's own patched source. R2: a grammar patch can add a node only for syntax the language has; Julia has no `with` clause and no member-set composition, so the patch would be inventing the language (R2's mechanism is proven here by P2-P5, but it is not a licence to fabricate a construct). R3: no existing node composes a member set into a type. MEASURED: 0 of the wired build's 224 unique names express a mixin, and 0 of the 149 node types produced over the whole 1,985-file population are a mixin clause (validation/m14/measurements/julia-extended-census.json; validation/m14/fixtures/julia/measurements/census-whole-corpus-2026-10-09.txt). THE NEAREST CONSTRUCT IS COUNTED: 1,706 `<:` clauses in a declared type's `type_head` across 390 files, every one published as `extends`, and the corpus contains exactly ONE lexical mention of `mixin` — a comment in `julia/Compiler/test/inference.jl:5423` describing an `abstract type ... <: ...` extension, not a member-set composition. A Julia struct has at most ONE supertype and its fields/methods are not copied in from another type, so the composing actor and the supertype-chain relation the contract requires do not exist.",
+        "falsifier": {
+          "run": "validation/m14/fixtures/julia/extended-census.ts --json validation/m14/measurements/julia-extended-census.json (the `ruledConstructs.mixes_in` block) plus the corpus lexical scan it performs; the grammar half is `bun run script/m14/grammar-remedy.ts surface --wasm wasm/tree-sitter-julia.wasm --names`.",
+          "wouldFail": "a Julia source form in which one type COMPOSES another type's member set into its own supertype chain (Dart `class C with M`, PHP trait `use`, Go embedding), or a node type in the served build carrying a mixin application. A single such site would retire the ruling and put `mixes_in` back in the denominator as a gap."
+        }
       }
     ],
     "corpusUnexercised": []
@@ -326,6 +356,14 @@
         "status": "CORRECTED: the lever is 1,038 edges, not 28,530. DO NOT BUILD the 28,505 as priced — it would resolve 27,323 edges BY BARE NAME, merging declarations that share only a spelling (the same semantics trap flagged for the 1,078 same-file collapses)",
         "question": "The programme lifted the freeze and asked for the 28,505 method-table lever to be BUILT: `calls` 19,336 · `references` 7,574 · `uses` 1,595 moving amb -> resolved. Is that population one binding?",
         "resolution": "NO — AND THE FALSIFIER WAS MINE, RUN BEFORE BUILDING. `bindingCollapsible` tested `pkBindings.get(key).size === 1` where the binding key is `qualifiedName || name`. **FOR A CANDIDATE WITH NO `qualifiedName`, THE KEY COLLAPSES TO THE BARE NAME**, so a set of file-scope declarations that merely SHARE A SPELLING reads as 'one binding' BY CONSTRUCTION. The predicate is blind exactly where the question is hardest, so the soundness split was added and run over the WHOLE population (labelled unguarded `nice -n 10`, single revision 58254e0ec, raw `validation/m14/fixtures/julia/measurements/census-collapse-regions-58254e0ec.txt`): of the 28,530 collapsible edges — **`calls` 19,351: QUALIFIED 249 (1.3%) · BARE-ONLY 18,970 (98.0%) · MIXED 132 · `uses` 1,596: QUALIFIED 132 (8.3%) · BARE-ONLY 1,464 · `references` 7,583: QUALIFIED 657 (8.7%) · BARE-ONLY 6,889 · TOTAL QUALIFIED 1,038 (3.6%) · BARE-ONLY 27,323 (95.8%) · MIXED 169.** QUALIFIED means every candidate answers to ONE NON-EMPTY qualifiedName (`Base.getindex`, `M.f`) — julia's method table, one generic function declared across files, THE LEVER. BARE-ONLY means NO candidate publishes a qualified name at all, so the collapse is by NAME ALONE: resolving those would merge two top-level functions that happen to share a spelling, which is a SEMANTICS change and not a resolution. CONTROLS FIRED, so the QUALIFIED column is a reading and not an absence of output: of the ambiguous edges that are NOT collapsible, multi-binding 28,546 (calls) · 15,457 (uses) · 9,598 (references), no-candidates 0 in all three. **THE REAL PRIZE IS THE NEXT SPLIT, ALSO RUN: the BARE-ONLY class by WHERE ITS CANDIDATE FILES LIVE — one region 21,175 (calls 13,875 · uses 1,180 · references 6,120) · several regions 6,317 (calls 5,227 · uses 284 · references 806).** A julia package `include`s its files into ONE module, so several files under one region are VERY LIKELY methods of one package-level generic function — the analyzer simply never publishes the package module as the owner, because the enclosing `module` is the PACKAGE and not a block in the file. That is a WIRING/QUALIFICATION gap (the binding exists and is never named), NOT a resolver collapse, and it must not be repaired by matching bare names. WHAT IS BUILDABLE, COSTED: (a) the 1,038 QUALIFIED edges — a project-scoped binding lookup in `parallel-indexer.resolveRelationships` plus the same rule in the gate's model, which is what makes them move in the gate's own columns; (b) the 21,175 one-region BARE-ONLY edges — publish the PACKAGE MODULE as the owner of file-scope declarations (julia does not currently read `projectRoot`; the readers are dart, json, php, toml, typescript, yaml), which names the binding the source already implies instead of guessing it; (c) the 6,317 several-region edges are the boundary and stay ruled. FALSIFIER FOR (b), stated before it is built: if two candidate files under ONE region belong to DIFFERENT modules (a `src/A/` that declares `module A`), qualifying them by the package module would MERGE two bindings — measurable by counting candidate files that carry a `module` block, and that count must be 0 for the qualification to be safe."
+      },
+      {
+        "id": "JUL-D20",
+        "node_type": "the four EXTENDED values — decorates, part_of, renders, mixes_in",
+        "status": "TWO IMPLEMENTED, TWO RULED AFTER THE LADDER WAS WALKED — and the exclusions are counts with falsifiers, not prose",
+        "question": "Under the changed doctrine the grammar can be cloned, patched and rebuilt, so a type may only be ruled when the language itself cannot express it. Which of the four extended values does Julia express, and which are genuinely absent?",
+        "resolution": "TWO ARE EXPRESSIBLE AND BOTH ARE NOW PUBLISHED. `decorates` is a macro applied to a declaration (`@inline function`, `Base.@kwdef struct`, `@doc \"…\" function`, `@inline h(x) = x`); the served grammar already carries `macrocall_expression` + `macro_argument_list` over the declaration node, so R3 applies and R2 would add nothing. Direction is the contract's: decorated declaration -> decorator. Whole population: 2,679 edges (389 resolved, 1,576 ambiguous, 714 unresolved), because `Base.@kwdef`/`@inline`/`@doc` are `Base` bindings no project file declares. `part_of` is `include(\"path\")`, which evaluates a file inside the including module; the grammar already carries `call_expression` + `string_literal`, so R3 applies. Whole population: 826 edges, all 826 unresolved by construction because the target is a basename and no file symbol is published; the written path is kept in `metadata.partPath`. TWO ARE RULED, AND EACH IS A WALKED LADDER: `renders` and `mixes_in`. R1 unavailable — the served build is the lane's own patched clone and no published build adds a construct the language lacks. R2 mechanically available (P2-P5 rebuilt this grammar) but unavailable as a REMEDY because it would have to invent syntax Julia does not have; the mechanism is not a licence to fabricate a language. R3 unavailable — no existing node expresses either relation. MEASURED, whole 1,985-file population: 0 of 224 declared names and 0 of 149 produced node types express either construct (validation/m14/measurements/julia-extended-census.json; validation/m14/fixtures/julia/measurements/census-whole-corpus-2026-10-09.txt). The nearest constructs are counted rather than dismissed: `render(...)` is 3 ordinary `calls -> render` edges in 2 files (a function call, not a component element), and `mixes_in`'s nearest is 1,706 `<:` clauses in a declared `type_head` across 390 files, every one already published as `extends`; the corpus has exactly ONE lexical mention of `mixin`, a comment in julia/Compiler/test/inference.jl:5423 describing an abstract-type extension. A Julia struct has at most one supertype, and its members are not copied from another type. FALSIFIER, per type, in coverage.excluded: a component-element AST site whose tag denotes a declared component retires `renders`; a source form that composes another type's member set into the supertype chain retires `mixes_in`.",
+        "falsifier": "validation/m14/fixtures/julia/extended-census.ts over the whole admitted population and `bun run script/m14/grammar-remedy.ts surface --wasm wasm/tree-sitter-julia.wasm --names`; a single component-element or member-set-composition site, or a served-build node type for either, retires that ruling and returns the type to the denominator as a gap."
       }
     ]
   },
