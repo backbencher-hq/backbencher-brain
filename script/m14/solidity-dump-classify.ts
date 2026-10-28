@@ -171,6 +171,16 @@ if (!table1Seen || table1.size === 0) {
 // ── pass 2: join each row to the analyzer's own edge (markers) ────────────────────────────────
 const joinKey = (label: string, target: string, line: number) => `${label}\u0000${target}\u0000${line}`
 const markIndex = new Map<string, any[]>()
+/**
+ * INDEX-ONLY LABEL FALLBACK. The dump is the INDEXED arm; this join re-analyses each file with
+ * `parseFile(abs, repoRoot)` and no project index, so a cross-file modifier application is
+ * published by the analyzer as `calls` (calleeKind `modifierInvocation`) while the arm, which has
+ * the index, publishes it as `decorates`. The label is therefore DIFFERENT BY THE ARM'S OWN
+ * SCOPE, not by a marker mismatch. The fallback is narrow and checkable: `decorates` may join a
+ * `calls` row at the same target+line only when that row's own marker says `modifierInvocation`.
+ * Anything else is still a join miss and still fails the control.
+ */
+const anyIndex = new Map<string, Array<{ label: string; md: any }>>()
 const files = [...new Set(rows.map((r) => r.src))].sort()
 let reanalyzed = 0
 let reanalyzeFailed = 0
@@ -192,16 +202,36 @@ for (const abs of files) {
     const list = markIndex.get(k) ?? []
     list.push(r.metadata ?? {})
     markIndex.set(k, list)
+    const ak = `${target}\u0000${line}`
+    const anyList = anyIndex.get(ak) ?? []
+    anyList.push({ label, md: r.metadata ?? {} })
+    anyIndex.set(ak, anyList)
   }
 }
 const joinConsumed = new Map<string, number>()
+const anyConsumed = new Map<string, number>()
 let joinMisses = 0
+let indexOnlyDecorates = 0
 const joined: Array<{ row: DumpRow; md: any }> = []
 for (const row of rows) {
   const k = joinKey(row.label, row.target, row.line)
   const used = joinConsumed.get(k) ?? 0
   const list = markIndex.get(k)
   if (!list || used >= list.length) {
+    // The narrow index-only label fallback declared above.
+    const ak = `${row.target}\u0000${row.line}`
+    const anyUsed = anyConsumed.get(ak) ?? 0
+    const candidates = anyIndex.get(ak) ?? []
+    const candidate = candidates.slice(anyUsed).find((c) =>
+      row.label === "decorates" && c.label === "calls" &&
+      (c.md?.isModifierInvocation === true || c.md?.calleeKind === "modifierInvocation")
+    )
+    if (candidate) {
+      anyConsumed.set(ak, anyUsed + 1)
+      indexOnlyDecorates++
+      joined.push({ row, md: { ...candidate.md, indexOnlyDecorate: true } })
+      continue
+    }
     joinMisses++
     joined.push({ row, md: null })
     continue
@@ -214,6 +244,7 @@ for (const row of rows) {
 function classify(row: DumpRow, md: any): { family: string; declaredClass: string } {
   const t = row.target
   if (md === null) return { family: "join-miss", declaredClass: "JOIN-MISS (control failure)" }
+  if (md.indexOnlyDecorate === true) return { family: "index-only-decorate", declaredClass: "W3-cross-file-modifier-target" }
   if (row.label === "imports") {
     return md.importPath === true || typeof md.importPath === "string"
       ? { family: "import-path", declaredClass: "W1-module-path-not-a-symbol" }
@@ -335,8 +366,7 @@ if (dumpLines !== rows.length + claimRows + bindingRows + causeRows + unclassifi
   failures.push(`dump lines ${dumpLines} != classified ${rows.length}+claims ${claimRows}+bindings ${bindingRows}+causes ${causeRows}+unclassified ${unclassifiedOutcomeRows}+unclassifiedLabel ${unclassifiedLabelRows}+malformed ${malformed}`)
 }
 if (failures.length > 0) {
-  if (JSON_OUT) {
-    console.log(JSON.stringify({ control: { ok: false, failures, join: { misses: joinMisses, rows: rows.length }, perTypeControl }, perType: summarize(perType, true) }, null, 1))
+  if (JSON_OUT) {      console.log(JSON.stringify({ control: { ok: false, failures, join: { misses: joinMisses, indexOnlyDecorates, rows: rows.length }, perTypeControl }, perType: summarize(perType, true) }, null, 1))
   } else {
     console.error("CONTROL DID NOT FIRE: the dump is not the population TABLE 1 describes, or a row did not join.")
     for (const f of failures.slice(0, 25)) console.error("  " + f)
@@ -382,7 +412,7 @@ const report = {
   control: {
     ok: closureOk,
     perType: perTypeControl,
-    join: { dumpedRows: rows.length, filesReanalyzed: reanalyzed, misses: joinMisses },
+    join: { dumpedRows: rows.length, filesReanalyzed: reanalyzed, misses: joinMisses, indexOnlyDecorates },
     closure: {
       tableEdges, tableResolved, dumpedRows: classified, claimRows, bindingRows, causeRows,
       unclassifiedLabelRows, unclassifiedOutcomeRows, sumClassRows: sumClasses,
@@ -402,7 +432,7 @@ if (JSON_OUT) {
 } else {
   const w = (s: string | number, n: number) => String(s).padEnd(n)
   console.log(`solidity-dump-classify — ${path.relative(ROOT, FILE)}`)
-  console.log(`control: PASS — table parity per type; join ${rows.length}/${rows.length}; claims ${claimRows}, bindings ${bindingRows}, causes ${causeRows}, unclassified-label 0`)
+  console.log(`control: PASS — table parity per type; join ${rows.length}/${rows.length} (${indexOnlyDecorates} index-only decorate fallback(s)); claims ${claimRows}, bindings ${bindingRows}, causes ${causeRows}, unclassified-label 0`)
   console.log(`closure: population ${tableEdges} == resolved ${tableResolved} + classified ${classified} + claims ${claimRows} + bindings ${bindingRows} + causes ${causeRows}`)
   console.log(`classes: ${sumClasses} row(s) over ${classTotals.size} named class(es) — ${closureOk ? "equals" : "DOES NOT EQUAL"} classified ${classified}`)
   if (intentTwin !== null) console.log(`arbitraryTwin (intent table): ${intentTwin}`)
