@@ -338,7 +338,8 @@ function classify(row: DumpRow, md: any): { family: string; declaredClass: strin
     // stay out (the name is declared by one type, or two bases declare it). Named rather than
     // folded into W5, which would claim the target is not a declaration — it is.
     if (kind === "crossFileInheritedMember") {
-      return { family: "inherited-member-name-collision", declaredClass: "W13-inherited-member-name-collision" }
+      // W15, not W13: W13 is `contains` in this lane's numbering (see the contains branch below).
+      return { family: "inherited-member-name-collision", declaredClass: "W15-inherited-member-name-collision" }
     }
     return { family: `unlabelled-${kind}`, declaredClass: "W5-in-file-name-not-a-declaration" }
   }
@@ -386,16 +387,45 @@ function classify(row: DumpRow, md: any): { family: string; declaredClass: strin
   return { family: "unknown-label", declaredClass: "W0-unknown" }
 }
 
-const perType: Record<string, { unresolved: number; ambiguous: number; classes: Map<string, { family: string; declaredClass: string; unresolved: number; ambiguous: number; samples: string[] }> }> = {}
+import { buildResolutionTables } from "../../src/ast/project-index"
+const tablesByIndex = new Map<any, ReturnType<typeof buildResolutionTables>>()
+const tablesFor = (repoRoot: string) => {
+  const idx = indexes.get(repoRoot)
+  if (idx === undefined) return null
+  let t = tablesByIndex.get(idx)
+  if (t === undefined) { t = buildResolutionTables(idx); tablesByIndex.set(idx, t) }
+  return t
+}
+/**
+ * THE DISPOSITION AXIS — WHERE THE TARGET NAME LIVES IN THE PROJECT. A class count says HOW MANY rows
+ * are unresolved; a disposition has to say WHY, and the project index can answer the first question
+ * of every wall: is the name a TYPE, a MEMBER some type declares, some other published name, or
+ * nothing the project declares at all? The four are disjoint by construction and are counted per
+ * class, so a wall that is really "the target is outside this project" stops being called a
+ * resolution defect.
+ */
+type TargetFacts = "type" | "member" | "otherName" | "absent"
+const factsFor = (row: DumpRow): TargetFacts => {
+  const repoRoot = repoOf(row.src)
+  const idx = indexes.get(repoRoot)
+  const t = tablesFor(repoRoot)
+  if (idx === undefined || t === null) return "absent"
+  if (idx.typeKinds.has(row.target)) return "type"
+  if (t.memberDeclarers.has(row.target)) return "member"
+  if (idx.symbolNames.has(row.target)) return "otherName"
+  return "absent"
+}
+const perType: Record<string, { unresolved: number; ambiguous: number; classes: Map<string, { family: string; declaredClass: string; unresolved: number; ambiguous: number; samples: string[]; facts: Record<TargetFacts, number> }> }> = {}
 for (const { row, md } of joined) {
   const c = classify(row, md)
   const entry = perType[row.label] ?? (perType[row.label] = { unresolved: 0, ambiguous: 0, classes: new Map() })
   const isAmbiguous = AMBIGUOUS_OUTCOMES.has(row.outcome)
   if (isAmbiguous) entry.ambiguous++
   else entry.unresolved++
-  const cls = entry.classes.get(c.declaredClass) ?? { family: c.family, declaredClass: c.declaredClass, unresolved: 0, ambiguous: 0, samples: [] }
+  const cls = entry.classes.get(c.declaredClass) ?? { family: c.family, declaredClass: c.declaredClass, unresolved: 0, ambiguous: 0, samples: [], facts: { type: 0, member: 0, otherName: 0, absent: 0 } }
   if (isAmbiguous) cls.ambiguous++
   else cls.unresolved++
+  cls.facts[factsFor(row)]++
   if (cls.samples.length < 4) cls.samples.push(`${row.src}:${row.line}: ${row.target} [${c.family}]`)
   entry.classes.set(c.declaredClass, cls)
 }
@@ -479,6 +509,7 @@ function printClasses(perTypeMap: typeof perType): void {
     console.log(`${t}: unresolved ${e.unresolved} · ambiguous ${e.ambiguous} — NAMED CLASSES`)
     for (const c of [...e.classes.values()].sort((a, b) => (b.unresolved + b.ambiguous) - (a.unresolved + a.ambiguous))) {
       console.log(`  ${c.declaredClass.padEnd(42)} unres ${String(c.unresolved).padStart(7)} · amb ${String(c.ambiguous).padStart(7)}`)
+      console.log(`      target is: type ${c.facts.type} · member ${c.facts.member} · other-name ${c.facts.otherName} · ABSENT ${c.facts.absent}`)
       for (const s of c.samples.slice(0, 3)) console.log(`      e.g. ${s}`)
     }
     console.log()
