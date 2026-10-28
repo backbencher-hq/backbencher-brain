@@ -2866,7 +2866,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       localFunction: 0, inheritedMember: 0, inFileTypeMember: 0,
       crossFileInheritedMember: 0, projectMemberCandidate: 0,
       eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0, localBinding: 0,
-      receiverTypedMember: 0, inheritedMemberQualified: 0,
+      receiverTypedMember: 0, inheritedMemberQualified: 0, libraryStaticCall: 0,
     }
     // SOL-21 — the index's inheritance-closed member set per type, and the
     // name -> declaring-types table. Built once per file from the shared index rather
@@ -2893,7 +2893,14 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // to a Set/Map lookup or a (target: string) predicate. `?? ""` is what already happened at
       // runtime -- `has(undefined)` is `false`, and "" matches no member name -- so the
       // classification is unchanged and the "external" fallback still catches it.
-      const target = rel.target ?? ""
+      // MUTABLE because the resolution passes below REWRITE it, and every later pass must see the
+      // spelling the earlier one published. It was a const while four passes each tested
+      // `!target.includes(".")` against the ORIGINAL spelling: the static-library pass published
+      // `Lib.shared` and the receiver pass, still reading the bare `shared`, overwrote it with its
+      // own answer — a later pass silently undoing an earlier, better-evidenced one. MEASURED on the
+      // SOL-25 fixture: `Lib.shared()` where `Lib` shadows the library reported `Lib2.shared`, i.e.
+      // the static branch's own row was written and then replaced.
+      let target = rel.target ?? ""
       // The SOURCE is the enclosing scope's qualified name, so the owner is
       // everything before the final separator. A file-scope source has no owner.
       const owner = typeof md.calleeOwner === "string" ? md.calleeOwner : ""
@@ -2997,7 +3004,37 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       const namespaceObject = typeof md.calleeObject === "string" ? md.calleeObject : ""
       if (kind === "namespaceBuiltin" && (namespaceObject === "abi" || namespaceObject === "type") && target !== "" && !target.includes(".")) {
         rel.target = `${namespaceObject}.${target}`
+        target = rel.target
         md.languageNamespace = [namespaceObject]
+      }
+      // W14 — STATIC LIBRARY CALL: the SOURCE spells the owner. `Math.min(…)`, `SafeCast.toUint(…)`
+      // and `EnumerableSet.add(…)` all publish a bare member name today, so the gate has to choose
+      // among every project declaration of `min` / `toUint` / `add`. But the call site already names
+      // the library — publishing `<object>.<member>` states what the source says, and it is the
+      // spelling the project's `qualifiedName` index resolves.
+      //
+      // TWO GUARDS, TWO DIFFERENT FACTS, and each was measured on the fixture after the other
+      // proved insufficient:
+      //  * the object's name must have exactly ONE project DECLARATION (`symbolCounts`) — two
+      //    same-named libraries would make the qualified spelling ambiguous where the bare one
+      //    resolved;
+      //  * the object must not be a VALUE declared in this file — `Lib2.T internal Lib;` makes
+      //    `Lib.shared()` a member call on a struct, and `symbolCounts` does NOT catch it (the
+      //    index counts the library, not the variable: `Lib` still reads 1). Without this guard the
+      //    row was published as `Lib.shared`, naming a library the call does not use.
+      // `this` and `super` are not declarations and fall out on the count.
+      if (projectIndex && typeof md.calleeObject === "string" && md.isMemberCall === true && target !== "" && !target.includes(".")) {
+        const objectName = md.calleeObject
+        if (objectName !== "" && !declaredVariableTypes.has(objectName) && (projectIndex.symbolCounts.get(objectName) ?? 0) === 1) {
+          const declarer = projectMemberDeclarer.get(objectName)?.get(target)
+          if (declarer !== undefined && declarer !== null) {
+            rel.target = `${declarer}.${target}`
+            target = rel.target
+            md.ownerType = declarer
+            md.calleeKind = "libraryStaticCall"
+            kind = "libraryStaticCall"
+          }
+        }
       }
       // W7 — RECEIVER-TYPED MEMBER RESOLUTION, where the evidence is a DECLARED type and the
       // DECLARER that type's own inheritance closure names. `token.transfer(...)` is a bare
@@ -3021,6 +3058,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           const declarer = projectMemberDeclarer.get(receiverType)?.get(target)
           if (declarer !== undefined && declarer !== null) {
             rel.target = `${declarer}.${target}`
+            target = rel.target
             md.receiverType = receiverType
             md.ownerType = declarer
             md.calleeKind = "receiverTypedMember"
@@ -3044,6 +3082,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           const declarer = projectMemberDeclarer.get(owner)?.get(target)
           if (declarer !== undefined && declarer !== null && declarer !== owner) {
             rel.target = `${declarer}.${target}`
+            target = rel.target
             md.ownerType = declarer
             md.calleeKind = "inheritedMemberQualified"
             kind = "inheritedMemberQualified"

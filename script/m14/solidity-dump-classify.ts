@@ -327,6 +327,19 @@ function classify(row: DumpRow, md: any): { family: string; declaredClass: strin
     if (kind === "localFunction" || kind === "inheritedMember" || kind === "inFileTypeMember") {
       return { family: `in-file-${kind}`, declaredClass: "W5-in-file-name-not-a-declaration" }
     }
+    // `projectMemberCandidate` is the analyzer's HONEST CANDIDATE class — "some project type
+    // declares this name, and the site does not say which". It is its own wall: the rows are
+    // library members reached through a receiver the analyzer cannot type (an index expression,
+    // a bytes/array builtin), so the cause is a missing RECEIVER TYPE, not an in-file name gap.
+    if (kind === "projectMemberCandidate") {
+      return { family: "library-member-candidate", declaredClass: "W14-library-member-candidate" }
+    }
+    // `crossFileInheritedMember` SURVIVING unrewritten means the pass had a measured reason to
+    // stay out (the name is declared by one type, or two bases declare it). Named rather than
+    // folded into W5, which would claim the target is not a declaration — it is.
+    if (kind === "crossFileInheritedMember") {
+      return { family: "inherited-member-name-collision", declaredClass: "W13-inherited-member-name-collision" }
+    }
     return { family: `unlabelled-${kind}`, declaredClass: "W5-in-file-name-not-a-declaration" }
   }
   if (row.label === "uses") {
@@ -335,6 +348,11 @@ function classify(row: DumpRow, md: any): { family: string; declaredClass: strin
     if (md.isMemberReference === true) return { family: "member-reference", declaredClass: "W7-member-or-builtin-read" }
     if (md.isVariableReference === true) return { family: "variable-reference", declaredClass: "W8-function-scope-binding-read" }
     return { family: "unlabelled", declaredClass: "W8-function-scope-binding-read" }
+  }
+  if (row.label === "decorates") {
+    // A modifier application whose target is declared in another file (or by more than one type).
+    // It has no calleeKind to read — the edge is its own shape — so the class is named by LABEL.
+    return { family: "modifier-application", declaredClass: "W3-cross-file-modifier-target" }
   }
   if (row.label === "references") {
     if (md.isImport === true) return { family: "import-binding", declaredClass: "W9-import-binding-not-in-run" }
