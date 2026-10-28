@@ -930,6 +930,28 @@ export function filterNoiseRelationships(
     //
     // A genuine snippet is still refused: its leaf is long or carries `{`/`}`/backtick/angle
     // brackets, and both of those checks stay unconditional.
+    //
+    // JULIA'S `var"…"` IS A LEGAL BINDING NAME, and the quote in it is not "a snippet".
+    // Measured on Compiler.jl: `function var"#_internal_julia_parse"(…)` is a real declaration; the
+    // analyzer published `contains Compiler -> Compiler.var"#_internal_julia_parse"` and this
+    // filter deleted it because the leaf contains a quote. The exemption is scoped to julia, to
+    // the three labels a binding name can appear on, and to targets that carry no layout — so a
+    // source-fragment target containing `var"` and a space is still refused.
+    if (language === "julia" && target.includes('var"') &&
+        (r.type === "contains" || r.type === "calls" || r.type === "references" ||
+         r.relationshipType === "contains" || r.relationshipType === "calls" || r.relationshipType === "references")) {
+      if (target.includes("\n") || target.includes("\t") || target.includes(" ")) return false
+      return true
+    }
+    // JULIA'S COLON OPERATOR IS A FUNCTION, and its NAME IS `:` — `(:)(1, 2)` builds a range and the
+    // analyzer publishes `calls -> :`. The universal shape test refuses it because `:` is a PATH
+    // SEPARATOR in most languages and is in no operator-name class, so the edge was silently deleted
+    // on the way to the index while the analyzer had emitted it (1 row in a 200-file draw, and a
+    // MISSING row in the direct oracle because `parseFile` is the path being measured). Scoped to
+    // julia, to `calls`, and to the exact one-character name: a `:` anywhere inside a longer target
+    // is still refused as a snippet, and no other language gains a target it cannot mean.
+    if (language === "julia" && target.trim() === ":" &&
+        (r.type === "calls" || r.relationshipType === "calls")) return true
     if (target.includes("\n")) return false
 
     const leaf = extractLeaf(target)
@@ -1031,7 +1053,20 @@ export function filterNoiseRelationships(
     // The exemption is deliberately NARROW: it matches a Sass at-rule callable reference and nothing
     // else, so `foo (a, b)` and `foo = bar` are still refused — the controls stay green.
     const CALLABLE_REF = /^@(?:mixin|function)\s+[A-Za-z_$][\w$-]*$/
-    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf)) return false
+    // ★ DERIVED TEMPLATE IDENTITIES (xml lane, 2026-10-27). An XSLT COMPETING TEMPLATE carries no
+    // name of its own — its identity is DERIVED from its match/mode/priority parts, and the lane's
+    // published spelling is `xsl:template[match=*|mode=toc.for.section|priority=]#0`. THAT LEAF
+    // CARRIES `=`, so the snippet ban below ate every one of its `overrides` rows: the lane's
+    // whole-population closure read `overrides 0` while the analyzer emitted them (verified at
+    // toc.xsl:190 and by the xml/xslt-competing-template-overrides fixture) and the 2026-10-09
+    // census saw 3 because it predates the 2026-10-21 ban. A derived identity is neither an
+    // operator name nor a setter name; it is THE ONLY SOUND NAME for a nameless declaration, and
+    // the ban's intent is SNIPPETS, not derived names — the scss lesson a second time.
+    // The exemption is deliberately NARROW: the derived spelling's own prefix and shape, so a
+    // random `foo=bar` snippet carrying `xsl:template[` inside is still refused by the other
+    // tests, and the snippet controls stay green.
+    const DERIVED_TEMPLATE_ID = /^xsl:template\[[^\]]*\](?:#\d+)?$/
+    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf) && !DERIVED_TEMPLATE_ID.test(leaf)) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
