@@ -2644,6 +2644,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
                   isAppliedModifier: true,
                   modifierResolution: inFileModifier ? "in-file"
                     : projectMember ? "project-member" : "project-symbol",
+                  // W15b — the ENCLOSING TYPE, so a modifier applied on a contract whose base
+                  // declares it can be resolved through that contract's inheritance closure. The
+                  // edge had no owner at all, which is why the 17 cross-file modifier rows could
+                  // not use the mechanism SOL-25 applied to calls.
+                  ...(enclosingTypeOf() !== "" ? { decoratesOwner: enclosingTypeOf() } : {}),
                 })
             } else {
               addRel(top().scope, name, ASTEngine.RelationshipType.Calls, 0.85, line, {
@@ -3243,6 +3248,28 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         rel.target = `${declarer}.${target}`
         md.receiverType = receiverType
         md.ownerType = declarer
+      }
+    }
+
+    // W15b — THE INHERITED MODIFIER APPLICATION, through the same closure the calls pass reads.
+    // `onlyBoss` applied in a contract whose base (in another file) declares it: the site proves the
+    // enclosing type, that type's closure names one declarer, and the modifier name is declared by
+    // more than one project type — so the bare spelling collides and the qualified one does not.
+    if (projectIndex) {
+      for (const rel of relationships) {
+        if (rel.type !== ASTEngine.RelationshipType.Decorates) continue
+        const md = rel.metadata as Record<string, unknown>
+        if (typeof md.decoratesOwner !== "string" || md.decoratesOwner === "") continue
+        const target = rel.target ?? ""
+        if (target === "" || target.includes(".")) continue
+        if ((projectMemberDeclarers.get(target) ?? 0) <= 1) continue
+        const owner = md.decoratesOwner
+        const declarer = projectMemberDeclarer.get(owner)?.get(target)
+        if (declarer === undefined || declarer === null || declarer === owner) continue
+        if ((projectIndex.symbolCounts.get(declarer) ?? 0) !== 1) continue
+        rel.target = `${declarer}.${target}`
+        md.ownerType = declarer
+        md.modifierResolution = "inherited-member"
       }
     }
 
