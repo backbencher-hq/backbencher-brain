@@ -1,5 +1,24 @@
 # real-clean-analyzer.md
 
+> **Status (M60 pass 6 — the four EXTENDED values).** `decorates`, `part_of`, `renders` and
+> `mixes_in` published zero rows and carried no ruling: they were absent from the table, which
+> left the lane at **9 implemented / 13 applicable**. Each now has a REGISTERED RULING with a
+> falsifying probe, measured over the whole admitted population (312 files, 312 parsed, 0 failed)
+> by `validation/m14/fixtures/clean/extended-census.ts`
+> (`validation/m14/measurements/clean-extended-census-2026-10-28.json`): **0 detector hits on all
+> four**, with the nearest construct counted for each — 583 `macro_definition` sites (0 carrying a
+> declaration), 1,328 `import_declaration` sites (0 naming a file), 0 render-ish calls against 4
+> HTML string literals, 20 `with_block` and 473 `class_context` sites (0 carrying a declaration).
+> `script/m14/coverage-block-gate.ts clean` now reads **9 implemented / 9 applicable / 5 excluded,
+> 0 problems**; the ten-type arbiter (`ontology-coverage-gate.ts clean`) still reads ITS vocabulary —
+> **emitted 9/10, ruled-sound 1**, because the four extended values are outside its ten-type table —
+> with `FALSIFIED 0` and `ruled-without-justification 0`; and `completion-gate.ts clean` reads clean
+> **done**. The four rulings are in
+> [the four extended values](#the-four-extended-values--ruled-with-the-ladder-walked); the census's
+> controls (6/6) are quoted beside every zero, because a zero from a scanner that cannot see
+> `class_declaration` is a zero about the scanner.
+>
+
 > **Status (M60 pass 3 — the ruling table).** Pass 2 adjudicated nine types and left
 > `extends` as prose. It is now a registered ruling with a falsifying probe:
 > `script/m14/clean-ruled.ts` exports `CLEAN_RULED`, the arbiter runs it, and
@@ -35,13 +54,15 @@
 | `script/m14/clean-ontology-census.ts` | relationship types, resolution rates, confidence, site lines, endpoint hygiene — **through production `parseFile`**, never `analyze()` | 2,181 files (default: the 312 tracked) |
 | `script/m14/clean-extends-overrides-probe.ts` | `overrides` and the pass-2 `extends` reading: grammar inventory (A) and parse-tree semantic counts (B) | 2,181 files |
 | `validation/m14/fixtures/clean/extends-construct-probe.mts` | pass 3 — the `extends` POSITION census and the grammar inventory, importing the ruling table's own walk so the evidence and the arbiter cannot drift | 312 tracked + 2,181 wide, both reported |
+| `validation/m14/fixtures/clean/extended-census.ts` | pass 6 — the four extended values: served-build vocabulary (A), synthetic shape probes through the arbiter's own detectors (B), and the whole-corpus nearest-construct census (C) | 312 admitted files, `parseFile`-free parse walk |
+| `validation/m14/fixtures/clean/index-receiver-census.ts` | pass 6 — CL-G1's price: each `index_access` receiver resolved against the file's PUBLISHED symbols, through production `parseFile` | 312 admitted files |
 | `script/m14/clean-ruled.ts` | the ruling table the arbiter consumes; `countOnTree` IS the position census | whatever the arbiter walks |
 | `script/m14/ontology-coverage-gate.ts clean` | EMITTED vs RULED-SOUND vs FALSIFIED, per type | 312 admitted files |
 | `script/m14/firing-check.ts --files 120 clean` | does each type FIRE through production `parseFile` | 120-file stride sample |
 | `script/m14/clean-label-probe.mts` | Q4 — whether each edge's TYPE label is provable against an independent walk of the same tree | 312 files |
 | `script/m14/clean-honesty-gate.ts` | resolution, empty names, unknown kinds, ownerless members, crash files — through **`analyze()`** | 312 files |
 | `script/m14/clean-completeness-gate.ts` | the grammar's named node types against the spec's buckets | fixtures |
-| `script/m14/run-fixtures.ts --lang clean` | 13 fixtures | fixtures |
+| `script/m14/run-fixtures.ts --lang clean` | 14 fixtures | fixtures |
 | `script/m14/clean-mutant-run.ts` | 12 mutants, judged by the shared harness's own rule | fixtures |
 | `validation/m14/fixtures/clean/extends-probe-roles-check.mts` | the ruling census's slot ROLES, per declaration, importing the census from the ruling table | the one fixture |
 | `validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | the spelling defect's own count: operator-shaped `implements` edges where the flag disagrees with the file | 312 tracked files, `analyze()` |
@@ -416,7 +437,7 @@ Round 1's before/after table, retained as its record. The "after" column is what
 | crash files | 0 | 0 |
 | symbol-free files | 3 (all legitimately symbol-free include stubs) | 3 |
 
-## The 10 relationship types: one verdict each
+## The 14 vocabulary values: one verdict each
 
 `EMITTED` means production `parseFile` produced the type on real corpus files.
 `RULED` means a written reason **and** a corpus measurement, and the ruling names the
@@ -442,6 +463,19 @@ content-deduplicated corpus (`script/m14/clean-wide-manifest.txt`).
 
 **† the WIDE column predates this round and was NOT re-measured — see
 [WIDE is not re-measurable on this machine](#wide-is-not-re-measurable-on-this-machine).**
+
+**The four EXTENDED values, same populations, same rule.** `RULED` here means the ladder was
+walked (R1 no published build adds the construct; R2 a patch would invent syntax the language does
+not have; R3 no existing node expresses the relation), the nearest construct was counted, and a
+probe exists that would fire on the construct. None of the four is emitted, and each is now in the
+denominator's excluded set with a count and a falsifier (`script/m14/spec/clean-completeness.json`).
+
+| extended type | emitted | verdict | PROD edges | nearest construct, counted | detector hits |
+| --- | --- | --- | --- | --- | --- |
+| `decorates` | ❌ not emitted | **RULED** — a macro applied to a declaration; Clean macros are VALUES (`name :== expr`), 0 of 583 carry a declaration | 0 | 583 `macro_definition`, 3 synthetic shapes 0-ERROR | 0 |
+| `part_of` | ❌ not emitted | **RULED** — no textual inclusion; `import` names a MODULE, and 0 of 1,328 name a file | 0 | 1,328 `import_declaration` | 0 |
+| `renders` | ❌ not emitted | **RULED** — no component element; HTML is built by ordinary functions over values | 0 | 0 render-ish calls, 4 HTML string literals, 0 constructor+elements | 0 |
+| `mixes_in` | ❌ not emitted | **RULED** — no member-set composition; `with` is a defining scope, `class_context` composes dictionaries | 0 | 20 `with_block`, 473 `class_context` | 0 |
 Every WIDE cell except `references` is unaffected by passes 4 and 5 by construction: both
 changes add edges only under a `class_context`, and no other type's count moved by one.
 
@@ -626,6 +660,108 @@ constraint as a base type. So the ruling rests on the **absence of a supertype S
 not on the presence of a constraint, and no probe over this wasm could decide it by
 reading a `with` clause. If a future tree-sitter-clean distinguishes them, the
 composition form becomes a separate question this ruling has not answered.
+
+### The four EXTENDED values — RULED, with the ladder walked
+
+`decorates`, `part_of`, `renders` and `mixes_in` are the vocabulary's extended values. They
+published **zero rows** in this lane and had no ruling, which is the state the coverage gate reads
+as a GAP: absent from `implemented` and absent from `excluded`. They are now ruled, and the ruling
+is three measurements rather than a sentence, because a zero has three possible causes and only one
+of them is a ruling:
+
+| part | question | instrument |
+| --- | --- | --- |
+| A | does the SERVED BUILD declare the construct? | `validation/m14/measurements/clean-grammar-nodes.json` (143 declared named types of 290 ids, digest `001361f63df7`) |
+| B | if the language had the syntax, would the GRAMMAR read it? | synthetic shapes parsed through the served wasm, run through the arbiter's own detectors |
+| C | does the CORPUS contain the construct, and what is the nearest thing it does contain? | the whole admitted population, 312 files, 312 parsed, 0 failed |
+
+```
+npx tsx validation/m14/fixtures/clean/extended-census.ts \
+  --json validation/m14/measurements/clean-extended-census-2026-10-28.json
+```
+
+**Controls are part of the instrument.** The vocabulary scan reports 6/6 control families
+(`class_declaration`, `instance_declaration`, `import_declaration`, `macro_definition`,
+`with_block`, `index_access`), and part C counts each of them in the corpus (173 class declarations,
+741 instances, 1,328 imports, 583 macro definitions, 20 `with` blocks). A zero from a scanner that
+cannot see `class_declaration` would be a zero about the scanner; these can see all six.
+
+| type | ladder | measured, whole population | falsifier that would retire it |
+| --- | --- | --- | --- |
+| `decorates` | R1 no published build adds a macro-application node; R2 a patch would invent application syntax; R3 no node composes a macro with a declaration | **583 `macro_definition` sites, 0 carrying a DECLARATION**; vocabulary 0 of 6 stems except the accounted `fixity_annotation` | a `macro_definition` whose named child is a declaration |
+| `part_of` | R1 no inclusion construct; R2 no preprocessor to patch in; R3 no node includes a file | **1,328 `import_declaration`, 0 module paths naming a FILE**; vocabulary 0 of 6 stems | an import whose target is a file path |
+| `renders` | R1 no component node; R2 components are not syntax Clean has; R3 no node carries a rendered component | **0 detector hits**, 0 render-ish calls, 4 HTML **string literals**, 0 constructor+elements | a call constructing a component element whose tag denotes a declared component |
+| `mixes_in` | R1 no mixin clause; R2 composition would be invented; R3 no node composes a member set | **0 detector hits**, 20 `with_block` (0 with a declaration child), 473 `class_context` (0 with a declaration child) | a `with_block`/`class_context` carrying a declaration |
+
+**FOUR TRAPS, EACH MEASURED AND NAMED, because each is the argument a reader will make.**
+
+1. **The grammar's `macro_definition` is not a macro applied to anything.** Clean's
+   `name :== expr` is a compile-time VALUE bound to a name (`NSViewCloseButton :== 0`,
+   `apply :== \f x -> f x`), and the grammar names the node `macro_definition`. The analyzer
+   publishes it as a `macro` symbol (556 of them) and the lane's symbol contract records that
+   mapping; what the tree never contains is an ARGUMENT LIST, so there is nowhere for a decorator
+   to be applied. `decorates` is not this construct and this construct is not `decorates`.
+2. **The one vocabulary hit is accounted for, not hidden.** The `annotat` stem matches
+   `fixity_annotation` — the `infixl 2` part of a fixity DECLARATION. It annotates an operator's
+   fixity, not a declaration, and the lane already publishes fixity declarations; listing it as a
+   decorator would be the same defect as calling `class_declaration` a supertype (which this file
+   already records for `extends`).
+3. **`with` is a SCOPE, not a mixin.** `f x = y with y = x + 1` parses with 0 ERROR nodes as a
+   `with_block` inside the function body — a let-like binding block. The synthetic probe for it was
+   written correctly only after the first draft used ML's spelling (`with … in …`) and produced an
+   ERROR node; that error would have been read as "the grammar cannot read `with`", which is the
+   `(b)` cause in the census's own header and not a ruling.
+4. **`Tag "<div>"` is a string, not an element.** The `renders` probe's positive control fires on a
+   constructor applied to an element-looking STRING. That is deliberate: it proves the detector can
+   see the nearest miss, and reading it as a component element would attribute a `renders` edge to
+   a value that has no declared component as its tag. The corpus contains **0** such sites.
+
+**COUNTER-ARGUMENTS THAT ARE ALREADY PUBLISHED AS SOMETHING TRUE.** Clean DOES relate declarations:
+1,328 `imports`, 473 `class_context` `references` (436 edges at this population), 772 `implements`
+and 306 `overrides`. The rulings claim only that none of those is the extended relation — an import
+is a module dependency, a context is a dictionary requirement, an instance implements a class. The
+labels the constructs earn are already emitted; re-labelling any of them would assert a relation
+the language never writes, which is the one edge this table must not fabricate.
+
+**THE DENOMINATOR MOVED, AND THAT IS THE POINT.** `extends` was already excluded (1), and the four
+add four more, so applicable drops **13 → 9** and the nine emitted types are the whole denominator.
+`npx tsx script/m14/coverage-block-gate.ts clean` reads **9 implemented / 9 applicable / 5 excluded,
+0 problems**; `npx tsx script/m14/ontology-coverage-gate.ts clean --fresh` still reads ITS ten-type
+vocabulary — **emitted 9/10, ruled-sound 1** (`extends`), `FALSIFIED 0`,
+`ruled-without-justification 0` — because the four extended values are outside that table; and
+`bun run script/m14/completion-gate.ts clean` reads clean **done**. The rulings are registered in `script/m14/clean-ruled.ts`
+(`countCleanDecoratesConstruct`, `countCleanPartOfConstruct`, `countCleanRendersConstruct`,
+`countCleanMixesInConstruct`), so the arbiter walks the same functions the census ran — a control
+that exercised a re-implementation would test the re-implementation.
+
+### CL-G1 — the index gap, PRICED rather than waved away
+
+`xs.[i]` (`index_access`, 307 sites) emits nothing, and the reason recorded at M14.0 was
+"it needs a type the analyzer does not have". That sentence is true and it is not a price. The
+price was measured on 2026-10-28 over the same 312 files, through production `parseFile` plus a
+parse-tree walk, and it splits the 307 sites by where the receiver can resolve:
+
+| receiver | sites | could a per-file analyzer name it? |
+| --- | --- | --- |
+| identifier receiver | 263 | only if the NAME is the target — a bare value read |
+| of those, a symbol the FILE PUBLISHES | **33** | yes, and it would still be a value read (`treeItems.[i]`, `lines.[i]`, `subdirs.[i]`) |
+| of those, names nothing published (locals, parameters, pattern variables) | 230 | no published symbol to name |
+| qualified / field receivers | 3 | no — the leaf is a field of a value, not a symbol |
+| expression receivers (application, binary, case, record access) | 41 | no — needs a type |
+
+**The 33 are not a free win, and that is the finding.** This lane's `uses` contract is written as
+`callable → record field` / `callable → data constructor`, with the explicit sentence *"The FP family
+emits no bare VALUE read: a receiver, a parameter or a pattern variable never produces an edge"*
+(Relationship contract, above). An indexed CAF is a VALUE read. Publishing the 33 would either
+contradict that rule for one node type or require redefining `uses` lane-wide, re-measuring the
+1,457 existing edges and their FP audit. That is a design change with its own fixture, mutant and
+before/after — not a case to bolt on while closing a ruling — so **CL-G1 stays a recorded gap with
+its price attached** (`script/m14/spec/clean-completeness.json`), and the number a successor needs
+to decide is on the page instead of in a memory.
+
+**FALSIFIER:** a decision that `uses` admits bare value reads (with the 1,457-edge re-measurement
+and the FP census that decision owes), or a type-carrying pass in the resolver that names the
+indexed value's type — either turns CL-G1 from a gap into an implementation.
 
 ### `overrides` — a GAP the handover belief got wrong
 
@@ -1206,6 +1342,10 @@ was clean before the doc edits and after them.
 | `npx tsc --noEmit -p tsconfig.json` | no output | 0 |
 | `npx tsx script/m14/ontology-coverage-gate.ts clean --fresh` | `walk: 312/312 files (100.0%)  newly walked 312, resumed 0` then `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` — **re-run at this commit, `--fresh` is mandatory, see [the arbiter's false 0/10](#what-the-arbiter-reported-and-why-it-was-wrong)** | **0** |
 | `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
+| `npx tsx script/m14/coverage-block-gate.ts clean` | **9 implemented / 9 applicable / 5 excluded, 0 problems** — the four extended values are now RULED in the 14-value table (pass 6) | 0 |
+| `npx tsx validation/m14/fixtures/clean/extended-census.ts --json validation/m14/measurements/clean-extended-census-2026-10-28.json` | 312/312 parsed, 0 failed; vocabulary controls **6/6**; declared FIELDS 29 with **0** construct-stem hits; **0 detector hits on all four types**; nearest constructs counted (583 macro_definition / 1,328 import_declaration / 0 render-ish calls, 4 HTML strings / 20 with_block, 473 class_context); KEY SPACE 2,831 keys, **0 construct-name keys**, 14 substring matches inspected as data (`include_builtins`, `slot`, `…AnnotationS`) | 0 |
+| `npx tsx validation/m14/fixtures/clean/index-receiver-census.ts --json validation/m14/measurements/clean-index-receiver-census-2026-10-28.json` | **307 `index_access` sites** — 263 identifier receivers of which **33 name a published symbol** and 230 nothing published, 3 qualified/field, 41 expression. **CL-G1 stays a gap**: every nameable receiver is a VALUE read, which the lane's `uses` contract excludes by rule | 0 |
+| `bun run script/m14/completion-gate.ts clean` | **clean is DONE** — all six conditions pass; the declaration is `validation/m14/instruments/clean/incoming-declaration.json` (312/312, 30,868 edges, closure exact) | 0 |
 | `npx tsx script/m14/verify-ruling-tables-registered.ts` | **18 tables on disk, 18 registered, `unadjudicated lanes : 0  ()`, `PASS`** — and `clean` is in the on-disk set and in the registry, so this lane is no longer named by any list (§8 item 1, since resolved) | 0 |
 | `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16416 edges, 120/120 files`, `degraded 0`, 0 parse failures, 0 empty names, 0 unknown kinds, 0 unknown endpoints — **and the digest reads `MISSING:` on every lane, so its `analyzerStableDuringRun: true` is vacuous; see [report item 6](#reported-to-the-supervisor-not-fixed)** | 0 |
 | `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,739** edges, 8,285 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
@@ -1216,7 +1356,7 @@ was clean before the doc edits and after them.
 | `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,285 symbols, **31,241** relationships, **no violations**; `implements.classNotDeclaredHere` **306**, `references.externalTypeOrContext` **7,866** (`analyze()`, see Instruments) | 0 |
 | `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
 | `npx tsx script/m14/clean-mutant-run.ts` | **12 mutants, caught 12/12**, every one made the suite red. The two `&` mutants are caught by `clean/ampersand-class-context` alone and in OPPOSITE directions — `…separator-dropped` fail 0 → 1 with 10 problems, `…repeat-published-per-conjunct` fail 0 → 1 with 4 | 0 |
-| `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 13, fail 0**, `fixture baseline gate: no regressions` (12 after pass 4 added `instance-member-signature-context`, 13 after pass 5 added `ampersand-class-context`) | 0 |
+| `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 14, fail 0**, `fixture baseline gate: no regressions` (12 after pass 4 added `instance-member-signature-context`, 13 after pass 5 added `ampersand-class-context`, 14 at the pass-6 census round) | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts` | **PASS** — 18 declarations, 23 (declaration, child) pairs, 0 unclassified, 0 ERROR, 0 MISSING | 0 |
 | `npx tsx validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | 772 `implements`, 198 operator-shaped, 174 external (correct), **0 external-but-local** (read 24 before the fix), 0 instances reading a parenthesised class name | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |

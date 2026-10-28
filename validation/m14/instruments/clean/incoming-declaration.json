@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "lang": "clean",
+    "instrument": "npx tsx script/m14/incoming-gate.ts --json clean icl,dcl 0",
+    "generator": "script/m14/arm-declaration.ts — transcribes the arm's own per-type buckets and REFUSES a sample, a non-whole population, a broken external split or a closure that does not sum",
+    "sample": 312,
+    "corpusTotal": 312,
+    "corpusRepos": 5,
+    "parsed": 312,
+    "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+    "metric": "edges counted once per (source, type, target, line) by the analyzer; buckets counted on the SAME edge in the SAME loop",
+    "analyzer": "src/ast/real-clean-analyzer.ts",
+    "analyzerDigest": "sha256:b7603c8348ff6e29aa5f2e08b4ecb701b2a458f799d0ed469efe465fb86b3882",
+    "arm": "validation/m14/measurements/clean-gate-whole-2026-10-28.json",
+    "indexArm": false,
+    "armVerdict": "FAIL",
+    "armReason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 6833 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  3906 ambiguous + 2927 unresolved of 30868 edges, resolved against the file's OWN PROJECT (production's scope)",
+    "instrumentSelfTest": {
+      "ok": true,
+      "failures": []
+    },
+    "absentFiles": 0,
+    "overCapFiles": 0,
+    "sizeCapBytes": 1048576
+  },
+  "causeRulings": {},
+  "causeRulingsNote": "EMPTY BECAUSE NO EDGE CARRIES A DECLARED CAUSE: the arm's cause columns read causeDeclared 0 and the residual is dispositioned by the WALL classes it does not name. An empty map here means 'the analyzer declares no cause that would need a ruling', which the completion gate reads as clause 3 SATISFIED — not as a missing section.",
+  "types": {
+    "calls": {
+      "edges": 3819,
+      "resolved": 3449,
+      "external": 0,
+      "ambiguous": 295,
+      "otherUnresolved": 75,
+      "unclassed": 0,
+      "_ambKind": 1,
+      "_collRes": 0
+    },
+    "uses": {
+      "edges": 1457,
+      "resolved": 1457,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "contains": {
+      "edges": 7541,
+      "resolved": 7541,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 5171
+    },
+    "imports": {
+      "edges": 1917,
+      "resolved": 0,
+      "external": 438,
+      "ambiguous": 0,
+      "otherUnresolved": 1479,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "references": {
+      "edges": 10113,
+      "resolved": 4244,
+      "external": 1763,
+      "ambiguous": 2748,
+      "otherUnresolved": 1358,
+      "unclassed": 0,
+      "_ambKind": 798,
+      "_collRes": 0
+    },
+    "exports": {
+      "edges": 4821,
+      "resolved": 4599,
+      "external": 0,
+      "ambiguous": 222,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 8,
+      "_collRes": 0
+    },
+    "extends": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "implements": {
+      "edges": 772,
+      "resolved": 416,
+      "external": 4,
+      "ambiguous": 337,
+      "otherUnresolved": 15,
+      "unclassed": 0,
+      "_ambKind": 196,
+      "_collRes": 0
+    },
+    "overrides": {
+      "edges": 306,
+      "resolved": 2,
+      "external": 0,
+      "ambiguous": 304,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "instantiates": {
+      "edges": 122,
+      "resolved": 122,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "decorates": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "renders": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    },
+    "part_of": {
+      "edges": 0,
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "unclassed": 0,
+      "_ambKind": 0,
+      "_collRes": 0
+    }
+  },
+  "resolution_caveats": {
+    "buckets": "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ARM'S ELEVEN TERMS, NOT THE ELEVEN TERMS: external = externalVerified + externalUnverified, and otherUnresolved carries unresolved + externalRefuted + the binding and cause columns. Every row's buckets sum to its edge count and `unclassed` is 0 by construction — the generator REFUSES to write a row that does not close."
+  }
+}
