@@ -742,6 +742,30 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (set === undefined) declaredVariableTypes.set(name, new Set([type]))
       else set.add(type)
     }
+    /**
+     * W14 — THE ELEMENT A CONTAINER YIELDS. `mapping(K => EnumerableSet.AddressSet) _roleMembers`
+     * makes `_roleMembers[role]` an `AddressSet`, whose library is `EnumerableSet`; `Foo[] arr`
+     * makes `arr[i]` a `Foo`. Neither is a declared variable's own type, so `declaredVariableTypes`
+     * cannot answer the receiver question for an INDEX receiver — and that is the whole W14 class
+     * (`_roleMembers[role].pos(index)`, 251 rows, every one naming a member the project declares).
+     *
+     * THE GRAMMAR FLATTENS BOTH FORMS INTO `type_name`: `mapping(bytes32 => EnumerableSet.AddressSet)`
+     * arrives as `type_name(primitive_type, type_name(user_defined_type))`, and `Foo[]` as
+     * `type_name(type_name(...))` — there is no `mapping` or `array_type` node to read. So the
+     * element type is found STRUCTURALLY as the LAST `user_defined_type` in the type's subtree:
+     * for a mapping that separates the VALUE from a possibly user-defined KEY, and a nested
+     * `mapping(a => mapping(b => T))` still ends at T. No text parsing, no regex.
+     */
+    const containerElementTypes = new Map<string, string>()
+    const noteContainerElementType = (name: string, typeNode: Node | null): void => {
+      if (!typeNode || name === "") return
+      const text = skipLeadingSpace(typeNode.text).trim()
+      if (!text.startsWith("mapping") && !text.endsWith("]")) return
+      const udts = findDescendants(typeNode, "user_defined_type")
+      const last = udts[udts.length - 1]
+      const head = udtName(last)
+      if (head !== "") containerElementTypes.set(name, head)
+    }
     /** Built once per file, and only when a header name actually needs the project's key space. */
     let projectResolutionTables: ReturnType<typeof buildResolutionTables> | null = null
     const projectTables = (): ReturnType<typeof buildResolutionTables> => {
@@ -1349,6 +1373,50 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (obj.type === "identifier") return obj.text
       if (obj.type === "expression" && obj.namedChildCount > 0) {
         const c = obj.namedChild(0)
+        if (c && c.type === "identifier") return c.text
+      }
+      return ""
+    }
+
+    /**
+     * W14 — the CONTAINER an indexed receiver reads from. `_m[k].pos(i)` puts an `array_access`
+     * under the member expression's `object`, so `memberObjectName` returns "" (the object is not
+     * an identifier) and the call publishes no object at all. The base identifier is what the
+     * element-type table is keyed on; the element itself is `_m`'s value type, not `_m[k]`'s.
+     * Returns "" for any deeper shape (`f().x`, `a.b[i].m`) — a guess is worse than a gap.
+     */
+    /**
+     * W14b — THE TYPE A CONVERSION NAMES. `IAccessManager(authority()).get()` calls `get` on an
+     * `IAccessManager`: the source states the receiver's type, and 90 of the ambiguous `calls` rows
+     * are this shape. The member expression's object is a `call_expression` whose callee is the TYPE
+     * — read structurally, never from the text — and the type itself must be a declared project type
+     * before it can name a declarer (checked by the caller through `memberDeclarer`).
+     */
+    const conversionTypeOf = (node: Node | null): string => {
+      if (!node) return ""
+      if (node.type === "expression" && node.namedChildCount > 0) return conversionTypeOf(node.namedChild(0))
+      if (node.type !== "call_expression") return ""
+      // A CONVERSION is not a user call: the grammar fills no `function` field for it, so the
+      // callee is the FIRST named child. Measured on `IAccessManager(authority()).get()` — with the
+      // field-only read, `conversionTypeOf` returned "" and all 90 conversion rows stayed
+      // `projectMemberCandidate` while the shape was right in front of it.
+      const fn = node.childForFieldName("function") ?? node.namedChild(0)
+      const inner = fn && fn.type === "expression" && fn.namedChildCount > 0 ? fn.namedChild(0) : fn
+      if (!inner) return ""
+      if (inner.type === "identifier") return inner.text
+      if (inner.type === "user_defined_type") return udtName(inner)
+      return ""
+    }
+
+    const indexedBaseOf = (node: Node | null): string => {
+      if (!node) return ""
+      if (node.type === "expression" && node.namedChildCount > 0) return indexedBaseOf(node.namedChild(0))
+      if (node.type !== "array_access") return ""
+      const base = node.namedChild(0)
+      if (!base) return ""
+      if (base.type === "identifier") return base.text
+      if (base.type === "expression" && base.namedChildCount > 0) {
+        const c = base.namedChild(0)
         if (c && c.type === "identifier") return c.text
       }
       return ""
@@ -2108,6 +2176,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           const meta = modifiersOf(node)
           meta.declaredType = typeTextOf(node.childForFieldName("type"))
           noteVariableType(name, typeof meta.declaredType === "string" ? meta.declaredType : "")
+          noteContainerElementType(name, node.childForFieldName("type"))
           if (node.childForFieldName("location")) {
             meta.stateLocation = node.childForFieldName("location")!.text
           }
@@ -2218,6 +2287,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isImmutable = findFirstChild(node, "immutable") !== null
           const declaredType = typeTextOf(node.childForFieldName("type"))
           noteVariableType(nameNode.text, declaredType)
+          noteContainerElementType(nameNode.text, node.childForFieldName("type"))
           declareSymbol(nameNode.text,
             isImmutable ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
             node, line, {
@@ -2429,6 +2499,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
                 ENGINE_FUNCTION_NAMES.has(got.name))
             const callBindOwner = callBareRefused ? null : callBindOwnerRaw
             const callTarget = callBindOwner !== null ? `${callBindOwner}${BINDING_SEP}${got.name}` : got.name
+            // W14 — an index receiver's CONTAINER name, read once here rather than at three emit sites.
+            const calleeObjectNode = calleeNode ? calleeNode.childForFieldName("object") : null
+            const callObjectBase = got.viaMember && qObj === "" ? indexedBaseOf(calleeObjectNode) : ""
+            const callObjectConversion = got.viaMember && qObj === "" && callObjectBase === "" ? conversionTypeOf(calleeObjectNode) : ""
             addRel(top().scope, callTarget, ASTEngine.RelationshipType.Calls, 0.9, got.line, {
               isSolidityCall: true,
               ...(callBindOwner !== null ? { localBinding: true } : {}),
@@ -2449,6 +2523,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
               // HERE, at the emit, because the post-pass has the callee NAME and
               // nothing else: `encode` alone cannot say which of the two it was.
               ...(got.viaMember ? { calleeObject: qObj } : {}),
+              // W14 — the CONTAINER an index receiver reads from, kept apart from `calleeObject`
+              // because the object of the member expression is `_m[k]`, not `_m`.
+              ...(callObjectBase !== "" ? { calleeObjectBase: callObjectBase } : {}),
+              // W14b — the TYPE a conversion receiver names (`IAccessManager(x).get()`).
+              ...(callObjectConversion !== "" ? { calleeObjectConversion: callObjectConversion } : {}),
               // SOL-15 — the enclosing TYPE, captured here because the relationship's
               // SOURCE is the enclosing scope's LEAF name (`everything`, not
               // `Child.everything`), so the owner cannot be recovered from the row
@@ -2620,10 +2699,15 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           const objectNode = node.childForFieldName("object")
           if (isEngineMemberObject(objectNode)) break
           const object = memberObjectName(node)
+          // W14 — an INDEX receiver (`_m[k].pos`) names no object through `memberObjectName`.
+          // The CONTAINER's name is recorded separately, so `viaObject` keeps its meaning
+          // (the object the member hangs off) and the element-type table has a key to read.
+          const objectBase = object === "" ? indexedBaseOf(objectNode) : ""
           addRel(top().scope, prop.text, ASTEngine.RelationshipType.Uses, 0.8,
             prop.startPosition.row + 1, {
               isMemberReference: true,
               ...(object !== "" ? { viaObject: object } : {}),
+              ...(objectBase !== "" ? { viaObjectBase: objectBase } : {}),
             })
           break
         }
@@ -3045,21 +3129,61 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // project's own `qualifiedName` index resolves — and `receiverType` records the evidence.
       //
       // TWO GUARDS, EACH A MEASURED FAILURE:
-      //  * `memberDeclarers > 1` — the name is declared by more than one project type, i.e. the
-      //    bare spelling CAN be ambiguous. Rewriting a name that only one type declares would
-      //    churn a row that already resolved, and a qualified spelling can collide where the
-      //    bare one did not (two same-named types in different files), so the pass stays out.
+      //  * the DECLARER's type name must be declared ONCE project-wide (`symbolCounts`) — that is
+      //    what makes `<Declarer>.<member>` a single key. A first version instead required the BARE
+      //    name to be declared by more than one type, a proxy that blocked 251 rows whose evidence
+      //    is complete (`pos` is declared by one type but collides with non-member names) and that
+      //    proved nothing about the qualified spelling.
       //  * a `null` declarer — two bases in the receiver's closure declare the member. Solidity
       //    requires an override to disambiguate that, so no single owner can be named here.
-      if (projectIndex && typeof md.calleeObject === "string" && target !== "" && !target.includes(".")) {
-        const types = declaredVariableTypes.get(md.calleeObject)
-        if (types !== undefined && types.size === 1 && (projectMemberDeclarers.get(target) ?? 0) > 1) {
-          const receiverType = [...types][0]
-          const declarer = projectMemberDeclarer.get(receiverType)?.get(target)
+      // THE RECEIVER MAY BE A CONTAINER, NOT A VALUE (W14): `_m[k].pos(i)` has no `calleeObject`, so
+      // the container name is read from `calleeObjectBase` and its ELEMENT type from the mapping/array
+      // declaration. If the container's own name is declared with two types, the element type is not
+      // a fact about the site and the row is left alone — the same rule as everywhere else here.
+      // `calleeObject` is PRESENT AND EMPTY on an index receiver (the emit spells every member call's
+      // object, and for `_m[k].pos` that object is not an identifier). Testing `typeof === "string"`
+      // therefore selected "" and never the base — the container branch was unreachable by exactly
+      // the shape it exists for. The fallback is on EMPTINESS, not on presence.
+      const calleeObject = typeof md.calleeObject === "string" ? md.calleeObject : ""
+      const receiverName = calleeObject !== ""
+        ? calleeObject
+        : (typeof md.calleeObjectBase === "string" ? md.calleeObjectBase : "")
+      // W14b — a conversion receiver's TYPE is the site's own statement, so it is not looked up in
+      // the declared-variable table at all; it must still be a declared project type to name a
+      // declarer, and that is checked by the `memberDeclarer` lookup below.
+      const conversionReceiver = typeof md.calleeObjectConversion === "string" ? md.calleeObjectConversion : ""
+      // A CONVERSION receiver has NO variable name at all, so the outer test cannot be `name !== ""`:
+      // measured, that single condition made all 90 conversion rows unreachable while every fact they
+      // need (`calleeObjectConversion`) was already on the edge.
+      if (projectIndex && (receiverName !== "" || conversionReceiver !== "") && target !== "" && !target.includes(".")) {
+        const types = declaredVariableTypes.get(receiverName)
+        const element = containerElementTypes.get(receiverName)
+        // A CONTAINER receiver takes its ELEMENT type, not the container's own declared type:
+        // `_roleMembers` is declared `mapping(...)`, and `_roleMembers[role]` is the value.
+        const receiverType = types !== undefined && types.size !== 1
+          ? undefined
+          : (element ?? (types !== undefined ? [...types][0] : undefined))
+        const isContainer = conversionReceiver !== "" || element !== undefined
+        // A CONVERSION receiver states its own type, so it needs no lookup at all; a CONTAINER
+        // receiver's type is the element; a VALUE receiver is the declared type. The two constructs
+        // that are NOT a variable read answer the qualified-name question directly.
+        const effectiveReceiverType = conversionReceiver !== "" ? conversionReceiver : receiverType
+        // THE GUARD DIFFERS BY CONSTRUCT, AND EACH IS THE ONE ITS CONSTRUCT NEEDS. A container or
+        // conversion receiver asks whether `<Type>.<member>` is ONE key (`symbolCounts` on the type
+        // name) — the bare-name collision count had blocked all 251 W14 rows, and those rows' bare
+        // names collide with NON-MEMBER symbols, which says nothing about the qualified spelling.
+        // A value receiver keeps the established guard: rewrite only when the bare name is declared
+        // by more than one type, so the pass touches only rows that can actually be ambiguous and
+        // does not churn spellings that already resolve.
+        const mayNameOneDeclaration = isContainer
+          ? (projectIndex.symbolCounts.get(effectiveReceiverType ?? "") ?? 0) === 1
+          : (projectMemberDeclarers.get(target) ?? 0) > 1
+        if (effectiveReceiverType !== undefined && mayNameOneDeclaration) {
+          const declarer = projectMemberDeclarer.get(effectiveReceiverType)?.get(target)
           if (declarer !== undefined && declarer !== null) {
             rel.target = `${declarer}.${target}`
             target = rel.target
-            md.receiverType = receiverType
+            md.receiverType = effectiveReceiverType
             md.ownerType = declarer
             md.calleeKind = "receiverTypedMember"
             kind = "receiverTypedMember"
@@ -3100,13 +3224,20 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const rel of relationships) {
         if (rel.type !== ASTEngine.RelationshipType.Uses) continue
         const md = rel.metadata as Record<string, unknown>
-        if (md.isMemberReference !== true || typeof md.viaObject !== "string") continue
+        if (md.isMemberReference !== true) continue
+        // Same emptiness rule as the calls branch: an absent `viaObject` is not the only way a read
+        // has no object — an index receiver has none, and the CONTAINER's name is the fallback.
+        const viaObject = typeof md.viaObject === "string" ? md.viaObject : ""
+        const receiverName = viaObject !== ""
+          ? viaObject
+          : (typeof md.viaObjectBase === "string" ? md.viaObjectBase : "")
+        if (receiverName === "") continue
         const target = rel.target ?? ""
         if (target === "" || target.includes(".")) continue
-        if ((projectMemberDeclarers.get(target) ?? 0) <= 1) continue
-        const types = declaredVariableTypes.get(md.viaObject)
-        if (types === undefined || types.size !== 1) continue
-        const receiverType = [...types][0]
+        const types = declaredVariableTypes.get(receiverName)
+        const element = types === undefined ? containerElementTypes.get(receiverName) : undefined
+        const receiverType = types !== undefined && types.size === 1 ? [...types][0] : element
+        if (receiverType === undefined) continue
         const declarer = projectMemberDeclarer.get(receiverType)?.get(target)
         if (declarer === undefined || declarer === null) continue
         rel.target = `${declarer}.${target}`
