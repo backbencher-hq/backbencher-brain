@@ -25,15 +25,19 @@
  *             the contract says the host renderer constructs the element. PowerShell
  *             is a shell and an automation language: it has no component model, no
  *             declaration that denotes a component, and no host renderer attributable
- *             to a declaration. The counters are the four nearest real constructs,
+ *             to a declaration. The counters are the five nearest real constructs,
  *             each counted rather than argued:
- *               ConvertTo-Html   converts OBJECTS to HTML text (a serializer)
- *               Out-GridView     displays objects in a GUI grid (a host displays
- *                                DATA; the target is the data, not a component)
- *               Show-Command     displays a cmdlet's parameter UI
- *               XamlReader       a WPF reader that constructs UI from XAML text
- *             A fifth, `format data files` (.ps1xml `<View>`), is named but NOT
- *             counted here because those files do not route to this lane — the
+ *               ConvertTo-Html        converts OBJECTS to HTML text (a serializer)
+ *               Out-GridView          displays objects in a GUI grid (a host
+ *                                     displays DATA; the target is the data, not a
+ *                                     component)
+ *               Show-Command          displays a cmdlet's parameter UI
+ *               Show-ControlPanelItem opens a CONTROL PANEL ITEM — its own counter,
+ *                                     because it shares nothing with a cmdlet's
+ *                                     parameter UI but the word "Show"
+ *               XamlReader            a WPF reader that constructs UI from XAML text
+ *             A sixth shape, `format data files` (.ps1xml `<View>`), is named but
+ *             NOT counted here because those files do not route to this lane — the
  *             census reports that as a routing fact, not a zero.
  *             The FALSIFIER it publishes: a site whose target is a DECLARED
  *             COMPONENT. The vocabulary has no component symbol kind, so this is
@@ -74,7 +78,11 @@
  *              `-PassThru`, an `Update-TypeData` naming only serialization
  *              parameters, and two commands with no arguments; NO
  *              `-NotePropertyMembers` hashtable form occurs in the population at
- *              all, which the first draft of this comment guessed it did), and every
+ *              all, which the first draft of this comment guessed it did); and an
+ *              attachment with no `command_elements` node at all is counted in
+ *              `attachmentSitesWithNoArguments` rather than raising the
+ *              attachment total and slipping past the residual, which is what the
+ *              early `return` did before that counter existed. Every
  *              member-set argument whose shape is none of block/string/declared-name
  *              is listed in `memberSetUnshapedArgs` (measured: bare value tokens like
  *              `$value`, `$null`, `(Get-ExpectedComputerInfoValue $propertyName)`) so
@@ -220,7 +228,14 @@ const addDeclared = (name: string, kind: string): void => {
 }
 let filesParsed = 0
 let filesFailed = 0
-const trees: Node[] = []
+/**
+ * THE PARSED FILE AND ITS RECORD, PAIRED — not two arrays indexed against each other. `trees` held
+ * only the files that PARSED while `admitted` held all of them, so ONE parse failure shifted every
+ * later per-site record onto the WRONG FILE: the counts stayed right and every `exampleSites` /
+ * residual listing named a file the site was not read from. `population.failed` is 0 today, so no
+ * record in the current artifact is misattributed — the identity was corpus luck, not construction.
+ */
+const parsedFiles: { root: Node; a: Admitted }[] = []
 
 for (const a of admitted) {
   let root: Node
@@ -239,7 +254,7 @@ for (const a of admitted) {
     filesFailed++
     continue
   }
-  trees.push(root)
+  parsedFiles.push({ root, a })
   walk(root, (n) => {
     if (n.type === "class_statement") {
       const nm = firstChild(n, "simple_name")
@@ -258,15 +273,64 @@ for (const a of admitted) {
 const RENDER_COMMANDS = new Set(["convertto-html", "out-gridview", "show-command", "show-controlpanelitem"])
 const MIXIN_COMMANDS = new Set(["add-member", "update-typedata", "update-formatdata", "add-type"])
 
+/**
+ * THE ARGUMENT'S OWN SHAPE — ONE classifier, used by the corpus walk and by the control.
+ *
+ * Two copies of a shape test are two answers to whether an argument is a block, a string, a declared
+ * name or a bare value, and the control would then be proving a predicate the corpus never runs.
+ *
+ * THE DECLARED-NAME HALF IS A SUBTREE TEST: any declared name ANYWHERE inside the argument makes it
+ * `declared_name`. That is STRONGER than "the member set is a named declaration" — a cast
+ * (`-Value ([SomeType]$o)`) would read as declared — so a zero here is the stronger reading and a
+ * non-zero would have to be read by a human before it was called a named member set.
+ */
+const argumentShape = (c: Node, isDeclared: (lower: string) => boolean): { shape: string; namesADeclaration: boolean } => {
+  let namesADeclaration = false
+  let sawBlock = false
+  let sawString = false
+  if (c.type === "generic_token" && isDeclared(c.text.trim().toLowerCase())) namesADeclaration = true
+  walk(c, (m) => {
+    if (m.type === "script_block" || m.type === "script_block_expression") sawBlock = true
+    else if (
+      m.type === "string_literal" ||
+      m.type === "expandable_string_literal" ||
+      m.type === "expandable_here_string_literal" ||
+      m.type === "verbatim_string_characters"
+    )
+      sawString = true
+    else if (
+      (m.type === "simple_name" || m.type === "type_name" || m.type === "type_identifier") &&
+      isDeclared(m.text.trim().toLowerCase())
+    )
+      namesADeclaration = true
+  })
+  const shape = sawBlock ? "script_block" : sawString ? "string_literal" : namesADeclaration ? "declared_name" : c.type
+  return { shape, namesADeclaration }
+}
+
 const counters = {
   renders: {
     convertToHtml: 0,
     outGridView: 0,
     showCommand: 0,
+    /**
+     * `Show-ControlPanelItem` HAD NO COUNTER AND WAS COUNTED AS `showCommand`: both commands fell
+     * through one `else`, so a "0 Show-Command" row was really "0 of those two commands". They
+     * display different things — a control panel item is not a cmdlet's parameter UI — so the key
+     * said something the count did not.
+     */
+    showControlPanelItem: 0,
     xamlReaderTypeMentions: 0,
     candidateSites: 0,
-    /** Candidate sites whose rendered TARGET names a declaration of this population (see the falsifier note). */
+    /**
+     * CANDIDATE SITES whose arguments contain a declaration of this population — a SITE count, at most
+     * once per command, because the falsifier's unit is a site. The NODE count below is the same walk
+     * per matching name, and it is what this key used to hold: one `ConvertTo-Html` naming two
+     * declarations read as 2 SITES when it is 1.
+     */
     sitesWhoseTargetNamesADeclaration: 0,
+    /** Matching NAME NODES inside candidate sites' arguments — reported beside the site count, never as it. */
+    declarationNameNodesInRenderArguments: 0,
     filesWithAnyCandidate: 0,
     exampleSites: [] as { file: string; line: number; command: string }[],
   },
@@ -304,6 +368,12 @@ const counters = {
     memberSetDeclaredSites: [] as { file: string; line: number; command: string; param: string; argument: string; declarationKinds: string[] }[],
     /** `-Name` / `-MemberName` / `-NotePropertyName` arguments, keyed by parameter AND shape: a name is not a set. */
     memberNameArguments: {} as Record<string, number>,
+    /**
+     * THE DECLARATION-SHAPED NAME ARGUMENTS, LISTED. The tally above says how many there are; a tally
+     * is not evidence, so each one carries its file, line and text — which is what the ruling disposes
+     * of BY NAME (`Add-Type -Name TestClass`, `Add-Member -Name Build`).
+     */
+    memberNameDeclaredSites: [] as { file: string; line: number; command: string; param: string; argument: string; declarationKinds: string[] }[],
     /** Every member-set argument whose shape is none of block / string / declared-name, in full (capped). */
     memberSetUnshapedArgs: [] as { file: string; line: number; command: string; param: string; shape: string; argument: string }[],
     /** `Add-Type -TypeDefinition` shapes — a compiled source string, counted so it is not claimed as a member set. */
@@ -312,7 +382,15 @@ const counters = {
     memberSetOnNonAttachment: {} as Record<string, number>,
     /** The HOST: `-TypeName`, counted separately so a host name is never read as a member set. */
     hostTypeArgumentSites: 0,
-    hostTypeIsPrimitiveOrWildcard: 0,
+    /**
+     * HOST ARGUMENTS THAT ARE NOT A CORPUS DECLARATION. This key was named
+     * `hostTypeIsPrimitiveOrWildcard`, and the name was FALSE: the test is `shape !== "declared_name"`,
+     * which is also reached by a RUNTIME VARIABLE (`-TypeName $t`), a `[type]` literal and a qualified
+     * name. The sites are listed in `hostTypeNonDeclaredSites` so a reader sees which they are instead
+     * of trusting a label — the same repair the member-set side already carries.
+     */
+    hostTypeArgumentNotACorpusDeclaration: 0,
+    hostTypeNonDeclaredSites: [] as { file: string; line: number; command: string; shape: string; argument: string }[],
     /**
      * MEMBER ATTACHMENTS WITH NO `-Value` ARGUMENT AT ALL — the residual that would otherwise be an
      * unclassified hole. `Add-Member -NotePropertyMembers @{…}` carries its members in a hashtable
@@ -320,6 +398,13 @@ const counters = {
      * rather than left to look like a site that was read and found clean.
      */
     attachmentSitesWithNoValueArgument: 0,
+    /**
+     * MEMBER ATTACHMENTS WITH NO ARGUMENT LIST AT ALL — no `command_elements` node, or an empty one
+     * (`Add-Member` alone). Without this counter such a site raised `memberAttachmentSites` and then hit
+     * the early `return` before the residual, so `144 = 121 + 23` would have closed because no such site
+     * exists in this corpus rather than because the reader guarantees it.
+     */
+    attachmentSitesWithNoArguments: 0,
     /** Those sites, WITH THE PARAMETERS THEY USED INSTEAD — so the residual is named, not inferred. */
     attachmentSitesWithoutValue: [] as { file: string; line: number; command: string; params: string[] }[],
     filesWithAnyCandidate: 0,
@@ -344,6 +429,12 @@ const counters = {
  * Declared at module scope because the CONTROL below classifies the same parameters, and two copies
  * of a role table are two answers to the same question.
  */
+// THE ROLE IS A PROPERTY OF (COMMAND, PARAMETER), NOT OF THE PARAMETER NAME. `-Name`
+// names ONE member of an existing type on Add-Member, but on Add-Type it names the .NET
+// TYPE THE COMPILATION CREATES — a HOST, the thing whose members `-TypeDefinition`
+// supplies. Keying the table on the bare parameter put 2 `Add-Type -Name TestClass`
+// arguments into the member-name tally, where they read as member sets naming a
+// declaration; the command-qualified key is read first and falls back to the bare one.
 const MIXIN_ARG_ROLE: Record<string, "host" | "memberSet" | "memberName" | "typeCompilation"> = {
   "-typename": "host",
   "-value": "memberSet",
@@ -352,12 +443,10 @@ const MIXIN_ARG_ROLE: Record<string, "host" | "memberSet" | "memberName" | "type
   "-notepropertyname": "memberName",
   "-name": "memberName",
   "-typedefinition": "typeCompilation",
+  "add-type -name": "host",
 }
 
-let fileIndex = -1
-for (const root of trees) {
-  fileIndex++
-  const a = admitted[fileIndex]
+for (const { root, a } of parsedFiles) {
   let renderInFile = false
   let mixinInFile = false
   let attachmentInFile = false
@@ -399,17 +488,31 @@ for (const root of trees) {
       counters.renders.candidateSites++
       if (cmd === "convertto-html") counters.renders.convertToHtml++
       else if (cmd === "out-gridview") counters.renders.outGridView++
+      else if (cmd === "show-controlpanelitem") counters.renders.showControlPanelItem++
       else counters.renders.showCommand++
       if (counters.renders.exampleSites.length < 12) {
         counters.renders.exampleSites.push({ file: `${a.repo}/${a.rel}`, line: n.startPosition.row + 1, command: cmd })
       }
       // FALSIFIER HALF: does the command's own arguments name a DECLARED thing?
       // A `-InputObject $x` / a pipeline value is a VALUE, not a declaration.
-      walk(n, (m) => {
-        if (m.type === "simple_name" || m.type === "type_name" || m.type === "type_identifier") {
-          if (declared.has(m.text.trim().toLowerCase())) counters.renders.sitesWhoseTargetNamesADeclaration++
-        }
-      })
+      // COUNTED TWICE ON PURPOSE AND NEVER CONFLATED: the NODE count is per matching name, the SITE
+      // count is once per command — and the site count is the unit the falsifier words.
+      // THE WALK IS OVER THE ARGUMENTS, not the command: `command_elements` is where every argument
+      // lives, and the command's own name is outside it. Walking `n` would let a cmdlet whose NAME is a
+      // declared function read as a site that "names a declaration in its arguments".
+      let renderNamesADeclaration = false
+      const renderArgs = firstChild(n, "command_elements")
+      if (renderArgs) {
+        walk(renderArgs, (m) => {
+          if (m.type === "simple_name" || m.type === "type_name" || m.type === "type_identifier") {
+            if (declared.has(m.text.trim().toLowerCase())) {
+              counters.renders.declarationNameNodesInRenderArguments++
+              renderNamesADeclaration = true
+            }
+          }
+        })
+      }
+      if (renderNamesADeclaration) counters.renders.sitesWhoseTargetNamesADeclaration++
       return
     }
 
@@ -432,10 +535,11 @@ for (const root of trees) {
         counters.mixes_in.exampleSites.push({ file: `${a.repo}/${a.rel}`, line: n.startPosition.row + 1, command: cmd })
       }
       // FALSIFIER HALF — read the PARAMETER, not the whole command. `-TypeName` is
-      // the HOST the members are attached to; the member set is whatever follows
-      // `-Value` / `-MemberName` / `-Name`. Classifying the argument's own subtree
-      // is what makes the number mean "the composed set is X" rather than "some
-      // name in this line is declared".
+      // the HOST the members are attached to; the MEMBER SET is the `-Value` /
+      // `-NotePropertyValue` argument, and `-Name` / `-MemberName` name ONE member
+      // and are tallied apart. Classifying the argument's own subtree is what makes
+      // the number mean "the composed set is X" rather than "some name in this line
+      // is declared".
       // THE GRAMMAR PUTS PARAMETERS AND THEIR ARGUMENTS INSIDE `command_elements`,
       // in source order, alternating `command_parameter` and the argument node:
       //   (command_elements (command_argument_sep) (command_parameter) (generic_token) …
@@ -444,7 +548,16 @@ for (const root of trees) {
       // are only `command_name` and `command_elements` — the first version of this read
       // the wrong level and measured 0 member-set arguments over 326 sites).
       const elements = firstChild(n, "command_elements")
-      if (!elements) return
+      if (!elements || elements.childCount === 0) {
+        // AN ATTACHMENT WITH NO ARGUMENT LIST AT ALL (`Add-Member` alone) lands here, whether the
+        // grammar omits `command_elements` or gives it no children. It has already been counted as a
+        // member attachment, so it must be counted as an unread member set too — otherwise the residual
+        // closes on corpus luck rather than on the reader's guarantee. AND IT RETURNS EITHER WAY: an
+        // empty element list would otherwise fall through to the residual below and be counted TWICE,
+        // once here and once in `attachmentSitesWithNoValueArgument`.
+        if (isAttachment) counters.mixes_in.attachmentSitesWithNoArguments++
+        return
+      }
       // Whether this SITE carried a member-set argument at all. A site with none is counted after
       // the loop rather than left to look like a site that was read and found clean: `Add-Member
       // -NotePropertyMembers @{…}` carries its members in a hashtable, which this reader cannot
@@ -464,34 +577,23 @@ for (const root of trees) {
         if (pending === null) continue
         const param = pending
         pending = null
-        const role = MIXIN_ARG_ROLE[param]
+        const role = MIXIN_ARG_ROLE[`${cmd} ${param}`] ?? MIXIN_ARG_ROLE[param]
         if (!role) continue
-        let shape = c.type
-        let namesADeclaration = false
-        let sawBlock = false
-        let sawString = false
-        if (c.type === "generic_token" && declared.has(c.text.trim().toLowerCase())) namesADeclaration = true
-        walk(c, (m) => {
-          if (m.type === "script_block" || m.type === "script_block_expression") sawBlock = true
-          else if (
-            m.type === "string_literal" ||
-            m.type === "expandable_string_literal" ||
-            m.type === "expandable_here_string_literal" ||
-            m.type === "verbatim_string_characters"
-          )
-            sawString = true
-          else if (
-            (m.type === "simple_name" || m.type === "type_name" || m.type === "type_identifier") &&
-            declared.has(m.text.trim().toLowerCase())
-          )
-            namesADeclaration = true
-        })
-        if (sawBlock) shape = "script_block"
-        else if (sawString) shape = "string_literal"
-        else if (namesADeclaration) shape = "declared_name"
+        const { shape } = argumentShape(c, (t) => declared.has(t))
         if (role === "host") {
           counters.mixes_in.hostTypeArgumentSites++
-          if (shape !== "declared_name") counters.mixes_in.hostTypeIsPrimitiveOrWildcard++
+          if (shape !== "declared_name") {
+            counters.mixes_in.hostTypeArgumentNotACorpusDeclaration++
+            if (counters.mixes_in.hostTypeNonDeclaredSites.length < 40) {
+              counters.mixes_in.hostTypeNonDeclaredSites.push({
+                file: `${a.repo}/${a.rel}`,
+                line: n.startPosition.row + 1,
+                command: cmd,
+                shape,
+                argument: c.text.slice(0, 120),
+              })
+            }
+          }
         } else if (role === "memberSet") {
           if (!isAttachment) {
             // A member-set-shaped argument on a command this ruling does not claim. Counted, never
@@ -531,6 +633,17 @@ for (const root of trees) {
         } else if (role === "memberName") {
           const k = `${param} ${shape}`
           counters.mixes_in.memberNameArguments[k] = (counters.mixes_in.memberNameArguments[k] ?? 0) + 1
+          if (shape === "declared_name" && counters.mixes_in.memberNameDeclaredSites.length < 40) {
+            const key = c.text.trim().toLowerCase()
+            counters.mixes_in.memberNameDeclaredSites.push({
+              file: `${a.repo}/${a.rel}`,
+              line: n.startPosition.row + 1,
+              command: cmd,
+              param,
+              argument: c.text.slice(0, 120),
+              declarationKinds: [...(declared.get(key) ?? [])],
+            })
+          }
         } else {
           if (cmd === "add-type") {
             counters.mixes_in.typeCompilationDefinitionShapes[shape] = (counters.mixes_in.typeCompilationDefinitionShapes[shape] ?? 0) + 1
@@ -567,9 +680,16 @@ const controlText = [
   "Update-TypeData -TypeName Foo -MemberType ScriptProperty -MemberName P -Value { 1 }",
   "Update-FormatData -PrependPath ./x.format.ps1xml",
   "Add-Type -TypeDefinition 'public class C { }'",
+  "Add-Type -Name Held -TypeDefinition 'public class Held { }'",
   "ConvertTo-Html -InputObject $o",
   "$o | Out-GridView",
   "Show-Command Get-ChildItem",
+  "Show-ControlPanelItem",
+  "function Build { }",
+  "$o | Add-Member -Name Build -Value 1",
+  "Add-Member",
+  "Add-Member -MemberType NoteProperty",
+  "ConvertTo-Html -Title (Build)",
   "class Base { }",
   "class Derived : Base { [void] M() { } [int]$P }",
 ].join("\n")
@@ -579,6 +699,22 @@ if (!cRoot) {
   console.error("CONTROL FAILURE: the control text did not parse, so no count below is demonstrably able to fire.")
   process.exit(2)
 }
+/**
+ * THE CONTROL'S OWN DECLARATION SET. `declared` is built from the ADMITTED POPULATION and the control
+ * text is deliberately not part of it — so a control reusing `declared` could never trip a
+ * `declared_name` counter, and the counters behind the `-Name` disposal would be unreachable in the one
+ * place that exists to prove they can fire.
+ */
+const controlDeclared = new Set<string>()
+walk(cRoot, (n) => {
+  if (n.type === "function_statement") {
+    const nm = firstChild(n, "function_name") ?? firstChild(n, "simple_name")
+    if (nm) controlDeclared.add(nm.text.trim().toLowerCase())
+  } else if (n.type === "class_statement" || n.type === "enum_statement") {
+    const nm = firstChild(n, "simple_name")
+    if (nm) controlDeclared.add(nm.text.trim().toLowerCase())
+  }
+})
 const control = {
   addMember: 0,
   updateTypeData: 0,
@@ -598,6 +734,15 @@ const control = {
   memberNameArgs: 0,
   typeDefinitionArgs: 0,
   memberSetArgsOnAttachment: 0,
+  hostArgs: 0,
+  hostNotDeclared: 0,
+  attachmentsNoArguments: 0,
+  attachmentsNoValue: 0,
+  memberNameDeclared: 0,
+  unshapedMemberSetArgs: 0,
+  renderSitesWithDeclaredName: 0,
+  renderDeclaredNameNodes: 0,
+  showControlPanelItem: 0,
 }
 walk(cRoot, (n) => {
   if (n.type === "class_method_definition") control.classMethods++
@@ -627,6 +772,7 @@ walk(cRoot, (n) => {
   else if (cmd === "convertto-html") control.convertToHtml++
   else if (cmd === "out-gridview") control.outGridView++
   else if (cmd === "show-command") control.showCommand++
+  else if (cmd === "show-controlpanelitem") control.showControlPanelItem++
 
   // THE ARGUMENT-LEVEL CONTROL, on the same parameters the census classifies, through the SAME
   // role table — so a role that stops matching the grammar goes red here rather than quietly
@@ -635,27 +781,62 @@ walk(cRoot, (n) => {
     const isAttachment = cmd !== "add-type"
     if (isAttachment) control.memberAttachmentSites++
     const elements = firstChild(n, "command_elements")
-    if (elements) {
-      let pending: string | null = null
-      for (let i = 0; i < elements.childCount; i++) {
-        const c = elements.child(i)
-        if (!c) continue
-        if (c.type === "command_parameter") {
-          pending = c.text.trim().toLowerCase()
-          continue
-        }
-        if (c.type === "command_argument_sep" || c.type === "command_name") continue
-        if (pending === null) continue
-        const role = MIXIN_ARG_ROLE[pending]
-        pending = null
-        if (!role) continue
-        if (role === "memberSet") {
-          control.memberSetArgs++
-          if (isAttachment) control.memberSetArgsOnAttachment++
-        } else if (role === "memberName") control.memberNameArgs++
-        else if (role === "typeCompilation") control.typeDefinitionArgs++
-      }
+    if (!elements || elements.childCount === 0) {
+      if (isAttachment) control.attachmentsNoArguments++
+      return
     }
+    let sawMemberSet = false
+    let pending: string | null = null
+    for (let i = 0; i < elements.childCount; i++) {
+      const c = elements.child(i)
+      if (!c) continue
+      if (c.type === "command_parameter") {
+        pending = c.text.trim().toLowerCase()
+        continue
+      }
+      if (c.type === "command_argument_sep" || c.type === "command_name") continue
+      if (pending === null) continue
+      const role = MIXIN_ARG_ROLE[`${cmd} ${pending}`] ?? MIXIN_ARG_ROLE[pending]
+      pending = null
+      if (!role) continue
+      // THE CORPUS CLASSIFIER, against the control's OWN declaration set: a control that consulted
+      // `declared` could never produce a `declared_name` and would prove nothing about that branch.
+      const { shape } = argumentShape(c, (t) => controlDeclared.has(t))
+      if (role === "host") {
+        control.hostArgs++
+        if (shape !== "declared_name") control.hostNotDeclared++
+      } else if (role === "memberSet") {
+        control.memberSetArgs++
+        if (isAttachment) {
+          control.memberSetArgsOnAttachment++
+          sawMemberSet = true
+          if (shape !== "script_block" && shape !== "string_literal" && shape !== "declared_name") control.unshapedMemberSetArgs++
+        }
+      } else if (role === "memberName") {
+        control.memberNameArgs++
+        if (shape === "declared_name") control.memberNameDeclared++
+      } else if (role === "typeCompilation") control.typeDefinitionArgs++
+    }
+    if (isAttachment && !sawMemberSet) control.attachmentsNoValue++
+  }
+
+  // THE RENDER FALSIFIER'S CONTROL — a candidate site whose own arguments name a declared thing. Its
+  // predicate is deliberately WIDER than the corpus one (leaf TEXT rather than a node-type list),
+  // because the control's job is to prove the counter CAN fire, and a control that guessed the grammar's
+  // spelling of `Build` wrong would report a broken counter instead of a narrow one.
+  if (cmd === "convertto-html" || cmd === "out-gridview" || cmd === "show-command" || cmd === "show-controlpanelitem") {
+    let hit = false
+    const renderArgs = firstChild(n, "command_elements")
+    if (renderArgs) {
+      walk(renderArgs, (m) => {
+        if (m.text.length === 0) return
+        if (controlDeclared.has(m.text.trim().toLowerCase())) {
+          control.renderDeclaredNameNodes++
+          hit = true
+        }
+      })
+    }
+    if (hit) control.renderSitesWithDeclaredName++
   }
 })
 const controlFailures: string[] = []
@@ -663,6 +844,16 @@ for (const [k, v] of Object.entries(control)) if (v === 0) controlFailures.push(
 if (controlFailures.length > 0) {
   console.error(`CONTROL FAILURE: the synthetic control did not trip: ${controlFailures.join(", ")}. Every zero below would be a false zero.`)
   process.exit(6)
+}
+// THE COMMAND-QUALIFIED ROLE IS PINNED IN BOTH DIRECTIONS. `Add-Type -Name Held` names the type the
+// compilation CREATES, so it must reach `hostArgs` and must NOT reach `memberNameArgs` — a bare-parameter
+// fallback would show up here as 2 and 4 instead of 2 and 3, and a role that quietly stopped matching
+// the grammar would otherwise only ever move a corpus number nobody was watching.
+if (control.memberNameArgs !== 3 || control.hostArgs !== 2) {
+  console.error(
+    `CONTROL FAILURE: the role split is not the one the table declares — memberNameArgs ${control.memberNameArgs} (expected 3), hostArgs ${control.hostArgs} (expected 2).`,
+  )
+  process.exit(7)
 }
 
 // ───────────────────────────── the facts ─────────────────────────────
@@ -714,9 +905,17 @@ const artifact = {
   classMembers: counters.classMembers,
   falsifiers: {
     renders:
-      "a site where a declaration produces a COMPONENT value that a host renderer constructs and whose target is a declared component: counted as sitesWhoseTargetNamesADeclaration, and a non-zero there is a name READ (uses/calls), not a render",
+      "a site where a declaration produces a COMPONENT value that a host renderer constructs and whose target is a declared component: counted as sitesWhoseTargetNamesADeclaration, a SITE count (at most once per command) — declarationNameNodesInRenderArguments is the same walk counted per matching name and is NEVER the site count; a non-zero would be a name READ (uses/calls), not a render",
     mixes_in:
-      "a site where a declaration attaches a MEMBER SET that is itself a named declaration: counted as memberSetNamesADeclaration, over the argument of -Value/-MemberName/-Name (never -TypeName, which is the host)",
+      "a site where a MEMBER ATTACHMENT passes a member set that is itself a named declaration: counted as memberSetNamesADeclaration, over the -Value / -NotePropertyValue argument of Add-Member and Update-TypeData ONLY. -Name / -MemberName / -NotePropertyName name ONE member and are tallied apart (memberNameArguments, with the declaration-shaped ones LISTED in memberNameDeclaredSites); -TypeName is the HOST and never a member set; Add-Type compiles source rather than attaching members. THE SHAPE TEST IS A SUBTREE TEST: any declared name anywhere inside the argument makes it declared_name, so a non-zero would have to be read by a human before it was called a named member set — which is why a zero here is the stronger reading",
+  },
+  shapeGloss: {
+    script_block: "the argument is a `{ … }` block",
+    string_literal: "the argument is, or contains, a string literal",
+    declared_name: "a declared name occurs inside the argument (a SUBTREE test, not the argument's own type)",
+    array_literal_expression:
+      "the grammar's wrapper for a SINGLE bare expression, so this is a VALUE — not a list of members, which the key's name would suggest to a reader of this JSON",
+    generic_token: "a bare token that is none of the above — a literal, a variable, or a switch-shaped argument",
   },
 }
 

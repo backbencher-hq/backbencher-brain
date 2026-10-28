@@ -34,7 +34,7 @@ The lane now ships a **local rebuild from vendored 0.26.4 source with 8 patches 
 | Size | 1,168,838 B |
 | Kind | `local-rebuild-from-vendored-source` |
 | ABI | 15 |
-| Node types | 429 ids / 152 named / 14 fields |
+| Node types | 429 ids / 154 named / 14 fields (`validation/m14/measurements/powershell-grammar-nodes.json`) |
 | Runtime | `web-tree-sitter@0.25.9` |
 
 The 8 patches, in the order they were admitted: **G5a/b** (PS7 `??` and `? :`), **G5c**
@@ -57,9 +57,9 @@ they stopped being the same file, and saying otherwise in either direction is th
 | Parameters | typed from `type_literal → type_spec` (no bracket stripping needed — the grammar separates the spec); `script_parameter_default` marks `isOptional`; both `script_parameter` and `class_method_parameter` shapes handled |
 | Owners | class members and function locals carry `ownerName` = enclosing class/function; top-level declarations are unowned. No synthetic `global` scope symbol is ever emitted; a constructor never contains itself |
 | Variables | assignments (including `for` counters and `foreach` loop vars) declare once per scope; `$global:`/`$script:`/`$env:` qualified names and automatic variables (`$this`, `$_`, `$args`, `$PSItem`, …) are never declarations |
-| Calls | cmdlets and functions emit `calls` (source = enclosing owner or `global`); flow keywords (`break`, `continue`, `return`, …) excluded; `$obj.Method()` → `calls` with `methodCall`; `[Type]::Static()` → `calls` to `Type::Static`; `. ./file.ps1` and `& ./file.ps1` → `calls` with the invocation operator recorded |
+| Calls | cmdlets and functions emit `calls` (source = enclosing owner or `global`); flow keywords (`break`, `continue`, `return`, …) excluded; `$obj.Method()` → `calls` with `methodCall`; `[Type]::Static()` → `calls` to the store's QUALIFIED NAME `Type.Static` (the source's `::` is not a name any declaration has — PS-B22); `. ./file.ps1` and `& ./file.ps1` → `calls` with the invocation operator recorded |
 | Instantiates | `[Type]::new(...)` → `instantiates` to the type |
-| Imports | `Import-Module` (bare, `-Name` and positional), `using module`, `using namespace`, and `#requires -Module`/`-Modules` populate the import table **and emit BOTH an `imports` and a `references` edge** at 0.9, tier `import_based`, with `metadata.via` naming which of the four forms declared it (char/index scanning only — comments are opaque to the grammar). Both edges carry identical metadata. See "The ten ontology types" for why both and not one |
+| Imports | `Import-Module` (bare, `-Name` and positional), `using module`, `using namespace`, and `#requires -Module`/`-Modules` populate the import table **and emit BOTH an `imports` and a `references` edge** at 0.9, tier `import_based`, with `metadata.via` naming which of the four forms declared it (char/index scanning only — comments are opaque to the grammar). Both edges carry identical metadata. See "The ontology types" for why both and not one |
 | Extends / Implements | class header `: Base, IFoo, IBar` → `extends` to the FIRST base and `implements` to the rest. PowerShell's header cannot say which base is a class and which are interfaces — the language resolves that at runtime — so the grammar's positional shape is the only information there is, and this row pins the rule rather than a guess. Gated by `class-inherit-psa2` and three mutants |
 | Overrides | a subclass member whose name matches a member of its resolved base emits `overrides` carrying `meta.overridesMember` = the member name. PowerShell class methods are virtual by default, so there is no `override` keyword to key on — the match is by name against the base's declared member set, and since PS26 it must additionally match the member KIND and the base member must be neither `hidden` nor `static` (the two things PowerShell uses to say a member is NOT overridden). The match is case-INSENSITIVE since PS28, because PowerShell identifiers are. Gated by `class-inherit-psa2`, `overrides-modifiers-psb12` and `overrides-redeclaration-psb13` |
 | Interfaces | PowerShell 5.0 `interface IShape { [string] Describe() }`. The GRAMMAR has no node for it, so it parses as a `command` named `interface`; the analyzer declares `IShape` as an `interface` symbol from that structure and does not publish it as a call. Known gap: the interface's method signatures are bodiless, so they are not `class_method_definition` nodes and an interface is declared with no members |
@@ -156,17 +156,17 @@ removal. The helper-presence assertion exists because a zero-regex gate is trivi
 satisfiable by deleting the work, and a green "zero regex" meaning "nothing left to be
 wrong about" is the vacuous pass this repo refuses elsewhere.
 
-## The ten ontology types
+## The ontology types
 
-The ten types in the table below are **EMITTED**, and every count in it is a positive
-measurement. **This section previously read "there is no RULED type in this lane", and
+The ten types in the table below (plus `part_of`, stated beneath it) are **EMITTED**, and
+every count in it is a positive measurement. **This section previously read "there is no RULED type in this lane", and
 that is no longer true**: the lane's applicable set is fourteen, and it reads **11
 implemented / 11 applicable / 3 excluded** in the coverage gate
 (`script/m14/spec/powershell-completeness.json`, which is the denominator and the
 authoritative wording). The three it does not emit — `decorates`, `renders`, `mixes_in` —
 are **RULED**, each with a population, a falsifier and an overturn ladder: `renders` and
 `mixes_in` were ruled on 2026-10-27 and are recorded under "PS-B20" below, and
-`decorates`' ruling is stated in that same spec block. Their two rows are in the table
+`decorates`' ruling is stated in that same spec block. Their three rows are in the table
 because a reader who scans it must see that these types are absent **by ruling and not by
 omission**; the `0` in each is a measured zero over the whole admitted population, not a
 cell that was never filled.
@@ -224,7 +224,7 @@ example list; `distinctFiles` in the census JSON is the uncapped set.
 
 | Relationship type | Emitted? | Edges | Files | corpusBoth | intraBoth | `conf < 0.7` | Tier | What it means **in PowerShell** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | EMITTED | 67,344 | 963 | 60.66% | 8.23% | **55.38%** | `usage_contextual` | a cmdlet or function invoked by name (`Get-ChildItem`), a method call (`$obj.Method()`), a static call (`[Type]::Static()`), or a script run through an invocation operator (`. ./x.ps1`, `& ./x.ps1`). Flow keywords excluded. |
+| `calls` | EMITTED | 67,344 | 963 | 60.66% | 8.23% | **55.38%** | `usage_contextual` | a cmdlet or function invoked by name (`Get-ChildItem`), a method call (`$obj.Method()`), a static call (`[Type]::Static()` → the qualified name `Type.Static`, PS-B22), or a script run through an invocation operator (`. ./x.ps1`, `& ./x.ps1`). Flow keywords excluded. |
 | `uses` | EMITTED | 64,599 | 887 | 92.87% | 55.96% | 0.00% | `usage_contextual` | a name READ rather than invoked: a type literal's spec, a variable read, a hashtable key, a cmdlet parameter name, an attribute, hashtable-literal and array-literal composition, and — since PS29 — a `New-Object` **type name held in a variable**. The largest channel after `calls` and the one with the highest corpus-wide resolution rate in the lane. |
 | `contains` | EMITTED | 21,750 | 1,022 | 99.87% | 99.73% | 0.00% | `structural` | lexical nesting: a module contains its functions, a class its members, a function its locals and parameters. The only type whose endpoints resolve at both ends on ~99.9% of edges, because both ends are symbols this same pass declared. **Lexical nesting is not ownership, and the size of the difference is now measured rather than declared open** — see "PS31" below. |
 | `imports` | EMITTED (PS23) | 556 | 207 | 69.42% | 37.77% | 0.00% | `import_based` | one module dependency, from `Import-Module` (361 edges), `using namespace` (105), `#requires` list or hashtable (90). **This is the type the lane did not have** — see below. |
@@ -235,7 +235,7 @@ example list; `distinctFiles` in the census JSON is the uncapped set.
 | `overrides` | EMITTED | 12 | 1 | 100.00% | 100.00% | 0.00% | `inferred` | a subclass member that overrides a member of its resolved base: same name, same kind, base member neither `hidden` nor `static`. PowerShell has no `override` keyword — class methods are virtual by default — so this is the lane's only genuinely INFERRED edge type, which is why it is the only one on tier `inferred` and the only one at 0.9 rather than 1.0. All 12 edges are in ONE file, and pass 1 published 2 of them. |
 | `instantiates` | EMITTED | 1,227 | 256 | 61.53% | 15.97% | 0.00% | `usage_contextual` | an object construction: `[Type]::new(...)` (854 edges) or `New-Object` in its three spellings (373 after PS29). Type-accelerator names are suppressed — they construct nothing the graph should name — and a **type name held in a VARIABLE is not published as an `instantiates` target at all**, since the edge would assert the variable is a type. |
 | `renders` | RULED — not applicable | 0 | — | — | — | — | — | **0 sites over 1,181 admitted files.** The vocabulary's relation is *a component renders another component*, and **0 of the 32 `SymbolKind` values name a component**; `ConvertTo-Html` (15 sites, 1 file) is a serializer of objects to HTML **text**, `Out-GridView`/`Show-Command` display data (0/0), and `[Windows.Markup.XamlReader]::Parse` builds UI from XAML **text**. All are already published as `calls`, which is the true relation. Population, falsifier and ladder: "PS-B20". |
-| `mixes_in` | RULED — not applicable | 0 | — | — | — | — | — | **0 sites over 1,181 admitted files.** `mixes_in` is member-set composition with **no conformance declared**; PowerShell's one declaration-level composition construct is the class base list (50 entries), which **is** conformance and is already emitted as `extends`/`implements`. The runtime family is the impostor and it is **not one construct**: 144 real member attachments (`Add-Member` 127 + `Update-TypeData` 17, in 34 files) beside 172 `Add-Type` sites (which compile a source string) and 10 `Update-FormatData` sites (a display view), all published as `calls`. Over the 144 attachments the `-Value`/`-NotePropertyValue` arguments are **121 — 0 of them a named declaration** (script block 25, string literal 49, array-literal value expression 33, bare value token 14), plus 23 attachments that supply no `-Value` at all (18 of them parameter-shape tests), and 121 + 23 = 144. The 3 declaration-shaped arguments are all `-Name` (a member's own name, and the type `Add-Type` compiles), which is a name and not a set. Population, falsifier and ladder: "PS-B20". |
+| `mixes_in` | RULED — not applicable | 0 | — | — | — | — | — | **0 sites over 1,181 admitted files.** `mixes_in` is member-set composition with **no conformance declared**; PowerShell's one declaration-level composition construct is the class base list (50 entries), which **is** conformance and is already emitted as `extends`/`implements`. The runtime family is the impostor and it is **not one construct**: 144 real member attachments (`Add-Member` 127 + `Update-TypeData` 17, in 34 files) beside 172 `Add-Type` sites (which compile a source string) and 10 `Update-FormatData` sites (a display view), all published as `calls`. Over the 144 attachments the `-Value`/`-NotePropertyValue` arguments are **121 — 0 of them a named declaration** (script block 25, string literal 49, array-literal value expression 33, bare value token 14), plus 23 attachments that supply no `-Value` at all (18 of them parameter-shape tests), and 121 + 23 = 144. ONE declaration-shaped argument in that family is a member NAME (`Add-Member -Name Build`) and a name is not a set; `Add-Type -Name` is a different role entirely — it names the type the compilation CREATES, so its 18 arguments are counted as HOST arguments beside the 18 `-TypeName` ones (36 in all, 22 naming no corpus declaration). Population, falsifier and ladder: "PS-B20". |
 
 `corpusBoth` is the share of edges whose BOTH endpoints name a symbol declared in ANY of
 the 1,108 sampled files; `intraBoth` is the share whose both endpoints are declared in
@@ -926,8 +926,11 @@ probes.
 Pass 2 reported that `script/m60/powershell-mutants.ts` (51 mutants) was referenced by
 nothing and that `BB_MUTANT_ONLY="powershell/"` printed `matched 0 of 1521` and exited 3.
 At HEAD that is **fixed**: `script/m14/mutate-analyzer.ts:28` imports `POWERSHELL_MUTANTS`
-and `:2429` spreads it into `MUTANTS`. A scoped run now reports **55 of 55 caught, 0
-survivors** — the original 51 plus the 4 added here for PS29/PS30.
+and `:2429` spreads it into `MUTANTS`. A scoped run on 2026-10-27 reports **65 of 65
+caught, 0 survivors** — the set has grown past the original 51 plus the 4 added here for
+PS29/PS30, and the four survivors an earlier run of that same day reported are now CAUGHT
+(PS-B23); each was a no-op transform keyed on a field the published shape does not have,
+not a missing fixture.
 
 That matters for PS29 and PS30 specifically, because **neither moves an edge count**:
 PS29 relabels and PS30 writes a metadata key, so a count-based expectation cannot tell
@@ -1114,8 +1117,8 @@ file in its row; none is carried forward from a previous wave without one.
 
 | Claim | Instrument | Result |
 | --- | --- | --- |
-| Fixtures | `validation/m14/fixtures/powershell/` | **22 pass / 0 fail** measured 2026-10-27 (`script/m14/run-fixtures.ts --lang powershell`). The ledger at PS-B20 read **17/17** (15 at pass 2, plus `new-object-variable-psb14` (PS29) and `export-flag-psb15` (PS30)); the suite has grown since, and today's addition is `ruled-extended-types.ps1` — the both-directions control for the `renders` and `mixes_in` rulings. The runner is the count, not this sentence |
-| Mutation coverage | `script/m60/powershell-mutants.ts`, **now reachable** | **55/55 caught, 0 survivors** — 51 from passes 1-2 plus 4 label mutants added for PS29/PS30. `BB_MUTANT_ONLY="powershell/" npx tsx script/m14/mutate-analyzer.ts`; a scoped run, so it writes no canonical evidence |
+| Fixtures | `validation/m14/fixtures/powershell/` | **23 pass / 0 fail** measured 2026-10-27 (`script/m14/run-fixtures.ts --lang powershell`). The ledger at PS-B20 read **17/17** (15 at pass 2, plus `new-object-variable-psb14` (PS29) and `export-flag-psb15` (PS30)); `ruled-extended-types.ps1` is the both-directions control for `renders`/`mixes_in`, and `static-call-psb22.ps1` is the qualified-target control for ordinary static calls. The runner is the count, not this sentence |
+| Mutation coverage | `script/m60/powershell-mutants.ts`, **now reachable** | **65 of 65 caught, 0 survivors** measured 2026-10-27 (`BB_MUTANT_ONLY="powershell/" npx tsx script/m14/mutate-analyzer.ts`; a scoped run, so it writes no canonical evidence; log `validation/m14/fixtures/powershell/measurements/mutants-powershell-2026-10-27-green.txt`). The PS-B22 mutant (`static-call-target-source-spelling`) is caught by `static-call-psb22` plus two external fixtures. The four survivors the earlier same-day run reported (`contains-on-reassignment`, `here-string-interpolation-unread`, `assignment-read-pre-empts-new-object`, `assignment-read-reads-the-left`) are now caught after PS-B23: one was an ANALYZER defect (the dedicated here-string marker was pre-empted by the assignment reader in every fixture), and three were transforms that had gone inert against the current field names (`startLine` vs `range.startLine`, bare vs qualified targets). **This row is GREEN and the prior red row is superseded, not deleted** — the older text here said 55/55 because the set had grown to 63 without the row being re-measured |
 | **The 5 pass-3 fixes, by SOURCE revert** | `validation/m14/fixtures/powershell/mutant-proof-psb14.sh` | **5/5 CAUGHT**, control clean, source restored byte-identical |
 | The 6 pass-2 fixes, by SOURCE revert | `validation/m14/fixtures/powershell/mutant-proof-psb12.sh` | **6/6 CAUGHT** at pass 2; not re-run this pass, and the fixtures it depends on are among the 17 still passing |
 | Ontology census | `validation/m14/fixtures/powershell/census.ts` | **10/10 types EMITTED** over 1,108/1,108 admitted files, **156,221 relationships** (156,225 before PS29/PS30). This is the census over the **ten registered types**; the lane's applicable set is now fourteen and the coverage gate reads **11/11 with 3 excluded** — see "PS-B20", whose population is the grown 1,181-file set |
@@ -1153,26 +1156,41 @@ meaningless, and the restore comparison refuses empty strings.
 
 ### Completeness (M14.0.SPEC)
 
-`script/m14/spec/powershell-completeness.json` classifies every one of the **152 named
-node types**; the gate reports **0 unclassified**. Its three type buckets are **mutually
-disjoint** and hold 144 rows — **50 handled**, **86 internal-silent**, **8 recorded gaps,
-all 8 now fixed** — and **6 rationale decisions** (flow keywords, DSC resource types,
-workflow keywords, `--%` stop-parsing, redirection, comments) cover the remainder.
-The buckets are disjoint, so the counts are meant to be added, and an earlier draft of
-this file that wrote "50 + 86 + 18 = 152, classified exactly once" was arithmetic that
-does not close.
+`script/m14/spec/powershell-completeness.json` classifies every one of the **154 named
+node types** (`validation/m14/measurements/powershell-grammar-nodes.json` reads
+`namedTypes: 154`; the 152 this file carried was a miscount, and the number is now read off
+the live registry rather than remembered); the gate reports **0 unclassified**. Its three
+type buckets are **mutually disjoint**: **50 handled**, **86 internal-silent**, and **18**
+classified by the **13 `design_decision` rows** — 50 + 86 + 18 = **154**, the arithmetic that
+closes. The **8 recorded gap records** (10 node types, every one already inside the handled or
+internal-silent bucket) are CLOSED defects, not a fourth bucket: all eight were fixed, each
+with a fixture row and a mutant. An earlier draft of this file wrote "50 + 86 + 18 = 152,
+classified exactly once", which was wrong in the total AND in the addends; the sentence is
+kept here only to say so.
 
 Sections A–D, G, H **pass**. Two sections do not, and the lane is not closed while they
 do not:
 
 - **Section E — `section-e-differential`:** no baseline floor row for
-  `powershell:powershell`. Closing it requires a **canonical unscoped** differential
-  baseline, and a lane-scoped run cannot supply one: `mergeBaseline()` writes
-  `loadContext` and `samplePerLang` unconditionally from the current run while merging
-  `counts` per lane, so a powershell-scoped run would re-stamp the load context of all
-  **182** existing rows. It also pins a lane only when `missing === 0 && unexplained === 0`,
-  and the lane-scoped F5 artifact records neither count for this lane — so the attempt
-  could rewrite the shared file without pinning powershell at all.
+  `powershell:powershell`, and **the lane-scoped sweep has now been run to find out whether
+  one can be pinned: it cannot, and the reason is a measurement rather than an absent
+  cell.** Two lane-scoped sweeps on 2026-10-27 found a residual both times: an earlier
+  draw measured `powershell:powershell` at **703 MISSING / 936 unexplained (22.2%)** over
+  4,206 truth edges, and the post-PS-B22 draw measured **109 / 82 (1.5%)** over 6,012 — with
+  `ansible:powershell` at **902 / 891 (17.1%)** and then **62 / 46 (0.8%)**. The draw is a
+  rotating cold-pool sample, so neither pair is a delta; both are in the Differential
+  section below. `mergeBaseline()` pins a lane only when `missing === 0 && unexplained === 0`
+  (#871 §2, and it says so: pinning a lane that carries its own residual "would bake a real
+  anomaly into the allowance"), so the writer REFUSES this lane by design. Pinning a
+  residual of either size would not close the section, it would convert a red cell into a
+  green one that has buried a measured wall — which is the exact failure the refusal exists
+  to prevent. **What closing it needs is not a pin but a reconciliation:** in the latest run
+  the 82 unexplained rows are `uses` 43, `contains` 16, `imports` 8, `references` 8 and
+  `calls` 7, and the sampled MISSING rows are concentrated in one torture file
+  (`TryCatch.Tests.ps1`) where the oracle derives `calls`/`part_of` rows whose targets are
+  script-block TEXTS — a sample, not a census. A documented floor ruling (the `SOL-SCOPE`
+  shape) would additionally need every disagreement adjudicated to `unclassifiable: 0` —
+  which is a lane-sized campaign and not a transcription.
 - **Section F — `section-f-perf-budget`:** no `avgMsPerFile` for
   `powershell:powershell`. The only figure that exists is **50.7 ms/file, measured at
   `loadAvg1` 39.42 on 8 cores with `loadAvgRetried: true`** — contention at 4–5× load, not
@@ -1180,8 +1198,10 @@ do not:
   so its existing 182 rows were themselves pinned at ~5× load.)
 
 Both sections stay red deliberately, and the full measurement is in
-`validation/m14/results/powershell-lane-record.json`. A red section here says the
-ceremony has not happened; it is cheaper than a green one that measures the machine.
+`validation/m14/results/powershell-lane-record.json` and in the 2026-10-27 run below. A red
+section here is a statement the lane stands behind: for E it now means the residual was
+MEASURED and cannot be pinned without burying it, and for F it means no honest perf figure
+exists yet — either is cheaper than a green one that measures the machine.
 
 ### Differential
 
@@ -1202,12 +1222,60 @@ Re-measured on the current analyzer, `--lang powershell --force-fresh`, 2 lanes:
 | `powershell:powershell` | 60 (rot 25) | 4,206 | 3,490 (83.0%) | 716 | 4,027 | 783 (19.4%) | 0 | `00d5982e5cf1f4c6` |
 | `ansible:powershell` | 60 (rot 24) | 5,473 | 4,535 (82.9%) | 938 | 4,767 | 634 (13.3%) | 0 | `8ecb1c63e3d36758` |
 
+**2026-10-27, the run that answered the section-E question — `--lang powershell`, no
+`--force-fresh`, 2 lanes:**
+
+| Lane | Files | tree-truth | covered | MISSING | analyzer edges | unexplained | heuristic | fact hash |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `powershell:powershell` | 60 | 4,206 | **3,503 (83.3%)** | **703** | **4,217** | **936 (22.2%)** | 0 | `00d5982e5cf1f4c6` |
+| `ansible:powershell` | 60 | 5,588 | **4,686 (83.9%)** | **902** | **5,213** | **891 (17.1%)** | 0 | `b316cd3dd025ab43` |
+
+**The primary row is comparable with the table above and the second-corpus row is not.**
+The file-set hash is IDENTICAL for `powershell:powershell` (`00d5982e5cf1f4c6`), so the two
+measurements drew the same 60 files — and against that pinned set the numbers moved:
+MISSING 716 → **703**, analyzer edges 4,027 → **4,217 (+190)**, covered 3,490 → **3,503
+(+13)**, unexplained 783 → **936 (+153)**. `src/ast/real-powershell-analyzer.ts` was clean at
+HEAD when that pair was measured and is no longer: PS-B22 changed the static-call target
+spelling afterwards, and the re-run below is a new draw. So the older pair is kept as the
+record of what was measured then, and it is not offered as a baseline for the new row. The
+`.corpus` is not tracked, so a corpus change cannot be ruled out as part of the older delta
+either; the honest statement is that it was a contradiction between two measurements at one
+hash, not a rebase. The `ansible` hash DIFFERS (`b316cd3dd025ab43` vs `8ecb1c63e3d36758`), so
+that row rotated and no delta is offered. Per-label unexplained, primary lane: `uses`
+**806**, `contains` 47, `instantiates` 34, `references` 32, `exports` 17; ansible: `uses`
+**760**, `references` 54, `contains` 43, `instantiates` 26, `exports` 8.
+
+**2026-10-27, THE POST-PS-B22 RE-RUN — `--lang powershell`, no `--force-fresh`, 2 lanes:**
+
+| Lane | Files | tree-truth | covered | MISSING | analyzer edges | unexplained | heuristic | fact hash |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `powershell:powershell` | 60 (rot 8, corpus 546) | 6,012 | **5,903 (98.2%)** | **109** | **5,575** | **82 (1.5%)** | 1 | `dec20c26edab3af6` |
+| `ansible:powershell` | 60 (rot 8, corpus 61) | 6,509 | **6,447 (99%)** | **62** | **5,938** | **46 (0.8%)** | 0 | `9ef5dc9f565f92e5` |
+
+**Both hashes differ from every row above, so this is a CURRENT-STATE measurement, not a
+delta.** The cold pool rotated (both lanes drew rotation 8) and the population is larger on
+the ansible side; comparing these numbers with the 703/936 pair would compare two different
+file sets. The post-fix analyzer is what it measures: the static-call target now resolves as
+the store's qualified `Type.Member`, which is why the four-call controlled project reads its
+two in-file static calls (`Counter.Add`, `Counter.Zero`) as resolved while the whole-arm
+`calls` bucket moved +211 resolved (see the PS-B22 record). Per-label unexplained, primary lane: `uses` 43,
+`contains` 16, `imports` 8, `references` 8, `calls` 7; ansible: `uses` 36, `references` 4,
+`contains` 3, `calls` 2, `imports` 1. ALL TWELVE printed primary MISSING rows are from
+`test/powershell/Language/Scripting/TryCatch.Tests.ps1`, where the oracle's derived
+`calls`/`part_of` target is a SCRIPT BLOCK TEXT (`{ try { ... } ... }`) — the sample is
+reported as it stands, not generalised into a cause.
+
 `unexplained-by-label`, primary lane: `uses` 653, `contains` 47, `instantiates` 34,
 `references` 32, `exports` 17. Ansible: `uses` 503, `references` 52, `contains` 45,
 `instantiates` 26, `exports` 8. **`COMPARED WITH NO TRUTH` on both lanes:
 `exports`** (17 comparable / 0 truth, and 8 / 0).
 
-**These numbers are not comparable with pass 1's and are not offered as a delta.**
+The post-PS-B22 row's unexplained list does not carry `exports` at all — its labels are
+`uses` 43, `contains` 16, `imports` 8, `references` 8 and `calls` 7 — so the earlier 17 / 0
+and 8 / 0 observation for `exports` is the only measurement of that label, and it is not
+re-read as clean here.
+
+**The 703/936 pair is not comparable with pass 1's and is not offered as a delta.**
 The sample rotated (`rot 25` and `rot 24` against pass 1's set), and PS25 removed 7
 `exports` edges and PS28 added 10 `overrides` edges. Pass 1's figures were
 3,768/3,080/688/3,410/631 at hash `3009d2b23fc3da21` and
@@ -1245,9 +1313,11 @@ and pass 3 adds one of its own (finding 7). `script/m14/differential.ts`,
    `script/m14/mutate-analyzer.ts:28` reads
    `import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"` and `:2429` spreads it
    into `MUTANTS`. Where pass 2 measured `matched 0 of 1521 — nothing was verified` and
-   exit 3, a scoped run now reports **55 of 55 caught, 0 survivors** over a pool of 1,727.
-   **This lane's mutation gate is live for the first time**, and it is what pins PS29 and
-   PS30, neither of which moves an edge count.
+   exit 3, a scoped run on 2026-10-27 reports **65 of 65 caught, 0 survivors** over a pool
+   of 2,071 (the set had grown past the 55 the earlier text recorded; the first run of the
+   day read 60/64 and PS-B23 names what changed). **This lane's mutation gate is live for
+   the first time**, and it is what pins PS29 and PS30, neither of which moves an edge
+   count. It is live and GREEN, and the four re-aimed transforms are part of that claim.
 2. **OPEN — `script/m60/rel-type-coverage-gate.ts` writes its evidence on every run.**
    Running it unmodified rewrote `validation/m60/results/rel-type-coverage.json`
    (**+253 / −68 lines**) as a side effect, dropping other lanes' rows from the ledger
@@ -1503,7 +1573,7 @@ REFUTED, every one with a BARE owner, zero with a qualified one:
 | `Test.User32::GetPlacement` | `Test` | `class Test`, Scripting.Classes.BasicParsing.Tests.ps1:508 (the type itself is created by `Add-Type -Name User32 -Namespace Test`, ConsoleHost.Tests.ps1:1012) |
 
 So the readable key is published only where the arbiter asks about the target itself or about
-an owner that is ITSELF QUALIFIED (`System.IO` in `System.IO.Path::Combine`). The withheld
+an owner that is ITSELF QUALIFIED (`System.IO` in `System.IO.Path.Combine`). The withheld
 edges keep `externalTarget`/`externalVia` exactly as before; nothing claims less than it did.
 
 After (`powershell ps1 60`, analyzer digest `52392fbdd74156f2`):
@@ -1583,8 +1653,8 @@ The lane's config was already present; this round measured it and closed one spe
 `bun run script/m14/completeness-inventory.ts --lang powershell` reads **6 of 8 sections**:
 
 ```
-pass  A  154 types, 50 handled, 86 silent, 8 gaps, 10 decisions
-pass  B  10 kinds pinned, the same 10 emitted — all accounted for
+pass  A  154 types, 50 handled, 86 silent, 8 gaps, 13 decisions
+pass  B  11 kinds pinned, the same 11 emitted — all accounted for
 pass  C  complexity payload row
 pass  D  4 tiers: import_based · inferred · structural · usage_contextual
 FAIL  E  no baseline floor row for powershell:powershell
@@ -1593,7 +1663,22 @@ pass  G  this doc + the analyzer head comment
 pass  H  M14.CC1.json, 12 checks
 ```
 
-**E/F are one absent baseline cell, not a missing instrument.** `script/m14/differential.ts` already
+**B WAS FAILING WHEN THIS SECTION WAS FIRST WRITTEN, AND THE READING ABOVE IS THE REPAIR.**
+The contract row listed ten kinds while the analyzer published eleven: `part_of` joined the
+lane with the dot-source relabel (PSD12, 38 edges over 37 files) and the powershell entry in
+`script/m14/completeness-inventory.ts` was never updated, so section B's reverse check —
+"EMITTED but absent from requiredKinds" — reported real drift, not a missing construct.
+`part_of` is in that row now, pinned by
+`validation/m14/fixtures/powershell/part-of-dot-source-psb19`, and B passes. The `13 decisions`
+in section A are the 13 `design_decision` rows, which carry 18 node types between them: that
+18 is what closes 50 + 86 + 18 = 154.
+
+**E/F are one absent baseline cell, and the cell is absent because the lane's own measurement
+is not pinnable — checked by running it on 2026-10-27, twice: 703 MISSING / 936 unexplained
+on the pre-PS-B22 draw and 109 / 82 on the post-PS-B22 draw (the harness refuses a nonzero
+pin by design, see the Differential section). Until that residual is reconciled, a green E
+would be a transformed red, not a closed one.**
+`script/m14/differential.ts` already
 carries and wires `derivePowershellEdges` (`:23812-23819`, M60 #278 F5), and `:24083` records powershell
 being joined to the calls/uses/contains/exports/references audited set so the oracle's truth edges are
 not dropped before comparison. The `powershell:powershell` row (`<repo>:<lang>`) is what a baseline
@@ -1601,9 +1686,9 @@ sweep supplies; the baseline's existing `powershell:javascript`, `powershell:c`,
 analyzers over the powershell corpus.
 
 **The spec-shape audit** (the four shapes the fleet keeps finding) is clean: `handled_verified.types` and
-`internal_silent.types` are string arrays (50 / 86), `design_decision.decisions` exists (11), and
+`internal_silent.types` are string arrays (50 / 86), `design_decision.decisions` exists (13, carrying 18 node types), and
 `gaps[].node_type` holds type names, not prose. Coverage is real: **154 wasm types, 154 classified, 0
-unclassified, 0 stale**, of which 18 are classified by PSD1-PS6's decision rows.
+unclassified, 0 stale**, of which 18 are classified by the 13 decision rows.
 
 **One defect fixed.** PSD7-PSD10 carried PROSE in `node_type` (`"relationship metadata: …"`,
 `"relationship:overrides (…)"`), a field the inventory gate comma-splits into its classified-type set —
@@ -1665,8 +1750,14 @@ fixture: `relative-path-psb18-escape-narrowed` (the 2026-10-19 rule VERBATIM) an
 ≤ 512 KiB (this lane's census cap), routed by `detectLanguageFromPath`. Instrument:
 `script/m14/powershell-extended-census.ts`; artifact:
 `validation/m14/measurements/powershell-extended-census.json`. Its **control
-PASSED**: every counter trips on a synthetic site before any corpus number is
-reported, so a zero below is a measured zero rather than a probe that never ran.
+PASSED**, and the claim is narrowed to what the control covers: every counter THIS RULING
+READS trips on a synthetic site before any corpus number is reported — and the
+command-qualified role split is pinned in BOTH directions (`memberNameArgs` 3 and
+`hostArgs` 2, asserted, not merely non-zero) — so a zero below is a measured zero rather
+than a probe that never ran. The artifact's administrative counters (the file counts, the
+per-shape maps, the non-attachment bucket) are NOT tripped by the control and are not read
+as evidence; an earlier version of this paragraph said "every counter" and that was false
+about ten of them.
 Both types are recorded in `script/m14/spec/powershell-completeness.json`
 (`coverage.excluded`), which is what the coverage gate reads.
 
@@ -1692,7 +1783,7 @@ component a source declaration names. All of them are **already published as
 declared component symbol — **0** over 1,181 files. (Four of the fifteen sites name
 a declaration anywhere in their own arguments; every one is the **object being
 serialized**, which is a `uses`/`calls` fact.) **Ladder:** R1 unavailable (the
-served grammar's 152 distinct named types carry no render/component/view node);
+served grammar's 154 distinct named types carry no render/component/view node);
 R2 unavailable (a patch would have to invent a component model and a host
 renderer — PowerShell's rendering surfaces are .NET types and cmdlets invoked at
 runtime, not declaration syntax); R3 unavailable (no node type carries a
@@ -1739,11 +1830,19 @@ they are listed rather than inferred — 18 parameter-shape and error tests in
 arguments. `121 + 23 = 144` closes exactly, and no `-NotePropertyMembers` hashtable
 form occurs anywhere in the population.
 
-The three declaration-shaped arguments in the whole family are all `-Name`, and
-`-Name` is not the member-set parameter:
+**One** member-name argument in the whole family is declaration-shaped, and `-Name` is not
+the member-set parameter:
 
-- `Add-Type -Name TestClass` (`powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1:7,14`) — the name of the type being **compiled**, not a composed set;
-- `Add-Member -Name Build` (`kubernetes/cluster/gce/windows/k8s-node-setup.psm1:146`) — a member **name** that collides with a function declared elsewhere in the corpus.
+- `Add-Member -Name Build` (`kubernetes/cluster/gce/windows/k8s-node-setup.psm1:146`) — a member **name** that collides with a function declared in the same module. It is listed by file and line in `memberNameDeclaredSites` in the artifact, and a name is not a set.
+
+`Add-Type -Name` is the last role error the artifact carried: it names the **type the
+compilation creates** — a HOST, whose members `-TypeDefinition` supplies — so the population's
+18 `Add-Type -Name` arguments are counted with its 18 `-TypeName` ones, for **36 host arguments
+of which 22 name no corpus declaration**. Two of them (`-Name TestClass`,
+`powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1:7,14`) name a
+class the corpus does declare. Keying the role table on the bare parameter had put those two
+into the member-name tally, where they read as member sets naming a declaration; the table is
+now keyed on (command, parameter) and the control asserts the split.
 
 **Ladder:** R1 unavailable (no mixin/trait/composition node in the served grammar);
 R2 unavailable (a patch would have to invent member-set composition; PowerShell's
@@ -1761,4 +1860,252 @@ param-block function calling a declared function, `ConvertTo-Html` **and**
 **forbidden** as `mixes_in`). `expectRelationshipCount` pins **0** `renders`,
 **0** `mixes_in`, and **exactly 1** `extends` / **1** `implements` — the last two
 stop a rule that reads every base-list entry as a superclass. Suite:
-**22 pass / 0 fail** (`bun run script/m14/run-fixtures.ts --lang powershell`).
+**23 pass / 0 fail** (`bun run script/m14/run-fixtures.ts --lang powershell`).
+
+## PS-B22 (append-only record, 2026-10-27) — a static member call targets `Type.Member`, not `Type::Member`
+
+**THE DEFECT IS A TARGET SPELLING THAT NO STORED SYMBOL CAN HAVE.** `[Counter]::Add(1, 2)`
+published `calls -> Counter::Add`. A class method is stored with `name = "Add"` and
+`qualifiedName = "Counter.Add"`; `Counter::Add` is neither, so the arbiter's exact-key
+lookup — which indexes a symbol under BOTH its name and its qualified name — can never
+bind the row. The edge is a real call, the member is declared in the same file, and the
+graph could not see the connection. The externality pass then made it worse: `declaredInFile`
+folds BARE names, so `Counter::Add` was "not declared here" and collected the lane's
+external reading — a **false external claim** about a project-local call.
+
+**MEASURED, WHOLE ADMITTED POPULATION** (1,183 `.ps1`/`.psm1`/`.psd1` files, the parse tree
+and production `parseFile`):
+
+| | count |
+| --- | --- |
+| static member call sites (`[T]::M(...)`, `M != new`) | **3,458** |
+| …whose type is a class the EMITTING FILE declares | **254** |
+| …of those, whose member that class really declares | **219** |
+| …of those, whose member the class does NOT declare (inherited .NET member) | **35** |
+| …whose type is itself dotted (BCL/namespace) | 1,830 |
+
+**THE FIX.** The target is `${typeName}.${memberName}` — the store's own qualified-name
+separator, the spelling the variable-read retarget pass already uses (`Get-Targets.index`).
+`metadata.staticType` keeps the type recoverable without splitting the target. The `::`
+spelling remains in the SOURCE and in comments; it is never a target.
+
+**TWO CONTROLS, BOTH DIRECTIONS.**
+
+1. `[System.Math]::Max(1, 2)` becomes `System.Math.Max`: still no declaration, still an
+   external row. The change moves the project-local rows into resolution and leaves the
+   BCL rows where they were.
+2. `[Counter]::ReferenceEquals(1, 2)` — the owner is in-file, the member is not. The generic
+   external reading would ask the arbiter about `Counter`, find it, and **REFUTE** the claim.
+   The row now carries the fleet's `ownerMemberAbsent` claim (`{owner: "Counter",
+   member: "ReferenceEquals"}`), which the project's own member map VERIFIES. The gate's
+   owner-member check now accepts the qualified spelling `owner.member` as well as the bare
+   member, because PowerShell must publish the qualified target; a target qualified by a
+   DIFFERENT owner is still refuted, and the gate's self-test pins both.
+
+**MEASURED ON A CONTROLLED PROJECT** (`validation/m14/fixtures/powershell/static-call-psb22.ps1`;
+`incoming-gate.ts --json powershell ps1 0`). The FINAL control carries four calls: two in-file
+(`Counter.Add`, `Counter.Zero`), the inherited member and the BCL twin:
+
+| | calls edges | resolved | markedExternal | externalVerified | externalUnverified | externalRefuted |
+| --- | --- | --- | --- | --- | --- | --- |
+| before, 3-call probe | 3 | 0 | 1 | 0 | **1** | 0 |
+| after, 4-call control | **4** | **2** (`Counter.Add`, `Counter.Zero`) | 2 | **2** (`ownerMemberAbsent` + BCL) | **0** | **0** |
+
+The two unresolved rows left in the control are `uses` of the class method's parameters —
+the adjacent shape below, refused rather than half-fixed.
+
+**THE ADJACENT SHAPE, MEASURED AND REFUSED.** A class method's parameters are not
+declarations today. Declaring them in the method's frame — the obvious fix — is WRONG, and
+a two-method twin proves it:
+
+```powershell
+class Twice {
+    [int] First([int] $x)  { return $x }
+    [int] Second([int] $x) { return $x + 1 }
+}
+```
+
+The frame's owner is the CLASS (PS3), and `declareSymbol` dedupes on (owner, name, kind),
+so the second `$x` is silently dropped and BOTH reads bind to `First`'s parameter — a wrong
+declaration, which is worse than the unresolved row it replaced. The correct unit is
+method-qualified ownership (`Twice.Second.x`) plus a retarget pass that reads it; PS3 keeps
+the edge SOURCE as the method's bare name (`Second`) so `bb_graph Second` works, so a
+class-qualified scope is invisible to today's visibility rule. Class-method LOCALS have the
+same collision (two methods' `$sum` are one class-owned symbol). That is a lane-sized change
+and it is recorded, not half-done. Function parameters are unaffected — a function frame's
+owner IS the function, so its parameters are already unique (PS-B21).
+
+**PINS.** `validation/m14/fixtures/powershell/static-call-psb22.ps1` fires
+`Counter.Add`, `Counter.Zero`, the `ownerMemberAbsent` shape on `Counter.ReferenceEquals`
+and the BCL twin `System.Math.Max`; its FORBID rows name `Counter::Add`, `Counter::Zero`
+and `System.Math::Max`, so a revert to the old spelling goes red in every direction, and a
+fourth negative forbids the generic external key on the in-file owner. Suite:
+**23 pass / 0 fail**. The external-claim fixtures whose static targets were spelled with
+`::` (`externality-arbiter-psb17`, `ruled-extended-types`) were re-pinned to the dot
+spelling; their source-syntax comments are unchanged.
+
+## PS-B23 (append-only record, 2026-10-27) — the four surviving mutants, and the analyzer defect one of them found
+
+**THE MUTATION GATE WAS LIVE AND NOT GREEN.** The first full scoped run this day reported
+`60 of 64 caught, 4 survivors`. All four survivors were `0 -> 0`: the transforms had gone
+inert against the shape the harness actually sees, and one of them was masking a real
+analyzer bug. This section records each cause and what now pins it.
+
+**1. `here-string-interpolation-unread` — AN ANALYZER DEFECT, not a fixture gap.**
+`expandable_here_string_literal` publishes its reads with `isHereStringInterpolation` so
+the construct is independently revertible. Measured over every powershell fixture through
+production `parseFile`: **0 of 115 `uses` edges carried the marker.** The reads existed; the
+marker did not. `emitAssignmentReads` (PS36) and the command-argument reader both descend
+into the here-string BEFORE the switch reaches its dedicated case, so the first row won
+`addRel`'s source|type|target|line dedupe and the later, marked row was discarded. On
+`variable-reads-psa4` the two here-string reads were published as plain `isAssignmentRead`
+rows — the right edges with the wrong reason, which is why the fixture passed and the
+mutant could not fail.
+
+The fix is two stops, one per pass: `emitVariableReads` does not descend into an
+expandable here-string unless it was called FOR that node with its own marker, and
+`emitAssignmentReads` stops at it exactly as it stops at a `command`. Edge count is
+unchanged; the two rows now carry `isHereStringInterpolation`, and line 36 additionally
+carries `isBracedVariable`, both asserted in `variable-reads-psa4.expectation.json`. The
+mutant was already correct and now fails 1 fixture.
+
+**2. `contains-on-reassignment` — a transform keyed on fields that do not exist.** It read
+`s.line ?? s.range?.start?.line` and compared `x.target` to the BARE symbol name. Neither
+is in the published result: a symbol's line is `startLine` and a `uses` target is the
+store-qualified `file.name`. It therefore emitted no extra containment edge on any fixture.
+Re-aimed to read both shapes (native `range.startLine` and normalized `startLine`), match
+qualification by suffix, and take the edge SOURCE off the symbol's own `contains` edge.
+Caught by `reserved-words-psb4`'s `contains -> value == 1` row (`$value = 1` then
+`$value = $(…)` adds a second site) and by `externality-arbiter-psb17`.
+
+**3. `assignment-read-pre-empts-new-object` — the transform was aimed at the wrong key.**
+It required `isArgumentReference` on an assignment line. The rows the defect costs are the
+dedicated `New-Object` reads, which carry `viaNewObject` / `isDynamicTypeName` and NO
+`isArgumentReference`; and its symbol filter read `kind === "Variable"` and `s.line`, while
+the native symbol is `kind: "variable"` with `range.startLine`. Two independent reasons for
+a no-op. Re-aimed to strip `viaNewObject` + `isDynamicTypeName` from a `uses` row on an
+assignment line and stamp `isAssignmentRead` instead — the measured pre-fix shape. Caught
+by `new-object-variable-psb14`'s four positive rows, which assert both keys.
+
+**4. `assignment-read-reads-the-left` — the direction was wrong for what the transform can
+observe.** The defect ADDS a fabricated edge (a read of the variable the assignment is
+defining); the transform tried to MUTATE an existing row whose target equalled a bare
+symbol name on the same line, a predicate that can never be true when targets are
+qualified. Rewritten to add the edge the pre-fix bug added: a `uses` from the variable's
+owner to its qualified name, on its declaration line, wherever an assignment's RHS was
+also read. Pinned in two ways — `new-object-variable-psb14` now FORBIDS `uses -> New-Dynamic.a`
+at line 29 and `uses -> New-Dynamic.d` at line 45 (the positional and interpolated
+readers), and the fixture's `uses == 12` count is the aggregate backstop.
+
+**RESULT.** `BB_MUTANT_ONLY="powershell/"` reports **65 of 65 caught, 0 survivors** over
+2,071 mutants; log
+`validation/m14/fixtures/powershell/measurements/mutants-powershell-2026-10-27-green.txt`.
+The lesson recorded for other lanes: a `0 -> 0` survivor is not proof the fixture is weak.
+Three of these four were instrument bugs, and the fourth was a real analyzer defect the
+instrument could not see. Reading the transform against the shape `runLang` passes is the
+step that separates the two.
+
+## PS-B24 (append-only record, 2026-10-27) — a numeric dotted chain is not a member read
+
+**THE DEFECT WAS FOUND BY THE INCOMING GATE'S REFUTED-CLAIM WORKLIST, NOT BY A FIXTURE.**
+A whole-population run (`incoming-gate.ts --json powershell ps1 0`) reported 85 external
+claims the project REFUTES. Three of them were `uses` edges whose targets were `2.3`, `3.4`
+and `1.2`, all from `PSScriptAnalyzer/Tests/Rules/InvalidMultiDotValue.tests.ps1`:
+
+```powershell
+$1.2.3.4
+$intKeys.1.2.3.4
+```
+
+The grammar hands each numeric run to the `member_access` case as a `member_name`, and
+`emitMemberUses` published the leaf verbatim. `isPlausibleSymbolName` does not reject them:
+it permits digits and dots because a DECLARED name may contain both. So the graph named
+symbols no project can declare — and because the rows carried `externalTarget`/`externalVia`,
+the arbiter looked them up and the project's own declaration table refuted the claim.
+
+**THE FIX IS ONE PREDICATE, AT THE LEAF.** A member leaf must contain at least one letter
+or underscore; anything else (a numeric run, a bare dot) is a parse shape, not a name. The
+receiver is unchanged — it is still not published, per the family leaf contract (R2/M60 R10)
+— so a numeric chain now publishes nothing at all rather than three fabrications.
+
+**PINS.** `member-reads-psb5` gained form 7 (both spellings) and three `forbidRelationships`
+rows for `2.3`, `3.4` and `1.2`; its `uses == 6` count would become 9 on a re-add. The new
+mutant `powershell/member-numeric-leaf-published` re-derives the pre-fix rows from the
+source text and is CAUGHT by that fixture (`0 -> 1`). Suite: **23 pass / 0 fail**. Mutation:
+**65 of 65 caught, 0 survivors** over 2,071.
+
+**WHAT REMAINS, STATED RATHER THAN IMPLIED.** The re-run after this fix reads **82** refuted
+claims, not 85, and they are NOT one class:
+
+- **19 `calls`** to native executables (`whoami.exe`, `powershell.exe`, `ping.exe`, …). A project
+  file or function carries the same spelling, so the owner lookup refutes the external mark.
+- **37 `instantiates`** to .NET type spellings (`Text.UTF8Encoding`, `Diagnostics.ProcessStartInfo`,
+  and two fixture types `Foo.Bar` / `MyTest.Root`). The arbiter asks about the OWNER (`Text`,
+  `Diagnostics`), not the member, and a project declaration can carry that bare name.
+- **22 `uses`** of `[Language.VariableExpressionAst]`-style type spellings, same owner-only rule.
+- **4 `references -> 3.0`** from `#Requires -Version 3.0`: a deliberate version constraint the
+  lane publishes with `requiresVersion` (and `imports-psb12` pins). A version is not a symbol the
+  project can declare, but the arbiter's generic external rule does not know that claim kind.
+
+All four are the owner-only heuristic's coarseness on qualified external targets, or a claim kind
+the shared arbiter does not recognise. They are a different defect class from this one and are
+recorded with their counts rather than folded into this fix.
+
+## PS-B27 (append-only record, 2026-10-28) — a .NET type literal claims a NAMESPACE, not an owner; and a literal is not a name
+
+**FOUND BY THE GATE'S REFUTED-CLAIM WORKLIST, over the whole admitted population, after the depth
+pass landed.** `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts powershell ps1,psm1,psd1 0 --index --json`
+read **113** refuted claims on 197,028 edges. One shape dominated: `instantiates Text.UTF8Encoding`
+from `[Text.UTF8Encoding]::new($false)` (Grace/scripts).
+
+**WHY THEY WERE FALSE.** The analyzer published `externalTarget: true`, and the arbiter verifies that
+claim by asking about the target's OWNER — everything before the LAST dot, so `Text`. The project
+publishes a **variable** named `Text`, so the owner lookup answered "the project declares that name"
+and refuted a claim about a .NET type. No file declares a TYPE named `Text`, and PowerShell classes
+cannot nest, so no project type can be spelled `Text.UTF8Encoding` at all. The refutation was a name
+collision, not a fact about the dependency; the same class is the lane's own W2 ruling.
+
+**THE FIX IS THE CLAIM, NOT THE READING.** A bracketed type literal's root is resolved by the ENGINE:
+`[Text.UTF8Encoding]` is `System.Text.UTF8Encoding` under PowerShell's documented implicit-`System.`
+rule. So the row now claims the **LIST** — `languageNamespace: ["Text"]`, whose evidence a reviewer
+diffs entry by entry and whose verification never asks about a name the edge does not carry (the
+fleet's own `NAMESPACE_CLAIM_KEY`, which cannot raise `resolved`). The table it is checked against
+(`DOTNET_SYSTEM_NAMESPACES`) is the framework's **documented direct children of `System`**, so a root
+it does not carry keeps the old reading. Two further parts:
+
+- **`instantiates` joined the namespace pass.** The pass read `uses`/`calls` only, and the whole
+  `.NET`-constructor population is `instantiates` — the one type that had no list claim was the one
+  carrying the targets that needed it. The claim certifies a ROOT, not an edge kind.
+- **A target with no ASCII letter is not a name.** `#Requires -Version 5.1` publishes
+  `references -> 5.1` with `requiresVersion: true` (pinned by `imports-psb12`); the qualified reading
+  fired on it because a version separator is a dot, and the arbiter then asked about `5` — the MAJOR
+  VERSION. 25 rows (13 refuted + 12 verified) carried that reading. The EDGE STAYS and
+  `noDeclarationInFile` still publishes; only the externality READING is withheld.
+
+**MEASURED.** Same population, same 1,181 files / 30 repos, **197,028 edges**, **101,352 resolved**,
+**17,762 ambiguous**, **49,207 unresolved** (was 48,952: the 255 literal rows keep their edges and lose
+only the claim). Refuted claims **113 → 60**, every one re-attributed by
+`validation/m14/fixtures/powershell/refutation-row-probe.mts`, which reproduces the gate's own number
+row by row (`REFUTED: 60`, by claim kind `owner` 47 + `sourcePath` 13):
+
+| shape | rows | why the arbiter still refutes it |
+|---|---:|---|
+| `Language.*` type literals under `using namespace System.Management.Automation` | 22 | the root is a namespace reached through the FILE'S OWN `using namespace`; the table carries `System`'s children, not every imported namespace's |
+| `whoami.exe`, `powershell.exe`, `cmd.exe`, … | 20 | a real executable invocation; the arbiter's owner (`whoami`) is answered by a VARIABLE of that spelling |
+| `$PSScriptRoot/../build.psm1` path claims | 13 | the claim is TRUE-shaped but the traversal lands on a file the project ADMITS, so the row is a resolution gap the analyzer cannot close from one file |
+| `Foo.Bar`, `MyTest.Root`, `TestHost.TestHost` | 3 | types created at runtime by `Add-Type`; the owner is answered by an unrelated declaration |
+| `'pr.number'` (a QUOTED property key) | 2 | the target is a quoted literal, not a type path |
+
+**All 60 are the arbiter's owner question being asked about a name the edge does not carry** (or a
+claim kind it does not model); the lane-side fixes that remain possible are the `using namespace`
+list and a quoted-literal provenance check, and both are recorded here rather than taken, because
+each needs its own measurement. The structural fix — an `owner` claim refutable only by a
+declaration that could BE an owner (a TYPE) — is **the shared instrument's**, and it is filed with a
+patch rather than taken (`validation/m14/verification/POWERSHELL-DEPTH-PASS-2026-10-28.md` §4).
+
+**PINS.** New fixture `dotnet-shorthand-psb27` (4 positive rows, 3 negative twins: an uncarried root
+`Foo.Bar`, a letter-bearing command that keeps both keys, and a withhold row for the bare owner).
+Two new mutants — `powershell/dotnet-shorthand-root-unclaimed` and
+`powershell/letterless-target-marked` — both CAUGHT: **67 of 67 caught, 0 survivors**
+(`BB_MUTANT_ONLY="powershell/" npx tsx script/m14/mutate-analyzer.ts`). Suite **25 pass / 0 fail**.
+Zero-regex PASS (0 operations / 0 literals). Spec-shape audit PASS (152 named types).

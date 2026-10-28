@@ -637,26 +637,53 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       // the pre-fix shape is an edge per site, and the sites are the symbol's own
       // recorded line plus every line that carries a `uses` edge of the same
       // name. Derived from the result, so it needs no fixture name.
-      const byName = new Map<string, { decl: number; uses: number[] }>()
+      //
+      // RE-AIMED 2026-10-27. The original keyed on `s.line ?? s.range?.start?.line`
+      // and compared `x.target` to the BARE symbol name. Neither exists in the
+      // published shape: a symbol carries `startLine`, and a `uses` target is the
+      // store-qualified name (`reserved-words-psb4.ps1.value`), which is what the
+      // variable-read retarget pass publishes. The transform therefore matched
+      // nothing and reported SURVIVED at 0 -> 0 — a no-op, not a missing fixture.
+      // The `contains` SOURCE is read off the symbol's own containment edge rather
+      // than rebuilt from `ownerName`, so the re-emitted row has the same source a
+      // per-site emission would have had.
+      const byName = new Map<string, { key: string; decl: number; name: string; qualified: string; uses: number[] }>()
       for (const s of r.symbols ?? []) {
+        // NATIVE SHAPE: this transform runs inside `runLang`'s analyzer path, where a
+        // symbol carries `range.startLine`; only the STORE's normalized result has a
+        // top-level `startLine`. Reading one field alone is why the re-aimed transform
+        // still reported 0 -> 0 on its first run after the fixture was added.
+        const line = s.range?.startLine ?? s.startLine
+        if (typeof line !== "number") continue
         const k = `${s.ownerName ?? s.scope ?? ""}|${s.name}`
-        if (!byName.has(k)) byName.set(k, { decl: s.startLine ?? 0, uses: [] })
+        if (!byName.has(k)) byName.set(k, {
+          key: k, decl: line, name: s.name,
+          qualified: typeof s.qualifiedName === "string"
+            ? s.qualifiedName
+            : `${s.ownerName ?? s.scope ?? ""}.${s.name}`,
+          uses: [],
+        })
+      }
+      const containsSource = new Map<string, string>()
+      for (const x of r.relationships ?? []) {
+        if (x.type !== "contains") continue
+        if (typeof x.target === "string" && typeof x.source === "string") containsSource.set(x.target, x.source)
       }
       for (const x of r.relationships ?? []) {
-        if (x.type !== "uses") continue
-        for (const s of r.symbols ?? []) {
-          if (s.name !== x.target) continue
-          const k = `${s.ownerName ?? s.scope ?? ""}|${s.name}`
-          const e = byName.get(k)
-          if (e && typeof x.line_number === "number") e.uses.push(x.line_number)
+        if (x.type !== "uses" || typeof x.target !== "string") continue
+        for (const v of byName.values()) {
+          if (x.target !== v.name && x.target !== v.qualified && !x.target.endsWith(`.${v.name}`)) continue
+          if (typeof x.line_number === "number") v.uses.push(x.line_number)
+          break
         }
       }
       const extra: any[] = []
-      for (const [k, v] of byName) {
-        const owner = k.split("|")[0]
+      for (const v of byName.values()) {
+        const owner = containsSource.get(v.name) ?? v.key.split("|")[0]
+        if (!owner) continue
         for (const line of v.uses) {
           if (line === v.decl) continue
-          extra.push({ source: owner, target: k.split("|")[1], type: "contains", confidence: 1, line_number: line, metadata: {} })
+          extra.push({ source: owner, target: v.name, type: "contains", confidence: 1, line_number: line, metadata: {} })
         }
       }
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
@@ -1206,28 +1233,86 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       // The set of lines carrying an assignment to a variable: the lines where the
       // assignment reader and the argument reader overlap, measured off the result's
       // own symbol table rather than off a fixture name.
+      // RE-AIMED 2026-10-27, twice over. The original read `s.kind === "Variable"`
+      // and `s.line ?? s.range?.start?.line`; the published symbol kind is lowercase
+      // `variable` and the line field is `startLine`, so the assignment set was
+      // EMPTY and the transform could not fire on any fixture (SURVIVED 0 -> 0).
+      // It also keyed on `isArgumentReference`, which is the key the dedicated
+      // `New-Object` reader REPLACES: the rows this defect costs are marked
+      // `viaNewObject` / `isDynamicTypeName` and carry no `isArgumentReference` at
+      // all. Both corrections make the transform describe the measured pre-fix shape
+      // rather than a shape the analyzer used to have.
       const assignmentLines = new Set<number>()
       for (const s of r.symbols ?? []) {
-        if (s.kind !== "Variable") continue
-        const l = s.line ?? s.range?.start?.line
+        if (s.kind !== "variable") continue
+        // `range.startLine` is the NATIVE shape this transform sees (see the note on
+        // `contains-on-reassignment`); `startLine` is kept as the normalized fallback.
+        const l = s.range?.startLine ?? s.startLine
         if (typeof l === "number") assignmentLines.add(l)
       }
       return {
         ...r,
         relationships: (r.relationships ?? []).map((x: any) => {
           const meta = x.metadata ?? {}
-          if (!("isArgumentReference" in meta)) return x
+          if (x.type !== "uses") return x
+          if (meta.viaNewObject !== true && meta.isDynamicTypeName !== true) return x
           if (!assignmentLines.has(x.line_number)) return x
           const {
-            isArgumentReference, isDynamicTypeName, isScopedEnvironmentRead,
-            externalTarget, externalVia, ...rest
+            isArgumentReference, isDynamicTypeName, viaNewObject, ...rest
           } = meta
-          void isArgumentReference; void isDynamicTypeName
-          void isScopedEnvironmentRead; void externalTarget; void externalVia
+          void isArgumentReference; void isDynamicTypeName; void viaNewObject
           return { ...x, metadata: { ...rest, isAssignmentRead: true } }
         }),
       }
     },
+  },
+  {
+    id: "powershell/member-numeric-leaf-published",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "F9 AT THE MEMBER LEAF: a numeric dotted chain publishes a member read. `$1.2.3.4` and `$intKeys.1.2.3.4` are a parse shape, and the grammar hands the numeric runs (`2.3`, `3.4`, `1.2`) to the member pass as `member_name` nodes. The pre-fix pass published them verbatim as `uses`, so the graph named symbols no project can declare; the whole-population incoming gate counted the rows as EXTERNAL CLAIMS ITS OWN PROJECT REFUTED (measured 2026-10-27: 3 `uses` names from PSScriptAnalyzer's InvalidMultiDotValue fixture). `isPlausibleSymbolName` does not catch this — it permits digits and dots because a DECLARED name may contain both — so the fix adds the member-only test that a leaf must contain at least one letter or underscore. Caught by member-reads-psb5's three forbid rows (`2.3`, `3.4`, `1.2`) and by its `uses == 6` count, which a re-add would push to 9.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string") return r
+      const lines = source.split("\n")
+      const mod = (r.symbols ?? []).find((s: any) => s.kind === "module")?.name
+      if (typeof mod !== "string" || mod === "") return r
+      const extra: any[] = []
+      const seen = new Set<string>()
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].indexOf(".1.2.3.4") < 0) continue
+        for (const target of ["1.2", "2.3", "3.4"]) {
+          const key = `${i + 1}|${target}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          extra.push({
+            source: mod, target, type: "uses", confidence: 0.8, line_number: i + 1,
+            metadata: {
+              powershellSpecific: true, isMemberAccess: true, isMemberReference: true,
+              externalTarget: true, externalVia: "qualified",
+            },
+          })
+        }
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "powershell/static-call-target-source-spelling",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS-B22 REVERT: every static member call's target is rewritten to the SOURCE spelling `Type::Member` instead of the store's qualified `Type.Member`. That is the pre-fix shape and it is wrong in both directions: a class method is stored with `qualifiedName = \"Counter.Add\"`, so `Counter::Add` can never bind, and the externality pass then reads a same-file callee as an external claim. Written generically off `metadata.staticMemberCall`/`staticType`, not off this fixture's names, so it keeps biting wherever a static call is pinned. Caught by static-call-psb22's four expect rows (the two in-file calls and the two external twins) and its three target forbid rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const meta = x.metadata ?? {}
+        if (x.type !== "calls" || meta.staticMemberCall !== true) return x
+        const type = typeof meta.staticType === "string" ? meta.staticType : ""
+        if (!type || !String(x.target).startsWith(`${type}.`)) return x
+        return { ...x, target: `${type}::${String(x.target).slice(type.length + 1)}` }
+      }),
+    }),
   },
   {
     id: "powershell/assignment-read-reads-the-left",
@@ -1235,19 +1320,76 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     defectClass: "fabrication",
     description:
       "PS36 REVERT, the FABRICATION arm, and the worst of the three: the right-hand side is read as if the left-hand side were excluded by NODE TYPE rather than by identity, so the LHS is read too and `$a = New-Object $typeName` publishes `uses -> a` for the variable it is DEFINING. A write is not a read, and an edge asserting a read of a variable at the moment of its declaration is exactly the fabricated edge the contract forbids — it is counted `unexplained` by the oracle and poisons `bb_graph` and `bb_impact`, where it reads as a self-loop.\n\nThis defect was MEASURED, not hypothesised: `namedChild(i)` returns a fresh wrapper object per call, so the original `child === left` guard was false for every child and never excluded anything (a.id === b.id and a.startIndex === b.startIndex while a === b is false). Transformed here as 'every `uses` edge whose target is the variable the same file declares on the assignment's own line becomes an assignment read', which is the observable shape.",
+    transform: (r: any) => {
+      // RE-AIMED 2026-10-27. This transform used to MUTATE an existing `uses` row
+      // whose target equalled a bare symbol name on the same line. Neither half of
+      // that predicate can be true in the published shape: a `uses` target is the
+      // store-qualified name (`New-Dynamic.a`), and the symbol's line is `startLine`,
+      // not `line`. So it matched nothing and reported SURVIVED at 0 -> 0.
+      //
+      // The defect ADDS an edge, so the faithful reconstruction adds one: a fabricated
+      // `uses` to the LEFT-hand variable, from its owner, on the assignment's own line.
+      // A line qualifies only where an assignment exists AND the RHS was read — the
+      // same overlap the pre-fix identity bug produced. Deriving both from the result
+      // keeps the transform fixture-agnostic.
+      const extra: any[] = []
+      for (const s of r.symbols ?? []) {
+        if (s.kind !== "variable") continue
+        // `range.startLine` is the NATIVE shape (this transform is applied to
+        // `analyzer.analyze`'s output, not to the store-normalized result).
+        const line = s.range?.startLine ?? s.startLine
+        if (typeof line !== "number") continue
+        const owner = s.ownerName ?? s.scope
+        if (typeof owner !== "string" || owner === "") continue
+        const target = typeof s.qualifiedName === "string" && s.qualifiedName !== ""
+          ? s.qualifiedName
+          : `${owner}.${s.name}`
+        const rhsRead = (r.relationships ?? []).some(
+          (x: any) => x.type === "uses" && x.line_number === line && x.target !== target,
+        )
+        if (!rhsRead) continue
+        extra.push({
+          source: owner, target, type: "uses", confidence: 0.9,
+          line_number: line,
+          metadata: { powershellSpecific: true, isVariableReference: true, isAssignmentRead: true },
+        })
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "powershell/dotnet-shorthand-root-unclaimed",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PS-B27 REVERT (half one): every `instantiates` row loses `languageNamespace`, which is the pre-fix state verbatim — a bracketed .NET type literal carried ONLY the generic owner reading, so the arbiter answered it by looking up the target's OWNER (`Text`, `Diagnostics`, `System`) and refuted 40 rows over the whole population on project symbols that merely share that spelling. Caught by dotnet-shorthand-psb27's two `meta.languageNamespace` pins, which assert the LIST on both the shorthand and the qualified spelling; the `Foo.Bar` row is the negative twin that must NOT gain one, so a revert to 'claim every dotted root' also fails the fixture rather than passing it.",
     transform: (r: any) => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) => {
-        const meta = x.metadata ?? {}
-        if (!("isVariableReference" in meta)) return x
-        // The LHS declaration shares the assignment's line, so a same-file Variable
-        // symbol on this edge's line whose name equals the target is the fabrication.
-        const declaredHere = (r.symbols ?? []).some(
-          (s: any) => s.kind === "Variable" && s.name === x.target &&
-            (s.line === x.line_number || s.range?.start?.line === x.line_number),
-        )
-        if (!declaredHere) return x
-        return { ...x, metadata: { ...meta, isAssignmentRead: true } }
+        if (x.type !== "instantiates") return x
+        const { languageNamespace: _drop, ...md } = (x.metadata ?? {})
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "powershell/letterless-target-marked",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PS-B27 REVERT (half two): a command-position target with NO ASCII letter carries the qualified externality reading again, which is the pre-fix state — `#Requires -Version 5.1` published `references -> 5.1` with `externalTarget: true` and `externalVia: \"qualified\"`, because a version separator is a dot. A version is not a name, so the arbiter's owner question asked about `5` (the MAJOR VERSION) and refuted 13 rows across the population on whatever symbol happened to carry that spelling. Caught by dotnet-shorthand-psb27's `references -> 5.1` pin, which asserts BOTH keys absent, and by its forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "references") return x
+        const t = String(x.target ?? "")
+        let hasLetter = false
+        for (let i = 0; i < t.length; i++) {
+          const c = t.charCodeAt(i)
+          if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) { hasLetter = true; break }
+        }
+        if (hasLetter) return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "qualified" } }
       }),
     }),
   },

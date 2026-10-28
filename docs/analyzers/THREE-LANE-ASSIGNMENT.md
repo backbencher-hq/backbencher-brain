@@ -98,11 +98,25 @@ grammar, not a reason to rule.
 - The lane's findings beyond coverage: the fleet's first and second refuted-claim incidents
   (`POWERSHELL-VERDICT-2026-10-20.md`), the runtime-variable path disposition (W9), the
   automatic-variable guard, static-call qualified targets, `-not`/`!` handling.
-- **Working tree after that commit is NOT clean**: `src/ast/real-powershell-analyzer.ts`
-  (+826 lines), `docs/analyzers/real-powershell-analyzer.md`, `script/m14/spec/powershell-completeness.json`
-  and 11 fixture files are modified. The doc's own new rows measure **24 fixtures pass / 0 fail**
-  and **65 of 65 mutants caught** (PS-B23, 2026-10-27). This pass is uncommitted.
-- Scoped suite measured 2026-10-28 from this tree: `powershell: {pass: 24, fail: 0}`.
+- **The depth pass LANDED 2026-10-28 together with PS-B27** (commit on this branch, message
+  `powershell: land the depth pass and stop claiming an owner for a .NET constructor target`).
+  Measured over the whole admitted population, same corpus, same instrument, A/B by analyzer
+  digest: **180,956 → 197,028 edges**, **84,901 → 101,352 resolved**, ambiguous 16,184 → 17,762,
+  unresolved 50,986 → 49,207, and **extFAIL 113 → 60** (the committed HEAD analyzer reads 85 under
+  today's arbiter, so the pre-pass “0” in `POWERSHELL-VERDICT-2026-10-20.md` was the WITHHELD key,
+  not a clean lane).
+- PS-B27: `instantiates` joined the namespace pass, a .NET type literal's root is now claimed as a
+  LIST (`languageNamespace`) instead of an owner the edge does not name, and a target with no ASCII
+  letter carries no externality reading. The 60 remaining refuted claims are attributed row by row
+  by `validation/m14/fixtures/powershell/refutation-row-probe.mts` (22 `using namespace` type
+  literals · 20 executables · 13 runtime-variable paths · 3 `Add-Type` types · 2 quoted keys) and
+  every one is the ARBITER's owner question, whose structural patch is filed with the Lead
+  (`POWERSHELL-DEPTH-PASS-2026-10-28.md` §4).
+- Gates from the committed tree: suite **25 pass / 0 fail**, mutants **67 of 67 caught, 0
+  survivors**, zero-regex **0/0**, spec-shape audit PASS, `tsc -p tsconfig.json` 0.
+- **Clause 4 is NOT met** (extFAIL 60) and the lane does not claim it is. Next: the `using
+  namespace` list (22 rows) and the quoted-literal provenance (2 rows) are lane-side and each needs
+  its own measurement; the other 36 wait on the arbiter patch or on a resolver the lane does not own.
 
 ### haskell — committed DONE, clean tree
 
