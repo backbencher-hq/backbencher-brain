@@ -2320,6 +2320,13 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           declareSymbol(name, ASTEngine.SymbolKind.Function, node, line, { isYul: true }, params)
           noteMember(top().owner, name)
           openFrame(node, top().owner, name, line, true)
+          // W6-a — THE YUL FRAME'S BINDINGS. `function twice(a) -> b` declares `a` and `b` in the
+          // Yul function's OWN frame; the family contract publishes no symbol for either, so every
+          // read of `a` or `b` in the body was a `yul_path` segment naming nothing (measured: 42 of
+          // the W6 wall's rows are exactly this). The parameters are already collected above — the
+          // frame simply never received them, because `openFrame` fills `bindings` only for the
+          // grammar's Solidity callable types and `yul_function_definition` is not one.
+          for (const p of params) top().bindings.add(p.name)
           break
         }
 
