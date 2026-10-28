@@ -498,7 +498,8 @@
       },
       "overrides": {
         "edges": 3,
-        "files": 3
+        "files": 3,
+        "_storePathNote": "TWO NUMBERS, TWO PATHS, BOTH TRUE, 2026-10-27: the ANALYZER emits 3 `overrides` rows (this census, and re-verified by direct analyze() on libxslt/tests/docbook/fo/toc.xsl line 190; the fixture xml/xslt-competing-template-overrides pins the emission and PASSES), while the 2026-10-27 whole-population closure arm reads 0 (validation/m14/results/xml-whole-population-closure.json) because the STORE path's shared shape test filterNoiseRelationships (src/ast/pool-worker.ts, commit ea8df6bbc 2026-10-21) refuses a target leaf carrying `=`, and this lane's DERIVED template identity - `xsl:template[match=*|mode=toc.for.section|priority=]#0`, the only sound name for a nameless competing template, which IS the XSLT 1.0 5.5 triple - carries `=` inside `priority=]`. MEASURED WITH A CONTROL by validation/m14/fixtures/xml/overrides-filter-census.mts: 3 rows eaten, ALL by `=`, and EVERY control row (the same leaf with `=` removed) is KEPT - so the emission is real, the filter is the cause, and the loss is silent, which is the scss lane's exact class (a rule added for one lane's snippets eating another lane's edges; the 2026-10-09 census predates the 2026-10-21 ban and therefore saw 3). The closure's 0 is the STORE PATH's truth and is not edited; the remedy belongs to the Lead-owned filter, and the lane's own artifacts carry the fact so no reader mistakes the 0 for an analyzer gap. OVERTURN: either the filter gains a derived-identity exemption (metadata.derivedTemplateIdentity is already on the symbol), or the identity's spelling drops the banned character - the Lead's call."
       },
       "uses": {
         "edges": 21414,
