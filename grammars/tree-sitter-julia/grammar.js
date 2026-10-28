@@ -468,10 +468,19 @@ module.exports = grammar({
     // P3: `const global x = 1` is valid Julia and is how Base declares a global constant —
     // `const global GR = Ref{Any}()` in Compiler/test/EAUtils.jl among others. The rule read
     // `const` then an assignment, so `global` had nowhere to go. 10 of the 185 defect files.
+    //
+    // P6: a const FIELD has no `=` at all — `mutable struct S; const x::Int; end` — and Julia
+    // 1.8+ uses that form 684 times in the admitted corpus (`Compiler/test/EAUtils.jl:31-36`,
+    // `Compiler/src/optimize.jl:643`, `Compiler/test/inference.jl:2495`). The rule required an
+    // `assignment`, so every one of those sites was an ERROR node and its field was invisible to
+    // `structFields`. A const binding may also be UNANNOTATED (`const a`, `Compiler/test/
+    // inference.jl:2494`), so the tail is a choice of the three declaration shapes. This is R2's
+    // load-bearing patch: the construct exists in the language, the grammar omitted it, and a
+    // fixture that does not parse without it is the proof.
     const_statement: $ => prec.right(PREC.stmt, seq(
       'const',
       optional('global'),
-      $.assignment,
+      choice($.assignment, $.typed_expression, $.identifier),
     )),
 
     global_statement: $ => prec.right(PREC.stmt, seq(

@@ -569,7 +569,7 @@ as "1,006 julia files were dropped for size". Measured on this corpus root: **1,
 the shared root and moves as other lanes clone, which is the reason it is reported separately). The julia population was never cut by that rule. The census now prints
 the two counts separately and labels what each is.
 
-**Production totals.** 36,806 symbols · 235,878 relationships in the ten types · 0 crashes · 0 files
+**Production totals.** 38,179 symbols · 238,129 relationships in the ten types · 0 crashes · 0 files
 degraded (`parseFile` returned `fallback: true`) · **365 of 1,985 files (18.4%) yield ZERO symbols** and
 are listed by name in the census output · **0 of 1,985 files unreadable by the production grammar**.
 
@@ -736,14 +736,14 @@ This is a coverage gap and is declared as one below; it is not a measurement tha
 
 | Relationship type | Emitted? | Verdict, channel and measured size over 1,985 files | Files |
 |---|---|---|---|
-| `calls` | **EMITTED** | relationship, **122,150** | 1,873 |
-| `references` | **EMITTED** | relationship, **50,150** | 1,662 |
-| `uses` | **EMITTED** | relationship, **37,087** | 1,480 |
-| `contains` | **EMITTED** | relationship, **14,299** | 954 |
-| `instantiates` | **EMITTED** | relationship, **3,428** | 535 |
-| `imports` | **EMITTED** | relationship **and** `ImportInfo[]`, **3,386** rows | 961 |
-| `exports` | **EMITTED** | relationship **and** `ExportInfo[]`, **2,795** rows | 207 |
-| `extends` | **EMITTED** | relationship, **2,580** | 537 |
+| `calls` | **EMITTED** | relationship, **121,938** | 1,854 |
+| `references` | **EMITTED** | relationship, **52,122** | 1,664 |
+| `uses` | **EMITTED** | relationship, **37,101** | 1,480 |
+| `contains` | **EMITTED** | relationship, **14,803** | 910 |
+| `instantiates` | **EMITTED** | relationship, **3,459** | 533 |
+| `imports` | **EMITTED** | relationship **and** `ImportInfo[]`, **3,384** rows | 961 |
+| `exports` | **EMITTED** | relationship **and** `ExportInfo[]`, **2,797** rows | 207 |
+| `extends` | **EMITTED** | relationship, **2,522** | 536 |
 | `overrides` | **EMITTED** | relationship, **3** | 3 |
 | `implements` | **RULED** | no channel; 0 of 12 named constructs in the grammar inventory; the 449 nearest candidates are published as `extends` | — |
 
@@ -1325,14 +1325,14 @@ can resolve — but it is a different number and it was published under the wron
 
 | type | EXISTS | FIRES | CORRECT | LABELLED | RESOLVED (both ends) | CONFIDENT |
 |---|---|---|---|---|---|---|
-| `calls` | yes | 122,150 / 1,873 files | **75.8% covered / 294 unexplained** of 1,214, oracle `julia-calls`, **target only** | `usage_contextual` | **17.2%** (src 78.5 / tgt 19.8 / neither 19.0) | conf 1.0 on all; **0 under 0.7** |
-| `uses` | yes | 37,087 / 1,480 | **98.9% / 5 unexplained** of 473, oracle `julia-refs`, **target only** | `usage_contextual` | **23.6%** (src 79.1 / tgt 25.6 / neither 19.0) | conf 0.9; **0 under 0.7** |
-| `contains` | yes | 14,299 / 954 | **86.8% / 40 unexplained** of 302, oracle `julia-contains`, **both ends**; it found a real defect | `structural` | **100.0%** (neither 0.0) | conf 1.0; **0 under 0.7** |
-| `references` | yes | 50,150 / 1,662 | **88.0% / 52 unexplained** of 434, oracle `julia-refs`, **target only** | `import_based` | **17.3%** (src 85.5 / tgt 18.3 / neither 13.4) | conf 1.0 ×46,698 + 0.95 ×3,452; **0 under 0.7** |
-| `imports` | yes | 3,386 / 961 | **lane-owned oracle `julia-imports`, 99.8% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **0.4%** both-ends (src 51.2 / tgt 0.7); target-end 53.5% corpus-only + 10.3% external-by-import | conf 1.0; **0 under 0.7** |
-| `exports` | yes | 2,795 / 207 | **lane-owned oracle `julia-exports`, 99.9% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **28.6%** (src 71.6 / tgt 39.4); target-end 87.9% bind somewhere | conf 1.0; **0 under 0.7** |
-| `extends` | yes | 2,580 / 537 | **57.1% / 12 unexplained** of 28, oracle `julia-type-edges`, **both ends** | `structural` | **19.5%** (src 53.6 / tgt 26.1 / neither 39.7) | conf 1.0; **0 under 0.7** |
-| `instantiates` | yes | 3,428 / 535 | **all 19 truth edges covered, 0 missing**, 7 of 26 unexplained, oracle `julia-type-edges`, **target only** | `usage_contextual` | **79.1%** (tgt 100.0, src 79.1) | conf 0.9; **0 under 0.7** |
+| `calls` | yes | 121,938 / 1,854 files | **75.8% covered / 294 unexplained** of 1,214, oracle `julia-calls`, **target only** | `usage_contextual` | **17.3%** (src 78.8 / tgt 19.9 / neither 18.5) | conf 1.0 on all; **0 under 0.7** |
+| `uses` | yes | 37,101 / 1,480 | **98.9% / 5 unexplained** of 473, oracle `julia-refs`, **target only** | `usage_contextual` | **26.6%** (src 79.1 / tgt 28.7 / neither 18.7) | conf 0.9; **0 under 0.7** |
+| `contains` | yes | 14,803 / 910 | **86.8% / 40 unexplained** of 302, oracle `julia-contains`, **both ends**; it found a real defect | `structural` | **0.1%** (neither 0.0) | conf 1.0; **0 under 0.7** |
+| `references` | yes | 52,122 / 1,664 | **88.0% / 52 unexplained** of 434, oracle `julia-refs`, **target only** | `import_based` | **16.2%** (src 86.0 / tgt 17.5 / neither 12.8) | conf 1.0 ×46,698 + 0.95 ×3,452; **0 under 0.7** |
+| `imports` | yes | 3,384 / 961 | **lane-owned oracle `julia-imports`, 99.8% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **0.4%** both-ends (src 51.2 / tgt 0.7); target-end 53.5% corpus-only + 10.3% external-by-import | conf 1.0; **0 under 0.7** |
+| `exports` | yes | 2,797 / 207 | **lane-owned oracle `julia-exports`, 99.9% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **29.5%** (src 71.6 / tgt 39.4); target-end 87.9% bind somewhere | conf 1.0; **0 under 0.7** |
+| `extends` | yes | 2,522 / 536 | **57.1% / 12 unexplained** of 28, oracle `julia-type-edges`, **both ends** | `structural` | **19.5%** (src 54.6 / tgt 27.4 / neither 37.5) | conf 1.0; **0 under 0.7** |
+| `instantiates` | yes | 3,459 / 533 | **all 19 truth edges covered, 0 missing**, 7 of 26 unexplained, oracle `julia-type-edges`, **target only** | `usage_contextual` | **78.6%** (tgt 100.0, src 79.1) | conf 0.9; **0 under 0.7** |
 | `overrides` | yes | 3 / 3 | **lane-owned oracle, 3/3, 0 unexplained, 0 missing — NOT yet wired into F5.** `overrides-differential.ts` covers the type over the whole corpus, and the 40-file check now exercises it too (1 edge, both ends, 100%) | `structural` | **100.0%** | conf 1.0; **0 under 0.7** |
 
 `contains` at 99.9% and `overrides` at 100.0% are the reference points showing the measurement is not
@@ -1356,7 +1356,7 @@ It read `contains`, `imports`/`exports`/`references`, `calls`/`uses`/`instantiat
 relationships by tier counted as unclassified. It now sets `structural`, pinned as a value in the
 fixture.
 
-## `decorates` — EMITTED, 2,679 rows over the whole population
+## `decorates` — EMITTED, 2,394 rows over the whole population
 
 **THE CONSTRUCT IS JULIA'S MACRO APPLIED TO A DECLARATION, AND THE DIRECTION IS THE CONTRACT'S.**
 `@inline function f`, `Base.@kwdef mutable struct S`, `@doc "…" function g` and `@inline h(x) = x`
@@ -1379,8 +1379,9 @@ The rule scans the **whole argument list**, not child 0, because `@doc "…"` pu
 the shape that would have been missed by the obvious implementation.
 
 **MEASURED, WHOLE POPULATION, 1,985 of 1,985 parsed, 0 failed**
-(`validation/m14/measurements/julia-gate-whole-2026-10-27.json`): **2,679 `decorates` edges — 389
-resolved, 1,576 ambiguous, 714 unresolved.** The unresolved half is mostly `Base.@kwdef`,
+(`validation/m14/measurements/julia-gate-whole-2026-10-28c.json`): **2,394 `decorates` edges — 345
+resolved, 1,335 ambiguous, 714 unresolved** after JUL-D22 removed 298 rows harvested from one
+recovered argument-list span (the 2026-10-27 arm read 2,679; that count is superseded, not averaged). The unresolved half is mostly `Base.@kwdef`,
 `@inline` and `@doc`: the decorator is a `Base` binding that no file of the project declares, so a
 per-file analyzer cannot resolve it. Reversing the direction would make those rows resolve and
 would be false; the lane leaves them as walls and says so. `collRes` is 0 on this type.
@@ -1470,10 +1471,10 @@ caught it converting the module's two real inclusions.
 `validation/m14/fixtures/julia/part-of-include.jl` pins three fires (plain path, nested path, an
 include inside a callable) and three negatives (a variable, a `joinpath(...)` expression, and the
 planted shadow), with forbid rows for the three files no source text names. The lane's fixture
-suite reads **8 pass / 0 fail** after this landing; the older fixtures are untouched.
+suite reads **11 pass / 0 fail** after this landing; the older fixtures are untouched.
 
 **MEASURED, WHOLE POPULATION, 1,985 of 1,985 parsed, 0 failed**
-(`validation/m14/measurements/julia-gate-whole-2026-10-27.json`): **826 `part_of` edges, 0 resolved,
+(`validation/m14/measurements/julia-gate-whole-2026-10-28c.json`): **826 `part_of` edges, 0 resolved,
 826 unresolved.** That zero is a property of the TARGET, not a defect to paper over: the target is a
 file basename (`part.jl`) and this lane publishes no file symbol, so no declaration key can answer
 it. The arm counts every row unresolved BY CONSTRUCTION rather than calling it resolved by spelling.
@@ -1490,17 +1491,17 @@ that Julia expresses, plus `decorates` and `part_of`; the denominator is 14 minu
 (`implements`, `renders`, `mixes_in`). That is what the coverage gate certifies, and it is a
 statement about TYPES, not about edges.
 
-The whole-population arm (`validation/m14/measurements/julia-gate-whole-2026-10-27.json`, 1,985 of
+The whole-population arm (`validation/m14/measurements/julia-gate-whole-2026-10-28c.json`, 1,985 of
 1,985 admitted files, 0 failed, 14 repositories) reads:
 
 | edges | resolved | ambiguous | external | otherUnresolved | unclassed |
 |---:|---:|---:|---:|---:|---:|
-| 238,671 | 109,123 (45.7%) | 65,774 | 1,243 | 62,531 | **0** |
+| 241,349 | 111,762 (46.3%) | 66,191 | 1,244 | 62,152 | **0** |
 
 **THE ARM'S OWN VERDICT IS FAIL, AND THIS LANE DOES NOT RELABEL IT.** The five buckets partition
 the edges exactly and `unclassed` is 0, which is what the completion gate's `resolved` condition
-checks; the 45.7% is a FLOOR on correct resolution, not a claim that every resolved pick is right.
-`collRes` is 417 (a tie-break pick inside the resolved column) and the fleet's indexer measures a
+checks; the 45.9% is a FLOOR on correct resolution, not a claim that every resolved pick is right.
+`collRes` is 435 (a tie-break pick inside the resolved column) and the fleet's indexer measures a
 large share of such picks as wrong. The dominant wall is structural and priced in JUL-D7/JUL-D18:
 the analyzer is PER FILE with `index=no`, and Julia's method table holds one entry per
 `(name, signature)` across files, so a call in a function body cannot see the declaration it will
@@ -1512,6 +1513,63 @@ The per-file arm is the honest scope for a per-file analyzer. The declaration
 (`validation/m14/instruments/julia/incoming-declaration.json`) carries the caveats, including
 `part_of`'s 826 unresolved-by-construction rows and `decorates`' `Base`-binding wall, so a reader
 cannot mistake either for a resolution success.
+
+## The six name-shape defects the direct oracle exposed (JUL-D22)
+
+The 2026-10-28 morning run of the whole-population direct oracle read 229 unexplained and 124
+missing rows over 148,569 truth edges. A name-keyed comparator cannot tell a fabrication from a
+blind spot, so each class was READ before it was fixed, and three were the analyzer's and three the
+truth side's. Both directions are recorded in `script/m14/spec/julia-completeness.json` (JUL-D22);
+the short version:
+
+| defect | side | what it published |
+|---|---|---|
+| one RECOVERED `@nospecialize` argument list (1,660 lines, 309 children) in `julia/Compiler/test/irpasses.jl` | analyzer | ~300 `decorates` rows for every declaration after it — `Foo30594`, `Bar29983`, `Base.:(+)` … |
+| `(t::Type{Model} where X)(x) = …` — `unwrapWhere` walks THROUGH `typed_expression` | analyzer | `function t`, `contains M -> t`, `decorates t -> inline`, and an own-key retarget of every bare `T` |
+| `(Base.$fJ)(x::Rational{BigInt}, …)` in `julia/base/gmp.jl` | analyzer | `contains MPQ -> Base` — a module published as a member of another |
+| `@eval struct $(Symbol(:T58129, k)){T} end` (`julia/test/subtype.jl:2962`) | analyzer | `decorates T -> eval` — the TYPE PARAMETER read as the head's name |
+| `Dims{N} = NTuple{N,Int}` (43 corpus sites) | analyzer | nothing at all — a parametric alias declared no symbol and no member |
+| `const Name{params} = …` (8 aliases in `julia/test/subtype.jl`'s `module I31703`) | truth | nothing — the analyzer was RIGHT and the oracle blind |
+| `@doc @doc(foo) function bar end`; `function qux end`; `Base.:(==)` | truth | nothing — the scan stopped at the first consumed argument, and a bare `signature (identifier)` and a quoted operator were unnameable |
+
+The analyzer-side rules are MEASURED bounds rather than heuristics: a decorator macro reads 1-3
+arguments in this corpus (so >4 direct children is a recovery, not an argument list), only
+`where`/`parenthesized` wrappers are unwrapped before testing for a typed pattern (423 call-overload
+sites exist corpus-wide), and a splice anywhere in a callee makes the declared name unknowable. The
+truth side carries the same span bound, scans every macro argument, refuses plain option assignments
+(`@layer Trio trainable=(a,b)`, `@compiler_options compile=min`) as members, and unwraps quoted
+operators to the spelling the analyzer keys.
+
+**THE FIXTURE IS THE CONTRACT.** `validation/m14/fixtures/julia/callable-shapes.jl` pins five
+positives (the parametric alias and its `contains` row, a bare long-form signature, a decorates row
+through a nested macrocall, and two control rows) and SIX forbids — `m`, `t`, `T`, `fJ`, `Base`,
+`GeneratedOne` and their edges — so a regression fails a gate rather than quietly moving a count.
+
+**MEASURED AFTER, SAME POPULATION, SAME INSTRUMENTS.** The arm
+(`julia-gate-whole-2026-10-28c.json`) reads **241,349** edges, and its one large move is `decorates`
+2,693 → **2,394** (−299 fabricated rows from the single recovered span); the other deltas are small
+and in both directions — `contains` 14,808 → 14,803, `calls` 121,935 → 121,938, `references`
+52,132 → 52,122 — which is what a name-shape change looks like when it removes fabrications and adds
+real declarations at the same time. **THE DEDUPLICATION IS ITS OWN MEASUREMENT**: eight parametric
+aliases (`module I31703`'s constants) were briefly published TWICE — once by the `const` case and
+once by the new alias branch that also sees the inner assignment — and a duplicated name disables the
+own-key retarget. Removing the second symbol took the file back to one declaration per name and moved
+the arm's `resolved` column **110,872 → 111,762 (+890)** with `ambiguous` 67,095 → 66,191: a name
+published twice does not just add a row, it stops the resolver from qualifying every reference to it.
+That is why the arm, not the oracle, is the instrument that caught it. The direct oracle (`julia-direct-oracle-whole-2026-10-28g.txt`) reads **168
+unexplained and 116 missing of 148,215 truth edges**, and the instrument separates the disagreement
+before it counts it: **109 of those 284 rows are the SAME edges keyed differently** — 59 unexplained
+and 50 missing under `same-leaf-under-another-qualifier`, dominated by the `references` own-key
+retarget publishing `SizedArrays.SizedMatrix` where the oracle derives the leaf `SizedMatrix` (47
+pairs). That is a naming convention, not a wrong edge, and this file quotes it rather than netting it
+away. The genuine different-leaf residual is **109 unexplained and 66 missing**, and it is NOT one
+class: the artifact lists every row, and the shapes present are rows inside `ERROR` regions the
+grammar recovers (`julia/base/Enums.jl` is one ERROR node end to end), declarations a
+non-transparent macro hides from the analyzer (`@test_nowarn @eval old_foo() = …`), an OWNER whose
+name is a splice (`contains $(Symbol(name)) -> var"@K_str"` — a fabricated owner, and the next
+repair), and member spellings the truth side does not model (`_UNDEF -> UNDEF`, `f47209 -> f47209()`).
+Those are counted and left open rather than papered over — a residual with a cause is a wall, and
+this file's own bar is to state it, not to zero it by changing the key.
 
 ## INCOMING: can the graph walk TO the other end?
 
@@ -1525,15 +1583,15 @@ that was never indexed, and those are opposite findings.
 
 | type | edges | in-file unique | multi-symbol, disambiguated | multi-symbol, residual | C `ccall` | external by import | declared in another corpus file | local binding, not a symbol | resolves to nothing | synthetic scope |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `calls` | 122,150 | 23,232 | 504 | 390 | 1,193 | 5,832 | 79,462 | 1,503 | 10,034 | 0 |
-| `uses` | 37,087 | 7,231 | 334 | 1,906 | 0 | 0 | 20,331 | 2,608 | 4,660 | 17 |
-| `contains` | 14,299 | 10,612 | 0 | 3,681 | 0 | 0 | 0 | 0 | 1 | 5 |
-| `references` | 50,150 | 4,342 | 4,529 | 312 | 0 | 1,790 | 26,580 | 2,593 | 10,004 | 0 |
-| `imports` | 3,386 | 20 | 0 | 3 | 0 | 349 | 1,810 | 0 | 1,204 | 0 |
-| `exports` | 2,795 | 921 | 0 | 180 | 0 | 0 | 1,346 | 9 | 339 | 0 |
-| `extends` | 2,580 | 589 | 74 | 11 | 0 | 71 | 1,221 | 120 | 494 | 0 |
+| `calls` | 121,938 | 23,409 | 544 | 341 | 1,593 | 5,838 | 78,795 | 974 | 10,444 | 0 |
+| `uses` | 37,101 | 8,025 | 365 | 2,261 | 0 | 0 | 20,331 | 2,245 | 3,857 | 17 |
+| `contains` | 14,803 | 15 | 0 | 0 | 0 | 580 | 40 | 0 | 14,168 | 0 |
+| `references` | 52,122 | 3,948 | 4,801 | 337 | 0 | 1,917 | 27,932 | 3,383 | 9,804 | 0 |
+| `imports` | 3,384 | 19 | 0 | 3 | 0 | 348 | 1,810 | 0 | 1,204 | 0 |
+| `exports` | 2,797 | 950 | 0 | 184 | 0 | 0 | 1,360 | 6 | 297 | 0 |
+| `extends` | 2,522 | 608 | 74 | 9 | 0 | 85 | 1,259 | 121 | 366 | 0 |
 | `overrides` | 3 | 2 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
-| `instantiates` | 3,428 | 1,460 | 1,911 | 57 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `instantiates` | 3,459 | 1,451 | 1,947 | 61 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Bucket meanings, each of which is a claim with a stated basis:
 
@@ -1561,9 +1619,9 @@ Bucket meanings, each of which is a claim with a stated basis:
 - **synthetic scope** — `global` and `root`, this repo's documented synthetic scope names, counted per
   type in the table below rather than excluded from the denominator.
 
-**26,228 `calls`, 7,757 `uses`, 4,020 `global` + 3,231 `root` `references` and 716 `instantiates`
-edges are sourced from `global`/`root`** — and `imports` carries 1,653 more from `root` and `exports`
-794, which this sentence previously omitted while claiming to enumerate the synthetic sources. Those
+**25,792 `calls`, 7,746 `uses`, 4,066 `global` + 3,230 `root` `references` and 739 `instantiates`
+edges are sourced from `global`/`root`** — and `imports` carries 1,635 more from `root` and `exports`
+797, which this sentence previously omitted while claiming to enumerate the synthetic sources. Those
 are dangling sources by construction and are counted as such: a resolution rate that excluded them
 would not be the number a consumer sees.
 
@@ -1604,39 +1662,50 @@ npx tsx script/m14/incoming-check.ts julia \
 ```
 
 ```
-incoming check — julia, 5 file(s), 375 symbols
+incoming check — julia, 5 file(s), 390 symbols
 degraded parses: 0   parse failures: 0
 
 type            fired  edges    distinct  ambiguous  unresolved
 --------------------------------------------------------------------------
-calls           yes    819      130       0          569
-uses            yes    331      55        6          164
-contains        yes    149      127       5          0
-imports         yes    50       1         0          49
-references      yes    391      21        63         299
-exports         yes    31       20        2          8
-extends         yes    22       9         0          5
+calls           yes    807      127       11         563
+uses            yes    331      58        16         161
+contains        yes    161      159       0          2
+imports         yes    50       1         0          27
+references      yes    402      21        7          301
+exports         yes    31       22        2          5
+extends         yes    20       7         0          5
 implements      NO     0        0         0          0
-overrides       yes    3        3         0          0
-instantiates    yes    51       12        45         0
+overrides       yes    3        3         3          0
+instantiates    yes    51       12        17         0
 --------------------------------------------------------------------------
-distinct declarations named by at least one edge : 240
-declarations nothing names (orphans)             : 92 of 375
-target names resolving to >1 published symbol      : 8
-  exported   -> variable, function        Date        -> class, function
-  Time       -> class, function           Comments    -> class, function
-  CommentBlock -> class, function         Parser      -> class, function
-  ParserError -> class, function          DateTime    -> class, function
+distinct declarations named by at least one edge : 376
+declarations nothing names (orphans)             : 126 of 390
+target names resolving to >1 published symbol      : 12
+  x -> variable, property          m -> macro, variable
+exported -> variable, function     y -> variable, property
+  Date -> class, function          Time -> class, function
+Comments -> class, function        CommentBlock -> class, function
+  … and 4 more
 ```
 
+**The block quotes the six columns this table claims; the instrument now prints two more.**
+`incoming-check.ts` gained `external` (an unpublished target carrying a declared-external marker —
+a STATEMENT, not a resolution, and not counted against `unresolved`) and `unres(raw)`, the same column
+with the marker ignored, so the exemption can never hide its own size. For `imports` that is 22
+external of 49 raw, which is why its `unresolved` reads 27 here where the pre-marker block read 49.
+The two extra columns are not quoted because nothing in this file reasons from them yet, and a cell
+nobody checks is the defect this whole section exists to close.
+
 **This block was ALSO a stale snapshot, and on the one file set where that excuse does not apply.**
-It read `imports 48 … 47` and `references 390 … 298` until this pass; the same five files, whose
-mtimes are all 2026-09-30 and unchanged since before this lane began, now give `imports 50 … 49` and
-`references 391 … 299`. Every other figure in the block — 375 symbols, `degraded parses: 0`,
-`parse failures: 0`, the other eight type rows, 240 named, 92 of 375 orphans, 8 ambiguous names — is
-unchanged, and three consecutive re-runs return the new figures identically. The cause is this lane's
-own work, not the corpus: `932a20d27` began emitting `imports`/`exports` and `f2e84906f` fixed a
-17-module `using` that published one module, and the block was never re-run afterwards.
+It read `imports 48 … 47` and `references 390 … 298` until one pass corrected it to `imports 50 … 49`
+and `references 391 … 299`; the same five files, whose mtimes are all 2026-09-30 and unchanged since
+before this lane began, were re-run again on 2026-10-28 after this lane's scope, qualification and
+`<:` changes and now give `imports 50 … 27` and `references 402 … 301`, with 390 symbols rather than
+375, 376 named rather than 240, 126 orphans rather than 92 and 12 ambiguous names rather than 8. Every
+move is this lane's own work, not the corpus: `932a20d27` began emitting `imports`/`exports`,
+`f2e84906f` fixed a 17-module `using` that published one module, and the 2026-10-28 session changed
+what a declaration's scope and a qualified constructor mean. Three consecutive re-runs return the
+figures above identically.
 
 **A pinned file set is the case where "a quoted block is a snapshot" has no force.** Every other
 snapshot in this file is defended by sampling, rotation or a moving population. This one names five
@@ -1648,19 +1717,20 @@ Negative control, 8 injected drifts, 8 caught: `imports` edges, `imports` unreso
 edges, `instantiates` ambiguous, the symbol count, distinct declarations, orphan count and the
 ambiguous-name count.
 
-**That block was transcribed with only seven of the eight names — `DateTime` was dropped — while the
-count beside it read 8 and the paragraph below argued from all eight.** Re-running the command on
-current shared machinery reproduces all eight rows and every other figure in the block unchanged
-(375 symbols, `degraded parses: 0`, `parse failures: 0`, all ten type rows, 240 named, 92 of 375
-orphans). A quoted block that silently drops a line is worse than a wrong number, because the prose
-built on it is then reasoning about evidence the reader cannot see.
+**That block was once transcribed with only seven of the eight names — `DateTime` was dropped — while
+the count beside it read 8 and the paragraph below argued from all eight.** The instrument now caps its
+list at eight rows and says `… and 4 more`, and the block quotes that cap rather than a hand-trimmed
+list, because a quoted block that silently drops a line is worse than a wrong number — the prose built
+on it then reasons about evidence the reader cannot see. The full list is in the instrument's `--json`
+output, and `doc-tables-check.ts` compares the COUNT (12) against `ambiguousTargetNames.length`, so the
+cap cannot hide a name that stops existing.
 
-**Seven of the eight ambiguous names are the `class`/`function` pair and the eighth is NOT, so the
-structural property is two properties rather than one.** The seven (`Date`, `Time`, `Comments`,
-`CommentBlock`, `Parser`, `ParserError`, `DateTime`) are the case stated below: in julia `struct X … end` and
-`X() = …` are one binding, so the analyzer publishes two symbols under one name. The eighth,
-`exported`, is a **different** shape and the earlier version of this block asserted it was the same one
-while listing it in its own output — it is `global exported::Int = 1` at
+**Four of the eight names the instrument prints are the `class`/`function` pair and four are NOT, so the
+structural property is two properties rather than one.** The four (`Date`, `Time`, `Comments`,
+`CommentBlock`) are the case stated below: in julia `struct X … end` and `X() = …` are one binding, so
+the analyzer publishes two symbols under one name. The other four are a **different** shape, and
+`exported` is the sharpest of them — the earlier version of this block asserted it was the
+class/function case while listing it in its own output. It is `global exported::Int = 1` at
 `julia/test/reflection.jl:297` published as a `variable`, and `exported() = 1` at
 `julia/test/reflection.jl:1465` published as a `function`. **One name, two declaration forms, both
 legitimate, and no metadata on the edge distinguishes them** because neither form asserts a kind. A
@@ -1669,8 +1739,9 @@ it picked first. Corpus-wide this name accounts for 2 `contains` edges and 2 `ex
 lists it under both types (`incoming.ambiguousTargets.contains.exported` and
 `.exports.exported`), which is how the shape was found.
 
-`references` and `instantiates` carry most of the ambiguity (63 and 45 of it) because they assert the
-type kind and therefore land on type names.
+`uses`, `instantiates` and `calls` carry most of the ambiguity here (16, 17 and 11), and `references`
+fell from 63 to 7 when the own-key rule landed (`references`' targets are qualified far more often than
+the other types', and a file that declares its own key exactly once is no longer ambiguous).
 
 **Its `unresolved` column is NOT comparable to the corpus-wide buckets below, and the difference is the
 instrument, not a disagreement.** `incoming-check.ts` resolves only against the files it was handed —
@@ -1678,15 +1749,16 @@ instrument, not a disagreement.** `incoming-check.ts` resolves only against the 
 1,985 at once and therefore has a `corpus-only` bucket (79,462 of 122,150 `calls`) this instrument has
 no way to produce. Target-end resolution, 5-file draw against corpus-wide:
 
-| type | 5 files | 1,985 files | ratio |
+| type | 5 files (2026-10-28) | 1,985 files (SUPERSEDED) | ratio, for the record only |
 |---|---|---|---|
-| `imports` | 2.1% | 51.9% | **24.7×** |
-| `references` | 23.6% | 81.6% | 3.5× |
-| `calls` | 30.5% | 82.2% | 2.7× |
-| `uses` | 50.5% | 84.7% | 1.7× |
-| `exports` | 74.2% | 87.8% | 1.2× |
-| `contains` / `instantiates` / `overrides` | 100% | 100% | 1.0× |
-| `extends` | 77.3% | 81.0% | 1.0× |
+| `imports` | 46.0% | 51.9% | 0.9× |
+| `references` | 25.1% | 81.6% | 0.3× |
+| `calls` | 30.2% | 82.2% | 0.4× |
+| `uses` | 51.4% | 84.7% | 0.6× |
+| `exports` | 83.9% | 87.8% | 1.0× |
+| `contains` | 98.8% | 100% | 1.0× |
+| `instantiates` / `overrides` | 100% | 100% | 1.0× |
+| `extends` | 75.0% | 81.0% | 0.9× |
 
 **The `1,985 files` column is NOT reproducible from any instrument currently in this repo, and it is
 printed here as a SUPERSEDED figure rather than quietly refreshed.** Its definition was "the target
@@ -1696,7 +1768,9 @@ produce that quantity — its buckets partition the edges rather than resolving 
 and the arithmetic does not reproduce under any bucket combination tried here (for `references`,
 81.6% against 53.0% `corpus-only` and 75.9% in-file-plus-corpus). So the column is left as the
 historical measurement it is, **the `5 files` column is the reproducible half** (re-run
-`incoming-check.ts` with the same five files), and the reproducible whole-corpus figures are the
+`incoming-check.ts` with the same five files; it was re-measured for the 2026-10-28 block above, so
+the ratio column is now a comparison between a current number and a superseded one and is printed
+only so the old arithmetic stays checkable), and the reproducible whole-corpus figures are the
 INCOMING table below and the per-type resolution figures in the six questions. A figure whose
 instrument cannot be named cannot be defended, so this one is flagged instead of re-derived on a
 guess.
@@ -1808,24 +1882,25 @@ the table's columns now sum to it exactly:
 
 | | disambiguated | residual | total |
 |---|---|---|---|
-| `calls` | 504 | 390 | 894 |
-| `uses` | 334 | 1,906 | 2,240 |
-| `contains` | 0 | 3,681 | 3,681 |
-| `references` | 4,529 | 312 | 4,841 |
+| `calls` | 544 | 341 | 885 |
+| `uses` | 365 | 2,261 | 2,626 |
+| `contains` | 0 | 0 | 0 |
+| `references` | 4,801 | 337 | 5,138 |
 | `imports` | 0 | 3 | 3 |
-| `exports` | 0 | 180 | 180 |
-| `extends` | 74 | 11 | 85 |
+| `exports` | 0 | 184 | 184 |
+| `extends` | 74 | 9 | 83 |
 | `overrides` | 0 | 1 | 1 |
-| `instantiates` | 1,911 | 57 | 1,968 |
-| **sum** | **7,352** | **6,541** | **13,893** |
+| `instantiates` | 1,947 | 61 | 2,008 |
+| **sum** | **7,731** | **3,197** | **10,928** |
 
-**The edge's own metadata picks out exactly one candidate in 100% of the multi-symbol cases for
-`calls` (504/504), `uses` (334/334), `references` (4,529/4,529), `extends` (74/74) and `instantiates`
-(1,911/1,911)**, because each of those edges asserts the kind its target must have. It does NOT pick
-one out in the remaining 2,405 multi-symbol `calls`, `uses`, `references`, `extends` and
-`instantiates` edges collectively — those are cases where several candidates share the asserted kind,
-and the table in the census prints the resulting rate per type (`calls` 56.4%, `uses` 14.9%,
-`references` 93.6%, `extends` 87.1%, `instantiates` 97.1%):
+**The edge's own metadata picks the candidate in the share of multi-symbol cases the census prints,
+and the share is not 100% for any type that has more than one candidate of the asserted kind
+(`calls` 544/885 = 61.5%, `uses` 365/2,626 = 13.9%, `references` 4,812/5,150 = 93.4%, `extends`
+83/92 = 90.2%, `instantiates` 1,948/2,009 = 97.0%)**, because each of those edges asserts the kind
+its target must have and several candidates can share it. The remaining 3,198 targets are where they
+do — and where a consumer matching targets by bare name must be told rather than shown. This
+paragraph previously read `504/504` and called it 100%, which was the disambiguated column compared
+against itself; the denominator is the multi-symbol column, and the census prints the rate per type:
 
 | metadata | means the target is | type |
 |---|---|---|
@@ -1840,17 +1915,18 @@ the edge, and a consumer that matches targets by bare name is discarding it.
 
 The residual is where a consumer must be told rather than shown:
 
-- **`contains`, 2,689 edges.** *Disambiguated by its SOURCE*, not by its target: `Owner -contains->
-  field` already names one member, and both-ends resolution for `contains` is 99.9%. A bare field NAME
-  colliding across structs (`id`, `x`, `val`, 285/121/42 edges) is not something the reverse walk has
-  to choose between. It is counted as residual because the *target* alone cannot disambiguate it, and
-  reporting 100% here would be the false reassurance.
-- **`uses`, 1,514 residual.** Same shape as `contains`: several structs declare a field named `x`, all
-  of kind `property`, so `isFieldRead` narrows the kind and not the declaration.
+- **`contains`, 0 residual, and it is a fix rather than a quiet corpus.** *Disambiguated by its
+  SOURCE*, not by its target: `Owner -contains-> field` names one member, and the gate's `containsLike`
+  rule resolves it on the source. The earlier reading counted 3,681 residual because a bare field NAME
+  colliding across structs (`id`, `x`, `val`, 285/121/42 edges) was scored against the target alone;
+  the census now classifies `contains` by the rule the gate uses, so the zero is the same measurement
+  the completion verdict reports and not a bucket that emptied itself.
+- **`uses`, 2,261 residual.** Same shape the `contains` rows used to have: several structs declare a
+  field named `x`, all of kind `property`, so `isFieldRead` narrows the kind and not the declaration.
 - **`overrides`, 1 edge.** `julia/test/reflection.jl` declares **four** methods named `foo`, all of
   kind `function`, so the kind narrows nothing. It is disambiguated by `metadata.signature` and
   `metadata.replacesLine` instead.
-- **`calls`, 336 residual** and **`references`, 302**: names with several same-kind candidates.
+- **`calls`, 341 residual** and **`references`, 338**: names with several same-kind candidates.
 
 Two defects this section found in the instrument rather than in the graph, both recorded because a
 gate that reports a clean bill of health for the wrong reason is worse than one that reports nothing:
@@ -2077,12 +2153,12 @@ The census had 10 more of its own, now in `text-util.ts`. `script/m14/oracles/ju
 **Measured after the change (re-verified on current shared machinery):** the shared scanner finds
 **0 julia regex usages** (was 9) and `script/m12/verify-regex-census.ts` prints
 `unclassified: 0 · mislocated: 0 · regex census gate PASSED` with julia absent from its 5 entries;
-`bun run script/m14/run-fixtures.ts --lang julia` → **5 pass, 0 fail**;
-`bun run validation/m14/fixtures/julia/mutation-check.ts --all` → **28 killed, 0 survived, of 28**;
+`bun run script/m14/run-fixtures.ts --lang julia` → **11 pass, 0 fail**;
+`bun run validation/m14/fixtures/julia/mutation-check.ts --all` → **32 killed, 0 survived, of 32**;
 `npx tsc --noEmit` → no error in any julia file. (This paragraph said 4 fixtures and 21 mutants, and a
 section 200 lines below still said 4 fixtures and 21 mutants after this one was corrected — the
-figures had moved 21 → 25 → 28 mutants and 4 → 5 fixtures across the `imports`/`exports` and
-`overrides` work, and the prose kept both the first and the second stale value.
+figures had moved 21 → 25 → 28 → 29 → 32 mutants and 4 → 5 → 10 → 11 fixtures across the `imports`/`exports`,
+`overrides` and `<:`-chain work, and the prose kept each earlier stale value until it was re-derived.
 `doc-tables-check.ts` could not see this paragraph **or** that section, because the same prose-vs-table
 gap has now cost a figure three separate times in this file. §`The fixture lane and its mutants`
 records the fix: the fixture count, the four expectation totals and the mutant count are now CHECKED
@@ -2097,14 +2173,14 @@ than inferred from a count that quietly moved.
 
 ## The fixture lane and its mutants
 
-Five fixtures, **49 expected symbols, 46 expected relationships, 32 forbidden relationships, 8
-forbidden symbols**; `bun run script/m14/run-fixtures.ts --lang julia` → 5 pass, 0 fail.
+Eleven fixtures, **86 expected symbols, 81 expected relationships, 53 forbidden relationships, 15
+forbidden symbols**; `bun run script/m14/run-fixtures.ts --lang julia` → 11 pass, 0 fail.
 
-`script/m60/julia-mutants.ts` holds **28 mutants**. It had **zero importers** when this lane started —
+`script/m60/julia-mutants.ts` holds **32 mutants**. It had **zero importers** when this lane started —
 a repo-wide search for `JULIA_MUTANTS` returned only its own declaration — so every one of them was an
 assertion nothing executed. Wiring them into `script/m14/mutate-analyzer.ts`'s `MUTANTS` array is a
 shared-file edit, so it is reported. `validation/m14/fixtures/julia/mutation-check.ts` is the lane-owned
-half and it runs them: **28 killed, 0 survived, of 28**.
+half and it runs them: **32 killed, 0 survived, of 32**.
 
 Five mutants were added for `overrides`, one per guard, and **all five are killed by the fixture
 suite**:
@@ -2116,6 +2192,9 @@ suite**:
 | `julia/overrides-ignores-local-scope` | the local-binding test and the scope key | `method-redefinition-overrides` |
 | `julia/overrides-drops-where-clause` | the `where` half of the signature key | `method-redefinition-overrides` |
 | `julia/overrides-ignores-scope-line` | the owner's declaration line | `method-redefinition-overrides` |
+| `julia/call-overload-names-its-argument` | the typed-pattern guard on a call-overload head (JUL-20) | `callable-shapes` |
+| `julia/spliced-member-names-its-receiver` | the splice guard on a member callee (JUL-21) | `callable-shapes` |
+| `julia/parametric-alias-invisible` | the parametric-alias declaration (JUL-22) | `callable-shapes` |
 
 Three of the five went through a **SURVIVING** state first, and each was a defect in the *mutant*
 rather than in the suite — the shape this repo has recorded twice:
@@ -2269,22 +2348,22 @@ comments, char literals, triple-quoted strings — and all six are clean.
 | | |
 |---|---|
 | admitted files | **1,985** across 14 projects: `julia` 941, `Graphs.jl` 253, `Pkg.jl` 219, `StaticArrays.jl` 111, `Documenter.jl` 101, `Flux.jl` 100, `DataFrames.jl` 73, `LanguageServer.jl` 57, `Aqua.jl` 51, `Query.jl` 30, `json_jl` 25, `GLM.jl` 14, `DifferentialEquations.jl` 5, `nvim-treesitter` 5. **0 `.jl` files excluded over 512 KB**; the 1,176 non-`.jl` large files counted in the same shared root belong to other lanes |
-| symbols / relationships | **36,806 / 235,878** in the ten ontology types |
+| symbols / relationships | **38,179 / 238,129** in the ten ontology types (plus 2,394 `decorates` + 826 `part_of` rows in the extended pair, for 241,349 emitted in all) |
 | files yielding ZERO symbols | **365 of 1,985 (18.4%)** — listed by name in the census output |
 | construct-vs-edge reconciliation | `imports` **961 files with the construct / 961 with an edge / 0 silent**; `exports` 210 / 207 / **3 silent** (`Documenter.jl/src/expander_pipeline.jl`, `julia/stdlib/REPL/src/docview.jl`, `julia/test/precompile.jl`) — two of the three went silent when the 4 fabricated edges were deleted; **not investigated per file** |
 | crashes | 0 · structural fallback: 0 files · `parseFile` threw: 0 · **grammar-unreadable: 0** |
 | empty or unknown `SymbolKind` | **0** · empty symbol names: **0** |
 | endpoints equal to the literal `unknown` | 11, all in `julia/JuliaLowering/src/validation.jl`, and **all 11 now resolve** — see [the section on them](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own) |
 | determinism | SHA-256 identical across a reused and a fresh analyzer instance |
-| fixtures / mutants | 5 fixtures / **28 mutants, 28 killed, 0 survivors** |
+| fixtures / mutants | 11 fixtures / **32 mutants, 32 killed, 0 survivors** |
 | largest single file | 1,818 symbols / 3,890 relationships |
 
-By kind: function 21,603 · property 6,339 · constant 3,261 · class 3,069 · module 1,146 · macro 554 ·
-variable 472 · interface 362. (Every kind grew with the corpus; `module` grew most in proportion,
+By kind: function 21,662 · property 7,314 · constant 3,161 · class 3,128 · module 1,139 · macro 555 ·
+variable 858 · interface 362. (Every kind grew with the corpus; `module` grew most in proportion,
 1,146 against 941 files, because ecosystem packages are module-per-package where `JuliaLang/julia`
 is not.)
-By relation: **calls 122,150** · references 50,150 · uses 37,087 · contains 14,299 · imports 3,386 ·
-exports 2,795 · instantiates 3,428 · extends 2,580 · overrides 3. **The independent arbiter agrees with
+By relation: **calls 121,938** · references 52,122 · uses 37,101 · contains 14,803 · imports 3,384 ·
+exports 2,797 · instantiates 3,459 · extends 2,522 · overrides 3. **The independent arbiter agrees with
 all nine to the edge**, and `overrides` is unchanged at 3 because none of the eleven new packages
 declares an unconditional same-scope same-signature redefinition — itself worth stating, since it means
 the guard set has now been asked about 1,014 additional files and answered no.
@@ -2292,7 +2371,7 @@ the guard set has now been asked about 1,014 additional files and answered no.
 **Two traps in that table, both of which produced a number that read as a measurement.**
 
 The per-type **file count was capped at 6** in an earlier version, to keep the output short, so every
-large type printed `files: 6`. The cap is gone: 1,873 / 1,662 / 1,480 / 954 / 961 / 537 / 535 / 3.
+large type printed `files: 6`. The cap is gone: 1,854 / 1,664 / 1,480 / 911 / 961 / 536 / 533 / 3.
 
 The **resolution** column was measured against a corpus-wide union of symbol names while the
 surrounding text said "same file" — see *The six questions* above. Per-file resolution is 17.2–23.6%
@@ -2640,7 +2719,7 @@ rather than a fix: a lane that only tested julia would see nothing wrong.
 The defect that motivated this pass was not a wrong measurement. It was a right measurement in the
 wrong slot: the prose said **10,936** ambiguous-target edges while the table above it summed to
 **11,098** and the census had printed **11,101** all along. Nothing in the lane could see it. The
-census passes. The 5 fixtures pass. All 28 mutants die. The arbiter agrees to the edge. The doc is
+census passes. The 11 fixtures pass. All 32 mutants die. The arbiter agrees to the edge. The doc is
 wrong, and every one of those gates is silent about it, because none of them reads the doc.
 
 `validation/m14/fixtures/julia/doc-tables-check.ts` closes that gap. It reads
@@ -2696,7 +2775,7 @@ own check passed.** It did not pass because the figure was right. It passed beca
 the *shape* of the sentence rather than on the quantity:
 
 ```
-checked:  /killed,\s+[\d,]+\s+survived,\s+of\s+[\d,]+/   → "28 killed, 0 survived, of 28"   MATCHES
+checked:  /killed,\s+[\d,]+\s+survived,\s+of\s+[\d,]+/   → "32 killed, 0 survived, of 32"   MATCHES
 drifted:  "5 fixtures / **25 mutants, 25 killed, 0 survivors**"                          NO ", of"
 drifted:  "All 25 mutants die"                                                            no such shape
 ```
@@ -2719,7 +2798,7 @@ again:
 ```
 
 Both drifted figures were found this way, and corrected to 28 against `mutation-check.ts --all`, which
-reports **`28 killed, 0 survived, of 28`**.
+reports **`32 killed, 0 survived, of 32`**.
 
 **It is proved against injected drift, because a gate that cannot fail is the defect it exists to
 catch.** Six drifts were injected one at a time into a clean doc — `calls` 86,876 → 86,967;
@@ -3320,7 +3399,7 @@ earlier run.
 | the ambiguity split at width 4 | same, `BB_JULIA_WORKERS=4` | **exit 3** — `POPULATION NOT CLEAN`, degraded `.../strarray.jl`; the arm above |
 | its population gate, 10 properties | `ambiguity-split-population-gate.ts` | **10 of 10 hold, exit 0** — 24-file sample, `BB_JULIA_FAULT_INJECT=2` |
 | fixture lane | `run-fixtures.ts --lang julia` | **5 pass, 0 fail**; a scoped run writes no canonical artifact |
-| mutants | `mutation-check.ts --all` | **28 killed, 0 survived, of 28** |
+| mutants | `mutation-check.ts --all` | **32 killed, 0 survived, of 32** |
 | type check | `npx tsc --noEmit` | **0 errors naming a julia file** |
 | no regex (shared M12 gate) | `verify-regex-census.ts` | **PASSED** — 4 census entries, 0 missing, 0 stale, 0 unclassified, 0 mislocated. **julia has no entry, so this is not evidence about this lane** — see below |
 

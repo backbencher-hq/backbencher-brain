@@ -188,6 +188,39 @@ const IMPLICIT_OR_CONSTANT: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * The macros whose expansion evaluates its block in the scope the block is WRITTEN in.
+ *
+ * Julia decides whether a macro's arguments become declarations in the enclosing module, and for
+ * these five the language defines the answer: `Base.@eval` evaluates in the containing module's
+ * global scope, `Base.@static` is a compile-time branch, and `Base.@sync` / `Base.@async` /
+ * `Base.@time` are wrappers around a block. Every OTHER macro is free to introduce a scope, and most
+ * of the ones in this corpus do: `@testset` expands its body under a `let`, so a function written
+ * inside a test set is a LOCAL function and not a member of the module the test file declares.
+ *
+ * Nothing here is inferred from the analyzer's own output — the list is julia's semantics, and the
+ * `contains` oracle applies the same five names from the other side.
+ */
+const SCOPE_TRANSPARENT_MACROS: ReadonlySet<string> = new Set(["eval", "static", "sync", "async", "time"])
+
+/**
+ * The node types that introduce a NEW lexical scope, so a binding written inside one is not a member
+ * of the enclosing module.
+ *
+ * Julia's own list of scope-introducing constructs, and nothing inferred: a function, a macro, a
+ * `let`, a loop, a `do` block, a quote, and a type body each own their bindings. `if` is NOT here
+ * because julia's scoping rules say it introduces no scope, and `try` is not here for the same
+ * reason this analyzer puts a top-level `try`'s declarations in the module — the corpus has no
+ * binding shape that would make the difference observable, and a barrier it does not need would
+ * hide one it does.
+ */
+const SCOPE_INTRODUCING_NODES: ReadonlySet<string> = new Set([
+  "function_definition", "macro_definition", "let_statement", "for_statement",
+  "while_statement", "do_clause", "quote_expression", "quote_statement",
+  "struct_definition", "abstract_definition", "primitive_definition",
+  "arrow_function_expression", "comprehension_expression",
+])
+
+/**
  * Text normalisation, three shapes, and NOT one regex each.
  *
  * `script/m12/verify-regex-census.ts` reported nine regex literals in this file, all of the form
@@ -208,20 +241,6 @@ const IMPLICIT_OR_CONSTANT: ReadonlySet<string> = new Set([
 function stripSigil(text: string, sigil: string): string {
   const t = text.trim()
   return t.startsWith(sigil) ? t.slice(sigil.length) : t
-}
-
-/**
- * The quoted-OPERATOR member of a field read: `x.:(==)` and `s.:<` put the member in a
- * `quote_expression`, whose text is `:(==)` — five characters around a two-character name. The
- * former spelling was `/^:\(|\)$/g`, which strips a leading `:(` and a trailing `)` in either order;
- * this strips the same two characters and nothing else, so it cannot also eat a `)` or `(` that is
- * part of an operator name.
- */
-function unquoteOperatorMember(text: string): string {
-  let t = text.trim()
-  if (t.startsWith(":")) t = t.slice(1)
-  if (t.startsWith("(") && t.endsWith(")")) t = t.slice(1, -1)
-  return t.trim()
 }
 
 /**
@@ -532,12 +551,25 @@ export class RealJuliaAnalyzer {
     // said one thing and the comment said another, and the comment was believed. A comment
     // describing a property the code does not have is worse than no comment, because it is an
     // answer to a question nobody thought to ask again.
+    // The MODULES this file declares, for the same reason: a QUALIFIED constructor call is a
+    // construction of a same-file type only when its qualifier is a module of this file.
+    // `atinvokelatest.Xs(...)` in `julia/test/misc.jl` builds this file's `Xs`; `Dates.DateTime(...)`
+    // in `base/toml/parser.jl` builds DATES' DateTime and merely shares a leaf with the internal
+    // `struct DateTime` declared 13 lines earlier. Matching on the leaf alone confuses the two: the
+    // first read as `calls` and the second as `instantiates`, and both directions were measured as
+    // wrong by the direct oracle on a 200-file draw.
+    const declaredModules = new Set<string>()
     {
       const collect = (n: Node) => {
         if (TYPE_DECLARATIONS.has(n.type)) {
           const head = this.firstNamedChildOfType(n, "type_head")
           const name = head ? this.typeHeadName(head) : ""
           if (name) declaredTypes.add(name)
+        }
+        if (n.type === "module_definition") {
+          const nm = n.childForFieldName("name")
+          const m = nm ? nm.text.trim() : ""
+          if (m) declaredModules.add(m)
         }
         for (const c of this.namedChildren(n)) collect(c)
       }
@@ -583,7 +615,15 @@ export class RealJuliaAnalyzer {
       const bindName = (b: Node | null | undefined): string => {
         if (!b) return ""
         if (b.type === "identifier") return b.text.trim()
-        if (b.type === "typed_expression" || b.type === "unary_typed_expression" || b.type === "splat_expression" || b.type === "parameters") {
+        if (b.type === "typed_expression" || b.type === "unary_typed_expression") {
+          // `::Ctx` is an ANONYMOUS argument: its only child is the TYPE, so reading child 0 as a
+          // binding publishes a parameter named `Ctx` and then retargets every reference to the
+          // type into `overdub\0Ctx`. A declaration needs TWO children: the name and its type.
+          const ks = this.namedChildren(b)
+          if (ks.length < 2) return ""
+          return bindName(ks[0])
+        }
+        if (b.type === "splat_expression" || b.type === "parameters") {
           const inner = this.pos(b, 0)
           return inner ? bindName(inner) : ""
         }
@@ -736,9 +776,18 @@ export class RealJuliaAnalyzer {
     }
 
     let activeScope = ""
+    // Whether `activeScope` names a CONTAINER (module or type) or a BODY (function/macro/closure).
+    // A body's locals are bindings, not members: the fleet's standing rule (C# M12.07
+    // LocalsAreNotSymbols, and Swift's SWIFT4b `contains Type -> local` sweep) is that a
+    // declaration whose lexical owner is a body is local and carries no `contains` edge. The
+    // first implementation advanced `activeScope` for functions but left the containment guard on
+    // `if (scope)`, so every local function and local variable inside a method became a member of
+    // that method. Measured on the 40-file whole-population draw: 27 unexplained `contains` rows,
+    // e.g. `expand_versions -> vnum` and `write_html -> size_threshold_msg`.
+    let containerScope = true
     let depth = 0
 
-    const walkStack: { node: Node; activeScope: string; inMacroBody: boolean; isExit: boolean }[] = [{ node: rootNode, activeScope: "", inMacroBody: false, isExit: false }]
+    const walkStack: { node: Node; activeScope: string; containerScope: boolean; inMacroBody: boolean; isExit: boolean }[] = [{ node: rootNode, activeScope: "", containerScope: true, inMacroBody: false, isExit: false }]
 
     while (walkStack.length > 0) {
       const frame = walkStack.pop()!
@@ -764,10 +813,27 @@ export class RealJuliaAnalyzer {
         // of everything after it. Frames are pushed exit-first with children reversed, so children
         // always pop before their parent's exit frame and restoring here is well-ordered.
         activeScope = frame.activeScope
+        containerScope = frame.containerScope
         this.inMacroBody = frame.inMacroBody
         continue
       }
       const scope = frame.activeScope
+      // THE FRAME'S OWN VALUE, not the variable's. A stack-walked visitor needs the per-node value
+      // on the FRAME or a per-child difference cannot be expressed at all: every child pushed with a
+      // different `containerScope` was silently read back as the parent's, so `@testset` bodies kept
+      // their membership edges for two rounds of edits that looked correct. `activeScope` needs no
+      // such line because it is only ever read through the exit-frame restore below.
+      containerScope = frame.containerScope
+      // The exit frame must restore the scope this node was ENTERED with, not the one its handler
+      // may have advanced to. Capturing both here is what makes a function's `containerScope=false`
+      // end at the function body instead of leaking to every later sibling in the module.
+      const parentContainerScope = containerScope
+      // `inMacroBody` needs the same treatment as the scope: the exit frame must restore the value
+      // this node was ENTERED with. It was pushed after the handler had already set the flag for a
+      // macro definition, so exiting a macro restored `true` and every later sibling in the file was
+      // analysed as if it were quoted macro code — which silently skipped `global`/`local`
+      // declarations. Measured on `Compiler.jl`: 23 symbols and a missing `BuildSettings.MAX_METHODS`.
+      const parentInMacroBody = this.inMacroBody
 
       switch (node.type) {
         // ---------------------------------------------------------------- modules
@@ -776,7 +842,13 @@ export class RealJuliaAnalyzer {
           // field is the ONLY field in this grammar's module rule, so it is read by field and
           // everything else in the file is positional.
           const nameNode = node.childForFieldName("name")
-          const name = nameNode ? nameNode.text.trim() : ""
+          // A SPLICED MODULE NAME IS NOT A NAME. `@eval module $(Symbol(name)) … end` puts an
+          // `interpolation_expression` in the `name` FIELD, and reading the field's TEXT published
+          // the splice itself as a module symbol — the direct oracle read
+          // `contains $(Symbol(name)) -> var"@K_str"` in `julia/JuliaLowering/test/utils.jl`, an
+          // owner whose name is a source expression. `nameOf` refuses a node that names nothing,
+          // which is the same rule the type-head and callee guards already apply.
+          const name = nameNode ? this.nameOf(nameNode) : ""
           if (name) {
             pushSym({
               name,
@@ -786,8 +858,9 @@ export class RealJuliaAnalyzer {
               ownerName: scope || undefined,
               metadata: { juliaSpecific: true, isBareModule: this.firstNamedChildType(node) === "baremodule" },
             })
-            if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
+            if (scope && containerScope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
             activeScope = name
+            containerScope = true
           }
           break
         }
@@ -797,6 +870,14 @@ export class RealJuliaAnalyzer {
         case "primitive_definition":
         case "struct_definition": {
           const nameNode = this.firstNamedChildOfType(node, "type_head")
+          // `@eval struct $T … end` DECLARES NO NAME THE TREE CAN SPELL. The head is an
+          // `interpolation_expression` whose only child is the loop variable, so reading through it
+          // published a type named `T` (Dates) or `typ` (LibGit2) — five real structs collapsed onto
+          // one fabricated owner, their fields hung off it, and the real names (`Year`, `git_time`)…
+          // absent. The same refusal the supertype path already applies, at the declaration site: a
+          // name the tree cannot spell is a name to REFUSE, not a name to guess.
+          const headInner = nameNode ? this.pos(nameNode, 0) : null
+          if (headInner && headInner.type === "interpolation_expression") break
           const name = nameNode ? this.typeHeadName(nameNode) : ""
           if (!name) break
           const kind = node.type === "struct_definition"
@@ -811,7 +892,7 @@ export class RealJuliaAnalyzer {
             metadata: { juliaSpecific: true, declarationForm: node.type, isMutable: this.hasToken(node, "mutable") },
           })
           declaredTypes.add(name)
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
+          if (scope && containerScope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
 
           // A type's OWN HEAD is not a reference. `struct Circle{T<:Real} <: Shape` names Circle in
           // its own type head, and the `parametrized_type_expression` case below reads that as a
@@ -825,11 +906,19 @@ export class RealJuliaAnalyzer {
           // type parameter. Without advancing the scope, `Shapes -references-> T` attributed a
           // type parameter to the module that has no such parameter.
           activeScope = name
+          containerScope = true
 
           // The SUBTYPE edge, and it is the only inheritance Julia has. `struct S <: A` puts a
           // `where`-less `binary_expression` (or a `comparison_operator` chain) between the type
           // head and the supertypes; `abstract type` uses the same shape.
           for (const sup of this.supertypesOf(node)) {
+            // A SELF-SUPERTYPE IS NOT A RELATION, IT IS A REFUSAL. `struct Foo <: Foo` is a
+            // declaration julia rejects at definition time — `a type cannot subtype itself` — and
+            // the edge it published said only that Foo is Foo. MEASURED: 2 corpus sites, both in
+            // julia's own tests of that error (`test/errorshow.jl:1533`, `test/typegroup.jl:721`),
+            // and the direct oracle refuses `f === t` by construction, so every one of them was an
+            // unexplained edge on a worksheet.
+            if (sup === name) continue
             relationships.push(this.rel(name, ASTEngine.RelationshipType.Extends, sup, node, 1.0, { juliaSpecific: true, isSubtype: true }))
           }
 
@@ -878,7 +967,16 @@ export class RealJuliaAnalyzer {
               // asserts the absence of a fabricated edge, and a bare `forbidSymbols` would not have
               // seen a relationship. A self-reference is a weak signal to forbid and an obvious one
               // to look at, which is the argument for reading the output even when it is green.
-              this.typeHeadSites.add(callable.id)
+              //
+              // THE CALLEE, NOT THE WHOLE CALL. Registering the `call_expression` put every
+              // PARAMETER ANNOTATION under the guard too, because the argument list is the call's
+              // child: `f(dfs::Union{AbstractVector{X}, Tuple{Y, Vararg{Z}}})` published `Union` and
+              // dropped `AbstractVector`, `Tuple` and `Vararg` — 4 rows in one `DataFrames.jl`
+              // signature on a 200-file draw. The 5-hop ancestor budget hid it: the annotations sit
+              // five levels below the call, exactly one hop past the limit, so the suppression looked
+              // like it only ever applied to the signature's own name.
+              const callee = this.pos(callable, 0)
+              this.typeHeadSites.add(callee ? callee.id : callable.id)
             }
           }
           const isMacro = node.type === "macro_definition"
@@ -894,8 +992,9 @@ export class RealJuliaAnalyzer {
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, isMacro, hasBlockBody: !!this.firstNamedChildOfType(node, "compound_statement") },
           })
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
+          if (scope && containerScope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
           activeScope = name
+          containerScope = false
           // BD8b: a declaration that REPLACES an earlier one with the same (name, signature) — the
           // only sense in which julia has an override. See `overrideEdgeFor` for the edge shape and
           // for why it is refused outside a declared scope.
@@ -927,7 +1026,75 @@ export class RealJuliaAnalyzer {
             const inner = this.pos(lhs, 0)
             if (inner && inner.type === "call_expression") lhs = inner
           }
-          if (lhs.type !== "call_expression") break
+          // `Dims{N} = NTuple{N,Int}` — A PARAMETRIC ALIAS DECLARES A TYPE NAME, and it is neither a
+          // call (a short-form method) nor a plain binding, so this case skipped it: `Base.Dims`,
+          // `Base.AbstractVecOrTuple`, `Flux._ParallelONE` and `StaticArrays.SizedMatrix` published
+          // no symbol and no `contains` row, while the truth oracle derived all of them. MEASURED: 43
+          // sites over the whole population, every one this shape (`grep -E '^Name{…} = '`), and
+          // every one a member the direct oracle read as MISSING. The base is the NAME; the `{…}` is
+          // a parameter list, the same split `nameOf` already makes for `const X{T} = …`.
+          if (lhs.type === "parametrized_type_expression") {
+            // THE WRAPPER IS THE DECLARATION. `const RestrictedBasis{B} = …` is a `const_statement`
+            // whose inner assignment this walk also reaches, and the const case already published
+            // its Constant — publishing a second, Class symbol for the same name made the name
+            // NON-UNIQUE in the file, which silently disabled the own-key retarget: every bare
+            // reference inside `module I31703` stayed bare while the truth oracle qualified it
+            // (`I31703.RestrictedBasis`), 8 unexplained + 8 missing rows on one file. Same rule as
+            // the plain-binding branch below.
+            const wrapper = node.parent ? node.parent.type : ""
+            if (wrapper === "const_statement" || wrapper === "global_statement" || wrapper === "local_statement") break
+            const base = this.pos(lhs, 0)
+            const alias = base && base.type === "identifier" ? base.text.trim() : ""
+            if (!alias || IMPLICIT_OR_CONSTANT.has(alias)) break
+            if (!containerScope) break
+            pushSym({
+              name: alias,
+              kind: ASTEngine.SymbolKind.Class,
+              range: this.range(node),
+              complexity: this.complexity(node),
+              ownerName: scope || undefined,
+              metadata: { juliaSpecific: true, declarationForm: "parametric_alias" },
+            })
+            if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, alias), node, 1.0))
+            break
+          }
+          if (lhs.type !== "call_expression") {
+            // A PLAIN MODULE-LEVEL BINDING. `suite = BenchmarkGroup()` at a module's top level
+            // creates `Mod.suite` exactly as `const suite = …` would — Julia gives a top-level
+            // assignment a global binding in its module, with or without `const` — and this case
+            // handled only the CALL-headed short form, so those bindings were invisible.
+            // MEASURED: 43 missing `contains` rows on the 200-file direct draw, and every one of
+            // them this shape: `TestJoin -> name/job/outer/right/left/inner/semi/anti`
+            // (`DataFrames.jl/test/join.jl:13-29`), `ResolveTest -> vlst` (`Pkg.jl/test/resolve.jl:21`),
+            // `BenchmarkMatMul -> suite/mul_wrappers` (`StaticArrays.jl/benchmark/bench_mat_mul.jl:8-10`)
+            // and `TestUndocumentedNames -> results` (`Aqua.jl/test/test_undocumented_names.jl:10`).
+            //
+            // THE SCOPE TEST IS LEXICAL, not `containerScope`: a `let`, a loop body or a
+            // short-form function body does not reset that flag, and a binding written in one is
+            // LOCAL. `inModuleBindingScope` walks the ancestors instead. `containerScope` is asked
+            // as well because a macro's arguments are opaque by construction.
+            // A BINDING WRAPPED IN A `const`/`global`/`local` STATEMENT IS THAT STATEMENT'S
+            // DECLARATION, and it is already published by the case above. Publishing it again here
+            // would give one binding TWO symbols of different kinds (`Constant` and `Variable`),
+            // which makes the name non-unique and silently disables the reference retarget —
+            // measured: 9 references to module `const`s stopped being qualified and read as
+            // unexplained rows. The wrapper IS the declaration; this branch is for the bare form.
+            const wrapper = node.parent ? node.parent.type : ""
+            if (wrapper === "const_statement" || wrapper === "global_statement" || wrapper === "local_statement") break
+            if (!containerScope) break
+            const binding = this.plainModuleBinding(node)
+            if (!binding || IMPLICIT_OR_CONSTANT.has(binding)) break
+            pushSym({
+              name: binding,
+              kind: ASTEngine.SymbolKind.Variable,
+              range: this.range(node),
+              complexity: this.complexity(node),
+              ownerName: scope || undefined,
+              metadata: { juliaSpecific: true, declarationForm: "module_assignment" },
+            })
+            if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, binding), node, 1.0))
+            break
+          }
           const name = this.calleeName(lhs)
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
           pushSym({
@@ -944,7 +1111,7 @@ export class RealJuliaAnalyzer {
           // not invoke it. The node is recorded so the call case can tell a declaration site from
           // an invocation, which is a distinction the tree does not make on its own.
           this.declSites.add(lhs.id)
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
+          if (scope && containerScope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
           // The short form is the form the corpus prefers, so the `overrides` pre-pass admits it
           // too: measuring only `function … end` would have missed every `f(x) = …` redefinition,
           // which is most of them. Same edge, same refusal rules — see `overrideEdgeFor`.
@@ -960,6 +1127,7 @@ export class RealJuliaAnalyzer {
           // working, and a reminder that this grammar's 7-field vocabulary is the thing to read.
           // Parameters are still READS (the `uses` pass binds them), which is the fact that matters.
           activeScope = name
+          containerScope = false
           break
         }
 
@@ -991,6 +1159,23 @@ export class RealJuliaAnalyzer {
           // does not name anything, which is a REFUSAL rather than a fabricated key.
           const name = this.nameOf(lhs)
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
+          // `global x` DECLARES A MODULE BINDING AT ANY NESTING, which is the whole meaning of the
+          // keyword: `struct _UNDEF; global const UNDEF = _UNDEF.instance; end` declares `Compiler`'s
+          // `UNDEF`, not a member of `_UNDEF`. The owner was the nearest container, so the type
+          // published a constant it does not have. MEASURED: `julia/base/rounding.jl`'s nine
+          // `global const JL_FE_*`, `julia/test/syntax.jl`'s `x2`/`x4`/`x5`/`x6`, and `_UNDEF` — 14
+          // of the whole-population draw's unexplained `contains` rows, all one keyword.
+          // A `global` WITH NO ENCLOSING MODULE BELONGS TO THE UNIT'S TOP-LEVEL SCOPE, NOT TO THE
+          // BODY IT IS WRITTEN IN. The fallback was `|| scope`, which named the enclosing FUNCTION:
+          // `@eval m begin function foo(); global var = 1; end end`
+          // (`julia/stdlib/REPL/test/replcompletions.jl:2086`) published `contains foo -> var`, and
+          // `var` is not a member of `foo` — a `global` declaration can never be. When the tree
+          // does not spell the module (the `m` here is a runtime `Module()` value), the honest owner
+          // is the file's top-level scope, which is where this analyzer already puts a bare
+            // top-level declaration. Found by the direct oracle: the one unexplained `contains` row
+          // on the 200-file draw.
+          const isGlobal = node.type === "global_statement" || this.hasToken(node, "global")
+          const owner = isGlobal ? this.enclosingModuleName(node) : scope
           // A binding inside a macro's body is part of QUOTED code that expands at the CALL SITE,
           // so it is not a declaration OF the macro. `macro cached(expr) quote local v = …; v end`
           // published `cached contains v`, asserting the macro declares `v` — when `v` is a
@@ -1007,10 +1192,13 @@ export class RealJuliaAnalyzer {
             kind: node.type === "const_statement" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
             range: this.range(node),
             complexity: this.complexity(node),
-            ownerName: scope || undefined,
+            ownerName: owner || undefined,
             metadata: { juliaSpecific: true, binding: node.type.replace("_statement", "") },
           })
-          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, memberKey(scope, name), node, 1.0))
+          // A `global` declaration is a member of its MODULE even when it is written inside a type
+          // body or a macro argument, so the containment guard's `containerScope` does not apply to
+          // it: the keyword is what puts the binding in the module.
+          if (owner && (isGlobal || containerScope)) relationships.push(this.rel(owner, ASTEngine.RelationshipType.Contains, memberKey(owner, name), node, 1.0))
           break
         }
 
@@ -1206,7 +1394,18 @@ export class RealJuliaAnalyzer {
             }))
             break
           }
-          const isCtor = declaredTypes.has(callee) || TYPE_DECLARATIONS.has(callee)
+          // A CONSTRUCTOR CALLED THROUGH A NAMESPACE still constructs the type this file declares:
+          // `atinvokelatest.Xs(Any[...])` in `julia/test/misc.jl` builds `Xs`, declared three lines
+          // into the module above it. The bare-name test missed it and published a `calls` edge for a
+          // construction, which the `instantiates` oracle reads as a MISSING row. The LEAF is also the
+          // target when it is a same-file type: that is the spelling the type's own symbol carries,
+          // and a qualified target whose module is not part of the declared name is the same binding
+          // written twice.
+          const dot = callee.indexOf(".")
+          const qualifier = dot > 0 ? callee.slice(0, dot) : ""
+          const ctorLeaf = dot > 0 ? callee.slice(callee.lastIndexOf(".") + 1) : callee
+          const sameFileCtor = dot > 0 && declaredModules.has(qualifier) && declaredTypes.has(ctorLeaf)
+          const isCtor = declaredTypes.has(callee) || sameFileCtor || TYPE_DECLARATIONS.has(callee)
           // The FUNCTION form of ccall: `ccall(:jl_getpid, Cint, ())` or
           // `ccall((:malloc, :libc), Ptr{Cvoid}, …)`. The callee here really is the Julia function
           // `ccall`, so that edge is emitted normally; the C symbol lives in the FIRST ARGUMENT, as
@@ -1225,7 +1424,7 @@ export class RealJuliaAnalyzer {
             relationships.push(this.rel(
               scope || GLOBAL_SCOPE,
               isCtor ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.Calls,
-              callee,
+              sameFileCtor ? ctorLeaf : callee,
               node,
               isCtor ? 0.9 : 1.0,
               meta,
@@ -1302,12 +1501,25 @@ export class RealJuliaAnalyzer {
         }
 
         // ---------------------------------------------------------------- type annotations
+        case "unary_typed_expression":
         case "typed_expression": {
           // `x::Int` — POSITIONAL: child 0 is the name, child 1 the type. The TYPE is the
           // reference; the left side is a binding or a read, and a struct body's bare `x::T` was
           // already published as a field above and must not also become a read here.
-          const typeNode = this.pos(node, 1)
-          const typeName = typeNode ? this.typeHeadName(typeNode) : ""
+          // THE TEXT IS THE DISCRIMINATOR for an anonymous annotation. `x::T` has two children
+          // (name, type); `::T` has one. But `::Type{<:Strider{T}}` parses as a two-child node whose
+          // FIRST child is the base name `Type` and whose second is the curly tail `{<:…}` — with
+          // no name before the `::`. Reading child 1 named the type after its PARAMETER (`Strider`)
+          // and lost `Type`. An annotation whose text begins `::` has no left-hand name, so child 0
+          // is the type base.
+          const typedKids = this.namedChildren(node)
+          // `unary_typed_expression` is the grammar's node for `::T` — the ordinary spelling of an
+          // anonymous typed argument. The typed case had no label for it, so `::Type{<:Strider{T}}`
+          // emitted neither `Type` nor `Strider` from the annotation; the only Strider row came from
+          // the child parametrized case, which is why the missing target was always the base.
+          const anonymous = node.type === "unary_typed_expression" || node.text.trimStart().startsWith("::")
+          const typeNode = anonymous ? typedKids[0] : typedKids.length >= 2 ? typedKids[1] : typedKids[0]
+          const typeName = typeNode ? this.typeRefName(typeNode) : ""
           if (typeName) relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.References, typeName, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
         }
@@ -1322,12 +1534,8 @@ export class RealJuliaAnalyzer {
           for (const inner of this.namedChildren(node)) {
             if (inner.type !== "curly_expression") continue
             for (const b of this.namedChildren(inner)) {
-              if (b.type !== "binary_expression") continue
-              const bo = this.binOperands(b)
-              if (bo.op !== "<:" && bo.op !== ">:") continue
-              const bound = bo.right ? this.typeHeadName(bo.right) : ""
-              if (bound && bo.left) {
-                relationships.push(this.rel(bo.left.text.trim(), ASTEngine.RelationshipType.Extends, bound, b, 1.0,
+              for (const link of this.subtypeChainLinks(b)) {
+                relationships.push(this.rel(link.from, ASTEngine.RelationshipType.Extends, link.to, link.at, 1.0,
                   { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
               }
             }
@@ -1363,34 +1571,49 @@ export class RealJuliaAnalyzer {
           // all. Found by the mutant `julia/where-bound-extends-scope-guarded`, which survived
           // because the fixture's own `where` bound was invisible to BOTH sides: a fixture and an
           // analyzer can agree on nothing and still both be wrong.
-          for (const child of this.namedChildren(node)) {
+          const whereKids = this.namedChildren(node)
+          const lastWhereKid = whereKids[whereKids.length - 1]
+          for (const child of whereKids) {
             if (child.type === "curly_expression") {
               for (const inner of this.namedChildren(child)) {
-                if (inner.type !== "binary_expression") continue
-                const r2 = this.binOperands(inner)
-                if (r2.op !== "<:" && r2.op !== ">:") continue
-                const b = r2.right ? this.typeHeadName(r2.right) : ""
-                if (b && r2.left) {
-                  relationships.push(this.rel(r2.left.text.trim(), ASTEngine.RelationshipType.Extends, b, inner, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
+                for (const link of this.subtypeChainLinks(inner)) {
+                  relationships.push(this.rel(link.from, ASTEngine.RelationshipType.Extends, link.to, link.at, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
                 }
               }
               continue
             }
             if (child.type !== "binary_expression") continue
-            const { op, left, right } = this.binOperands(child)
+            // A `where` WRAPPED AROUND A COMPARISON IS NOT A BOUND. The pinned grammar makes the
+            // `where` the OUTERMOST node and puts the type variable after the expression, for both
+            // a real bound and a comparison that the grammar cannot tell apart by shape alone:
+            //
+            //   f(x::T) where T<:Real            -> (where_expression (call) (binary T<:Real))
+            //   @test typeintersect(A,B) <: T{X} where T
+            //                                    -> (where_expression (binary …) (identifier T))
+            //
+            // The distinguishing POSITION is the binary's: a real bound is the where's LAST named
+            // child, a comparison is its FIRST, with the variable after it. Before this, the
+            // analyzer published `typeintersect extends Tuple` (`julia/test/subtype.jl:2769`) — a
+            // subtype relation read off a test assertion's comparison.
+            //
+            // THE EXCEPTION IS A PARAMETER LIST, and it is stated as a position too: a chain whose
+            // OWN `where` scopes only its braces — `Pair{N, S} where {N, NTuple{N,Int}<:S<:NTuple{M,Int}
+            // where {M}}` (`subtype.jl:2939`) — is a BOUND chain inside an outer curly, with the
+            // chain FIRST and its braces last. It is a member of a parameter list, so its links are
+            // bounds; the same shape at statement or macro-argument level is a UnionAll VALUE whose
+            // chain is a comparison, and publishes nothing.
+            if (child !== lastWhereKid && node.parent?.type !== "curly_expression") continue
             // `>` is not a bound operator; `>:` is. The test said `">"`, so an UPPER bound written
             // `T>:Int` was skipped — a real Julia form, and the oracle derives it.
-            if (op !== "<:" && op !== ">:") continue
-            const sub = right ? this.typeHeadName(right) : ""
-            // NO `scope` guard here, and its absence was a defect: this edge's SOURCE is `left` —
-            // the type parameter — not the enclosing scope. The guard was copy-pasted from the
+            // NO `scope` guard here, and its absence was a defect: this edge's SOURCE is the
+            // type parameter — not the enclosing scope. The guard was copy-pasted from the
             // `contains` cases, where the scope IS the source and the check is the point. So it
             // suppressed a valid edge whenever the bound appeared at FILE SCOPE, which is 71.9% of
             // Julia files. Found by the F5 `extends` oracle: `base/rational.jl` publishes
             // `T extends AbstractFloat` and `base/hashing.jl` `UTF8Units extends AbstractString`,
             // both at file scope, and the analyzer had neither.
-            if (sub && left) {
-              relationships.push(this.rel(left.text.trim(), ASTEngine.RelationshipType.Extends, sub, child, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
+            for (const link of this.subtypeChainLinks(child)) {
+              relationships.push(this.rel(link.from, ASTEngine.RelationshipType.Extends, link.to, link.at, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
             }
           }
           break
@@ -1443,9 +1666,11 @@ export class RealJuliaAnalyzer {
             ?? this.namedChildren(node).find((c) => c.type === "identifier" && c.id !== value.id)
             ?? this.namedChildren(node).find((c) => c.id !== value.id && (c.type === "quote_expression" || c.type === "operator"))
           if (!member) break
-          const memberName = member.type === "quote_expression"
-            ? (this.pos(member, 0) && !hasLayout(this.pos(member, 0)!.text) ? this.pos(member, 0)!.text.trim() : this.quotedName(member))
-            : member.text.trim()
+          // Both spellings of a quoted operator member (`x.:(==)`, `x.:<`) go through ONE resolver,
+          // which unwraps the `:`/parens to the operator name. The earlier inline version read the
+          // quote's first child, so `:(==)` published `(==)` while `:+` published `+` — three
+          // spellings of one binding across the read path, the definition path and the call path.
+          const memberName = member.type === "quote_expression" ? this.quotedName(member) : member.text.trim()
           if (!memberName) break
           relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Uses, memberName, node, 0.9,
             { juliaSpecific: true, isFieldRead: true, isOperatorMember: member.type !== "identifier" }))
@@ -1456,12 +1681,65 @@ export class RealJuliaAnalyzer {
       // Recurse with the (possibly advanced) scope, and push an exit frame so `depth` tracks
       // nesting. The scope is advanced for the CHILDREN of the node that advanced it, which is
       // what makes `contains` ownership correct for a module or a function body.
-      walkStack.push({ node, activeScope: scope, inMacroBody: this.inMacroBody, isExit: true })
+      walkStack.push({ node, activeScope: scope, containerScope: parentContainerScope, inMacroBody: parentInMacroBody, isExit: true })
       const childScope = activeScope
+      // A MACRO DECIDES THE SCOPE OF ITS OWN ARGUMENTS, so membership does not pass through one.
+      // `@testset "…" begin f(x) = … end` expands its body under a local scope, and the analyzer
+      // attributed every declaration written there to the enclosing module — 31 of the 200-file
+      // draw's unexplained `contains` rows, the largest class by far (`TestJoin -> simple_df`,
+      // `PipeLineTests -> build_doc`, `ResolveTest -> idx`, `T59244 -> asdf`). The same walk claimed
+      // `@test_throws`, `@testitem`, `@view` and every user macro, none of which this file can see
+      // the expansion of. The exceptions are the scope-transparent macros above, and a declaration
+      // the macro is applied DIRECTLY to — `@kwdef struct S`, `@inline f(x) = x` — which is written
+      // in source and whose `decorates` edge already records the application.
+      let opaqueArgs: Set<number> | null = null
+      // TWO LEVELS, because an argument can sit in either one: a block argument
+      // (`@testset "…" begin … end`) is a `compound_statement` inside the macrocall's
+      // `macro_argument_list`, so marking the arguments at the macrocall alone is one level too high
+      // — the list is pushed as a child, and its children would inherit the module scope again.
+      const opaqueArgsOf = (parent: Node): Set<number> => {
+        const set = new Set<number>()
+        for (const c of this.namedChildren(parent)) {
+          if (c.type === "macro_identifier" || c.type === "macro_argument_list") continue
+          if (!this.directDeclarationArg(c)) set.add(c.id)
+        }
+        return set
+      }
+      if (node.type === "macrocall_expression" && !this.macroIsScopeTransparent(node)) {
+        opaqueArgs = opaqueArgsOf(node)
+      }
+      if (node.type === "macro_argument_list" && node.parent &&
+          node.parent.type === "macrocall_expression" && !this.macroIsScopeTransparent(node.parent)) {
+        opaqueArgs = opaqueArgsOf(node)
+      }
       depth++
+      // 
+      // A TYPE'S HEAD IS AN EXPRESSION, NOT A BODY, and a declaration written in one is nobody's
+      // member. `struct S <: (global g; g(::S) = 1; Any)` (`julia/test/typegroup.jl:652`, julia's own
+      // test of the error that construct raises) published `contains S -> g`: the method's lexical
+      // owner became the type because the head inherits the type's scope. The same inheritance
+      // applies to a FIELD's type expression — `x::(struct Inner; y::Outer; end; Inner)`
+      // (`typegroup.jl:626`) published `contains Outer -> Inner` — because a struct body is a
+      // container and every descendant inherited that.
+      //
+      // MEASURED: a declaration in a type position is 3 sites in the whole 1,985-file population
+      // (last count: 1 in a type head, 2 in a struct field's type), and all three are in julia's own
+      // tests of invalid code. So the rule costs nothing and removes a `contains` edge that says a
+      // member exists where the language has no member.
+      //
+      // The declaration is still PUBLISHED (its symbol and its own edges stand — the source states
+      // it, and its scope is the enclosing one); only MEMBERSHIP is refused. A nested container
+      // resets the flag for its own children, which is why `contains Inner -> y` still publishes.
+      const fieldTypeChild = node.type === "typed_expression" && node.parent &&
+        (node.parent.type === "struct_definition") ? this.pos(node, 1) : null
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const c = node.namedChild(i)
-        if (c) walkStack.push({ node: c, activeScope: childScope, inMacroBody: this.inMacroBody, isExit: false })
+        if (!c) continue
+        const typePositionChild =
+          ((node.type === "struct_definition" || node.type === "abstract_definition" ||
+            node.type === "primitive_definition") && c.type === "type_head") ||
+          (fieldTypeChild ? c.id === fieldTypeChild.id : false)
+        walkStack.push({ node: c, activeScope: childScope, containerScope: (typePositionChild || opaqueArgs?.has(c.id)) ? false : containerScope, inMacroBody: this.inMacroBody, isExit: false })
       }
     }
 
@@ -1932,6 +2210,29 @@ export class RealJuliaAnalyzer {
   }
 
   /**
+   * Is this macro ARGUMENT itself a declaration — the form a decorator applies to?
+   *
+   * The same shapes `decoratedDeclarations` admits, asked from the other side: a long-form
+   * definition, or a short-form `f(x) = …` assignment whose left-hand side unwraps to a call. Used
+   * to keep `@kwdef struct S` a module member while everything inside `@testset begin … end` is not.
+   */
+  /** Is this macro one whose arguments are evaluated in the scope they are written in? */
+  private macroIsScopeTransparent(macrocall: Node): boolean {
+    const m = this.firstNamedChildOfType(macrocall, "macro_identifier")
+    return SCOPE_TRANSPARENT_MACROS.has(m ? macroNameOf(m.text) : "")
+  }
+
+  private directDeclarationArg(arg: Node): boolean {
+    if (arg.type === "function_definition" || arg.type === "macro_definition" ||
+        arg.type === "struct_definition" || arg.type === "abstract_definition" ||
+        arg.type === "primitive_definition" || arg.type === "module_definition") return true
+    if (arg.type !== "assignment") return false
+    const lhs = this.pos(arg, 0)
+    const u = lhs ? this.unwrapWhere(lhs) : null
+    return !!u && u.type === "call_expression"
+  }
+
+  /**
    * The declarations a macro is APPLIED TO, read from its own `macro_argument_list`.
    *
    * `@doc "…" function g` puts the declaration after a string; `@kwdef mutable struct S` puts it
@@ -1944,6 +2245,16 @@ export class RealJuliaAnalyzer {
   private decoratedDeclarations(call: Node): { name: string; kind: string }[] {
     const args = this.namedChildren(call).find((c) => c.type === "macro_argument_list")
     if (!args) return []
+    // A RECOVERED SPAN IS NOT AN ARGUMENT LIST, and harvesting one published hundreds of false
+    // `decorates` rows. MEASURED on `julia/Compiler/test/irpasses.jl`: a `@nospecialize(T)` inside a
+    // function signature came back as a macrocall spanning 1,660 lines with **309 direct children**,
+    // so every declaration in the rest of the file was read as decorated by `@nospecialize` (the
+    // whole `Foo30594`/`Bar29983`/`Base.:(+)` block included). A decorator macro takes a handful of
+    // arguments — a docstring plus a declaration, a configuration expression plus a block — and the
+    // corpus's real ones read 1-3 here. `@eval begin … end` is one child, `@doc "…" function f` two.
+    // Above this bound the node is the parser's recovery of a broken region, and the honest reading
+    // is "no argument list", which leaves the macro as the CALL it is.
+    if (this.namedChildren(args).length > 4) return []
     const out: { name: string; kind: string }[] = []
     const seen = new Set<string>()
     const add = (name: string, kind: string): void => {
@@ -2063,6 +2374,80 @@ export class RealJuliaAnalyzer {
   }
 
   /**
+   * A `<:` / `>:` CHAIN states one subtype fact per ADJACENT PAIR, and both ends must be NAMES.
+   *
+   * `A where LB <: X <: UB` parses as `(binary (binary LB <: X) <: UB)`. The previous code read
+   * `left.text` for the source, so it published an `extends` edge whose SOURCE was `LB <: X` — a
+   * source fragment is not a symbol, and the edge can resolve to nothing. MEASURED on the whole
+   * 1,985-file population by `direct-oracle-check.ts`: 25 of the 25 unexplained `extends` rows carry
+   * either a fragment source (`LB <: X`, `X <: f()`, `S <: V`) or a doubled target (`UB.UB`), and
+   * every one of the first ten is in `julia/JuliaLowering/test/typedefs_ir.jl` — a file of deliberate
+   * lowering-error probes whose `where` chains the grammar recovers around. The same defect occurs
+   * in a WELL-FORMED chain, which is the reason it is fixed rather than filed as an ERROR-shape
+   * artefact: a fragment source is a lie the graph tells on any file that writes the chain.
+   *
+   * The rule, stated rather than inferred: flatten the chain left to right, emit `a -> b` and
+   * `b -> c`, take each source with `typeHeadName` (never `.text`), and take each target through
+   * `boundTypeName`, which REFUSES a call/literal bound — `X <: f() <: Z` is a lowering error, and
+   * naming `f` as a type would invent a relation the source says is invalid.
+   */
+  private subtypeChainLinks(node: Node): { from: string; to: string; at: Node }[] {
+    const out: { from: string; to: string; at: Node }[] = []
+    const link = (left: Node | null, right: Node | null, at: Node) => {
+      // BOTH ENDS GO THROUGH THE BOUND RESOLVER. `typeHeadName` accepts a CALL through its
+      // first-identifier fallback, which is right for a declaration head and wrong for a chain
+      // operand: `A where X <: f() <: Z` (`julia/JuliaLowering/test/typedefs_ir.jl:92`, a file of
+      // deliberate lowering-error probes) makes the middle operand a call, and the fallback
+      // published `f extends Z` — a type relation built from a function call. The direct oracle
+      // refused it (`calleePath` has no call case) and only this side had the row, which is what
+      // MEASURED it as one of the 25 unexplained `extends` rows on the whole population.
+      const from = left ? this.boundTypeName(left) : ""
+      const to = right ? this.boundTypeName(right) : ""
+      if (from && to && from !== to) out.push({ from, to, at })
+    }
+    const walk = (n: Node) => {
+      if (n.type !== "binary_expression") return
+      const { op, left, right } = this.binOperands(n)
+      if (op !== "<:" && op !== ">:") return
+      let fromNode = left
+      if (left && left.type === "binary_expression") {
+        const inner = this.binOperands(left)
+        if (inner.op === "<:" || inner.op === ">:") {
+          // The nested chain's own links come first; this link starts at its LAST operand, not at
+          // the whole nested expression.
+          walk(left)
+          fromNode = inner.right
+        }
+      }
+      link(fromNode, right, n)
+    }
+    walk(node)
+    return out
+  }
+
+  /**
+   * The name a subtype BOUND states, or "" when the tree states none.
+   *
+   * `typeHeadName` accepts a call expression through its first-identifier fallback, which is right
+   * for a declaration head (`f(x) = …`) and wrong for a bound: `A where X <: f() <: Z` is a
+   * lowering error, and publishing `f` as the supertype would invent a type relation the source
+   * explicitly rejects. A bound is an identifier, a dotted path, or a parameterised/wrapped form of
+   * one — anything else is refused.
+   */
+  private boundTypeName(node: Node | null): string {
+    if (!node) return ""
+    if (node.type === "identifier" || node.type === "operator") return node.text.trim()
+    if (node.type === "macro_identifier") return macroNameOf(node.text)
+    if (node.type === "field_expression") return this.fieldPath(node)
+    if (node.type === "parametrized_type_expression" || node.type === "where_expression" ||
+        node.type === "parenthesized_expression" || node.type === "curly_expression" ||
+        node.type === "type_head") {
+      return this.boundTypeName(this.pos(node, 0))
+    }
+    return ""
+  }
+
+  /**
    * The operator token of a `binary_expression`. It is a NAMED child of type `operator` in this
    * grammar — verified by walking the children of a real `struct Circle{T<:Real} <: Shape` —
    * so a scan restricted to anonymous children finds nothing and the operator reads as empty.
@@ -2118,7 +2503,40 @@ export class RealJuliaAnalyzer {
    * `supertypesOf`. That is a plausible-looking wrong answer, which is the whole difficulty: the
    * symbol list looked like a valid parse of a valid file.
    */
+  private typeRefName(node: Node): string {
+    // `$T` IN A TYPE POSITION names the interpolated BINDING. The splice is a runtime value, so the
+    // type itself cannot be known — but the name inside it is the only static fact the source
+    // states, and it is a real dependency (`rows_inds::$T1` inside `for T1 in (:AbstractVector, …)`
+    // really does refer to whatever `T1` holds). The analyzer published nothing for it, so every
+    // generated annotation read as a missing `references` row (5 on the 200-file draw: `T`, `T1`,
+    // `T2`, `uname`, `sname`).
+    //
+    // This is a TYPE-REFERENCE rule and lives at the reference site rather than inside
+    // `typeHeadName`: in a DECLARED position `struct $(T)` the same interpolation names nothing the
+    // tree can spell, and reading `T` there would publish a type called after the loop variable.
+    if (node.type === "interpolation_expression") {
+      const inner = this.pos(node, 0)
+      return inner ? this.fieldPath(inner) : ""
+    }
+    return this.typeHeadName(node)
+  }
+
   private typeHeadName(node: Node): string {
+    // AN INTERPOLATED NAME IS NOT A NAME, AND A DECLARED POSITION MUST NOT SPELL IT. `@eval struct
+    // $T <: DatePeriod` (`julia/stdlib/Dates/src/types.jl:53`), `struct $n <: B33370`
+    // (`julia/test/core.jl:3025`) and `struct $InterpName <: …` (`Compiler/test/newinterp.jl:31`)
+    // all put an `interpolation_expression` where a name belongs; the splice is a runtime value and
+    // the only static fact is the LOOP VARIABLE's spelling. The declaration case refuses a head
+    // whose DIRECT child is an interpolation, but a head with a supertype is a `binary_expression`
+    // whose left operand is the interpolation, so that guard missed it and the fallback below read
+    // the loop variable as the type's name — publishing `T extends DatePeriod`, `n extends B33370`
+    // and `InterpName extends AbstractInterpreter`, three relations from types the tree cannot
+    // name. MEASURED on the whole population: 4 of the last unexplained `extends` rows.
+    //
+    // `typeRefName` intercepts interpolation BEFORE delegating here, which is why a reference
+    // position (`rows_inds::$T1`) still publishes its dependency; only the DECLARED position and
+    // the subtype operands refuse.
+    if (node.type === "interpolation_expression") return ""
     // BASE CASE. A supertype is very often a bare `identifier`, and this function looks for
     // CHILDREN — so handed an identifier it found none and returned "". The effect was that
     // `struct Circle <: Shape` published no `extends` edge at all, on a file with zero ERROR
@@ -2129,10 +2547,16 @@ export class RealJuliaAnalyzer {
     // A subtype/where chain: the declared name is on the LEFT, the bound on the right.
     if (node.type === "binary_expression") {
       const { left } = this.binOperands(node)
-      if (left) {
-        const inner = this.typeHeadName(left)
-        if (inner) return inner
-      }
+      // THE DECLARED NAME IS THE LEFT OPERAND AND NOTHING ELSE — no fallback to a sibling. The
+      // identifier scans below look at THIS node's children, and for a binary expression the only
+      // bare identifier among them is the SUPERTYPE: `struct $(T) <: AbstractPlatform` puts an
+      // `interpolation_expression` on the left, so the fallback found `AbstractPlatform` and
+      // `Pkg.jl/src/BinaryPlatformsCompat.jl` published a `class:AbstractPlatform` colliding with the
+      // abstract type it extends, an `AbstractPlatform extends AbstractPlatform` self-row, and a
+      // `references` retarget that qualified every real mention of the type to the fabricated member.
+      // Found by the direct oracle as a self-`extends` row the truth side refuses; a name the tree
+      // cannot spell is a name to REFUSE, which is the same key-publication rule as `quotedName`.
+      return left ? this.typeHeadName(left) : ""
     }
     // A QUALIFIED type is a `field_expression` and the WHOLE path is the name. `x::Threads.SpinLock`
     // is (field_expression (identifier Threads) (identifier SpinLock)), and taking pos(0) returned
@@ -2147,11 +2571,24 @@ export class RealJuliaAnalyzer {
     }
     const first = this.pos(node, 0)
     if (first && first.type === "identifier") return first.text.trim()
+    // A DYNAMIC HEAD IS NOT A NAME, even when an identifier sits further in. `@eval struct
+    // $(Symbol(:T58129, k)){T} end` puts an `interpolation_expression` at the base of a
+    // `parametrized_type_expression`, and the identifier scan below found the TYPE PARAMETER `T` —
+    // publishing `decorates T -> eval`, a declaration named after a parameter of a type the tree
+    // cannot name. MEASURED: `julia/test/subtype.jl:2962`, the last unexplained `decorates` row on
+    // the 300-file draw. Refuse rather than spell a splice.
+    if (first && first.type === "interpolation_expression") return ""
     const direct = this.firstNamedChildOfType(node, "identifier")
     if (direct) return direct.text.trim()
-    // `Vector{T}` — the base name is the first identifier under the curly expression.
+    // `Vector{T}` — the base name is the first identifier under the curly expression. A base that is
+    // a QUALIFIED path (`struct S <: TerminalMenus._ConfiguredMenu{TerminalMenus.Config}`) is a
+    // `field_expression` there, not an identifier — and this loop's type list did not include it, so
+    // the struct published NO `extends` edge at all for a qualified parametric supertype, while its
+    // symbol and every other edge were present. Found by the direct oracle as the only missing
+    // `extends` row on the 200-file draw.
     for (const c of this.namedChildren(node)) {
-      if (c.type === "curly_expression" || c.type === "parametrized_type_expression" || c.type === "binary_expression") {
+      if (c.type === "curly_expression" || c.type === "parametrized_type_expression" ||
+          c.type === "binary_expression" || c.type === "field_expression") {
         const inner = this.typeHeadName(c)
         if (inner) return inner
       }
@@ -2197,6 +2634,86 @@ export class RealJuliaAnalyzer {
     return cur
   }
 
+  /**
+   * The nearest enclosing `module … end`, by name. Used by the `global` rule: the keyword declares a
+   * MODULE binding at any nesting, so the owner is this module and not the nearest container.
+   */
+  private enclosingModuleName(node: Node): string {
+    let cur: Node | null = node.parent ?? null
+    while (cur) {
+      if (cur.type === "module_definition") {
+        const nm = cur.childForFieldName("name")
+        return nm ? nm.text.trim() : ""
+      }
+      cur = cur.parent ?? null
+    }
+    return ""
+  }
+
+  /**
+   * The binding name a PLAIN module-scope assignment declares, or "" when this is not one.
+   *
+   * Julia admits a top-level assignment with no `const` (`x = 1`) and it creates a global binding in
+   * the module, which is what `contains` is for. Three things disqualify a node here, and each is a
+   * different fact:
+   *
+   *   - it is not written in a module's own scope (a `let`, a loop, a short-form body, a type body);
+   *   - its left side is not a NAME: `A.x = 1` assigns a field of another module, `a, b = 1, 2`
+   *     destructures (the grammar's tuple LHS), and a call/`where` head is a method definition;
+   *   - the name is a constant Julia implies (`nothing`, `missing`, …) rather than a binding.
+   *
+   * A `typed_expression` left side (`x::Int = 0`) is read through to its first child, the same rule
+   * the `const` case applies: the annotation is a reference, not part of the name.
+   */
+  private plainModuleBinding(node: Node): string {
+    if (!this.inModuleBindingScope(node)) return ""
+    const lhs = this.pos(node, 0)
+    if (!lhs) return ""
+    const head = lhs.type === "typed_expression" ? this.pos(lhs, 0) : lhs
+    if (!head) return ""
+    if (head.type === "identifier" || head.type === "operator" || head.type === "prefixed_string_literal") {
+      return head.text.trim()
+    }
+    return ""
+  }
+
+  /**
+   * Is this node written in a MODULE's own scope — not inside a body, loop, `let` or quote?
+   *
+   * The scope-introducing constructs are Julia's own list, not a heuristic: a binding written inside
+   * any of them is local to it. `begin`, `if` and `try` are transparent here (`if` is documented as
+   * introducing no scope; a top-level `begin` is the module body continuing). A SHORT-FORM FUNCTION
+   * is an `assignment` whose left side is a call, so the ancestor test has to recognise that shape
+   * as a body — otherwise `f(x) = (y = 1; y)` would publish `y` as a member of the module.
+   */
+  private inModuleBindingScope(node: Node): boolean {
+    let cur: Node | null = node.parent ?? null
+    while (cur) {
+      if (cur.type === "module_definition" || cur.type === "baremodule_definition") return true
+      if (SCOPE_INTRODUCING_NODES.has(cur.type)) return false
+      if (cur.type === "assignment") {
+        const head = this.unwrapWhere(this.pos(cur, 0) ?? cur)
+        const inner = head.type === "typed_expression" ? this.pos(head, 0) : head
+        if (inner && inner.type === "call_expression") return false
+      }
+      cur = cur.parent ?? null
+    }
+    return false
+  }
+
+  /** The `call_expression` at a definition's head, through the wrappers a head can carry. */
+  private definitionCall(head: Node): Node | null {
+    let cur: Node | null = head
+    for (let i = 0; i < 8 && cur; i++) {
+      if (cur.type === "call_expression") return cur
+      if (cur.type === "where_expression") cur = this.unwrapWhere(cur)
+      else if (cur.type === "signature" || cur.type === "typed_expression" ||
+               cur.type === "parenthesized_expression" || cur.type === "macro_argument_list") cur = this.pos(cur, 0)
+      else return null
+    }
+    return null
+  }
+
   private signatureName(sig: Node): string {
     // A signature may carry a RETURN TYPE. `function scaled{T<:Real}(s::Shape, k::T)::Float64`
     // makes the signature a `typed_expression` whose siblings are the callable and the return
@@ -2206,6 +2723,16 @@ export class RealJuliaAnalyzer {
     if (sig.type === "typed_expression") {
       const callable = this.pos(sig, 0)
       if (callable) return this.signatureName(callable)
+    }
+    // `function @main(args::Vector{String})::Cint` — julia's ENTRY POINT spelling. The grammar puts
+    // a `macrocall_expression` where the callable goes (the return type wrapped it in a
+    // `typed_expression`), and no case below matches one, so `CompileMinInit` published NO `main`
+    // symbol and no membership edge for the function the file exists to define. The name is the
+    // macro's name: `@main` is julia's marker and the binding it declares is `main`, which is the
+    // spelling `macroNameOf` already produces for every other macro name in this file.
+    if (sig.type === "macrocall_expression") {
+      const m = this.firstNamedChildOfType(sig, "macro_identifier")
+      return m ? macroNameOf(m.text) : ""
     }
     // A call_expression reached here may have a QUALIFIED or PARAMETRIC name —
     // `scaled{T<:Real}(…)` puts the name in a `field_expression`, so there is no direct identifier
@@ -2246,8 +2773,16 @@ export class RealJuliaAnalyzer {
    */
   private withinTypeHead(node: Node): boolean {
     let cur: Node | null = node
-    for (let i = 0; i < 5 && cur; i++) {
+    // UNBOUNDED TO THE DEFINITION BOUNDARY. The earlier version walked five ancestors, and depth is
+    // a property of the SHAPE: `struct Fill{T, N, S<:NTuple{N,Integer}} <: AbstractArray{T,N}` puts a
+    // bound's parameterised type six levels below the head, so `NTuple` was published as a
+    // `references` row for a mention the head already carries as `S extends NTuple` — a duplicate
+    // spell of one fact under two labels. A hop budget cannot answer "is this inside the head"; the
+    // walk ends at the enclosing definition instead, and a `type_head` is always below it.
+    while (cur) {
       if (this.typeHeadSites.has(cur.id)) return true
+      if (cur.type === "function_definition" || cur.type === "macro_definition" ||
+          cur.type === "module_definition" || cur.type === "source_file") return false
       cur = cur.parent ?? null
     }
     return false
@@ -2263,7 +2798,22 @@ export class RealJuliaAnalyzer {
       return sym ? { symbol: stripSigil(sym.text, ":"), library: null } : null
     }
     if (first.type === "tuple_expression") {
-      const parts = this.namedChildren(first).map((q) => { const inner = this.pos(q, 0); return inner ? stripSigil(inner.text, ":") : "" })
+      // EACH ELEMENT'S OWN TEXT, not its first child. `(:malloc, :libc)` spells both as quotes, but
+      // the LIBRARY is very often a bare BINDING — `ccall((:git_error_last, libgit2), …)`, which is
+      // how every LibGit2 binding in julia's stdlib is written. An identifier has no children, so
+      // the child-read returned "" for the library, the two-element test failed, and NO foreign edge
+      // was published for the whole of `stdlib/LibGit2/src` — 5 of the direct oracle's 6 missing
+      // `calls` rows on a 200-file draw. `:libc` and `libc` name the same library; stripping a
+      // leading `:` when the element IS a quote keeps both spellings on one name.
+      const elem = (q: any): string => {
+        if (!q) return ""
+        if (q.type === "quote_expression") {
+          const inner = this.pos(q, 0)
+          return inner ? stripSigil(inner.text.trim(), ":") : ""
+        }
+        return q.text.trim()
+      }
+      const parts = this.namedChildren(first).map(elem)
       if (parts.length >= 2 && parts[0] && parts[1]) return { symbol: parts[0], library: parts[1] }
       if (parts.length === 1 && parts[0]) return { symbol: parts[0], library: null }
     }
@@ -2357,7 +2907,10 @@ export class RealJuliaAnalyzer {
         return stripSigil(node.text, "@")
       case "scoped_identifier":
       case "field_expression":
-        return this.fieldPath(node)
+      case "prefixed_string_literal":
+        // `var"#_internal_julia_parse"` is a NAME in Julia, not a string expression. Without this
+        // case `nameOf` fell through to a child identifier and published the function as `var`.
+        return node.type === "prefixed_string_literal" ? node.text.trim() : this.fieldPath(node)
       case "quote_expression":
         return this.quotedName(node)
       case "typed_expression":
@@ -2376,12 +2929,12 @@ export class RealJuliaAnalyzer {
   }
 
   /**
-   * The name a `quote_expression` spells — `:(==)` for the quoted operator, or the quoted symbol
-   * itself when the node's text is a SPAN rather than a spelling.
+   * The name a `quote_expression` spells — the OPERATOR for a quoted operator (`:(==)` → `==`), the
+   * quoted symbol itself for a Symbol value (`:foo`), or "" when the node's text is a SPAN rather
+   * than a spelling.
    *
-   * The distinction is the whole point. `Base.:(==)` puts `:(==)` in a `quote_expression` and that
-   * text IS a spelling, so it is kept exactly as it was (27 corpus occurrences of that one name).
-   * A `quote_expression` recovered over a broken region spans the reparsed remainder of the file —
+   * The span rule is the whole point of the guard below. A `quote_expression` recovered over a
+   * broken region spans the reparsed remainder of the file —
    * `julia/base/broadcast.jl`'s `:.>:` followed by the next line's `Expr(...)` came out as
    * `":.>:\n        Expr"` and was published as a FUNCTION's name, with seven relationships
    * sourced from it. A node whose text carries layout is not a name at all, so this refuses: the
@@ -2391,25 +2944,33 @@ export class RealJuliaAnalyzer {
    */
   private quotedName(node: Node): string {
     const t = node.text.trim()
-    return hasLayout(t) ? "" : t
-  }
-
-  /**
-   * The quoted-OPERATOR member's name for a field READ — `x.:(==)` reads `==`, not `:(==)`.
-   *
-   * Unwrapped rather than spelled because that is what the read names: the operator, whose
-   * spelling in the path position (`Base.:(==)`) keeps the wrapper so the qualified form stays
-   * distinguishable from a plain `.` member.
-   *
-   * The layout guard is the key-publication rule reaching this site too. A `quote_expression`
-   * recovered over a broken region has a text that is a source span, and a span is not a name, so
-   * it is REFUSED here rather than unwrapped into a fabricated operator.
-   */
-  private quotedOperatorMember(node: Node): string {
-    if (hasLayout(node.text)) return ""
+    if (hasLayout(t)) return ""
+    // A QUOTED OPERATOR NAMES THE OPERATOR, and the `:`/parens are syntax rather than the name.
+    // `Base.:(==)` and `Base.:+` name the same two bindings as the call sites `==(a, b)` and
+    // `a + b`, and the graph keys a binding by ONE spelling; keeping the wrapper published a second
+    // name for one function — `M.Base.:(==)` beside every `==` edge — that nothing resolves to. It is
+    // also UNREPRESENTABLE downstream: the universal target filter refuses a leaf carrying `(`, so
+    // `contains M -> M.Base.:(<=)` was silently dropped while the symbol was still published, and the
+    // direct oracle read that as a missing edge (3 rows in `julia/test/ranges.jl` alone).
+    //
+    // The unwrapped name is the OPERATOR CHILD, not a text edit: `:(==)` wraps a
+    // `parenthesized_expression` around an `operator`, `:+` wraps the `operator` directly, and both
+    // resolve to the same token. A quote that wraps an IDENTIFIER is unwrapped for the same reason:
+    // in a NAME position `x.:(foo)` reads the member `foo`, and this resolver is only reached from
+    // name positions. The layout guard above still refuses a span, and a quote whose inner is
+    // neither a name nor an operator (a quoted EXPRESSION, `:(a + b)`) keeps its own text.
     const inner = this.pos(node, 0)
-    if (inner && !hasLayout(inner.text)) return inner.text.trim()
-    return unquoteOperatorMember(node.text)
+    const plain = (n: Node | null): string =>
+      n && (n.type === "operator" || n.type === "identifier") && !hasLayout(n.text) ? n.text.trim() : ""
+    if (inner) {
+      const direct = plain(inner)
+      if (direct) return direct
+      if (inner.type === "parenthesized_expression") {
+        const op = plain(this.pos(inner, 0))
+        if (op) return op
+      }
+    }
+    return t
   }
 
   private fieldPath(node: Node): string {
@@ -2430,7 +2991,17 @@ export class RealJuliaAnalyzer {
     // refuses it rather than publishing a key no lookup can match.
     if (node.type === "quote_expression") return this.quotedName(node)
     if (node.type === "macro_identifier") return macroNameOf(node.text)
+    // `var"…"` is a binding name, not a string expression.
+    if (node.type === "prefixed_string_literal") return node.text.trim()
     if (node.type === "operator") return node.text.trim()
+    // A TYPED RECEIVER keeps its BINDING name: `(ft::UnionAll).var.ub` is a path whose first link is
+    // the local `ft`, and the absence of this case dropped the whole head — the path then published
+    // as `var.ub`, a name that resolves to nothing and reads as a field of a variable that is not
+    // there. Found by the direct oracle as an unexplained `references` row beside a missing one.
+    if (node.type === "typed_expression" || node.type === "unary_typed_expression") {
+      const inner = this.pos(node, 0)
+      return inner ? this.fieldPath(inner) : ""
+    }
     if (node.type === "where_expression" || node.type === "parenthesized_expression") {
       const inner = this.pos(node, 0)
       return inner ? this.fieldPath(inner) : ""
@@ -2467,6 +3038,45 @@ export class RealJuliaAnalyzer {
     // liability; one resolver with the shapes inside it is not.
     const calleeNode = this.pos(call, 0)
     if (calleeNode) {
+      // A CALLABLE OBJECT IS NOT NAMED HERE. `function (pass::EnclosingParenHighlightPass)(input, ast,
+      // context)` and `(::RegionHighlightPass)(…)` put a parenthesised EXPRESSION where the callee
+      // goes; the expression evaluates to a value, and reading through it published the ARGUMENT
+      // `pass` as a declared function and as a module member — one fabricated name, one fabricated
+      // symbol, one fabricated `contains` row, and a second symbol that blocked the `references`
+      // retarget for the type's real name. Only a plain name inside the parens is a declaration's
+      // name: `(f)(x) = …` still declares `f`.
+      if (calleeNode.type === "parenthesized_expression") {
+        const inner = this.pos(calleeNode, 0)
+        // Only a VALUE is refused: `(pass::X)`, `(::X)`, `($f)`. A parenthesised NAME or OPERATOR is
+        // a name — `(f)(x) = …` declares `f`, and `(:)(1, 2)` calls the colon function (and
+        // `(/)(a, b)` the slash), which is how julia invokes an operator whose spelling cannot be a
+        // bare callee. Refusing every parenthesised callee dropped those three calls.
+        // `(T::Type{Wrap1{X}} where X)(x)` puts a `where_expression` around the typed value, so the
+        // refusal has to look through it. Without the unwrap the where-form fell through to
+        // `fieldPath`, which found the type VARIABLE and published `contains Wrap1 -> T` — the same
+        // fabricated declaration the plain form had already been fixed for.
+        // THE UNWRAP MUST STOP AT THE TYPED PATTERN, and `unwrapWhere` does not: it walks through
+        // `typed_expression` as one more wrapper, so `(t::Type{Model} where X)(x) = …` unwrapped
+        // past the pattern to the BINDING `t` and the guard below never saw a typed node. Measured:
+        // that spelling published `function t` and a `contains M -> M.t` row the direct oracle read
+        // as unexplained. Only the `where`/`parenthesized` wrappers are walked here, because the
+        // question is "what does the paren wrap", and a typed pattern is the answer, not a wrapper.
+        let base = inner
+        for (let i = 0; i < 4 && base &&
+             (base.type === "where_expression" || base.type === "parenthesized_expression"); i++) {
+          base = this.pos(base, 0)
+        }
+        if (base && (base.type === "typed_expression" || base.type === "unary_typed_expression" ||
+            base.type === "interpolation_expression")) return null
+        // A SPLICED MEMBER IS DYNAMIC TOO. `(Base.$fJ)(x::Rational{BigInt}, …) = …` in
+        // `julia/base/gmp.jl` names the overloaded function through a loop variable, and the paren
+        // guard above saw a `field_expression` (not an interpolation) and let `fieldPath` read the
+        // RECEIVER — publishing `contains MPQ -> Base`, a module named as a member of another one,
+        // beside a truth row that correctly derived nothing. Any splice in the callee makes the
+        // declared name unknowable from the source, which is this file's standing rule for quote
+        // spans and interpolated heads.
+        if (base && this.subtreeHasInterpolation(base)) return null
+      }
       const path = this.fieldPath(calleeNode)
       if (path) return path
     }
@@ -2479,43 +3089,169 @@ export class RealJuliaAnalyzer {
     return null
   }
 
-  /** `<: A, <: B` on a struct/abstract head, and `<: S` on a type parameter. */
+  /**
+   * Does this subtree splice a runtime value (`$x`) into a NAME?
+   *
+   * A splice is not a spelling: `(Base.$fJ)(… ) = …` declares whichever binding the loop variable
+   * holds, and the source never names it. Walking the subtree rather than testing the top node is
+   * the point — the splice sits under a `field_expression` member, one level below the paren that
+   * `calleeName` inspects.
+   */
+  private subtreeHasInterpolation(node: Node): boolean {
+    if (node.type === "interpolation_expression") return true
+    for (const c of this.namedChildren(node)) if (this.subtreeHasInterpolation(c)) return true
+    return false
+  }
+
+  /**
+   * The supertype a type head STATES — the head's own `<:`, and never a comparison inside it.
+   *
+   * THE HEAD IS A WALL, NOT A ROAD, and this function used to descend it looking for `<:` at any
+   * depth. Two facts made every one of those edges wrong in a different way:
+   *
+   *   - a `<:` inside a supertype EXPRESSION is a COMPARISON, not a subtype of the declared type.
+   *     `struct S <: (S <: Real ? Any : Real)` published `S extends Real` — the CONDITION's right
+   *     operand read as the supertype, `1 of 1` corpus sites in `julia/test/typegroup.jl:665`.
+   *   - a `<:` chain inside a `where` clause bounds a PARAMETER (`(AbstractArray{T, N} where T <:
+   *     Integer where N)`), which the `where_expression` case below publishes with `T` as the
+   *     source; descending here also published `Foo extends N` and `Foo extends Integer`.
+   *
+   * Both were found by the direct oracle (`validation/m14/fixtures/julia/direct-oracle-check.ts`),
+   * whose own rule has been "the head's top-level binary, and the operand must NAME a type" since
+   * it was written — a second derivation of the same fact that disagreed, which is the only reason
+   * a reader could see it.
+   *
+   * A PARAMETER's bound is still published, by the `parametrized_type_expression`/
+   * `where_expression` cases, with the parameter as the source. That is a fact about `T`, not about
+   * the type, and it is a different edge.
+   */
   private supertypesOf(node: Node): string[] {
-    const out: string[] = []
     const head = this.firstNamedChildOfType(node, "type_head")
-    if (!head) return out
-    const visit = (n: Node) => {
-      if (n.type === "binary_expression") {
-        const { op, right } = this.binOperands(n)
-        if ((op === "<:" || op === ">:") && right) {
-          const name = this.typeHeadName(right)
-          if (name) out.push(name)
-        }
+    if (!head) return []
+    const bin = this.firstNamedChildOfType(head, "binary_expression")
+    if (!bin) return []
+    const { op, right } = this.binOperands(bin)
+    if ((op !== "<:" && op !== ">:") || !right) return []
+    const name = this.supertypeName(right)
+    return name ? [name] : []
+  }
+
+  /**
+   * The NAME a supertype operand spells, or "" when the operand is a computed VALUE.
+   *
+   * MEASURED over the whole 1,985-file population (validation/m14/measurements/julia-supertype-
+   * shapes.json): 1,313 of the 1,324 `<:` sites in a type head are a NAME — identifier 891,
+   * `parametrized_type_expression` 346 (`AbstractVector{T}`), `field_expression` 76
+   * (`Base.AbstractSet`) — and the remaining 11 are the shapes below, every one of which this
+   * function REFUSES rather than guesses:
+   *
+   *   - `$typ <: $sup` (3, `julia/stdlib/LibGit2/src/types.jl:1084`): a runtime VALUE. The old
+   *     fallback published the interpolation's own identifier, `typ extends sup` — 3 edges saying a
+   *     type is a subtype of a loop variable.
+   *   - a statement BLOCK `(global g; g(::S) = 1; Any)` (2, `julia/test/typegroup.jl:652`): the
+   *     value is its last statement, `Any`, which happens to be a type — but the operand as written
+   *     states no name, and the block also DEFINES a method, which the walker published as
+   *     `contains S -> g`.
+   *   - `typeof(Core.apply_type)` (1), `0x01` (1), `@NamedTuple{x::Int}` (1), a TERNARY (1), and a
+   *     `where` chain (2) — a call, a literal, a macro call, a conditional and a UnionAll. The old
+   *     fallback read the call's CALLEE as the supertype (`Foo extends typeof`,
+   *     `julia/test/errorshow.jl:1540`) and the first bare identifier it could find inside the
+   *     others.
+   *
+   * A parenthesised NAME is still a name (`struct S <: (Any)`), and a `where`/`parametrized` wrapper
+   * is unwrapped to the type it is built from (`Tuple{T} where T` names `Tuple`, which is what the
+   * oracle derives and what a reader can follow). What is inside a CURLY parameter list is never
+   * read as the supertype: those are the type's ARGUMENTS.
+   */
+  private supertypeName(node: Node): string {
+    switch (node.type) {
+      case "identifier":
+      case "operator":
+        return node.text.trim()
+      case "field_expression":
+        return this.fieldPath(node) || ""
+      case "parametrized_type_expression":
+      case "curly_expression":
+      case "parenthesized_expression":
+      case "where_expression": {
+        const inner = this.pos(node, 0)
+        return inner ? this.supertypeName(inner) : ""
       }
-      for (const c of this.namedChildren(n)) {
-        // A PARAMETER's upper bound is not a supertype of the declared type.
-        // `struct Circle{T<:Real} <: Shape` hides `T<:Real` inside the curly expression, and a
-        // walk that descends into it reports `Circle <: Real` — a FALSE edge that says Circle is
-        // a subtype of Real. It is a bound on Circle's PARAMETER, which is a different fact and
-        // belongs in the `where_expression` case below, where the bound is published as
-        // `T <: Real` with T as the source. A parameter list is a wall, not a road.
-        if (c.type === "curly_expression" || c.type === "parametrized_type_expression") continue
-        visit(c)
-      }
+      default:
+        return ""
     }
-    visit(head)
-    return [...new Set(out)]
   }
 
   /** A struct body's `x::T` entries. The grammar has no dedicated field node for them. */
   private structFields(node: Node): { name: string; node: Node }[] {
     const out: { name: string; node: Node }[] = []
+    /** A field's name from a declaration-shaped node, or "" when the node declares no field. */
+    const fieldName = (c: Node): string => {
+      // `x::T` — a typed field. `typed_expression` is POSITIONAL: child 0 is the name, child 1 the
+      // type. It is also the node that carries a PARAMETER's type in a signature, so this is only
+      // called on a struct body where a bare `x::T` really is a field.
+      if (c.type === "typed_expression") return this.pos(c, 0)?.text.trim() ?? ""
+      // `x::Ref{S} where S<:T` — the field's declaration WRAPPED in a where clause. `TG_BoundWhere`
+      // and `TG_BoundBody` in `julia/test/typegroup.jl` write exactly this, and the wrapper was not
+      // one of the shapes read here, so both structs published no `x` field at all. The typed
+      // expression is the where clause's first child, the same position the other wrappers use.
+      if (c.type === "where_expression") {
+        const inner = this.pos(c, 0)
+        return inner ? fieldName(inner) : ""
+      }
+      // `x` — a field with no annotation, which Julia admits and which was SILENT here. The same
+      // omission covered the two DEFAULT forms: `x::T = default` and `const x::T = default` parse
+      // as an `assignment`/`const_statement` whose LEFT side is a typed expression (or a bare
+      // identifier), and the old loop accepted only a direct `typed_expression`, so
+      // `Base.@kwdef struct SyntaxCompatContext; toplevel::Bool=true; end` published no
+      // `contains SyntaxCompatContext -> toplevel` at all. Found by the whole-population direct
+      // oracle: `contains` was the label with the second-largest MISSING count (861 of 12,593
+      // truth rows) and this shape is one of its named classes.
+      if (c.type === "identifier") return c.text.trim()
+      // `@atomic str::Union{String,Nothing}` — a macro-annotated field. The macro is not a field;
+      // the declaration inside its argument list is. The oracle derived `LazyString -> str` and the
+      // analyzer had no row, which is a MISSING edge rather than a disagreement about scope.
+      if (c.type === "macrocall_expression") {
+        const args = this.namedChildren(c).find((n) => n.type === "macro_argument_list")
+        if (!args) return ""
+        for (const a of this.namedChildren(args)) {
+          const nm = fieldName(a)
+          if (nm) return nm
+        }
+        return ""
+      }
+      // `date::Date &(json=(dateformat=…,),)` — a FIELD ANNOTATED BY A MACRO. The `&` binds looser
+      // than `::`, so the field is a `binary_expression` whose LEFT is the typed declaration and
+      // whose right is the annotation; this reader knew only the bare typed shape, so every
+      // StructUtils-annotated struct published no fields at all (`json_jl/test/parse.jl`'s
+      // `ThreeDates` lost `date`, `datetime` and `time`). MEASURED: 7 missing `contains` rows, all
+      // this shape. Only a TYPED left is accepted — `x = 1` is an assignment, not a field.
+      if (c.type === "binary_expression") {
+        const { left } = this.binOperands(c)
+        if (left && left.type === "typed_expression") return this.pos(left, 0)?.text.trim() ?? ""
+        return ""
+      }
+      if (c.type === "const_statement") {
+        // Three shapes are valid: `const x::T = default` (an assignment child), `const x::T` (a
+        // typed_expression child, P6's const field) and `const x` (a bare identifier). The first
+        // version looked only for an assignment, so P6's parsed const field still published no
+        // `contains` edge — the tree was fixed and the reader was not.
+        const inner = this.namedChildren(c).find((n) =>
+          n.type === "assignment" || n.type === "typed_expression" || n.type === "identifier")
+        return inner ? fieldName(inner) : ""
+      }
+      if (c.type === "assignment") {
+        const lhs = this.pos(c, 0)
+        if (!lhs) return ""
+        if (lhs.type === "typed_expression") return this.pos(lhs, 0)?.text.trim() ?? ""
+        // A short-form INNER CONSTRUCTOR is an assignment whose left side is a call: its parameters
+        // are bindings, not fields. `IdDict{K,V}(d::IdDict{K,V}) = new(...)` must not publish `d`.
+        if (lhs.type === "identifier") return lhs.text.trim()
+      }
+      return ""
+    }
     for (const c of this.namedChildren(node)) {
-      if (c.type !== "typed_expression") continue
-      // `typed_expression` is POSITIONAL: child 0 is the name, child 1 the type. It is also the
-      // node that carries a PARAMETER's type in a signature, so this is only called on a struct
-      // body where a bare `x::T` really is a field.
-      const name = this.pos(c, 0)?.text.trim() ?? ""
+      const name = fieldName(c)
       if (name) out.push({ name, node: c })
     }
     return out

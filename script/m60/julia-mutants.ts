@@ -30,6 +30,10 @@
  *           read `&&`'s right operand at named-child index 1 while the operator is a NAMED child,
  *           so the guard never matched and the corpus's one version-guarded method definition
  *           produced an edge
+ *   JUL-19 a `<:` CHAIN was read from `left.text`, so the published source was the FRAGMENT
+ *           `LB <: A` rather than `LB`, and the adjacent pair `A <: Mid` was never published at
+ *           all — the analyzer and the truth oracle agreed on the same wrong row, which is why
+ *           it survived until both were fixed on 2026-10-28
  */
 import type { Mutant } from "../m14/mutate-analyzer"
 
@@ -505,6 +509,59 @@ const firstByScope = new Map<string, { scope: string; line: number }>()
     }),
   },
   {
+    id: "julia/chain-fragment-source",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-19 REVERT: a `<:` CHAIN is read from `left.text`, so `LB <: A <: Mid` publishes ONE edge " +
+      "whose SOURCE is the fragment `LB <: A` and whose target is `Mid`, instead of the two adjacent " +
+      "links `LB -> A` and `A -> Mid`. A source fragment is not a symbol and resolves to nothing, and " +
+      "the upper link is absent entirely. MEASURED over the whole 1,985-file population by " +
+      "`direct-oracle-check.ts` before the fix: 25 of the 25 unexplained `extends` rows carried a " +
+      "fragment source (`LB <: X`, `X <: f()`, `S <: V`) or a doubled target (`UB.UB`), and the two " +
+      "sides agreed because the oracle read `left.text` too — a defect shared by both sides is " +
+      "invisible to a comparison, which is the whole reason this fixture pins BOTH implications: the " +
+      "two adjacent edges must exist AND a fragment source must not. Found generically off the source " +
+      "text because the post-fix result carries no record of the fragment it used to spell. Caught by " +
+      "`extends-shapes`: its two POSITIVE 2 assertions go missing and its `source: \"LB <: A\"` forbid " +
+      "row matches the fabricated edge.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      // Every `<:` chain of at least three names, in either direction. Two spellings of the same
+      // adjacency are covered: a WHERE bound (`where {LB <: A <: Mid}`) and a bare comparison.
+      const re = /([A-Za-z_][\w.!]*)\s*<:\s*([A-Za-z_][\w.!]*)\s*<:\s*([A-Za-z_][\w.!]*)/g
+      const chains: { a: string; b: string; c: string; at: number }[] = []
+      let m: RegExpExecArray | null
+      while ((m = re.exec(source))) chains.push({ a: m[1]!, b: m[2]!, c: m[3]!, at: m.index })
+      if (chains.length === 0) return r
+      const drop = new Set<string>()
+      const added: any[] = []
+      for (const { a, b, c, at } of chains) {
+        // The two links the fixed analyzer publishes for this chain.
+        drop.add(`${a}|${b}`)
+        drop.add(`${b}|${c}`)
+        // The one row the pre-fix analyzer published instead: a fragment source, upper target.
+        added.push({
+          type: "extends",
+          source: `${a} <: ${b}`,
+          target: c,
+          confidence: 1,
+          line_number: source.slice(0, at).split("\n").length,
+          metadata: { juliaSpecific: true, isSubtype: true },
+        })
+      }
+      return {
+        ...r,
+        relationships: [
+          ...rels(r).filter(
+            (x: any) => !(x.type === "extends" && drop.has(`${String(x.source)}|${String(x.target)}`)),
+          ),
+          ...added,
+        ],
+      }
+    },
+  },
+  {
     id: "julia/struct-named-after-supertype",
     language: "julia",
     defectClass: "misnaming",
@@ -907,6 +964,104 @@ const firstByScope = new Map<string, { scope: string; line: number }>()
       }
       if (!fabricated.length) return r
       return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+    },
+  },
+  {
+    id: "julia/call-overload-names-its-argument",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-20 REVERT: a CALL-OVERLOAD definition is named after its own BINDING. `(m::Model)(x) = …` adds a " +
+      "method to Model's call table and declares no binding `m`; the analyzer already refused the plain " +
+      "form, but `unwrapWhere` walks THROUGH `typed_expression`, so `(t::Type{Model} where X)(x) = …` " +
+      "unwrapped past the pattern to the binding and published `function t`, `contains M -> t` and a " +
+      "`decorates t -> inline` row. 423 call-overload sites exist corpus-wide. Caught by the `m`/`t` forbid " +
+      "rows and the `Model.m` / `CallableShapes.t` forbid edges in `callable-shapes`.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const lines = source.split("\n")
+      let owner = "root"
+      for (const s of r.symbols ?? []) if (s.kind === "module") owner = String(s.name)
+      const extraSyms: any[] = []
+      const extraRels: any[] = []
+      for (let i = 0; i < lines.length; i++) {
+        const m = /^\s*\(\s*([A-Za-z_][\w!]*)\s*::[^()]*\)\s*(?:where\b[^{=]*)?\(/.exec(lines[i]!)
+        if (!m) continue
+        const binding = m[1]!
+        extraSyms.push({
+          name: binding, kind: "function", ownerName: owner, startLine: i + 1,
+          metadata: { juliaSpecific: true, declarationForm: "short_form_assignment", mutant: "JUL-20" },
+        })
+        extraRels.push({
+          source: owner, target: `${owner}.${binding}`, type: "contains", confidence: 1, line_number: i + 1,
+          metadata: { juliaSpecific: true, mutant: "JUL-20" },
+        })
+      }
+      if (!extraSyms.length) return r
+      return { ...r, symbols: [...(r.symbols ?? []), ...extraSyms], relationships: [...(r.relationships ?? []), ...extraRels] }
+    },
+  },
+  {
+    id: "julia/spliced-member-names-its-receiver",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-21 REVERT: a SPLICED member is read through to its receiver. `(Base.$fJ)(x::Rational{BigInt}, …)` " +
+      "in `julia/base/gmp.jl` names its overloaded function through a loop variable, and the paren guard " +
+      "saw a `field_expression` rather than an interpolation, so `fieldPath` published the RECEIVER: " +
+      "`contains MPQ -> Base`, a module named as a member of another module. Caught by the `Base`/`fJ` " +
+      "forbid rows (`forbidSymbols` and `forbidRelationships`) in `callable-shapes`.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const lines = source.split("\n")
+      let owner = "root"
+      for (const s of r.symbols ?? []) if (s.kind === "module") owner = String(s.name)
+      const extraSyms: any[] = []
+      const extraRels: any[] = []
+      for (let i = 0; i < lines.length; i++) {
+        // NOT anchored to the line start: the corpus spelling is `@eval (Base.$fJ)(…) = …`, so the
+        // call-overload sits after a macro. The mutant must revert the shape the analyzer refused,
+        // not a narrower spelling only the fixture happens to write.
+        const m = /\(\s*([A-Za-z_][\w!]*)\s*\.\s*\$([A-Za-z_][\w!]*)\s*\)\s*\(/.exec(lines[i]!)
+        if (!m) continue
+        const receiver = m[1]!
+        const variable = m[2]!
+        for (const name of [receiver, variable]) {
+          extraSyms.push({ name, kind: "function", ownerName: owner, startLine: i + 1, metadata: { juliaSpecific: true, mutant: "JUL-21" } })
+          extraRels.push({
+            source: owner, target: `${owner}.${name}`, type: "contains", confidence: 1, line_number: i + 1,
+            metadata: { juliaSpecific: true, mutant: "JUL-21" },
+          })
+        }
+      }
+      if (!extraSyms.length) return r
+      return { ...r, symbols: [...(r.symbols ?? []), ...extraSyms], relationships: [...(r.relationships ?? []), ...extraRels] }
+    },
+  },
+  {
+    id: "julia/parametric-alias-invisible",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "JUL-22 REVERT: a PARAMETRIC ALIAS declares nothing. `Dims{N} = NTuple{N,Int}` puts a " +
+      "`parametrized_type_expression` on the assignment's left, which is neither a call (a short-form " +
+      "method) nor a plain binding, so the assignment case skipped it — 43 sites corpus-wide (" +
+      "`Base.Dims`, `Base.AbstractVecOrTuple`, `Flux._ParallelONE`, `StaticArrays.SizedMatrix`) published " +
+      "no symbol and no `contains` row while the truth oracle derived all 43. Caught by the `Dims` " +
+      "expectSymbol and the `CallableShapes.Dims` expectRelationship in `callable-shapes`.",
+    transform: (r: any) => {
+      const mine = (s: any) => s?.metadata?.declarationForm === "parametric_alias"
+      const drop = new Set((r.symbols ?? []).filter(mine).map((s: any) => String(s.name)))
+      if (!drop.size) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !mine(s)),
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if (String(x.type) !== "contains") return true
+          const t = String(x.target ?? "")
+          return ![...drop].some((n) => t === n || t.endsWith(`.${n}`))
+        }),
+      }
     },
   },
 ]

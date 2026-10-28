@@ -19,14 +19,17 @@ a rebuild of the vendored, patched source, and the pin has to describe *that*.
 
 | build | bytes | sha256 (16) |
 |---|---|---|
-| WIRED `wasm/tree-sitter-julia.wasm` | 5,892,544 | `583519521e5136d8…` |
-| REBUILD of this committed patched source | 5,892,547 | `201ac6b7e820d2b8…` |
+| WIRED `wasm/tree-sitter-julia.wasm` (P6) | 5,926,972 | `6a4569abd693ab20…` |
+| P5 wired build, kept as the A/B baseline | 5,892,544 | `583519521e5136d8…` |
+| REBUILD of this committed patched source | 5,892,547 | `201ac6b7e820d2b8…` (P5; P6 rebuild recorded below) |
 | PRISTINE npm 0.23.1's own wasm | 6,223,352 | `e0f52c36eadf0299…` |
 
 **The byte sha256s differ and they must**: a wasm build carries its emscripten version, compiler
 flags and section order. Identity is therefore claimed on **surface and behaviour**, which is
-what the gate measures, not on bytes. Measured: a rebuild of the committed source is
+what the gate measures, not on bytes. Measured for P5: a rebuild of the committed source was
 **behaviourally identical to WIRED on all 949 corpus files — 0 fixed, 0 broken, 949 unchanged.**
+For P6 the behavioural measurement is over the current 1,985-file population: **21 files fixed,
+0 broken, 1,964 unchanged** (`validation/m14/measurements/julia-p6-ab-2026-10-27.json`).
 
 ## The oracle, and why this lane has a real one
 
@@ -61,6 +64,7 @@ files (17 non-Julia IR dumps excluded by content, declared in the census artifac
 | **P3** | `const global x = 1` — the rule read `const` then an assignment, so `global` had nowhere to go | 10 |
 | **P4** | `abstract type X; end` — the rule went from `type_head` straight to `end`, while `struct_definition` three rules below already had the optional body | 5 |
 | **P5** | a function NAMED by an operator: `function ⊑ end` in `abstractlattice.jl` declares the abstract-lattice ordering relation | 46 |
+| **P6** | a `const` FIELD has no `=`: `mutable struct S; const x::Int; end` — Julia 1.8+ syntax, 684 corpus sites, and `const_statement` required an assignment, so every site was an ERROR node | 21 files fixed, 0 broken |
 
 **P1 (`+%` and `-%`) IS NOT LANDED**, with the whole measurement recorded beside its absence
 because three attempts is three more data points than the next person needs to spend.
@@ -98,8 +102,9 @@ full-corpus A/B existing at all: **net +8 files, with this one named.**
 
 ## Known gap, and it is large
 
-**177 files of valid Julia still carry ERROR nodes.** The four landed patches account for 9 of
-the 185 the differential found. The rest is unclassified: `script/m60/julia-error-minimal.ts`
+**211 files of valid Julia still carry ERROR nodes on the current 1,985-file population** (232
+before P6; the patch fixed 21 and broke 0). P6 is the largest single reduction since P2–P5, and
+the rest remains unclassified: `script/m60/julia-error-minimal.ts`
 reports the *smallest* failing span per file, because the *first* error points at line 1 in 121
 of 185 files and clustering on it produced 15 clusters of which 9 were the Julia licence header.
 

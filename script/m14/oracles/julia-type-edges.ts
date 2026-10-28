@@ -103,31 +103,122 @@ function declaredName(node: any): string {
 
 /** The name a `type_head`'s SUPER TYPE names, or "" when there is none. */
 function supertypeOf(head: any): string {
-  const leftmost = (n: any): string => {
+  /** The whole dotted name, not its first segment: `Documenter.Writer` is the supertype. */
+  const typeName = (n: any): string => {
     if (!n) return ""
-    if (n.type === "identifier") return n.text.trim()
-    if (n.type === "binary_expression" || n.type === "where_expression" ||
+    if (n.type === "identifier" || n.type === "operator") return n.text.trim()
+    if (n.type === "field_expression") {
+      const parts = kids(n).map((c: any) => typeName(c)).filter((x: string) => x)
+      return parts.join(".")
+    }
+    if (n.type === "parametrized_type_expression" || n.type === "where_expression" ||
         n.type === "parenthesized_expression" || n.type === "type_head" ||
-        n.type === "field_expression" || n.type === "parametrized_type_expression") {
-      return leftmost(kids(n)[0])
+        n.type === "curly_expression") {
+      return typeName(kids(n)[0])
     }
     return ""
   }
-  const scan = (n: any): string => {
-    if (n.type === "binary_expression") {
-      const { op, right } = operands(n)
-      if (op === "<:" || op === ">:") return leftmost(right)
-    }
-    for (const c of kids(n)) {
-      const hit = scan(c)
-      if (hit) return hit
-    }
-    return ""
+  // THE HEAD'S OWN `<:`, NOT A COMPARISON INSIDE IT. This used to scan the head's subtree, which
+  // made a `<:` in a supertype EXPRESSION look like a subtype: `struct S <: (S <: Real ? Any : Real)`
+  // (`julia/test/typegroup.jl:665`) is a ternary whose CONDITION compares S with Real, and a
+  // `where` chain (`(AbstractArray{T, N} where T <: Integer where N)`, `julia/test/errorshow.jl:1543`)
+  // bounds T. Three of the corpus's 11 non-name supertype operands are those two shapes, and the
+  // scan derived `S -> Real` and `Foo -> Integer` from them. The head's top-level node IS the
+  // subtype declaration; the operand must NAME the type, and `typeName` refuses a block, a call, a
+  // literal, a macro call, an interpolation and a ternary.
+  const bin = kids(head).find((c: any) => c.type === "binary_expression")
+  if (!bin) return ""
+  const { op, right } = operands(bin)
+  if (op !== "<:" && op !== ">:") return ""
+  return typeName(right)
+}
+
+/**
+ * The name a BOUND names, with a qualified path kept WHOLE.
+ *
+ * `calleeName` takes the LAST segment, which is right for a construction (`Foo.Bar()` builds `Bar`)
+ * and wrong for a bound: `where {T <: Base.IEEEFloat}` bounds T by `Base.IEEEFloat`, and reporting
+ * `IEEEFloat` made every qualified bound read as an unexplained analyzer row and a missing truth
+ * row. A bound is a reference to a TYPE, and a type declared in a namespace is named by its path.
+ */
+function boundName(n: any): string {
+  if (!n) return ""
+  if (n.type === "identifier") return n.text.trim()
+  if (n.type === "field_expression") {
+    const parts = kids(n).map((c: any) => boundName(c)).filter((x: string) => x)
+    return parts.join(".")
   }
-  return scan(head)
+  if (n.type === "parametrized_type_expression" || n.type === "where_expression" ||
+      n.type === "parenthesized_expression" || n.type === "curly_expression") {
+    return boundName(kids(n)[0])
+  }
+  if (n.type === "quote_expression") {
+    const inner = kids(n)[0]
+    if (inner?.type === "operator") return inner.text.trim()
+    if (inner?.type === "parenthesized_expression") {
+      const op = kids(inner)[0]
+      if (op?.type === "operator") return op.text.trim()
+    }
+    return n.text.trim()
+  }
+  return ""
 }
 
 /** The name a call's callee introduces; a qualified path is kept WHOLE. */
+/** The WHOLE dotted path a callee names (`a.b.C` stays `a.b.C`), for the qualifier test. */
+function calleePath(n: any): string {
+  if (!n) return ""
+  if (n.type === "identifier") return n.text.trim()
+  if (n.type === "field_expression") {
+    const parts = kids(n).map((c: any) => calleePath(c)).filter((x: string) => x)
+    return parts.join(".")
+  }
+  if (n.type === "parametrized_type_expression" || n.type === "where_expression" ||
+      n.type === "parenthesized_expression" || n.type === "typed_expression") {
+    return calleePath(kids(n)[0])
+  }
+  return ""
+}
+
+/**
+ * The ADJACENT subtype links of a `<:` / `>:` chain, with BOTH ends as NAMES.
+ *
+ * `a <: b <: c` parses as `(binary (binary a <: b) <: c)` and states TWO facts: `a <: b` and
+ * `b <: c`. The earlier rule here read `left.text` and published the edge `a <: b -> c`, so the
+ * truth side carried a SOURCE FRAGMENT — and the analyzer carried the same defect, which is why
+ * the two agreed and the direct oracle reported the row as a convention difference rather than
+ * as both sides being wrong. MEASURED whole-population 2026-10-28: 25 of 25 unexplained `extends`
+ * rows had a fragment source (`LB <: X`, `X <: f()`, `S <: V`) or a doubled target (`UB.UB`).
+ *
+ * A bound that is not a nameable type (a call, a literal) contributes NO link, by the same refusal
+ * the analyzer applies: `A where X <: f() <: Z` is a lowering error, and naming `f` as a supertype
+ * would invent a relation the source rejects.
+ */
+function subtypeChain(n: any): { from: string; to: string; at: any }[] {
+  const out: { from: string; to: string; at: any }[] = []
+  const link = (left: any, right: any, at: any) => {
+    const from = calleePath(left)
+    const to = boundName(right)
+    if (from && to && from !== to) out.push({ from, to, at })
+  }
+  const walk = (node: any) => {
+    if (!node || node.type !== "binary_expression") return
+    const { op, left, right } = operands(node)
+    if (op !== "<:" && op !== ">:") return
+    let fromNode = left
+    if (left && left.type === "binary_expression") {
+      const inner = operands(left)
+      if (inner.op === "<:" || inner.op === ">:") {
+        walk(left)
+        fromNode = inner.right
+      }
+    }
+    link(fromNode, right, node)
+  }
+  walk(n)
+  return out
+}
+
 function calleeName(n: any): string {
   if (!n) return ""
   if (n.type === "identifier") return n.text.trim()
@@ -145,11 +236,12 @@ function calleeName(n: any): string {
 /**
  * `extends` truth: type-declaration supertypes and `where`-clause parameter bounds.
  *
- * The `where` walk STOPS at a curly/parameter list rather than descending into it, because a bound
- * inside a struct's own type head belongs to its PARAMETER — `struct Circle{T<:Real} <: Shape`
+ * A bound inside a struct's own type head belongs to its PARAMETER — `struct Circle{T<:Real} <: Shape`
  * contains `T<:Real`, and reading that as a relation on Circle is a false edge. The declared
  * supertype is on the type head's top level; the parameter bound is a different fact about a
- * different name.
+ * different name. `collectHeadBounds` derives those parameter bounds, and `headWhereBounds` derives
+ * the `where` bounds on the SUPERTYPE side (`… where {X,Y<:T}` inside a supertype's argument), which
+ * are bounds on the supertype expression's own type variables and were not derived at all before.
  */
 export function deriveJuliaExtendsTruth(root: any): JuliaTypeEdge[] {
   const out: JuliaTypeEdge[] = []
@@ -164,8 +256,89 @@ export function deriveJuliaExtendsTruth(root: any): JuliaTypeEdge[] {
     out.push({ label, from: f, target: t })
   }
 
+  /** Bounds written inside a curly parameter list: `T<:Real`, `T>:Int`. */
+  const boundsInCurly = (curly: any) => {
+    for (const b of kids(curly)) {
+      for (const l of subtypeChain(b)) add("extends", l.from, l.to)
+    }
+  }
+  /**
+   * Every parameter bound under a type head, at any depth.
+   *
+   * `struct DataFrameRows{D<:AbstractDataFrame} <: AbstractVector{…}` wraps the declared name in a
+   * `parametrized_type_expression` on the LEFT of the head's binary expression, so the curly is
+   * never a DIRECT child of the head — the earlier loop looked for one there, found only the binary
+   * expression, and derived no bound at all for the single most common bounded-type spelling in
+   * Julia. Every `D`/`Fwd`/`O`/`V`/`S` in the cross-check was this shape.
+   */
+  const collectHeadBounds = (n: any) => {
+    if (n.type === "curly_expression") {
+      boundsInCurly(n)
+      return
+    }
+    for (const c of kids(n)) collectHeadBounds(c)
+  }
+  /**
+   * `where` bounds written INSIDE a type head, on the SUPERTYPE side.
+   *
+   * `struct T54757{A>:Int,N} <: AbstractArray{Tuple{… Vararg{Y,N}} where {X,Y<:T54757}, N}`
+   * (`julia/test/core.jl:6097`) states a bound on `Y` — a type variable of the UnionAll that is the
+   * supertype's first ARGUMENT — and the earlier walk SKIPPED the whole head
+   * (`if (c.type !== "type_head") visit(c)`), so that bound was not derived. MEASURED on the
+   * whole population: this was the last truth-side MISSING row of `extends` after the chain fix,
+   * and the analyzer had it, which is the direction a truth gap points: the analyzer was right and
+   * this oracle was silent.
+   *
+   * The walk is confined to `where_expression` nodes. A bound written directly in a parameter list
+   * is `collectHeadBounds`' business, above, and a `where`'s own bound binary is the same shape the
+   * generic rule (2) matches, so the two derivations agree by construction and the dedup `seen` set
+   * absorbs any overlap.
+   */
+  /**
+   * The links a `where` clause states — or none, when the clause wraps a COMPARISON.
+   *
+   * POSITION IS THE DISCRIMINATOR, measured on the pinned grammar. A real bound is the where's
+   * LAST named child (`f(x::T) where T<:Real` → `(where_expression (call) (binary T<:Real))`), or a
+   * member of a last curly (`where {T<:Real}`). A comparison gets the mirror shape — the binary
+   * comes FIRST and the type variable after it:
+   *
+   *   @test X <: Ref{Tuple{…}} where S      -> (where_expression (binary X<:Ref{…}) (identifier S))
+   *
+   * The earlier rule read ANY binary below a where, so the truth side fabricated `X -> Ref`
+   * (`julia/test/subtype.jl:1588`), `I -> Tuple` (:1761) and `J -> Tuple` (:1762) — and the
+   * analyzer agreed until its own scan was position-checked, which is exactly how a shared mistake
+   * hides: the two sides agreed on rows neither should have had. MEASURED after the analyzer fix:
+   * those five truth rows were the label's whole MISSING set on the residual files.
+   *
+   * THE ONE EXCEPTION IS A PARAMETER LIST. `Pair{N, S} where {N, NTuple{N,Int}<:S<:NTuple{M,Int}
+   * where {M}}` (`subtype.jl:2939`) puts a chain FIRST and its own braces LAST, because the `where`
+   * scopes only `{M}` and the chain is a BOUND on S — it sits inside an outer curly parameter list.
+   * The `where` is then a member of that list, and the chain is a bound rather than a value.
+   */
+  const whereBoundLinks = (w: any): { from: string; to: string; at: any }[] => {
+    const out: { from: string; to: string; at: any }[] = []
+    const ws = kids(w)
+    const last = ws[ws.length - 1]
+    const inParamList = w.parent?.type === "curly_expression"
+    for (const c of ws) {
+      if (c.type === "binary_expression") {
+        if (c !== last && !inParamList) continue
+        out.push(...subtypeChain(c))
+      } else if (c.type === "curly_expression") {
+        for (const b of kids(c)) out.push(...subtypeChain(b))
+      }
+    }
+    return out
+  }
+
+  const headWhereBounds = (n: any) => {
+    if (n.type === "where_expression") {
+      for (const l of whereBoundLinks(n)) add("extends", l.from, l.to)
+    }
+    for (const c of kids(n)) headWhereBounds(c)
+  }
   const visit = (node: any) => {
-    // (1) A TYPE DECLARATION's supertype.
+    // (1) A TYPE DECLARATION's supertype, plus the bounds on its TYPE PARAMETERS.
     if (node.type === "struct_definition" || node.type === "abstract_definition" ||
         node.type === "primitive_definition") {
       const head = kids(node).find((c: any) => c.type === "type_head")
@@ -173,23 +346,28 @@ export function deriveJuliaExtendsTruth(root: any): JuliaTypeEdge[] {
         const declared = declaredName(node)
         const sup = supertypeOf(head)
         if (declared && sup) add("extends", declared, sup)
+        // `struct SimpleEdge{T<:Integer} <: AbstractSimpleEdge{T}` has TWO subtype facts: the
+        // declaration's supertype and the parameter's upper bound. The bound's source is `T`, not
+        // `SimpleEdge` — reading it as the type would say SimpleEdge <: Integer, which is false.
+        collectHeadBounds(head)
+        headWhereBounds(head)
       }
-      // The type head's own parameter list is NOT descended into: `T<:Real` there bounds T.
-      // Everything else in the struct still is.
+      // The type head's own surface is handled above. Everything else in the struct still is.
       for (const c of kids(node)) if (c.type !== "type_head") visit(c)
       return
     }
 
-    // (2) A `where` clause's parameter bounds — a subtype relation between two NAMES.
+    // (2) A `where` clause's parameter bounds. The RULE for which shape is a bound rather than a
+    // comparison lives in `whereBoundLinks`, because a `where` around a test comparison and a
+    // `where` around a bound chain differ only in the operand's position.
     if (node.type === "where_expression") {
-      for (const c of kids(node)) {
-        if (c.type !== "binary_expression") continue
-        const { op, left, right } = operands(c)
-        if (op !== "<:" && op !== ">:") continue
-        const bound = calleeName(right)
-        const param = left ? left.text.trim() : ""
-        if (param && bound) add("extends", param, bound)
-      }
+      for (const l of whereBoundLinks(node)) add("extends", l.from, l.to)
+    }
+
+    // (3) A bounded parameter on a parametrized type outside a `where`: `f{T<:Real}(x)`. The
+    // bound is on T, not on the callee, so it is its own edge.
+    if (node.type === "parametrized_type_expression") {
+      for (const c of kids(node)) if (c.type === "curly_expression") boundsInCurly(c)
     }
 
     for (const c of kids(node)) visit(c)
@@ -209,13 +387,27 @@ export function deriveJuliaInstantiatesTruth(root: any): JuliaTypeEdge[] {
   const out: JuliaTypeEdge[] = []
   const seen = new Set<string>()
 
-  // Pass 1: the type names THIS tree declares.
+  // Pass 1: the type names THIS tree declares, and its MODULES.
+  //
+  // The module set is what keeps a QUALIFIED call honest: `atinvokelatest.Xs(...)` in
+  // `julia/test/misc.jl` constructs this file's `Xs`, while `Dates.DateTime(...)` in
+  // `base/toml/parser.jl` constructs DATES' type and only shares a leaf with the internal
+  // `struct DateTime` the same file declares. Matching on the last segment alone turned the second
+  // into a same-file construction — which is exactly the kind of plausible wrong row an oracle is
+  // supposed to refuse.
   const types = new Set<string>()
+  const modules = new Set<string>()
   const collect = (n: any) => {
     if (n.type === "struct_definition" || n.type === "abstract_definition" ||
         n.type === "primitive_definition") {
       const name = declaredName(n)
       if (name) types.add(name)
+    }
+    if (n.type === "module_definition" || n.type === "baremodule_definition") {
+      const byField = n.childForFieldName?.("name")
+      const nm = byField ?? kids(n)[0]
+      const m = nm ? String(nm.text ?? "").trim() : ""
+      if (m) modules.add(m)
     }
     for (const c of kids(n)) collect(c)
   }
@@ -248,18 +440,30 @@ export function deriveJuliaInstantiatesTruth(root: any): JuliaTypeEdge[] {
       let isDefinitionLHS = false
       for (let i = 0; q && i < 4; i++) {
         if (q.type === "signature") { inSignature = true; break }
-        // Reaching an `assignment` by walking UP THROUGH WRAPPERS ONLY is itself the proof: this
-        // call is transitively that assignment's left-hand side, i.e. a definition. Comparing
-        // against `kids(assignment)[0]` was wrong, because that node is the `where_expression`, not
-        // the call inside it — so `NoLengthDict{K,V}() where {K,V} = new(…)` kept reading as a
-        // construction while the analyzer correctly declined it.
-        if (q.type === "assignment") { isDefinitionLHS = true; break }
+        // Reaching an `assignment` by walking UP THROUGH WRAPPERS ONLY is NOT enough to call this
+        // a definition: a constructor call on the RIGHT of `x = Foo(…)` has the same ancestors.
+        // The call is a declaration only when it is inside the assignment's LEFT subtree.
+        if (q.type === "assignment") {
+          let lhs: any = kids(q)[0]
+          for (let d = 0; lhs && d < 4; d++) {
+            if (lhs.id === n.id) { isDefinitionLHS = true; break }
+            if (!WRAPPERS.has(lhs.type)) break
+            lhs = kids(lhs)[0]
+          }
+          break
+        }
         if (!WRAPPERS.has(q.type)) break
         q = q.parent
       }
       if (!inSignature && !isDefinitionLHS) {
-        const callee = calleeName(kids(n)[0])
-        if (callee && types.has(callee)) {
+        const calleeNode = kids(n)[0]
+        const callee = calleeName(calleeNode)
+        const full = calleePath(calleeNode)
+        const dot = full.indexOf(".")
+        const isLocalCtor = dot > 0
+          ? modules.has(full.slice(0, dot)) && types.has(callee)
+          : !!callee && types.has(callee)
+        if (isLocalCtor) {
           const k = `instantiates|${callee}`
           if (!seen.has(k)) {
             seen.add(k)
