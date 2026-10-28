@@ -1062,10 +1062,17 @@ export function filterNoiseRelationships(
     // census saw 3 because it predates the 2026-10-21 ban. A derived identity is neither an
     // operator name nor a setter name; it is THE ONLY SOUND NAME for a nameless declaration, and
     // the ban's intent is SNIPPETS, not derived names — the scss lesson a second time.
-    // The exemption is deliberately NARROW: the derived spelling's own prefix and shape, so a
-    // random `foo=bar` snippet carrying `xsl:template[` inside is still refused by the other
-    // tests, and the snippet controls stay green.
-    const DERIVED_TEMPLATE_ID = /^xsl:template\[[^\]]*\](?:#\d+)?$/
+    // THE TEST IS END-ANCHORED ON THE WHOLE TARGET, NOT THE LEAF — and the xml lane measured why
+    // before this exemption could ever fire: `extractLeaf` strips every `:` and `.` segment FIRST,
+    // so the real target `xsl:stylesheet.xsl:template[match=*|mode=toc.for.section|priority=]#0`
+    // yields the leaf `section|priority=]#0` and a `^xsl:template[` anchor can never match what
+    // it is tested against (measured: pattern-vs-leaf FALSE, same-shape-vs-target TRUE, and the
+    // store path read `overrides 0` with the anchored form committed). Qualification only
+    // PREPENDS owner segments, so the identity is always the target's SUFFIX — and the end
+    // anchor is what keeps a snippet carrying the substring refused: `foo = xsl:template[...]`
+    // does not END with the identity, so it fails here and dies in the other tests. (xml lane,
+    // 2026-10-27, measured both ways before this correction landed.)
+    const DERIVED_TEMPLATE_ID = /xsl:template\[[^\]]*\](?:#\d+)?$/
     if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf) && !DERIVED_TEMPLATE_ID.test(leaf)) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
