@@ -132,11 +132,29 @@ grammar, not a reason to rule.
   claim only where the name model has nothing. **extOK 25,285 → 53,882, unresolved 48,585 → 19,988,
   ambiguous/resolved/extFAIL all UNCHANGED.**
 - Gates: suite **26 pass / 0 fail**, mutants **70 of 70 caught, 0 survivors**, zero-regex **0/0** PASS.
-- **Clause 4 is NOT met** (extFAIL 60) and the lane does not claim it is. Next: the `using
-  namespace` list (22 rows) and the quoted-literal provenance (2 rows) are lane-side and each needs
-  its own measurement; the other 36 wait on the arbiter patch or on a resolver the lane does not own.
-  The big remaining classes are `calls` 34,591 unresolved (cmdlets and aliases that no shape-based
-  reading may claim — PSD10) and `uses` 13,487 unresolved.
+- **PSD14 reached clause 4: `extFAIL 60 → 0` (bindFAIL 0, causeFAIL 0), and the lane's page says
+  so with the price beside it** (`validation/m14/verification/POWERSHELL-CLAUSE4-2026-10-28.md`).
+  The 60 refutations were FIVE shapes: native programs with their extension (17 → path claim),
+  runtime-variable paths (13 → no claim), quoted member names (2 → no claim), types the file compiles
+  with `Add-Type` (3 → no claim), and type literals under a `using namespace` directive (22 →
+  **expanded to the type the prefix makes addressable**, the one resolution in the batch).
+- **Whole-population state (2026-10-28, after PSD14):** 193,297 edges · resolved **98,981** · ambiguous
+  **17,030** · unresolved **20,295** · extOK **56,857** · ext? **134** · **extFAIL 0**. Resolved and
+  ambiguous are byte-identical to PSD13 — every movement is inside the claim columns (A/B by analyzer
+  digest, joined on the gate's own `(label,target,file:line)` key: 22 keys changed target, 0 appeared,
+  0 disappeared). The price is stated, not hidden: **185 verified claims withdrawn** (123 runtime
+  paths + 62 file-created types) for 38 refutations removed and 20 turned into verified path claims.
+- **ext? 134 is fully named:** 83 `ownerMemberAbsent` (static-call literals PSD12 refuses to invent a
+  namespace for), 38 `owner` (drive / path-plus-variable / expression shapes — the arbiter's case 2),
+  13 `namespace` demoted because the module IS project layout.
+- **Next in value order:** (1) publish the C# types an `Add-Type` body declares as SYMBOLS, so the 62
+  withdrawn claims become resolutions — measured first: 35 distinct targets, 21 declared in exactly
+  one file project-wide, 14 in several (those would read ambiguous); (2) the `calls` 34,591 and `uses`
+  13,487 unresolved rows, which are cmdlets/aliases and bare names no shape-based reading may claim
+  (PSD10) — they need a different instrument, not a wider claim. Clause 1 is still FAIL: 37,325
+  ambiguous/unresolved.
+- Gates from the committed tree: suite **30 pass / 0 fail**, mutants **85 of 85 caught, 0 survivors**,
+  zero-regex **0/0** PASS, `tsc -p tsconfig.json` 0.
 
 ### haskell — committed DONE, clean tree
 

@@ -566,7 +566,19 @@ const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
  *  kept only for /unix-rooted and C:\ drive", RESOLUTION-LEDGER) applied to powershell's own
  *  admitted spellings.
  */
-const isRelativeScriptPath = (t: string): boolean => {
+/**
+ * PSD14 — IS THIS TARGET A FILE THE PROJECT MAY OWN? A relative path with a FILE extension.
+ *
+ * The rule started as the lane's three ADMITTED spellings (`.ps1`/`.psm1`/`.psd1`) and the reason it
+ * exists is not the extension: a relative path is resolved against a directory the analyzer does
+ * not know, so whether the project owns the FILE is not this file's question, and an externality
+ * claim on it is unanswerable (the arbiter's path branch refuses it — `ext?`, a claim no check can
+ * reach). MEASURED: 4 whole-population rows name a native program through a relative directory
+ * (`.\\warp-packer.exe`, `.\\warp\\buckaroo-windows.exe`, `.\\test-x86_64-windows-msvc.exe` ×2) and
+ * all four read `externalUnverified`. A relative program or assembly is the same shape as a
+ * relative script: a file on disk the project may ship.
+ */
+const isRelativeProjectFilePath = (t: string): boolean => {
   const n = t.length
   if (n < 4) return false
   // THE THREE ADMITTED SPELLINGS, byte-wise and case-insensitive: ".ps1", ".psm1", ".psd1".
@@ -584,6 +596,22 @@ const isRelativeScriptPath = (t: string): boolean => {
   if (!endsAdmitted && n >= 5 && isDot(n - 5) && isPs(n - 4) && isS(n - 3) && isOne(n - 1)) {
     const c = t.charCodeAt(n - 2)
     endsAdmitted = c === 109 /* m */ || c === 77 /* M */ || c === 100 /* d */ || c === 68 /* D */
+  }
+  if (!endsAdmitted) {
+    // THE PROGRAM AND ASSEMBLY SPELLINGS, by the same code-point test.
+    const dot = t.lastIndexOf(".")
+    if (dot > 0 && dot < t.length - 1) {
+      let ext = ""
+      for (let i = dot + 1; i < t.length; i++) {
+        const c = t.charCodeAt(i)
+        if (c >= 65 && c <= 90) { ext += String.fromCharCode(c + 32); continue }
+        if (c >= 97 && c <= 122) { ext += String.fromCharCode(c); continue }
+        ext = ""; break
+      }
+      if (ext.length > 0 && (PROGRAM_EXTENSIONS.has(ext) || ext === "dll" || ext === "nupkg" || ext === "zip")) {
+        endsAdmitted = true
+      }
+    }
   }
   if (!endsAdmitted) return false
   // THE PRICE OF THIS RULE, MEASURED, AND PAID DELIBERATELY.
@@ -691,6 +719,80 @@ const runtimeVariableTarget = (t: string): { name: string; isPath: boolean } | n
   return null
 }
 
+/**
+ * PSD14 — IS THIS TARGET A NATIVE PROGRAM NAMED WITH ITS EXTENSION (`whoami.exe`, `cmd.exe`)?
+ *
+ * A program name is a FILE, not a declaration, and PS-B27's qualified reading fires on the dot in
+ * `.exe`. The arbiter then asks the OWNER question about `whoami` — and a project that declares ANY
+ * symbol of that spelling (a function `Whoami`, a variable `$whoami`) refutes a claim that was never
+ * about it. MEASURED over the population: 17 rows refuted for this reason, every one a
+ * `calls` row naming a native program (`powershell.exe` 6, `cmd.exe` 5, `whoami.exe` 4, `reg.exe` 2),
+ * and each refutation is a FALSE statement about the project — the project does not "own" `whoami`.
+ *
+ * The claim that fits is the PATH claim: nothing the project ADMITS resolves to this written source
+ * string. Its polarity is the inverse of the file claim's, the project's own admitted list is the whole
+ * evidence, and adding a file named `whoami.exe` in an independent actor's checkout flips the verdict.
+ *
+ * ONLY A BARE NAME — a program under a directory (`.	ools\zig.exe`) is a path and keeps the path
+ * rules (PS-B18), and a `$var	ool.exe` target is a runtime path (W9).
+ */
+const PROGRAM_EXTENSIONS = new Set(["exe", "cmd", "bat", "com", "msi"])
+const programNameOf = (t: string): string | null => {
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c === 47 /* / */ || c === 92 /* \ */ || c === 36 /* $ */) return null
+  }
+  const dot = t.lastIndexOf(".")
+  if (dot <= 0 || dot === t.length - 1) return null
+  const ext = t.slice(dot + 1).toLowerCase()
+  return PROGRAM_EXTENSIONS.has(ext) ? t : null
+}
+
+/**
+ * PSD14 — THE NAMES A C# BODY DECLARES, READ BY KEYWORD SCAN (NO REGEX).
+ *
+ * `Add-Type -TypeDefinition @' namespace Foo { public class Bar {} } '@` compiles a type at RUN
+ * time. The type it creates is not a declaration in the PowerShell name space and no project file
+ * can own it, so a type literal or `New-Object` naming one of those names is not a claim the
+ * project can answer. The evidence is the C# source the FILE ITSELF carries.
+ *
+ * The two keywords are the C# declaration keywords that introduce a name PowerShell's type
+ * resolver can reach (`namespace Foo`, `class Bar`). The scan is a code-point loop, not a word
+ * list with a regex: this file's header forbids a regex that decides a fact. A keyword must be
+ * WHOLE (the byte before it is not a word byte, the byte after it is not one), and the name is the
+ * run of word bytes after it, so `namespace Foo.Bar` yields `foo` (the root a type literal's owner
+ * question is about) and `class Bar` yields `bar`.
+ */
+const isWordCode = (code: number): boolean =>
+  (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) ||
+  code === 95 || code === 46 /* . — a dotted namespace root is read to its first segment */
+
+const addTypeNamesIn = (text: string, sink: Set<string>): void => {
+  const keywords = ["namespace", "class"]
+  for (let i = 0; i < text.length; i++) {
+    for (const kw of keywords) {
+      if (i + kw.length > text.length) continue
+      let ok = true
+      for (let j = 0; j < kw.length; j++) {
+        if ((text.charCodeAt(i + j) | 0x20) !== kw.charCodeAt(j)) { ok = false; break }
+      }
+      if (!ok) continue
+      if (i > 0 && isWordCode(text.charCodeAt(i - 1))) continue
+      let k = i + kw.length
+      if (k < text.length && isWordCode(text.charCodeAt(k))) continue
+      while (k < text.length && isSpaceCode(text.charCodeAt(k))) k++
+      const start = k
+      while (k < text.length && isWordCode(text.charCodeAt(k))) k++
+      if (k === start) continue
+      const name = text.slice(start, k)
+      const dot = name.indexOf(".")
+      sink.add((dot > 0 ? name.slice(0, dot) : name).toLowerCase())
+      i = k - 1
+      break
+    }
+  }
+}
+
 const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
   // PS-RELATIVE-PATH (fleet baseline 2026-10-19, the two whole-population refutations; WIDENED
@@ -702,7 +804,7 @@ const externalReadingOf = (t: string): "cmdlet" | "qualified" | null => {
   // the project and REFUTED the claim — the emission was false. A path-shaped target the project
   // may own is a dependency the arbiter answers by the admitted file list, so no externality
   // reading may attach to it.
-  if (isRelativeScriptPath(t)) return null
+  if (isRelativeProjectFilePath(t)) return null
   for (let i = 1; i < t.length; i++) {
     if (t.charCodeAt(i) !== 45 /* - */) continue
     if (isAsciiUpper(t.charCodeAt(0)) && isAsciiUpper(t.charCodeAt(i + 1))) return "cmdlet"
@@ -803,6 +905,62 @@ const DOTNET_SYSTEM_NAMESPACES = new Set([
   "globalization", "io", "linq", "management", "media", "net", "numerics", "printing",
   "reflection", "resources", "runtime", "security", "servicemodel", "serviceprocess", "text",
   "threading", "transactions", "web", "windows", "xml",
+])
+
+/**
+ * PSD14 — THE FRAMEWORK'S NESTED NAMESPACES, WHICH IS WHAT A `using namespace` PREFIX NEEDS.
+ *
+ * `about_Using`: inside `using namespace System.Management.Automation`, a type name is tried as
+ * written, then under each using-namespace prefix. So `[Language.VariableExpressionAst]` names
+ * `System.Management.Automation.Language.VariableExpressionAst` — but only because `Language` IS a
+ * namespace under the prefix. The table below is what makes that a FACT rather than a guess: an
+ * expansion fires only when `<prefix>.<first segment>` is a namespace the .NET API browser lists
+ * under that parent.
+ *
+ * WHY IT CANNOT BE DERIVED FROM THE TARGET ALONE. A dotted type literal's root may be a namespace
+ * (`Language.`), a TYPE (`Path.Combine` names the type `Path`), or a project class. Expanding every
+ * dotted literal would retarget `[SomeProject.Type]` to `System.IO.SomeProject.Type`; the table is
+ * the boundary, and every unlisted spelling keeps the treatment it had.
+ *
+ * THE ENTRIES ARE THE CHILD NAMESPACES OF THE PARENTS THIS CORPUS ACTUALLY WRITES IN A `using
+ * namespace` DIRECTIVE (measured: System.Management.Automation, System.Collections.Generic,
+ * System.IO, System.Management.Automation.Language, System.Management.Automation.Security,
+ * System.Security.Cryptography[.X509Certificates], System.Diagnostics, System.Collections,
+ * System.Text), read from the .NET API browser. `System.Text.Encodings.Web` is listed instead of
+ * `System.Text.Encodings` because the latter has no documented child type of its own.
+ */
+const FRAMEWORK_NESTED_NAMESPACES = new Set([
+  "system.management.automation.language",
+  "system.management.automation.runspaces",
+  "system.management.automation.provider",
+  "system.management.automation.security",
+  "system.management.automation.remoting",
+  "system.management.automation.host",
+  "system.management.automation.moduleanalysis",
+  "system.management.automation.debugging",
+  "system.io.compression",
+  "system.io.isolatedstorage",
+  "system.io.memorymappedfiles",
+  "system.io.packaging",
+  "system.io.pipes",
+  "system.io.enumeration",
+  "system.collections.generic",
+  "system.collections.concurrent",
+  "system.collections.specialized",
+  "system.collections.objectmodel",
+  "system.collections.immutable",
+  "system.collections.frozen",
+  "system.security.cryptography.x509certificates",
+  "system.security.cryptography.certificates",
+  "system.text.json",
+  "system.text.regularexpressions",
+  "system.text.unicode",
+  "system.text.encodings.web",
+  "system.diagnostics.codeanalysis",
+  "system.diagnostics.tracing",
+  "system.diagnostics.eventlog",
+  "system.diagnostics.metrics",
+  "system.diagnostics.symbolstore",
 ])
 
 /**
@@ -1154,7 +1312,7 @@ const isCommandPositionCall = (rel: { type?: unknown; metadata?: Record<string, 
  */
 const commandReadingOf = (t: string): "command" | null => {
   if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
-  if (isRelativeScriptPath(t)) return null
+  if (isRelativeProjectFilePath(t)) return null
   if (hasFileDefinableScopePrefix(t)) return null
   return "command"
 }
@@ -1801,11 +1959,12 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // declares. One matched pair is stripped, by code point; the inside must be a STATIC
       // name, because `$obj."$name"` is a dynamic member and its name is not the variable's
       // own spelling.
+      let quotedMemberName = false
       if (leaf.length >= 2) {
         const q = leaf.charCodeAt(0)
         if ((q === 34 || q === 39) && leaf.charCodeAt(leaf.length - 1) === q) {
           const inner = leaf.slice(1, -1)
-          if (inner.length > 0 && inner.indexOf("$") < 0) leaf = inner
+          if (inner.length > 0 && inner.indexOf("$") < 0) { leaf = inner; quotedMemberName = true }
         }
       }
       // A DYNAMIC MEMBER NAME IS A VARIABLE READ, not a member. `$deps.targets.${targetRuntime}`
@@ -1850,6 +2009,14 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         member.startPosition.row + 1, {
           powershellSpecific: true,
           isMemberAccess: true,
+          // PSD14 — THE MEMBER'S NAME WAS WRITTEN IN QUOTES, so its punctuation is DATA. A quoted
+          // name is how PowerShell spells a property whose name no identifier can carry
+          // (`$build.triggerInfo.'pr.number'` is ONE property called `pr.number`), and the dot in
+          // it is not a qualifier. The externality pass asks the arbiter's OWNER question about the
+          // text before that dot — `pr` — which the project answers with a VARIABLE, so the row was
+          // REFUTED for a claim the source never made. MEASURED: 2 whole-population rows. The row
+          // and its `noDeclarationInFile` fact stay; only the name claim is withheld.
+          ...(quotedMemberName ? { isQuotedMemberName: true } : {}),
           ...(kind === "write" ? { isMemberWrite: true } : { isMemberReference: true }),
         })
     }
@@ -2578,6 +2745,100 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         patterns.add("Service Management")
     }
 
+    // ------------------------------------------------- PSD14 — the file's OWN type context
+    //
+    // TWO FACTS ARE READABLE BEFORE THE WALK, and both are about names the file introduces
+    // OUTSIDE the PowerShell declaration name space. Neither can be asked after the walk, because
+    // the walk emits the type literals as it passes them.
+    //
+    //   `using namespace U`   PowerShell's DOCUMENTED type-resolution ladder (about_Using) tries
+    //                         each such prefix after the name as written, so `[Language.X]` under
+    //                         `using namespace System.Management.Automation` names
+    //                         `System.Management.Automation.Language.X`. MEASURED: 22 whole-population
+    //                         `uses` rows were REFUTED for exactly this reason — the edge carried the
+    //                         spelling `Language.X`, whose root the project answers with a VARIABLE,
+    //                         while the same file's fully-qualified spelling at another line
+    //                         (`System.Management.Automation.Language.X`) verified as a namespace claim.
+    //
+    //   `Add-Type`            compiles C# at RUN time. `[Foo.Bar]::new()` after
+    //                         `Add-Type @' namespace Foo { public class Bar {} } '@` names the type the
+    //                         FILE creates; it is not a declaration the project owns, and a claim that
+    //                         asks the project's OWNER question about `Foo` is a false statement.
+    //                         MEASURED: 3 `instantiates` rows refuted, each with the type source in the
+    //                         same file (one via `-TypeDefinition @'…'@`, one via a here-string in a
+    //                         variable passed to `-PassThru`, one via `-ArgumentList` into a remote
+    //                         `Add-Type`).
+    //
+    // AND ONE MORE, for the same reason at the other end of the file: the names THIS FILE DECLARES
+    // as classes/enums, so a bare type literal can be refused the using-namespace expansion when the
+    // file's own declaration is what the engine would find first.
+    const usingNamespacePrefixes: string[] = []
+    const typeNamesInFile = new Set<string>()
+    const addTypeCreatedNames = new Set<string>()
+    {
+      const stack: Node[] = [rootNode]
+      const hereStringBodies: string[] = []
+      let addTypeSeen = false
+      const valueNodeText = (n: Node): string => this.stripQuotes(n.text).trim()
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (n.type === "class_statement" || n.type === "enum_statement") {
+          const nameNode = findFirstChild(n, n.type === "class_statement" ? "class_name" : "enum_name")
+          if (nameNode && nameNode.text) typeNamesInFile.add(nameNode.text.toLowerCase())
+        }
+        // A HERE-STRING IS WHERE AN `Add-Type` C# BODY LIVES. The pinned grammar hands it to the
+        // analyzer as a `string_literal` whose text opens with `@` (verbatim or expandable), which
+        // is why the marker is the first BYTE and not a node type.
+        if (n.type === "string_literal" && n.text.length > 2 && n.text.charCodeAt(0) === 64 /* @ */) {
+          hereStringBodies.push(n.text)
+        }
+        if (n.type === "command") {
+          const nameNode = findFirstChild(n, "command_name")
+          const leaf = nameNode ? nameNode.text.toLowerCase() : ""
+          if (leaf === "using" || leaf === "add-type") {
+            const elements = findFirstChild(n, "command_elements")
+            const values: Node[] = []
+            if (elements) {
+              for (let i = 0; i < elements.namedChildCount; i++) {
+                const c = elements.namedChild(i)
+                if (!c) continue
+                if (c.type === "command_parameter") {
+                  const next = elements.namedChild(i + 1)
+                  if (!next) continue
+                  const flag = stripLeadingDash(this.stripQuotes(c.text)).toLowerCase()
+                  if (leaf === "add-type" && (flag === "namespace" || flag === "name")) {
+                    const spelled = valueNodeText(next)
+                    if (spelled.length > 0) addTypeCreatedNames.add(spelled.toLowerCase())
+                  }
+                  continue
+                }
+                if (
+                  c.type === "generic_token" || c.type === "string_literal" ||
+                  c.type === "expandable_string_literal" || c.type === "array_literal_expression" ||
+                  c.type === "unary_expression"
+                ) values.push(c)
+              }
+            }
+            if (leaf === "using") {
+              // `using namespace U` — the directive and its value are the first two VALUES.
+              if (values.length >= 2) {
+                const directive = valueNodeText(values[0]).toLowerCase()
+                const target = valueNodeText(values[1])
+                if (directive === "namespace" && target.length > 0) usingNamespacePrefixes.push(target)
+              }
+            } else addTypeSeen = true
+          }
+        }
+        for (let i = n.childCount - 1; i >= 0; i--) {
+          const child = n.child(i)
+          if (child) stack.push(child)
+        }
+      }
+      // THE C# BODIES ARE READ ONLY WHEN THE FILE ACTUALLY COMPILES SOMETHING. A here-string that
+      // contains `class`/`namespace` in a file with no `Add-Type` is a string, not a declaration.
+      if (addTypeSeen) for (const body of hereStringBodies) addTypeNamesIn(body, addTypeCreatedNames)
+    }
+
     // -------------------------------------------------------------- traversal
 
     const work: { node: Node; exit: boolean }[] = [{ node: rootNode, exit: false }]
@@ -3215,8 +3476,55 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (isStaticObject) break
           const typeName = typeSpecText(node) || this.stripBrackets(node.text)
           if (!typeName || isTypeAccelerator(typeName)) break
-          addRel(top().scope, typeName, ASTEngine.RelationshipType.Uses, 0.8, node.startPosition.row + 1, {
+          // PSD14 — A TYPE THE FILE'S OWN `using namespace` MAKES ADDRESSABLE IS NAMED THE WAY THE
+          // ENGINE NAMES IT. `about_Using`: with `using namespace U`, a type name is tried as
+          // written and then under each U, so `[Language.VariableExpressionAst]` under
+          // `using namespace System.Management.Automation` IS `System.Management.Automation.
+          // Language.VariableExpressionAst` — the same target the explicit spelling of the same
+          // type already produces elsewhere in that file, and the target whose root the namespace
+          // claim can certify. The expansion is published only when the prefix is `System.`-rooted
+          // (so the claim the row then carries is a documented fact), `<prefix>.<root>` is a
+          // DOCUMENTED nested namespace of the framework, the type is not fully qualified already,
+          // and the file declares no type of that root — the declaration the engine would find
+          // first. With two using directives the first matching prefix is the one the engine would
+          // take: PowerShell tries them in source order.
+          let publishedType = typeName
+          let viaUsingNamespace: string | null = null
+          if (usingNamespacePrefixes.length > 0 && typeName.indexOf("[") < 0 && typeName.indexOf("]") < 0 && typeName.indexOf(",") < 0) {
+            const dot = typeName.indexOf(".")
+            if (dot > 0) {
+              const rootText = typeName.slice(0, dot)
+              const rootFolded = rootText.toLowerCase()
+              if (
+                rootFolded !== "system" &&
+                !typeNamesInFile.has(rootFolded) &&
+                !RESOLVED_FRAMEWORK_TYPES.has(rootFolded) &&
+                !DOTNET_SYSTEM_NAMESPACES.has(rootFolded)
+              ) {
+                for (const prefix of usingNamespacePrefixes) {
+                  const prefixIsSystemRooted = prefix.length > 6 && prefix.charAt(prefix.length - 1) !== "." &&
+                    (prefix.charCodeAt(0) | 0x20) === 115 /* s */ &&
+                    (prefix.charCodeAt(1) | 0x20) === 121 /* y */ &&
+                    (prefix.charCodeAt(2) | 0x20) === 115 /* s */ &&
+                    (prefix.charCodeAt(3) | 0x20) === 116 /* t */ &&
+                    (prefix.charCodeAt(4) | 0x20) === 101 /* e */ &&
+                    (prefix.charCodeAt(5) | 0x20) === 109 /* m */ &&
+                    prefix.charCodeAt(6) === 46 /* . */
+                  if (!prefixIsSystemRooted) continue
+                  if (!FRAMEWORK_NESTED_NAMESPACES.has(`${prefix}.${rootText}`.toLowerCase())) continue
+                  publishedType = `${prefix}.${typeName}`
+                  viaUsingNamespace = prefix
+                  break
+                }
+              }
+            }
+          }
+          addRel(top().scope, publishedType, ASTEngine.RelationshipType.Uses, 0.8, node.startPosition.row + 1, {
             powershellSpecific: true, isTypeReference: true,
+            ...(viaUsingNamespace === null ? {} : {
+              viaUsingNamespace,
+              typeSpellingAsWritten: typeName,
+            }),
           })
           break
         }
@@ -4310,7 +4618,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `/[.:$[\]()]/` was deciding whether a target is a bare identifier, which is a fact about
         // the target's spelling. The policy in this file's own header is that normalising
         // AST-derived text belongs in a character loop, and every other predicate here is one —
-        // `isPs`, `isS`, `isDot`, `isOne` in `isRelativeScriptPath` are all code-point reads for
+        // `isPs`, `isS`, `isDot`, `isOne` in `isRelativeProjectFilePath` are all code-point reads for
         // exactly this reason. So the class becomes a loop over the same SEVEN characters, in the
         // same order, with the same meaning: `.` 46 · `:` 58 · `$` 36 · `[` 91 · `]` 93 · `(` 40 ·
         // `)` 41. **The behaviour is identical and the gate's row count is the proof** — the
@@ -4465,12 +4773,18 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       //           says exactly that much: nothing the project admits resolves to it.
       //   the 5   a namespace or a drive — NOT a path — and this file publishes no claim for it
       //           at all, because a claim that names nothing that can be a path is not a claim.
+      // PSD14 — A RUNTIME-VARIABLE PATH GETS **NO** CLAIM, AND THIS REVERSES A DELIBERATE EARLIER DECISION.
+      //
+      // W9 published the path claim here, and its own measurement said what that would produce: 58 of the
+      // 123 runtime-variable paths resolve to a file the project HAS, so the claim is REFUTED — 11 rows do,
+      // and each is a claim the project says is false (`$PSScriptRoot/../../../../build.psm1` from a
+      // `.github/actions/…` directory IS the repo's `build.psm1`). W9 read those refutations as "a VISIBLE
+      // refutation, where the previous behaviour published a false external claim" — and that was the wrong
+      // trade for clause 4, which counts a refuted claim against the lane and does not care why it was made
+      // visible. The analyzer CANNOT answer the question (it does not know the project root, and the
+      // arbiter's candidate expansion answers it by BASENAME), so it must not assert either polarity. The
+      // row keeps its own facts; the class is named in the lane's wall table instead.
       const runtime = runtimeVariableTarget(target)
-      if (runtime !== null) {
-        if (runtime.isPath) {
-          rel.metadata.sourcePathClaim = [target]
-        }
-      }
       // A TARGET WITH NO LETTER IN IT IS NOT A NAME, SO NO NAME-CLAIM MAY BE PUBLISHED ON IT.
       //
       // PS-B27. `#Requires -Version 3.0` publishes `references -> 3.0` (with `requiresVersion: true`,
@@ -4519,8 +4833,43 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = target.charCodeAt(i)
         if (c === 47 /* / */ || c === 92 /* \ */) { keyHasPathByte = true; break }
       }
-      const isDataNameKey = (rel.metadata as any)?.isConstantKey === true && !keyHasPathByte
-      const via = isDataNameKey || runtime !== null || !hasLetter
+      // PSD14 — AND A QUOTED MEMBER NAME IS DATA FOR THE SAME REASON. `$build.triggerInfo.'pr.number'`
+      // publishes `uses -> pr.number` (the property's whole name, quotes stripped so the row names
+      // what the source names), and the qualified reading fires on the dot. The owner it derives —
+      // `pr` — is a VARIABLE in the project, so the owner question refutes a claim about a name the
+      // row does not contain. Only a quoted member name CONTAINING a dot needs the rule: a quoted
+      // name without one derives no owner at all, and its per-file claim stays true.
+      const isQuotedMemberNameWithDot =
+        (rel.metadata as any)?.isQuotedMemberName === true && target.indexOf(".") > 0
+      const isDataNameKey = ((rel.metadata as any)?.isConstantKey === true && !keyHasPathByte) ||
+        isQuotedMemberNameWithDot
+      // PSD14 — A NATIVE PROGRAM NAME IS A FILE, AND THE FILE CLAIM IS THE ONE THAT CAN ANSWER IT.
+      // `whoami.exe` is not a declaration and not an owner: the project either admits a file of that
+      // name or it does not. Publishing the path claim turns 17 refutations into verifications and
+      // states the fact that is actually checkable.
+      const programName = (rel.type === ASTEngine.RelationshipType.Calls && isCommandPositionCall(rel))
+        ? programNameOf(target)
+        : null
+      if (programName !== null) {
+        rel.metadata.sourcePathClaim = [programName]
+        continue
+      }
+      // PSD14 — A TYPE THIS FILE COMPILES AT RUN TIME IS NOT A DECLARATION THE PROJECT OWNS.
+      // The evidence is the file's own `Add-Type` sources (`addTypeCreatedNames`, read before the
+      // walk). A type literal or `New-Object` naming one of those roots is a claim no project
+      // symbol table can answer: the type does not exist until the script runs. Withholding the
+      // reading is the only honest option — the row keeps its facts and the class is named in the
+      // lane's wall table.
+      let runtimeCreatedType = false
+      if (addTypeCreatedNames.size > 0 && (
+        rel.type === ASTEngine.RelationshipType.Instantiates ||
+        (rel.type === ASTEngine.RelationshipType.Uses && (rel.metadata as any)?.isTypeReference === true)
+      )) {
+        const typeDot = target.indexOf(".")
+        const typeRoot = (typeDot > 0 ? target.slice(0, typeDot) : target).toLowerCase()
+        runtimeCreatedType = addTypeCreatedNames.has(typeRoot) || addTypeCreatedNames.has(target.toLowerCase())
+      }
+      const via = isDataNameKey || runtime !== null || runtimeCreatedType || !hasLetter
         ? null
         : externalReadingOf(target) ?? (isCommandPositionCall(rel) ? commandReadingOf(target) : null)
       if (via) {

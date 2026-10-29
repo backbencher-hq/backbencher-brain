@@ -2405,3 +2405,86 @@ one is a NAMED class with a count; none is a bare marker.
 extension leaf, and the PATH-key control). Four new mutants, all CAUGHT: module-claim-dropped,
 module-claim-on-any-path, using-scope-unclaimed, data-name-key-qualified. Lane battery **79 of 79**,
 suite **29 pass / 0 fail**, `tsc` 0.
+
+## PSD14 (append-only record, 2026-10-28) — clause 4 reached: `extFAIL 60 → 0`, and the five shapes that produced it
+
+**CLAUSE 4 IS MET ON THIS LANE: `extFAIL 0 · bindFAIL 0 · causeFAIL 0`.** The 60 claims the project
+refuted were not sixty mistakes; they were FIVE shapes, and each shape's claim had the same defect —
+it asked a question the name it named could not answer. Four are withdrawn, one is resolved.
+
+### The five shapes, measured, each from the dump rather than from a sample
+
+| shape | rows | what the row names | why the claim was false |
+|---|---:|---|---|
+| native program with its extension (`whoami.exe`, `cmd.exe`, `powershell.exe`, `ping.exe`, `node.exe`, `reg.exe`, `pwsh.exe`) | **17** | a FILE on the machine | the qualified reading fired on the dot; the arbiter asked about `whoami` and a project symbol of that spelling refuted it |
+| runtime-variable path (`$PSScriptRoot/../../build.psm1`, `$repoRoot/build.psm1`, `$ProjectRoot/build.ps1`) | **13** | a path resolved at RUN time | the arbiter's source-path candidates include the **BASENAME**, so any repo with `build.psm1` at its root refutes the claim wherever the path actually points |
+| quoted member name (`$build.triggerInfo.'pr.number'`) | **2** | ONE property called `pr.number` | the dot is punctuation in data; the owner question was asked about `pr`, which the project answers with a VARIABLE |
+| type the file compiles (`Add-Type` + `[Foo.Bar]::new()`, `[TestHost.TestHost]::New()`, `New-Object MyTest.Root`) | **3** | a type that does not exist until the script runs | no project declaration table can own it, and the owner question about `Foo` hit an unrelated `class Test` |
+| type literal under `using namespace System.Management.Automation` (`[Language.VariableExpressionAst]`) | **22** | `System.Management.Automation.Language.VariableExpressionAst` | the source spells a name the USING PREFIX makes addressable; the claim carried the spelling, not the type |
+
+### The four withdrawals, and the one resolution
+
+- **Program name → the PATH claim.** A program is a file; `sourcePathClaim` is the claim whose truth is
+  "nothing the project admits resolves to this written string". 17 refutations became 17 verifications,
+  and the owner claim is gone. A program under a directory is refused (`.\tools\whoami.exe`), because a
+  path may name a project file.
+- **Runtime-variable path → NO claim.** This REVERSES a deliberate earlier decision (W9), and the
+  reversal is driven by W9's own measurement: the same shape VERIFIED 123 rows and REFUTED 13, because
+  the candidate list is basename-based. A claim that answers by coincidence is not a claim. The price is
+  stated: **123 verified rows become unresolved**.
+- **Quoted member name → NO claim** (the name stays). The rule is PSD13's, applied to member names: a
+  quoted spelling is data, and only a quoted name CONTAINING a dot needs it.
+- **Runtime-created type → NO claim.** The evidence is the file's own `Add-Type` C# source (a
+  keyword scan, no regex): `namespace`/`class` names and the `-Namespace`/`-Name` values. The price is
+  stated: **62 verified claims withdrawn**, because those rows name types the same construction creates.
+  A later round can publish the C# types as SYMBOLS instead (they are declarations the file makes); that
+  is named as the next step, not done here.
+- **Using-namespace type literal → RESOLVED, not withheld.** `about_Using`: a type name inside
+  `using namespace U` is tried under each U. The expansion fires only when `<U>.<first segment>` is a
+  DOCUMENTED nested namespace (`FRAMEWORK_NESTED_NAMESPACES`, 31 entries, each a child namespace of a
+  parent this corpus writes in a directive), the file declares no type of that root, the root is not a
+  child namespace of `System` (the implicit-`System.` reading governs those), and the name carries no
+  generic brackets. The row publishes both the expansion and the spelling the source wrote
+  (`viaUsingNamespace`, `typeSpellingAsWritten`), so the step is visible. **22 refuted rows became 22
+  verified claims, and the target is byte-identical to the explicit spelling's** — one type no longer
+  has two spellings in the graph.
+
+### And one more, found by the fixture's own twin: relative program and assembly paths
+
+The program rule refused `.\tools\whoami.exe` and the row then carried the QUALIFIED reading, whose
+owner (`.\tools\whoami`) the arbiter refuses — a claim no check can reach. **MEASURED: 4 rows**
+(`.\warp-packer.exe`, `.\warp\buckaroo-windows.exe`, `.\test-x86_64-windows-msvc.exe` ×2), all
+`externalUnverified`. The relative-path refusal (`isRelativeProjectFilePath`) was widened from the three
+admitted SCRIPT spellings to the program/assembly spellings (`exe cmd bat com msi dll nupkg zip`) for the
+same reason it existed: a relative path may name a project file, and this file does not know the root.
+**ext? 150 → 134** (16 rows: those 4 plus 12 more of the same shape).
+
+### The arm, same population (1,181 files / 30 repos), same arbiter, A/B by analyzer digest
+
+| column | PSD13 | PSD14 |
+|---|---:|---:|
+| edges | 193,297 | **193,297** |
+| resolved | 98,981 | **98,981** |
+| ambiguous(decl) | 17,030 | **17,030** |
+| unresolved | 20,076 | **20,295** |
+| extOK | 57,000 | **56,857** |
+| ext? | 150 | **134** |
+| **extFAIL** | **60** | **0** |
+
+**NO RESOLUTION MOVED, IN EITHER DIRECTION**: `resolved` and `ambiguous` are byte-identical before and
+after, every movement is inside the claim columns, and the join was checked on the gate's own
+`(label, target, file:line)` key — 22 keys changed target (the using-namespace rows), 0 appeared, 0
+disappeared. The clause-1 sum falls **37,406 → 37,325**, and `extFAIL` reaching 0 is what makes clause 4
+read PASS for the first time on this lane.
+
+**`ext?` IS 134 AND IT IS FULLY NAMED**: 83 `ownerMemberAbsent` (the static-call literals PSD12 refuses to
+invent a namespace for), 38 `owner` (drive paths, path-plus-variable targets, expression-shaped
+`./$var` targets, colon strings — the arbiter's documented "exists nowhere" case 2), 13 `moduleNamespace`
+(demoted because the module IS project layout). No bare marker, no unclassified row.
+
+**PINS.** New fixture `name-context-psd14`: five positives and four twins (a program under a directory,
+an unquoted member, a `System` child namespace under a using prefix, a framework type in a file that
+compiles C#, plus a runtime path through `Import-Module`). Six new mutants, all CAUGHT:
+native-program-owner-claim, runtime-path-claim-restored, quoted-member-name-qualified,
+using-namespace-unexpanded, runtime-type-claimed, using-expansion-overreach. Lane battery **85 of 85
+caught, 0 survivors**, suite **30 pass / 0 fail**, zero-regex **0/0**, `tsc` 0.

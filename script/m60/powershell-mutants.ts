@@ -1635,6 +1635,145 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/native-program-owner-claim",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD14 REVERT (the program half): a native program named with its extension takes the OWNER claim again — the pre-fix state verbatim, `calls -> whoami.exe` with `externalTarget`/`externalVia: \"qualified\"` and no path claim. The arbiter asks the owner question about `whoami`, and a project that declares ANY symbol of that spelling REFUTES a statement that was never about it: MEASURED as 17 whole-population refutations, every one a true program name. The transform re-derives the shape from the RESULT (a `calls` row whose target ends in a program extension and contains no separator), not from a fixture name. Caught by name-context-psd14's positive row, which pins `meta.sourcePathClaim`, and by its forbid row on `meta.isExternalTarget`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "calls") return x
+        const t = String(x.target ?? "")
+        for (let i = 0; i < t.length; i++) {
+          const c = t.charCodeAt(i)
+          if (c === 47 || c === 92 || c === 36) return x
+        }
+        const dot = t.lastIndexOf(".")
+        if (dot <= 0 || dot === t.length - 1) return x
+        const ext = t.slice(dot + 1).toLowerCase()
+        if (ext !== "exe" && ext !== "cmd" && ext !== "bat" && ext !== "com" && ext !== "msi") return x
+        const { sourcePathClaim: _p, ...rest } = (x.metadata ?? {}) as Record<string, unknown>
+        return { ...x, metadata: { ...rest, externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/runtime-path-claim-restored",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD14 REVERT (the runtime-path half): a `$var`-rooted PATH target carries the source-path claim again, which is the pre-fix state — and its own measurement is what condemned it: the arbiter's candidate list includes the BASENAME, so `$PSScriptRoot/../../../../build.psm1` is REFUTED by any repo that has `build.psm1` at its root even when the path resolves elsewhere. MEASURED: 13 refuted rows, and the claim also VERIFIED 123 rows on the same shape, which is how the incoherence showed. The transform re-derives the shape from the result: a target opening with `$` whose next separator is a path byte. Caught by name-context-psd14's runtime-variable-path fixture row through its `meta.sourcePathClaim: null` pin — this mutant adds the claim back and the pin goes red.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (t.length < 3 || t.charCodeAt(0) !== 36) return x
+        let i = 1
+        while (i < t.length) {
+          const c = t.charCodeAt(i)
+          const isWord = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+          if (!isWord) break
+          i++
+        }
+        if (i === 1) return x
+        const sep = t.charCodeAt(i)
+        if (sep !== 47 && sep !== 92) return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), sourcePathClaim: [t] } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/quoted-member-name-qualified",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD14 REVERT (the quoted-member half): a quoted member name containing a dot takes the qualified externality reading again, so `$build.triggerInfo.'pr.number'` claims to name something outside the project with owner `pr` — and the project answers `pr` with a VARIABLE, so the claim is REFUTED. The dot inside a quoted member name is punctuation in ONE property's name, not a qualifier. The transform is keyed on the row's own `isQuotedMemberName` flag, so it reverts the mechanism and not a fixture. Caught by name-context-psd14's positive row and by its forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.isQuotedMemberName !== true) return x
+        if (String(x.target ?? "").indexOf(".") <= 0) return x
+        return { ...x, metadata: { ...md, externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/using-namespace-unexpanded",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD14 REVERT (the using-namespace half): the expansion is undone, so the row goes back to the spelling `Language.VariableExpressionAst` and its owner claim — the pre-fix state, where the project answers `Language` with a VARIABLE and the claim is REFUTED (22 population rows). The transform re-derives the shape from the row's own `viaUsingNamespace`/`typeSpellingAsWritten` pair, so it reverts the mechanism. Caught by name-context-psd14's resolved-target expect row and by its forbid row on the pre-fix spelling.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (typeof md.viaUsingNamespace !== "string" || typeof md.typeSpellingAsWritten !== "string") return x
+        const { viaUsingNamespace: _u, typeSpellingAsWritten: _s, languageNamespace: _n, ...rest } = md
+        return { ...x, target: String(md.typeSpellingAsWritten), metadata: { ...rest, externalTarget: true, externalVia: "qualified" } }
+      }),
+    }),
+  },
+  {
+    id: "powershell/runtime-type-claimed",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD14 REVERT (the Add-Type half): a type the file compiles takes an externality reading again. `[Contoso.Helpers.Gadget]::new()` after `Add-Type @'namespace Contoso.Helpers …'@` names a type that does not exist until the script runs; the project's symbol table cannot own it, and the owner question about `Contoso` is a statement about a name the row does not contain. MEASURED: 3 refuted rows, and the rule that removes them also withdraws 62 verified claims (the same construction creates those types), which is the price the lane records rather than hides. The transform re-derives the shape from the file's own symbols and the row's `dotNetNew`/`isTypeReference` flag. Caught by name-context-psd14's `Contoso.Helpers.Gadget` row and its forbid twin.",
+    transform: (r: any) => {
+      // THE FRAMEWORK ROOTS ARE NAMED, NOT DERIVED, and that is the point of a mutant: it must not
+      // call the analyzer's own table, or it could not fail when the table changes. A multi-segment
+      // type name under one of these roots is a framework type (the reading it already has); any
+      // OTHER multi-segment root in a file whose C# body declares a namespace is a runtime type.
+      const frameworkRoots = new Set([
+        "system", "text", "io", "collections", "diagnostics", "security", "management",
+        "linq", "net", "xml", "threading", "microsoft", "dateTime".toLowerCase(),
+      ])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const md = (x.metadata ?? {}) as Record<string, unknown>
+          const t = String(x.target ?? "")
+          const dot = t.indexOf(".")
+          if (dot <= 0) return x
+          const root = t.slice(0, dot).toLowerCase()
+          const isTypeRow = md.dotNetNew === true || md.isTypeReference === true
+          if (!isTypeRow) return x
+          if (frameworkRoots.has(root)) return x
+          return { ...x, metadata: { ...md, externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+        }),
+      }
+    },
+  },
+  {
+    id: "powershell/using-expansion-overreach",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PSD14 REVERT (the over-reach): every dotted type literal in a file with a `using namespace` directive is expanded under the prefix, with no documented-namespace check. `[Text.StringBuilder]` then becomes `System.Management.Automation.Text.StringBuilder` — a type that exists nowhere — while the implicit-`System.` reading was the right one. This is the mistake the FRAMEWORK_NESTED_NAMESPACES table exists to prevent, and it is invisible on any fixture that only carries the positive shape. Caught by name-context-psd14's `Text.StringBuilder` twin and by its forbid row on the expanded spelling.",
+    transform: (r: any) => {
+      let prefix: string | null = null
+      for (const im of r.imports ?? []) {
+        const via = String(im?.metadata?.via ?? im?.via ?? "")
+        const path = String(im?.path ?? im?.module ?? "")
+        if (via.toLowerCase() === "using namespace" && path.toLowerCase().startsWith("system.")) { prefix = path; break }
+      }
+      if (prefix === null) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const md = (x.metadata ?? {}) as Record<string, unknown>
+          if (md.isTypeReference !== true && md.dotNetNew !== true) return x
+          const t = String(x.target ?? "")
+          if (t.indexOf(".") <= 0) return x
+          if (t.toLowerCase().startsWith("system.")) return x
+          return { ...x, target: `${prefix}.${t}` }
+        }),
+      }
+    },
+  },
+  {
     id: "powershell/env-root-folded",
     language: "powershell",
     defectClass: "false-claim",
