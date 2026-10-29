@@ -1085,3 +1085,26 @@ wall **28,243 → 23,127**. Inert on the other two lanes (0 rows on powershell a
 arm), and the control has seven arms — the positive plus six refusals, including the leaf-in-another-file and
 the two-declarations plants — so a rule that always returned the leaf would fail the control rather than move
 5,000 rows on a guess.
+
+### HSA12b — the same read, priced, then spent: the module channel
+
+The retarget above resolves a name only where the NAME MODEL can bind it — one declaration project-wide.
+Its refusals were counted rather than left silent, and the count was decisive: **3,091 rows** were refused
+**solely** because the module's file declares the name once while the project declares it more than once.
+The qualifier decides those: `<Module>.<name>`, with `<Module>` a project module whose file declares
+`<name>` exactly once, can refer to that declaration and no other. The name model cannot express it because
+it keys bare names; the gate now models it as the **module channel**, exactly as it models the owner channel
+— the caller holds the evidence and passes a verdict, `verifiedBy: "moduleChannel"` names the mechanism, and
+every arm prints how many rows it decided in its own language (0 on powershell and solidity).
+
+Checked beside the owner channel and **before the claims**, because the row's own qualifier is a stronger
+fact than the module-space claim, which can only say "this module is ours". It does not retarget: the dump
+keeps the qualified spelling the analyzer published.
+
+**MEASURED, same population:** the disclosure reads **3,091 rows through the channel**; `resolved`
+122,465 → **130,674**; `ext?` 18,334 → **10,127**; ambiguous **9,326** and unresolved **583** unchanged;
+**refuted 0**; wall **28,243 → 20,036**. Together with the retarget, that is **−8,207 rows (−29.0 %)** on
+this lane from one fact the arm already held.
+
+Control: two arms — a planted verdict must read `resolved`/`moduleChannel`, and the SAME row without a verdict
+must not resolve (a channel that always resolved would pass a positive-only control). Suite 11/0.

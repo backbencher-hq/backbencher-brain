@@ -1884,7 +1884,6 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   let classLikeResolved = 0
   let caseFolded = 0
   let moduleQualified = 0
-  let moduleQualifiedBlocked = 0
   let moduleQualifiedChannel = 0
   let joinAskedSlash = 0
   let joinAskedNamespace = 0
@@ -2123,8 +2122,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     `  case fold (project key space): ${caseFolded} row(s) moved from unresolved to a declaration whose spelling differs only in case` +
     (CASE_INSENSITIVE_LANGUAGES.has(lang) ? "" : " (this language is not opt-in: the fold is inert)") +
     `\n  module-qualified resolution: ${moduleQualified} row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name` +
-    `\n  module-qualified held back: ${moduleQualifiedBlocked} row(s) where that file declares the name once but the project declares it more than once — the name model would read them AMBIGUOUS, so they wait for a module channel` +
-    `\n  module channel: ${moduleQualifiedChannel} row(s) resolved through it (the module's file declares the name once; the qualified spelling names that declaration)` +
+    `\n  module channel: ${moduleQualifiedChannel} row(s) resolved through it — the claimed module's file declares the name once, so the qualified spelling names that declaration even where the bare name is NOT unique project-wide` +
     `\n`,
   )
   // THE CLASS-LIKE RULE'S OWN PRICE, printed on every arm for the join's reason: an arm that does not
@@ -2739,7 +2737,7 @@ function selfTest(): { ok: boolean; failures: string[] } {
   {
     const ch = classifyEdge(
       declCount, kinds, "Widget.run", { kind: "moduleNamespace", module: "Widget" },
-      undefined, undefined, undefined, undefined, undefined, undefined, undefined, { outcome: "resolved" },
+      undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, { outcome: "resolved" },
     )
     if (ch.outcome !== "resolved" || ch.verifiedBy !== "moduleChannel") {
       failures.push(`control (module channel): a channel verdict read ${ch.outcome}/${ch.verifiedBy ?? "-"}, expected resolved/moduleChannel`)
