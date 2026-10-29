@@ -1060,3 +1060,28 @@ carry it — either per-symbol qualified names through the index payload, or a r
 consults the dotted key space. Neither is an analyzer change. Reverted byte for byte to the HSA6-HSA11
 state (193,418 edges · 9,326 ambiguous · 583 unresolved · 42,710 verified · 18,334 ext? · 0 refuted),
 suite 11/0, `tsc` 0.
+
+## HSA12 (append-only record, 2026-10-29) — the module-alias resolution, and why it is not a guess
+
+HSA2b left 18,334 `ext?` rows: alias-qualified dependencies (`Schema.column`, `Witch.from`) whose module the
+project carries. The claim is correct (the project has that module) and it could only be demoted, because
+`<Module>.<fn>` is not a symbol the store keys. Retargeting the bare leaf was measured and REFUSED in
+`cc523e01d` (583 → 21,099 unresolved, because a second symbol named `Module.name` pollutes the key space).
+
+**The arm holds the fact that makes it provable, and nothing else needed it: the leaf's DECLARATION SITE.**
+When the leaf has exactly ONE declaration in the repo and the file carrying it answers to the claimed module
+path (`modulePathsOfFile`, the same derivation the module space uses — one rule, not two), the qualified
+target can only name that declaration. Every other case is refused: the leaf declared twice, the qualified
+spelling itself declared, the declaration in a file that does not answer to the module, a non-module claim, a
+nested `A.B.c`.
+
+One-way by construction, like the case fold: consulted only where the qualified spelling has no declaration
+of its own, so it can only move `ext?`/`unresolved` to `resolved` — never to ambiguity (the leaf must be
+declared exactly once AND at exactly one site), never to a refutation.
+
+**MEASURED, same population:** the disclosure reads **5,118 rows retargeted**; `resolved` 122,465 → 127,583;
+`ext?` 18,334 → 13,218; ambiguous unchanged at 9,326; unresolved unchanged at 583; **refuted 0**;
+wall **28,243 → 23,127**. Inert on the other two lanes (0 rows on powershell and solidity, printed by every
+arm), and the control has seven arms — the positive plus six refusals, including the leaf-in-another-file and
+the two-declarations plants — so a rule that always returned the leaf would fail the control rather than move
+5,000 rows on a guess.

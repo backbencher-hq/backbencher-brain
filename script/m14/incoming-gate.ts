@@ -210,7 +210,7 @@ import {
   EXTERNAL_KEYS, NAMESPACE_CLAIM_KEY, NAMESPACE_POLICY_KEY, NAMESPACE_SLASH_KEY, PACKAGE_SCOPE_CLAIM_KEY, isMarkedExternal, externalClaimOf, targetOwner, verifyExternalClaim, classifyEdge, tally,
   NAME_CAP,
   FILE_CLAIM_KEY, REMOTE_REF_CLAIM_KEY,
-  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge,
+  emptyOutcomes, verifyImportClaim, verifyBindingClaim, BINDING_CLAIM_KEY, isContainsEdge, modulePathsOfFile,
   type ExternalClaim, type ProjectFacts,
   type Outcome, type Classified, type Outcomes,
 } from "./incoming-rule"
@@ -1820,6 +1820,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   /** of `resolved`: rows the class-like `implements` rule answered (its own disclosure) */
   let classLikeResolved = 0
   let caseFolded = 0
+  let moduleQualified = 0
   let joinAskedSlash = 0
   let joinAskedNamespace = 0
   let joinResolvedSlash = 0
@@ -1879,6 +1880,16 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (folded !== undefined && folded.count === 1 && folded.spelling !== null && folded.spelling !== e.tgt) {
         e.tgt = folded.spelling
         caseFolded++
+      }
+    }
+    // PSD22 / HSA12 — the module-qualified resolution. See `moduleQualifiedLeaf` for why it is one-way.
+    if (e.label !== "imports") {
+      const qualifiedLeaf = moduleQualifiedLeaf(
+        e.tgt, e.claim, e.repo, projectDecl.get(e.repo), declPos, repoOf,
+      )
+      if (qualifiedLeaf !== null) {
+        e.tgt = qualifiedLeaf
+        moduleQualified++
       }
     }
     const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
@@ -2035,6 +2046,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   process.stderr.write(
     `  case fold (project key space): ${caseFolded} row(s) moved from unresolved to a declaration whose spelling differs only in case` +
     (CASE_INSENSITIVE_LANGUAGES.has(lang) ? "" : " (this language is not opt-in: the fold is inert)") +
+    `\n  module-qualified resolution: ${moduleQualified} row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name` +
     `\n`,
   )
   // THE CLASS-LIKE RULE'S OWN PRICE, printed on every arm for the join's reason: an arm that does not
@@ -2084,6 +2096,47 @@ type Report = Awaited<ReturnType<typeof measure>>
  * A control that only proves the happy path is decoration. This one plants one of each
  * outcome the gate can report and asserts each is counted where it belongs.
  */
+/**
+ * A QUALIFIED TARGET WHOSE MODULE THE PROJECT CARRIES NAMES A PROJECT DECLARATION, AND THE MODULE
+ * CLAIM COULD ONLY DEMOTE IT.
+ *
+ * The claim is verified against the project's module PATHS, so a module the project carries can only
+ * become `ext?`: `<Module>.<fn>` is not a symbol the store keys, and retargeting the bare leaf on its
+ * own was measured and REFUSED because it is a guess — a `Schema.column` call must not bind a `column`
+ * declared in `Other.hs`.
+ *
+ * The arm itself holds the fact that makes it provable: the leaf's DECLARATION SITE. When the leaf has
+ * exactly one declaration in the repo, and the file carrying it answers to the claimed module path (via
+ * `modulePathsOfFile`, the SAME derivation the module space uses), the qualified target names that
+ * declaration and nothing else. Returns the leaf to retarget to, or null.
+ *
+ * ONE-WAY BY CONSTRUCTION, like the case fold: consulted only where the qualified target has no
+ * declaration of its own, and only at exactly one declaration AND one declaration site, so the row can
+ * only move from `ext?`/`unresolved` to `resolved` — never to ambiguity, never to a refutation. `imports`
+ * is excluded at the call site on purpose: an import names a MODULE, and a module path is not a
+ * declaration even when a symbol shares its leaf.
+ */
+function moduleQualifiedLeaf(
+  tgt: string,
+  claim: ExternalClaim | null,
+  repo: string,
+  pDecl: Map<string, number> | undefined,
+  declPos: Map<string, { file: string; line: number }[]>,
+  repoOfFile: (f: string) => string,
+): string | null {
+  if (claim?.kind !== "moduleNamespace") return null
+  const dot = tgt.indexOf(".")
+  if (dot <= 0) return null
+  const leaf = tgt.slice(dot + 1)
+  if (leaf.length === 0 || leaf.indexOf(".") >= 0) return null
+  // the qualified spelling must have NO declaration of its own, and the leaf EXACTLY ONE
+  if ((pDecl?.get(tgt) ?? 0) > 0) return null
+  if ((pDecl?.get(leaf) ?? 0) !== 1) return null
+  const sites = (declPos.get(leaf) ?? []).filter((d) => repoOfFile(d.file) === repo)
+  if (sites.length !== 1) return null
+  return modulePathsOfFile(sites[0].file).indexOf(claim.module) >= 0 ? leaf : null
+}
+
 function selfTest(): { ok: boolean; failures: string[] } {
   const failures: string[] = []
   // name -> declarations, kinds
@@ -2954,6 +3007,45 @@ function selfTest(): { ok: boolean; failures: string[] } {
       `marker without checking its reason`,
     )
   }
+  // MODULE-QUALIFIED RESOLUTION (PSD22/HSA12). The rule is one-way, so the control must show BOTH that
+  // it fires where it may and that every refusal it claims really refuses — a rule that always returns
+  // the leaf would pass a positive-only control and move 5,000 rows on a guess.
+  {
+    const repo = "/cr/proj"
+    const repoOfFile = (f: string) => f.split("/").slice(0, 3).join("/")
+    const claim: ExternalClaim = { kind: "moduleNamespace", module: "Schema" }
+    const at = (file: string) => new Map([["column", [{ file, line: 3 }]]])
+    const one = new Map([["column", 1]])
+    const hit = moduleQualifiedLeaf("Schema.column", claim, repo, one, at("/cr/proj/src/Schema.hs"), repoOfFile)
+    if (hit !== "column") {
+      failures.push(`control (module-qualified): the module's own file declares the leaf once, expected the leaf back, got ${JSON.stringify(hit)}`)
+    }
+    const otherFile = moduleQualifiedLeaf("Schema.column", claim, repo, one, at("/cr/proj/src/Other.hs"), repoOfFile)
+    if (otherFile !== null) {
+      failures.push("control (module-qualified): a leaf declared in a DIFFERENT file was retargeted — the module's file is the whole evidence")
+    }
+    const twoDecls = moduleQualifiedLeaf("Schema.column", claim, repo, new Map([["column", 2]]), at("/cr/proj/src/Schema.hs"), repoOfFile)
+    if (twoDecls !== null) {
+      failures.push("control (module-qualified): a leaf with TWO declarations was retargeted — the choice would be a guess")
+    }
+    const selfDeclared = moduleQualifiedLeaf("Schema.column", claim, repo, new Map([["column", 1], ["Schema.column", 1]]), at("/cr/proj/src/Schema.hs"), repoOfFile)
+    if (selfDeclared !== null) {
+      failures.push("control (module-qualified): a qualified spelling that IS a declaration was retargeted")
+    }
+    const wrongModule = moduleQualifiedLeaf("Schema.column", { kind: "moduleNamespace", module: "Nope" }, repo, one, at("/cr/proj/src/Schema.hs"), repoOfFile)
+    if (wrongModule !== null) {
+      failures.push("control (module-qualified): a module the file does NOT answer to was retargeted")
+    }
+    const otherClaim = moduleQualifiedLeaf("Schema.column", { kind: "owner", specifier: "Schema" }, repo, one, at("/cr/proj/src/Schema.hs"), repoOfFile)
+    if (otherClaim !== null) {
+      failures.push("control (module-qualified): a non-module claim was retargeted — only the module claim carries the module path")
+    }
+    const nested = moduleQualifiedLeaf("Schema.Inner.column", claim, repo, one, at("/cr/proj/src/Schema.hs"), repoOfFile)
+    if (nested !== null) {
+      failures.push("control (module-qualified): a nested qualified target was retargeted to its last segment")
+    }
+  }
+
   return { ok: failures.length === 0, failures }
 }
 

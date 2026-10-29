@@ -1848,16 +1848,24 @@ function projectModuleNames(facts: ProjectFacts): Set<string> {
  */
 const MODULE_SEPARATOR_CACHE = new WeakMap<ProjectFacts, Set<string>>()
 const MODULE_SOURCE_EXT = /\.(hs|lhs|ml|mli|re|rei|ps1|psm1|psd1|py|ts|tsx|js|jsx|java|kt|kts|scala|rb|go|rs|sol|ex|exs|erl|hrl|clj|cljs|groovy|dart|c|cc|cpp|h|hpp|cs|fs|vb|swift|php|lua|r|jl|nim|zig|m|mm)$/i
+/**
+ * THE MODULE PATHS ONE FILE ANSWERS TO — every suffix of its path, extension dropped. Exported so a
+ * caller that must go the other way (given a module, which FILE carries it) derives the paths with
+ * THIS function rather than a second copy of the rule; two copies of a naming rule are two rules.
+ */
+export function modulePathsOfFile(file: string): string[] {
+  const clean = file.replace(/\\/g, "/").replace(MODULE_SOURCE_EXT, "")
+  const segs = clean.split("/").filter((s) => s.length > 0 && s !== "." && s !== "..")
+  if (segs.length === 0) return []
+  const out: string[] = []
+  for (let i = 0; i < segs.length; i++) out.push(segs.slice(i).join("."))
+  return out
+}
 function projectModulePaths(facts: ProjectFacts): Set<string> {
   const hit = MODULE_SEPARATOR_CACHE.get(facts)
   if (hit) return hit
   const paths = new Set<string>()
-  for (const f of facts.files) {
-    const clean = f.replace(/\\/g, "/").replace(MODULE_SOURCE_EXT, "")
-    const segs = clean.split("/").filter((s) => s.length > 0 && s !== "." && s !== "..")
-    if (segs.length === 0) continue
-    for (let i = 0; i < segs.length; i++) paths.add(segs.slice(i).join("."))
-  }
+  for (const f of facts.files) for (const p of modulePathsOfFile(f)) paths.add(p)
   MODULE_SEPARATOR_CACHE.set(facts, paths)
   return paths
 }
