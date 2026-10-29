@@ -1747,6 +1747,56 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "powershell/compiled-type-call-external",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD15 REVERT (the call half): a static call through a type the file compiles takes the qualified externality reading again, so `[Contoso.Helpers.Gadget]::Create()` claims to name something outside the project with owner `Contoso.Helpers.Gadget` — a type the SAME FILE creates. MEASURED while the symbols were published: 33 population claims of this shape read `externalRefuted`, the arbiter's owner question having found the type it was just told about. The transform derives the shape from the row (`staticMemberCall` whose owner is not a framework root), not from a fixture name. Caught by name-context-psd14's `Get-Gadget` row and its forbid twin.",
+    transform: (r: any) => {
+      const frameworkRoots = new Set([
+        "system", "text", "io", "collections", "diagnostics", "security", "management",
+        "linq", "net", "xml", "threading", "microsoft",
+      ])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const md = (x.metadata ?? {}) as Record<string, unknown>
+          if (md.staticMemberCall !== true) return x
+          const t = String(x.target ?? "")
+          const dot = t.indexOf(".")
+          if (dot <= 0) return x
+          if (frameworkRoots.has(t.slice(0, dot).toLowerCase())) return x
+          return { ...x, metadata: { ...md, externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+        }),
+      }
+    },
+  },
+  {
+    id: "powershell/runtime-type-mention-claimed",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD15 REVERT (the mention half): a type mention whose root is a namespace the file compiles\nkeeps the externality reading, in EVERY emitter — not just `isTypeReference`. The rule was keyed\non that one marker and MEASURED left 6 `catch [Ansible.AccessToken.Win32Exception]` rows refuted\nafter the first cut, so the transform keys on the TARGET's shape alone: an `instantiates`/`uses` row\nwhose dotted root is not a framework namespace. Caught by name-context-psd14's `Contoso.Helpers.Gadget`\nrow and its forbid twin.",
+    transform: (r: any) => {
+      const frameworkRoots = new Set([
+        "system", "text", "io", "collections", "diagnostics", "security", "management",
+        "linq", "net", "xml", "threading", "microsoft",
+      ])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (x.type !== "instantiates" && x.type !== "uses") return x
+          const md = (x.metadata ?? {}) as Record<string, unknown>
+          const t = String(x.target ?? "")
+          const dot = t.indexOf(".")
+          if (dot <= 0) return x
+          if (frameworkRoots.has(t.slice(0, dot).toLowerCase())) return x
+          return { ...x, metadata: { ...md, externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+        }),
+      }
+    },
+  },
+  {
     id: "powershell/using-expansion-overreach",
     language: "powershell",
     defectClass: "misattribution",

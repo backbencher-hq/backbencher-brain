@@ -2488,3 +2488,74 @@ compiles C#, plus a runtime path through `Import-Module`). Six new mutants, all 
 native-program-owner-claim, runtime-path-claim-restored, quoted-member-name-qualified,
 using-namespace-unexpanded, runtime-type-claimed, using-expansion-overreach. Lane battery **85 of 85
 caught, 0 survivors**, suite **30 pass / 0 fail**, zero-regex **0/0**, `tsc` 0.
+
+## PSD15 (append-only record, 2026-10-28) — the compiled types: two claim classes withdrawn, and the publication PRICED
+
+**The 62 rows PSD14 withdrew a claim from name types the file itself compiles. This round asked the
+obvious next question — if the file declares them, why not publish them? — and answered it with a
+measurement instead of an opinion.**
+
+### 1 · The publication, measured, and NOT taken
+
+The change was small: push a `class` symbol per `namespace N { class C }` pair (and per
+`-Namespace N -Name C`), named with the full dotted .NET name and carrying `metadata.fqn`, the key the
+index resolves an edge target by. Then run the arm.
+
+| column | PSD14 | with the symbols published |
+|---|---:|---:|
+| unresolved | 20,295 | **20,233** (−62) |
+| resolved | 98,981 | **99,043** (+62) |
+| extOK | 56,857 | **56,817** (−40) |
+| **extFAIL** | **0** | **39** |
+
+The 62 are exactly the rows the publication was for, and they resolved with no new key. **The 39 are the
+finding:** a published type makes `declCount` answer its own name, and the arbiter's owner question
+strips the LAST segment, so
+
+```
+calls -> DotNetInterop.CodeMethods.GetMethod      owner question: DotNetInterop.CodeMethods
+uses  -> Ansible.AccessToken.Win32Exception       owner question: Ansible.AccessToken
+```
+
+now find declarations — the type itself in the first case, and a DIFFERENT file's `class AccessToken`
+in the second — and REFUTE a claim that was never about them. Withholding the static-call reading (which
+is right on its own terms: a call into a file-compiled type is not external) removed 33; six remained,
+all `catch [Ansible.AccessToken.Win32Exception]` in files that compile nothing, where this analyzer has
+no evidence at all. Clause 4 would go 0 → 6, so **the publication is not shipped.**
+
+**What this prices, exactly:** the arbiter's `typeNames` patch (an owner claim may be refuted only by a
+declaration that could BE an owner — a TYPE) is worth **+62 resolved, 0 refuted** on this lane, measured
+rather than estimated. It is already filed with the Lead.
+
+### 2 · What IS shipped: the call reading, and the type mention
+
+- **A static call through a compiled type carries NO externality reading.** `[T]::M()` where `T` is a
+  type this file compiles targets `T.M`, so the owner IS the file's own type; the dependency is internal.
+  MEASURED: 35 whole-population `calls` rows were carrying a verified "external" claim about a type the
+  file creates. They are now unclaimed. The members of a C# body are NOT published (no member scan is
+  safe enough to mint declarations), so those rows cannot resolve either — they join the wall, correctly.
+- **A type mention of the file's compiled type keeps no reading**, in every emitter that reaches this
+  pass (`isTypeReference` covers the literal and the cast; measured on both). The `catch [T]` gap is
+  named above.
+
+### 3 · The arm, same population, A/B by analyzer digest
+
+| column | PSD14 | PSD15 |
+|---|---:|---:|
+| edges | 193,297 | **193,297** |
+| resolved | 98,981 | **98,981** |
+| ambiguous(decl) | 17,030 | **17,030** |
+| unresolved | 20,295 | **20,330** |
+| extOK | 56,857 | **56,822** |
+| ext? | 134 | **134** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**35 verified claims withdrawn, 0 refutations added, 0 resolutions moved.** The clause-1 sum rises
+37,325 → 37,360 and that rise is the price of two classes of claim that were true only by the name
+table's accident. The join was checked on the gate's own `(label,target,file:line)` key: 35 keys moved
+`externalVerified → unresolved`, all `calls`; 0 appeared; 0 disappeared.
+
+**PINS.** `name-context-psd14` grows two positives (`Get-Gadget`'s static call and `Convert-Gadget`'s
+cast) and two forbid rows; two new mutants (`compiled-type-call-external`, `runtime-type-mention-claimed`)
+both CAUGHT. Lane battery **87 of 87 caught, 0 survivors**, suite **30 pass / 0 fail**, zero-regex
+**0/0**, `tsc` 0.

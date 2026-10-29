@@ -767,8 +767,38 @@ const isWordCode = (code: number): boolean =>
   (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) ||
   code === 95 || code === 46 /* . — a dotted namespace root is read to its first segment */
 
-const addTypeNamesIn = (text: string, sink: Set<string>): void => {
-  const keywords = ["namespace", "class"]
+/**
+ * PSD15 — AND THE TYPES IT DECLARES ARE DECLARATIONS THE FILE MAKES, so they are published as
+ * SYMBOLS.
+ *
+ * PSD14 withheld the externality claim on a type the file compiles, and the lane recorded the price:
+ * 62 verified claims withdrawn because those names denote types `Add-Type` creates. Withholding was
+ * the honest READING, but it left the row UNRESOLVED — and the row is not a mystery: the file itself
+ * states `namespace Contoso.Helpers { public class Gadget }`, so `[Contoso.Helpers.Gadget]::new()`
+ * names a declaration this file makes at run time. Publishing that declaration is what turns the
+ * claim into a RESOLUTION (clause 1's first half), and it is the same evidence PSD14 already read:
+ * the C# bodies are in the file, and so are the `-Namespace`/`-Name` pairs.
+ *
+ * WHAT IS PUBLISHED, AND WHY THE DOT IS ALLOWED HERE. A PowerShell CLASS name cannot contain a
+ * dot, which is why `pushSymbol` refuses a qualified name — but this is not a PowerShell class: it
+ * is a .NET type whose name IS dotted (`Ansible.Logon`), and the edge target spells it that way.
+ * The symbol is therefore pushed with its `qualifiedName` set to the full dotted name (`metadata.fqn`,
+ * the field the index prefers), so the row's target resolves to the declaration instead of hanging.
+ *
+ * THE PAIRING IS NAMESPACE + CLASS, read in SOURCE ORDER: a `class`/`struct`/`interface`/`enum`
+ * belongs to the most recent `namespace` before it, which is how the compiler reads it too. A type
+ * declared with no namespace is NOT published (its name would be a bare identifier that can collide
+ * with anything) — that residual is named in the lane's doc rather than guessed at.
+ */
+const addTypeNamesIn = (
+  text: string,
+  /** the ROOT of every name seen, for the claim-withholding rule (`Contoso` from `Contoso.Helpers`) */
+  roots: Set<string>,
+  /** full dotted type names, lowercase key -> declared spelling (null when only roots are wanted) */
+  types: Map<string, string> | null,
+): void => {
+  const keywords = ["namespace", "class", "struct", "interface", "enum"]
+  let currentNamespace = ""
   for (let i = 0; i < text.length; i++) {
     for (const kw of keywords) {
       if (i + kw.length > text.length) continue
@@ -786,7 +816,11 @@ const addTypeNamesIn = (text: string, sink: Set<string>): void => {
       if (k === start) continue
       const name = text.slice(start, k)
       const dot = name.indexOf(".")
-      sink.add((dot > 0 ? name.slice(0, dot) : name).toLowerCase())
+      roots.add((dot > 0 ? name.slice(0, dot) : name).toLowerCase())
+      if (kw === "namespace") currentNamespace = name
+      else if (types !== null && currentNamespace.length > 0) {
+        types.set(`${currentNamespace}.${name}`.toLowerCase(), `${currentNamespace}.${name}`)
+      }
       i = k - 1
       break
     }
@@ -2775,6 +2809,15 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const usingNamespacePrefixes: string[] = []
     const typeNamesInFile = new Set<string>()
     const addTypeCreatedNames = new Set<string>()
+    // PSD15 — the full declarations the file's `Add-Type` makes, lowercase key -> declared spelling.
+    // These are the OWNER names a static call through such a type carries, which is what the claim
+    // pass needs; they are not published as symbols (see the record below the pre-pass).
+    const addTypeDeclarations = new Map<string, string>()
+    const recordAddTypeDeclaration = (full: string): void => {
+      if (full.length === 0) return
+      const key = full.toLowerCase()
+      if (!addTypeDeclarations.has(key)) addTypeDeclarations.set(key, full)
+    }
     {
       const stack: Node[] = [rootNode]
       const hereStringBodies: string[] = []
@@ -2798,6 +2841,8 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (leaf === "using" || leaf === "add-type") {
             const elements = findFirstChild(n, "command_elements")
             const values: Node[] = []
+            let addNamespace = ""
+            let addName = ""
             if (elements) {
               for (let i = 0; i < elements.namedChildCount; i++) {
                 const c = elements.namedChild(i)
@@ -2809,6 +2854,10 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                   if (leaf === "add-type" && (flag === "namespace" || flag === "name")) {
                     const spelled = valueNodeText(next)
                     if (spelled.length > 0) addTypeCreatedNames.add(spelled.toLowerCase())
+                    if (spelled.length > 0) {
+                      if (flag === "namespace") addNamespace = spelled
+                      else addName = spelled
+                    }
                   }
                   continue
                 }
@@ -2826,7 +2875,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                 const target = valueNodeText(values[1])
                 if (directive === "namespace" && target.length > 0) usingNamespacePrefixes.push(target)
               }
-            } else addTypeSeen = true
+            } else {
+              addTypeSeen = true
+              // `Add-Type -Namespace N -Name C` states the type's full name directly.
+              if (addNamespace.length > 0 && addName.length > 0) {
+                recordAddTypeDeclaration(`${addNamespace}.${addName}`)
+              }
+            }
           }
         }
         for (let i = n.childCount - 1; i >= 0; i--) {
@@ -2836,8 +2891,35 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // THE C# BODIES ARE READ ONLY WHEN THE FILE ACTUALLY COMPILES SOMETHING. A here-string that
       // contains `class`/`namespace` in a file with no `Add-Type` is a string, not a declaration.
-      if (addTypeSeen) for (const body of hereStringBodies) addTypeNamesIn(body, addTypeCreatedNames)
+      if (addTypeSeen) {
+        for (const body of hereStringBodies) {
+          addTypeNamesIn(body, addTypeCreatedNames, addTypeDeclarations)
+        }
+      }
     }
+    // PSD15 — THE TYPES ARE DECLARATIONS, AND PUBLISHING THEM IS MEASURED, PRICED AND **NOT TAKEN**.
+    // (The paragraph below is the record; the code that did it is not in the tree.)
+    //
+    // The 62 rows PSD14 withdrew a claim from name types this file compiles, so publishing those
+    // types as symbols (name = the dotted .NET name, `metadata.fqn` = the same, which is the key the
+    // index resolves a target by) turns the claim into a RESOLUTION — and it does: the whole-population
+    // arm moved **62 rows from unresolved to resolved, and nothing else** in the first half.
+    //
+    // BUT THE SECOND HALF IS WHY IT IS NOT SHIPPED, and it is a property of the ARBITER'S QUESTION, not
+    // of the symbol: a published type makes `declCount` answer its own name, and the owner question
+    // strips the LAST segment. `[Ansible.AccessToken.Win32Exception]` (a runtime type) asks about
+    // `Ansible.AccessToken`, which is now a PUBLISHED CLASS (a different file's `class AccessToken`) —
+    // so the project "owns" the owner and the claim is REFUTED. MEASURED on the fully-wired tree:
+    // **39 refuted claims appeared** (static calls through the new types, 33 of them, plus these six),
+    // and withholding the static-call reading — correct on its own terms, a call into a file-compiled
+    // type is not external — left **6** from `catch [Ansible.AccessToken.Win32Exception]` in files that
+    // compile nothing at all, where this analyzer has no evidence to act on. Clause 4 would go 0 → 6.
+    //
+    // So the publication waits for the arbiter's `typeNames` patch (an owner claim may be refuted only
+    // by a declaration that could BE an owner — a TYPE), which is already filed with the Lead. The
+    // price of that patch on this lane is now MEASURED rather than estimated: **+62 resolved**, and 0
+    // refuted once the owner question is type-aware. `addTypeDeclarations` is kept because the
+    // static-call rule below needs the names; the symbols are the part that waits.
 
     // -------------------------------------------------------------- traversal
 
@@ -4860,16 +4942,35 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // symbol table can answer: the type does not exist until the script runs. Withholding the
       // reading is the only honest option — the row keeps its facts and the class is named in the
       // lane's wall table.
+      // THE RULE IS THE NAME, NOT THE MARKER, on the rows this file can actually answer. A type
+      // mention reaches this pass through several emitters, and every one of them publishes the type
+      // name with `isTypeReference` (measured on `[T]$x` and on a bare `[T]`); a `catch [T]` clause in
+      // another file's compilation is the case this rule CANNOT reach, and that gap is named in the
+      // lane's doc rather than papered over.
       let runtimeCreatedType = false
       if (addTypeCreatedNames.size > 0 && (
-        rel.type === ASTEngine.RelationshipType.Instantiates ||
-        (rel.type === ASTEngine.RelationshipType.Uses && (rel.metadata as any)?.isTypeReference === true)
+        rel.type === ASTEngine.RelationshipType.Instantiates || rel.type === ASTEngine.RelationshipType.Uses
       )) {
         const typeDot = target.indexOf(".")
         const typeRoot = (typeDot > 0 ? target.slice(0, typeDot) : target).toLowerCase()
         runtimeCreatedType = addTypeCreatedNames.has(typeRoot) || addTypeCreatedNames.has(target.toLowerCase())
       }
-      const via = isDataNameKey || runtime !== null || runtimeCreatedType || !hasLetter
+      // PSD15 — AND A CALL THROUGH SUCH A TYPE IS NOT AN EXTERNAL DEPENDENCY EITHER. `[DotNetInterop.
+      // CodeMethods]::GetMethod()` targets `DotNetInterop.CodeMethods.GetMethod`, whose OWNER is the
+      // type this file compiles. Publishing the type as a declaration (above) is what made the arbiter
+      // answer that owner: MEASURED, 39 such claims read `externalRefuted` the moment the symbols
+      // existed — and the arbiter was RIGHT, because the type is now published and the claim said it
+      // was outside. The members of a C# body are NOT published (no member scan is safe enough to
+      // mint declarations), so the row cannot resolve either; what it must not do is assert. The
+      // reading is withheld and the row joins the wall unnamed-in-metadata but correctly classified.
+      let callIntoCompiledType = false
+      if (addTypeDeclarations.size > 0 && rel.type === ASTEngine.RelationshipType.Calls) {
+        const callDot = target.lastIndexOf(".")
+        if (callDot > 0) {
+          callIntoCompiledType = addTypeDeclarations.has(target.slice(0, callDot).toLowerCase())
+        }
+      }
+      const via = isDataNameKey || runtime !== null || runtimeCreatedType || callIntoCompiledType || !hasLetter
         ? null
         : externalReadingOf(target) ?? (isCommandPositionCall(rel) ? commandReadingOf(target) : null)
       if (via) {

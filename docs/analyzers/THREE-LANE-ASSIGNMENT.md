@@ -138,22 +138,33 @@ grammar, not a reason to rule.
   runtime-variable paths (13 → no claim), quoted member names (2 → no claim), types the file compiles
   with `Add-Type` (3 → no claim), and type literals under a `using namespace` directive (22 →
   **expanded to the type the prefix makes addressable**, the one resolution in the batch).
-- **Whole-population state (2026-10-28, after PSD14):** 193,297 edges · resolved **98,981** · ambiguous
-  **17,030** · unresolved **20,295** · extOK **56,857** · ext? **134** · **extFAIL 0**. Resolved and
+- **PSD15 then asked whether the file's compiled types should be PUBLISHED as symbols** (the rows PSD14
+  had to withdraw a claim from name them). Measured: **+62 resolved, 0 new keys** — and **39 refuted
+  claims appeared**, because a published type answers the arbiter's owner question for its own name and
+  the owner strips the last segment (`[Ansible.AccessToken.Win32Exception]` asks about
+  `Ansible.AccessToken`, a class another file declares). Withholding the static-call reading — correct
+  on its own terms — left 6 in `catch` clauses of files that compile nothing. So the publication is
+  **NOT taken**, and the arbiter's `typeNames` patch is now priced at **+62 resolved / 0 refuted** on
+  this lane. What IS shipped: a static call through a compiled type (35 rows) and a type mention of one
+  carry no externality reading.
+- **Whole-population state (2026-10-28, after PSD15):** 193,297 edges · resolved **98,981** · ambiguous
+  **17,030** · unresolved **20,330** · extOK **56,822** · ext? **134** · **extFAIL 0**. Resolved and
   ambiguous are byte-identical to PSD13 — every movement is inside the claim columns (A/B by analyzer
   digest, joined on the gate's own `(label,target,file:line)` key: 22 keys changed target, 0 appeared,
-  0 disappeared). The price is stated, not hidden: **185 verified claims withdrawn** (123 runtime
-  paths + 62 file-created types) for 38 refutations removed and 20 turned into verified path claims.
+  0 disappeared). The price is stated, not hidden: **220 verified claims withdrawn** (123 runtime
+  paths + 62 file-created types + PSD15's 35 compiled-type calls) for 38 refutations removed and 20
+  turned into verified path claims.
 - **ext? 134 is fully named:** 83 `ownerMemberAbsent` (static-call literals PSD12 refuses to invent a
   namespace for), 38 `owner` (drive / path-plus-variable / expression shapes — the arbiter's case 2),
   13 `namespace` demoted because the module IS project layout.
-- **Next in value order:** (1) publish the C# types an `Add-Type` body declares as SYMBOLS, so the 62
-  withdrawn claims become resolutions — measured first: 35 distinct targets, 21 declared in exactly
-  one file project-wide, 14 in several (those would read ambiguous); (2) the `calls` 34,591 and `uses`
-  13,487 unresolved rows, which are cmdlets/aliases and bare names no shape-based reading may claim
-  (PSD10) — they need a different instrument, not a wider claim. Clause 1 is still FAIL: 37,325
+- **Next in value order:** (1) the `uses` wall (13,608 unresolved + 13,405 ambiguous) and the `calls`
+  wall (6,055 unresolved + 3,534 ambiguous) — these are member/bare reads and cmdlets no shape-based
+  reading may claim, so they need a different INSTRUMENT (per-file receiver evidence, or the gate's
+  import/module space), not a wider claim; (2) re-take the C# symbol publication the moment the
+  Lead's `typeNames` patch lands — its worth is measured (+62 resolved, 0 refuted), so it is a
+  one-line re-enable with the measurement already banked. Clause 1 is still FAIL: 37,360
   ambiguous/unresolved.
-- Gates from the committed tree: suite **30 pass / 0 fail**, mutants **85 of 85 caught, 0 survivors**,
+- Gates from the committed tree: suite **30 pass / 0 fail**, mutants **87 of 87 caught, 0 survivors**,
   zero-regex **0/0** PASS, `tsc -p tsconfig.json` 0.
 
 ### haskell — committed DONE, clean tree
