@@ -2559,3 +2559,36 @@ table's accident. The join was checked on the gate's own `(label,target,file:lin
 cast) and two forbid rows; two new mutants (`compiled-type-call-external`, `runtime-type-mention-claimed`)
 both CAUGHT. Lane battery **87 of 87 caught, 0 survivors**, suite **30 pass / 0 fail**, zero-regex
 **0/0**, `tsc` 0.
+
+## PSD17 (append-only record, 2026-10-28) — the remaining wall, measured and named
+
+After PSD15 the arm reads **193,297 edges · 98,981 resolved · 17,030 ambiguous · 20,330 unresolved ·
+56,822 extOK · 134 ext? · 0 refuted**. The wall is **37,360**, and this is what it is made of — by SHAPE
+of the target, counted from the run's own dump, not sampled:
+
+| class | rows | what it is | disposition |
+|---|---:|---|---|
+| bare `uses` | **12,614 unresolved + 10,721 ambiguous** | variable reads and member leaves | **cross-file name space.** The retarget pass already fires where the file declares the variable visibly; the residual names are declared in many files (`index`, `path`, `result`, `Name`), and no edge field can say which file's binding is meant. Not the analyzer's to close. |
+| scope-qualified reads (`$script:x` 710 · `$global:x` 31 · `$local:x` 8) | **749 unresolved** | a variable in a DEFINABLE scope | **NOT TAKEN — needs a scope model.** See below. |
+| quoted data keys (`$x['it:skip']`) | **73 unresolved** | a string key | PSD13 already withholds the name claim; nothing can declare the key, and the `binding` claim is unavailable (`decls === 0` holds, but a quoted key has no separator to verify). Recorded, not claimed. |
+| dotted `uses` | 2,646 ambiguous + 28 unresolved | namespace-qualified targets | the namespace/`typeNames` patch class. |
+| `calls` | 6,055 unresolved + 3,534 ambiguous | cmdlets/aliases and `$obj.Method()` | PSD10 already claims the bare command channel; the rest are members whose receiver type is unknowable (see the `$this` measurement). |
+
+### Why the 749 scope-qualified reads are NOT collapsed to their bare names
+
+`$script:testWorkspace` is a read of the variable `testWorkspace` in the SCRIPT scope, and the file's own
+`$script:testWorkspace = …` publishes no symbol at all (`pushSymbol` refuses a qualified name on purpose,
+PS8). So the row names a spelling no declaration has, and 749 of them read unresolved.
+
+The tempting fix — strip the definable prefix on both sides — is a **possible wrong bind**, and that is
+worse than an unresolved row. `$script:x` and `$x` are the SAME variable only at script scope; inside a
+function `$x` is LOCAL while `$script:x` reaches the script's. The store has no scope model (this file's
+own note on method-owned locals says so), so collapsing the two would let a script-scope read bind to a
+function-local declaration of the same spelling. The honest unit is a scope identity on the frame plus a
+retarget pass that reads it — the same lane-sized change that note already names, and it stays named
+here rather than half-built.
+
+**One more thing this round measured, for the record:** publishing the compiled C# types as symbols is
+worth **+62 resolved, 0 refuted** on this lane the moment the arbiter's owner question becomes
+type-aware (`typeNames`); until then it costs 6 refutations (PSD15 §1). Nothing else in the wall moved
+by a mechanism this lane owns.

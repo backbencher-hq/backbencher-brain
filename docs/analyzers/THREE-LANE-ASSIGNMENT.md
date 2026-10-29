@@ -157,12 +157,18 @@ grammar, not a reason to rule.
 - **ext? 134 is fully named:** 83 `ownerMemberAbsent` (static-call literals PSD12 refuses to invent a
   namespace for), 38 `owner` (drive / path-plus-variable / expression shapes — the arbiter's case 2),
   13 `namespace` demoted because the module IS project layout.
-- **Next in value order:** (1) the `uses` wall (13,608 unresolved + 13,405 ambiguous) and the `calls`
-  wall (6,055 unresolved + 3,534 ambiguous) — these are member/bare reads and cmdlets no shape-based
-  reading may claim, so they need a different INSTRUMENT (per-file receiver evidence, or the gate's
-  import/module space), not a wider claim; (2) re-take the C# symbol publication the moment the
-  Lead's `typeNames` patch lands — its worth is measured (+62 resolved, 0 refuted), so it is a
-  one-line re-enable with the measurement already banked. Clause 1 is still FAIL: 37,360
+- **The wall is now MEASURED AND NAMED** (`real-powershell-analyzer.md` §PSD17): bare `uses` 23,335
+  (cross-file name space — the retarget pass already fires where a visible unique declaration exists);
+  scope-qualified reads 749 (`$script:`/`$global:`/`$local:` — **needs a scope model; a prefix strip
+  would bind a script-scope read to a function-local declaration, so it is not taken**); quoted data
+  keys 73 (no claim is available); dotted 2,674 (the `typeNames` class); `calls` 9,589 (cmdlets already
+  claimed by PSD10, the rest are members whose receiver type is unknowable).
+- **Rejected by measurement, recorded so it is not retried:** `$this.Member -> Class.Member` (+151
+  ambiguous keys, 0 resolved — the corpus declares the same class in many files).
+- **Next in value order:** (1) re-take the C# symbol publication the moment the Lead's `typeNames`
+  patch lands — measured at **+62 resolved, 0 refuted**; (2) a frame-scope identity for method-owned
+  locals and scoped reads (lane-sized, named above); (3) clause 1 cannot close on this lane without
+  the name-model/ontology work the bare and dotted classes need. Clause 1 is FAIL: 37,360
   ambiguous/unresolved.
 - Gates from the committed tree: suite **30 pass / 0 fail**, mutants **87 of 87 caught, 0 survivors**,
   zero-regex **0/0** PASS, `tsc -p tsconfig.json` 0.
