@@ -878,3 +878,32 @@ Reverted: the analyzer is back to the HSA1 state byte for byte (wall 43,364 · v
 refuted 0). The change is a one-line re-enable **if** the module claim ever keys on the full module path —
 that is a Lead instrument change, and this record is its price: **+24,807 claimed, 22,432 of them
 unverifiable at root granularity.**
+
+## HSA3 (append-only record, 2026-10-28) — single-segment module imports: MEASURED, NOT TAKEN
+
+`import Prelude` (631 rows), `import Autocodecd` (157), `import Protolude` (120), `import Safe` (59) …
+name a module with NO DOT. The arbiter's inferred `importPath` claim requires a dotted capitalised
+leaf (`DOTTED_MODULE_TYPE`), so those rows carried NO reading at all — a small, safe-looking class.
+
+It was built (the lane's own `moduleNamespace` claim, specifier = the module, fail-closed by the
+verifier's module-space test) and the arm said no:
+
+| column | before HSA3 | with |
+|---|---:|---:|
+| unresolved | 34,038 | **32,900** (−1,138) |
+| extOK | 27,522 | **27,872** (+350) |
+| **ext?** | **67** | **855** (+788) |
+| extFAIL | 0 | 0 |
+
+**350 verified for 788 claims the instrument refuses** — the wall's satisfied side moves by 350 while
+its debt side moves by 788. Same shape as HSA2, same verdict: reverted, because a claim no check can
+reach is the lane's own definition of debt, and the lane's bar counts it.
+
+Cause of the demotions: `projectModuleNames` is built from file basenames and DIRECTORY names, so a
+project that happens to carry `Prelude.hs` (or a `Safe/` directory) demotes every claim naming that
+root. A module claim that cannot distinguish `Prelude` from a directory called `Prelude` is not a
+question this project can answer — it needs the full-module-space key.
+
+Reverted byte for byte (43,364 wall · 27,522 verified · ext? 67 · refuted 0). Two module-claim
+experiments now sit in this file as records (HSA2, HSA3), both priced, both blocked on the same
+instrument.
