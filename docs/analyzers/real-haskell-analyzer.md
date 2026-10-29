@@ -800,3 +800,61 @@ contains, in one file, the shapes a wrong rule would fire on:
 Suite: **8 pass / 0 fail** (`bun run script/m14/run-fixtures.ts --lang haskell`).
 A relabel of the 493 deriving-via sites, or a value-shape render rule, would
 fail on this file rather than pass on a corpus zero.
+
+## HSA1 (append-only record, 2026-10-28) — a bare capitalised dependency is a CLAIM, not silence
+
+**THE WALL WAS 60,898 AMBIGUOUS/UNRESOLVED OF 193,418 EDGES**, and its two largest classes were the
+two dependencies Haskell spells as a BARE UPPER-CASE NAME:
+
+| class | rows | what it names |
+|---|---:|---|
+| `implements` unresolved | **11,563** | the type class in an `instance` head: `Show` 2,459 · `Eq` 1,899 · `Generic` 1,404 · `Ord` 703 · `ToJSON` 662 · `FromJSON` 641 · `NFData` 530 · `Hashable` 327 · `Functor` 300 · `Binary` 270 · `Data` 258 · `Read` 172 · `Arbitrary` 163 … |
+| `instantiates` unresolved | **10,978** | the constructor in an expression: `Just` 3,657 · `Right` 1,017 · `Left` 617 · … |
+
+Not one of those names can be declared by a corpus file that does not already declare it. Every row was
+a dependency published with **no reading at all** — indistinguishable at the gate from a broken edge.
+
+### The rule, and why it cannot refute
+
+`pushRel` — the analyzer's single relationship writer — now attaches the fleet's `externalTarget`
+claim to an `implements`/`instantiates` row whose target is a bare capitalised name the module does not
+declare. Because it rides the writer, a new emission site cannot forget it.
+
+**THE CLAIM IS SAFE BY CONSTRUCTION, NOT BY CARE.** The arbiter consults a claim only where the name
+model has NOTHING (`decls === 0`), so a name the project really declares keeps its resolved/ambiguous
+answer, and a REFUTATION requires `decls > 0` on an unresolved row — a state this claim cannot reach.
+That is why the movement below adds **zero** extFAIL.
+
+Three refusals: a QUALIFIED target (`Csv.ToNamedRecord`, `T.unpack`) is a module path and belongs to the
+arbiter's own `importPath` claim; a LOWER-CASE target is a parse artifact (Haskell types and constructors
+are upper-case); a name THIS MODULE declares is a local dependency and must resolve.
+
+**The guard needs CONSTRUCTORS, not just types.** The first cut checked `declaredTypes` only, so
+`data Foo = MkFoo Int` did not protect `MkFoo` and the module's own constructor was claimed — a
+VERIFIED FALSE claim, the worst of the three outcomes. The fixture caught it on the first run, and the
+candidate set now carries `declaredConstructors` (collected generously — over-collecting can only
+withhold a claim, which is the safe direction).
+
+### The arm, same population (3,702 files / 6 repos), A/B by analyzer digest
+
+| column | before HSA1 | after |
+|---|---:|---:|
+| edges | 193,418 | **193,418** |
+| ambiguous | 9,326 | **9,326** |
+| unresolved | 51,572 | **34,038** |
+| extOK (verified) | 9,988 | **27,522** |
+| ext? | 67 | **67** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 60,898 → 43,364 (−17,534), every one a dependency that now says what it is.** No resolution moved,
+no ambiguous row moved, and no claim was refuted — the movement is exactly the two classes above.
+
+**PINS.** New fixture `bare-type-claims`: three positives (`instance Show Int`, `Just`, `Right`, `Left`)
+and three twins (`instance Shape Bool` where `Shape` is declared here; `MkFoo` in the same expression;
+`MkFoo` alone as the module's own constructor). Two new mutants — `bare-type-claim-dropped` and
+`local-constructor-claimed` — both CAUGHT. Lane battery **19 of 19**, suite **9 pass / 0 fail**,
+`tsc` 0.
+
+**What is left, named:** `calls` 25,131 unresolved (qualified names like `T.unpack` — the import-alias
+map is the next instrument), `instantiates` residue with dotted targets (`Schema.VInt`), `imports` 2,395,
+`exports` 985.

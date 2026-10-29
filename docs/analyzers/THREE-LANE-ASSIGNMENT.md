@@ -173,14 +173,25 @@ grammar, not a reason to rule.
 - Gates from the committed tree: suite **30 pass / 0 fail**, mutants **87 of 87 caught, 0 survivors**,
   zero-regex **0/0** PASS, `tsc -p tsconfig.json` 0.
 
-### haskell — committed DONE, clean tree
+### haskell — coverage DONE; the wall campaign has BEGUN (HSA1)
 
 - Commit `fbe61b88b` — `renders` and `mixes_in` ruled with whole-population counts; the lane
   reads **12/12** (12 implemented + 2 excluded = 14 applicable).
 - Population: **3,702 of 3,702** admitted `.hs`/`.lhs` over **6 repositories**, 0 failures.
   `extends` 189 · `implements` 13,721 · `overrides` 1,274 are the conformance family;
   DerivingVia (493 sites) is read as `implements` with `metadata.derived`, not `mixes_in`.
-- Fixtures 8/8, and no working-tree changes in this lane. Nothing outstanding.
+- **HSA1 (2026-10-28) claimed the wall's two biggest classes**: a bare capitalised dependency the
+  module does not declare now carries `externalTarget` — `implements` 11,563 unresolved (Show 2,459,
+  Eq 1,899, Generic 1,404…) and `instantiates` 10,978 (Just 3,657, Right 1,017, Left 617). The claim
+  rides `pushRel`, the single writer, and is safe by construction (consulted only where the name
+  model has nothing). **Wall 60,898 → 43,364 · verified 9,988 → 27,522 · ambiguous unchanged ·
+  refuted 0.**
+- Current state: **193,418 edges · resolved 140,728 · ambiguous 9,326 · unresolved 34,038 · extOK
+  27,522 · ext? 67 · extFAIL 0**. Fixtures **9/9** (new `bare-type-claims`), mutants **19/19 caught**,
+  `tsc` 0.
+- **Next:** `calls` 25,131 unresolved (qualified `T.unpack`/`Schema.column` — needs the import-alias
+  map as the instrument), dotted `instantiates` (`Schema.VInt`), `imports` 2,395, `exports` 985.
+  Clause 1 is still FAIL: 43,364 ambiguous/unresolved.
 
 ### solidity — 11/11 implemented, 3 ruled, and every wall DISPOSITIONED (2026-10-28)
 

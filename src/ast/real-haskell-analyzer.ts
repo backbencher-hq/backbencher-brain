@@ -85,6 +85,15 @@ interface HaskellContext {
   // BEFORE the declaration it decorates in source order is irrelevant — the
   // quote must resolve against the file's own declarations whatever the order.
   declaredTypes: Set<string>
+  /**
+   * HSA1 — every DATA CONSTRUCTOR this module declares (`data Foo = MkFoo Int` → `MkFoo`).
+   *
+   * Kept apart from `declaredTypes` on purpose: that set is what the qualified/type lookups resolve
+   * against, and a constructor is not a type. This one exists purely for the external-claim guard — a
+   * module's own constructor must never be claimed as an outside dependency, which the fixture caught
+   * the first version doing (`MkFoo` was claimed because only the TYPE name `Foo` was in the set).
+   */
+  declaredConstructors: Set<string>
   // `{-# ANN ... #-}` pragma sites. The pragma attaches METADATA to its target;
   // it runs no callable and applies no decorator, so it publishes no edge. It is
   // COUNTED here so the class is a number the spec can disclose rather than an
@@ -134,6 +143,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       functionSymbolIndex: {},
       declaredFunctions: new Set(),
       declaredTypes: new Set(),
+      declaredConstructors: new Set(),
       annPragmas: 0,
       classMethods: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
@@ -155,6 +165,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // lexically (collectLocalScopes), so this prepass skips local blocks.
     this.collectDeclaredFunctions(rootNode, ctx.declaredFunctions)
     this.collectDeclaredTypes(rootNode, ctx.declaredTypes)
+    this.collectDeclaredConstructors(rootNode, ctx.declaredConstructors)
     this.collectClassMethods(rootNode, ctx.classMethods)
     this.collectLocalScopes(rootNode, ctx.localScopes)
 
@@ -666,9 +677,58 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       target,
       type,
       confidence,
-      metadata,
+      // HSA1 — the claim rides every row this writer publishes, so a new emission site cannot
+      // silently drop it (see `bareExternalClaim`).
+      metadata: { ...metadata, ...this.bareExternalClaim(ctx, type, target) },
       ...(hasLine ? { line_number: line as number } : {}),
     })
+  }
+
+  /**
+   * HSA1 — A DEPENDENCY THE FILE DOES NOT DECLARE IS A CLAIM, NOT SILENCE.
+   *
+   * The lane's wall after its declaration wave was 60,898 ambiguous/unresolved of 193,418 edges, and
+   * the two largest classes are the two dependencies Haskell spells as a BARE CAPITALISED NAME:
+   *
+   *   `instance Show Foo where …`      the class `Show` lives in `base`, not in this project
+   *   `Just x`, `Left e`, `Right v`    the constructors are the language's own
+   *
+   * MEASURED over the whole admitted population (3,702 files / 6 repos): `implements` 11,563
+   * unresolved, led by `Show` 2,459 / `Eq` 1,899 / `Generic` 1,404 / `Ord` 703 / `ToJSON` 662 /
+   * `FromJSON` 641 / `NFData` 530 / `Hashable` 327; and `instantiates` 10,978 unresolved, led by
+   * `Just` 3,657 / `Right` 1,017 / `Left` 617. None of those names can be declared by a corpus file
+   * that does not already declare it, so every row was a dependency published with NO reading at all.
+   *
+   * THE CLAIM IS THE FLEET'S `externalTarget`, and it is SAFE BY CONSTRUCTION rather than by care: the
+   * arbiter consults a claim only where the name model has NOTHING (`decls === 0`), so a name the
+   * project really does declare keeps its resolved/ambiguous answer and can never be refuted by this
+   * row. A REFUTATION requires `decls > 0` on an UNRESOLVED row, which this claim cannot reach.
+   *
+   * THREE REFUSALS, each because the spelling is not a bare declaration name:
+   *   · a QUALIFIED target (`Csv.ToNamedRecord`, `T.unpack`) — a module path, and the arbiter's own
+   *     `importPath` claim is the one that reads it; a second claim would be a different question.
+   *   · a target that is not capitalised — Haskell type and data constructors are upper-case, so a
+   *     lower-case name here is a parse artifact, not a type.
+   *   · a name THIS FILE declares — the row is a local dependency and must resolve, not claim.
+   */
+  private bareExternalClaim(
+    ctx: HaskellContext,
+    type: ASTEngine.RelationshipType,
+    target: string,
+  ): Record<string, any> {
+    if (type !== ASTEngine.RelationshipType.Implements && type !== ASTEngine.RelationshipType.Instantiates) return {}
+    if (!target || target.length === 0) return {}
+    for (let i = 0; i < target.length; i++) {
+      const c = target.charCodeAt(i)
+      if (c === 46 /* . */ || c === 58 /* : */) return {}
+    }
+    const first = target.charCodeAt(0)
+    if (!(first >= 65 && first <= 90)) return {}
+    if (ctx.declaredTypes.has(target) || ctx.declaredFunctions.has(target) || ctx.declaredConstructors.has(target)) return {}
+    return {
+      externalTarget: true,
+      externalVia: type === ASTEngine.RelationshipType.Implements ? "instance-class" : "constructor",
+    }
   }
 
   /** 1-based line of a node, or undefined — never 0 (M59.O2). */
@@ -999,6 +1059,35 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // callable prepass does (scoped identity, never module-level).
       if (child.type === "local_binds" || child.type === "let" || child.type === "let_in") continue
       this.collectDeclaredTypes(child, out)
+    }
+  }
+
+  /**
+   * HSA1 — the DATA CONSTRUCTORS this module declares, for the external-claim guard only.
+   *
+   * The walk is deliberately generous: every `constructor` under a `data_type`/`newtype` is
+   * collected, field types included (`data T = C Int` also collects `Int`). Over-collecting can only
+   * WITHHOLD a claim, and a withheld claim leaves the row where it was — the safe direction. Missing
+   * one would publish a false statement about the module's own declaration, which is what the fixture
+   * caught.
+   */
+  private collectDeclaredConstructors(node: Node, out: Set<string>): void {
+    if (node.type === "data_type" || node.type === "newtype") {
+      const grab = (n: Node): void => {
+        if (n.type === "constructor" && n.text) out.add(n.text)
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) grab(c)
+        }
+      }
+      grab(node)
+      return
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (child.type === "local_binds" || child.type === "let" || child.type === "let_in") continue
+      this.collectDeclaredConstructors(child, out)
     }
   }
 

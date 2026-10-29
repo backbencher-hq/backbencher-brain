@@ -10945,6 +10945,20 @@ export const MUTANTS: Mutant[] = [
     transform: shiftLineNumbersZeroBased,
   },
   {
+    id: "swift/drop-renders-edge",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "drops swift renders edges (CardView->VStack, RowView->NavigationLink, HelperView->Group) — swift/renders-view-body expects catch them (the R3 emission landed 2026-10-23; a mutant that survives means the fixture pins nothing)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "renders") }),
+  },
+  {
+    id: "swift/emit-renders-without-host",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "renders host-gate regression: injects the Builder->VStack renders row the non-host refusal exists to stop (a `body` property on a type that does NOT conform to View is the protobuf-builder impostor shape) — swift/renders-view-body forbids catch it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "renders", source: "Builder", target: "VStack", confidence: 0.9, line_number: 32, metadata: { isRenderHost: true, renderHost: "body", renderTarget: "VStack", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
     id: "swift/drop-implements-edge",
     language: "swift",
     defectClass: "relationship-loss",
@@ -13274,6 +13288,47 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops haskell qualified calls (M.lookup) — haskell isQualifiedCall pin (HSD-qualified contract)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isQualifiedCall && x.type === "calls")) }),
+  },
+  {
+    id: "haskell/bare-type-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA1 REVERT: an `implements`/`instantiates` row on a BARE upper-case target publishes no externality reading again — the pre-fix state verbatim, where 11,563 `implements` rows (Show 2,459 · Eq 1,899 · Generic 1,404 …) and 10,978 `instantiates` rows (Just 3,657 · Right 1,017 · Left 617 …) named a library class or a language constructor and said NOTHING about it. The claim cannot refute by construction (the arbiter consults it only where the project declares nothing), so the whole class sat in the wall for want of one key. The transform re-derives the shape from the RESULT — a bare capitalised target on one of the two labels — not from a fixture name. Caught by haskell/bare-type-claims' `Show`/`Just`/`Right`/`Left` rows and by its silence-forbid row on `Show`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "implements" && x.type !== "instantiates") return x
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        for (let i = 0; i < t.length; i++) {
+          const c = t.charCodeAt(i)
+          if (c === 46 || c === 58) return x
+        }
+        const first = t.charCodeAt(0)
+        if (!(first >= 65 && first <= 90)) return x
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        delete md.externalTarget
+        delete md.externalVia
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/local-constructor-claimed",
+    language: "haskell",
+    defectClass: "false-claim",
+    description:
+      "HSA1 REVERT (the guard): the claim is published for EVERY bare capitalised target, including the module's OWN constructor — the exact defect the fixture caught in the first cut, when `MkFoo` was claimed because the candidate set held only the type name `Foo`. A claim that the project does not declare its own constructor is false, and the arbiter verifies it (nothing else declares `MkFoo`) — a verified FALSE claim, the worst of the three outcomes. Caught by haskell/bare-type-claims' `justFoo -> MkFoo` expect row and its forbid row.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "instantiates") return x
+        const t = String(x.target ?? "")
+        if (t !== "MkFoo") return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "constructor" } }
+      }),
+    }),
   },
   {
     id: "haskell/drop-record-construction",
