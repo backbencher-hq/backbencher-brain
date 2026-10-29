@@ -1558,6 +1558,83 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/module-qualified-claim-dropped",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD13 REVERT: a module-qualified command carries only the generic externality marker, which is the pre-fix state verbatim — `Microsoft.PowerShell.Management\\Join-Path` then reaches the arbiter as an owner claim about `Microsoft.PowerShell`, a name no project declares, so 25 verified rows go back to `ext?` (and 13 more, whose module IS project layout, lose the demotion that made the refusal honest). The transform re-derives the shape from the result (`externalReason: \"module-namespace\"` plus its specifier), not from a fixture name. Caught by module-and-scope-psd13's row 1.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.externalReason !== "module-namespace") return x
+        const { externalReason: _r, externalSpecifier: _s, ...rest } = md
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "powershell/module-claim-on-any-path",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD13 REVERT (the over-reach): EVERY backslash target is published as a module-qualified command, so `stage3-release\\bin\\zig` claims module `stage3-release` and `.\\lib\\Helper.psm1` claims `.` — the module claim then says the project does not carry a module named `stage3-release`/`.` about targets that are FILES. The refusal list exists because the backslash is the language's separator in both spellings, and the two are told apart by the path's own shape. Written off the result (any `externalVia: \"qualified\"` row carrying a backslash), not off a fixture name. Caught by module-and-scope-psd13's two path twins and by their two forbid rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.externalVia !== "qualified") return x
+        if (md.externalReason === "module-namespace") return x
+        const t = String(x.target ?? "")
+        if (t.indexOf("\\") < 0) return x
+        return {
+          ...x,
+          metadata: { ...md, externalReason: "module-namespace", externalSpecifier: t.slice(0, t.indexOf("\\")) },
+        }
+      }),
+    }),
+  },
+  {
+    id: "powershell/using-scope-unclaimed",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD13 REVERT: a `$using:` read keeps only the generic marker, so the arbiter refuses the owner for its colon and 66 rows sit in `ext?` with a claim no check can reach — the pre-fix state verbatim. The target cannot be a declaration (no admitted file can be spelled `using:Something`), so the namespace claim is available and TRUE; withholding it is a wall kept for no reason. The transform drops the list from any row whose target carries the `using:` prefix, so it reverts the mechanism rather than naming a fixture. Caught by module-and-scope-psd13's row 2.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        const t = String(x.target ?? "")
+        if (t.length <= 6 || t.charCodeAt(5) !== 58) return x
+        let isUsing = true
+        for (let i = 0; i < 5; i++) if ((t.charCodeAt(i) | 0x20) !== "using".charCodeAt(i)) { isUsing = false; break }
+        if (!isUsing) return x
+        const { languageNamespace: _ns, ...rest } = md
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "powershell/data-name-key-qualified",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD13 REVERT (the data half): a quoted NAME key takes the qualified externality reading again, so `$PSDefaultParameterValues['it:skip']` claims to name something outside the project. A colon in a quoted key is punctuation in a string; nothing can declare `it:skip`, so the claim is neither true nor false — it is meaningless, and MEASURED it was 93 population rows the arbiter could only refuse. The transform re-derives the shape from `isConstantKey` and the ABSENCE of a path byte, which is exactly the guard's boundary. Caught by module-and-scope-psd13's row 3 and its forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.isConstantKey !== true) return x
+        const t = String(x.target ?? "")
+        for (let i = 0; i < t.length; i++) {
+          const c = t.charCodeAt(i)
+          if (c === 47 || c === 92) return x
+        }
+        return { ...x, metadata: { ...md, externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+      }),
+    }),
+  },
+  {
     id: "powershell/env-root-folded",
     language: "powershell",
     defectClass: "false-claim",

@@ -976,6 +976,77 @@ const classMembersOf = (
 }
 
 /**
+ * PSD13 — IS THIS TARGET A `$using:` SCOPE READ (`using:NAME`)?
+ *
+ * `$using:Name` inside a remote scriptblock reads `$Name` from the CALLER's scope: the engine supplies
+ * the binding, and `using` is a reserved scope keyword. No admitted file can declare a name spelled
+ * `using:Something` — measured: zero `function using:…` declarations in the population, and the grammar
+ * does not accept `using` in a declaration scope position.
+ *
+ * THE DISTINCTION FROM `global:`/`script:` IS THE WHOLE POINT, and it is not stylistic. Those are
+ * scopes a file CAN declare into (`function global:Foo { … }` is ordinary PowerShell), so the lane
+ * refuses to call them external and `FILE_DEFINABLE_SCOPE_PREFIXES` exists for exactly that. `using` is
+ * in `RUNTIME_TABLE_SCOPE_PREFIXES` beside `env` and `variable` for the same reason in the other
+ * direction: the runtime binds it from outside the parse.
+ *
+ * WHY IT NEEDS A CLAIM OF ITS OWN, MEASURED. The generic externality reading fires on the colon, and the
+ * arbiter's owner question is refused for a colon-bearing owner (`[:/\s]`), so 66 rows sat in `ext?`
+ * with a claim no check could reach. The namespace claim is the kind built for it: the LIST is the
+ * evidence, the root is matched by segment, and the claim can never raise `resolved`. The root is
+ * carried AS WRITTEN (PSD11's rule), because `namespaceMatchOf` compares byte for byte.
+ */
+const usingScopeRootOf = (t: string): string | null => {
+  if (t.length <= 6) return null
+  if (t.charCodeAt(5) !== 58 /* : */) return null
+  for (let i = 0; i < 5; i++) {
+    const c = t.charCodeAt(i) | 0x20
+    if (c !== "using".charCodeAt(i)) return null
+  }
+  return t.slice(0, 5)
+}
+
+/**
+ * PSD13 — IS THIS TARGET A MODULE-QUALIFIED COMMAND (`ModuleName\CommandName`)?
+ *
+ * PowerShell's DOCUMENTED way to say which module's command you mean is exactly this spelling
+ * (about_Command_Precedence, "Use a module-qualified name"): `Microsoft.PowerShell.Management\Get-Item`
+ * is *the* `Get-Item` of *that* module, not whichever one the session happens to have loaded. The fact
+ * the target states is therefore "a member of the MODULE named before the backslash", which is the
+ * fleet's `moduleNamespace` claim — verified against the project's own module space (its file basenames
+ * and directory names), never against the symbol table.
+ *
+ * WHY IT NEEDED DECIDING AT ALL, MEASURED. The qualified externality reading fires on the backslash, and
+ * the arbiter then refuses the owner: `targetOwner` on `Microsoft.PowerShell.Management\Join-Path`
+ * yields `Microsoft.PowerShell` (`:`/`/`/space` only are refused, and a backslash is not one of them), a
+ * name no project declares — so 65 population rows sat in `ext?` with a claim that says "outside" and
+ * cannot be checked. The claim that CAN be checked is the module one, and it is the true one.
+ *
+ * THE THREE REFUSALS, each because the shape is a PATH rather than a module:
+ *   · MORE THAN ONE BACKSLASH — `stage3-release\bin\zig` is a directory path (measured: 6 rows).
+ *   · A COLON — `TestDrive:\TestModule.psm1`, `c:\Windows\System32\Calc.exe` are drive paths (11 rows).
+ *   · A FILE-EXTENSION LEAF — `.\warp-packer.exe`, `.\lib\Helper.psm1` are scripts/programs on disk
+ *     (25 rows), and PS-B18's relative-path rule already owns the leading `./`/`.\` forms.
+ * A command name may contain a `-` and an underscore (`Set-_InternalPSDscXMachineTR`), so those are NOT
+ * used as refusals; the extension test is the only leaf test, and it is a fixed vocabulary rather than a
+ * "has a dot" heuristic because a command name may legally contain a dot.
+ */
+const moduleQualifiedCommandOf = (t: string): string | null => {
+  const at = t.indexOf("\\")
+  if (at <= 0) return null
+  if (t.indexOf("\\", at + 1) >= 0) return null
+  for (let i = 0; i < t.length; i++) if (t.charCodeAt(i) === 58 /* : */) return null
+  const leaf = t.slice(at + 1)
+  if (leaf.length === 0) return null
+  const dot = leaf.lastIndexOf(".")
+  if (dot > 0) {
+    let ext = leaf.slice(dot + 1).toLowerCase()
+    if (ext === "exe" || ext === "ps1" || ext === "psm1" || ext === "psd1" || ext === "dll" ||
+        ext === "cmd" || ext === "bat" || ext === "com" || ext === "msi") return null
+  }
+  return t.slice(0, at)
+}
+
+/**
  * PSD11 — IS THIS TARGET AN ENVIRONMENT-PROVIDER READ (`env:NAME`)?
  *
  * `$env:PSModulePath` names a PROCESS environment variable. PowerShell's Environment PROVIDER is the
@@ -4430,12 +4501,41 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // so the reading is exactly the per-file statement this pass exists to make, and the arbiter
       // consults it only where the project's own name model has nothing. See
       // `isCommandPositionCall` for the three shapes it refuses and the measured split.
-      const via = runtime !== null || !hasLetter
+      // PSD13 — A QUOTED ELEMENT-ACCESS KEY IS DATA, SO ITS PUNCTUATION IS NOT A NAME QUALIFIER.
+      //
+      // `$PSDefaultParameterValues["it:skip"]` publishes `uses -> it:skip` with `isConstantKey: true`
+      // (PS-B10: a constant key names the slot). The qualified reading then fired on the COLON — a colon
+      // in a quoted key is punctuation in data, not a scope/provider qualifier — and the arbiter refused
+      // the owner it derived from it, so 93 population rows carried a NAME claim about a string nobody
+      // can declare. The reading is withheld here; the ROW and its `noDeclarationInFile` fact stay.
+      //
+      // BUT A PATH-SHAPED KEY KEEPS ITS READING, and PS-B18's fixture is why. `$x["/usr/lib/Helper.ps1"]`
+      // states a FILE, and the path claim is verified against the project's admitted FILE list — a
+      // different question from the owner question, and the one PS-B18 measured in both directions. The
+      // guard therefore fires on a NAME-shaped key only: no `/` and no `\` in the content, which is
+      // exactly what separates `it:skip` from a path.
+      let keyHasPathByte = false
+      for (let i = 0; i < target.length; i++) {
+        const c = target.charCodeAt(i)
+        if (c === 47 /* / */ || c === 92 /* \ */) { keyHasPathByte = true; break }
+      }
+      const isDataNameKey = (rel.metadata as any)?.isConstantKey === true && !keyHasPathByte
+      const via = isDataNameKey || runtime !== null || !hasLetter
         ? null
         : externalReadingOf(target) ?? (isCommandPositionCall(rel) ? commandReadingOf(target) : null)
       if (via) {
         rel.metadata.externalTarget = true
         rel.metadata.externalVia = via
+        // PSD13 — AND WHEN THE TARGET IS MODULE-QUALIFIED, SAY WHICH MODULE. The arbiter reads this
+        // pair as the fleet's `moduleNamespace` claim and checks the MODULE against the project's own
+        // file/directory space, which is a question the project can answer — unlike the owner question
+        // the bare marker led to. Fail-closed: if the module root IS project layout the claim demotes to
+        // `ext?` and never refutes, so this cannot raise `extFAIL` by construction.
+        const moduleName = moduleQualifiedCommandOf(target)
+        if (moduleName !== null) {
+          rel.metadata.externalReason = "module-namespace"
+          rel.metadata.externalSpecifier = moduleName
+        }
         // PS38 — THE ARBITER'S SPELLING OF THE SAME CLAIM, and the whole defect it repairs
         // is one key name.
         //
@@ -4552,8 +4652,10 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // than a guess, and it is consulted BEFORE the list is written, never after.
       let roots: string[] | null = null
       const envRoot = envProviderRootOf(tgt)
+      const usingRoot = usingScopeRootOf(tgt)
       if (tgt === "System" || tgt.startsWith("System.")) roots = ["System"]
       else if (envRoot !== null) roots = [envRoot]
+      else if (usingRoot !== null) roots = [usingRoot]
       else if (md.dotNetNew === true) {
         const shorthand = dotNetShorthandRootOf(tgt)
         if (shorthand !== null) {

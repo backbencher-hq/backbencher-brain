@@ -2340,3 +2340,68 @@ The 251 are colon/backslash targets the arbiter refuses to look up (`it:skip` 67
 `Microsoft.PowerShell.Management\Join-Path` 23, `TestDrive:\…` 8, `stage3-release\bin\zig.exe` 6) — a
 module-qualified COMMAND name and a Pester DSL key are not paths, which is a real class for the next wave.
 The 83 are the static calls whose literal resolution is not documented (`Path.Combine` 16 and 67 more).
+
+## PSD13 (append-only record, 2026-10-28) — the module claim, the `using:` scope, and the key that is DATA
+
+**THE LAST 334 `ext?` ROWS WERE THREE SPELLINGS AND ONE NOISE CLASS, and every one of them had a false
+or unanswerable claim rather than a missing mechanism.** Split by the construct that produced them
+(`script/m14/tmp/ps-owner-residual.mts`, reading the analyzer's own metadata for each dumped row):
+
+| class | rows | what the claim said | what it should say |
+|---|---:|---|---|
+| module-qualified command | 65 | "outside the project", owner `Microsoft.PowerShell` | **a member of MODULE `Microsoft.PowerShell.Management`** |
+| `$using:` scope read | 66 | "outside the project", owner `using:X` | **the `using` scope is a runtime table** |
+| quoted NAME key | 93 | "outside the project" about `it:skip` | **nothing: a colon in quoted data is not a qualifier** |
+| paths, expressions | 110 | "outside the project" | unchanged — the arbiter's documented "exists nowhere" limit |
+
+**THE THREE FIXES, EACH THE FLEET'S OWN CLAIM FOR THAT FACT.**
+
+1. **`moduleNamespace` for `Module\Command`** (25 verified, 13 demoted). PowerShell's documented way to
+   name one module's command is this spelling, so the target states which module owns the command, and
+   the arbiter checks that module against the project's own file/directory space. Fail-closed by
+   construction: a module the project DOES carry demotes to `ext?` and never refutes — which is what the
+   13 are (`PSDSCxMachine`, a project `.psm1`).
+2. **`languageNamespace: ["using"]` for `$using:Name`** (66 verified). A reserved scope keyword the
+   runtime binds from the caller's scope; zero `function using:…` declarations exist in the population,
+   so no admitted file can be spelled that way. Root carried AS WRITTEN (PSD11's rule), and the
+   distinction from `global:`/`script:` — scopes a file CAN declare into — is the whole reason
+   `FILE_DEFINABLE_SCOPE_PREFIXES` and `RUNTIME_TABLE_SCOPE_PREFIXES` are different lists.
+3. **No name claim on a quoted NAME key** (93 rows leave the claim column). `$PSDefaultParameterValues
+   ["it:skip"]` publishes `uses -> it:skip` with `isConstantKey`; the qualified reading fired on the
+   colon, which is punctuation in DATA. The row stays and keeps `noDeclarationInFile`; only the
+   meaningless claim goes.
+
+**THE CONTROL THAT KEPT THE GUARD HONEST.** The first version withheld the reading on EVERY constant
+key, and `relative-path-psb18` went red on four rows: `$x["/usr/lib/Helper.ps1"]` is a quoted PATH, and
+its claim is answered by the project's admitted FILE list — a different question from the owner question.
+The guard now fires only on a NAME-shaped key (no `/`, no `\`), and the fixture pins both sides of that
+boundary (`module-and-scope-psd13` rows 3 and 6).
+
+**MEASURED, same population (1,181 files / 30 repos), same arbiter, A/B by analyzer digest:**
+
+| column | PSD12 | PSD13 |
+|---|---:|---:|
+| edges | 193,297 | **193,297** |
+| resolved | 98,981 | **98,981** |
+| ambiguous(decl) | 17,030 | **17,030** |
+| unresolved | 19,983 | **20,076** |
+| extOK | 56,909 | **57,000** |
+| **ext?** | **334** | **150** |
+| **extFAIL** | 60 | **60** |
+
+**+91 claims became checkable, 93 meaningless claims were withdrawn, and no refutation was added.** The
+unresolved rise is the third fix and it is the point: a row whose claim was meaningless now reads as the
+wall it always was. The clause-1 sum falls **37,407 → 37,316**.
+
+**WHAT IS LEFT IN `ext?`, EXACTLY.** **83 `ownerMemberAbsent`** (the static-call literals whose
+resolution is not a documented fact — `Path.Combine` 16 and 67 more; PSD12's table deliberately refuses
+to invent `System.Path`), **54 `owner`** (25 relative paths with a script/executable leaf, 11 drive
+paths, 8 path-plus-variable targets, 7 expression-shaped `./$var` targets, 3 kubectl/Pester colon
+strings — all of them the arbiter's documented "exists nowhere" case 2, where the corpus cannot tell
+external from dangling), and **13 `moduleNamespace`** demoted because the module is project layout. Every
+one is a NAMED class with a count; none is a bare marker.
+
+**PINS.** New fixture `module-and-scope-psd13`: three positives and three twins (a two-segment path, an
+extension leaf, and the PATH-key control). Four new mutants, all CAUGHT: module-claim-dropped,
+module-claim-on-any-path, using-scope-unclaimed, data-name-key-qualified. Lane battery **79 of 79**,
+suite **29 pass / 0 fail**, `tsc` 0.
