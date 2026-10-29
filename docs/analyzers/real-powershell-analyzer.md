@@ -2161,3 +2161,59 @@ row for it; the string-key and variable-key rows in the SAME fixture are the con
 silenced the whole element-access branch fails them. New mutant
 `powershell/numeric-index-published` re-derives the pre-fix rows from the source text and is CAUGHT
 by that forbid row: **68 of 68 caught, 0 survivors**. Suite **25 pass / 0 fail**, `tsc` 0.
+
+## PSD10 (append-only record, 2026-10-28) — the command-position reading, and the 28,597 rows of wall it names
+
+**THE GAP WAS THE LANE'S OWN, RECORDED AS "NOT DONE" AND NOW MEASURED.** The externality reading was
+SHAPE-based: a Verb-Noun spelling (`Get-ChildItem`) or a qualifier byte (`System.IO.Path`,
+`./build.psm1`). Both are correct tests for *"this name cannot be a local declaration"*, and both are
+silent on a bare command name — `git`, `cd`, `mkdir`, `dotnet`. The spec's own note called the
+widening "the obvious one" and left it undone, because an earlier measurement of **3,680** names
+another file declares looked like a refutation price.
+
+**IT IS NOT A PRICE, AND THE ARBITER'S RULE IS WHY.** `externalTarget` is published only where THIS
+file declares no symbol of that spelling (`declaredInFile`, the guard this pass has always had), and
+`classifyEdge` reaches `verifyExternalClaim` **inside `decls === 0`**. Where the project declares the
+name, the row keeps its declaration answer: `resolved`, or ambiguous with disposition
+`ownFileSilent`, which the arbiter reports and does **not** count as a refutation.
+
+The split, measured over the whole admitted population before wiring:
+
+```
+bare command-position rows      36,916
+  name nothing project-wide     34,158   <- the rows that had no claim and no resolution
+  declared once elsewhere        1,899   <- never reached: the claim is not consulted
+  declared many                    859   <- never reached
+```
+
+**WHAT CHANGED.** A `calls` row emitted from a `command` node, or from an invocation operator with a
+bare name, now carries `externalVia: "command"` — the CHANNEL is the fact, not the spelling. Three
+shapes are refused by construction: a member call's leaf (`methodCall: true`), a static member call
+(handled by `ownerMemberAbsent`), and everything the three existing refusals withhold (a quoted
+literal, a relative script path, a scope prefix the file can declare into). The first run of the
+change proved the last of those is load-bearing: `& .\lib\Helper.psm1` collected
+`externalVia: "command"` through a `??` fallback that could not tell "no shape fired" from "this
+shape is deliberately refused", and `relative-path-psb18` went red.
+
+**MEASURED, same population, A/B by analyzer digest:**
+
+| column | before PSD10 | after |
+|---|---:|---:|
+| edges | 193,297 | **193,297** |
+| resolved | 98,975 | **98,975** |
+| ambiguous(decl) | 17,030 | **17,030** |
+| unresolved | 48,585 | **19,988** |
+| markedExternal | 28,707 | **57,304** |
+| extOK | 25,285 | **53,882** |
+| ext? | 3,362 | **3,362** |
+| **extFAIL** | 60 | **60** |
+
+**+28,597 rows moved out of `unresolved` and into a claim the project verifies, and NOT ONE row moved
+in the other direction**: no resolution lost, no ambiguity created, no refutation added. The clause-1
+gap reads **37,018** (was 66,969 at the start of this campaign).
+
+**PINS.** New fixture `command-position-psd10`: three positives (`git`, `cd`, `whoami`), three twins
+(the same bare spelling declared in-file, a member call's leaf, and PS-B18's withheld relative path),
+plus a `forbidRelationships` row on each twin. Two new mutants, both CAUGHT — one that drops the
+reading and one that extends it to member calls: **70 of 70 caught, 0 survivors**. Suite **26 pass /
+0 fail**, `tsc` 0.

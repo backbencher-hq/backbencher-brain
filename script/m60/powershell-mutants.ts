@@ -1373,6 +1373,37 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/bare-command-unmarked",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD10 REVERT: a bare command-position call stops carrying the externality reading, which is the pre-fix state verbatim — the reading was shape-based (Verb-Noun or a qualifier byte), so `git`, `cd`, `mkdir` and `dotnet` carried nothing at all. MEASURED over the whole admitted population: 34,158 rows named nothing in their own project and 28,597 of them moved to `externalVerified` when the channel reading landed, with extFAIL unchanged at 60 and resolved unchanged at 98,975. Caught by command-position-psd10's three positive rows (`git`, `cd`, `whoami`), which assert both keys.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.externalVia !== "command") return x
+        const { externalTarget: _t, externalVia: _v, isExternalTarget: _i, ...rest } = md
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "powershell/command-reading-on-member-call",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD10 REVERT (the other side): the command reading is published on a MEMBER call's leaf too, so `$list.Add(1)` carries `externalVia: \"command\"` on `Add`. A member name is not a command name — the channel is the whole fact — and the widened rule would claim every .NET member the corpus calls on a receiver whose type the one-file parse cannot see. Caught by command-position-psd10's row 5 (`Add` with `methodCall: true`) and by its forbid row, which is why the fixture pins a member call beside the command rows rather than relying on the positives alone.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.methodCall !== true) return x
+        return { ...x, metadata: { ...md, externalTarget: true, externalVia: "command", isExternalTarget: true } }
+      }),
+    }),
+  },
+  {
     id: "powershell/numeric-index-published",
     language: "powershell",
     defectClass: "fabrication",

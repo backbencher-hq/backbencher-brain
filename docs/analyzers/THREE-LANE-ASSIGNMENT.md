@@ -124,7 +124,14 @@ grammar, not a reason to rule.
   The wall is **65,615**, down from 80,051 when the lane was declared done. The resolved COUNT fell by
   2,377 with PS-B28 and every one of those was a false binding, so the verified-class rate reads
   51.20% and NOT a higher number that counted them.
-- Gates: suite **25 pass / 0 fail**, mutants **68 of 68 caught, 0 survivors**, zero-regex **0/0** PASS.
+- **PSD10 then closed the lane's own "not done" gap**: the externality reading was SHAPE-based, so
+  a bare command name (`git`, `cd`, `mkdir`) carried no claim. A `calls` row from a `command` node
+  (or from an invocation operator with a bare name) now carries `externalVia: "command"`, and the
+  measured split says the widening costs nothing: of 36,916 bare command-position rows, 34,158 name
+  nothing project-wide and 2,758 keep their resolved/ambiguous answer because the arbiter consults a
+  claim only where the name model has nothing. **extOK 25,285 → 53,882, unresolved 48,585 → 19,988,
+  ambiguous/resolved/extFAIL all UNCHANGED.**
+- Gates: suite **26 pass / 0 fail**, mutants **70 of 70 caught, 0 survivors**, zero-regex **0/0** PASS.
 - **Clause 4 is NOT met** (extFAIL 60) and the lane does not claim it is. Next: the `using
   namespace` list (22 rows) and the quoted-literal provenance (2 rows) are lane-side and each needs
   its own measurement; the other 36 wait on the arbiter patch or on a resolver the lane does not own.

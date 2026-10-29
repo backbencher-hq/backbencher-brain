@@ -831,6 +831,58 @@ const dotNetShorthandRootOf = (t: string): string | null => {
 }
 
 /**
+ * PSD10 — IS THIS ROW A COMMAND-POSITION CALL RATHER THAN A MEMBER CALL?
+ *
+ * The externality reading has always been SHAPE-based: a Verb-Noun spelling or a qualifier byte.
+ * That is a correct test for "this name cannot be a local declaration", and it is the reason a bare
+ * `git`, `mkdir` or `dotnet` carried NO reading at all — 34,158 rows over the admitted population,
+ * every one of them naming nothing in its own project, and indistinguishable at the gate from a
+ * broken edge. The missing fact is not the spelling: it is which CHANNEL emitted the row.
+ *
+ *   `calls` from a `command` node            a command name the runtime resolves (a cmdlet, an
+ *                                            alias, a native program, or a function)
+ *   `calls` with `methodCall: true`          `$obj.Method()` — the leaf is a MEMBER name, and a
+ *                                            member read has no command reading
+ *   `calls` with `staticMemberCall: true`    `[T]::M()` — handled by `ownerMemberAbsent` above
+ *   `calls` from an invocation operator      `& name` / `. name` — a command by construction
+ *
+ * THE CLAIM THIS UNLOCKS IS PER-FILE AND THE ARBITER ALREADY MODELS IT. `externalTarget` is
+ * published only where the file declares no symbol of that spelling (`declaredInFile`, the guard
+ * this pass has always had), and the arbiter reads a claim ONLY where the name model has nothing
+ * (`classifyEdge` consults `verifyExternalClaim` inside `decls === 0`). Where the PROJECT declares
+ * the name, the row keeps its declaration answer — resolved, or ambiguous with disposition
+ * `ownFileSilent`, which the arbiter reports and does NOT count as a refutation. MEASURED before
+ * wiring: of the 36,916 bare command-position rows, 34,158 name nothing project-wide and the other
+ * 2,758 (1,899 declared once + 859 many) are rows the claim never reaches. That is why the price of
+ * this widening is ZERO refutations and not the 3,680 the lane's earlier note feared.
+ */
+const isCommandPositionCall = (rel: { type?: unknown; metadata?: Record<string, unknown> }): boolean => {
+  if (rel.type !== ASTEngine.RelationshipType.Calls) return false
+  const md = rel.metadata ?? {}
+  if (md.methodCall === true) return false
+  if (md.staticMemberCall === true) return false
+  return true
+}
+
+/**
+ * THE COMMAND READING, WITH THE THREE EXCLUSIONS `externalReadingOf` ALREADY MAKES.
+ *
+ * `externalReadingOf` returns `null` for two different reasons — "no shape fired" and "this shape is
+ * DELIBERATELY refused" — and a `??` fallback cannot tell them apart. It cannot, and the first run
+ * proved it: `& .\lib\Helper.psm1` (a RELATIVE path the lane refuses on purpose, PS-B18) collected
+ * `externalVia: "command"` and the fixture went red, which is the exclusion doing its job. So the
+ * three refusals are re-stated here in the same order: a quoted literal, a relative script path the
+ * project may own, and a scope prefix this file can declare into. What remains is a spelling with
+ * no shape cue at all, and the CHANNEL is the only fact left that can speak for it.
+ */
+const commandReadingOf = (t: string): "command" | null => {
+  if (t.charCodeAt(0) === 34 /* " */ || t.charCodeAt(0) === 39 /* ' */) return null
+  if (isRelativeScriptPath(t)) return null
+  if (hasFileDefinableScopePrefix(t)) return null
+  return "command"
+}
+
+/**
  * Is this declared type a PowerShell TYPE ACCELERATOR rather than a project
  * type?
  *
@@ -4129,7 +4181,15 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = target.charCodeAt(i)
         if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) { hasLetter = true; break }
       }
-      const via = runtime !== null || !hasLetter ? null : externalReadingOf(target)
+      // PSD10 — THE THIRD READING, AND IT IS ABOUT THE CHANNEL RATHER THAN THE SPELLING.
+      // A command-position `calls` row names a command the runtime resolves: a cmdlet, an alias, a
+      // native program, or a function. The file declares nothing of that spelling (the guard above),
+      // so the reading is exactly the per-file statement this pass exists to make, and the arbiter
+      // consults it only where the project's own name model has nothing. See
+      // `isCommandPositionCall` for the three shapes it refuses and the measured split.
+      const via = runtime !== null || !hasLetter
+        ? null
+        : externalReadingOf(target) ?? (isCommandPositionCall(rel) ? commandReadingOf(target) : null)
       if (via) {
         rel.metadata.externalTarget = true
         rel.metadata.externalVia = via
