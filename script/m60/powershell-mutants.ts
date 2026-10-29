@@ -1474,6 +1474,90 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/type-accelerator-literal-kept",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD12 REVERT: a static call on a TYPE ACCELERATOR keeps the written spelling and publishes `ownerMemberAbsent {owner: <literal>}` again, which is the pre-fix state verbatim. The claim says \"the owner is published and the member is not\" about a type NO admitted file declares, so the arbiter can only answer UNVERIFIED: over the whole population that was 2,256 rows, the largest single class in `ext?`. The transform re-derives the shape from the result (a `staticMemberCall` whose published target has a one-segment owner and carries `staticTypeResolved`), so it reverts the mechanism rather than naming a fixture. Caught by type-accelerator-psd12's two resolved-target expect rows and by its forbid row on the pre-fix spelling.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.staticMemberCall !== true) return x
+        if (typeof md.staticTypeResolved !== "string") return x
+        const t = String(x.target ?? "")
+        const dot = t.lastIndexOf(".")
+        if (dot <= 0) return x
+        const owner = t.slice(0, dot)
+        const { staticTypeResolved: _res, typeAccelerator: _acc, languageNamespace: _ns, ...rest } = md
+        return {
+          ...x,
+          target: `${String(md.typeAccelerator ?? md.staticType)}.${t.slice(dot + 1)}`,
+          metadata: {
+            ...rest,
+            staticType: String(md.typeAccelerator ?? md.staticType),
+            ownerMemberAbsent: { owner: String(md.typeAccelerator ?? md.staticType), member: t.slice(dot + 1) },
+          },
+        }
+      }),
+    }),
+  },
+  {
+    id: "powershell/type-accelerator-shadows-declaration",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PSD12 REVERT (the other side): the accelerator table is consulted BEFORE the file's own classes, so `[Regex]::Pattern()` in a file that declares `class Regex` is republished as `System.Text.RegularExpressions.Regex.Pattern` with a `System` namespace claim. The claim is false — PowerShell's class lookup is case-insensitive and the local class wins — and the direction matters: a resolvable in-file call is laundered into an external claim, which is where a defect hides best. Written off the RESULT (a static call whose owner is a class this file declares), not off a fixture name. Caught by type-accelerator-psd12's `Regex.Pattern` row and by its forbid row on the rewritten target.",
+    transform: (r: any) => {
+      const classes = new Set<string>(
+        (r.symbols ?? [])
+          .filter((s: any) => s.kind === "class" && typeof s.name === "string")
+          .map((s: any) => String(s.name).toLowerCase()),
+      )
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const md = (x.metadata ?? {}) as Record<string, unknown>
+          if (md.staticMemberCall !== true) return x
+          const t = String(x.target ?? "")
+          const dot = t.lastIndexOf(".")
+          if (dot <= 0) return x
+          const owner = t.slice(0, dot)
+          if (!classes.has(owner.toLowerCase())) return x
+          return {
+            ...x,
+            target: `System.Fake.${owner}.${t.slice(dot + 1)}`,
+            metadata: { ...md, languageNamespace: ["System"] },
+          }
+        }),
+      }
+    },
+  },
+  {
+    id: "powershell/dotted-owner-keeps-absent-claim",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD12 REVERT (the dotted half): a static call on a DOTTED literal goes back to `ownerMemberAbsent`, which the arbiter cannot check — the owner (`System.IO.Path`, `IO.File`) is a type no admitted file declares, so the claim is UNVERIFIED forever. MEASURED: the dotted-owner split moved 1,038 population rows from `ext?` to `extOK` with extFAIL unchanged at 60, because a dotted name cannot be a published symbol (PowerShell class names cannot contain `.`; variables, functions and parameters are stored as bare identifiers). Caught by externality-arbiter-psb17's expect row and its forbid row, and independently by type-accelerator-psd12's `IO.Path.GetFullPath` row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (md.staticMemberCall !== true) return x
+        const t = String(x.target ?? "")
+        const dot = t.lastIndexOf(".")
+        if (dot <= 0) return x
+        const owner = t.slice(0, dot)
+        if (owner.indexOf(".") < 0) return x
+        const { externalTarget: _t, externalVia: _v, isExternalTarget: _i, ...rest } = md
+        return {
+          ...x,
+          metadata: { ...rest, ownerMemberAbsent: { owner, member: t.slice(dot + 1) } },
+        }
+      }),
+    }),
+  },
+  {
     id: "powershell/env-root-folded",
     language: "powershell",
     defectClass: "false-claim",

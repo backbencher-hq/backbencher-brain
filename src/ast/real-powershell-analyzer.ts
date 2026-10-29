@@ -806,6 +806,176 @@ const DOTNET_SYSTEM_NAMESPACES = new Set([
 ])
 
 /**
+ * PSD12 — THE TYPE LITERALS THE RUNTIME RESOLVES FOR US: the accelerator table, plus the framework
+ * types PowerShell resolves by the implicit-namespace rule and the loaded-assembly search.
+ *
+ * WHY A TABLE, AND WHY IT HAS TO BE CLOSED. `[string]::IsNullOrWhiteSpace($x)` names nothing this
+ * project can declare: `string` is a TYPE ACCELERATOR the engine rewrites to `System.String`, and the
+ * call is a static member of a framework type. The analyzer knew only the SPELLING, so it published
+ * `ownerMemberAbsent {owner: "string"}` — a claim whose owner no admitted file declares, which the
+ * arbiter can therefore only answer UNVERIFIED (measured: 2,256 such rows over the whole population,
+ * the largest single class in `ext?`). The claim was also FALSE in its own terms: it says "the owner
+ * is published and the member is not", and the owner is not published at all.
+ *
+ * THE FIX IS THE TARGET, NOT THE CLAIM. `[string]::IsNullOrWhiteSpace` IS
+ * `System.String.IsNullOrWhiteSpace`, so the row is published under the name of the thing it names —
+ * the same shape `[System.Math]::Max` already produces (`System.Math.Max`), and the shape PS-B22
+ * settled for in-project types (`DeclaringType.Member`). The root is then `System`, which the
+ * namespace pass certifies from its documented-list rule, and the row verifies instead of hanging.
+ *
+ * EVERY ENTRY IS A DOCUMENTED FACT, and there are exactly two sources:
+ *   1. the TYPE ACCELERATOR table (about_Type_Accelerators): `string` -> System.String,
+ *      `regex` -> System.Text.RegularExpressions.Regex, `wmi` -> System.Management.ManagementObject, ...
+ *   2. for the names that are NOT accelerators, PowerShell's own type resolution — the implicit
+ *      `System.` attempt followed by the loaded-assembly search — over the framework types this
+ *      population actually names: `[Convert]`, `[Math]`, `[Environment]`, `[Tuple]`, `[Enum]`,
+ *      `[Console]`, `[BitConverter]`, `[GC]`, `[WaitHandle]`, `[Version]`, `[Uri]`, and the
+ *      `System.Management.Automation` types (`[powershell]`, `[PSSerializer]`, `[ProxyCommand]`, ...).
+ *      The resolved name is the type's documented namespace-qualified name, so the entry is a
+ *      citation rather than a guess.
+ *
+ * WHAT THE TABLE DELIBERATELY DOES NOT CARRY, each because the resolution is NOT a documented fact:
+ *   `[Path]`, `[File]`, `[Directory]`, `[Process]` — no `System.Path`/`System.File` exists, so the
+ *   name goes to the assembly search and can answer a DIFFERENT type of that name (there is more than
+ *   one `Path` in the framework). Those rows keep their previous treatment.
+ *   `[Parser]`, `[MyCSMU]`, `[NullStringTest]`, `[AnsibleModule]` — project or test types outside the
+ *   admitted population; nothing in the framework documents them.
+ * A literal the table does not carry is left EXACTLY as it was, so the table can only move rows it
+ * can name, and every unlisted spelling is a bounded, measured residual rather than a silent one.
+ */
+const RESOLVED_FRAMEWORK_TYPES = new Map<string, string>([
+  // ── the documented TYPE ACCELERATORS (about_Type_Accelerators) ────────────────────────────────
+  ["adsi", "System.DirectoryServices.DirectoryEntry"],
+  ["adsisearcher", "System.DirectoryServices.DirectorySearcher"],
+  ["alias", "System.Management.Automation.AliasAttribute"],
+  ["allowemptycollection", "System.Management.Automation.AllowEmptyCollectionAttribute"],
+  ["allowemptystring", "System.Management.Automation.AllowEmptyStringAttribute"],
+  ["allow_null", "System.Management.Automation.AllowNullAttribute"],
+  ["array", "System.Array"],
+  ["bigint", "System.Numerics.BigInteger"],
+  ["bool", "System.Boolean"],
+  ["byte", "System.Byte"],
+  ["char", "System.Char"],
+  ["cimclass", "Microsoft.Management.Infrastructure.CimClass"],
+  ["cimconverter", "Microsoft.Management.Infrastructure.CimConverter"],
+  ["ciminstance", "Microsoft.Management.Infrastructure.CimInstance"],
+  ["cimtype", "Microsoft.Management.Infrastructure.CimType"],
+  ["cmdletbinding", "System.Management.Automation.CmdletBindingAttribute"],
+  ["cultureinfo", "System.Globalization.CultureInfo"],
+  ["datetime", "System.DateTime"],
+  ["decimal", "System.Decimal"],
+  ["double", "System.Double"],
+  ["dsclocalconfigurationmanager", "Microsoft.PowerShell.DesiredStateConfiguration.LocalConfigurationManager"],
+  ["dscproperty", "System.Management.Automation.DscPropertyAttribute"],
+  ["dscresource", "System.Management.Automation.DscResourceAttribute"],
+  ["float", "System.Single"],
+  ["guid", "System.Guid"],
+  ["hashtable", "System.Collections.Hashtable"],
+  ["initialsessionstate", "System.Management.Automation.Runspaces.InitialSessionState"],
+  ["int", "System.Int32"],
+  ["int16", "System.Int16"],
+  ["int32", "System.Int32"],
+  ["int64", "System.Int64"],
+  ["ipaddress", "System.Net.IPAddress"],
+  ["ipendpoint", "System.Net.IPEndPoint"],
+  ["long", "System.Int64"],
+  ["mailaddress", "System.Net.Mail.MailAddress"],
+  ["moduleinfo", "System.Management.Automation.PSModuleInfo"],
+  ["nullable", "System.Nullable"],
+  ["object", "System.Object"],
+  ["objectsecurity", "System.Security.AccessControl.ObjectSecurity"],
+  ["ordered", "System.Collections.Specialized.OrderedDictionary"],
+  ["outputtype", "System.Management.Automation.OutputTypeAttribute"],
+  ["parameter", "System.Management.Automation.ParameterAttribute"],
+  ["physicaladdress", "System.Net.NetworkInformation.PhysicalAddress"],
+  ["psobject", "System.Management.Automation.PSObject"],
+  ["pscredential", "System.Management.Automation.PSCredential"],
+  ["pscustomobject", "System.Management.Automation.PSCustomObject"],
+  ["pslistmodifier", "System.Management.Automation.PSListModifier"],
+  ["psprimitivedictionary", "System.Management.Automation.PSPrimitiveDictionary"],
+  ["pstypenameattribute", "System.Management.Automation.PSTypeNameAttribute"],
+  ["psvariable", "System.Management.Automation.PSVariable"],
+  ["ref", "System.Management.Automation.PSReference"],
+  ["regex", "System.Text.RegularExpressions.Regex"],
+  ["runspace", "System.Management.Automation.Runspaces.Runspace"],
+  ["runspacefactory", "System.Management.Automation.Runspaces.RunspaceFactory"],
+  ["sbyte", "System.SByte"],
+  ["scriptblock", "System.Management.Automation.ScriptBlock"],
+  ["securestring", "System.Security.SecureString"],
+  ["semver", "System.Management.Automation.SemanticVersion"],
+  ["short", "System.Int16"],
+  ["single", "System.Single"],
+  ["string", "System.String"],
+  ["switch", "System.Management.Automation.SwitchParameter"],
+  ["timespan", "System.TimeSpan"],
+  ["type", "System.Type"],
+  ["uint", "System.UInt32"],
+  ["uint16", "System.UInt16"],
+  ["uint32", "System.UInt32"],
+  ["uint64", "System.UInt64"],
+  ["ulong", "System.UInt64"],
+  ["uri", "System.Uri"],
+  ["ushort", "System.UInt16"],
+  ["validatecount", "System.Management.Automation.ValidateCountAttribute"],
+  ["validatedrive", "System.Management.Automation.ValidateDriveAttribute"],
+  ["validatelength", "System.Management.Automation.ValidateLengthAttribute"],
+  ["validatenotnull", "System.Management.Automation.ValidateNotNullAttribute"],
+  ["validatenotnullorempty", "System.Management.Automation.ValidateNotNullOrEmptyAttribute"],
+  ["validatepattern", "System.Management.Automation.ValidatePatternAttribute"],
+  ["validaterange", "System.Management.Automation.ValidateRangeAttribute"],
+  ["validatescript", "System.Management.Automation.ValidateScriptAttribute"],
+  ["validateset", "System.Management.Automation.ValidateSetAttribute"],
+  ["version", "System.Version"],
+  ["void", "System.Void"],
+  ["wildcardpattern", "System.Management.Automation.WildcardPattern"],
+  ["wmi", "System.Management.ManagementObject"],
+  ["wmiclass", "System.Management.ManagementClass"],
+  ["wmisearcher", "System.Management.ManagementObjectSearcher"],
+  ["xml", "System.Xml.XmlDocument"],
+  // ── NOT accelerators: resolved by the implicit-`System.` attempt, or by the loaded-assembly
+  //    search, to the framework type of that name. Cited per line, and only where the resolution is
+  //    a documented fact rather than a coin toss (see the block comment's "deliberately not" list).
+  ["bitconverter", "System.BitConverter"],                    // System.BitConverter
+  ["console", "System.Console"],                               // System.Console (implicit `System.`)
+  ["convert", "System.Convert"],                               // System.Convert (implicit `System.`)
+  ["datetimeoffset", "System.DateTimeOffset"],                  // System.DateTimeOffset
+  ["enum", "System.Enum"],                                     // System.Enum (implicit `System.`)
+  ["environment", "System.Environment"],                       // System.Environment (implicit `System.`)
+  ["experimentalfeature", "System.Management.Automation.ExperimentalFeature"],
+  ["gc", "System.GC"],                                        // System.GC (implicit `System.`)
+  ["linebreakpoint", "System.Management.Automation.LineBreakpoint"],
+  ["math", "System.Math"],                                     // System.Math (implicit `System.`)
+  ["powershell", "System.Management.Automation.PowerShell"],   // assembly search: the PS host object
+  ["proxycommand", "System.Management.Automation.ProxyCommand"],
+  ["psserializer", "System.Management.Automation.PSSerializer"],
+  ["securityprotocoltype", "System.Net.SecurityProtocolType"],
+  ["servicepointmanager", "System.Net.ServicePointManager"],
+  ["tuple", "System.Tuple"],                                   // System.Tuple (implicit `System.`)
+  ["waithandle", "System.Threading.WaitHandle"],
+])
+
+/**
+ * THE MEMBER SET OF THE CLASS A TYPE LITERAL NAMES, matched the way PowerShell matches it: without
+ * regard to case. Returns `undefined` when this file declares no such class.
+ *
+ * The exact-key lookup this replaces was measured wrong on its own terms: `[counter]::Add()` with
+ * `class Counter` in the same file missed, because the literal and the declaration disagree on case
+ * — and PowerShell's class lookup is case-insensitive, so the MISS was the analyzer's, not the
+ * language's. Two consequences, both real: the call lost its in-file member check (PS-B22's
+ * `ownerMemberAbsent` path), and PSD12's accelerator table could shadow a class this file declares.
+ */
+const classMembersOf = (
+  map: Map<string, Set<MemberFact>>,
+  literal: string,
+): { name: string; members: Set<MemberFact> } | undefined => {
+  const exact = map.get(literal)
+  if (exact !== undefined) return { name: literal, members: exact }
+  const folded = literal.toLowerCase()
+  for (const [name, members] of map) if (name.toLowerCase() === folded) return { name, members }
+  return undefined
+}
+
+/**
  * PSD11 — IS THIS TARGET AN ENVIRONMENT-PROVIDER READ (`env:NAME`)?
  *
  * `$env:PSModulePath` names a PROCESS environment variable. PowerShell's Environment PROVIDER is the
@@ -4120,11 +4290,25 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // whole population (PS-B22).
       const staticMeta = (rel.metadata ?? {}) as any
       if (staticMeta.staticMemberCall === true && typeof staticMeta.staticType === "string") {
-        const ownerMembers = classMembers.get(staticMeta.staticType)
+        // CASE-FOLDED, because PowerShell identifiers are: `[counter]::Add()` calls the class
+        // declared as `class Counter`, and an EXACT-key lookup missed it — the row was then
+        // published under the accelerator/generic reading for a type this file declares. Found
+        // while writing PSD12's negative twin, where `class Regex` must shadow `[regex]`.
+        const declaredOwner = classMembersOf(classMembers, staticMeta.staticType)
         const memberLeafRaw = target.slice(target.lastIndexOf(".") + 1)
         const memberLeaf = memberLeafRaw.toLowerCase()
-        if (ownerMembers) {
-          if ([...ownerMembers].some((m) => m.name.toLowerCase() === memberLeaf)) continue
+        if (declaredOwner) {
+          // THE DECLARED SPELLING, not the literal's. `[foo]::Bar2()` calls `class Foo`'s method —
+          // PowerShell identifiers are case-insensitive — and the store's qualified name is built
+          // from the DECLARATION (`Foo.Bar2`), so a target spelled `foo.Bar2` cannot bind to it.
+          // MEASURED: one population row (`Scripting.Classes.BasicParsing.Tests.ps1:127`) is exactly
+          // this shape and read `unresolved` once the case-folded lookup recognised the class;
+          // publishing the declaration's spelling is what makes that recognition pay.
+          const declaredMember = [...declaredOwner.members].find((m) => m.name.toLowerCase() === memberLeaf)
+          if (declaredMember) {
+            rel.target = `${declaredOwner.name}.${declaredMember.name}`
+            continue
+          }
           // THE OWNER IS DECLARED HERE AND THE MEMBER IS NOT. The generic externality
           // reading below would ask the arbiter about `DeclaringType`, find it, and
           // REFUTE the claim — a false statement about the corpus produced by a true
@@ -4134,26 +4318,49 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the member really is declared. Measured: 35 of the 254 same-file static
           // call sites name a member their class does not declare (an inherited .NET
           // member such as `GetCustomAttributes`), and every one of them is this shape.
+          rel.metadata.ownerMemberAbsent = { owner: declaredOwner.name, member: memberLeafRaw }
+          continue
+        }
+        // PSD12 — THE LITERAL IS A FRAMEWORK TYPE THE RUNTIME RESOLVES FOR US. Publish the target
+        // under the type's documented name so the row names the thing it names, exactly as
+        // `[System.Math]::Max` already does; the namespace pass below then certifies the root
+        // (`System`), which turns a claim the arbiter could only refuse into one it verifies. The
+        // in-file class check above wins over the table deliberately: a class of that spelling
+        // declared HERE is what the source actually calls, and the accelerator must not shadow it.
+        const resolvedType = RESOLVED_FRAMEWORK_TYPES.get(staticMeta.staticType.toLowerCase())
+        if (resolvedType !== undefined) {
+          rel.target = `${resolvedType}.${memberLeafRaw}`
+          const resolvedMeta = (rel.metadata ?? (rel.metadata = {})) as Record<string, unknown>
+          resolvedMeta.staticTypeResolved = resolvedType
+          resolvedMeta.typeAccelerator = staticMeta.staticType
+          continue
+        }
+        // PSD12 (second half) — A DOTTED LITERAL IS OUTSIDE THE POPULATION BY CONSTRUCTION.
+        // `IO.Path.Combine` names `System.IO.Path` through PS-B27's implicit-`System.` rule, and no
+        // published symbol can be keyed by a dotted name: a PowerShell class name cannot contain a
+        // dot, and variables, functions and parameters are stored as bare identifiers. So the generic
+        // externality reading below asks a question the project can ANSWER, and the arbiter verifies
+        // it by finding nothing. MEASURED: +1,038 rows, extFAIL unchanged at 60.
+        if (staticMeta.staticType.indexOf(".") > 0) {
+          // fall through to the generic externality reading
+        } else {
+          // THE BARE OWNER THE TABLE DOES NOT CARRY — AND THE GENERIC EXTERNAL CLAIM IS STILL THE
+          // WRONG ONE FOR IT. `externalReadingOf(target)` + `verifyExternalClaim` ask about the
+          // target's text owner, and for a one-segment BCL type that owner is the type name alone
+          // (`Path.Combine` -> `Path`, `Regex.Match` -> `Regex`). A project that declares ANY symbol
+          // with that name — a variable `$path`, a function `Path`, a class — REFUTES the claim, and
+          // the refutation is false: the project symbol is not the .NET type the call names.
+          // MEASURED on the whole population, after the dot spelling was introduced: `calls`
+          // extRefuted 21 -> 559, every sampled row a static BCL member on a one-segment type
+          // (`array.Reverse`, `Regex.Match`, `Path.Combine`, `File.Create`, ...). The type-aware
+          // claim is the fleet's `ownerMemberAbsent`: unknown owner => UNVERIFIABLE (never refuted),
+          // a project type with the member ABSENT => verified, and the member DECLARED => refuted.
+          // PSD12 shrank this branch to the literals whose resolution is NOT a documented fact
+          // (`Path`, `File`, `Directory`, `Process`, project and test types) — a named, counted
+          // residual rather than the whole static-call population it used to be.
           rel.metadata.ownerMemberAbsent = { owner: staticMeta.staticType, member: memberLeafRaw }
           continue
         }
-        // THE OWNER IS NOT DECLARED IN THIS FILE — AND THE GENERIC EXTERNAL CLAIM IS
-        // STILL THE WRONG ONE. `externalReadingOf(target)` + `verifyExternalClaim` ask
-        // about the target's text owner, and for a one-segment BCL type that owner is
-        // the type name alone (`Path.Combine` -> `Path`, `Regex.Match` -> `Regex`). A
-        // project that declares ANY symbol with that name — a variable `$path`, a
-        // function `Path`, a class — REFUTES the claim, and the refutation is false:
-        // the project symbol is not the .NET type the call names. MEASURED on the
-        // whole population, after the dot spelling was introduced: `calls` extRefuted
-        // 21 -> 559, every sampled row a static BCL member on a one-segment type
-        // (`array.Reverse`, `Regex.Match`, `Path.Combine`, `File.Create`, ...). The
-        // type-aware claim is the fleet's `ownerMemberAbsent`: unknown owner =>
-        // UNVERIFIABLE (never refuted), a project type with the member ABSENT =>
-        // verified, and the member DECLARED => refuted (which would mean the row
-        // should have resolved instead — and it does, before this pass). No static
-        // call can now produce a generic owner claim.
-        rel.metadata.ownerMemberAbsent = { owner: staticMeta.staticType, member: memberLeafRaw }
-        continue
       }
       const type = rel.type
       if (declaredInFile(target)) continue

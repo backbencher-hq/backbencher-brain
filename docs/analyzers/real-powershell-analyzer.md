@@ -2274,3 +2274,69 @@ one drops the list (claim-loss) and one folds it (false-claim). Suite **27 pass 
 type at all (`string.IsNullOrWhiteSpace`, `IO.Path.Combine`, `powershell.Create`,
 `Ansible.Basic.AnsibleModule.Create`), which the arbiter can only answer UNVERIFIED. That class is the
 next target, not this one's.
+
+## PSD12 (append-only record, 2026-10-28) — a static call names the TYPE it reaches, and 2,172 claims become checkable
+
+**THE LARGEST CLAIM DEBT IN THE LANE WAS A TARGET SPELLING, NOT A MISSING CLAIM.** PSD11's table ends
+with `ext? 2,507`; **2,256 of those were `ownerMemberAbsent`** — a claim that says *"the owner is
+published and the member is not"*, emitted on static member calls whose owner the project does not
+publish at all (`string.IsNullOrWhiteSpace`, `IO.Path.Combine`, `powershell.Create`,
+`Ansible.Basic.AnsibleModule.Create`). The arbiter can only answer UNVERIFIED, and it is right to: the
+claim is false in its own terms.
+
+**THE ROWS NAMED THE WRITTEN SPELLING INSTEAD OF THE TYPE.** `[string]::IsNullOrWhiteSpace($x)` IS
+`System.String.IsNullOrWhiteSpace`; `[guid]::NewGuid()` is `System.Guid.NewGuid`. Three mechanisms,
+each measured on its own, fix the name:
+
+| mechanism | rows | what it does |
+|---|---:|---|
+| **type-accelerator table** | 1,134 | a documented alias (`string`, `guid`, `regex`, `wmi`, …) or a framework type the resolver reaches (`Convert`, `Math`, `Environment`, `Tuple`, `[powershell]`, …) is published under its **documented namespace-qualified name**, so the existing namespace claim certifies the root (`System`) |
+| **dotted-owner split** | 1,038 | `IO.Path.Combine` keeps its spelling and takes the GENERIC externality claim: no published symbol can be keyed by a dotted name (class names cannot contain `.`; variables/functions/parameters are stored bare), so the question is answerable and the project answers it by finding nothing |
+| **declared-spelling rewrite** | 6 resolved | `[counter]::Zero()` calls `class Counter`'s method — PowerShell identifiers are case-insensitive — so the target is built from the DECLARATION (`Counter.Zero`), which is the store's qualified name |
+
+**THE TABLES ARE CLOSED AND CITED.** `RESOLVED_FRAMEWORK_TYPES` carries the documented type-accelerator
+list plus the implicit-`System.` / loaded-assembly types this population names, each mapped to a type
+whose namespace-qualified name the .NET documentation states. A literal the table does not carry is left
+EXACTLY as it was — `[Path]`, `[File]`, `[Directory]`, `[Process]` have no documented resolution
+(`System.Path` does not exist and the assembly search can answer more than one type of that name), and
+project/test types (`[MyCSMU]`, `[NullStringTest]`) are not framework names at all. 83 rows remain in
+that residual, named below.
+
+**MEASURED, same population (1,181 files / 30 repos), same arbiter, A/B by analyzer digest:**
+
+| column | PSD11 | PSD12 |
+|---|---:|---:|
+| edges | 193,297 | **193,297** |
+| resolved | 98,975 | **98,981** |
+| ambiguous(decl) | 17,030 | **17,030** |
+| unresolved | 19,988 | **19,983** |
+| extOK | 54,737 | **56,909** |
+| **ext?** | **2,507** | **334** |
+| **extFAIL** | 60 | **60** |
+
+**+2,172 rows entered the verified column (1,134 + 1,038), SIX rows resolved, ONE row left `ext?` for a
+resolution, and NOT ONE refutation was added.** The six resolutions come from the declared-spelling
+rewrite: five from `unresolved` and one out of the claim column (`[foo]::Bar2()` in powershell's own
+`Scripting.Classes.BasicParsing.Tests.ps1:127`). The clause-1 sum falls **39,585 → 37,407**.
+
+**A DEFECT FOUND WHILE WRITING THE NEGATIVE TWIN.** The in-file class check was an EXACT key read
+(`classMembers.get("Regex")`), so `[counter]::Add()` missed `class Counter` — PowerShell's class lookup is
+case-insensitive, so the MISS was the analyzer's. It mattered twice: the row lost its in-file member
+check, and PSD12's table could have shadowed a class the file declares. The lookup is folded now, and the
+fixture's row 3 (`class Regex` vs `[Regex]::Pattern()`) is the pin.
+
+**PINS.** New fixture `type-accelerator-psd12`: two resolved-target positives, the shadow twin, the
+undocumented-resolution twin (`[Path]`), the dotted twin (`[IO.Path]`), and the declared-spelling twin
+(`[counter]::Zero()`), plus four forbid rows (the pre-fix spelling, an invented `System.Path.Combine`,
+the accelerator shadowing a declared class, and the two claim shapes on one row). `externality-arbiter-psb17`
+had its BCL static-call row UPDATED — the PS-B22 expectation it carried (`ownerMemberAbsent` on
+`System.IO.Path.Combine`) was the unverifiable treatment, and the fixture now pins the verification
+instead, with a forbid row so a revert is caught. Three new mutants, all CAUGHT: literal-kept,
+accelerator-shadows-declaration, dotted-owner-keeps-absent-claim. Lane battery **75 of 75 caught**,
+suite **28 pass / 0 fail**, `tsc` 0, zero-regex **0 operations / 0 literals**, spec-shape PASS.
+
+**WHAT IS LEFT IN `ext?`, NAMED EXACTLY.** 334 rows = **251 `owner` + 83 `ownerMemberAbsent`**.
+The 251 are colon/backslash targets the arbiter refuses to look up (`it:skip` 67,
+`Microsoft.PowerShell.Management\Join-Path` 23, `TestDrive:\…` 8, `stage3-release\bin\zig.exe` 6) — a
+module-qualified COMMAND name and a Pester DSL key are not paths, which is a real class for the next wave.
+The 83 are the static calls whose literal resolution is not documented (`Path.Combine` 16 and 67 more).
