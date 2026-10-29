@@ -500,6 +500,37 @@ const hasScopePrefix = (t: string, prefixes: string[]): boolean => {
   return false
 }
 const hasFileDefinableScopePrefix = (t: string): boolean => hasScopePrefix(t, FILE_DEFINABLE_SCOPE_PREFIXES)
+
+/**
+ * PSD18 — A DEFINABLE SCOPE PREFIX IS A SCOPE SELECTOR, NOT PART OF THE NAME.
+ *
+ * `$script:testWorkspace` is the variable `testWorkspace` in the SCRIPT scope; `$global:x`, `$local:x`,
+ * `$private:x` and `$function:x` are the same shape. The lane published BOTH the declaration and the
+ * read under the qualified spelling, and no symbol can be keyed `script:x` (`pushSymbol` refuses a
+ * qualified name on purpose, PS8), so the file's own `$script:testWorkspace = …` declared NOTHING and
+ * 749 whole-population reads named a spelling no declaration has.
+ *
+ * THE SCOPE IS KEPT AS THE OWNER, which is what makes the collapse safe: a `script:`/`global:` read
+ * belongs to the FILE's scope, `local:`/`private:`/`function:` to the enclosing frame, so a
+ * script-scope read and a function's own `$x` can never bind to each other.
+ */
+const definableScopeOf = (name: string): { scope: string; bare: string } | null => {
+  for (const p of FILE_DEFINABLE_SCOPE_PREFIXES) {
+    if (name.length <= p.length + 1) continue
+    if (name.charCodeAt(p.length) !== 58 /* : */) continue
+    let eq = true
+    for (let i = 0; i < p.length; i++) {
+      let c = name.charCodeAt(i)
+      if (c >= 65 && c <= 90) c += 32
+      if (c !== p.charCodeAt(i)) { eq = false; break }
+    }
+    if (!eq) continue
+    const bare = name.slice(p.length + 1)
+    if (bare.length === 0) return null
+    return { scope: p, bare }
+  }
+  return null
+}
 const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
 /**
  * WHICH EXTERNALITY READING FIRES ON THIS TARGET, or null for neither.
@@ -1851,6 +1882,17 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       return QUALIFIED_PREFIXES.some((p) => lower.startsWith(p))
     }
 
+    /**
+     * PSD18 — IS THIS VARIABLE NAME DECLARABLE? Bare, or carrying a scope prefix the FILE can define.
+     *
+     * PS8's rule is right for `$env:` / `$variable:` / `$using:` — the runtime owns those. It is wrong
+     * for `script:`/`global:`/`local:`/`private:`/`function:`, which select scopes a file writes into.
+     * Four declaration sites tested `isQualified` and skipped the whole name, so `$script:cfg = 1`
+     * declared NOTHING and the file's own `$script:cfg` read had no symbol to bind.
+     */
+    const isDeclarableVariable = (text: string): boolean =>
+      !isQualified(text) || definableScopeOf(stripDollar(text.trim())) !== null
+
     /** PS8 — case-insensitive membership, per the AUTOMATIC_VARIABLES note. */
     const isAutomatic = (name: string): boolean => AUTOMATIC_VARIABLES.has(name.toLowerCase())
 
@@ -1863,11 +1905,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       line: number,
       meta: Record<string, unknown> = {},
       parameters?: ASTEngine.Parameter[],
+      /** PSD18 — the owner a DEFINABLE scope selects (`script:`/`global:` = the FILE), not the frame. */
+      ownerOverride?: string,
     ): ASTEngine.UniversalSymbol | null => {
       const raw = name.trim()
       if (raw === "") return null
       if (isQualified(raw)) return null
-      const owner = top().owner
+      const owner = ownerOverride ?? top().owner
       const clean = stripDollar(raw)
       if (clean === "") return null
       // THE AUTOMATIC-VARIABLE GUARD IS A VARIABLE RULE, NOT A NAME RULE.
@@ -1966,11 +2010,20 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     ): void => {
       const name = stripDollar(rawName)
       if (name === "") return
-      if (kind === ASTEngine.SymbolKind.Variable && (isAutomatic(name) || isQualified(rawName))) return
-      const key = `${top().owner}\u0000${name.toLowerCase()}\u0000${kind}`
+      // PSD18 — a definable scope prefix declares the BARE name at the scope it selects.
+      const scoped = kind === ASTEngine.SymbolKind.Variable ? definableScopeOf(name) : null
+      const bare = scoped === null ? name : scoped.bare
+      const scopeOwner = scoped !== null && (scoped.scope === "script" || scoped.scope === "global")
+        ? fileName
+        : undefined
+      if (kind === ASTEngine.SymbolKind.Variable && isAutomatic(bare)) return
+      if (kind === ASTEngine.SymbolKind.Variable && scoped === null && isQualified(rawName)) return
+      const key = `${scopeOwner ?? top().owner}\u0000${bare.toLowerCase()}\u0000${kind}`
       if (symbolMap.has(key)) return
-      pushSymbol(rawName, kind, node, line, meta, parameters)
-      addContains(name, containsLine, kind)
+      pushSymbol(bare, kind, node, line,
+        scoped === null ? meta : { ...meta, scopeQualifier: scoped.scope },
+        parameters, scopeOwner)
+      addContains(bare, containsLine, kind)
     }
 
     /**
@@ -2220,6 +2273,12 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!name || isAutomatic(name)) continue
           const isScoped = isScopedName
           if (isScoped && name.indexOf(":") < 0) continue
+          // PSD18 — a DEFINABLE scope prefix selects a scope; the target is the BARE name at THAT owner.
+          const scopedRead = isScoped ? definableScopeOf(name) : null
+          const scopedOwner = scopedRead === null
+            ? null
+            : (scopedRead.scope === "script" || scopedRead.scope === "global" ? fileName : top().owner)
+          const publishedName = scopedRead === null ? name : `${scopedOwner}.${scopedRead.bare}`
           // The LINE must skip the leading break too, not just the name. A
           // here-string interpolation's node starts at the END of the previous line
           // (the grammar reports `variable [6,8]-[7,8]` for a `$message` written on
@@ -2233,11 +2292,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 0; i < lead; i++) {
             if (n.text.charCodeAt(i) === 10 /* \n */) skippedLines++
           }
-          addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9,
+          addRel(top().scope, publishedName, ASTEngine.RelationshipType.Uses, 0.9,
             n.startPosition.row + 1 + skippedLines, {
             powershellSpecific: true, isVariableReference: true,
             ...(marker ? { [marker]: true } : {}),
-            ...(isScoped ? { isScopedEnvironmentRead: true } : {}),
+            ...(scopedRead !== null
+              ? { isScopedVariableRead: true, scopeQualifier: scopedRead.scope }
+              : isScoped ? { isScopedEnvironmentRead: true } : {}),
             // A read written in the BRACED spelling. The marker's job is to make the
             // normalization independently revertible: once `${a}` and `$a` are the
             // same string in the result, nothing distinguishes them, so a mutant for
@@ -3333,7 +3394,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
               // `declareSymbol` stays this branch's job only.
             } else {
               const varNode = findDescendantVariable(left)
-              if (varNode && !isQualified(varNode.text)) {
+              if (varNode && isDeclarableVariable(varNode.text)) {
                 const line = varNode.startPosition.row + 1
                 // PS8 — a suppressed name (an automatic variable) is not a
                 // declaration, so it must not become a contained child either.
@@ -3410,7 +3471,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // --------------------------------------------------------- foreach
         case "foreach_statement": {
           const varNode = findFirstChild(node, "variable")
-          if (varNode && !isQualified(varNode.text)) {
+          if (varNode && isDeclarableVariable(varNode.text)) {
             const line = varNode.startPosition.row + 1
             declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, { isLoopVariable: true })
           }
@@ -3659,7 +3720,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             break
           }
-          if (isQualified(varNode.text)) break
+          if (!isDeclarableVariable(varNode.text)) break
           const line = varNode.startPosition.row + 1
           const declared = typeSpecText(node)
           declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, {
@@ -3694,7 +3755,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // blessed. Removal is behaviour-preserving: the branch never matched.
           const typeLit = findFirstChild(node, "type_literal")
           const varNode = findFirstChild(node, "variable")
-          if (!typeLit || !varNode || isQualified(varNode.text)) break
+          if (!typeLit || !varNode || !isDeclarableVariable(varNode.text)) break
           const line = varNode.startPosition.row + 1
           const declared = typeSpecText(node)
           declareSymbol(varNode.text, ASTEngine.SymbolKind.Variable, varNode, line, {
@@ -4647,8 +4708,33 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // names another file declares, which is the dot-source / module-export case and is the
     // population cause C is about. Char-code scans only; zero regex.
     const declaredFolded = new Set<string>()
-    for (const s of symbols) declaredFolded.add(s.name.toLowerCase())
-    const declaredInFile = (name: string): boolean => declaredFolded.has(name.toLowerCase())
+    // PSD18 — the QUALIFIED names too. A scope-qualified target (`<file>.cfg`, `Counter.Add`,
+    // `Get-Targets.index`) names a symbol by its `scope.name` key, not by a bare name; without this a
+    // row that RESOLVES was still handed to the claim pass as an external dependency.
+    const declaredQualified = new Set<string>()
+    for (const s of symbols) {
+      declaredFolded.add(s.name.toLowerCase())
+      const sc = (s as { scope?: unknown }).scope
+      if (typeof sc === "string" && sc.length > 0) declaredQualified.add(`${sc}.${s.name}`.toLowerCase())
+    }
+    const declaredInFile = (name: string): boolean =>
+      declaredFolded.has(name.toLowerCase()) || declaredQualified.has(name.toLowerCase())
+    /**
+     * PSD18 — A TARGET WHOSE OWNER IS DECLARED HERE IS A LOCAL CHILD, NOT AN EXTERNAL DEPENDENCY.
+     *
+     * This is the guard the FIRST attempt at the scope model lacked, and it cost 51 refutations: a read
+     * retargeted to `<file>.name` was handed to the arbiter's OWNER question, the owner is the FILE
+     * symbol (`build-utils.ps1`, `TypeInference.Tests.ps1` …), and a file symbol is always declared — so
+     * every such claim said "the project does not declare its own file" and was refuted. The same shape
+     * applies to a member of a class this file declares (`Counter.Add` without a matching member), which
+     * the static-call path already answers with `ownerMemberAbsent`; a second, generic claim must not
+     * be asked about it.
+     */
+    const ownedByThisFile = (name: string): boolean => {
+      const dot = name.lastIndexOf(".")
+      if (dot <= 0) return false
+      return declaredInFile(name.slice(0, dot))
+    }
 
     // ---------------------------------------------------- variable reads, cause D
     //
@@ -4877,6 +4963,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // visible. The analyzer CANNOT answer the question (it does not know the project root, and the
       // arbiter's candidate expansion answers it by BASENAME), so it must not assert either polarity. The
       // row keeps its own facts; the class is named in the lane's wall table instead.
+      // PSD18 — see `ownedByThisFile`: no reading is published about a local declaration's own child.
+      if (ownedByThisFile(target)) {
+        if (type === ASTEngine.RelationshipType.Calls || type === ASTEngine.RelationshipType.Uses) {
+          rel.metadata.noDeclarationInFile = true
+        }
+        continue
+      }
       const runtime = runtimeVariableTarget(target)
       // A TARGET WITH NO LETTER IN IT IS NOT A NAME, SO NO NAME-CLAIM MAY BE PUBLISHED ON IT.
       //

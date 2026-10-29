@@ -1747,6 +1747,26 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "powershell/file-owned-target-claimed",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD18 REVERT (the guard): a target whose OWNER is a symbol this file declares takes the qualified externality reading again — the exact defect the first cut of the scope model shipped, and it cost **51 refutations**: a read retargeted to `<file>.name` was handed to the arbiter's OWNER question, the owner is the FILE symbol (`build-utils.ps1`, `TypeInference.Tests.ps1` …), and a file symbol is always declared, so every claim said 'the project does not declare its own file'. The transform re-derives the shape from the RESULT (a target with a dotted owner that equals the file symbol's name), not from a fixture name. Caught by variable-reads-psa4's scoped-read row, which pins `meta.isExternalTarget: null` on `<file>.cfg`.",
+    transform: (r: any) => {
+      const file = (r.symbols ?? []).find((s: any) => s.kind === "module")?.name ?? ""
+      if (!file) return r
+      const lower = String(file).toLowerCase()
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const t = String(x.target ?? "")
+          if (!t.toLowerCase().startsWith(lower + ".")) return x
+          return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "qualified", isExternalTarget: true } }
+        }),
+      }
+    },
+  },
+  {
     id: "powershell/compiled-type-call-external",
     language: "powershell",
     defectClass: "false-claim",

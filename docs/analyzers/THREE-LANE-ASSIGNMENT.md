@@ -147,8 +147,15 @@ grammar, not a reason to rule.
   **NOT taken**, and the arbiter's `typeNames` patch is now priced at **+62 resolved / 0 refuted** on
   this lane. What IS shipped: a static call through a compiled type (35 rows) and a type mention of one
   carry no externality reading.
-- **Whole-population state (2026-10-28, after PSD15):** 193,297 edges · resolved **98,981** · ambiguous
-  **17,030** · unresolved **20,330** · extOK **56,822** · ext? **134** · **extFAIL 0**. Resolved and
+- **PSD18 then gave the 749 scope-qualified reads their scope model** — a definable prefix is a scope
+  SELECTOR (`script:`/`global:` = the file's scope, `local:`/`private:`/`function:` the frame), the
+  prefix never part of the name — **after** adding the guard the first cut lacked: a target whose OWNER
+  is a symbol this file declares takes no externality reading (without it, every `<file>.x` retarget was
+  refuted, 51 rows, because a file symbol is always declared). Measured: **resolved 98,981 → 99,896,
+  unresolved 20,330 → 19,585, ambiguous 17,030 → 17,198, extOK 56,822 → 56,803, extFAIL 0, wall
+  37,360 → 36,783.**
+- **Whole-population state (2026-10-28, after PSD18b):** 193,616 edges · resolved **99,896** ·
+  ambiguous **17,198** · unresolved **19,585** · extOK **56,803** · ext? **134** · **extFAIL 0**. Resolved and
   ambiguous are byte-identical to PSD13 — every movement is inside the claim columns (A/B by analyzer
   digest, joined on the gate's own `(label,target,file:line)` key: 22 keys changed target, 0 appeared,
   0 disappeared). The price is stated, not hidden: **220 verified claims withdrawn** (123 runtime

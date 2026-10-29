@@ -2632,3 +2632,47 @@ lane's clause 4 would go 60 → 0 → 51, which is not a trade this bar allows.
 
 Reverted byte for byte to the PSD17 state (193,297 edges · 98,981 resolved · 17,030 ambiguous ·
 20,330 unresolved · 56,822 verified · ext? 134 · **refuted 0**); suite 30/0 on the restored tree.
+
+## PSD18b (append-only record, 2026-10-28) — the guard the scope model needed, and the model SHIPPED
+
+The PSD18 record above ends with the model REVERTED and the reason named: every row retargeted to
+`<file>.name` was handed to the arbiter's OWNER question, the owner is the FILE symbol, and a file
+symbol is always declared — 51 refutations. That reason was a defect in the CLAIM PASS, and this
+round fixed it and re-took the model.
+
+**The guard:** a target whose OWNER is a symbol THIS FILE declares is a local child, not an external
+dependency, so the claim pass publishes no reading on it (and keeps `noDeclarationInFile` for
+`calls`/`uses`). That is what the arbiter's own division of labour implies: it asks the owner question
+of a name the edge does NOT name, and for `<file>.x` the owner is the emitting file itself. The same
+guard covers a member of a class this file declares (`Counter.Add` with no matching member), which
+the static-call path already answers with `ownerMemberAbsent`.
+
+**The model, re-measured with the guard — SHIPPED.**
+
+| column | PSD17 | PSD18b |
+|---|---:|---:|
+| edges | 193,297 | **193,616** (+319) |
+| resolved | 98,981 | **99,896** (+915) |
+| ambiguous | 17,030 | **17,198** (+168) |
+| unresolved | 20,330 | **19,585** (−745) |
+| extOK | 56,822 | **56,803** (−19) |
+| ext? | 134 | **134** |
+| **extFAIL** | **0** | **0** |
+
+**Wall 37,360 → 36,783 (−577), and `resolved + extOK` 155,803 → 156,699 (+896).** The scope prefix
+is now a scope SELECTOR: `$script:x`/`$global:x` declare and target the FILE's scope, `$local:`/
+`$private:`/`$function:` the enclosing frame, and the prefix is never part of the name. `$env:` /
+`$variable:` / `$using:` are untouched — the runtime owns those and they stay external (pinned by
+`variable-reads-psa4`'s `env:TEMP` row and by `suppression-and-params-psb7`'s `PATH` forbid).
+
+**The 19 lost verified claims are the honest price**: a bare read that used to verify as external now
+has a project declaration of the same spelling to answer to (the file's own `$script:` variable), so
+the claim is no longer consulted — the row resolves instead. +915 resolved for −19 claims is the right
+direction for clause 1.
+
+**PINS.** `variable-reads-psa4` — the scoped read targets `<file>.cfg`, carries
+`isScopedVariableRead`/`scopeQualifier`, resolves, and pins `meta.isExternalTarget: null` (the guard);
+`cfg` moved from `forbidSymbols` to `expectSymbols`. `suppression-and-params-psb7` — `Shared`/`Upper`
+are declarations now, with the prefixed SPELLINGS still forbidden (`contains Script:Upper`), so the
+prefix can never return as a symbol name. New mutant `file-owned-target-claimed`, CAUGHT by two
+fixtures. Lane battery **88 of 88**, suite **30 pass / 0 fail**, zero-regex **0/0**, `tsc` 0.
