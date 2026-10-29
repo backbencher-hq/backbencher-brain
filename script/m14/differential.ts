@@ -863,6 +863,14 @@ export const SECOND_CORPUS: Record<string, string> = {
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
+/**
+ * HOW MANY DIFF SAMPLES a lane RETAINS for triage. The cap exists so a catastrophic lane cannot
+ * exhaust memory; 300 is the published default and every existing number was measured with it. A
+ * lane that needs to adjudicate its WHOLE diff raises it (and dumps it with `BB_F5_SAMPLES_JSON`)
+ * rather than re-deriving the comparison by hand — the gap this hook closes was recorded when the
+ * samples were first collected: they were captured for triage and then had no output path.
+ */
+const F5_SAMPLE_CAP = Number(process.env.BB_F5_SAMPLE_CAP ?? 300)
 // M60 groovy lane (2026-09-25): the lane's DISCOVERY cap must never truncate a
 // full-extent draw. It read `if (files.length > 4000) return` — an early return
 // that abandons the whole directory — so on grails-core the groovy+gradle pool
@@ -25971,7 +25979,7 @@ async function main() {
       for (const te of truth) {
         const hit = rels.some((r: any) => r.label === te.label && matchKey(r.label, r.target) === matchKey(te.label, te.target))
         if (hit) coveredByAnalyzer++
-        else { missingInAnalyzer++; if (samples.length < 300) samples.push({ dir: "MISSING", file: relPath, ...te }) }
+        else { missingInAnalyzer++; if (samples.length < F5_SAMPLE_CAP) samples.push({ dir: "MISSING", file: relPath, ...te }) }
       }
       for (const r of rels) {
         const hit = truth.some(te => te.label === r.label && (matchKey(te.label, te.target) === matchKey(r.label, r.target) || (r.label !== "imports" && te.target.includes(normTarget(auditTarget(r.target))))))
@@ -25992,7 +26000,7 @@ async function main() {
             console.log(`    [trace] unexplained #${unexplainedInAnalyzer} at ${relPath}`)
           }
           unexplainedByLabel.set(String(r.label), (unexplainedByLabel.get(String(r.label)) ?? 0) + 1)
-          if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
+          if (samples.length < F5_SAMPLE_CAP) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
       // Sharpness pass (BB_F5_STRICT only): re-match this file's truth rows on the
@@ -26255,6 +26263,19 @@ async function main() {
       if (strictSamples.length > 25) console.log(`    … +${strictSamples.length - 25} more HARD row(s)`)
       for (const s of strictSoftSamples.slice(0, 10)) console.log(`    SOFT ${s}`)
       if (strictSoftSamples.length > 10) console.log(`    … +${strictSoftSamples.length - 10} more SOFT row(s)`)
+    }
+    // THE FULL SAMPLE SET, AS A FILE — the adjudication instrument an owner needs when a lane's
+    // floor is not 0/0: the printed list is capped at 40 for a reason, and re-deriving the whole
+    // comparison to see the rest is how a floor gets guessed instead of measured. Keyed by
+    // `repo:lang`, merged across lanes of one run, and the row's own copy of `samples` is stripped
+    // so the file does not carry the list twice.
+    if (process.env.BB_F5_SAMPLES_JSON) {
+      const dest = process.env.BB_F5_SAMPLES_JSON
+      let prev: any = {}
+      try { if (fs.existsSync(dest)) prev = JSON.parse(fs.readFileSync(dest, "utf8")) } catch { prev = {} }
+      const { samples: _s, heuristicSamples: _h, ...rowNoSamples } = row as any
+      prev[`${langRepo}:${lang}`] = { files: sample.length, row: rowNoSamples, samples: row.samples, heuristicSamples: (row as any).heuristicSamples ?? [] }
+      fs.writeFileSync(dest, JSON.stringify(prev, null, 2))
     }
     if (process.env.BB_F5_SHOW_SAMPLES && row.samples.length > 0) {
       for (const s of row.samples.slice(0, 40)) {
