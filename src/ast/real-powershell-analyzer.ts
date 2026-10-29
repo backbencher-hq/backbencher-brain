@@ -1979,6 +1979,17 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * arrive here; the target is the member LEAF, which is the family contract
      * (a bare callee/member leaf, never the dotted chain).
      */
+    // PSD16 — `$this.Member` → `Class.Member` WAS MEASURED AND IS NOT IN THE TREE.
+    //
+    // The rule looked free: inside a class method `$this.Name` names THAT class's `Name`, and the bare
+    // leaf is ambiguous by construction (`Name`, `Value`, `Count`, `Type` are declared in dozens of
+    // files). The arm says otherwise, and it says it for a reason worth keeping: the corpus declares
+    // the same CLASS in many files (`FileResource` in the DSC tests, `TestClass` in the CLR-binding
+    // tests), so `Class.Member` is exactly as ambiguous as the bare leaf. MEASURED over the whole
+    // population: **151 new keys, ALL `ambDeclOnly`**, and 23 old keys replaced — no resolution, and
+    // 130 more ambiguous rows. The wall is a cross-file NAME-SPACE problem, not a receiver-typing one,
+    // and the next reader should not spend a second token on this idea.
+
     const emitMemberUses = (node: Node, kind: "read" | "write") => {
       const member = this.findChildByType(node, "member_name")
       if (!member) return
