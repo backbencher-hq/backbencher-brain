@@ -1144,6 +1144,23 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const pooledKinds = new Map<string, Set<string>>()
   const projectDecl = new Map<string, Map<string, number>>()
   /**
+   * A CASE-INSENSITIVE LANGUAGE'S NAME SPACE, FOLDED — the language's convention, not the store's.
+   *
+   * `$obj.Count` and a declaration `[int]$count` are ONE binding in PowerShell and two keys here, and
+   * the analyzer can only fold the ones in its own file (PSD20: 2,259 rows). The rest need the
+   * PROJECT's key space, which only this instrument holds: per repo, lowercased name → how many
+   * declarations carry it and the single spelling if there is exactly one.
+   *
+   * ONE-WAY BY CONSTRUCTION. A fold is consulted ONLY where the exact key has no declaration, and
+   * only when the folded key names EXACTLY ONE declaration — so it can turn `unresolved` into
+   * `resolved` and can never refute, never make an ambiguous row ambiguous for a new reason, and
+   * never move a row whose exact spelling is declared.
+   */
+  const projectFolded = new Map<string, Map<string, { count: number; spelling: string | null }>>()
+  /** The languages whose identifiers are case-insensitive. Opt-in per lane: a language that is not
+   *  listed here reads byte-identical numbers. */
+  const CASE_INSENSITIVE_LANGUAGES = new Set(["powershell"])
+  /**
    * THE FILE's NAMESPACE, from the ANALYZER's own `(ns …)` MODULE SYMBOL — the symbol whose
    * NAME is the namespace the analyzer saw at that form.
    *
@@ -1449,6 +1466,10 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     if (!pBindSet) projectBindSet.set(repo, (pBindSet = new Map()))
     let pBindQual = projectBindQual.get(repo)
     if (!pBindQual) projectBindQual.set(repo, (pBindQual = new Map()))
+    let pDeclFacts = projectDeclFacts.get(repo)
+    if (!pDeclFacts) projectDeclFacts.set(repo, (pDeclFacts = new Map()))
+    let pFold = projectFolded.get(repo)
+    if (!pFold) projectFolded.set(repo, (pFold = new Map()))
     /** the same increment in both key spaces, so a symbol can never be counted in one only.
      *  ALSO records WHERE the declaration lives: the exact intent test needs (file, line), and a
      *  count cannot answer "is the declaration the edge meant in the edge's own file?". */
@@ -1462,9 +1483,20 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
       if (!ps) pooledKinds.set(key, (ps = new Set()))
       ps.add(kind)
       pDecl!.set(key, (pDecl!.get(key) ?? 0) + 1)
+      let keyFacts = pDeclFacts!.get(key)
+      if (!keyFacts) pDeclFacts!.set(key, (keyFacts = []))
+      keyFacts.push({ kind, qual: bindingOf })
       let qs = pKinds!.get(key)
       if (!qs) pKinds!.set(key, (qs = new Set()))
       qs.add(kind)
+      {
+        const folded = pFold!.get(key.toLowerCase())
+        if (!folded) pFold!.set(key.toLowerCase(), { count: 1, spelling: key })
+        else {
+          folded.count++
+          if (folded.spelling !== key) folded.spelling = null
+        }
+      }
       if (bindingOf) {
         let bs = pBindSet!.get(key)
         if (!bs) pBindSet!.set(key, (bs = new Set()))
@@ -1785,6 +1817,9 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
    * an arm that cannot SHOW the count cannot claim that its numbers did not move.
    */
   let joinResolved = 0
+  /** of `resolved`: rows the class-like `implements` rule answered (its own disclosure) */
+  let classLikeResolved = 0
+  let caseFolded = 0
   let joinAskedSlash = 0
   let joinAskedNamespace = 0
   let joinResolvedSlash = 0
@@ -1836,6 +1871,16 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     // `isExternalTarget` means "THIS FILE declares no `--x`", while the arbiter checked the PROJECT key
     // space and called all 180 of css's ambiguous edges contradicted. Same `d.file === srcFile` test
     // `classifyIntent` uses, so the two agree by construction rather than by convention.
+    // PSD21 — THE CASE FOLD, PROJECT-WIDE. See `projectFolded`: consulted only where the exact key
+    // has no declaration, and only when the folded name has exactly one declaration, so the row moves
+    // `unresolved → resolved` and nothing else can move.
+    if (CASE_INSENSITIVE_LANGUAGES.has(lang) && (projectDecl.get(e.repo)!.get(e.tgt) ?? 0) === 0) {
+      const folded = projectFolded.get(e.repo)?.get(e.tgt.toLowerCase())
+      if (folded !== undefined && folded.count === 1 && folded.spelling !== null && folded.spelling !== e.tgt) {
+        e.tgt = folded.spelling
+        caseFolded++
+      }
+    }
     const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
     // THE OWNER CHANNEL'S VERDICT for this row, when the row states its receiver and the type is one
     // the store channel touches (calls/uses). For those rows the channel is AUTHORITATIVE: the store
@@ -1984,6 +2029,20 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     `namespace branch: ${joinResolvedNamespace} of ${joinAskedNamespace} row(s) asked` +
     (joinAskedNamespace === 0 ? " (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)" : "") +
     `\n`,
+  )
+  // THE CASE FOLD'S OWN PRICE, on every arm for the join's reason — and it prints ZERO on every lane
+  // that has not opted in, so a reader can see that the rule did not move their numbers.
+  process.stderr.write(
+    `  case fold (project key space): ${caseFolded} row(s) moved from unresolved to a declaration whose spelling differs only in case` +
+    (CASE_INSENSITIVE_LANGUAGES.has(lang) ? "" : " (this language is not opt-in: the fold is inert)") +
+    `\n`,
+  )
+  // THE CLASS-LIKE RULE'S OWN PRICE, printed on every arm for the join's reason: an arm that does not
+  // say the number cannot honestly claim that this rule moved nothing in its language.
+  process.stderr.write(
+    `  implements class-like resolution: ${classLikeResolved} row(s) resolved by the class-like rule ` +
+    `(the key's CLASS declarations under the bare, then the parenthesised, spelling; a member of the same ` +
+    `name is not a rival for an \`implements\` row)\n`,
   )
 
   return {

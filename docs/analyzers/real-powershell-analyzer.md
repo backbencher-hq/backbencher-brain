@@ -2736,3 +2736,24 @@ own declaration — a claim replaced by a resolution.
 Pins: `method-scope-psb3` grows a `FoldedRead` method whose `$this.name` read is published as `Name`
 (and the unfolded `name` is forbidden); mutant `case-fold-dropped`, CAUGHT. Lane battery **90 of 90**,
 suite 30/0, zero-regex 0/0, `tsc` 0.
+
+## PSD21 (append-only record, 2026-10-29) — the case fold, project-wide (an instrument change, taken with its A/B)
+
+PSD20 folded case INSIDE one file (2,259 rows). The rest of the collision lives across files, and only
+the project's key space can see it: `$obj.Count` in one file, `[int]$count` declared in another. The
+gate now builds a **folded key space per repo** — lowercased name → how many declarations carry it and
+the single spelling if exactly one — and, for a language that opts in (`CASE_INSENSITIVE_LANGUAGES`,
+today powershell only), a row whose exact key has NO declaration is retargeted to that one declaration.
+
+**ONE-WAY BY CONSTRUCTION**, which is why it was taken without a ruling: the fold is consulted only
+where the exact key is absent and only when the folded name has EXACTLY ONE declaration — so it can
+only turn `unresolved` into `resolved`. It cannot refute, cannot add ambiguity, and every lane that
+does not opt in reads byte-identical numbers (the gate prints the fold's count on every arm, including
+the zero).
+
+**MEASURED, same population:** the disclosure line reads **2,438 rows folded**; `ambiguous` unchanged at
+15,565; `unresolved` **17,762 → 16,221 (−1,541)**; **refuted 0**; wall **33,487 → 31,946 (−1,541)**.
+
+Suite 30/0, lane battery 90/90, `tsc` (src) 0. The gate's own `tsc -p tsconfig.scripts.json` is red for
+a reason outside this lane: another uncommitted change references `VB_DECLARATION_SPEC`, which
+`project-index.ts` does not export — not touched here.
