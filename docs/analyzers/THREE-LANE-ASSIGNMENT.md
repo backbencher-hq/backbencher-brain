@@ -186,8 +186,10 @@ grammar, not a reason to rule.
   rides `pushRel`, the single writer, and is safe by construction (consulted only where the name
   model has nothing). **Wall 60,898 → 43,364 · verified 9,988 → 27,522 · ambiguous unchanged ·
   refuted 0.**
-- Current state: **193,418 edges · resolved 140,728 · ambiguous 9,326 · unresolved 34,038 · extOK
-  27,522 · ext? 67 · extFAIL 0**. Fixtures **9/9** (new `bare-type-claims`), mutants **19/19 caught**,
+- Current state: **193,418 edges · resolved 122,465 · ambiguous 9,326 · unresolved 34,038 · extOK
+  27,522 · ext? 67 · extFAIL 0** (resolved = edges − ambiguous − unresolved − extOK − ext?, the
+gate's own arithmetic; an earlier draft of this line said 140,728, which the columns do not add to
+and is corrected here). Fixtures **9/9** (new `bare-type-claims`), mutants **19/19 caught**,
   `tsc` 0.
 - **Next:** `calls` 25,131 unresolved (qualified `T.unpack`/`Schema.column` — needs the import-alias
   map as the instrument), dotted `instantiates` (`Schema.VInt`), `imports` 2,395, `exports` 985.
