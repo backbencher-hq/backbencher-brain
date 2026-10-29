@@ -1635,6 +1635,23 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/runtime-binding-unclaimed",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD19 REVERT: a bare variable read of a name no file declares publishes no reading again — the pre-fix partition, where 12,614 bare `uses` targets were unresolved and 41,686 of the lane's unresolved edges (59.43%) sat in that state. The claim is the channel's, like PSD10's bare command: `isVariableReference` on a `uses` row, an identifier-shaped target, and the file's declaration table agreeing. Keyed on the row's own `externalVia: \"runtime-binding\"`. Caught by externality-psb16's `fromElsewhere` row (which pins the claim AND `noDeclarationInFile` on the same row).",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalVia !== "runtime-binding") return x
+        delete md.externalTarget
+        delete md.externalVia
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
     id: "powershell/native-program-owner-claim",
     language: "powershell",
     defectClass: "false-claim",

@@ -5074,12 +5074,35 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           callIntoCompiledType = addTypeDeclarations.has(target.slice(0, callDot).toLowerCase())
         }
       }
+      // PSD19 — A VARIABLE READ OF A NAME NO FILE DECLARES IS A RUNTIME BINDING, AND THE CLAIM IS THE
+      // SAME ONE PSD10 MAKES FOR A COMMAND NAME: "the project's name model has nothing of this
+      // spelling". It is the CHANNEL that justifies it — a `uses` row carrying `isVariableReference`,
+      // whose target is a bare identifier — and the arbiter checks it the way it checks a bare command:
+      // a claim is consulted ONLY where the name model has nothing (`decls === 0`), so a variable the
+      // project really declares keeps its resolved/ambiguous answer and this row can never refute it.
+      //
+      // MEASURED class: 12,614 bare `uses` targets are unresolved over the whole population, every one
+      // of them a name NO admitted file declares — a scriptblock parameter, an engine-supplied binding,
+      // a variable the corpus never declares anywhere. The row already names the read and the file; what
+      // it lacked was the one fact the gate can verify.
+      let runtimeBindingRead = false
+      if (rel.type === ASTEngine.RelationshipType.Uses && (rel.metadata as any)?.isVariableReference === true) {
+        if (target.length > 0 && target.indexOf(".") < 0 && target.indexOf(":") < 0 && target.charCodeAt(0) !== 36 /* $ */) {
+          runtimeBindingRead = true
+        }
+      }
       const via = isDataNameKey || runtime !== null || runtimeCreatedType || callIntoCompiledType || !hasLetter
         ? null
-        : externalReadingOf(target) ?? (isCommandPositionCall(rel) ? commandReadingOf(target) : null)
+        : externalReadingOf(target) ??
+          (isCommandPositionCall(rel) ? commandReadingOf(target) : null) ??
+          (runtimeBindingRead ? "runtime-binding" : null)
       if (via) {
         rel.metadata.externalTarget = true
         rel.metadata.externalVia = via
+        // PSD19 — a runtime-binding read is GENUINELY BOTH facts, so it keeps the per-file key too:
+        // "this file declares nothing of that spelling" (what PS16's second key is for) and "the
+        // project's name model has nothing" (the claim the arbiter checks).
+        if (via === "runtime-binding") rel.metadata.noDeclarationInFile = true
         // PSD13 — AND WHEN THE TARGET IS MODULE-QUALIFIED, SAY WHICH MODULE. The arbiter reads this
         // pair as the fleet's `moduleNamespace` claim and checks the MODULE against the project's own
         // file/directory space, which is a question the project can answer — unlike the owner question

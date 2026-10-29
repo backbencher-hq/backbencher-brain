@@ -2676,3 +2676,29 @@ direction for clause 1.
 are declarations now, with the prefixed SPELLINGS still forbidden (`contains Script:Upper`), so the
 prefix can never return as a symbol name. New mutant `file-owned-target-claimed`, CAUGHT by two
 fixtures. Lane battery **88 of 88**, suite **30 pass / 0 fail**, zero-regex **0/0**, `tsc` 0.
+
+## PSD19 (append-only record, 2026-10-29) — a bare variable read is a runtime binding, and the claim says so
+
+The lane's largest unresolved class was `uses` rows with a bare, undeclared name — **12,614** of them,
+41,686 of the lane's unresolved edges (59.43 %). PS16 had deliberately left them UNCLAIMED, on the
+reasoning that PowerShell binds `$fromElsewhere` from a dot-sourced file, a caller's scope or a module
+export, all at run time — so the file cannot say where it comes from.
+
+That reasoning is right and it is the claim's premise, not its refutation: **the project's name model
+has NOTHING of this spelling**, which is the one fact the arbiter can check, and it checks it exactly
+the same way for a bare command name (PSD10). The row keeps `noDeclarationInFile` as well — it is
+genuinely both facts — and the claim is consulted ONLY where `decls === 0`, so a variable the project
+really declares keeps its resolved answer and this row can never refute it.
+
+**MEASURED, same population:** unresolved 19,585 → **18,388**, extOK 56,803 → **57,974**, ext? 134 →
+160, ambiguous unchanged, **refuted 0**. Wall 36,783 → **35,586**.
+
+**What it does NOT reach, and the reason is a case trap worth naming:** the remaining 11,568 bare
+unresolved `uses` are MEMBER names (`CompletionMatches`, `Count`, `Length`), whose unresolved state is
+partly a CASE artifact — PowerShell identifiers are case-insensitive, the gate's `declCount` is not,
+so `Count` and `count` are different keys. Claiming those would verify a claim the language says is
+false. They stay wall rows.
+
+Pins: `externality-psb16`'s `fromElsewhere` row now carries the claim and `noDeclarationInFile`
+together (the reversal is documented on the row); mutant `runtime-binding-unclaimed`, CAUGHT. Lane
+battery **89 of 89**, suite 30/0, `tsc` 0.
