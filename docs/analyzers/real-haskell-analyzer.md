@@ -1037,3 +1037,26 @@ claimed.
 **PINS.** `alias-module-claims` grows six rows (two imports, a derived `J.ToJSON`, `Nickname -> Text`,
 `Sortable extends Show`, `asJson -> J.String`) plus a local-constructor twin; five new mutants, all
 CAUGHT. Lane battery **28 of 28**, suite 11/0, `tsc` 0.
+
+## HSA12 (append-only record, 2026-10-29) — module-qualified resolution: TWO VARIANTS, BOTH LOSSES
+
+The 18,334 `ext?` are project-module aliases: the claim is published, the project carries the module,
+and the row still cannot resolve because `<Module>.<fn>` is not a symbol. Two ways to MAKE it one were
+built and measured — both are losses, and the reason is the same each time.
+
+**Variant A — retarget the target to the module path (`T.unpack` → `Data.Text.unpack`) and give the
+declaration `metadata.fqn = "<Module>.<name>"`.** The measured arm: **unresolved 583 → 21,099,
+ext? 18,334 → 2,623, verified 42,710 → 31,369** — the rows stopped resolving AND stopped carrying a
+usable claim, because `serializeProjectIndex` does not carry per-symbol qualified names: a symbol-level
+`fqn` never reaches the worker or the gate.
+
+**Variant B — publish a SECOND symbol literally NAMED `<Module>.<name>`** (names ARE serialized, so the
+key space would hold the spelling). With the same retarget: **unresolved 21,099, ext? 2,623** — the
+alias symbols exist in `parseFile` output (`Main.main`, …) and add 28,848 `contains` edges, but the
+gate's `declCount` does not answer the dotted name, so the rows still do not resolve.
+
+**What this prices, from two directions:** a module-qualified name needs the store's NAME MODEL to
+carry it — either per-symbol qualified names through the index payload, or a resolution pass that
+consults the dotted key space. Neither is an analyzer change. Reverted byte for byte to the HSA6-HSA11
+state (193,418 edges · 9,326 ambiguous · 583 unresolved · 42,710 verified · 18,334 ext? · 0 refuted),
+suite 11/0, `tsc` 0.
