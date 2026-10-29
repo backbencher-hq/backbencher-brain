@@ -235,10 +235,10 @@ depends on them:
 
 | Field | Supported? | How extracted |
 | --- | --- | --- |
-| `name` | ✅ | Every declaration reads its grammar field: `module_declaration.name`, `type_definition.name`, `class_declaration.name`, `instance_declaration.name` (the `instance_class`), `generic_declaration.name`, `function_declaration.name`, `operator_definition.name`, `macro_definition.name`, `foreign_export.name`, `generic_case_definition.name`, `data_constructor.name`, `record_field.name`, `type_signature.name` (normalized across all four `signature_name` shapes). |
-| `kind` | ✅ | `module`; `type_definition` → `type`; record fields → `property`; ADT constructors → `constructor`; class → `interface`; generic → `interface`; instance → `class`; class/instance members → `method`; `macro_definition` → `macro`; everything else callable → `function`. |
+| `name` | ✅ | Every declaration reads its grammar field: `module_declaration.name`, `type_definition.name`, `class_declaration.name`, `instance_declaration.name` (the `instance_class`), `generic_declaration.name`, `function_declaration.name`, `operator_definition.name`, `macro_definition.name`, `foreign_export.name`, `generic_case_definition.name`, `data_constructor.name`, `record_field.name`, `type_signature.name` (normalized across all four `signature_name` shapes). **The instance CONTAINER is the one name the source does not spell**: it is `<target>::instance`, so `instance == Collision where …` publishes `Collision::instance`, never `Collision` — see [The phantom declaration](#the-phantom-declaration-the-container-is-targetinstance). |
+| `kind` | ✅ | `module`; `type_definition` → `type`; record fields → `property`; ADT constructors → `constructor`; class → `interface`; generic → `interface`; **instance container → `impl`** (it was `class` while the container was named after its target); class/instance members → `method`; `macro_definition` → `macro`; everything else callable → `function`. |
 | `ownerName` / `ownerKind` | ✅ | The enclosing module for module-level symbols; a type for its constructors and fields; a class or instance for its members; **and, new this round, the enclosing FRAME for a where/with/let binder** — see [Local identity](#local-identity-where-with-and-let). |
-| `qualifiedName` | ✅ | The scoped identity of a local (`describe.nonNegative`). A module-level symbol needs none: its `name` is already unique in the file, and the store falls back to `name`. This is what makes a local's relationship endpoints resolvable while the symbol keeps the bare name the source declares. |
+| `qualifiedName` | ✅ | The symbol's QUALIFIED identity. A module-level symbol carries `<module>.<name>` (`StdPathname.Pathname`, `CleanDeclForms.Sized`) — the spelling a consumer writes when two modules declare the same name, and the one the incoming gate's `--binding-collapse` needs to read a `.dcl`/`.icl` pair as ONE declaration; see [The `.dcl`/`.icl` twin](#the-dclicl-twin-a-module-level-symbol-is-qualified-by-its-module). A class/instance member carries its OWNER's (`Sized.sizeOf`), which the store derives from `scope` and which `overrides`/`implements` endpoints are written in. A local carries its frame (`describe.nonNegative`). The MODULE symbol carries none (its name is already the module's qualified name). |
 | `visibility` | ✅ | `public` for module-level; **`local` for a where/with/let binder**, which is also what keeps it out of the export surface. |
 | `range` (lines + columns + byte indices) | ✅ | the declaration node. A multi-clause function's range extends to the last clause's end. |
 | `parameters` | ✅ **REAL** | The definition's `pattern` fields (one field = one parameter, in order) paired positionally with the `type` field's domain argument types. A pattern that binds no single target is named by its own text. |
@@ -265,6 +265,194 @@ skipped whole: no Class symbol, no `implements` edge, no member scope, and every
 the module. The target is now read from the field, and the remaining shapes are
 resolved structurally (an `array_type`'s inner type, a `type_paren`'s inner type)
 rather than by text. **488 Class symbols → 741.**
+
+### The phantom declaration: the container is `<target>::instance`
+
+An instance needs a symbol to own its members, and the symbol the source declares none of is
+the CONTAINER. It used to be named after the instance's target TYPE — `instance == Collision
+where …` published a symbol called `Collision`, kind `class` — so a file that declared
+`:: Collision` and an instance for it declared the name **twice**, and a file that declared no
+`Collision` at all declared it once.
+
+That second case is the expensive one, because the incoming gate resolves on `declCount === 1`
+ALONE (`classifyEdge`, `script/m14/incoming-rule.ts` — there is no kind-compatibility test), so
+a container is not merely a stray row: it **manufactures resolutions** for a name the project
+does not declare. `instance zero ABCInstructionEntry where …` (cloogle.org/backend/Builtin/ABC.icl:19)
+made all 17 references to `ABCInstructionEntry` in that project read `resolved`, and the type is
+in the Clean STDLIB, not in the repository.
+
+The container is now `<target>::instance` with kind `impl` — the Rust lane's `<target>::impl`
+discipline, adopted for the same reason: an implementation is addressable without asserting that
+its target is a declaration of this file. Members keep the NOMINAL owner (`instance == Collision`
+puts its members on `Collision`), so `implements`, `contains`, `overrides` and every member
+endpoint are unchanged; `impl` is not an exportable kind, so a container stops appearing in the
+module's export surface.
+
+**Measured, three instruments, all on the 312-file population**
+(`validation/m14/fixtures/clean/phantom-census.mts`, `gate-residue-delta.ts`,
+`phantom-attribution.mts`):
+
+| | before | after |
+| --- | --- | --- |
+| container symbols | 699 in 94 files | 699 in 94 files |
+| …named after their target (a DECLARATION of it) | 699 | **0** |
+| distinct names they published | 112 | 112 (`<target>::instance`) |
+| not an identifier at all (`.a`, `[]`, `?`, `?^`) | 150 | n/a |
+| named after a name the SAME file declares for real | 93 | 0 |
+
+The gate's own row dump is the receipt (it is `NOT resolved`, so it contains `externalVerified`
+too — 10,163 = 2,906 amb + 2,972 unresolved + 4,285 extOK):
+
+- **435 rows left the dump.** 366 name a target that still has a real declaration in the project
+  — the ambiguity the phantom was inflating is gone (321 plainly, 45 with an unrelated row now
+  sharing their line). The other **69 are `exports` rows** of non-identifier names (`.a`, `[]`,
+  `?`), i.e. fabricated export surfaces whose only declaration was the container: the edge itself
+  is no longer emitted. That is also why `exports` lost **238** edges — 69 residual ones plus 169
+  that had read `resolved` against a coincidental same-named declaration — below the **300**
+  distinct `(file, container name)` pairs that are the ceiling on what a rename can remove.
+- **1,537 rows appeared, and 100.0% of them are attributed to one of the 11 names only a
+  container ever published**: `Int` 654 · `Bool` 426 · `Char` 320 · `Files` 50 · `File` 37 ·
+  `World` 24 · `ABCInstructionEntry` 17 · `ParseError` 3 · `ParseWarning` 3 · `Tm` 2 · `Range` 1.
+  Their OUTCOME is the point: **1,511 are `externalVerified`** (the stdlib claim the analyzer marks
+  with `metadata.isStdlib`, which could not speak while a phantom "declared" the name), **25 are
+  honestly `unresolved`** (no claim carries them — `ABCInstructionEntry` is one) and **1 is
+  `ambBoth`**.
+
+TABLE 1, the scope production resolves in:
+
+| type | edges | resolved | amb(decl) | amb(kind) | unresolved | extOK |
+| --- | --- | --- | --- | --- | --- | --- |
+| `references` | 10,113 → 10,113 | 4,245 → 3,074 | 2,747 → 1,808 | 797 → 363 | 1,358 → 1,388 | 1,763 → 3,843 |
+| `exports` | 4,834 → 4,596 | 4,603 → 4,434 | 231 → 162 | 8 → 8 | 0 → 0 | 0 → 0 |
+| `contains` | 7,559 → 7,579 | 7,559 → 7,579 | 0 | 0 | 0 | 0 |
+| **TOTAL** | 30,911 → 30,693 | 21,850 → 20,530 | 3,914 → 2,906 | 1,002 → 568 | 2,942 → 2,972 | 2,205 → 4,285 |
+
+**The honest reading of that table, because the direction is not the obvious one.** The
+`references` edge population is IDENTICAL (10,113 both sides) — the fix moved no edge — and the
+residual did not fall: `unresolved` rose by 30 and the dump by 1,102 rows. What happened is that
+**1,511 rows stopped being a fabrication and became evidence**: `resolved` fell by 1,171 and
+`extOK` rose by 2,080, because a claim the project can confirm (`isStdlib`) is allowed to speak
+the moment no phantom declares the name, and a row that was `resolved` against a declaration no
+source spells is now either verified against the STDLIB or openly unresolved. `amb(decl)` fell
+1,008 and `amb(kind)` fell 434 for the same reason — the phantom was a SECOND declaration of
+`Int`/`Bool`/`Char` in files that merely implement a class for them.
+
+So: **26 rows became honestly open, 1,511 became honestly closed, and 69 fabricated export edges
+disappeared.** The residual's own count is not the metric, and this round is the clearest case
+the lane has produced of why.
+
+### The `.dcl`/`.icl` twin: a module-level symbol is qualified by its module
+
+A Clean module is DECLARED in `.dcl` (`definition module X`) and IMPLEMENTED in `.icl`
+(`implementation module X`), so a module-scope type, function, class or macro is ONE declaration
+written in TWO files. The incoming gate models exactly that with `--binding-collapse`, and its rule
+is narrow on purpose: a key becomes ONE declaration only if EVERY declaration answering to it
+carries the same NON-EMPTY `qualifiedName` that DIFFERS from the bare name. The difference matters
+because `pool-worker.ts` falls back to `qualifiedName = name` for a file-scope symbol, and a
+FALLBACK IS NOT A QUALIFICATION.
+
+This analyzer published NO `qualifiedName` at module scope — the rule was "its name is already
+unique in the file" — so every module-level `.dcl`/`.icl` pair reached the gate as TWO declarations
+and was counted as a name collision. The class/instance half of the same pair already worked,
+because a member's `Owner.member` spelling qualifies it (that is what took `overrides` from 2/306
+to 306/306 on 2026-10-28).
+
+**The fix is one PASS 3 step:** `qualifiedName = '<module>.<name>'` for module-level symbols.
+Members, constructors, fields and locals are untouched (each already has an owner's identity), and
+the module symbol is untouched (a module's qualified name IS its name).
+
+| whole population, same arm | before | after |
+| --- | --- | --- |
+| `references` ambiguous (decl) | 1,808 | **1,011** |
+| `exports` ambiguous (decl) | 40 | **12** |
+| `calls` unresolved | 75 | **74** |
+| `resolved` | 20,958 | **21,791** |
+| collapsed keys | 719 | **3,148** |
+| qualifiedName aliases indexed | 2,649 | **7,836** |
+
+**The number was priced before it was written.** `validation/m14/fixtures/clean/residual-cause-census.mts`'
+sibling instrument (`validation/m14/fixtures/clean/collapse-price.mts`, over the gate's own dump)
+predicted 797 collapse-fixable
+`references` rows and 28 `exports`; the arm moved exactly 797 and 28. The only same-module cross-kind
+pairs the collapse merges are FOUR GENERICS and their case functions (`bimap`, `binumap`, `gEqTest`,
+`exampleGeneric`) — a generic and its cases are one entity, which is why that is not an over-collapse.
+
+What this does NOT fix, and the reason is structural rather than a missing spelling: a MODULE's own
+name cannot carry a qualification, so a module reference still answers both halves (590 rows), and a
+project that names its central type after its module (`Diagnostic.icl` declaring `Diagnostic`) answers
+a type position twice (95 rows). Both are ruled in the declaration's `causeRulings`.
+
+Pinned by `clean/declaration-forms` — `qualifiedName: CleanDeclForms.Sized` and
+`CleanDeclForms.MaxBound` for module scope, `qualifiedName: null` for the class member beside them —
+and by the mutant `clean/module-level-qualified-name-dropped`.
+
+### The import file claim: an unconfirmed claim is a REFUTATION, not a conservative one
+
+A Clean import is `Module:item`, a spelling no symbol can carry, so the lane answers it with a
+claim. Two claim kinds exist, and the 2026-10-28 pass emitted the wrong one for every non-stdlib
+module: a flat `[Module/Sub.icl, Module/Sub.dcl]` was attached at both import emission sites,
+WITHOUT the shared `fileClaimForTarget` guard. A file claim is a statement the project can REFUTE,
+and on the arm it refuted **1,177 of the 1,615** claims it made — `extFAIL 1177`, a clause-4 red.
+The cause is the language: a Clean module's file is found on a SEARCH PATH, not at the project root
+(`UtilStrictLists` lives at `cleantools/Util/UtilStrictLists.icl`; eastwood's `Diagnostic` lives at
+`src/sharedUtil/Diagnostic.icl`).
+
+**The fix moves the claim to where the evidence is.** The emission sites state the stdlib
+`moduleNamespace` claim only; PASS 3 has `context.projectRoot` and states `importProjectFile` ONLY
+where the shared guard confirms a candidate on disk, trying the importing file's own directory first
+and the project root second. Measured before and after, whole population:
+
+| `imports` | 2026-10-28 arm | 2026-10-29 arm |
+| --- | --- | --- |
+| edges | 1,932 | 1,932 |
+| `externalVerified` | 755 | **891** (574 file claims + 317 moduleNamespace) |
+| `externalRefuted` | **1,177** | **0** |
+| unresolved | 0 | **1,041** |
+
+The pricing instrument
+(`validation/m14/fixtures/clean/import-claim-pricing.mts`, whole 312-file population) measures the
+three candidate sets: **A** project root 438, **B** + the importing file's own directory **+136**,
+**C** + anywhere in the project 243 — every hit in all three a file that DECLARES the module. A and B
+are implemented; C needs a project-wide file search, which a per-file analyzer does not have and which
+is PROPOSED rather than taken
+(`validation/m14/proposals/clean-import-file-claim-project-search.md`, with the leaf-ambiguity count
+measured: 239 of C's 243 are unambiguous, 4 are eastwood's two `Linter.icl` files).
+
+The 1,041 unclaimed imports are TRUE holes and are ruled in three classes (module on a search path
+222 · module in another project 59 · module declared nowhere 760); none is closable by a claim that
+is true of this corpus.
+
+### The `implements` residual: the row's LABEL is the evidence
+
+The arm's `implements` column is **701 resolved · 49 ambiguous · 15 unresolved** (it read 417 / 333 /
+15 before the class-like rule landed on 2026-10-29), and the 333 were not a name-model wall — they are
+the one collision Clean guarantees. An `implements` target is a CLASS,
+and a class shares its spelling with the members its instances publish (`instance == Bool` publishes a
+member `Bool.==`), so the key `==` answers 37 MEMBER declarations beside the class. Where the class is
+an OPERATOR, the declaration parenthesises it (`class (==) infix 4`) while the instance writes it bare;
+the analyzer publishes both spellings as the source writes them, and both are right for their position.
+
+**Measured, not asserted** (`validation/m14/fixtures/clean/implements-class-spelling.mts`: the arm's own
+`--dump` + the project's symbols over `git ls-files`, 333 ambiguous rows, 333 classified):
+
+| bucket | rows |
+| --- | --- |
+| decided by the PARENTHESISED spelling — `(T)` is declared class-like and collapses to one | **153** |
+| decided by the BARE spelling — `T` is itself the class and collapses to one | **131** |
+| no class-like under either spelling — 47 in another project, 2 declared nowhere (`JSONEncode`/`JSONDecode`) | **49** |
+| class-like under either spelling that does NOT collapse to one | **0** |
+
+**The analyzer does not act on this, and the reason is a fact rather than a preference.** Rewriting the
+edge's TARGET to `(<class>)` would assert a spelling the source does not write in that position, and
+`~` (declared BARE, `class ~ a ::`) proves the spelling is a PROJECT fact that a per-file analyzer cannot
+know: parenthesising every operator target would turn 7 currently-decidable rows into unresolved ones.
+The 284 decidable rows are a GATE-side, label-aware resolution — leave the target as written, take the
+class-like declarations of the key under the bare, then the parenthesised spelling, and require ONE
+qualified identity. **LANDED 2026-10-29** (`implementsClassLike` in `script/m14/incoming-gate.ts`, the
+`classLike` branch in `incoming-rule.ts`), and the arm moved exactly the price: 284 rows, `implements`
+417 → 701 resolved, ambiguous 333 → 49, overall resolved 21,791 → 22,075, every other column unchanged,
+`extFAIL` still 0. Nothing in THIS file changes for it — and the rule prints its own count on every arm
+(`implements class-like resolution: N`), so a language where it moved nothing says so.
 
 ### Local identity: `where`, `with` and `let`
 
@@ -1573,6 +1761,35 @@ absent from that run. Run 1 lost `clean-libraries/Examples/ObjectIO/…/Life.dcl
 lost `Prelude/Data/List.dcl`. Every rate in this document is therefore stable to three
 decimal places and no figure is quoted to more precision than that.
 
+**2026-10-29 — the module-qualified identity and the import claim move the INCOMING arm, not the
+edge population.** Both changes emit no edge and remove none (30,400 published-type edges on both
+sides), so the honesty gate's table above does not move; the resolution buckets do:
+
+| incoming arm, TABLE 1, per project | 2026-10-28 | 2026-10-29 |
+| --- | --- | --- |
+| edges | 30,400 | 30,400 |
+| `resolved` | 20,958 | **21,791** |
+| `ambiguous` (decl) | 2,185 | **1,360** |
+| `unresolved` | 1,478 | **2,511** |
+| `externalVerified` | 4,602 | **4,738** |
+| `externalRefuted` | **1,177** | **0** |
+| `unclassed` | 0 | 0 |
+
+The two moves are opposite in direction on purpose: 833 more rows resolve, and 1,033 more rows are
+OPEN, because a file claim that the project refuted was replaced by an honest gap. The declaration's
+`causeRulings` partitioned the then-3,871 open rows into 11 named classes
+(`validation/m14/instruments/clean/incoming-declaration.json`), computed by
+`validation/m14/fixtures/clean/residual-cause-census.mts` from the arm's own dump with its control
+on.
+
+**Later the same day, the class-like `implements` rule resolved 284 of those rows**: `implements`
+417 → **701** resolved and 333 → **49** ambiguous, so the whole arm reads `resolved` **22,075**,
+`ambiguous` **1,076**, open **3,587**, and the 11 rulings were re-summed to 3,587. The rule is in the
+classifier, not this analyzer (see "The `implements` residual" above); a 60-file A/B across ten other
+languages moved only Kotlin's `implements -> Runnable` row, and that project's `expect`/`actual`
+declarations all carry the same qualified identity, so the binding is the same type — verified, not
+assumed.
+
 ### Retracted numbers, kept visible
 
 Round 1's retractions stand and are not repeated here. This round adds none: the
@@ -1663,7 +1880,7 @@ gate: a check whose population is empty is itself a failure.
 | --- | --- |
 | `definition-module-interface.dcl` | the declaration contract, all four `signature_name` shapes |
 | `signature-definition-merge.icl` | a signature and its definition are ONE symbol |
-| `instance-target-name-collision.icl` | the name-keyed export dedupe |
+| `instance-target-name-collision.icl` | **the container naming**: a type and an instance for it, where the file must declare `Collision` exactly ONCE (`expectSymbolCount` 1) and `Collision::instance` exactly once — plus the FORBID that puts the phantom back (`contains -> Collision` at the instance's line). Also pins that the instance's member keeps the NOMINAL owner (`method ==` on `Collision`), i.e. that the rename moved no member endpoint |
 | `import-modules-alias-884.icl` | a multi-module import's items and alias |
 | `expression-shapes.icl` | case / lambda / guard / where / comprehension / record / class shapes, and the qualified-call and pattern-position rules |
 | `declaration-forms.icl` | **new.** macro, generic, generic case, derive, special, fixity (both spellings), foreign export, class context, with- and where-locals |
@@ -1680,7 +1897,8 @@ it cannot pass against a probe the arbiter does not run — and it reads a `.pro
 the fixture rather than a `.expectation.json`, because `runLang` grades expectations against
 the analyzer's output and this asserts something the analyzer does not produce.
 
-`script/m14/run-fixtures.ts --lang clean`: **11 pass, 0 fail** (10 in pass 2).
+`script/m14/run-fixtures.ts --lang clean`: **11 pass, 0 fail** (10 in pass 2); **14 pass, 0 fail**
+at the container-naming commit, with `fixture baseline gate: no regressions`.
 `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts`: **PASS**, 18
 declarations, 23 pairs, 0 unclassified.
 
@@ -1693,7 +1911,7 @@ handled types are now fixture-backed, and the gate says so on every run. The cou
 
 ### Mutation (L4), and the wiring it needs
 
-`script/m14/clean-mutants.ts` defines **9 mutants**: seven for the `overrides` type, one
+`script/m14/clean-mutants.ts` defines **13 mutants**: seven for the `overrides` type, one
 per way it can be wrong — dropped entirely; emitted without the in-file guard
 (fabrication); emitted with the direction reversed; emitted with unqualified endpoints
 (which every resolution rate still reports as clean); emitted as a self-edge; relabelled
@@ -1729,6 +1947,29 @@ CAUGHT   clean/implements-external-class-always-external  fail 0 -> 1  problems 
 caught 9/9
 every mutant made the suite red
 ```
+
+At the container-naming commit the battery is **13 mutants, 13/13 caught** (baseline 14 pass / 0
+fail). Two arrived with that round:
+
+```
+CAUGHT   clean/instance-container-named-after-target  fail 0 -> 6  problems 0 -> 23
+           newly failing: clean/ampersand-class-context, clean/declaration-forms,
+                          clean/expression-shapes, clean/instance-member-signature-context,
+                          clean/instance-target-name-collision, clean/typeclass-overrides
+```
+
+- `clean/instance-container-named-after-target` reverts the NAMING **and** the KIND (`impl` →
+  `class`) and moves every edge endpoint that named a container, so the phantom's own rows come
+  back. It is caught by `instance-target-name-collision` on three pins at once: the symbol count
+  (`Collision` becomes 2), the namespaced symbol's absence, and the forbidden `contains ->
+  Collision` at the instance's line.
+- `clean/overrides-in-file-guard-dropped` **was surviving until this round, and the reason is
+  instructive**: its shape was derived from `s.kind === "class"` and `m.ownerName === s.name`, so
+  when the container became `impl` with members owned by the NOMINAL type, the generator matched
+  NOTHING and the mutant survived by fabricating nothing. A generator-built revert that stops
+  matching does not fail — it goes quiet. It is now derived from the post-fix container (`impl`
+  + `::instance` for the type, `ownerName` for the endpoint) and is caught again (`forbidRelationships
+  from: Bool.size`).
 
 The new fixture also catches **5 of the 7 pre-existing `overrides` mutants**, which
 previously failed `typeclass-overrides` alone. That is a coverage gain nobody planned and

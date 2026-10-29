@@ -347,5 +347,15 @@
       "validation/m14/fixtures/clean/extends-construct-probe.json (instruments A and B, committed)",
       "script/m14/clean-ruled.ts (the registered ruling: instrument B countOnTree, corroborated by A)"
     ]
+  },
+  "label_coverage": {
+    "_what_this_is": "The differential's own declaration mechanism (script/m14/differential.ts `readDeclaredNoTruth`): a label in the compared set with analyzer edges and NO truth behind them is a HOLE unless the lane declares the absence here, with the oracle's scope and what would close it. Measured 2026-10-29 on the lane-scoped differential run (`bun run script/m14/differential.ts --lang clean`): `clean-stdlib:clean COMPARED WITH NO TRUTH: overrides (38 comparable, 0 truth)` — the G20 gate failed the run on it before this block existed.",
+    "declared_no_truth": [
+      {
+        "label": "overrides",
+        "reason": "THE LANE'S OVERRIDES ORACLE DOES NOT EXIST, AND AN ORACLE HERE WOULD BE A MIRROR. `deriveCleanEdges` (script/m14/differential.ts:17867) derives references, implements, calls and instantiates from the parse tree; it has no overrides rule. The relation is `instance C T where m` -> the class member `C.m` of the same name, and Clean only makes that pairing provable when the CLASS is declared in the edge's own file (the analyzer's rule, and the reason its 306 rows are 306/306 resolved). An oracle for it would have to re-encode that same pairing rule, i.e. a copy of the analyzer's condition, and a mirror cannot adjudicate — the fleet's own ruling (this file's readDeclaredNoTruth docstring, javascript's 44 rows). MEASURED: 38 comparable rows in the clean-stdlib 60-file draw, every one resolved; the label's independent coverage is the FIXTURE suite, where 20 overrides rows are pinned across 14 expectation-paired fixtures (typeclass-overrides, declaration-forms, instance-target-name-collision, ...). Nothing here is a fabrication: the rows land in `heuristic` (the analyzer's own declared suspicion), not in coverage.",
+        "closes_when": "an independent overrides oracle exists — one that derives the instance-member/class-member pairing by a rule the analyzer does not share (e.g. from the class's own member list plus the instance head, with the polymorphic-instance exception stated) — and its rows are pushed into the compared set; or the Lead removes `overrides` from clean's compared set with its own ruling. Not closable by widening this declaration."
+      }
+    ]
   }
 }

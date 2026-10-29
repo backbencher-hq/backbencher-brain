@@ -493,12 +493,19 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/clean.md", "docs/analyzers/real-clean-analyzer.md"],
     differentialCheck: "differential-clean",
     perfKey: "Clyde:clean",
-    requiredKinds: ["calls","contains","exports","imports","instantiates","overrides","references","uses","extends"],
+    // `extends` IS ABSENT AND `implements` IS PRESENT, because that is what the lane publishes: the
+    // served grammar has no inheritance production (0 of 143 named types; `clean-ruled.ts`), and Clean
+    // composition is class/instance, published as `implements`. The row previously listed `extends`
+    // and omitted `implements`, so section B failed on the CONFIG rather than on the lane — the exact
+    // two-field defect `proposals/clean-lang-config.md` §6 measured. The complexity pin also reads
+    // `expectMetadata`, where the lane pins `cyclomaticComplexity` (FILE metadata, the CLJ1
+    // precedent), not `expectComplexity` (a per-SYMBOL number the lane does not publish).
+    requiredKinds: ["calls","uses","contains","imports","references","exports","implements","overrides","instantiates"],
     payloads: {
       exports: { key: "expectExports", pin: "clean/exports-surface" },
       imports: { key: "expectImports", pin: "clean/imports-surface" },
       parameters: { key: "expectParameters", pin: "clean/expression-shapes" },
-      complexity: { key: "expectComplexity", pin: "clean/expression-shapes (cyclomaticComplexity 18)" },
+      complexity: { key: "expectMetadata", pin: "clean/expression-shapes (cyclomaticComplexity 18)" },
     },
     title: "clean wave (#419 sections A-D, G, H; E/F await a corpus row)",
   },
@@ -1223,11 +1230,15 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // (PSD/`addImport`), so it is not listed as required here — the exclusion is
   // written down rather than left as a silence, and the annotation is pinned by
   // module-surface-psb9's `expectImports` rows.
-  // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
+  // THE ROW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["calls", "uses", "contains", "references", "instantiates", "exports", "extends", "implements", "overrides", "imports"],
+    // `part_of` JOINED THE LIST WITH THE DOT-SOURCE RELABEL (PSD12, 38 edges over 37
+    // files): the row had not been updated since, so section B reported the lane as
+    // publishing a kind its contract omitted — a drift the gate caught and this line
+    // closes. The pin is part-of-dot-source-psb19 (4 `part_of` rows + the forbids).
+    requiredKinds: ["calls", "uses", "contains", "references", "instantiates", "exports", "extends", "implements", "overrides", "imports", "part_of"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "powershell/reserved-words-psb4" },
   },
@@ -1273,7 +1284,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     unexplained: 21,
     ruling: "SOL-SCOPE",
   },
-  requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+  // `decorates` JOINED THE CONTRACT ROW WITH THE SOL-17/SOL-R3 RELABEL (144 rows at index
+  // scope, 31 per file): the modifier invocation is published as its own kind now, and the
+  // row had not been updated since, so section B reported the lane as emitting a kind its
+  // contract omitted. Pinned by validation/m14/fixtures/solidity/modifier-decorates-relabel
+  // (the in-file band fires, and the base-constructor impostor is forbidden both ways).
+  requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "decorates"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "solidity/branches-sol (every branch construct in the language, so a branch set that loses one drops the number below 12 and fails)" },
   },

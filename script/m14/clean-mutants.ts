@@ -57,31 +57,37 @@ export const CLEAN_MUTANTS: Mutant[] = [
     language: "clean",
     defectClass: "fabricated-relationship",
     description:
-      "FABRICATION CLASS, and the direction an aggregate count invites. The in-file guard is dropped, so an `instance C T where m` emits `overrides T.m -> C.m` for a class this file never read. Almost every Clean class is IMPORTED — the doc's own `implements` row records 322 of 739 edges as external for exactly that reason — so the unguarded form names a class member the analyzer has no evidence exists. Unlike an `implements` edge, whose meaning survives an external target, an `overrides` edge ASSERTS that this member is the implementation of that specific class member; without having read the class, that is a claim about a declaration the run never saw. Caught by clean/typeclass-overrides, whose `forbidRelationships` rows refuse an `overrides` edge targeting `Show.size` — `size` is a member of the instance, never of the class.",
-    transform: (r: any) => ({
-      ...r,
-      relationships: [
-        ...(r.relationships ?? []),
-        // The unguarded pre-fix shape: an edge for every instance member, built from
-        // the same REAL member symbols the analyzer publishes. Both ends are real
-        // nodes, which is the point — a fabricated edge between two REAL symbols is
-        // the class no resolution check can catch, and only a fixture pin can.
-        ...(r.symbols ?? [])
-          .filter((s: any) => s.kind === "class" && (r.relationships ?? []).some((x: any) => String(x.type).toLowerCase() === "implements" && x.source === s.name))
-          .flatMap((s: any) =>
-            (r.symbols ?? [])
-              .filter((m: any) => m.kind === "method" && m.ownerName === s.name)
-              .map((m: any) => ({
-                type: "overrides",
-                source: String(s.name) + "." + String(m.name),
-                target: String(m.name),
-                confidence: 1,
-                line_number: m.startLine ?? m.range?.startLine,
-                metadata: { cleanSpecific: true, isTypeClassOverride: true, isExternalClassUnguarded: true },
-              })),
-          ),
-      ],
-    }),
+      "FABRICATION CLASS, and the direction an aggregate count invites. The in-file guard is dropped, so an `instance C T where m` emits `overrides T.m -> C.m` for a class this file never read. Almost every Clean class is IMPORTED — the doc's own `implements` row records 322 of 739 edges as external for exactly that reason — so the unguarded form names a class member the analyzer has no evidence exists. Unlike an `implements` edge, whose meaning survives an external target, an `overrides` edge ASSERTS that this member is the implementation of that specific class member; without having read the class, that is a claim about a declaration the run never saw. Caught by clean/typeclass-overrides, whose `forbidRelationships` row refuses `overrides from: Bool.size` — `instance Show Bool where size b = …` supplies a member (`size`) the imported class does not declare. THE SHAPE IS DERIVED, NOT HARDCODED, and it had to be re-derived when the container was namespaced: the unguarded emission is per INSTANCE, so the mutant reads the instance container (`impl`, `<target>::instance`) for the type and the member's NOMINAL owner for the endpoint — the two facts the naming fix moved. A mutant that still matched `kind === 'class'` would have survived by matching nothing, which is the failure mode a generator-built revert exists to avoid.",
+    transform: (r: any) => {
+      const SUFFIX = "::instance"
+      // THE INSTANCE'S TYPE, from the container symbol — the post-fix spelling. Members are owned by
+      // the NOMINAL type, so `ownerName` is the same string and both halves agree without guessing.
+      const instanceTypes = new Set<string>()
+      for (const s of r.symbols ?? []) {
+        const name = String(s?.name ?? "")
+        if (String(s?.kind) === "impl" && name.endsWith(SUFFIX)) instanceTypes.add(name.slice(0, -SUFFIX.length))
+      }
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          // The unguarded pre-fix shape: an edge for every instance member, built from
+          // the same REAL member symbols the analyzer publishes. Both ends are real
+          // nodes, which is the point — a fabricated edge between two REAL symbols is
+          // the class no resolution check can catch, and only a fixture pin can.
+          ...(r.symbols ?? [])
+            .filter((m: any) => m.kind === "method" && instanceTypes.has(String(m.ownerName ?? "")))
+            .map((m: any) => ({
+              type: "overrides",
+              source: String(m.ownerName) + "." + String(m.name),
+              target: String(m.name),
+              confidence: 1,
+              line_number: m.startLine ?? m.range?.startLine,
+              metadata: { cleanSpecific: true, isTypeClassOverride: true, isExternalClassUnguarded: true },
+            })),
+        ],
+      }
+    },
   },
   {
     id: "clean/overrides-direction-reversed",
@@ -280,6 +286,69 @@ export const CLEAN_MUTANTS: Mutant[] = [
         extra.push({ ...x })
       }
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "clean/instance-container-named-after-target",
+    language: "clean",
+    defectClass: "fabricated-declaration",
+    caughtBy: "clean/instance-target-name-collision",
+    description:
+      "PHANTOM DECLARATION CLASS, and the mutant that keeps the fix falsifiable. `processInstance` publishes a CONTAINER symbol to own an instance's members, and before this round it was named exactly the instance's TARGET TYPE: `instance == Collision where` published a symbol called `Collision` (kind `class`), so a file that declares `:: Collision = …` and an instance for it declared the name TWICE. The invented symbol is not a declaration of anything the source declares — an instance head is a TYPE EXPRESSION, not a name form. MEASURED on the 312-file population (validation/m14/fixtures/clean/phantom-census.mts, +244 / gates): 699 containers in 94 files, 112 distinct names, 150 of them not an identifier at all (`.a`, `[]`, `?`), and the incoming gate resolves on `declCount === 1` ALONE with no kind test, so the phantom did not merely add a row — it MADE RESOLUTIONS. Removing it moved 1,537 residual rows (Int 654 · Bool 426 · Char 320 · Files 50 · File 37 · World 24 · ABCInstructionEntry 17 · ParseError 3 · ParseWarning 3 · Tm 2 · Range 1) into the open, and 100.0% of them are attributed to a name only a container published (validation/m14/fixtures/clean/phantom-attribution.mts). This transform reverts the NAMING and the KIND the pre-fix code published, and moves every edge endpoint that named a container with it, so a fixture that only checks relationships still sees the phantom's own rows. Caught by clean/instance-target-name-collision on three pins: `expectSymbolCount Collision equals 1` (the mutant reads 2), `expectSymbols Collision::instance` (absent), and `forbidRelationships contains -> Collision at line 17` (the instance's containment reappears under the bare name).",
+    transform: (r: any) => {
+      const SUFFIX = "::instance"
+      /** namespaced container name -> the bare target type it published before the fix */
+      const renamed = new Map<string, string>()
+      const symbols = (r.symbols ?? []).map((s: any) => {
+        const name = String(s?.name ?? "")
+        if (!name.endsWith(SUFFIX)) return s
+        const bare = name.slice(0, -SUFFIX.length)
+        renamed.set(name, bare)
+        // THE KIND MOVES TOO. The pre-fix container was a `class` — that is what made it an
+        // EXPORTABLE declaration and what `expectExports`/`forbidExports` pin — so a revert that
+        // kept `impl` would model a defect the code never had and could be caught by the wrong pin.
+        return { ...s, name: bare, kind: "class" }
+      })
+      // EVERY EDGE ENDPOINT THAT NAMED A CONTAINER MOVES WITH IT: `contains` (the module and the
+      // target type contain it), `exports` and `implements`. A transform that renamed only symbols
+      // would leave the fixture's relationship rows green and the mutant would survive on the
+      // symbol-count pin alone — which is the narrowest possible catch for a defect whose cost was
+      // measured in RESOLUTIONS, not in symbol counts.
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        const t = String(x?.target ?? "")
+        const src = String(x?.source ?? "")
+        if (!renamed.has(t) && !renamed.has(src)) return x
+        return {
+          ...x,
+          ...(renamed.has(src) ? { source: renamed.get(src) } : {}),
+          ...(renamed.has(t) ? { target: renamed.get(t) } : {}),
+        }
+      })
+      return { ...r, symbols, relationships }
+    },
+  },
+  {
+    id: "clean/module-level-qualified-name-dropped",
+    language: "clean",
+    defectClass: "missing-symbol-identity",
+    caughtBy: "clean/declaration-forms",
+    description:
+      "THE .dcl/.icl TWIN CLASS, reintroduced. A Clean module is DECLARED in `.dcl` and IMPLEMENTED in `.icl`, so a module-level type, function, class or macro is ONE declaration written in TWO files — and the incoming gate collapses the pair only when every declaration carries the same NON-EMPTY `qualifiedName` that DIFFERS from the bare name (the store's file-scope fallback is `qualifiedName = name`, and a fallback is not a qualification). This analyzer published NO qualifiedName at module scope, so every such pair reached the gate as TWO declarations and the pair was counted as a name collision. MEASURED on the 312-file arm, whole population: `references` ambiguous 1,808 -> 1,011 (-797, exactly the collapse price measured before the change), `exports` 40 -> 12, and the gate's own collapsed-key count 719 -> 3,148 (1,287 of them NAME keys, the rest the new `Module.name` alias keys each symbol now also answers to). Held by the pin on `clean/declaration-forms` (`qualifiedName: CleanDeclForms.Sized` / `CleanDeclForms.MaxBound`), which fails the moment a module-level symbol loses the spelling; the class/instance MEMBER spellings (`Sized.sizeOf`, `Int.sizeOf`) are pinned beside it so a revert that qualified EVERYTHING is caught too.",
+    transform: (r: any) => {
+      const symbols = (r.symbols ?? []).map((s: any) => {
+        const name = String(s?.name ?? "")
+        const owner = String(s?.ownerName ?? "")
+        const qn = String(s?.qualifiedName ?? "")
+        // the module-level spelling this round added: `<module>.<name>`, no `scope`, not a local.
+        // A class/instance member carries `scope` (its owner) and is NOT touched — that is the
+        // control: a revert that dropped every qualifiedName would also break the member pins.
+        if (s?.scope === undefined && s?.visibility !== "local" && s?.metadata?.isLocalDefinition !== true &&
+            owner.length > 0 && qn === `${owner}.${name}`) {
+          return { ...s, qualifiedName: name }
+        }
+        return s
+      })
+      return { ...r, symbols }
     },
   },
 ]

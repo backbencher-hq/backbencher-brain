@@ -1628,7 +1628,7 @@ export type Classified = {
   kinds: string
   /** WHICH evidence confirmed a verified external claim — reported so a lane can audit the
    *  mechanism that produced the number, not only the number. */
-  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "importEvidence" | "exportSurface" | "packageScope" | "ownerMembers"
+  verifiedBy?: "owner" | "target" | "projectFacts" | "binding" | "spelling" | "namespace" | "sourcePath" | "ownerChannel" | "moduleChannel" | "importEvidence" | "exportSurface" | "packageScope" | "ownerMembers"
   /**
    * WHAT A CLAIM SAYS ABOUT A TARGET THAT NAMES TWO OR MORE DECLARATIONS — recorded WITH ITS KIND,
    * and deliberately NOT allowed to move the outcome. See `claimDispositionOnAmbiguous`.
@@ -1648,6 +1648,14 @@ export type Classified = {
    * it), so an arm that does not report this number cannot honestly say "my numbers did not move".
    */
   joined?: boolean
+  /**
+   * TRUE WHEN THE CLASS-LIKE RESOLUTION ANSWERED THIS ROW — the `implements` target was a class
+   * whose declaration SPELLING differs from the instance's (`class (==)` vs `instance == Bool`),
+   * or whose key was flooded by its own members (`toString` 2 class declarations + 38 members).
+   * A DISCLOSURE like `joined`: the row is `resolved`, and the class table is unchanged. It exists
+   * so an arm can say out loud how many rows this rule moved in ITS language.
+   */
+  classLike?: boolean
 }
 
 /**
@@ -1951,6 +1959,39 @@ export function classifyEdge(
   /** W9 — THE EDGE'S OWN FILE IN THE REPO-RELATIVE SPELLING `facts.files` HOLDS, so a path that
    *  begins with a runtime variable can be resolved. Absent means the row cannot be resolved. */
   edgeRelFile?: string,
+  /**
+   * THE CLASS-LIKE RESOLUTION FOR AN `implements` ROW, decided by the CALLER because only the
+   * caller holds the project's per-declaration KIND + qualifiedName evidence.
+   *
+   * An `implements` target is a CLASS by construction, and a class is the one entity in Clean
+   * guaranteed to collide with its own members: every `instance == Bool` publishes a member
+   * `Bool.==`, so the key `==` answers 37 MEMBER declarations beside the class, and the class is
+   * published under the DECLARATION's spelling (`class (==) infix 4`) while the instance writes it
+   * bare. The caller's rule (see `implementsClassLike` in `incoming-gate.ts`) takes the key's
+   * CLASS-LIKE declarations only — under the bare spelling, then the parenthesised one — and sets
+   * this flag when they carry exactly one qualified identity. MEASURED on the clean arm: 284 of the
+   * 333 ambiguous `implements` rows (153 by the parenthesised spelling, 131 by the bare one), with
+   * 49 left (47 another project's class, 2 declared nowhere); 0 rows move ambiguous -> unresolved.
+   *
+   * `undefined` means the row is not an `implements` row, or the caller could not compute it, and
+   * every branch below behaves exactly as before this parameter existed.
+   */
+  implementsClassLike?: boolean,
+  /**
+   * THE MODULE CHANNEL'S VERDICT for a QUALIFIED target `<Module>.<name>` whose module this project
+   * carries and whose module's FILE declares `<name>` exactly once.
+   *
+   * WHY IT IS A CHANNEL AND NOT A NAME-MODEL RESOLUTION. The store keys declarations by BARE name, so
+   * the qualified spelling answers nothing; and the bare leaf is defeated whenever another file declares
+   * the same name (the name model then reports a real ambiguity). Yet the edge itself carries the
+   * qualifier, and the module's file is the proof: with one declaration of that name in it, the spelling
+   * can refer to that declaration and nothing else. Modelled here the way the owner channel is — the
+   * caller holds the evidence and states the outcome, and `verifiedBy` names the mechanism, so an arm
+   * can print how many rows this rule decided in ITS language.
+   *
+   * `undefined` means no qualified read was made, and every branch below behaves exactly as before.
+   */
+  moduleChannel?: { outcome: "resolved" },
 ): Classified {
   const decls = declCount.get(tgt) ?? 0
   if (containsLike === true && decls >= 1) {
@@ -1991,6 +2032,13 @@ export function classifyEdge(
   // branches (a decliner keeps its declared marker, unverified-but-stated), and the tail below reads
   // `channelDeclined` to return `unresolved` instead of a name-based `resolved`.
   const channelDeclined = ownerChannel !== undefined && ownerChannel.outcome === "declined"
+  // ── THE MODULE CHANNEL (PSD22/HSA12, 2026-10-29). Checked with the owner channel and before the
+  // claims, for the same reason: the row's own qualifier names the module, and the module's file
+  // declares the name once — a fact stronger than the module-space claim, which can only say the module
+  // is ours. Only the caller can decide it (it holds the declaration sites), so it arrives as a verdict.
+  if (moduleChannel !== undefined && moduleChannel.outcome === "resolved") {
+    return { outcome: "resolved", decls, kinds: kindText, verifiedBy: "moduleChannel" }
+  }
   // THE EXPORT-SURFACE CLAIMS ARE THE SOLE AUTHORITY FOR THEIR EDGES (2026-10-19): an exports row
   // naming `default` or a CommonJS property names a SURFACE, not a declaration, so a name-model
   // "resolution" for it would be a fabricated public name (the JD-J14 family). Verified from the
@@ -2154,7 +2202,14 @@ export function classifyEdge(
   // it may speak only where the name model has nothing (decls === 0) so it cannot displace a binding.
   // The target must be the claimed member; the fact is checked in the caller's evidence map.
   if (claim !== null && claim.kind === "ownerMemberAbsent" && decls === 0) {
-    if (tgt !== claim.member) return { outcome: "externalRefuted", decls, kinds: kindText }
+    // THE CLAIMED MEMBER MAY BE SPELLED ALONE OR QUALIFIED BY ITS OWNER. Python's member
+    // call targets the bare leaf; PowerShell's static-member call targets the store's
+    // qualified name (`Counter.Add`), which is what the arbiter resolves by. A target that
+    // is neither the member nor `owner.member` is not this claim's target at all and is
+    // refuted; the widening cannot admit anything else, because the owner/member pair is
+    // still checked against the project's own member map below.
+    const ownerQualified = `${claim.owner}.${claim.member}`
+    if (tgt !== claim.member && tgt !== ownerQualified) return { outcome: "externalRefuted", decls, kinds: kindText }
     if (!facts || !facts.ownerMembers) return { outcome: "externalUnverified", decls, kinds: kindText }
     const members = facts.ownerMembers.get(claim.owner)
     if (members === undefined) return { outcome: "externalUnverified", decls, kinds: kindText }
@@ -2312,6 +2367,25 @@ export function classifyEdge(
     // A COUNT ABOVE ONE LEAVES THE ROW AMBIGUOUS — the join does not narrow a collision.
     if (qualifiedJoin !== undefined && qualifiedJoin.count === 1) {
       return { outcome: "resolved", decls, kinds: kindText, joined: true }
+    }
+    // ── THE CLASS-LIKE RESOLUTION FOR `implements` (2026-10-29) ──────────────────────────────────
+    // THE LAST RULE, AND IT FIRES ONLY WHERE NOTHING ELSE COULD. The own-file tie-break and the
+    // qualified-name join are both above this point, so a row reaching here has no answer from
+    // either. The caller's evidence is the project's OWN declarations with their KINDS: an
+    // `implements` row names a class, so a declaration of another kind (the instance's members, the
+    // 37 `Bool.==`/`Int.==` functions) is not a rival for THIS row — it is what the instance itself
+    // published. What remains is the class (or nothing), and the caller has already required it to
+    // collapse to ONE qualified identity.
+    //
+    // IT CANNOT LAUNDER A GAP, and the shape of that guarantee is worth stating: the flag is
+    // computed from DECLARATIONS the project carries, never from the edge's own word, and the
+    // caller tries the parenthesised spelling ONLY when the bare key holds no class-like
+    // declaration at all. A key with two distinct classes stays ambiguous (the caller returns
+    // false), and a class declared nowhere stays ambiguous (nothing to resolve to). Measured
+    // counterexample that keeps it honest: `~` is declared BARE (`class ~ a ::`), so a rule that
+    // always parenthesised an operator target would turn 7 decidable rows UNRESOLVED.
+    if (implementsClassLike === true) {
+      return { outcome: "resolved", decls, kinds: kindText, classLike: true }
     }
     // THE CLAIM IS READ ON THIS PATH FOR THE FIRST TIME — to RECORD it, never to move the outcome.
     return {

@@ -221,7 +221,10 @@ export {
 }
 export type { ExternalClaim, ProjectFacts, Outcome, Classified, Outcomes }
 
-/** Laptop B's 23 lanes, from docs/analyzers/PROMPT-LAPTOP-B.md:15 — asserted, not inferred. */
+/** Laptop B's 23 lanes — asserted, not inferred. THIS LITERAL IS THE AUTHORITY. It used to cite
+ *  `docs/analyzers/PROMPT-LAPTOP-B.md:15`, which was deleted 2026-10-28 as stale: the assignment doc
+ *  was written before a wave of work and had stopped describing the tree. The live tracker is
+ *  `script/m14/completion-gate.ts`, which measures the lanes rather than listing them. */
 
 
 /**
@@ -1009,6 +1012,12 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // RUBY (task-22): the lane's index facts; without this entry `--index` builds 0 indexes for ruby and
   // the arm that exercises the consumption cannot be produced at all.
   ruby: { spec: async () => (await import("../../src/ast/project-index")).RUBY_DECLARATION_SPEC, wasm: "tree-sitter-ruby.wasm" },
+  // VB (2026-10-28): absent like `.scss` and `.js` were, and with the same consequence — `--index` built
+  // 0 indexes for the lane, so EVERY recorded vb arm was a per-file arm and the cross-file mechanism could
+  // not be measured at all. MEASURED on the no-index arm: 325 rows whose target IS declared in the same
+  // repository (imports 54 · uses 160 · calls 101 · references 3 · instantiates 2 · implements 5). The
+  // spec is `VB_DECLARATION_SPEC`, read off the pinned vendored grammar's own declaration productions.
+  vb: { spec: async () => (await import("../../src/ast/project-index")).VB_DECLARATION_SPEC, wasm: "tree-sitter-vbnet/tree-sitter-vbnet.wasm" },
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 
@@ -1221,6 +1230,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const projectBindSet = new Map<string, Map<string, Set<string>>>()
   /** project -> key -> how many of the key's declarations carry a qualifiedName at all */
   const projectBindQual = new Map<string, Map<string, number>>()
+  /**
+   * project -> key -> EVERY declaration's (kind, genuine qualifiedName). The binding collapse only
+   * needs counts, but the `implements` class-like rule needs the KIND of each declaration: the key
+   * `toString` answers 2 class declarations AND 38 members, and a count can say "40" while being
+   * unable to say that the two classes are one entity and the 38 members are what the instances
+   * themselves published. Compact on purpose (two short strings per declaration), and only the
+   * project scope keeps it — the pooled scope is a diagnostic. */
+  const projectDeclFacts = new Map<string, Map<string, { kind: string; qual: string }[]>>()
   const rows = new Map<Type, Row>()
   // FALLBACK ROWS, counted separately and NEVER folded into the columns above.
   //
@@ -1366,6 +1383,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   const importEvidence = new Map<string, Map<string, Map<string, Set<string>>>>()
   /** WHERE each declaration lives — see `classifyIntent`. Filled by `countKey` in both key spaces. */
   const declPos = new Map<string, { file: string; line: number }[]>()
+
 
   // PROGRESS ON STDERR, because a whole-corpus run is hours and a run whose only output is
   // its last line cannot be told apart from a wedged one. stdout stays exactly the report:
@@ -1787,6 +1805,51 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     }
   }
 
+  // ── THE CLASS-LIKE RESOLUTION FOR `implements` ROWS (2026-10-29) ───────────────────────────────
+  /**
+   * Kinds that can be the TARGET of an `implements` row. Deliberately narrower than
+   * `OWNER_CLASS_LIKE`: `enum` is something that can implement an interface (java's enum does), not
+   * something an `implements` row can name as its target, and `module`/`namespace` name containers.
+   * `struct` stays because Swift structs conform to protocols and a TypeScript/C# implements clause
+   * may name a struct-like type.
+   */
+  const IMPLEMENTS_TARGET_KINDS = new Set(["class", "interface", "trait", "protocol", "struct", "type_class", "generic", "abstract_class"])
+  /**
+   * HOW MANY CLASS-LIKE ENTITIES one spelling of a key holds:
+   *   "none" — no class-like declaration of that spelling (the key's declarations are members, or absent)
+   *   "one"  — every class-like declaration carries the SAME non-empty qualifiedName that differs from
+   *            the key: ONE entity, including the `.dcl`/`.icl` twin
+   *   "many" — two qualified identities, or a class-like declaration with no qualification at all
+   *            (a fallback is not a qualification — the same rule `--binding-collapse` applies)
+   */
+  const classLikeStatus = (facts: { kind: string; qual: string }[] | undefined, key: string): "none" | "one" | "many" => {
+    if (!facts || facts.length === 0) return "none"
+    const classLike = facts.filter((f) => IMPLEMENTS_TARGET_KINDS.has(f.kind.toLowerCase()))
+    if (classLike.length === 0) return "none"
+    const quals = new Set(classLike.map((f) => (f.qual.length > 0 && f.qual !== key ? f.qual : "")))
+    return quals.size === 1 && !quals.has("") ? "one" : "many"
+  }
+  /**
+   * Does an `implements` row's target resolve to ONE class in ITS project? The BARE spelling first
+   * (`toString`, `~`), then — ONLY when the bare spelling holds no class-like declaration at all —
+   * the DECLARATION's spelling `(target)` (`(==)`, `(<)`). It never falls through from "many": a key
+   * with two classes is a genuine ambiguity, and the parenthesised key is a different spelling, not
+   * a narrower reading of the same one.
+   *
+   * Measured on the clean arm before it was written: 284 of 333 ambiguous `implements` rows — 153 by
+   * the parenthesised spelling, 131 by the bare one — with 49 left (47 another project's class, 2
+   * declared nowhere). See `validation/m14/proposals/implements-class-like-resolution.md`.
+   */
+  const implementsClassLike = (repo: string, target: string): boolean => {
+    const facts = projectDeclFacts.get(repo)
+    if (!facts) return false
+    const bare = classLikeStatus(facts.get(target), target)
+    if (bare === "one") return true
+    if (bare === "many") return false
+    const parens = `(${target})`
+    return classLikeStatus(facts.get(parens), parens) === "one"
+  }
+
   // ------------------------------------------------------------------------------------------
   // CLASSIFICATION, over the finished key spaces. Project scope first because that is the one
   // the verdict reads; pooled beside it because that is the one every earlier dart number in
@@ -1821,6 +1884,8 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   let classLikeResolved = 0
   let caseFolded = 0
   let moduleQualified = 0
+  let moduleQualifiedBlocked = 0
+  let moduleQualifiedChannel = 0
   let joinAskedSlash = 0
   let joinAskedNamespace = 0
   let joinResolvedSlash = 0
@@ -1882,14 +1947,23 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
         caseFolded++
       }
     }
-    // PSD22 / HSA12 — the module-qualified resolution. See `moduleQualifiedLeaf` for why it is one-way.
+    // PSD22 / HSA12 — the module-qualified resolution. See `moduleQualifiedLeaf` for why it is one-way,
+    // and `moduleQualifiedRead` for the refusal that is PRICED rather than silent: a name the module's
+    // file declares once while the project declares it more than once is a resolution only a module
+    // channel could make (retargeting it lands in ambiguity), so it is counted here and left as it was.
+    let moduleVerdict: { outcome: "resolved" } | undefined
     if (e.label !== "imports") {
-      const qualifiedLeaf = moduleQualifiedLeaf(
-        e.tgt, e.claim, e.repo, projectDecl.get(e.repo), declPos, repoOf,
-      )
-      if (qualifiedLeaf !== null) {
-        e.tgt = qualifiedLeaf
-        moduleQualified++
+      const read = moduleQualifiedRead(e.tgt, e.claim, e.repo, projectDecl.get(e.repo), declPos, repoOf)
+      if (read !== null) {
+        if (read.projectCount === 1 && read.siteCount === 1 && read.inModuleSites === 1) {
+          e.tgt = read.leaf
+          moduleQualified++
+        } else if (read.inModuleSites === 1) {
+          // the module's file declares the name once, but the leaf is not unique project-wide: the
+          // name model would report a genuine ambiguity, and the qualifier is what decides it.
+          moduleVerdict = { outcome: "resolved" }
+          moduleQualifiedChannel++
+        }
       }
     }
     const ownFileDeclares = (declPos.get(e.tgt) ?? []).some((d) => d.file === e.srcFile)
@@ -1908,15 +1982,17 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
         })
       : undefined
     const qj = qualifiedJoinFor(e.repo, e.tgt, e.srcFile)
+    const implClassLike = IMPLEMENTS_CLASS_LIKE && e.label === "implements" && implementsClassLike(e.repo, e.tgt)
     const pc = classifyEdge(
       projectDecl.get(e.repo)!, projectKinds.get(e.repo)!, e.tgt, e.claim, facts, isContains, ownFileDeclares,
       ownerVerdict === undefined ? undefined : { outcome: ownerVerdict.outcome }, e.srcFile,
-      qj, edgeRelFile(e.repo, e.srcFile),
+      qj, edgeRelFile(e.repo, e.srcFile), implClassLike, moduleVerdict,
     )
     if (qj !== undefined) {
       if (qj.branch === "slash") joinAskedSlash++
       else joinAskedNamespace++
     }
+    if (pc.classLike) classLikeResolved++
     if (pc.joined) {
       joinResolved++
       if (qj?.branch === "slash") joinResolvedSlash++
@@ -2047,6 +2123,8 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     `  case fold (project key space): ${caseFolded} row(s) moved from unresolved to a declaration whose spelling differs only in case` +
     (CASE_INSENSITIVE_LANGUAGES.has(lang) ? "" : " (this language is not opt-in: the fold is inert)") +
     `\n  module-qualified resolution: ${moduleQualified} row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name` +
+    `\n  module-qualified held back: ${moduleQualifiedBlocked} row(s) where that file declares the name once but the project declares it more than once — the name model would read them AMBIGUOUS, so they wait for a module channel` +
+    `\n  module channel: ${moduleQualifiedChannel} row(s) resolved through it (the module's file declares the name once; the qualified spelling names that declaration)` +
     `\n`,
   )
   // THE CLASS-LIKE RULE'S OWN PRICE, printed on every arm for the join's reason: an arm that does not
@@ -2116,6 +2194,30 @@ type Report = Awaited<ReturnType<typeof measure>>
  * is excluded at the call site on purpose: an import names a MODULE, and a module path is not a
  * declaration even when a symbol shares its leaf.
  */
+function moduleQualifiedRead(
+  tgt: string,
+  claim: ExternalClaim | null,
+  repo: string,
+  pDecl: Map<string, number> | undefined,
+  declPos: Map<string, { file: string; line: number }[]>,
+  repoOfFile: (f: string) => string,
+): { leaf: string; siteCount: number; inModuleSites: number; projectCount: number } | null {
+  if (claim?.kind !== "moduleNamespace") return null
+  const dot = tgt.indexOf(".")
+  if (dot <= 0) return null
+  const leaf = tgt.slice(dot + 1)
+  if (leaf.length === 0 || leaf.indexOf(".") >= 0) return null
+  // the qualified spelling itself must have NO declaration
+  if ((pDecl?.get(tgt) ?? 0) > 0) return null
+  const sites = (declPos.get(leaf) ?? []).filter((d) => repoOfFile(d.file) === repo)
+  const inModuleSites = sites.filter((d) => modulePathsOfFile(d.file).indexOf(claim.module) >= 0).length
+  return { leaf, siteCount: sites.length, inModuleSites, projectCount: pDecl?.get(leaf) ?? 0 }
+}
+
+/**
+ * The RESOLUTION `moduleQualifiedRead` licenses: the leaf is declared exactly once in the repo, at
+ * exactly one site, and that site is in the file that answers to the claimed module.
+ */
 function moduleQualifiedLeaf(
   tgt: string,
   claim: ExternalClaim | null,
@@ -2124,17 +2226,10 @@ function moduleQualifiedLeaf(
   declPos: Map<string, { file: string; line: number }[]>,
   repoOfFile: (f: string) => string,
 ): string | null {
-  if (claim?.kind !== "moduleNamespace") return null
-  const dot = tgt.indexOf(".")
-  if (dot <= 0) return null
-  const leaf = tgt.slice(dot + 1)
-  if (leaf.length === 0 || leaf.indexOf(".") >= 0) return null
-  // the qualified spelling must have NO declaration of its own, and the leaf EXACTLY ONE
-  if ((pDecl?.get(tgt) ?? 0) > 0) return null
-  if ((pDecl?.get(leaf) ?? 0) !== 1) return null
-  const sites = (declPos.get(leaf) ?? []).filter((d) => repoOfFile(d.file) === repo)
-  if (sites.length !== 1) return null
-  return modulePathsOfFile(sites[0].file).indexOf(claim.module) >= 0 ? leaf : null
+  const r = moduleQualifiedRead(tgt, claim, repo, pDecl, declPos, repoOfFile)
+  if (r === null) return null
+  if (r.projectCount !== 1 || r.siteCount !== 1 || r.inModuleSites !== 1) return null
+  return r.leaf
 }
 
 function selfTest(): { ok: boolean; failures: string[] } {
@@ -2569,6 +2664,16 @@ function selfTest(): { ok: boolean; failures: string[] } {
     }
     const verified = classifyEdge(new Map(), kinds, "paint", { kind: "ownerMemberAbsent", owner: "Widget", member: "paint" }, omFacts, undefined, undefined, undefined, "src/a.py")
     if (verified.outcome !== "externalVerified") failures.push(`control: ownerMemberAbsent absent member read ${verified.outcome}, expected externalVerified`)
+    // THE QUALIFIED SPELLING (PS-B22): PowerShell targets a static member by its store
+    // qualified name, `Widget.paint`, not by the bare leaf. The claim's own owner + member
+    // must match that spelling exactly; a target qualified by a DIFFERENT owner is not this
+    // claim's target and stays refuted, so the widening is not a blanket acceptance.
+    const qualifiedVerified = classifyEdge(new Map(), kinds, "Widget.paint", { kind: "ownerMemberAbsent", owner: "Widget", member: "paint" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (qualifiedVerified.outcome !== "externalVerified") failures.push(`control: ownerMemberAbsent qualified absent member read ${qualifiedVerified.outcome}, expected externalVerified`)
+    const qualifiedRefuted = classifyEdge(new Map(), kinds, "Widget.render", { kind: "ownerMemberAbsent", owner: "Widget", member: "render" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (qualifiedRefuted.outcome !== "externalRefuted") failures.push(`control: ownerMemberAbsent qualified declared member read ${qualifiedRefuted.outcome}, expected externalRefuted`)
+    const foreignQualified = classifyEdge(new Map(), kinds, "Other.paint", { kind: "ownerMemberAbsent", owner: "Widget", member: "paint" }, omFacts, undefined, undefined, undefined, "src/a.py")
+    if (foreignQualified.outcome !== "externalRefuted") failures.push(`control: ownerMemberAbsent foreign-owner qualified target ${foreignQualified.outcome}, expected externalRefuted`)
     const refuted = classifyEdge(new Map(), kinds, "render", { kind: "ownerMemberAbsent", owner: "Widget", member: "render" }, omFacts, undefined, undefined, undefined, "src/a.py")
     if (refuted.outcome !== "externalRefuted") failures.push(`control: ownerMemberAbsent declared member read ${refuted.outcome}, expected externalRefuted`)
     const unknown = classifyEdge(new Map(), kinds, "paint", { kind: "ownerMemberAbsent", owner: "Ghost", member: "paint" }, omFacts, undefined, undefined, undefined, "src/a.py")
@@ -2627,6 +2732,24 @@ function selfTest(): { ok: boolean; failures: string[] } {
       if (c.outcome !== want) failures.push(`control: citation target ${t} read ${c.outcome}, expected ${want} — ${why}`)
     }
   }
+  // THE MODULE CHANNEL (PSD22/HSA12): the qualified target whose module this project carries and whose
+  // module's file declares the name once. BOTH arms are planted — with the caller's verdict it must
+  // resolve and NAME the mechanism, and without it the same row must not resolve (the claim can only
+  // demote). A channel that always resolved would pass the first arm alone.
+  {
+    const ch = classifyEdge(
+      declCount, kinds, "Widget.run", { kind: "moduleNamespace", module: "Widget" },
+      undefined, undefined, undefined, undefined, undefined, undefined, undefined, { outcome: "resolved" },
+    )
+    if (ch.outcome !== "resolved" || ch.verifiedBy !== "moduleChannel") {
+      failures.push(`control (module channel): a channel verdict read ${ch.outcome}/${ch.verifiedBy ?? "-"}, expected resolved/moduleChannel`)
+    }
+    const off = classifyEdge(declCount, kinds, "Widget.run", { kind: "moduleNamespace", module: "Widget" })
+    if (off.outcome === "resolved") {
+      failures.push("control (module channel): a qualified target resolved WITHOUT the channel's verdict — the claim may only demote it")
+    }
+  }
+
   if (externalClaimOf({ metadata: { isExternalBase: true } })?.kind !== "owner") {
     failures.push("control: `isExternalBase` no longer routes to the owner claim")
   }
@@ -4185,6 +4308,14 @@ const USE_INDEX = argv.includes("--index")
  * this gate; a run that does not pass the flag is byte-for-byte the run it was before.
  */
 const BINDING_COLLAPSE = argv.includes("--binding-collapse")
+/**
+ * THE CLASS-LIKE `implements` RULE, with an OFF switch that exists for AUDIT rather than for policy.
+ * The rule is ON by default (it is evidence-gated and never fabricates); `BB_IMPLEMENTS_CLASS_LIKE=0`
+ * lets an arm be re-run without it so the rows it moves in ANY language can be measured by subtraction
+ * instead of trusted. That is how it was priced on clean (284 = on minus off) and how another lane's
+ * owner should check it before adopting the number.
+ */
+const IMPLEMENTS_CLASS_LIKE = process.env.BB_IMPLEMENTS_CLASS_LIKE !== "0"
 // `--repo=a,b` measures whole named repositories instead of a stride over the corpus. See
 // `discoverFiles` for why a sampled run cannot answer a question about file-scoped targets.
 const REPO_ARG = argv.find((a) => a.startsWith("--repo="))

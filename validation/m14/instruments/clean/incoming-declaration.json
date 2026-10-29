@@ -1,40 +1,58 @@
 {
+  "lane": "clean",
+  "language": "clean",
+  "ext": ".icl,.dcl",
+  "declared": "2026-10-29",
+  "_what_this_is": "The `clean` lane's WHOLE-POPULATION declaration, rebuilt 2026-10-29 from a live arm. IT WAS REBUILT AGAIN BECAUSE THE 2026-10-28 VERSION PUBLISHED A CLAIM THE ARM REFUTES: it recorded `imports` as 1,932 answered with `extFAIL 0`, and the same arm reads **extFAIL 1,177** — the 1,177 `importProjectFile` claims had been read from the REFUTED column as if they were the verified one (the verified total was 755 = 438 projectFile + 317 moduleNamespace). The claim is fixed at its source (a file claim is now emitted only where the guard confirms a file), imports read 891 verified + 1,041 unclaimed, and extFAIL is 0. The residual is now partitioned by a census (`validation/m14/fixtures/clean/residual-cause-census.mts`, control PASS) into 11 named causes whose counts sum to the ambiguous + unresolved column exactly.",
+  "_arm": {
+    "instrument": "bun run script/m14/incoming-gate.ts clean icl,dcl 0 --binding-collapse (also via script/m14/residual-gate.ts --lane clean)",
+    "corpusRoot": "$HOME/fixtures/repositories",
+    "population": "312 admitted files, 312 parsed, 0 parse failures, 0 degraded; 5 repositories",
+    "repos": [
+      "clean-stdlib",
+      "Prelude",
+      "Clyde",
+      "eastwood",
+      "cloogle.org"
+    ],
+    "index": "no",
+    "measured": "2026-10-29",
+    "_residual_gate_runs_the_wrong_arm": "FIXED 2026-10-29. Until this date `script/m14/residual-gate.ts --lane clean` invoked the incoming gate WITHOUT `--binding-collapse`, so it reported 20,366 resolved / 2,785 ambiguous / residual 5,296 and `overrides` 2/304 — the NO-COLLAPSE arm, a state this lane fixed on 2026-10-28, while the edge population, unresolved, extOK and extFAIL agreed exactly (which pinned the difference to the collapse pass). The gate now carries `BINDING_COLLAPSE_LANES = new Set([\"clean\"])`, appends the flag to the runner's argv, and prints the arm in its header. MEASURED after the fix: resolved 22,075 · ambiguous 1,076 · residual 3,587 · `overrides` 306/306 — identical to this file's arm of record.",
+    "bindingCollapse": "YES — `--binding-collapse`, and it is the CORRECT mode for this language rather than a leniency: a Clean module is declared in `.dcl` and implemented in `.icl`, so the same member is ONE declaration in two files. The gate's rule collapses a key to ONE declaration iff EVERY declaration answering to it carries the same NON-EMPTY qualifiedName that DIFFERS from the bare name (`qualifiedName = name` is the store's file-scope fallback, and a fallback is not a qualification). MEASURED 2026-10-29: **3,148 keys collapsed** (719 on 2026-10-28), 7,836 qualifiedName aliases indexed (2,649), and the growth is the module-qualified identity fix below — a module-level `.dcl`/`.icl` pair could not collapse before it, because the analyzer published no qualifiedName at module scope at all. `references` ambiguity 1,808 -> 1,011 and `exports` 40 -> 12 come from that fix; `overrides` was 2/306 -> 306/306 on 2026-10-28 (the class-member half of the same pair, whose `Owner.member` spelling already qualified)."
+  },
   "meta": {
-    "lang": "clean",
-    "instrument": "npx tsx script/m14/incoming-gate.ts --json clean icl,dcl 0",
-    "generator": "script/m14/arm-declaration.ts — transcribes the arm's own per-type buckets and REFUSES a sample, a non-whole population, a broken external split or a closure that does not sum",
+    "parsed": 312,
     "sample": 312,
     "corpusTotal": 312,
-    "corpusRepos": 5,
-    "parsed": 312,
-    "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
-    "metric": "edges counted once per (source, type, target, line) by the analyzer; buckets counted on the SAME edge in the SAME loop",
-    "analyzer": "src/ast/real-clean-analyzer.ts",
-    "analyzerDigest": "sha256:b7603c8348ff6e29aa5f2e08b4ecb701b2a458f799d0ed469efe465fb86b3882",
-    "arm": "validation/m14/measurements/clean-gate-whole-2026-10-28.json",
-    "indexArm": false,
-    "armVerdict": "FAIL",
-    "armReason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 6833 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  3906 ambiguous + 2927 unresolved of 30868 edges, resolved against the file's OWN PROJECT (production's scope)",
-    "instrumentSelfTest": {
-      "ok": true,
-      "failures": []
-    },
-    "absentFiles": 0,
-    "overCapFiles": 0,
-    "sizeCapBytes": 1048576
+    "repos": [
+      "clean-stdlib",
+      "Prelude",
+      "Clyde",
+      "eastwood",
+      "cloogle.org"
+    ],
+    "exts": "icl,dcl",
+    "index": "no"
   },
-  "causeRulings": {},
-  "causeRulingsNote": "EMPTY BECAUSE NO EDGE CARRIES A DECLARED CAUSE: the arm's cause columns read causeDeclared 0 and the residual is dispositioned by the WALL classes it does not name. An empty map here means 'the analyzer declares no cause that would need a ruling', which the completion gate reads as clause 3 SATISFIED — not as a missing section.",
+  "closure": {
+    "edges": 30400,
+    "resolved": 22075,
+    "external": 4738,
+    "ambiguous": 1076,
+    "otherUnresolved": 2511,
+    "unclassed": 0,
+    "_check": "22075 + 4738 + 1076 + 2511 + 0 = 30400",
+    "_unit": "the fourteen published types over the 312-file admitted population; each row's buckets sum to its edges",
+    "_external_is_a_coarsening": "`external` HERE = externalVerified + binding-verified FILE claims: 891 `imports` (574 confirmed `importProjectFile` claims + 317 confirmed `moduleNamespace` claims) + 3,843 verified `references` `isStdlib` claims + 4 verified `implements` claims (`FileEnv`/`FileSystem`, the stdlib class names, verified through their owner). Every one is a CLAIM and none is a resolution, so the lane's coarsening covers them. `extFAIL` is 0 and `ext?` is 0."
+  },
   "types": {
     "calls": {
       "edges": 3819,
-      "resolved": 3449,
+      "resolved": 3741,
       "external": 0,
-      "ambiguous": 295,
-      "otherUnresolved": 75,
-      "unclassed": 0,
-      "_ambKind": 1,
-      "_collRes": 0
+      "ambiguous": 4,
+      "otherUnresolved": 74,
+      "unclassed": 0
     },
     "uses": {
       "edges": 1457,
@@ -42,49 +60,39 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "contains": {
-      "edges": 7541,
-      "resolved": 7541,
+      "edges": 7579,
+      "resolved": 7579,
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 5171
+      "unclassed": 0
     },
     "imports": {
-      "edges": 1917,
+      "edges": 1932,
       "resolved": 0,
-      "external": 438,
+      "external": 891,
       "ambiguous": 0,
-      "otherUnresolved": 1479,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "otherUnresolved": 1041,
+      "unclassed": 0
     },
     "references": {
       "edges": 10113,
-      "resolved": 4244,
-      "external": 1763,
-      "ambiguous": 2748,
-      "otherUnresolved": 1358,
-      "unclassed": 0,
-      "_ambKind": 798,
-      "_collRes": 0
+      "resolved": 3878,
+      "external": 3843,
+      "ambiguous": 1011,
+      "otherUnresolved": 1381,
+      "unclassed": 0
     },
     "exports": {
-      "edges": 4821,
-      "resolved": 4599,
+      "edges": 4303,
+      "resolved": 4291,
       "external": 0,
-      "ambiguous": 222,
+      "ambiguous": 12,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 8,
-      "_collRes": 0
+      "unclassed": 0
     },
     "extends": {
       "edges": 0,
@@ -92,29 +100,23 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "implements": {
-      "edges": 772,
-      "resolved": 416,
+      "edges": 769,
+      "resolved": 701,
       "external": 4,
-      "ambiguous": 337,
+      "ambiguous": 49,
       "otherUnresolved": 15,
-      "unclassed": 0,
-      "_ambKind": 196,
-      "_collRes": 0
+      "unclassed": 0
     },
     "overrides": {
       "edges": 306,
-      "resolved": 2,
+      "resolved": 306,
       "external": 0,
-      "ambiguous": 304,
+      "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "instantiates": {
       "edges": 122,
@@ -122,9 +124,7 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "decorates": {
       "edges": 0,
@@ -132,9 +132,7 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "renders": {
       "edges": 0,
@@ -142,9 +140,7 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "mixes_in": {
       "edges": 0,
@@ -152,9 +148,7 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     },
     "part_of": {
       "edges": 0,
@@ -162,12 +156,226 @@
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
-      "unclassed": 0,
-      "_ambKind": 0,
-      "_collRes": 0
+      "unclassed": 0
     }
   },
-  "resolution_caveats": {
-    "buckets": "THE FIVE BUCKETS ARE A DECLARED COARSENING OF THE ARM'S ELEVEN TERMS, NOT THE ELEVEN TERMS: external = externalVerified + externalUnverified, and otherUnresolved carries unresolved + externalRefuted + the binding and cause columns. Every row's buckets sum to its edge count and `unclassed` is 0 by construction — the generator REFUSES to write a row that does not close."
+  "causeRulings": {
+    "module-halves-are-one-module": {
+      "count": 590,
+      "types": [
+        "references"
+      ],
+      "byType": {
+        "references": 590
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "The target is a MODULE name and EVERY declaration answering it is a MODULE symbol: the `.dcl` half (`definition module X`) and the `.icl` half (`implementation module X`) of ONE module. A target that names a module cannot be ambiguous by MEANING — Clean has one module per name, and these two are it — but the gate's collapse cannot merge the key, because its rule requires a qualifiedName that DIFFERS from the bare name and a module's qualified identity IS its name (`qualifiedName = name`, which is the store's fallback spelling and must not be read as a qualification). MEASURED on the arm's own dump with the census covering the whole population: 590 rows, top targets `Cocoa.objc` 30 · `UtilStrictLists` 27 · `StdClass` 26 · `Cocoa.Foundation` 22 · `Cocoa.msg` 21 · `StdOverloaded` 20, all of them two module symbols. NOT COUNTED AS A DEFECT OF THE ANALYZER: publishing the module from both halves is TRUE (both files declare it), and suppressing one half would be a false statement made to move a number. This is a GATE-MODEL limit, named and priced.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a `references` row in the module-halves bucket whose declaration set contains anything other than MODULE symbols, or a module in the corpus whose `.dcl` and `.icl` halves do NOT both publish the module symbol (then the twin is not the cause)."
+      }
+    },
+    "module-name-reused-as-a-type": {
+      "count": 95,
+      "types": [
+        "references"
+      ],
+      "byType": {
+        "references": 95
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "A MODULE symbol plus a NON-module declaration of the same name: Clean projects name their central type after the module, so `Diagnostic.icl` declares `Diagnostic` (type) in the same project whose module symbol is also `Diagnostic`. The module's own name is not a collapsible gap (see the ruling above) and the type is a real declaration, so a type position answers both. MEASURED: 95 rows, `Diagnostic` 46 · `Range` 23 · `Symbol` 14 · `Target` 8 · `typewin` 2 · `logfile` 1 — and the declaration sets are exactly (module symbol + the module's own type). The analyzer cannot drop either: the type is what the reference means, and the module symbol is what `contains`/`exports` edges use as their source.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose non-module declarations are NOT declared by the same module whose module symbol answers the name (then it is cross-module, not the module/type idiom)."
+      }
+    },
+    "module-level-same-name-in-different-modules": {
+      "count": 181,
+      "types": [
+        "references",
+        "implements",
+        "exports"
+      ],
+      "byType": {
+        "references": 177,
+        "implements": 2,
+        "exports": 2
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "Two or more MODULE-LEVEL declarations of the same name in DIFFERENT modules of one project — the module-qualified identity distinguishes them (that is why they did NOT collapse), and a bare target genuinely means one of several. `List` 164 (a FUNCTION `List` in Clyde's `UtilOptions` and a TYPE `List` in `UtilStrictLists`, so the kinds differ as well) and `NSView` 13 (`Cocoa.layout` and `Cocoa.tabview` each declare the type). This is the one residual class where the name really is overloaded at module scope, and it is a property of the corpus rather than of the analyzer: the source writes a bare name and the language resolves it by the import's module, which a name-keyed arbiter does not model. NOT FIXED, COUNTED — a fix would mean a qualified target spelling the source does not write.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose module-level declarations all share ONE module (i.e. a `.dcl`/`.icl` twin the qualified identity failed to collapse) — the census reports that as `twin-not-collapsed`, and its count is 0."
+      }
+    },
+    "class-name-is-its-members-name": {
+      "count": 132,
+      "types": [
+        "references",
+        "implements",
+        "calls",
+        "exports"
+      ],
+      "byType": {
+        "references": 104,
+        "implements": 15,
+        "calls": 3,
+        "exports": 10
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "One CLASS/INTERFACE declaration plus N members that spell the class's OWN name — Clean's degenerate naming: `class toString a` declares `toString`, and EVERY instance of it declares a member `toString`, so the bare key answers the class AND every instance's member. MEASURED **132** rows REMAINING after the class-like rule (313 before it): references 104 · implements 15 · calls 3 · exports 10. A NAME-keyed key space cannot pick the class out of that set; a KIND-aware one can, and THE CLASS-LIKE RULE NOW DOES for `implements` rows (TAKEN 2026-10-29, `implementsClassLike` in the classifier): it took 181 of this bucket's 196 `implements` rows. The 104 `references`, 3 `calls` and 10 `exports` rows remain because their LABEL does not say the target is a class — a `references` row may name a value. The analyzer emits the right target — the instance names its class — so this is a RULING ABOUT THE MODEL, not a target-spelling defect. It is the same family the `overrides` caveat named on 2026-10-28 (`addTabViewItem.addTabViewItem`), now measured for every type.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket with NO class/interface declaration among its declarations (the census would place it in `instance-member-collision`), or a class whose members do NOT share its name (then the target could resolve and the row is a defect, not the idiom)."
+      }
+    },
+    "instance-members-without-the-class": {
+      "count": 78,
+      "types": [
+        "references",
+        "implements",
+        "calls"
+      ],
+      "byType": {
+        "references": 45,
+        "implements": 32,
+        "calls": 1
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "Every declaration answering the target is a MEMBER (ownerName is a type), in two or more owners, and NO class declaration answers it. For an `implements` row this is the OPERATOR-CLASS SPELLING effect, measured: the class is DECLARED parenthesised (`class (<<<) a` in clean-stdlib/StdFile.dcl) while the INSTANCE spells it bare (`instance <<< ...`), so the bare target answers only the instances' same-named members (`<<<` 24, `<` 31, `==` 18, `%` 16, `+` 9, `-` 9). MEASURED 181 rows, and the alternative was PRICED rather than waved away: 198 of the 769 `implements` targets are operator-shaped, and **153 of the 333 ambiguous rows name a class that IS declared parenthesised in the edge's own project** — so publishing the declaration's spelling `(<class>)` would resolve 153. It is NOT taken, for two reasons that are both facts and not preferences: (1) the lane's own identity for an operator class is the BARE name — `isLocallyDeclaredOperatorClass` reads `(<class>)` as the DECLARATION's spelling and matches the instance's bare name to it — so a parenthesised TARGET asserts a spelling the source does not write in that position; (2) the 153 are clean-stdlib's own declared-here rows, and the other 180 would move from ambiguous to unresolved, i.e. the same wall with a different label, which is exactly the kind of label move the contract forbids when it is presented as progress. Recorded as a MEASURED DESIGN DECISION, decision (a) of two. LATER THE SAME DAY, THE LEVER WAS PRICED THE OTHER WAY, AND IT IS A DIFFERENT LEVER: a GATE-SIDE rule that leaves the ANALYZER's target spelling exactly as the source writes it and resolves the row against the CLASS among the key's declarations. `validation/m14/fixtures/clean/implements-class-spelling.mts` (the arm's own `--dump` + the project's own symbols over `git ls-files`, 333 ambiguous rows, 333 classified) measures the split: **153** decided by the PARENTHESISED spelling (`(T)` is declared class-like and collapses to one — `(==)` 43, `(<)` 31, `(<<<)` 24, `(%)` 16, …), **131** decided by the BARE spelling (`T` is itself the class and collapses to one — `~` 7 proves the spelling is a project fact and NOT derivable per file, `fromString` 13, `toInt` 8, …), and **49** with no class-like declaration under EITHER spelling — split by measurement into **47** whose class is declared in ANOTHER project of the corpus (Clyde's `instance == Processor` names `StdOverloaded`'s class, declared in `clean-stdlib`) and **2** declared NOWHERE in the corpus (`JSONEncode`/`JSONDecode`, eastwood `SemVer.dcl:38-39`). So the analyzer-side rewrite's cost was real (the 180 would have moved ambiguous -> unresolved) and the gate-side rule has no such cost. TAKEN 2026-10-29: `implementsClassLike` in `script/m14/incoming-gate.ts` plus the `classLike` branch in `incoming-rule.ts` resolve the row against the key's CLASS-LIKE declarations under the bare, then the parenthesised, spelling, requiring ONE qualified identity. MEASURED ON THE ARM: **284 rows resolved, exactly the price** — `implements` 417 -> **701** resolved, ambiguous 333 -> **49**; overall resolved 21,791 -> **22,075**, ambiguous 1,360 -> **1,076**, every other column unchanged, extFAIL still 0 — and THIS bucket 181 -> **78** (`implements` 135 -> 32). The analyzer is UNCHANGED: the rule is in the classifier.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose class-like declarations DO carry exactly one qualified identity (then `implementsClassLike` should have taken it), or a row the rule took whose class-like declarations carry two DISTINCT qualifiedNames (then it resolved to one of two classes). Re-run the arm and compare the bucket counts with 78 / 32."
+      }
+    },
+    "import-module-file-on-a-search-path": {
+      "count": 222,
+      "types": [
+        "imports"
+      ],
+      "byType": {
+        "imports": 222
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "The target is a `Module:item` / `Module:*` import whose MODULE the edge's own project DECLARES, but whose FILE the claim's candidate spellings did not reach: Clean modules are found on a SEARCH PATH, not at the project root (`UtilStrictLists` lives at `cleantools/Util/UtilStrictLists.icl`, not beside `Clyde/outlineviewcontroller.icl` that imports it). MEASURED 222 rows, `UtilStrictLists:*` 18 · `StdPathname:*` 12 · `Range:*` 10 · `Diagnostic:Diagnostic` 9 · `UtilStrictLists:List` 7. THE CLAIM IS NOT MADE, DELIBERATELY: an unconfirmed file claim REFUTES (`extFAIL`), and a project-wide search is the only spelling that would confirm these — priced at 243 edges (`imports-claim-pricing.mts`, candidate set C, every hit a file that DECLARES the module; its leaf-ambiguity question WAS settled by a follow-up probe — 239 unique-directory hits and 4 for eastwood's two `Linter.icl` files), but not taken, for a reason that is soundness rather than cost: the claim is checked against the ADMITTED list (`git ls-files`), and a filesystem walk can name an UNTRACKED file (a `_build` copy) that the gate would REFUTE. MEASURED 2026-10-29: `git ls-files --others` for `*.icl`/`*.dcl` is 0 in all five repositories, so a walk would be sound on THIS corpus — but the admitted list is exactly what a per-file analyzer does not have, and production Clean trees carry untracked `_build` output. The performance cost is a second, unmeasured limit (the lane has no `Clyde:clean` F baseline row to charge it to). PROPOSED, NOT CLAIMED: `validation/m14/proposals/clean-import-file-claim-project-search.md`.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/import-claim-pricing.mts --json=validation/m14/measurements/clean/import-claim-pricing-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose module is NOT declared by the edge's project (then it belongs to another bucket), or a candidate-set-C hit whose file does not declare the module."
+      }
+    },
+    "import-module-in-another-project": {
+      "count": 59,
+      "types": [
+        "imports"
+      ],
+      "byType": {
+        "imports": 59
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "The import names a module the CORPUS carries, in a project that is not the edge's: `Data.Functor:*` 13 · `Data.List:*` 12 · `Control.Applicative:*` 6 · `Control.Monad:*` 4 · `Control.Monad:join` 3 · `Data.Array:*` 2. Those modules ARE admitted files — in `Prelude`, which is a different repository, and resolution is PER PROJECT (production's scope), so at this scope they are genuinely unreachable. The class is checkable (the module is declared somewhere in the corpus) and that is why it is counted apart from the next ruling rather than folded into 'nowhere'.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose module is ALSO declared by the edge's own project (then the file claim should have been reachable) or declared by NO project (then it belongs in `import-module-declared-nowhere`)."
+      }
+    },
+    "import-module-declared-nowhere": {
+      "count": 760,
+      "types": [
+        "imports"
+      ],
+      "byType": {
+        "imports": 760
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "The import names a module NO admitted file declares anywhere in the corpus — the Clean platform libraries the corpus does not carry: `Data.Error:*` 22 · `Data.Maybe:*` 21 · `Text:*` 20 · `System._Pointer:*` 14 · `System.FilePath:*` 14 · `System.File:*` 14. This is the import half of the same wall as `name-declared-nowhere-in-the-corpus`, and the honest reading of `<Module>:item`: the item is bound by a module whose file the run never saw. A claim COULD be manufactured here (`moduleNamespace` verifies whenever the project does not carry the module) and that is exactly why it is refused — the closed stdlib list is the evidence and these modules are not in it (the corpus's `clean-stdlib` carries only the `Std*` modules; `Data/` and `System/` are absent, measured by `stdlib-inventory.mts`). A widened list would be vocabulary, i.e. the laundering vector the contract forbids.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/stdlib-inventory.mts --json=validation/m14/measurements/clean/stdlib-inventory-2026-10-29.json",
+        "wouldFail": "a module in this bucket declared by any admitted file in the corpus (the inventory walks clean-stdlib and Prelude through production `parseFile`), or a `Data.*`/`System.*` module file present in `clean-stdlib` after all."
+      }
+    },
+    "reference-module-in-another-project": {
+      "count": 51,
+      "types": [
+        "references"
+      ],
+      "byType": {
+        "references": 51
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "A `references` row that names a MODULE the corpus carries in another project — `Data.List` 15 · `Data.Functor` 15 · `Control.Monad` 10 · `Control.Applicative` 6 · `Data.Array` 3 · `Data.Bool` 2. These are the import-dependency rows (`metadata.isImportDependency`), and the module resolves in `Prelude`, not in the edge's project. Same scope statement as `import-module-in-another-project`: per project is production's scope, so the row is genuinely open here and would resolve under a cross-repository key space.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose module the edge's OWN project declares, or one declared nowhere (a different class)."
+      }
+    },
+    "reference-symbol-in-another-project": {
+      "count": 37,
+      "types": [
+        "references",
+        "implements"
+      ],
+      "byType": {
+        "references": 33,
+        "implements": 4
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "The target is a bare NAME declared by another project of the corpus and not by the edge's: `Map` 15 · `JSONDecode` 4 · `ProcessHandle` 4 · `JSONEncode` 2 · `fromString` 2 · `FileInfo` 2. These are ordinary cross-repository names (`Map` is `Data.Map`'s, `JSONEncode`/`JSONDecode` are cloogle.org's generic classes, `ProcessHandle` is a platform type). Counted apart from 'nowhere' because the corpus DOES declare them — the fact is checkable and it says this is a scope boundary, not a miss.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/residual-cause-census.mts --json=validation/m14/measurements/clean/residual-cause-census-2026-10-29.json",
+        "wouldFail": "a row in this bucket whose name is declared by the edge's own project (then it is an analyzer defect, not a boundary) or by no project at all."
+      }
+    },
+    "name-declared-nowhere-in-the-corpus": {
+      "count": 1382,
+      "types": [
+        "references",
+        "implements",
+        "calls"
+      ],
+      "byType": {
+        "references": 1297,
+        "implements": 11,
+        "calls": 74
+      },
+      "population": "parsed=312/312 admitted=312 exts=icl,dcl index=no",
+      "ruling": "The target is declared by NO admitted file in any project. Three sub-classes, each measured, and NONE is a candidate for a claim: (1) the Clean platform's own names whose StdEnv declaration is not in the corpus at all — `Pointer` 238 · `Property` 117 · `FilePath` 63 · `MaybeError` 33 · `System.FilePath` 30 · `Text` 27 · `Data.Maybe` 24 · `Data.Func` 22 — and `clean-stdlib/_system.dcl`, which is where StdEnv declares them, is a 0-byte file in this checkout (the arm lists it among its 3 empty results); (2) DOTTED calls into platform modules (`Data.Error.Ok` 11 · `Data.Map.get` 10 · `Data.Map.toList` 6 · `Data.Map.put` 5), i.e. a qualified call whose module is absent; (3) derived-generic members of an external class (`gLSPJSONDecode` 4 · `ConstructFromYAML` 2 · `gLSPJSONEncode` 2 · `gLexOrd` 1 · `ggen` 1). THE STDLIB-LIST EXTENSION WAS PROBED AND REFUSED on 2026-10-28: `clean-stdlib` and `Prelude` are in the corpus (74 + 42 files) and **0 of the 10 most frequent unresolved targets are declared in them**, so widening the closed list would be a vocabulary rather than evidence. The 1,382 stay counted.",
+      "falsifier": {
+        "run": "bun validation/m14/fixtures/clean/stdlib-inventory.mts --json=validation/m14/measurements/clean/stdlib-inventory-2026-10-29.json",
+        "wouldFail": "a name in this bucket declared by any admitted file in any project (the inventory parses clean-stdlib and Prelude through production `parseFile` and reports every published name), or a non-zero `_system.dcl` in a future checkout that declares the platform names — either would move the class to `reference-symbol-in-another-project`."
+      }
+    }
+  },
+  "causeRulingsNote": "ELEVEN rulings, and their counts SUM TO THE AMBIGUOUS + UNRESOLVED COLUMN EXACTLY: 590 + 95 + 181 + 132 + 78 + 222 + 59 + 760 + 51 + 37 + 1382 = 3,587 = ambiguous 1,076 + unresolved 2,511. The partition is computed, not asserted: `validation/m14/fixtures/clean/residual-cause-census.mts` reads the ARM'S OWN DUMP, rebuilds the project-scoped declaration census with the gate's collapse rule, and its control REFUSES a row that disagrees with the gate's own bucket (every ambiguous row must have >= 2 declarations, every unresolved row 0 — PASS on this population). Receipt: `validation/m14/measurements/clean/residual-cause-census-2026-10-29.json`.",
+  "resolution_caveats": [
+    "A CLOSURE IS A PARTITION, NOT A CORRECTNESS PROPERTY: these buckets say where every edge went, not that it points at the RIGHT declaration. That question is script/m14/differential.ts's, and the lane's differential seat is green only with `overrides` DECLARED no-truth (script/m14/spec/clean-completeness.json `label_coverage.declared_no_truth`) — clean has no independent overrides oracle, and a mirror would not adjudicate.",
+    "AMBIGUOUS COUNTS DECLARATIONS, NOT KINDS: **1,076** by declaration = references 1,011 · implements 49 · exports 12 · calls 4. `amb(kind)` is **387** of those 1,076 and is a SUBSET, printed beside and never added. Every one of the 1,076 is dispositioned by a causeRuling above. (The 1,360 -> 1,076 move is the class-like `implements` rule, 284 rows, measured exactly.)",
+    "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: 2,336 of 22,075 resolved rows (10.6%) are a tie-break pick among colliding declarations, and ALL of them are `contains` (the module-qualified identity collapsed the other types' collisions). The fleet's own indexer measures 37,318 of 49,729 such picks as WRONG, so the resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+    "★ THE IMPORT CLAIM WAS THE LANE'S FALSE STATEMENT AND IS CORRECTED (2026-10-29). The 2026-10-28 declaration recorded `imports` as 1,932 answered with `extFAIL 0`; the SAME arm reads extFAIL **1,177** and the verified total is 891 (574 `importProjectFile` + 317 `moduleNamespace`), not 1,932. The 1,177 were `importProjectFile` arrays emitted for EVERY non-stdlib module at the two import sites, without the shared guard — a file claim is a statement the project can REFUTE, and the project refuted 1,177 of them (a Clean module's file is on a search path, not at the root the candidate arithmetic spelled). FIXED AT THE SOURCE: the emission sites no longer state the claim; PASS 3 states it only where `fileClaimForTarget` CONFIRMS a candidate on disk, from the importing file's own directory first and the project root second (the pricing instrument measured 438 + 136 = 574 such files, every one a file that DECLARES the module). extFAIL is 0 and ext? is 0.",
+    "★ THE MODULE-QUALIFIED IDENTITY IS THE ROUND'S FIX (2026-10-29): every MODULE-LEVEL symbol now publishes `Module.name` (`StdPathname.Pathname`, `PmTypes.Project`), where it published none. A module-level type/function/class/macro is ONE declaration written in BOTH halves of a Clean module, and the gate's collapse could not see the pair because a collision needs a qualifiedName that differs from the bare name. MEASURED, whole population, BEFORE -> AFTER on the same arm: `references` ambiguous 1,808 -> 1,011 (-797, exactly the collapse price measured beforehand by `validation/m14/fixtures/clean/collapse-price.mts` over the gate's own dump), `exports` 40 -> 12 (-28), `calls` unresolved 75 -> 74, resolved 20,958 -> 21,791 (+833), collapsed keys 719 -> 3,148. THE EXCLUSIONS ARE THE CONTRACT: a MEMBER keeps its owner's spelling (`Sized.sizeOf`), which is what `overrides`/`implements` endpoints are written in; a LOCAL keeps its frame-scoped spelling; a MODULE symbol keeps its name (there is nothing above a module). ONE over-collapse was priced and accepted: the only same-module cross-kind pairs the collapse merges are 4 GENERICS and their case functions (`bimap`, `binumap`, `gEqTest`, `exampleGeneric`) — one entity, not two.",
+    "★ THE POPULATION'S REPOSITORIES ARE NOW RECORDED (2026-10-29): 312 files over 5 repositories — clean-stdlib 74, Prelude 42, Clyde 109, eastwood 73, cloogle.org 14. The 2026-10-28 declaration recorded this as OWED (`meta.repos` absent); it is closed here. The corpus ALSO carries the Clean platform library sources `Prelude` (Data.*, Control.*, Text.Show, System.IO) and `clean-stdlib` (Std*), which is why so many rows in the classes above name a module the corpus holds in a DIFFERENT project — the per-project scope is production's, and those rows are the price of it.",
+    "★ THE PHANTOM CLASS IS CLOSED AND THE AMBIGUITY THAT REPLACED IT IS NOT A PHANTOM ONE (2026-10-28, re-measured 2026-10-29): the instance containers are namespaced (`<target>::instance`, kind `impl`), 0 `onlyPhantom` and 0 `oneRealPlusPhantom` in `phantom-census.mts`. The remaining **1,076** ambiguous rows are partitioned by the causeRulings above — 590 module halves, 132 class-name-is-its-member, 181 cross-module collisions, 78 instance members without their class, 95 module-name-reused-as-a-type — and NONE of them is a fabricated declaration.",
+    "★ `extends` IS RULED GRAMMAR-ABSENCE, MEASURED (2026-10-28): `validation/m14/measurements/clean-grammar-nodes.json` enumerates the SERVED wasm — **143 named types over 290 ids, and 0 of them match extend|inherit|subclass|superclass**. Clean's composition constructs are type classes and instances (`class_declaration`, `class_member`, `instance_class`) plus `derive_declaration`, all of which publish `implements`, not `extends`. The suite's zero `extends` edges over 312 files is therefore a property of the LANGUAGE, not a silence of the analyzer.",
+    "THE THREE LARGEST UNRESOLVED CLASSES ARE A SCOPE BOUNDARY, NOT A NAME-MODEL DEFECT, and the split is measured rather than asserted: 1,041 `imports` (222 module-on-a-search-path + 59 module-in-another-project + 760 module-declared-nowhere) + 1,381 `references` (1,297 declared-nowhere + 51 module-in-another-project + 33 symbol-in-another-project) + 74 `calls` (74 declared-nowhere) + 15 `implements` (11 declared-nowhere + 4 symbol-in-another-project) = 2,511. A cross-repository key space would move the 59 + 51 + 37 = 147 boundary rows; the 760 + 1,297 + 74 + 11 = 2,142 rows whose name is declared NOWHERE can only be moved by a false claim."
+  ],
+  "_imports_2026_10_29": "EVERY ONE OF THE 1,932 IMPORT EDGES IS NOW ANSWERED HONESTLY, AND THE DIFFERENCE FROM 2026-10-28 IS THE POINT: 891 carry a claim the PROJECT CONFIRMS (574 confirmed `importProjectFile` file claims — 438 at the project root + 136 in the importing file's own directory, every one a file that DECLARES the module — plus 317 verified `moduleNamespace` claims from the closed `CLEAN_STD_ENV_NAMES` set) and 1,041 carry NO claim at all. `extFAIL 0`, `ext? 0`, 0 refuted. The 2026-10-28 version of this file recorded the 1,177 refuted rows of the previous run as VERIFIED and proof-read as 'imports closed'; the ARM is the instrument that says otherwise, and it did. The class no longer has a cause ruling — its unclaimed rows are ruled in the three import classes above.",
+  "_clean_session_2026_10_29": {
+    "_state": "edges 30,400 · resolved 22,075 · claims 4,738 (891 imports + 3,843 references + 4 implements) · ambiguous 1,076 · unresolved 2,511 · unclassed 0.",
+    "_fixed": "(1) THE REFUTED IMPORT CLAIM: 1,177 -> 0 extFAIL, by removing the unguarded `importProjectFile` from both emission sites and letting PASS 3 attach it only where the shared guard confirms a file; the importing file's own directory was added to the candidate spellings (+136 claims, all confirmed). (2) THE MODULE-QUALIFIED IDENTITY: module-level symbols publish `Module.name`; the gate's collapse now reads every `.dcl`/`.icl` pair as ONE declaration (719 -> 3,148 keys).",
+    "_refused": "The project-wide file search for import claims (priced 243 edges, every hit a file that declares the module; leaf ambiguity MEASURED at 239 unique + 4 `Linter`) — not taken because the claim is checked against the ADMITTED `git ls-files` list and a per-file walk cannot distinguish a tracked file from an untracked `_build` copy that the gate would REFUTE; 0 untracked `.icl`/`.dcl` on this corpus makes it sound HERE, not in production. Performance is a second, unmeasured limit (no `Clyde:clean` F row yet). Proposed in validation/m14/proposals/clean-import-file-claim-project-search.md, not taken.",
+    "_declared": "`overrides` as `label_coverage.declared_no_truth` in the lane's spec — the differential compares it with 0 truth (38 comparable rows in the clean-stdlib draw) and an overrides oracle would mirror the analyzer's own pairing rule. The G20 gate failed the lane-scoped differential on it before the declaration.",
+    "_open": "The 3,587-row wall is now a measured partition, not a list: 2,142 rows name something declared nowhere (platform names whose `_system.dcl` is 0 bytes), 1,076 ambiguous rows are the language-model classes, 147 are cross-project boundary rows, and 222 are imports a project-wide search would confirm. The class-like `implements` rule took 284 of the 3,871 on 2026-10-29 (exactly its price); no remaining class is closable by a claim that is TRUE of this corpus."
+  },
+  "_clean_session_2026_10_28": {
+    "_state": "SUPERSEDED by the 2026-10-29 block above. Recorded here because the numbers it published are what the arm contradicted.",
+    "_superseded_figure": "It read edges 30,693 / resolved 20,530 with imports 1,932 answered and extFAIL 0; the arm at the time already read extFAIL 1,177. Any reader comparing this file to that block is comparing a measurement to a mis-read of one.",
+    "_still_true": "The phantom-instance fix (0 onlyPhantom, 0 oneRealPlusPhantom), the self-export removal (exports 4,596 -> 4,303, ambiguity 162 -> 40, and the module is correctly still not its own export), and the `extends` grammar-absence ruling."
+  },
+  "_self_export_fix_2026_10_28": "A MODULE WAS EXPORTING ITS OWN NAME, from BOTH its `.dcl` and its `.icl` (`Clyde.Console -> Clyde.Console` at Console.dcl:1 AND Console.icl:1; same for ClydeApplicationController, DebugClyde, Link). The module symbol passes the owner test because its `ownerName` is undefined, so nothing excluded it, and the duplicate is a property of Clean's two-file module system. MEASURED: exports 4,596 -> **4,303** edges (293 spurious self-exports removed), ambiguity 162 -> **40**, resolved 4,434 -> 4,263 — the 171 'resolved' rows lost were the same degenerate self-edges, which is the correct direction: an edge that says a module exports itself is false whether it binds or not. (After the 2026-10-29 module-qualified identity fix the exports row reads 4,291 resolved / 12 ambiguous.)",
+  "coverage_exclusion": {
+    "label": "extends",
+    "evidence": "grammar-absence",
+    "count": 0,
+    "from": "CLEAN-D1 (2026-10-28): 0 of the served grammar's 143 named node types is an inheritance production; the class/instance nodes name conformance (published as `implements`), not subtyping."
   }
 }

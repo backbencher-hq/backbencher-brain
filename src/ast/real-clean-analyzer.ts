@@ -20,6 +20,7 @@
 //   unique names, 29 fields; `module` headers are optional and a hyphen in a module name
 //   breaks the whole file's parse.
 import type { Node } from "web-tree-sitter"
+import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"
 
@@ -379,6 +380,13 @@ interface FrameSpec {
  *          the same predicate without the engine (and without the `lastIndex`
  *          state a `g` literal carries, which this call never relied on).
  */
+/** Every whitespace character removed — the spelling of a TYPE CONSTRUCTOR carries none. */
+function stripWhitespace(text: string): string {
+  let out = ""
+  for (const ch of text) if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") out += ch
+  return out
+}
+
 function unparenthesizeText(text: string): string | null {
   let body = text
   if (body.startsWith("(")) body = body.slice(1)
@@ -460,6 +468,22 @@ const OPERATOR_LEAF_TYPES = new Set([
   "parenthesized_operator",
 ])
 
+/**
+ * The node kinds a `derive` declaration's TARGET can be, from the language rather than from the
+ * tree: a derived instance is for a TYPE, so the target is a type-variable, a type constructor (bare
+ * or dotted), a type application, a parenthesised type, or an operator type. Everything else a
+ * `derive` node can hold — a comment, an ERROR, an identifier — is not a type and is not a target.
+ * See `processDeriveDeclaration` for the measured tree this refuses.
+ */
+const DERIVE_TARGET_NODE_TYPES = new Set([
+  "type_variable",
+  "constructor",
+  "dotted_type",
+  "type_application",
+  "type_paren",
+  "parenthesized_operator",
+])
+
 /** Every pattern node whose subtree is pattern territory, not expression. */
 const PATTERN_NODE_TYPES = new Set([
   "constructor_pattern",
@@ -487,6 +511,18 @@ const CONSTRAINT_MARKER_TYPES = new Set([
   "uniqueness_star",
   "uniqueness_constraints",
 ])
+
+/**
+ * The suffix that NAMESPACES an instance's container under the type it implements: `instance Show Int`
+ * publishes `Int::instance`, never `Int`.
+ *
+ * An instance head is a TYPE EXPRESSION, so the container's name was never a declaration of anything
+ * the source declares — `instance UList {.a} where …` published a `class` called `.a`, and
+ * `instance Show Int` published one called `Int` in files that declare no `Int` at all. The form is
+ * the Rust lane's (`<target>::impl`) for the same reason: an implementation is addressable without
+ * asserting that its target is declared here. See `processInstance` for the measurement.
+ */
+const INSTANCE_CONTAINER_SUFFIX = "::instance"
 
 const CALLABLE_NODE_TYPES = new Set([
   "function_declaration",
@@ -851,6 +887,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.attachFixities(ctx)
     this.emitContainsEdges(ctx)
     this.emitExports(ctx)
+    this.qualifyModuleLevelSymbols(ctx)
     this.classifyEvidenceTier(ctx)
 
     // ------------------------------------------------------------- THE FILE CLAIM
@@ -862,12 +899,29 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // one. The guard still does the admitting (extension, project boundary, `statSync`).
     //
     // MEASURED BEFORE EMITTING (`imports-claim-pricing.mts`; clean's population is 312 files, so it
-    // was measured WHOLE, not sampled): of 1,891 import edges, **429 name a module file the
-    // population carries** and the cross-tab is EXACT in both directions — **0 would be refuted**.
-    // The other 1,462 name the Clean STDLIB (`StdEnv:*` 52, `StdString:*` 23, `Data.Error:*` 22 …),
-    // which the corpus does not carry; that residue is a ruled class with its count, not a claim.
+    // was measured WHOLE, not sampled): of 1,891 import edges, **429 name a module file at the
+    // PROJECT ROOT** — and the cross-tab is EXACT, every one of them a file that DECLARES the
+    // module. The pricing also measured the two spellings this pass did not use: **136 more** are
+    // found in the IMPORTING FILE'S OWN DIRECTORY and **243 more** anywhere in the project, every
+    // one of them a file that declares the module. The root-only arithmetic was therefore claiming
+    // a third of what the project could confirm.
+    //
+    // AND IT IS A CLAIM, NOT A HINT: an unconfirmed candidate REFUTES, and a refuted claim is
+    // charged against the lane (`extFAIL`). So the claim is attached ONLY where the guard confirms
+    // a candidate on disk, and the candidate list is every spelling a Clean loader would try that
+    // this per-file pass can reach — the importing file's own directory, then the project root.
+    // The third spelling (anywhere in the project) needs the project's file list, which a per-file
+    // analyzer does not have; it is priced in the instrument and left unclaimed, not guessed.
     const claimRoot = typeof context?.projectRoot === "string" && context.projectRoot.length > 0 ? context.projectRoot : null
     if (claimRoot !== null) {
+      const root = path.resolve(claimRoot)
+      // POSIX-normalised, and the directory comes from `path.posix.dirname` rather than from two
+      // slash LITERALS on one line: the lane's zero-regex scanner reads the two `"/"` strings as the
+      // delimiters of a regex literal (measured — it did, on the first form of this code), and the
+      // rule that there is no regex in this file is enforced by that scanner on every run.
+      const fileRel = path.relative(root, filePath).split(path.sep).join("/")
+      const relDir = path.posix.dirname(fileRel)
+      const fileDir = relDir === "." ? "" : `${relDir}/`
       for (const r of ctx.relationships) {
         if (r.type !== ASTEngine.RelationshipType.Imports) continue
         const md = r.metadata as Record<string, unknown> | undefined
@@ -878,12 +932,16 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (moduleName.length === 0) continue
         // `Module.Sub` -> `Module/Sub`; the corpus' Clean sources are laid out that way.
         const modulePath = moduleName.split(".").join("/")
+        const rootCandidates = [`${modulePath}.icl`, `${modulePath}.dcl`]
+        const extraCandidates = fileDir.length > 0
+          ? [`${fileDir}${modulePath}.icl`, `${fileDir}${modulePath}.dcl`, ...rootCandidates]
+          : rootCandidates
         const claim = fileClaimForTarget({
           projectRoot: claimRoot,
           filePath,
           written: String(r.target ?? ""),
           admittedExtensions: ["icl", "dcl"],
-          extraCandidates: [`${modulePath}.icl`, `${modulePath}.dcl`],
+          extraCandidates,
         })
         if (claim === null) continue
         md.importProjectFile = claim
@@ -1007,6 +1065,32 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
               itemKind: it.kind,
               isInstanceImport: it.kind === "instance",
               isClassImport: it.kind === "class",
+              // ★ THE STDLIB CLAIM, emitted where the evidence exists (2026-10-28). The target of an
+              // import here is `${module}:${item}` (`StdEnv:map`) — a spelling no symbol can ever carry, so
+              // every one of the lane's 1,917 import edges read unresolved or unverifiable. The fleet's
+              // `moduleNamespace` claim is the mechanism for exactly this shape (python's `pathlib:Path`),
+              // and its evidence must be a CLOSED list, not a guess: `CLEAN_STD_ENV_NAMES` is the lane's own
+              // stdlib module set, measured, and the arbiter verifies the MODULE against the project's module
+              // space — so a project that DOES declare `StdEnv` REFUTES the claim. That direction is the one
+              // this lane must watch: `extFAIL` may not rise, and the arm is what says so.
+              // THE STDLIB CLAIM ONLY, AND A NON-STDLIB MODULE CARRIES NO CLAIM AT THIS SITE.
+              //
+              // ANY OTHER module (`Data.Error`, a corpus project's own `Clyde.Cocoa.tabview`) may be a
+              // project module or a dependency, and THE PROJECT'S FILE LIST DECIDES WHICH — but THIS SITE
+              // CANNOT SEE THAT LIST, so it must not state the claim. It used to: a flat
+              // `[Module/Sub.icl, Module/Sub.dcl]` was attached to every non-stdlib module, and the arm
+              // REFUTED **1,177 of the 1,615** claims it made (`extFAIL 1177`), because a Clean module's
+              // file is found on a SEARCH PATH (`Clyde` puts module `IdeState` at
+              // `cleantools/BatchBuild/IdeState.icl`, eastwood puts `Diagnostic` at
+              // `src/sharedUtil/Diagnostic.icl`) and the root-relative arithmetic below is only one of the
+              // spellings a loader tries. A file claim that a run can refute is a FALSE statement, not a
+              // conservative one: `fileClaimForTarget` refuses to emit an unconfirmed candidate for
+              // exactly this reason. PASS 3 owns the claim instead — it has `context.projectRoot`, it
+              // runs the shared guard over the importing file's own directory AND the project root, and
+              // it attaches a claim only when a candidate is CONFIRMED on disk (see the block there).
+              ...(CLEAN_STD_ENV_NAMES.has(it.module)
+                ? { isExternal: true, externalReason: "module-namespace", externalSpecifier: it.module }
+                : {}),
             },
             it.line,
           )
@@ -1074,7 +1158,22 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
                 `${modName}:*`,
                 ASTEngine.RelationshipType.Imports,
                 1.0,
-                { cleanSpecific: true, module: modName, isWildcard: true },
+                {
+                  cleanSpecific: true,
+                  module: modName,
+                  isWildcard: true,
+                  // THE WILDCARD FORM NEEDS THE SAME CLAIM AS THE ITEM FORM, and it was the gap: `import StdEnv`
+                  // publishes `StdEnv:*`, and this site carried NO claim at all, so 52 `StdEnv:*` + 23 `StdString:*`
+                  // rows read unresolved while the identical module on the item path was verified. MEASURED: the
+                  // claim existed at ONE of the two emission sites (`grep -c module-namespace` = 1) and the
+                  // unclaimed remainder was dominated by `StdEnv:*` (52), `StdString` (23), `StdBool` (21) — every
+                  // one of them a module already in the closed `CLEAN_STD_ENV_NAMES` set.
+                  // A NON-STDLIB module carries no file claim here — see the item site above for the 1,177
+                  // refutations that measured why, and PASS 3 for where the claim is made instead.
+                  ...(CLEAN_STD_ENV_NAMES.has(modName)
+                    ? { isExternal: true, externalReason: "module-namespace", externalSpecifier: modName }
+                    : {}),
+                },
                 this.lineOf(modNode),
               )
             }
@@ -1142,8 +1241,18 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         continue
       }
-      const described = this.describeImportItem(c, keyword)
-      if (described) out.push({ ...described, module: currentModule })
+      // ONE ITEM CHILD MAY NAME SEVERAL SYMBOLS, and publishing only the first silently
+      // dropped the rest. Measured on the whole 312-file population: `class
+      // Text(concat,join,toLowerCase)` (cloogle.org/backend/CloogleServer.icl:34) is ONE
+      // `class_method_name` holding THREE identifiers, and `:: Type (Var, Func, Type, Uniq,
+      // Strict)` (eastwood/src/languageServer/Symbol.icl:8) is ONE `constructor_subset` holding
+      // FIVE constructors. The old `describeImportItem` read `namedChild(0)` / the first
+      // `constructor` and published `Text:concat` and `Type:Var`, so six bound names in these
+      // two files alone had no `imports` edge — an import is a dependency on each name it
+      // binds, and the list is the statement's own spelling of that list.
+      for (const described of this.describeImportItems(c, keyword)) {
+        out.push({ ...described, module: currentModule })
+      }
     }
     return out
   }
@@ -1166,37 +1275,90 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `:: MaybeError (Ok)` gives one holding `Ok`.
       return this.firstNamedChildOfType(node, "constructor") === null
     }
-    // The `(..)` list after a class or constructor name.
-    if (node.type === "parenthesized_operator") return true
+    // The `(..)` list after a class or constructor name — AND ONLY `(..)`. This branch used to
+    // return true for EVERY `parenthesized_operator`, which silently deleted every operator
+    // imported in its fixity spelling: `from Data.Func import (==)` names the operator `==`, and
+    // the marker rule read it as punctuation and dropped it while the empty `identifier` the
+    // grammar also emits became `Module:` . The marker is a run of dots; an operator is not.
+    // Measured across the population's 45 `parenthesized_operator` import children: the dotted
+    // form is the subset marker and the rest are names this branch used to eat.
+    if (node.type === "parenthesized_operator") return this.isDotsOnly(this.unparenthesize(node.text) ?? node.text)
     return false
   }
 
+  /** Is every character a dot (and is there at least one)? `(..)` → true, `(==)` → false. */
+  private isDotsOnly(text: string): boolean {
+    const t = text.trim()
+    if (!t) return false
+    for (const ch of t) if (ch !== ".") return false
+    return true
+  }
+
   /** Name + kind for one import-item node, or null when it names nothing. */
-  private describeImportItem(node: Node, keyword: ImportItem["kind"]): Omit<ImportItem, "module"> | null {
+  private describeImportItems(node: Node, keyword: ImportItem["kind"]): Omit<ImportItem, "module">[] {
     const line = this.lineOf(node)
-    if (!line) return null
+    if (!line) return []
+    const kind = keyword === "name" ? "name" : keyword
     switch (node.type) {
       case "identifier":
       case "constructor":
-        return { name: node.text, kind: keyword === "name" ? "name" : keyword, line }
+        // AN EMPTY NAME IS NOT A NAME. The grammar emits a zero-width `identifier` for the `(` of
+        // a parenthesised operator item — measured on `from Data.Func import `on`, id, (==)`: the
+        // children are `backtick_operator`, `identifier(id)`, `identifier("")`,
+        // `parenthesized_operator((==))`. Publishing the empty one produced the target
+        // `Data.Func:` — an edge whose item names nothing, which no file can export and no
+        // consumer can join. `pushRel` cannot catch it because the TARGET string is non-empty.
+        return node.text ? [{ name: node.text, kind, line }] : []
       case "constructor_subset": {
-        // Reached only when the subset NAMES a constructor (`:: MaybeError (Ok)`);
-        // the bare `(..)` form is a marker and is filtered before this call.
-        const inner = this.firstNamedChildOfType(node, "constructor")
-        return inner ? { name: inner.text, kind: keyword, line } : null
+        // Reached only when the subset NAMES constructors (`:: MaybeError (Ok)`,
+        // `:: Type (Var, Func, Type, Uniq, Strict)`); the bare `(..)` form is a marker and is
+        // filtered before this call. EVERY named constructor is an item.
+        const out: Omit<ImportItem, "module">[] = []
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const inner = node.namedChild(i)
+          if (!inner || inner.type !== "constructor" || !inner.text) continue
+          out.push({ name: inner.text, kind, line })
+        }
+        return out
       }
       case "class_method_name": {
         // `class zero(zero)` names the CLASS `zero` and then its METHOD list;
-        // the method is a real symbol in the exporting module, so it is an item
-        // in its own right, and it dedupes against the class item when the two
-        // spell the same name.
-        const inner = node.namedChild(0)
-        return { name: inner?.text ?? node.text, kind: keyword, line }
+        // `class Text(concat,join,toLowerCase)` names three methods. Every method is a real
+        // symbol in the exporting module, so each is an item in its own right, and one dedupes
+        // against the class item when the two spell the same name.
+        const out: Omit<ImportItem, "module">[] = []
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const inner = node.namedChild(i)
+          if (!inner || !inner.text) continue
+          out.push({ name: inner.text, kind, line })
+        }
+        return out.length ? out : node.text ? [{ name: node.text, kind, line }] : []
+      }
+      case "backtick_operator": {
+        // `` `on` `` is Clean's INFIX spelling of the operator `on`. The binding the statement
+        // makes is `on`; the backticks are list syntax. Publishing them produced a target the
+        // index's garbage filter deletes (a backtick is a snippet character, rightly), so the
+        // edge was emitted by this analyzer and silently absent from the graph — measured on
+        // CloogleServer.icl:25, the only such site in the population, found by the lane's own
+        // `imports` oracle and not by any count the lane had.
+        const bare = this.backtickOperatorName(node.text)
+        return bare ? [{ name: bare, kind, line }] : []
       }
       default:
-        if (OPERATOR_LEAF_TYPES.has(node.type)) return { name: node.text, kind: keyword, line }
-        return null
+        if (OPERATOR_LEAF_TYPES.has(node.type)) {
+          const name = node.text.trim()
+          return name ? [{ name, kind, line }] : []
+        }
+        return []
     }
+  }
+
+  /** `` `on` `` → `on`. A character filter, not a regex; an empty result is not a name. */
+  private backtickOperatorName(text: string): string | null {
+    let out = ""
+    for (const ch of text) if (ch !== "`") out += ch
+    out = out.trim()
+    return out || null
   }
 
   /**
@@ -2092,12 +2254,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!targetType) return false
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
 
-    // The universal impl-naming contract: the implementation is named by its
-    // TARGET (Rust `impl User`, Elixir `defimpl`, Haskell
-    // `instance Mergeable (Stream a)` → class `Stream`). An instance with more
-    // than one target type (`instance Array {} a`, `instance C (a, b)`) records
-    // the rest in metadata rather than fabricating sibling symbols — they are
-    // arguments to ONE implementation, not several.
+    // The impl-naming contract: the implementation is named by its TARGET and
+    // NAMESPACED under it (Rust `impl User` → `User::impl`, Elixir `defimpl`,
+    // Haskell `instance Mergeable (Stream a)` → class `Stream`). The namespace is
+    // load-bearing and was not always there: naming the container EXACTLY the
+    // target made every instance a phantom declaration of its target type — see
+    // the block at the `ctx.symbols.push` below for the measured cost. An
+    // instance with more than one target type (`instance Array {} a`,
+    // `instance C (a, b)`) records the rest in metadata rather than fabricating
+    // sibling symbols — they are arguments to ONE implementation, not several.
     //
     // A POLYMORPHIC instance publishes NO symbol. `instance Sized {!} a` is a real
     // instance declaration, but its target is the type VARIABLE `a`, and a symbol
@@ -2111,8 +2276,40 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     const targetIsPolymorphic = typeArgs[typeArgs.length - 1]?.type === "type_variable"
     if (!targetIsPolymorphic) {
       ctx.symbols.push({
-        name: targetType,
-        kind: ASTEngine.SymbolKind.Class,
+        // THE IMPLEMENTATION IS NAMESPACED UNDER ITS TARGET. It used to be named EXACTLY the
+        // target type, and on a per-file analyzer that is a PHANTOM DECLARATION: a file whose
+        // only statement about `Int` is `instance Show Int` published a `class` symbol named
+        // `Int`, which counts as a declaration of `Int` in the project's name space and therefore
+        // turns every `references -> Int` edge elsewhere into an ambiguity. Measured on the
+        // 312-file population (`validation/m14/fixtures/clean/phantom-census.mts`): **699 such
+        // containers in 94 files, 93 of them named after a type the SAME file also declares for
+        // real, 150 of them not an identifier at all** (`.a`, `[a]`, `?` — instance heads that
+        // are type EXPRESSIONS, so the name could never match any reference in the first place).
+        // Deleting them alone reaches **1,009 of the lane's 6,856 residual edges (14.7%)** —
+        // 574 `references` whose target has no real declaration in the project at all, 366 whose
+        // target has exactly one real declaration beside the phantoms (those RESOLVE once the
+        // phantom stops counting), and 69 `exports` that were never exports.
+        //
+        // The naming is the RUST lane's (`impl Foo` publishes `Foo::impl`, so the implementation
+        // is addressable without claiming Foo is declared here), and the reason is the same: an
+        // instance is a DECLARATION OF AN IMPLEMENTATION, not of its target type. What made this
+        // lane worse than Rust's is that Clean's instance heads are usually types from StdEnv
+        // (`Int`, `Char`, `Real`, `Bool` — the five most common container names), so the phantom
+        // landed on exactly the names the language uses most.
+        //
+        // THE MEMBERS KEEP THE NOMINAL OWNER (`frameOwner` below), which is what keeps this fix
+        // surgical: `contains` still reads `Int -> show`, `overrides` still reads `Int.show ->
+        // Show.show`, and the member's `qualifiedName` is unchanged — every observable edge
+        // surface is identical to before, and the ONLY difference is that the file no longer
+        // declares `Int`. Moving the owner as well would rename 2,000+ edges to fix a declaration
+        // count, which is the wrong trade: the endpoint of a `contains` edge is the name a reader
+        // navigates to, and `Int.show` is what Clean itself calls that member.
+        name: `${targetType}${INSTANCE_CONTAINER_SUFFIX}`,
+        // `impl`, not `class`: `class` is an EXPORTABLE kind, so the container became a module
+        // export — `Prelude/Data/List.dcl` exported `[]` and `.a` because it holds instances whose
+        // heads are those type expressions (69 measured `exports` rows, all of them naming a
+        // phantom). An instance is not part of a module's interface.
+        kind: ASTEngine.SymbolKind.Impl,
         range: this.nodeToRange(node),
         scope: currentScope?.name,
         ownerName: currentScope?.name || ctx.currentModule,
@@ -2123,7 +2320,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           className,
           targetType,
           targetTypes: targetNames,
+          // The instance's target as the SOURCE spells it (`List a`), kept beside the nameable
+          // identity (`List`) so a reader can see which instance this is when one type has
+          // several — the identity is what resolves, the spelling is what distinguishes.
+          targetSpelling: typeArgs[typeArgs.length - 1]?.text,
           isTypeClassInstance: true,
+          // The container's name is DERIVED (`<target>::instance`), so the target it was derived
+          // from travels with it: a consumer reading `Int::instance` should not have to strip a
+          // suffix to learn which type the instance is for, and the pair must not drift apart.
+          instanceTarget: targetType,
         },
       })
       this.attachComments(ctx.symbols[ctx.symbols.length - 1], node)
@@ -2174,7 +2379,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `contains` edge carries a source that resolves to nothing. Three cases, in the
     // order they can satisfy it:
     //
-    //   1. the instance publishes a symbol, so the frame is that symbol's name;
+    //   1. the instance publishes a symbol, so the frame is its TARGET — the name the
+    //      container's `<target>::instance` spelling namespaces (the container itself is
+    //      not the owner: `Int.show` is what Clean calls this member, and the qualified
+    //      endpoint of `overrides` must not move with a container-naming change);
     //   2. the instance is polymorphic (no symbol) but its CLASS is declared here,
     //      so the class owns the members;
     //   3. neither — the class is imported and the target is a variable
@@ -2300,12 +2508,44 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   private instanceTargetName(arg: Node): string | null {
     switch (arg.type) {
       case "constructor":
-      case "type_application":
       case "type_function":
-      case "tuple_type":
-      case "list_type":
       case "dotted_type":
         return arg.text
+      // A LIST OR TUPLE TYPE'S NAME HAS NO SPACES IN IT. `instance length [ !]`
+      // (clean-stdlib/StdOverloadedList.icl:142) is the strict list type constructor, and the
+      // source's own spacing inside the brackets is layout, not spelling: the type `[ !]` and the
+      // type `[!]` are the same type and Clean's own declaration writes `[!]`. Leaving the space in
+      // gave the instance's members a `contains` source and an `implements` target that no symbol
+      // can match. Measured: 3 edges on the 312-file population, and 0 after the normalization.
+      case "tuple_type":
+      case "list_type":
+        return stripWhitespace(arg.text) || arg.text
+      case "type_application": {
+        // A TYPE APPLICATION'S NAME IS ITS HEAD, NEVER ITS WHOLE SPELLING. `instance toString
+        // (List a)` implements `toString` FOR `List`, and `List a` is a type EXPRESSION: no symbol
+        // in any file is named `List a`, so publishing it gave every member of the instance a
+        // `contains` source, an `overrides` prefix and an `implements` target that resolve to
+        // nothing. Measured on the 312-file population: 64 edges across 4 labels carried a source
+        // or target with a space in it, every one of them an instance identity — `List a` 5,
+        // `Option a` 5, `? a` 3, `?^ a` 3, `?# a` 3, and the rest the same shape. The FULL
+        // spelling is not lost: it stays in the symbol's `targetSpelling` metadata and in the
+        // instance's `targetTypes`.
+        const head = arg.namedChild(0)
+        if (!head) return arg.text
+        const headName = this.instanceTargetName(head)
+        if (!headName) return arg.text
+        // An operator head keeps an operator name: `((->) r)` is the instance of `(->)`.
+        return this.unparenthesize(headName) ?? headName
+      }
+      case "question_type": {
+        // `instance Maybe ? a` — the `?` family (`?`, `?^`, `?#`) is Clean's BUILTIN type
+        // constructor syntax, and the identity is the MARKER token, not `? a`. The marker is one
+        // token the source spells; `? a` is a type expression with a space in it, which no symbol
+        // can be named. Same rule as `type_application`, same reason (4 labels, 40 edges on the
+        // 312-file population, all from clean-stdlib's _SystemStrictMaybes.icl).
+        const head = arg.namedChild(0)
+        return head?.text || arg.text
+      }
       case "type_variable":
         return arg.namedChild(0)?.text ?? arg.text
       case "type_paren":
@@ -2400,10 +2640,24 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The derived TYPE is the declaration's other named child: a `type_variable`
     // for `derive bimap c`, a `constructor` for `derive bimap PAIR`, a
     // `parenthesized_operator` for `derive bimap (->)`.
+    //
+    // ONLY A TYPE-SHAPED CHILD IS A TARGET. Any child at all is not: the grammar glues the NEXT
+    // declaration into a `derive` node when a comment separates them, and the first child is then
+    // a `line_comment` — measured on eastwood/src/sharedUtil/Diagnostic.icl:8,
+    // `instance == Diagnostic derive gEq` followed by a comment line and `instance ==
+    // DiagnosticSource where` produced ONE `derive_declaration` whose children are the comment,
+    // `type_variable(instance)`, `ERROR`, `constructor(DiagnosticSource)`, `type_variable(where)`.
+    // Taking child 0 published `implements "// We cannot compare these as the type is
+    // extensible." -> gEq` — a comment as a type name, which no consumer can even read back.
+    // A derived target also cannot be a reserved word (`type_variable(instance)` spells one), since
+    // a declaration name is never `instance`.
     let target: Node | null = null
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.startIndex === nameNode.startIndex) continue
+      if (!DERIVE_TARGET_NODE_TYPES.has(c.type)) continue
+      const spelled = c.type === "type_variable" ? (c.namedChild(0)?.text ?? c.text) : c.text
+      if (!spelled || isReservedDeclarationName(spelled)) continue
       target = c
       break
     }
@@ -2674,6 +2928,55 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       precedence: node.childForFieldName("precedence")?.text,
       line: this.lineOf(node),
     })
+  }
+
+  /**
+   * THE MODULE-QUALIFIED IDENTITY OF EVERY MODULE-LEVEL SYMBOL — `StdPathname.Pathname`, `PmTypes.Project`.
+   *
+   * A Clean module is DECLARED in `.dcl` and IMPLEMENTED in `.icl`, so a type, function, class or macro at
+   * module scope is ONE declaration written in TWO files. The incoming gate models that with
+   * `--binding-collapse`: a key becomes ONE declaration iff every declaration answering to it carries the
+   * same NON-EMPTY `qualifiedName` — and the gate requires that name to DIFFER from the bare name, because
+   * `pool-worker.ts` falls back to `qualifiedName = name` for a file-scope symbol and a fallback is not a
+   * qualification. This analyzer published NO qualifiedName for module-level symbols ("its name is already
+   * unique in the file"), so every module-level `.dcl`/`.icl` pair reached the gate as TWO declarations and
+   * the pair was counted as a name collision.
+   *
+   * MEASURED on the 312-file arm (2026-10-28, whole population): 1,808 `references` ambiguous, and 797 of
+   * them name a module-level pair like this — `Pathname` 143 (`StdPathname.dcl` + `.icl`), `Modulename` 46,
+   * `Project` 34, `StaticLibInfo` 32, `CompilerOptions` 30, `UtilStrictLists` 27 — plus 28 of the 40
+   * ambiguous `exports` rows (operator `&&`, `:!`, `!!|` written in both halves). The lane already ruled the
+   * pair ONE declaration for class/instance MEMBERS, where the store's `Owner.member` spelling made the
+   * collapse fire (`overrides` 2/306 -> 306/306, 719 keys collapsed); the same ruling was simply not
+   * reachable for module scope, because there was no qualified spelling for it to fire on.
+   *
+   * WHAT IS NOT TOUCHED, and each exclusion is a fact about the symbol rather than a convenience:
+   *
+   *   - a MODULE symbol (its name IS the module; there is nothing above it to qualify with), and it is the
+   *     module's own name, so `qualifiedName = name` would be the fallback the gate rightly ignores;
+   *   - a CLASS/INSTANCE MEMBER (`ownerName` is the class or the instance's target, not the module) — those
+   *     already carry `Owner.member`, which is what `overrides` and `implements` endpoints are spelled
+   *     against;
+   *   - an ADT CONSTRUCTOR or RECORD FIELD (`ownerName` is the type that declares it);
+   *   - a LOCAL (`visibility: "local"; it keeps its frame-scoped spelling and is never part of the module
+   *     interface).
+   *
+   * THE IDENTITY IS NOT INVENTED. Clean names a module-scope entity `Module.name` — that is the spelling a
+   * consumer writes when two modules declare the same name, and it is what the module's own `module` header
+   * plus the declaration produce. The bare `name` stays exactly as the source writes it, so every existing
+   * endpoint, export and fixture pin is unchanged; this field is the QUALIFIED spelling beside it, which is
+   * what the store resolves relationship endpoints against.
+   */
+  private qualifyModuleLevelSymbols(ctx: CleanContext): void {
+    const module = ctx.currentModule
+    if (!module) return
+    for (const s of ctx.symbols) {
+      if (s.qualifiedName) continue
+      if (s.kind === ASTEngine.SymbolKind.Module) continue
+      if (s.visibility === "local" || s.metadata?.isLocalDefinition) continue
+      if (s.ownerName !== module) continue
+      s.qualifiedName = `${module}.${s.name}`
+    }
   }
 
   /** Apply the collected fixities to the operator symbols they name. */
@@ -3476,12 +3779,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * Name-keyed first-wins dedupe: the exports-family invariant (run-fixtures.ts,
    * M49 JVM-closure audit) requires UNIQUE export names, because a duplicate
-   * cannot identify its provider. Clean reaches the collision honestly —
-   * `instance Eq ParseState where …` publishes its Class under the instance
-   * TARGET type, so a file that both defines the type and implements an instance
-   * for it offered `ParseState` twice (measured: 59 of 312 files before the
-   * dedupe). Same dedupe as cpp/go/objc/clojure, keyed by bare name — a Clean
-   * module exports a name, not a name+kind pair.
+   * cannot identify its provider. THE DEDUPE SURVIVES THE INSTANCE-CONTAINER FIX, and
+   * the invariant is why: it is a property of the export LIST (one name, one
+   * provider), not of any one declaration form, so it stays regardless of which
+   * forms happen to collide this round. What the dedupe USED to absorb is gone at the
+   * source — a file declaring `ParseState` and also implementing `instance Eq
+   * ParseState` offered `ParseState` twice (59 of 312 files), and the instance
+   * container is now `ParseState::instance` of kind `impl`, which is neither exported
+   * nor a declaration of `ParseState`. Same dedupe as cpp/go/objc/clojure, keyed by
+   * bare name — a Clean module exports a name, not a name+kind pair.
    */
   private emitExports(ctx: CleanContext): void {
     const EXPORTABLE_KINDS = new Set<ASTEngine.SymbolKind>([
@@ -3498,6 +3804,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     const source = ctx.currentModule ?? ""
     for (const sym of ctx.symbols) {
       if (sym.name.startsWith("_")) continue
+      // ★ A MODULE IS NOT PART OF ITS OWN INTERFACE, and exporting its own name was the defect that
+      // made every `exports` row ambiguous. MEASURED on the 312-file arm (2026-10-28): 162 ambiguous
+      // export rows, every dumped one a SELF-EXPORT published from BOTH halves of the module —
+      // `Clyde.Console -> Clyde.Console` from `Console.dcl:1` AND from `Console.icl:1`, likewise
+      // ClydeApplicationController, DebugClyde and Link. The module symbol passes the owner test
+      // (`ownerName` is undefined), so nothing else excluded it, and the duplicate is a property of
+      // the two-file module system rather than of any one declaration. A consumer IMPORTS the module;
+      // nothing can import it as one of its own exports.
+      if (sym.name === ctx.currentModule) continue
       if (!EXPORTABLE_KINDS.has(sym.kind)) continue
       if (sym.visibility === "local" || sym.metadata?.isLocalDefinition) continue
       if (seen.has(sym.name)) continue

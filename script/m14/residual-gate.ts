@@ -148,6 +148,22 @@ function derivedExts(lane: string): string | null {
   return exts.length ? exts.join(",") : null
 }
 
+/**
+ * LANES WHOSE DECLARED ARM IS `--binding-collapse`. A Clean module is DECLARED in `.dcl` and
+ * IMPLEMENTED in `.icl`, so one declaration is written in two files, and the incoming gate's rule
+ * (every declaration of the key carries the same NON-EMPTY qualifiedName that differs from the bare
+ * name) is exactly that pair. The collapse is a LANGUAGE PROPERTY, not a fleet switch: on a lane
+ * without it the same rule merges name coincidences (the incoming gate measured 95.8% of a naive
+ * collapse on julia as exactly that), so a lane must opt in and the set must stay small.
+ *
+ * MEASURED 2026-10-29, the defect this fixes: `--lane clean` invoked the gate WITHOUT the flag and
+ * printed resolved 20,366 / amb 2,785 / residual 5,296 / `overrides` 2-304, while the lane's own arm
+ * (the declaration's mode) read 22,075 / 1,076 / 3,587 / 306-306. Same 30,400 edges, same unresolved,
+ * same extOK/extFAIL — the difference was exactly the arm. A worklist that reports a state the lane
+ * fixed reopens a closed defect, so the arm is read from the lane, not assumed to be the default.
+ */
+const BINDING_COLLAPSE_LANES = new Set(["clean"])
+
 function runLane(lang: string): { rows: Array<{ type: string; edges: number; resolved: number; ambColl?: number; amb: number; ambKind: number; unres: number; extOK: number; extQ: number; extFAIL: number; bindOK: number; bindQ: number; bindFAIL: number; causeOK: number; causeFAIL: number }>; total: any; intent: Map<string, { intended: number; sameFileUnproven: number; arbitraryTwin: number; noDeclaration: number }>; intentBlockSeen: boolean; intentWidthBad: number; population: Population; intentClosure: string | null; claimBlock: string[] } {
   // FOUR ENTRIES WIDENED 2026-10-20 (Lead) to the router's own sets, which the population gate
   // named as MISSING: php (phpt — 1,310 corpus files), graphql (graphqls — 97), json (jsonl 31 +
@@ -157,7 +173,7 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
   const ext = { fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble", php: "php,phpt", powershell: "ps1,psm1,psd1", r: "r", dart: "dart", sql: "sql", graphql: "graphql,gql,graphqls", protobuf: "proto", json: "json,jsonc,jsonl,jsonlog", yaml: "yaml,yml", css: "css,less,sass", scss: "scss", hcl: "tf,hcl,tfvars,tofu", make: "mk,mak,makefile", toml: "toml", xml: "xml,xsd,dtd,svg,xsl,xslt,rng", markdown: "md,markdown", clean: "icl,dcl", bash: "sh,bash,zsh" }[lang] ?? derivedExts(lang) ?? lang
   let out = ""
   try {
-    out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, // THE RUNNER'S STDERR IS NO LONGER DISCARDED. It was `stdio: ["ignore","pipe","ignore"]`, which meant a
+    out = execFileSync("npx", ["tsx", "script/m14/incoming-gate.ts", lang, ext, "0", ...ARM_FLAGS], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, // THE RUNNER'S STDERR IS NO LONGER DISCARDED. It was `stdio: ["ignore","pipe","ignore"]`, which meant a
     // gate-read lane COULD NOT report a force-abort even when one occurred — the log would look identical to a
     // clean run. That is the same silent-instrument class as the `?? lang` fallback and the `NaN%` table: the
     // gate reported a number without being able to report what it excluded. Capturing stderr changes NOTHING about
@@ -311,6 +327,9 @@ function runLane(lang: string): { rows: Array<{ type: string; edges: number; res
 const argv = process.argv.slice(2)
 const JSON_MODE = argv.includes("--json")
 const LANE = argv.includes("--lane") ? argv[argv.indexOf("--lane") + 1] : null
+/** THE FLAGS THIS LANE'S DECLARATION MEASURES — computed AFTER `LANE`, because a `const` read before
+ *  its declaration is a TDZ crash, not a default. */
+const ARM_FLAGS: string[] = BINDING_COLLAPSE_LANES.has(LANE ?? "") ? ["--binding-collapse"] : []
 
 if (LANE) {
   const { rows, total, intent, intentBlockSeen, intentWidthBad, population, intentClosure, claimBlock } = runLane(LANE)
@@ -326,7 +345,7 @@ if (LANE) {
     const resolvedExt = derivedExts(LANE) ?? LANE
     console.error(`residual-gate: LANE "${LANE}" READ NOTHING — the runner produced 0 edges. ` +
       `resolved extension: "${resolvedExt}". invocation: ` +
-      `\`npx tsx script/m14/incoming-gate.ts ${LANE} ${resolvedExt} 0\`. ` +
+      `\`npx tsx script/m14/incoming-gate.ts ${LANE} ${resolvedExt} 0 ${ARM_FLAGS.join(" ")}`.trimEnd() + "\`. " +
       `An all-zero table is NOT a clean lane.`)
     process.exit(2)
   }
@@ -382,7 +401,13 @@ if (LANE) {
         : population.parsed === null
           ? `WHOLE admitted population (the population line was NOT PRINTED by the instrument — scope UNSTATED, not assumed clean)`
           : `WHOLE admitted population, production scope`
-  console.log(`residual gate — ${LANE}\nscope: ${scope}\n`)
+  // THE ARM IS PART OF THE HEADER for the scope's reason: two instruments over one lane can differ by
+  // the arm alone, and a reader who cannot see which arm each read will compare them as if they measured
+  // the same thing (that is the whole defect this set exists to close).
+  const arm = ARM_FLAGS.length > 0
+    ? `arm: ${ARM_FLAGS.join(" ")} — the lane's DECLARED mode (one declaration written in two files); a run without it is a DIFFERENT arm and its numbers must not be compared with the lane's declaration`
+    : `arm: default (no --binding-collapse; this lane declares no two-file declaration)`
+  console.log(`residual gate — ${LANE}\nscope: ${scope}\n${arm}\n`)
   {
     const bits: string[] = []
     if (population.parsed !== null && population.sampled !== null) bits.push(`${population.parsed} parsed of ${population.sampled} sampled`)

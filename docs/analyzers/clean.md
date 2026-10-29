@@ -147,7 +147,12 @@ honest):
   scan over source text is needed.
 - **`where`/`with`/`let` binders are real callables** — 13,665 binder occurrences
   publishing 12,026 scoped symbols — with a `<frame>.<local>` identity that rides
-  `qualifiedName`. Adopted from the haskell lane.
+  `qualifiedName`. Adopted from the haskell lane. **A module-level symbol rides it too,
+  as `<module>.<name>`** (2026-10-29): a Clean module is DECLARED in `.dcl` and
+  IMPLEMENTED in `.icl`, so one module-scope type/function/class/macro is one declaration
+  in two files, and the module-qualified spelling is what lets the incoming gate's
+  `--binding-collapse` read the pair as ONE declaration. Members keep `<owner>.<member>`,
+  which is the spelling `overrides`/`implements` endpoints use.
 - **Clean has no `export` keyword**: a `.dcl`'s definition list IS the interface.
 
 ## Known limitations — every one measured
@@ -162,10 +167,15 @@ honest):
   `(rootNode, content, path)` with no project context, so a reference to a name
   declared in another file cannot be resolved. This is a cross-lane architecture
   question, not a Clean defect.
-- **The M14.0.F5 differential is red on this lane** — the shared oracle derives
-  `instantiates` from every `constructor`-headed application, so satisfying it means
-  asserting a data construction for ≥97% of the sites above. Deliberate, written up,
-  and the shared oracle was not modified.
+- **The M14.0.F5 differential runs GREEN on this lane, with `overrides` DECLARED
+  no-truth** (`script/m14/spec/clean-completeness.json` → `label_coverage.declared_no_truth`,
+  2026-10-29). The oracle derives `references`, `implements`, `calls` and `instantiates` and
+  has no `overrides` rule; an overrides oracle would re-encode the analyzer's own
+  instance-member/class-member pairing, i.e. a mirror, and a mirror cannot adjudicate. The
+  label's independent coverage is the fixture suite (20 `overrides` rows across 14 fixtures).
+  The oracle still derives `instantiates` from every `constructor`-headed application, which
+  is why a share of `instantiates` rows read as oracle disagreement — those are the measured
+  19,430 declines above, and the shared oracle was not modified.
 - `?Just 0` in a body is an ERROR in the pinned grammar, so the unboxed BUILD
   direction is unreachable (ruling `CL-D8`).
 - An imported OPERATOR cannot be written as the shared `<module>:<item>` edge form —
