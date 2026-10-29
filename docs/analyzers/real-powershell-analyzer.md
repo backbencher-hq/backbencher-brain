@@ -2592,3 +2592,43 @@ here rather than half-built.
 worth **+62 resolved, 0 refuted** on this lane the moment the arbiter's owner question becomes
 type-aware (`typeNames`); until then it costs 6 refutations (PSD15 §1). Nothing else in the wall moved
 by a mechanism this lane owns.
+
+## PSD18 (append-only record, 2026-10-28) — the scope-selector model: BUILT, MEASURED, REVERTED
+
+PSD17 named 749 scope-qualified reads (`$script:x` 710 · `$global:x` 31 · `$local:x` 8) and said the
+collapse "needs a scope model". This round built that model, because "needs a model" is not an answer
+until the model is priced.
+
+**What was built.** A definable prefix (`script`/`global`/`local`/`private`/`function`) is a SCOPE
+SELECTOR, not part of the name: the declaration publishes the BARE name at the scope it selects
+(`script`/`global` → owner = the FILE symbol; the others → the enclosing frame), and a read targets
+`<owner>.<name>`. The scope is kept as the owner, so `$script:x` and a function's own `$x` keep
+different owners and can never bind to each other — the wrong-bind PSD17 refused. Four declaration
+sites that tested `isQualified` were relaxed to `isDeclarableVariable`; the `env:`/`variable:`/`using:`
+prefixes were untouched (the runtime owns those), and `$env:` stays external.
+
+**The arm said no.**
+
+| column | PSD17 | with the scope model |
+|---|---:|---:|
+| edges | 193,297 | **193,616** (+319) |
+| ambiguous | 17,030 | **17,198** (+168) |
+| unresolved | 20,330 | **19,524** (−806) |
+| extOK | 56,822 | **56,813** (−9) |
+| **extFAIL** | **0** | **51** |
+
+**AND THE 51 ARE THE FINDING, not a side effect.** Every one is a row whose target became
+`<file>.name` — the exact qualified form the read retarget produces — and every one refuted on the
+**owner** question, because the owner is the FILE symbol (`build-utils.ps1`, `compiler.test.ps1`,
+`TypeInference.Tests.ps1` …) and a file symbol is always declared. So a qualified target owned by a
+file is, to the arbiter, a claim that the project does not declare its own file: false by construction.
+The 51 are the rows whose declaration spelling did not match exactly (case, or not declared), so the
+row did not resolve and the claim pass ran on it.
+
+**What this prices.** A scope model is not enough on its own: it must also teach the claim pass to
+leave a FILE-OWNED qualified target alone (no externality reading when the target's owner is the
+emitting file's own symbol). That is a second, independent change — and until both land together the
+lane's clause 4 would go 60 → 0 → 51, which is not a trade this bar allows.
+
+Reverted byte for byte to the PSD17 state (193,297 edges · 98,981 resolved · 17,030 ambiguous ·
+20,330 unresolved · 56,822 verified · ext? 134 · **refuted 0**); suite 30/0 on the restored tree.
