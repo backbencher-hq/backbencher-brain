@@ -932,3 +932,31 @@ verified rows, 0 debt, 0 refutations** the moment the invariant admits a claimed
 
 Reverted: analyzer, mutant set and fixture are back to the HSA1 state byte for byte (43,364 wall ·
 27,522 verified · ext? 67 · refuted 0); suite 9/0.
+
+## HSA2b (append-only record, 2026-10-29) — the alias/module claim SHIPPED, with the module space fixed
+
+HSA2 was built and reverted once because 22,432 of its 24,807 claimed rows landed in `ext?`: the
+arbiter keyed the project's module space on the module's **ROOT** (`Data` for `Data.Text`) over a set of
+file basenames and DIRECTORY names, so a Haskell module could never be distinguished from a directory.
+That verifier is now fixed (`moduleInProject` compares the FULL module path, derived from
+`facts.files`: `src/Data/Text.hs` → `Data.Text`, every suffix recorded, one-way), and the claim is
+re-measured on the same population:
+
+| column | before HSA2b | after |
+|---|---:|---:|
+| unresolved | 34,038 | **9,231** (−24,807) |
+| extOK (verified) | 27,522 | **38,872** (+11,350) |
+| ext? | 67 | **13,524** |
+| ambiguous | 9,326 | **9,326** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 43,364 → 32,081 (−11,283), every moved row a dependency that now names its module, and 0
+refuted.** The 13,524 `ext?` are the HONEST demotions: aliases whose module the project DOES carry
+(`Schema.column`, `Fixture.fixture`, `UUT.serveCommandParser` — `Schema`, `Fixture`, `UUT` are files in
+those repos). They cannot be claimed as external, and they cannot resolve either: the store keys a
+function by its bare name, so `<Module>.<fn>` is not a symbol. That limit is now named in the wall
+table rather than assumed away.
+
+**PINS.** New fixture `alias-module-claims` (`T.toUpper` and `L.sort` claimed with their specifiers, a
+locally declared `twice` call with no claim); two new mutants (`alias-module-claim-dropped`,
+`local-call-claimed`), both CAUGHT. Lane battery **21 of 21**, suite **10 pass / 0 fail**, `tsc` 0.

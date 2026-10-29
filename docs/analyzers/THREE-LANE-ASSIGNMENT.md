@@ -180,34 +180,24 @@ grammar, not a reason to rule.
 - Gates from the committed tree: suite **30 pass / 0 fail**, mutants **87 of 87 caught, 0 survivors**,
   zero-regex **0/0** PASS, `tsc -p tsconfig.json` 0.
 
-### haskell — coverage DONE; the wall campaign has BEGUN (HSA1)
+### haskell — coverage DONE; wall campaign SHIPPED TWO PASSES (HSA1, HSA2b)
 
 - Commit `fbe61b88b` — `renders` and `mixes_in` ruled with whole-population counts; the lane
   reads **12/12** (12 implemented + 2 excluded = 14 applicable).
 - Population: **3,702 of 3,702** admitted `.hs`/`.lhs` over **6 repositories**, 0 failures.
-  `extends` 189 · `implements` 13,721 · `overrides` 1,274 are the conformance family;
-  DerivingVia (493 sites) is read as `implements` with `metadata.derived`, not `mixes_in`.
-- **HSA1 (2026-10-28) claimed the wall's two biggest classes**: a bare capitalised dependency the
-  module does not declare now carries `externalTarget` — `implements` 11,563 unresolved (Show 2,459,
-  Eq 1,899, Generic 1,404…) and `instantiates` 10,978 (Just 3,657, Right 1,017, Left 617). The claim
-  rides `pushRel`, the single writer, and is safe by construction (consulted only where the name
-  model has nothing). **Wall 60,898 → 43,364 · verified 9,988 → 27,522 · ambiguous unchanged ·
-  refuted 0.**
-- Current state: **193,418 edges · resolved 122,465 · ambiguous 9,326 · unresolved 34,038 · extOK
-  27,522 · ext? 67 · extFAIL 0** (resolved = edges − ambiguous − unresolved − extOK − ext?, the
-gate's own arithmetic; an earlier draft of this line said 140,728, which the columns do not add to
-and is corrected here). Fixtures **9/9** (new `bare-type-claims`), mutants **19/19 caught**,
-  `tsc` 0.
-- **Three further mechanisms were built and MEASURED, and all three are FILED rather than shipped**,
-  each with its price: HSA2 alias/module claim on calls (+24,807 out of `unresolved`, **22,432 into
-  `ext?`**), HSA3 single-segment module imports (+350 verified, **+788 `ext?`**) — both blocked on the
-  arbiter keying the module space on a module's ROOT (`Data`), so `Data.Text` cannot be answered; and
-  HSA4 re-export claims (**+811 verified, 0 debt, 0 refutations**) — blocked on the shared fixture
-  runner's export invariant, which refuses an export that names no local symbol (a re-export does, by
-  construction). The one-line instrument changes are named in the lane's page.
-- **Next:** the two instrument changes above (module space keyed on the full module path; the export
-  invariant admitting a row that carries `externalTarget`), then `calls` 25,131 (alias-qualified) and
-  dotted `instantiates`. Clause 1 is still FAIL: 43,364 ambiguous/unresolved.
+  `extends` 189 · `implements` 13,721 · `overrides` 1,274 are the conformance family.
+- **HSA1**: a bare capitalised dependency the module does not declare carries `externalTarget`
+  (implements 11,563 + instantiates 10,978 unresolved at the time). Wall 60,898 → 43,364.
+- **HSA2b**: a qualified call names its module through the alias (`T.unpack` → `Data.Text`) and the
+  arbiter verifies the claim against the project's **full module paths** (`moduleInProject`,
+  taken this round). Wall 43,364 → **32,081**; verified 27,522 → **38,872**; **0 refuted**.
+- **Current state: 193,418 edges · resolved 122,465 · ambiguous 9,326 · unresolved 9,231 ·
+  extOK 38,872 · ext? 13,524 · extFAIL 0.** Fixtures **10/10**, mutants **21/21 caught**, `tsc` 0.
+- **The 13,524 `ext?` are named**: aliases whose module the project carries (`Schema`, `Fixture`,
+  `UUT` …), which can be neither claimed external nor resolved — the store keys a function by its
+  bare name, so `<Module>.<fn>` is not a symbol. That is the lane's next ontological question.
+- **Still filed**: re-export claims (+811 verified, blocked by the fixture runner's export
+  invariant). Clause 1 is still FAIL: 32,081 ambiguous/unresolved + 13,524 refused claims.
 
 ### solidity — 11/11 implemented, 3 ruled, and every wall DISPOSITIONED (2026-10-28)
 

@@ -94,6 +94,8 @@ interface HaskellContext {
    * the first version doing (`MkFoo` was claimed because only the TYPE name `Foo` was in the set).
    */
   declaredConstructors: Set<string>
+  /** HSA2 — the module alias this file binds (`import qualified Data.Text as T` → `T` → `Data.Text`). */
+  importAliases: Map<string, string>
   // `{-# ANN ... #-}` pragma sites. The pragma attaches METADATA to its target;
   // it runs no callable and applies no decorator, so it publishes no edge. It is
   // COUNTED here so the class is a number the spec can disclose rather than an
@@ -144,6 +146,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       declaredFunctions: new Set(),
       declaredTypes: new Set(),
       declaredConstructors: new Set(),
+      importAliases: new Map(),
       annPragmas: 0,
       classMethods: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
@@ -716,6 +719,22 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     type: ASTEngine.RelationshipType,
     target: string,
   ): Record<string, any> {
+    // HSA2 — A QUALIFIED CALL NAMES ITS MODULE THROUGH THE ALIAS. `T.unpack` is `Data.Text.unpack`,
+    // and the file itself says so in its import list. The claim published is the fleet's
+    // `moduleNamespace`, verified against the PROJECT'S MODULE PATHS — `moduleInProject` compares the
+    // full path, so `Data.Text` is decided by whether the project carries `Data/Text.hs`, not by
+    // whether it has anything called `Data`. FAIL-CLOSED: a module the project carries demotes to
+    // `ext?`, so this class cannot raise extFAIL.
+    if (type === ASTEngine.RelationshipType.Calls) {
+      const dot = target.indexOf(".")
+      if (dot > 0) {
+        const mod = ctx.importAliases.get(target.slice(0, dot))
+        if (mod !== undefined && mod.length > 0) {
+          return { externalTarget: true, externalReason: "module-namespace", externalSpecifier: mod }
+        }
+      }
+      return {}
+    }
     if (type !== ASTEngine.RelationshipType.Implements && type !== ASTEngine.RelationshipType.Instantiates) return {}
     if (!target || target.length === 0) return {}
     for (let i = 0; i < target.length; i++) {
@@ -1564,6 +1583,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else {
         importItems.push("*")
       }
+      if (mod.alias && mod.alias.length > 0) ctx.importAliases.set(mod.alias, mod.name)
       ctx.imports.push({
         module: mod.name,
         source: mod.name,

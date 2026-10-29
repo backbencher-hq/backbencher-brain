@@ -1830,6 +1830,50 @@ function projectModuleNames(facts: ProjectFacts): Set<string> {
   return names
 }
 
+/**
+ * THE PROJECT'S MODULE PATHS, repo-relative, dots for separators: `src/Data/Text.hs` → `Data.Text`.
+ *
+ * WHY THIS EXISTS, MEASURED. `projectModuleNames` holds file BASENAMES and DIRECTORY names, and the
+ * claim used to compare only the module's ROOT — so `Data.Text` was decided by whether the project had
+ * anything called `Data`, and a Haskell module can never be distinguished from a directory of that
+ * name. Two experiments on the haskell lane priced the consequence: publishing the claim on
+ * alias-qualified calls moved 24,807 rows out of `unresolved` but 22,432 of them into `ext?` for 2,375
+ * real verifications; the dotless imports gave +350 verified and +788 `ext?`.
+ *
+ * EVERY SUFFIX IS RECORDED, because the indexer is not told where the source root is: `a/b/Data/Text.hs`
+ * yields `Data.Text`, `b.Data.Text` and `a.b.Data.Text`, and a claim matches any of them.
+ *
+ * THE DIRECTION IS ONE-WAY: a module the project carries can only stay `externalUnverified`; the change
+ * turns `ext?` into `externalVerified` for modules the project does NOT carry and nothing else.
+ */
+const MODULE_SEPARATOR_CACHE = new WeakMap<ProjectFacts, Set<string>>()
+const MODULE_SOURCE_EXT = /\.(hs|lhs|ml|mli|re|rei|ps1|psm1|psd1|py|ts|tsx|js|jsx|java|kt|kts|scala|rb|go|rs|sol|ex|exs|erl|hrl|clj|cljs|groovy|dart|c|cc|cpp|h|hpp|cs|fs|vb|swift|php|lua|r|jl|nim|zig|m|mm)$/i
+function projectModulePaths(facts: ProjectFacts): Set<string> {
+  const hit = MODULE_SEPARATOR_CACHE.get(facts)
+  if (hit) return hit
+  const paths = new Set<string>()
+  for (const f of facts.files) {
+    const clean = f.replace(/\\/g, "/").replace(MODULE_SOURCE_EXT, "")
+    const segs = clean.split("/").filter((s) => s.length > 0 && s !== "." && s !== "..")
+    if (segs.length === 0) continue
+    for (let i = 0; i < segs.length; i++) paths.add(segs.slice(i).join("."))
+  }
+  MODULE_SEPARATOR_CACHE.set(facts, paths)
+  return paths
+}
+
+/** Does the project carry this module? Full path first; the root rule only where it is the only evidence. */
+function moduleInProject(facts: ProjectFacts, module: string): boolean {
+  const norm = module.replace(/\\/g, "/").replace(/\//g, ".").replace(/^\.+|\.+$/g, "")
+  if (norm.length === 0) return false
+  if (norm.indexOf(".") < 0) return projectModuleNames(facts).has(norm)
+  const paths = projectModulePaths(facts)
+  if (paths.size === 0) return projectModuleNames(facts).has(norm.split(".")[0])
+  if (paths.has(norm)) return true
+  for (const p of paths) if (p.endsWith(`.${norm}`)) return true
+  return false
+}
+
 export function classifyEdge(
   declCount: Map<string, number>,
   kinds: Map<string, Set<string>>,
@@ -2131,8 +2175,7 @@ export function classifyEdge(
       if (!facts) return { outcome: "externalUnverified", decls, kinds: kindText }
       // THE ROOT, not the whole module path: `xml.sax.handler` is contained in `xml`. Splitting on `.` as well
       // as `/` is what makes a dotted module findable in a directory space; the FIRST segment is the root.
-      const root = claim.module.split(/[./\\]/)[0]
-      const present = root.length > 0 && projectModuleNames(facts).has(root)
+      const present = moduleInProject(facts, claim.module)
       return {
         outcome: present ? "externalUnverified" : "externalVerified",
         decls, kinds: kindText,

@@ -13290,6 +13290,39 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isQualifiedCall && x.type === "calls")) }),
   },
   {
+    id: "haskell/alias-module-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA2 REVERT: a qualified call publishes no module reading again — the pre-fix state, where 25,131 `calls` rows named `Schema.column`, `T.unpack`, `J.toJSON` … and said nothing about the module they reach. The transform re-derives the shape from the RESULT (a `calls` row carrying `externalReason: \"module-namespace\"`), not from a fixture name. Caught by haskell/alias-module-claims' two alias rows and its silence-forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "calls") return x
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalReason !== "module-namespace") return x
+        delete md.externalTarget
+        delete md.externalReason
+        delete md.externalSpecifier
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/local-call-claimed",
+    language: "haskell",
+    defectClass: "false-claim",
+    description:
+      "HSA2 REVERT (the guard): EVERY dotted call is claimed as a module dependency, including a call to a function this module declares — the shape the file's own declaration table exists to refuse. A verified FALSE claim. Caught by haskell/alias-module-claims' `useLocal -> twice` twin and its false-claim forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "calls" || String(x.target ?? "") !== "twice") return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalReason: "module-namespace", externalSpecifier: "Twice" } }
+      }),
+    }),
+  },
+  {
     id: "haskell/bare-type-claim-dropped",
     language: "haskell",
     defectClass: "claim-loss",
