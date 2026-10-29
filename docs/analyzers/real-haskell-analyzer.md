@@ -960,3 +960,28 @@ table rather than assumed away.
 **PINS.** New fixture `alias-module-claims` (`T.toUpper` and `L.sort` claimed with their specifiers, a
 locally declared `twice` call with no claim); two new mutants (`alias-module-claim-dropped`,
 `local-call-claimed`), both CAUGHT. Lane battery **21 of 21**, suite **10 pass / 0 fail**, `tsc` 0.
+
+## HSA4b (append-only record, 2026-10-29) — re-export claims SHIPPED, and the invariant that refused them
+
+HSA4 was measured and filed: a re-export (`module M (intercalate)`) names an imported binding, and the
+bare `externalTarget` claim fits it exactly. It was blocked by the shared fixture runner, whose export
+invariant requires every export to resolve to a top-level symbol — which a re-export fails BY
+CONSTRUCTION. The harness already admits module-surface exports for the JS family (`reExport`), CJS
+(`viaCommonJs`) and lua (`luaSpecific`); the same statement in per-row form is `externalTarget` on the
+export edge, and it is gate-checked: a lane that claims a name the project declares gets a REFUTED
+claim and fails clause 4 instead of passing.
+
+**Shipped, measured on the whole population:**
+
+| column | before HSA4b | after |
+|---|---:|---:|
+| unresolved | 9,231 | **8,420** (−811) |
+| extOK (verified) | 38,872 | **39,683** (+811) |
+| ext? | 13,524 | **13,524** |
+| ambiguous | 9,326 | **9,326** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 32,081 → 31,270, no debt moved, nothing refuted.** Pins: fixture `re-export-claims`
+(`intercalate` re-exported and claimed, `declared` exported from the module and NOT claimed), two
+mutants (`re-export-claim-dropped`, `local-export-claimed`), both CAUGHT. Lane battery **23 of 23**,
+suite **11 pass / 0 fail**, `tsc` 0.

@@ -191,8 +191,12 @@ grammar, not a reason to rule.
 - **HSA2b**: a qualified call names its module through the alias (`T.unpack` → `Data.Text`) and the
   arbiter verifies the claim against the project's **full module paths** (`moduleInProject`,
   taken this round). Wall 43,364 → **32,081**; verified 27,522 → **38,872**; **0 refuted**.
-- **Current state: 193,418 edges · resolved 122,465 · ambiguous 9,326 · unresolved 9,231 ·
-  extOK 38,872 · ext? 13,524 · extFAIL 0.** Fixtures **10/10**, mutants **21/21 caught**, `tsc` 0.
+- **HSA4b**: a re-export names an imported binding, and the bare `externalTarget` claim now rides it
+  (the fixture runner admits a CLAIMED re-export, as it already admitted the JS/CJS/lua module-surface
+  roles). Unresolved 9,231 → **8,420**, verified 38,872 → **39,683**, 0 refuted.
+- **Current state: 193,418 edges · resolved 122,465 · ambiguous 9,326 · unresolved 8,420 ·
+  extOK 39,683 · ext? 13,524 · extFAIL 0.** Wall **31,270**. Fixtures **11/11**, mutants **23/23
+  caught**, `tsc` 0.
 - **The 13,524 `ext?` are named**: aliases whose module the project carries (`Schema`, `Fixture`,
   `UUT` …), which can be neither claimed external nor resolved — the store keys a function by its
   bare name, so `<Module>.<fn>` is not a symbol. That is the lane's next ontological question.

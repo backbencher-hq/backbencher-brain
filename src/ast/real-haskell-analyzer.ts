@@ -719,6 +719,25 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     type: ASTEngine.RelationshipType,
     target: string,
   ): Record<string, any> {
+    // HSA4 — A RE-EXPORT NAMES A DEPENDENCY THE MODULE DOES NOT DECLARE. `module M (intercalate, …)`
+    // re-exports a name imported from elsewhere; the export row's target is the bare name, and if no
+    // corpus file declares it the row said NOTHING about where it comes from. MEASURED: 985 unresolved
+    // `exports` rows. The claim is the bare `externalTarget` HSA1 uses, safe for the same reason (the
+    // arbiter consults a claim only where the name model has nothing), and the guard is the file's own
+    // declaration table plus the module's own name.
+    if (type === ASTEngine.RelationshipType.Exports && target.length > 0) {
+      if (target === ctx.currentModule) return {}
+      if (ctx.declaredTypes.has(target) || ctx.declaredFunctions.has(target)) return {}
+      const first = target.charCodeAt(0)
+      const firstOk = (first >= 65 && first <= 90) || (first >= 97 && first <= 122) || first === 95
+      if (!firstOk) return {}
+      for (let i = 1; i < target.length; i++) {
+        const c = target.charCodeAt(i)
+        const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 39
+        if (!ok) return {}
+      }
+      return { externalTarget: true, externalVia: "re-export" }
+    }
     // HSA2 — A QUALIFIED CALL NAMES ITS MODULE THROUGH THE ALIAS. `T.unpack` is `Data.Text.unpack`,
     // and the file itself says so in its import list. The claim published is the fleet's
     // `moduleNamespace`, verified against the PROJECT'S MODULE PATHS — `moduleInProject` compares the

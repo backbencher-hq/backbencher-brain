@@ -13290,6 +13290,38 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isQualifiedCall && x.type === "calls")) }),
   },
   {
+    id: "haskell/re-export-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA4 REVERT: an `exports` row whose target is a bare name the module does not declare publishes no externality reading again — the pre-fix state, where 985 population rows re-exported an imported name and said nothing about it. Keyed on the row's own `externalVia: \"re-export\"`, not on a fixture name. Caught by haskell/re-export-claims' `intercalate` row and its silence-forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "exports") return x
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalVia !== "re-export") return x
+        delete md.externalTarget
+        delete md.externalVia
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/local-export-claimed",
+    language: "haskell",
+    defectClass: "false-claim",
+    description:
+      "HSA4 REVERT (the guard): every bare `exports` target is claimed, including the module's own declaration — `module M (declared)` then says the project does not declare `declared`, two lines above it. A verified FALSE claim. Caught by haskell/re-export-claims' `declared` twin and its false-claim forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "exports" || String(x.target ?? "") !== "declared") return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), externalTarget: true, externalVia: "re-export" } }
+      }),
+    }),
+  },
+  {
     id: "haskell/alias-module-claim-dropped",
     language: "haskell",
     defectClass: "claim-loss",

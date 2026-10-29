@@ -54,6 +54,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // tree-sitter-vbnet, and the pin's `wired` field names the same file, so a swap
   // of the wasm here is a swap the pin catches.
   vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
+  vba: { wasm: "tree-sitter-vba.wasm", analyzerFile: "real-vba-analyzer", className: "RealVbaAnalyzer", ext: "bas,cls,frm" },
   clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj,cljc,cljs" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
@@ -1826,7 +1827,23 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // aliased re-export of a local: some local symbol exists that is NOT
       // itself in the export list under its own name (alpha as beta)
       (isJsFamily && [...symbolNames].some((sn) => !exportedNamesSet.has(sn) && topLevelNames.has(sn)))
-    const unresolvable = [...new Set(exportNames)].filter((n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n))
+    // A RE-EXPORT THE LANE *CLAIMS* IS A BINDING TOO — and the claim is gate-checked, not a free
+    // pass. `module M (intercalate)` re-exports an imported name, so it fails the top-level-symbol
+    // test BY CONSTRUCTION; the harness already admits the same role for the JS family (`reExport`
+    // marker), CJS (`viaCommonJs`) and lua (`luaSpecific`), i.e. "a lane that STATES its surface may
+    // be believed". `externalTarget` on the export edge is that statement for a re-export, and the
+    // incoming gate verifies it against the project's name table — a lane that claims a name the
+    // project declares gets a REFUTED claim and fails clause 4 instead of passing here.
+    const claimedReExport = (n: string): boolean =>
+      (result.relationships ?? []).some(
+        (r: any) =>
+          r.type === "exports" &&
+          String(r.target ?? "") === n &&
+          (r.metadata ?? {}).externalTarget === true,
+      )
+    const unresolvable = [...new Set(exportNames)].filter(
+      (n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n) && !claimedReExport(n),
+    )
     if (unresolvable.length) {
       problems.push(`export invariant violated: export(s) ${JSON.stringify(unresolvable)} do not resolve to a top-level symbol (membership rides Contains)`)
     }
