@@ -696,3 +696,38 @@ Verified after the repairs: fixtures **34/34**, mutants **49/49**, coverage gate
 **11 implemented / 11 applicable / 3 excluded**, completeness **126/126 exactly once**,
 doc truth **72/72 numbers agree**, zero-regex selftest **8/8**, cross-file gate **15/15**,
 IPC-wiring gate **7/7**.
+
+## SOL-26/27/28 (append-only record, 2026-10-29) — the dependency boundary gets its claim, and the wall falls to 1,275
+
+The lane's unresolved residue was one shape wearing three labels: a dependency the project does not
+declare, published with no reading at all. **W3 had already been dispositioned as a corpus boundary**
+(`assertEq`, `vm.prank`, `deal` — forge-std, outside the admitted corpus) — and a corpus boundary is
+exactly what an external claim is FOR.
+
+| rule | shape | rows | claim |
+|---|---|---:|---|
+| **SOL-26** | a call the classifier already labelled `calleeKind: external` | 1,348 unresolved `calls` | `externalTarget` + `externalVia: "call"` |
+| **SOL-27** | `contract C is Test` where `kindUnresolved` (neither file nor index declares the base) | 38 unresolved `extends` | `externalTarget` + `externalVia: "base"` |
+| **SOL-28** | an import path the project does not admit (`forge-std/Test.sol`) | 134 unresolved `imports` | `sourcePathClaim` |
+
+**THE CLAIMS ARE THE ANALYZER'S OWN MEASUREMENTS, STATED WHERE THE GATE CAN CHECK THEM.** `calleeKind:
+external` is reached only after the file's scope AND the project index both declined the name, and
+`kindUnresolved` is the same fact for a base; the arbiter consults a claim only where `decls === 0`, so
+a name the project really declares keeps its resolved answer and none of these can refute.
+
+**MEASURED, same population (421 files / 2 repos), A/B by analyzer digest:**
+
+| column | before | after |
+|---|---:|---:|
+| unresolved | 1,348 | **145** (−1,203) |
+| ambiguous | 1,130 | **1,130** |
+| extOK | 948 | **2,151** (+1,203) |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 2,478 → 1,275.** The 145 that remain are `address.code` / `address.balance` (language builtins,
+W2's ruled class), member names of untyped receivers, and 30 `references` rows — none claimable without
+asserting something the language does not support. The 1,130 ambiguous are the cross-file name space.
+
+**PINS.** New fixture `external-deps-sol26` (an external call, an unresolved base, an unadmitted import
+path — each with its claim and a forbid twin); one new mutant (`external-call-unclaimed`), CAUGHT.
+Lane battery **50 of 50**, suite **37 pass / 0 fail**, `tsc` 0.

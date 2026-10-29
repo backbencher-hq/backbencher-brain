@@ -1957,6 +1957,12 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
                     kindUnresolved: true,
                     assumedKind: ASTEngine.RelationshipType.Extends,
                     reasonCode: "base-not-declared-in-file",
+                    // SOL-27 — AND THE CLAIM THE PROJECT CAN ANSWER. `kindUnresolved` means NEITHER
+                    // this file NOR the project index declares the base — the fact the arbiter checks
+                    // (a claim is consulted only where `decls === 0`). MEASURED: 38 unresolved
+                    // `extends`, led by `Test` 33 (forge-std's base contract, outside the corpus).
+                    externalTarget: true,
+                    externalVia: "base",
                   }
                   : {}),
                 // SOL-21 — how the kind was settled, so a consumer can tell a settled
@@ -3089,6 +3095,18 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         return "external"
       })()
       md.calleeKind = kind
+      // SOL-26 — A CALL THIS ANALYZER HAS ALREADY CLASSIFIED EXTERNAL IS A DEPENDENCY NO PROJECT
+      // DECLARATION ANSWERS. `calleeKind === "external"` is not a guess: the classifier reaches it
+      // only after the file's own scope AND the project index both declined the name — so the claim
+      // "the project declares nothing of this spelling" is exactly what it already measured, and the
+      // arbiter verifies it against the same name model (it consults a claim only where `decls === 0`).
+      // MEASURED class: 1,348 unresolved `calls`, dominated by the forge-std helpers (`assertEq`,
+      // `vm.prank`, `deal`) that live OUTSIDE the admitted corpus — the lane's W3 wall, which is a
+      // corpus/dependency boundary and not a resolver defect.
+      if (kind === "external" && target !== "" && (rel.metadata as any).externalTarget !== true) {
+        md.externalTarget = true
+        md.externalVia = "call"
+      }
       // W2 — A LANGUAGE NAMESPACE IS A CLAIM THE GATE CAN CHECK, not a bare name it must
       // guess at. `abi.encode` / `type(T).interfaceId` were published with target `encode` /
       // `interfaceId`, so the gate saw a bare name that names no declaration and counted it
@@ -3345,6 +3363,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           import: true,
           importPath: e.path,
           ...(claim !== null ? { importProjectFile: claim } : {}),
+          // SOL-28 — AND WHEN THE PATH IS NOT A PROJECT FILE, THE SOURCE-PATH CLAIM IS THE TRUE ONE:
+          // nothing the project ADMITS resolves to this written path (`forge-std/Test.sol`,
+          // `@openzeppelin/contracts/utils/math/Math.sol`). Its polarity is the inverse of the file
+          // claim's and the project's own admitted list is the whole evidence.
+          ...(claim === null ? { sourcePathClaim: [e.path] } : {}),
           ...(e.isNamespace ? { isNamespaceImport: true } : {}),
         }, { pathTarget: true })
       }

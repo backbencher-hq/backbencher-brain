@@ -92,6 +92,23 @@ const solEdgeKeyPerSet = (r: any) => {
 
 export const SOLIDITY_MUTANTS: Mutant[] = [
   {
+    id: "solidity/external-call-unclaimed",
+    language: "solidity",
+    defectClass: "claim-loss",
+    description:
+      "SOL-26 REVERT: a call the classifier already labelled `calleeKind: external` publishes no reading again — the pre-fix state, where 1,348 unresolved `calls` named forge-std helpers (`assertEq`, `vm.prank`, `deal`) that live outside the admitted corpus and said nothing about it. Keyed on the row's own `externalVia: \"call\"`, not a fixture name. Caught by solidity/external-deps-sol26's `assertEq` row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalVia !== "call") return x
+        delete md.externalTarget
+        delete md.externalVia
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
     id: "solidity/global-file-owner",
     language: "solidity",
     defectClass: "fabrication",

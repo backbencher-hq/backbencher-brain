@@ -203,42 +203,23 @@ grammar, not a reason to rule.
 - **Still filed**: re-export claims (+811 verified, blocked by the fixture runner's export
   invariant). Clause 1 is still FAIL: 32,081 ambiguous/unresolved + 13,524 refused claims.
 
-### solidity — 11/11 implemented, 3 ruled, and every wall DISPOSITIONED (2026-10-28)
+### solidity — 11/11 implemented, 3 ruled, every wall dispositioned, and the dependency wall CLAIMED
 
 - Coverage: **11 implemented + 3 excluded** (`renders`, `part_of` grammar-remedy-ruled; `mixes_in`
   ontological, emission tried and withdrawn as SOL-24). `coverage-block-gate` reads solidity
   11/11/3 with 0 problems.
-- Whole-population arm (`incoming-gate solidity sol 0 --index`, farm root): **421 of 421 files over
-  2 repos, 35,099 edges, 0 unclassed**; **resolved 22,750 · verified claims 948 · ambiguous 1,130 ·
-  unresolved 1,348**; extFAIL / bindFAIL / causeFAIL **0**. The verified class is
-  (22,750 + 948) / 35,099 = **67.5%**, up from 48.9% at the start of this campaign.
-- The movement is measured as A/B by analyzer digest with the same corpus and instrument, and
-  reconciled on the gate's own `(label, target, file:line)` key every time: **627 ambiguous rows
-  became resolved, 0 appeared** across SOL-25 (receiver typing, implicit-`this`, static library
-  call, container element, conversion receiver, inherited modifier).
-- **The wall classification is now trustworthy and it CHANGED the lane's remaining work**: the
-  classifier used to re-analyse each file WITHOUT the project index while every arm ran WITH one,
-  which read an inherited member call as `calleeKind: external` and charged 826 ambiguous calls to
-  W3. The join now rebuilds the arm's index and REFUSES a sampled dump. Classes: W3 1,070 · W7 704
-  · W14 208 · W6 146 · W1 134 · W15 85 · W10 72 · W8 38 · W4 16 · W5 4 · W11 1. Each is disposed by
-  where its target lives in the project (`docs/analyzers/real-solidity-analyzer.md` §WALL
-  DISPOSITIONS): W3's 1,070 are ALL absent from the project (forge-std `Test` helpers outside the
-  admitted corpus, plus `wrap`/`unwrap`/`push`/`slice` builtins) — a corpus/owner decision, not a
-  resolver defect; W1's 134 are module specifiers by construction; W7's 159 absent are builtins and
-  its 545 member rows are untyped receivers; W14's 208 are bytes/array builtins and objects with two
-  declarations; W15's 85 need an index count for non-type names.
-- Commits this campaign: `dc8290f4e` (SOL-24 withdrawal + SOL-12 fix + oracle coverage),
-  `893c00fc9` (exclusion ladder), `6cfad3971` (classifier), `82f0589d7` (import file claim, 798
-  verified), `414aa07f7` (`abi.*` namespace claim, 150 verified), `3f410436f` (receiver typing +
-  implicit-`this` + indexed classifier), `49b3a4112` (static call + the stale-target defect),
-  `49fc66240` (wall dispositions), `9a843b4dc` (container + conversion receivers), `663a0b0c2`
-  (inherited modifier), `a4b2c8239` (Yul frame bindings, correctness only).
-- Fixtures **36/0**; doc-truth 74/74; zero-regex 0/0; differential 60 files MISSING 0 / unexplained 0.
-- **Next for this lane, in value order:** W4's 16 event rows (declared kind not in run), then the
-  index facts that would close W14's 208 and W15's 85. W3/W7-builtin/W1/W10 are not the analyzer's
-  to close; they need a dependency index or a corpus decision from the owner, and the doc states the
-  falsifier for each. **The lane is NOT "done"**: clause 1 still fails on 1,130 + 1,348 rows, and
-  those rows are dispositioned, not resolved.
+- The campaign's resolutions: receiver typing, implicit-`this`, static library calls, container and
+  conversion receivers, inherited modifiers, Yul frame bindings (SOL-25). **The wall classifier was
+  rebuilt** because it re-analysed without the project index; its classes are now trustworthy.
+- **SOL-26/27/28 (2026-10-29) claimed the dependency boundary**: `calleeKind: external` calls
+  (forge-std helpers outside the corpus), `kindUnresolved` bases, and unadmitted import paths now
+  carry the claim the project can verify. **Wall 2,478 → 1,275**; unresolved 1,348 → 145;
+  ambiguous 1,130 unchanged; **refuted 0**.
+- **Current state: 35,099 edges · resolved 22,750 · ambiguous 1,130 · unresolved 145 · extOK 2,151 ·
+  ext? 0 · extFAIL 0.** Fixtures **37/37**, mutants **50/50 caught**, `tsc` 0.
+- **What is left, named**: 1,130 ambiguous (cross-file name space — two declarations of one name),
+  145 unresolved (`address.code`/`.balance` builtins under W2's ruling, member names of untyped
+  receivers, 30 `references`). Clause 1 is still FAIL: 1,275.
 
 ## The interruption point, stated plainly
 
