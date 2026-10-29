@@ -2217,3 +2217,60 @@ gap reads **37,018** (was 66,969 at the start of this campaign).
 plus a `forbidRelationships` row on each twin. Two new mutants, both CAUGHT — one that drops the
 reading and one that extends it to member calls: **70 of 70 caught, 0 survivors**. Suite **26 pass /
 0 fail**, `tsc` 0.
+
+## PSD11 (append-only record, 2026-10-28) — `$env:NAME` is a NAMESPACE root, and the 855 claims no check could reach
+
+**THE CLAIM WAS TRUE AND UNCHECKABLE, WHICH IS A CLAUSE-1 DEBT IN ITS OWN RIGHT.** PSD10's table ends
+with `ext? 3,362` — rows carrying a marker that the arbiter cannot turn into a verdict. 855 of them
+were ONE shape: an environment-provider read (`$env:PSModulePath`, `$env:TEMP`, `$env:GRACE_TOKEN`;
+220 admitted files, 159 of `PSModulePath` alone). The analyzer had always refused to call it a project
+name — `RUNTIME_TABLE_SCOPE_PREFIXES` keeps the qualified external reading on `env:`/`variable:`/`using:`
+because the runtime binds them from outside the parse — but it published only the GENERIC marker, and
+`verifyExternalClaim` refuses an owner that is not identifier-shaped. `env:TEMP` carries a colon, so the
+verdict was UNVERIFIABLE and stayed there.
+
+**THE FACT IS NOT DOUBTFUL AT ALL.** PowerShell's Environment provider is part of the engine: the
+prefix is case-insensitive, `$Env:TEMP` and `$ENV:TEMP` are the same binding, and no admitted file can
+declare a symbol spelled `env:Something` — a scope-qualified name is never a declaration (PS8's rule,
+unchanged since the first wave). The namespace claim is the fleet's kind for exactly this statement:
+the LIST is the evidence, the root is matched by segment, and the claim can never raise `resolved`.
+
+**THE ROOT IS CARRIED AS WRITTEN, AND THAT IS THE WHOLE CORRECTNESS ARGUMENT.**
+`namespaceMatchOf` compares the target's own first SEGMENT against the list **byte for byte**, so a
+list folded to `["env"]` REFUTES `$ENV:TEMP`. Measured directly against the arbiter before writing the
+pass: `namespaceMatchOf("ENV:TEMP", ["env"]) === null` · `namespaceMatchOf("ENV:TEMP", ["ENV"]) === "ENV"`.
+Folding case looks like normalisation and is a false claim — it would have converted 855 unverifiable
+rows into as many refuted ones, which is worse than the debt it repairs. The list therefore carries
+`env`/`ENV`/`Env` as the source spells it, which is also PS-B27's standing convention for every list
+root (`System`, `Text`).
+
+**MEASURED, same population (1,181 files / 30 repos), same arbiter, A/B by analyzer digest:**
+
+| column | before PSD11 | after |
+|---|---:|---:|
+| edges | 193,297 | **193,297** |
+| resolved | 98,975 | **98,975** |
+| ambiguous(decl) | 17,030 | **17,030** |
+| unresolved | 19,988 | **19,988** |
+| extOK | 53,882 | **54,737** |
+| **ext?** | **3,362** | **2,507** |
+| **extFAIL** | 60 | **60** |
+
+**+855 rows left the unverifiable column, and nothing else moved in either direction**: no resolution
+gained (a claim may not buy one), none lost, no ambiguity created, no refutation added. The
+before-arm was taken in a hard-linked copy of the tree with only this analyzer file replaced by
+`git show HEAD:…`, so both arms ran the same arbiter and the same corpus.
+
+**PINS.** New fixture `env-provider-psd11`: two positives (`$env:PSModulePath`, `$ENV:TEMP` — the
+second is the case row), two negative twins (`$envLocal`, a plain variable whose name merely starts
+with the same three letters; and `global:Helper`, a scope prefix the project CAN declare into), and
+four `forbidRelationships` rows — the folded list on `ENV:TEMP` (the refutation twin), the claim on the
+project binding, the claim on `global:`, and a claim on a cmdlet leaf. Two new mutants, both CAUGHT:
+one drops the list (claim-loss) and one folds it (false-claim). Suite **27 pass / 0 fail**;
+`tsc` 0; zero-regex **0 operations / 0 literals**.
+
+**WHAT IS LEFT IN `ext?`, NAMED.** The remaining 2,507 rows are **2,256 `ownerMemberAbsent` + 251
+`owner`** — and the first of those is the lane's own claim emitted where the owner is not a project
+type at all (`string.IsNullOrWhiteSpace`, `IO.Path.Combine`, `powershell.Create`,
+`Ansible.Basic.AnsibleModule.Create`), which the arbiter can only answer UNVERIFIED. That class is the
+next target, not this one's.

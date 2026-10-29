@@ -1455,7 +1455,57 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "powershell/env-provider-unclaimed",
+    language: "powershell",
+    defectClass: "claim-loss",
+    description:
+      "PSD11 REVERT: an environment-provider read carries only the generic externality marker, which is the pre-fix state verbatim — `$env:PSModulePath` published `externalTarget`/`externalVia: \"qualified\"` and nothing the arbiter could CHECK, because `verifyExternalClaim` treats a colon in the owner as a path byte and answers UNVERIFIABLE rather than guessing. Those rows sat in `ext?` — a claim no check can reach — on the least doubtful fact in the language. The transform is keyed on the TARGET's shape (three case-folded letters then a colon), not on a fixture or a name, so it stays live when the fixture is renamed. Caught by env-provider-psd11's two positive rows, which pin `meta.languageNamespace`; a revert that left the generic marker in place would keep every other row in the lane green, which is why the claim and not the marker is the pinned half.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        const t = String(x.target ?? "")
+        if (!envProviderShaped(t)) return x
+        if (!Array.isArray(md.languageNamespace)) return x
+        const { languageNamespace: _n, ...rest } = md
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "powershell/env-root-folded",
+    language: "powershell",
+    defectClass: "false-claim",
+    description:
+      "PSD11 REVERT (the mistake this change made): the namespace list carries a FOLDED root (`\"env\"`) instead of the spelling the source writes. PowerShell's provider prefixes are case-insensitive, so folding looks like normalisation rather than a decision — and it is a FALSE CLAIM, because the arbiter compares the target's own first segment against the list byte for byte (measured against `namespaceMatchOf`: `(\"ENV:TEMP\", [\"env\"])` is null, `(\"ENV:TEMP\", [\"ENV\"])` is `ENV`). A lane that folds converts every mixed-case row from 'verified' to 'REFUTED', i.e. it trades an unverifiable claim for a false one. Caught by env-provider-psd11's `ENV:TEMP` positive AND its forbid row on the folded list; the forbid is the half that survives a fix which lists both spellings.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, unknown>
+        if (!Array.isArray(md.languageNamespace)) return x
+        const folded = (md.languageNamespace as unknown[]).map((v: unknown) =>
+          typeof v === "string" ? v.toLowerCase() : v)
+        return { ...x, metadata: { ...md, languageNamespace: folded } }
+      }),
+    }),
+  },
 ]
+
+/**
+ * IS THIS TARGET SHAPED LIKE AN ENVIRONMENT-PROVIDER READ (`env:NAME`, any case)?
+ *
+ * Shared by the two PSD11 mutants so neither hard-codes the fixture's variable names. The test is
+ * the analyzer's own: a case-folded three-letter prefix then a colon at index 3, and something after
+ * it. Written as a byte scan because this file's zero-regex rule applies to the lane's instruments
+ * as well as to the analyzer (script/m14/powershell-zero-regex.ts reads both).
+ */
+const envProviderShaped = (t: string): boolean => {
+  if (t.length <= 4) return false
+  if (t.charCodeAt(3) !== 58 /* : */) return false
+  const a = t.charCodeAt(0) | 0x20, b = t.charCodeAt(1) | 0x20, c = t.charCodeAt(2) | 0x20
+  return a === 101 /* e */ && b === 110 /* n */ && c === 118 /* v */
+}
 
 /** PS-B16 — the three byte predicates the four cause-C mutants re-derive. They duplicate
  *  `externalReadingOf` in the analyzer on purpose: a revert that called the analyzer's own

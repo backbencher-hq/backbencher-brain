@@ -806,6 +806,42 @@ const DOTNET_SYSTEM_NAMESPACES = new Set([
 ])
 
 /**
+ * PSD11 — IS THIS TARGET AN ENVIRONMENT-PROVIDER READ (`env:NAME`)?
+ *
+ * `$env:PSModulePath` names a PROCESS environment variable. PowerShell's Environment PROVIDER is the
+ * namespace it lives in, the prefix is case-insensitive (`$ENV:PATH` is the same binding), and no
+ * declaration in any project can be spelled `env:Something` — a scope-qualified name is never a
+ * declaration (PS8's rule, unchanged since the first wave).
+ *
+ * WHY IT NEEDS ITS OWN CLAIM, MEASURED. The generic externality reading fires on the `:` and the
+ * arbiter then refuses to check it: `externalClaimOf` routes the row to `owner`, and
+ * `verifyExternalClaim` refuses an owner that is not identifier-shaped — `env:TEMP` carries a colon,
+ * which is also a path/URI byte, so a lookup returning 0 would prove nothing and it answers
+ * UNVERIFIABLE. Those rows therefore sat in `ext?`, "a claim no check can reach", which clause 1
+ * counts against the lane — on the least doubtful fact in the language.
+ *
+ * THE A/B, same 1,181-file population and same arbiter, only the analyzer's digest differing:
+ *   extOK 53,882 -> **54,737**   ext? 3,362 -> **2,507**   extFAIL **60 -> 60**
+ *   resolved 98,975 · ambiguous 17,030 · unresolved 19,988 — ALL UNCHANGED
+ * That is +855 rows moved out of the unverifiable column for zero refutations and zero resolutions
+ * bought, which is the whole contract of a claim. The namespace claim is the kind built for it: the
+ * LIST is the evidence, the root is matched by segment, and the claim can never raise `resolved`.
+ */
+const envProviderRootOf = (t: string): string | null => {
+  if (t.length <= 4) return null
+  if (t.charCodeAt(3) !== 58 /* : */) return null
+  const a = t.charCodeAt(0) | 0x20, b = t.charCodeAt(1) | 0x20, c = t.charCodeAt(2) | 0x20
+  if (!(a === 101 /* e */ && b === 110 /* n */ && c === 118 /* v */)) return null
+  // THE ROOT AS WRITTEN, NOT FOLDED — `namespaceMatchOf` compares the target's own segment against
+  // the list byte for byte, so a folded `"env"` would REFUTE `$ENV:TEMP` (measured: `namespaceMatchOf
+  // ("ENV:TEMP", ["env"]) === null`, and the arbiter's own rule for a namespace claim is "a target
+  // whose root the claim did not declare is refused"). PowerShell's provider prefix is case-
+  // insensitive, so `ENV`, `Env` and `env` are one namespace — but the claim names the spelling the
+  // source uses, which is this file's standing convention for every list root (PS-B27).
+  return t.slice(0, 3)
+}
+
+/**
  * The root a `[T]::new()` type literal denotes once the engine's implicit-`System` rule has run, or
  * `null` when the target carries no shorthand root.
  *
@@ -4308,7 +4344,9 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the target's own segments against it; the DOCUMENTED table is what makes the entry a fact rather
       // than a guess, and it is consulted BEFORE the list is written, never after.
       let roots: string[] | null = null
+      const envRoot = envProviderRootOf(tgt)
       if (tgt === "System" || tgt.startsWith("System.")) roots = ["System"]
+      else if (envRoot !== null) roots = [envRoot]
       else if (md.dotNetNew === true) {
         const shorthand = dotNetShorthandRootOf(tgt)
         if (shorthand !== null) {
