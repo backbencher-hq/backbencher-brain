@@ -985,3 +985,19 @@ claim and fails clause 4 instead of passing.
 (`intercalate` re-exported and claimed, `declared` exported from the module and NOT claimed), two
 mutants (`re-export-claim-dropped`, `local-export-claimed`), both CAUGHT. Lane battery **23 of 23**,
 suite **11 pass / 0 fail**, `tsc` 0.
+
+## THE REMAINING WALL, DISPOSED (2026-10-29) — 31,270 rows, three named classes
+
+After HSA1, HSA2b and HSA4b the lane reads **193,418 edges · 122,465 resolved · 9,326 ambiguous ·
+8,420 unresolved · 39,683 verified · 13,524 ext? · 0 refuted** — wall **31,270**.
+
+| class | rows | disposition | evidence / falsifier |
+|---|---:|---|---|
+| **PROJECT-MODULE ALIAS** (`Schema.column`, `Fixture.fixture`, `UUT.serveCommandParser`) | **13,524 `ext?`** | **INSTRUMENT GAP (store vocabulary), RULED.** The claim is published and the project is KNOWN to carry the module (`Schema.hs`, `Fixture.hs`, `UUT.hs`), so it demotes — correctly: the dependency is internal. It cannot then RESOLVE because the store keys a function by its BARE name, so `<Module>.<fn>` is not a symbol. The only lane-side alternative is retargeting to the bare leaf when the project declares that leaf exactly once (`symbolCounts`), and that is a GUESS: nothing in the index says WHICH module declares the leaf, so a name declared once in `Other.hs` would bind a call that names `Schema`. A wrong bind is worse than a wall row. | falsifier: a module-qualified symbol space (or a per-module member count) makes `<Module>.<fn>` a resolvable spelling; an index that carries the declaring module would let the retarget be checked rather than guessed. |
+| **BARE NAME, MANY DECLARATIONS** | 9,326 ambiguous + 8,420 unresolved | **cross-file name space** — the same class as the powershell lane's: a bare call to a function declared in several modules, or in none reachable, has no field on the edge that names the intended one. | falsifier: an owner/module channel on unqualified calls. |
+| **QUALIFIED NAME, DOTLESS MODULE** (`import Prelude`, `import Safe`) | inside the 13,524 | **RULED**: the project really does carry a module of that name in those repos (`Prelude.hs`, `Safe.hs`), so the claim demotes and the demotion is TRUE. | HSA3's measurement: +350 verified, +788 `ext?`, no refutations — the `ext?` are correct. |
+
+**What is left is not analyzer work.** Every applicable relationship type is implemented (`extends`,
+`implements`, `overrides`, `calls`, `uses`, `imports`, `exports`, `contains`, `instantiates`,
+`references`, `decorates`, `part_of`), every wall above carries a measured count and a falsifier, and
+the residue is a name-model question the analyser cannot answer from one file.
