@@ -13290,6 +13290,88 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isQualifiedCall && x.type === "calls")) }),
   },
   {
+    id: "haskell/qualified-constructor-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA6 REVERT: a QUALIFIED constructor publishes no module reading again — `Schema.VInt`, `J.String` and 4,839 other unresolved `instantiates` rows named a module through their alias and said nothing about it. Keyed on the row's own `externalReason: \"module-namespace\"` on an `instantiates` edge. Caught by haskell/alias-module-claims' `toJSON`/`Payload` rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "instantiates") return x
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalReason !== "module-namespace") return x
+        delete md.externalTarget; delete md.externalReason; delete md.externalSpecifier
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/import-module-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA7 REVERT: an `imports` row publishes no module reading again — the pre-fix state, where 2,395 imports named a module and the arbiter's inferred importPath claim was nulled whenever the module's owner was a declared name. Caught by haskell/alias-module-claims' two import rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "imports") return x
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        delete md.externalTarget; delete md.externalReason; delete md.externalSpecifier
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/type-mention-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA10 REVERT: a bare capitalised type mention carries no reading again — 371 unresolved `uses` rows named a library type (`Text`, `IO`, `ByteString`, `Map`) and said nothing. Keyed on the row's own `externalVia: \"type\"`. Caught by haskell/alias-module-claims' `Nickname -> Text` row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalVia !== "type") return x
+        delete md.externalTarget; delete md.externalVia
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/superclass-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA9 REVERT: a superclass the module does not declare carries no reading again (127 unresolved `extends`). Keyed on `externalVia: \"superclass\"`. Caught by haskell/alias-module-claims' `Sortable extends Show` row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalVia !== "superclass") return x
+        delete md.externalTarget; delete md.externalVia
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
+    id: "haskell/qualified-class-claim-dropped",
+    language: "haskell",
+    defectClass: "claim-loss",
+    description:
+      "HSA11 REVERT: a qualified class in a deriving/instance head publishes no module reading again (`J.ToJSON` 41, `J.FromJSON` 35, `JSON.ToJSON` 22 of 168 unresolved `implements`). Keyed on a module-namespace claim on an `implements` edge. Caught by haskell/alias-module-claims' `Payload implements J.ToJSON` row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "implements") return x
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.externalReason !== "module-namespace") return x
+        delete md.externalTarget; delete md.externalReason; delete md.externalSpecifier
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
+  {
     id: "haskell/re-export-claim-dropped",
     language: "haskell",
     defectClass: "claim-loss",

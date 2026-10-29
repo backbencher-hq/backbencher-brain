@@ -1001,3 +1001,39 @@ After HSA1, HSA2b and HSA4b the lane reads **193,418 edges · 122,465 resolved �
 `implements`, `overrides`, `calls`, `uses`, `imports`, `exports`, `contains`, `instantiates`,
 `references`, `decorates`, `part_of`), every wall above carries a measured count and a falsifier, and
 the residue is a name-model question the analyser cannot answer from one file.
+
+## HSA6-HSA11 (append-only record, 2026-10-29) — five more dependency shapes, one rule each
+
+After HSA2b/HSA4b the wall was 31,270, and its unresolved residue was five spellings the lane had never
+given a reading. Each is the same fact in a different edge type, and each is fail-closed: the arbiter
+consults a claim only where the name model has nothing, so a name the project declares keeps its
+resolved answer and none of these can refute.
+
+| rule | shape | rows | claim |
+|---|---|---:|---|
+| **HSA6** | a QUALIFIED constructor (`Schema.VInt`, `J.String`) | 4,839 unresolved `instantiates` | `moduleNamespace` through the alias |
+| **HSA7** | an `imports` row, dotted or not (`Test.Hspec`) | 2,395 unresolved `imports` | `moduleNamespace`, specifier = the module |
+| **HSA8** | a module's OWN name as a qualifier (`import Witch` → `Witch.from`) | 324 unresolved `calls` | alias map now carries the module's own name |
+| **HSA9** | a bare superclass (`class Show a => …`) | 127 unresolved `extends` | `externalTarget` |
+| **HSA10** | a bare type mention (`type Nickname = T.Text` → `Text`) | 371 unresolved `uses` | `externalTarget`, capitalised guard |
+| **HSA11** | a qualified class in a deriving head (`deriving (J.ToJSON)`) | 168 unresolved `implements` | `moduleNamespace` through the alias |
+
+**MEASURED, same population (3,702 files / 6 repos), A/B by analyzer digest:**
+
+| column | before | after |
+|---|---:|---:|
+| unresolved | 8,420 | **583** (−7,837) |
+| extOK (verified) | 39,683 | **42,710** (+3,027) |
+| ext? | 13,524 | **18,334** (+4,810) |
+| ambiguous | 9,326 | **9,326** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 31,270 → 28,243.** The 4,810 new `ext?` are honest demotions: a constructor or class reached
+through an alias whose module the project carries (`Witch`, `Schema`) — a project-internal dependency
+that still cannot resolve, because `<Module>.<name>` is not a symbol. The 583 unresolved that remain
+are operator constructors (`:|` 144, `:>` 45) and operator exports, which are not names and cannot be
+claimed.
+
+**PINS.** `alias-module-claims` grows six rows (two imports, a derived `J.ToJSON`, `Nickname -> Text`,
+`Sortable extends Show`, `asJson -> J.String`) plus a local-constructor twin; five new mutants, all
+CAUGHT. Lane battery **28 of 28**, suite 11/0, `tsc` 0.

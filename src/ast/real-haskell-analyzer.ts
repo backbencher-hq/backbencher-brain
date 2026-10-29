@@ -751,8 +751,79 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (mod !== undefined && mod.length > 0) {
           return { externalTarget: true, externalReason: "module-namespace", externalSpecifier: mod }
         }
+        return {}
       }
       return {}
+    }
+    // HSA7 — EVERY IMPORT NAMES ITS MODULE, DOTTED OR NOT. The arbiter's inferred `importPath` claim
+    // requires a dotted capitalised leaf AND is NULLED when the module's owner is a declared name —
+    // MEASURED: 2,395 unresolved `imports`, e.g. `Test.Hspec` in a repo that declares something called
+    // `Test`. The lane's own `moduleNamespace` claim is consulted unconditionally, and the verifier now
+    // keys on the project's FULL module paths, so `Test.Hspec` is decided by whether `Test/Hspec.hs`
+    // exists — not by whether anything is called `Test`. FAIL-CLOSED: a module the project carries
+    // demotes to `ext?` and can never refute.
+    if (type === ASTEngine.RelationshipType.Imports && target.length > 0) {
+      if (ctx.declaredTypes.has(target) || ctx.declaredFunctions.has(target)) return {}
+      return { externalTarget: true, externalReason: "module-namespace", externalSpecifier: target }
+    }
+    // HSA11 — A QUALIFIED CLASS IN AN INSTANCE HEAD NAMES ITS MODULE THROUGH THE ALIAS TOO.
+    // `instance J.ToJSON X` is `Data.Aeson.ToJSON` reached through the alias `J`; MEASURED: 168
+    // unresolved `implements`, led by `J.ToJSON` 41 · `J.FromJSON` 35 · `JSON.ToJSON` 22.
+    if (type === ASTEngine.RelationshipType.Implements) {
+      const dotI = target.indexOf(".")
+      if (dotI > 0) {
+        const mod = ctx.importAliases.get(target.slice(0, dotI))
+        if (mod !== undefined && mod.length > 0) {
+          return { externalTarget: true, externalReason: "module-namespace", externalSpecifier: mod }
+        }
+        return {}
+      }
+    }
+    // HSA10 — A BARE TYPE MENTION OF A NAME THE MODULE DOES NOT DECLARE IS A LIBRARY TYPE.
+    // `Text`, `IO`, `ByteString`, `Map` in signatures name types from other packages; MEASURED: 371
+    // unresolved `uses`, led by `Text` 46 · `IO` 41 · `SQLExpression` 25 · `Int` 16 · `ByteString` 14.
+    // The capitalised guard keeps variable reads (lower-case) out, and the file's declaration table
+    // keeps the module's own types in.
+    if (type === ASTEngine.RelationshipType.Uses) {
+      if (target.length === 0 || target.indexOf(".") >= 0) return {}
+      const firstU = target.charCodeAt(0)
+      if (!(firstU >= 65 && firstU <= 90)) return {}
+      for (let i = 1; i < target.length; i++) {
+        const c = target.charCodeAt(i)
+        const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 39
+        if (!ok) return {}
+      }
+      if (ctx.declaredTypes.has(target) || ctx.declaredFunctions.has(target)) return {}
+      return { externalTarget: true, externalVia: "type" }
+    }
+    // HSA6 — A QUALIFIED CONSTRUCTOR NAMES ITS MODULE THROUGH THE ALIAS, exactly as a qualified
+    // call does (HSA2). `Schema.VInt` and `J.String` are constructor applications through an import
+    // alias; MEASURED: 4,839 unresolved `instantiates` rows, the lane's largest remaining class.
+    if (type === ASTEngine.RelationshipType.Instantiates) {
+      const dot = target.indexOf(".")
+      if (dot > 0) {
+        const mod = ctx.importAliases.get(target.slice(0, dot))
+        if (mod !== undefined && mod.length > 0) {
+          return { externalTarget: true, externalReason: "module-namespace", externalSpecifier: mod }
+        }
+        return {}
+      }
+    }
+    // HSA9 — A SUPERCLASS OR A DERIVED CLASS IS THE SAME DEPENDENCY SHAPE. `class X extends Y` where
+    // Y is a library type (Control.Monad.IO.Class, etc.) names a dependency the module does not
+    // declare; MEASURED: 127 unresolved `extends`. The bare-capitalised rule below covers
+    // Implements/Instantiates; Extends is the same fact one edge type over.
+    if (type === ASTEngine.RelationshipType.Extends) {
+      if (target.length === 0 || target.indexOf(".") >= 0) return {}
+      const firstE = target.charCodeAt(0)
+      if (!(firstE >= 65 && firstE <= 90)) return {}
+      for (let i = 1; i < target.length; i++) {
+        const c = target.charCodeAt(i)
+        const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 39
+        if (!ok) return {}
+      }
+      if (ctx.declaredTypes.has(target)) return {}
+      return { externalTarget: true, externalVia: "superclass" }
     }
     if (type !== ASTEngine.RelationshipType.Implements && type !== ASTEngine.RelationshipType.Instantiates) return {}
     if (!target || target.length === 0) return {}
@@ -1603,6 +1674,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         importItems.push("*")
       }
       if (mod.alias && mod.alias.length > 0) ctx.importAliases.set(mod.alias, mod.name)
+      // HSA8 — A MODULE'S OWN NAME IS A LEGAL QUALIFIER TOO: `import Witch` portends `Witch.from`
+      // with no `as` clause, and the alias map had no entry for it (measured: 324 unresolved `calls`
+      // led by `Witch.from` 42 · `Witch.into` 22 · `Prometheus.Counter.inc` 11).
+      const own = mod.name.indexOf(".") < 0 ? mod.name : mod.name.slice(mod.name.lastIndexOf(".") + 1)
+      if (own.length > 0 && !ctx.importAliases.has(own)) ctx.importAliases.set(own, mod.name)
       ctx.imports.push({
         module: mod.name,
         source: mod.name,
