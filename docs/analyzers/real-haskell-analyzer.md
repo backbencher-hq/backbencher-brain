@@ -907,3 +907,28 @@ question this project can answer — it needs the full-module-space key.
 Reverted byte for byte (43,364 wall · 27,522 verified · ext? 67 · refuted 0). Two module-claim
 experiments now sit in this file as records (HSA2, HSA3), both priced, both blocked on the same
 instrument.
+
+## HSA4 (append-only record, 2026-10-28) — re-export claims: the claim WORKS, the FIXTURE HARNESS refuses it
+
+An export list may name an imported function (`module M (intercalate)`), and the export row's target is
+the bare name. Where no corpus file declares it, the row said nothing about where it comes from:
+**985 unresolved `exports` rows**. The same bare `externalTarget` HSA1 uses applies — safe by
+construction, since the arbiter consults a claim only where the name model has nothing.
+
+**It works.** Measured over the whole population: `unresolved` 34,038 → **33,227 (−811)**, `extOK`
+27,522 → **28,333 (+811)**, ambiguous unchanged, `ext?` unchanged at 67, **refuted 0**. Clean.
+
+**And it is not shipped, because a SHARED INSTRUMENT refuses the row.** The fixture runner enforces
+`export(s) […] do not resolve to a top-level symbol (membership rides Contains)`
+(`script/m14/run-fixtures.ts:1832`), and a re-export of an imported name fails it BY CONSTRUCTION —
+that is what a re-export is. The harness already admits module-surface exports for the JS family, for
+a `reExport` import marker and for lua's `luaSpecific` role, so the extension is one condition away:
+admit an export row that itself carries `externalTarget` (the lane stating the binding is external,
+exactly as those lanes state theirs).
+
+That is a **Lead instrument decision** (the file is shared by 48 lanes and the precedent is
+`EXPORTS-CONTAINS-RULING.md`), so it is filed rather than taken, with the price measured: **+811
+verified rows, 0 debt, 0 refutations** the moment the invariant admits a claimed re-export.
+
+Reverted: analyzer, mutant set and fixture are back to the HSA1 state byte for byte (43,364 wall ·
+27,522 verified · ext? 67 · refuted 0); suite 9/0.
