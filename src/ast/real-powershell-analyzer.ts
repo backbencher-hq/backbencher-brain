@@ -4720,6 +4720,49 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const declaredInFile = (name: string): boolean =>
       declaredFolded.has(name.toLowerCase()) || declaredQualified.has(name.toLowerCase())
     /**
+     * PSD20 — POWERSHELL'S NAME MODEL IS CASE-INSENSITIVE; THE GATE'S IS NOT.
+     *
+     * `$obj.Count` and a declaration `[int]$count` are ONE binding in the language, and the store keys
+     * them as two — so a member or variable read whose spelling differs only in case from the file's
+     * own declaration reads UNRESOLVED while the declaration sits ten lines above. MEASURED: 11,568
+     * bare `uses` rows are unresolved, led by `CompletionMatches`, `Streams`, `Count`, `Params`,
+     * `Length` — the member-read half of the lane's wall, and its unresolved state is partly this
+     * convention.
+     *
+     * THE FIX IS A RESOLUTION, NOT A CLAIM: when the file declares the name with a different spelling
+     * and EXACTLY ONE declaration matches case-insensitively, the target is rewritten to the DECLARED
+     * spelling — the name the store actually holds — and the row carries `caseFoldedTo` as its
+     * evidence. Only the VALUE namespace participates (`variable`, `property`, `parameter`): folding a
+     * member read onto a same-named FUNCTION would bind a property to a command, which is a wrong bind.
+     * Two declarations differing in case among themselves are a real ambiguity and are left alone.
+     */
+    const foldedValueSpellings = new Map<string, Set<string>>()
+    for (const sym of symbols) {
+      const kind = String((sym as { kind?: unknown }).kind ?? "")
+      if (kind !== "variable" && kind !== "property" && kind !== "parameter") continue
+      if (!sym.name) continue
+      const key = sym.name.toLowerCase()
+      let set = foldedValueSpellings.get(key)
+      if (!set) foldedValueSpellings.set(key, (set = new Set()))
+      set.add(sym.name)
+    }
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const md = rel.metadata as Record<string, unknown> | undefined
+      if (!md) continue
+      if (md.isVariableReference !== true && md.isMemberAccess !== true && md.isMemberReference !== true) continue
+      const t = String(rel.target ?? "")
+      if (t.length === 0 || t.indexOf(".") >= 0 || t.indexOf(":") >= 0) continue
+      if (declaredFolded.has(t.toLowerCase()) && symbols.some((sym) => sym.name === t)) continue
+      const spellings = foldedValueSpellings.get(t.toLowerCase())
+      if (spellings === undefined || spellings.size !== 1) continue
+      const declared = [...spellings][0]
+      if (declared === t) continue
+      rel.target = declared
+      md.caseFoldedTo = declared
+      md.powershellCaseFolded = true
+    }
+    /**
      * PSD18 — A TARGET WHOSE OWNER IS DECLARED HERE IS A LOCAL CHILD, NOT AN EXTERNAL DEPENDENCY.
      *
      * This is the guard the FIRST attempt at the scope model lacked, and it cost 51 refutations: a read

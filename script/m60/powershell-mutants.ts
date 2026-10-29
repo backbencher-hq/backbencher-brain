@@ -1635,6 +1635,23 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "powershell/case-fold-dropped",
+    language: "powershell",
+    defectClass: "relationship-loss",
+    description:
+      "PSD20 REVERT: a case-folded read keeps the SOURCE spelling instead of the DECLARED one, so `$this.name` and the property `[string]$Name` stay two names to the store — the pre-fix state, where 626 unresolved and 1,633 ambiguous rows were the same binding spelled differently on the two sides. The transform lowers the published target and drops the evidence marker, so it reverts the mechanism rather than naming a fixture. Caught by method-scope-psb3's `FoldedRead -> Name` row and its `name` forbid.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        if (md.powershellCaseFolded !== true) return x
+        delete md.caseFoldedTo
+        delete md.powershellCaseFolded
+        return { ...x, target: String(x.target ?? "").toLowerCase(), metadata: md }
+      }),
+    }),
+  },
+  {
     id: "powershell/runtime-binding-unclaimed",
     language: "powershell",
     defectClass: "claim-loss",

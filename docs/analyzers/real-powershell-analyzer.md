@@ -2702,3 +2702,37 @@ false. They stay wall rows.
 Pins: `externality-psb16`'s `fromElsewhere` row now carries the claim and `noDeclarationInFile`
 together (the reversal is documented on the row); mutant `runtime-binding-unclaimed`, CAUGHT. Lane
 battery **89 of 89**, suite 30/0, `tsc` 0.
+
+## PSD20 (append-only record, 2026-10-29) — the case convention, resolved instead of claimed
+
+PowerShell identifiers are **case-insensitive**; the store's key space is not. So `$obj.Count` and a
+declaration `[int]$count` are ONE binding in the language and two names to the index — and the lane's
+wall paid for it twice: **11,568 bare `uses` rows** unresolved, led by `CompletionMatches`, `Streams`,
+`Count`, `Params`, `Length`, and **1,633 ambiguous** rows that were the same collision in the other
+direction. PSD19 refused to CLAIM those (a claim would assert something the language says is false).
+
+**The right move is a RESOLUTION.** When the file declares the name with a different spelling and
+**exactly one** declaration matches case-insensitively, the read is published under the DECLARED
+spelling — the name the store actually holds — with `caseFoldedTo` as its evidence. Only the VALUE
+namespace participates (`variable`, `property`, `parameter`): folding a member read onto a same-named
+FUNCTION would bind a property to a command. Two declarations differing in case among themselves are a
+real ambiguity and are left alone.
+
+**MEASURED, same population:**
+
+| column | before PSD20 | after |
+|---|---:|---:|
+| resolved | 99,896 | **106,523** (+6,627) |
+| ambiguous | 17,198 | **15,565** (−1,633) |
+| unresolved | 18,388 | **17,762** (−626) |
+| extOK | 57,974 | **53,606** (−4,368) |
+| ext? | 160 | **160** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 35,746 → 33,487 (−2,259), and `resolved + extOK` 157,870 → 160,129 (+2,259).** The `extOK` drop
+is the direction the lane wants: 4,368 rows that used to VERIFY as external now RESOLVE to the file's
+own declaration — a claim replaced by a resolution.
+
+Pins: `method-scope-psb3` grows a `FoldedRead` method whose `$this.name` read is published as `Name`
+(and the unfolded `name` is forbidden); mutant `case-fold-dropped`, CAUGHT. Lane battery **90 of 90**,
+suite 30/0, zero-regex 0/0, `tsc` 0.
