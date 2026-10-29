@@ -1087,3 +1087,54 @@ could not, which is the argument for running them in this order:
   does, so a forbid pin that documents itself could never fire (three mutants
   survived a suite that looked complete); and the completeness gate caught the spec
   leaving 5 of 140 types in no bucket and 2 in two.
+
+## PERL-1 (append-only record, 2026-10-29) — the lane had NO claim at all; the dependency surface gets one
+
+**The starting measurement, whole population (`pl,pm,t,pod`, no cap): 10,096 edges · 4,605 resolved ·
+9,435 ambiguous/unresolved · 0 verified · 0 refuted · 0 ext?.** 93 % of the graph was wall, and every
+wall row was a dependency the lane had named and said nothing about — the same starting position
+powershell and haskell were in before their claim work.
+
+The two largest unresolved labels were the two dependencies Perl names without syntax of its own:
+
+| label | rows | what it names |
+|---|---:|---|
+| `imports` | **1,654** | `use strict` 328 · `use Test::More` 267 · `use warnings` 228 · `use Test::Nginx::Socket::Lua` 120 |
+| `calls` | **2,966** | `is` 206 · `plan` 175 · `run_tests` 124 · `repeat_each` 122 · `blocks` 120 · `ok` 118 |
+
+**The rule** (`publishExternalDependencies`, one pass after the lane's stated causes): a row on
+`imports` / `calls` / `instantiates` / `extends` / `uses` whose target is a Perl name, and which the
+FILE does not declare, carries `externalTarget` — or, for a `Package::Name` target, the
+`moduleNamespace` claim with the module as its specifier. Safe by construction, exactly as on the other
+two lanes: the arbiter consults a claim only where the name model has NOTHING (`decls === 0`), so a
+name the project declares keeps its resolved/ambiguous answer and this claim cannot refute it.
+
+**TWO MEASURED CORRECTIONS INSIDE THE FIRST HOUR.** (1) The generic `externalTarget` claim on a
+`Package::Name` target lands in `ext?` — 812 rows — because the target contains colons and the
+arbiter's path branch refuses it; the `moduleNamespace` claim is the kind that fits a module path, and
+it verifies. (2) Allowing a DOTTED target (`Class.method`, `Request.constructor`) produced **87
+refuted claims**: the owner question is about the class, and a project class that exists without the
+member refutes a claim that was never about it. Dots are refused; those rows keep the lane's
+`baseBeyondRunScope` cause, which is the claim that fits a member of a class outside the run.
+
+**MEASURED, same population:**
+
+| column | before | after |
+|---|---:|---:|
+| edges | 10,096 | **10,096** |
+| resolved | 4,605 | **4,605** |
+| ambiguous | ~6,469 | **~4,486** |
+| unresolved | 2,966 | **405** |
+| extOK (verified) | **0** | **2,561** |
+| ext? | **0** | **0** |
+| **extFAIL / bindFAIL / causeFAIL** | **0 / 0 / 0** | **0 / 0 / 0** |
+
+**Wall 9,435 → 4,891 (−4,544), zero debt, zero refutations.** Pins: fixture `external-deps-perl1`
+(four positives — a pragma, a second pragma, a `Package::Name` module claim, a bare call — plus the
+local-sub twin and two forbid rows); mutant `perl/external-dependency-unclaimed`, CAUGHT. Lane battery
+**68 of 68**, suite **24 pass / 0 fail**, `tsc` 0.
+
+**What is left, named:** the 1,387 `overrides` and the `instantiates`/`calls` rows carrying
+`baseBeyondRunScope` are a CAUSE (an unverifiable reading), not an external claim — converting them is
+a clause-2/3 decision for the lane's cause table, not a claim this pass may add. The 2,525 ambiguous
+`calls` are the cross-file name space every bare-name lane has.

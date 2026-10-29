@@ -2011,6 +2011,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // statement ABOUT the edges that already exist: it adds one metadata key and changes no
     // source, target, label, line or confidence.
     this.publishStatedCauses(symbols, relationships, qualifiedClassNames)
+    this.publishExternalDependencies(symbols, relationships)
 
     return { symbols, relationships, imports, exports, errors, metadata }
   }
@@ -2745,6 +2746,87 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (heldQualified.has(owner)) continue
       metadata.baseBeyondRunScope = owner
     }
+  }
+
+  /**
+   * PERL-1 — A DEPENDENCY THE FILE DOES NOT DECLARE IS A CLAIM, NOT SILENCE.
+   *
+   * The lane published no externality reading at all: its whole-population arm read **10,096 edges ·
+   * 4,605 resolved · 9,435 ambiguous/unresolved · 0 verified · 0 refuted**, i.e. 93 % of the graph was
+   * wall. The two largest unresolved labels are the two dependencies Perl names without any syntax of
+   * its own:
+   *
+   *   `use strict` / `use warnings` / `use Test::More`   an IMPORT of a module or pragma
+   *   `is(…)` / `plan(…)` / `ok(…)` / `run_tests(…)`     a BARE function call
+   *
+   * MEASURED: `imports` 1,654 unresolved (strict 328 · Test::More 267 · warnings 228 ·
+   * Test::Nginx::Socket::Lua 120) and `calls` 2,966 unresolved (is 206 · plan 175 · run_tests 124 ·
+   * repeat_each 122 · blocks 120 · ok 118). None of those names is declared by a corpus file that does
+   * not already declare it, so every row was a dependency published with no reading at all.
+   *
+   * THE CLAIM IS SAFE BY CONSTRUCTION, exactly as on the powershell and haskell lanes: the arbiter
+   * consults a claim only where the name model has NOTHING (`decls === 0`), so a name the project
+   * declares keeps its resolved/ambiguous answer and this claim cannot refute it. The guard is the
+   * file's own declaration table, so a local sub or a package this file declares keeps no claim.
+   */
+  private publishExternalDependencies(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const declared = new Set<string>()
+    for (const s of symbols) if (s.name) declared.add(s.name)
+    for (const rel of relationships) {
+      const type = rel.type
+      // PERL-1 covers four labels, because the same fact arrives in four edge types: an import names a
+      // module, a bare call names a sub, `instantiates` names a class (`Request.constructor`), and
+      // `extends` names a base (`Base`). MEASURED after the first two: instantiates 507 · extends 233 ·
+      // uses 100 unresolved, all of them names no corpus file declares.
+      if (
+        type !== ASTEngine.RelationshipType.Imports && type !== ASTEngine.RelationshipType.Calls &&
+        type !== ASTEngine.RelationshipType.Instantiates && type !== ASTEngine.RelationshipType.Extends &&
+        type !== ASTEngine.RelationshipType.Uses
+      ) continue
+      const md = rel.metadata as Record<string, unknown> | undefined
+      if (!md || md.externalTarget === true) continue
+      // A `Class::method` call already carries the lane's `baseBeyondRunScope` cause when the class is
+      // outside the run; that claim owns the row and a second one must not be asked about it.
+      if (type === ASTEngine.RelationshipType.Calls && md.baseBeyondRunScope !== undefined) continue
+      const target = String(rel.target ?? "")
+      if (target.length === 0) continue
+      if (!this.isPerlName(target)) continue
+      if (declared.has(target) || declared.has(this.leafName(target))) continue
+      // A `Package::Name` TARGET IS A MODULE PATH, AND THE GENERIC OWNER CLAIM IS THE WRONG QUESTION
+      // FOR IT: the target contains a colon, so the arbiter's path branch refuses it (`ext?`) — 812
+      // rows on the first measurement. The `moduleNamespace` claim is the kind built for a module
+      // path, and its verifier decides it against the project's module space (fail-closed).
+      if (target.indexOf("::") >= 0) {
+        md.externalTarget = true
+        md.externalReason = "module-namespace"
+        md.externalSpecifier = target
+        continue
+      }
+      md.externalTarget = true
+      md.externalVia = type === ASTEngine.RelationshipType.Imports ? "use" : "call"
+    }
+  }
+
+  /** A Perl module/function spelling: `strict`, `Test::More`, `is`, `run_tests`. */
+  private isPerlName(name: string): boolean {
+    const code = name.charCodeAt(0)
+    const firstOk = (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95
+    if (!firstOk) return false
+    for (let i = 1; i < name.length; i++) {
+      const c = name.charCodeAt(i)
+      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 ||
+        c === 58 /* : — `Package::Name` */
+      if (!ok) return false
+    }
+    // A DOTTED target (`Class.method`, `Request.constructor`) is NOT claimed here: its owner question
+    // is about the CLASS, and a project class that exists without the member refutes the claim —
+    // MEASURED at 87 refutations the moment dots were allowed. Those rows keep the lane's
+    // `baseBeyondRunScope` cause instead, which is the claim that fits a member of a class outside the
+    // run.
+    return !name.endsWith(":")
   }
 
   private isAllCapsName(name: string): boolean {

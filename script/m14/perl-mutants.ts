@@ -31,6 +31,27 @@ const relsOf = (r: any): any[] => (r.relationships ?? []).filter((x: any) => Str
 const ofType = (r: any, t: string): any[] => (r.relationships ?? []).filter((x: any) => String(x.type) === t)
 
 export const PERL_MUTANTS: Mutant[] = [
+  {
+    id: "perl/external-dependency-unclaimed",
+    language: "perl",
+    defectClass: "claim-loss",
+    description:
+      "PERL-1 REVERT: a dependency the file does not declare publishes no reading again — the pre-fix state, where the whole population read 10,096 edges and 9,435 ambiguous/unresolved with ZERO verified claims: `use strict` (328), `use Test::More` (267), `is(…)` (206), `plan(…)` (175), `ok(…)` (118) all named a dependency and said nothing. Keyed on the row's own claim keys (`externalVia: use|call`, `externalReason: module-namespace`), not on a fixture name. Caught by perl/external-deps-perl1's four positive rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = { ...(x.metadata ?? {}) } as Record<string, unknown>
+        const mine = md.externalVia === "use" || md.externalVia === "call" ||
+          (md.externalReason === "module-namespace" && typeof md.externalSpecifier === "string")
+        if (!mine) return x
+        delete md.externalTarget
+        delete md.externalVia
+        delete md.externalReason
+        delete md.externalSpecifier
+        return { ...x, metadata: md }
+      }),
+    }),
+  },
   /* ------------------------------------------------------------------ *
    * The four labels this wave added. Each reverts ONE construct rule.
    * ------------------------------------------------------------------ */
