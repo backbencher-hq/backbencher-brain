@@ -858,3 +858,23 @@ and three twins (`instance Shape Bool` where `Shape` is declared here; `MkFoo` i
 **What is left, named:** `calls` 25,131 unresolved (qualified names like `T.unpack` — the import-alias
 map is the next instrument), `instantiates` residue with dotted targets (`Schema.VInt`), `imports` 2,395,
 `exports` 985.
+
+## HSA2 (append-only record, 2026-10-28) — the alias/module claim for qualified calls: MEASURED, NOT TAKEN
+
+`T.unpack` names `Data.Text.unpack`, and the file itself says so: `import qualified Data.Text as T`.
+The import list already carries the alias, so publishing the fleet's `moduleNamespace` claim on an
+alias-qualified `calls` row is a small change — and it was built and run before being judged.
+
+**The arm said no.** Over the whole population: `unresolved` 34,038 → 9,231 (a 24,807-row movement) but
+`ext?` 67 → **22,499**, and `extOK` 27,522 → 29,897. So 22,432 of the rows moved from "unresolved" to
+"a claim no check can reach" — the lane's own definition of debt — for **2,375** real verifications.
+
+**The cause is the claim's granularity, not the emission.** `verifyModuleNamespaceClaim` keys the
+project's module space on the module's ROOT (`Data` for `Data.Text`), and `projectModuleNames` is built
+from file basenames and DIRECTORY names, so any project that has a `Data/` or `Schema/`-like directory
+demotes every claim under that root. Haskell modules are dotted paths; a root-only key cannot answer them.
+
+Reverted: the analyzer is back to the HSA1 state byte for byte (wall 43,364 · verified 27,522 · ext? 67 ·
+refuted 0). The change is a one-line re-enable **if** the module claim ever keys on the full module path —
+that is a Lead instrument change, and this record is its price: **+24,807 claimed, 22,432 of them
+unverifiable at root granularity.**
