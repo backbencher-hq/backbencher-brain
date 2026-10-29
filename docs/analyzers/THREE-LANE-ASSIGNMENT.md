@@ -198,9 +198,16 @@ grammar, not a reason to rule.
 gate's own arithmetic; an earlier draft of this line said 140,728, which the columns do not add to
 and is corrected here). Fixtures **9/9** (new `bare-type-claims`), mutants **19/19 caught**,
   `tsc` 0.
-- **Next:** `calls` 25,131 unresolved (qualified `T.unpack`/`Schema.column` — needs the import-alias
-  map as the instrument), dotted `instantiates` (`Schema.VInt`), `imports` 2,395, `exports` 985.
-  Clause 1 is still FAIL: 43,364 ambiguous/unresolved.
+- **Three further mechanisms were built and MEASURED, and all three are FILED rather than shipped**,
+  each with its price: HSA2 alias/module claim on calls (+24,807 out of `unresolved`, **22,432 into
+  `ext?`**), HSA3 single-segment module imports (+350 verified, **+788 `ext?`**) — both blocked on the
+  arbiter keying the module space on a module's ROOT (`Data`), so `Data.Text` cannot be answered; and
+  HSA4 re-export claims (**+811 verified, 0 debt, 0 refutations**) — blocked on the shared fixture
+  runner's export invariant, which refuses an export that names no local symbol (a re-export does, by
+  construction). The one-line instrument changes are named in the lane's page.
+- **Next:** the two instrument changes above (module space keyed on the full module path; the export
+  invariant admitting a row that carries `externalTarget`), then `calls` 25,131 (alias-qualified) and
+  dotted `instantiates`. Clause 1 is still FAIL: 43,364 ambiguous/unresolved.
 
 ### solidity — 11/11 implemented, 3 ruled, and every wall DISPOSITIONED (2026-10-28)
 
