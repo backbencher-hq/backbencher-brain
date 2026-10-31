@@ -108,6 +108,24 @@ function attrsOf(blockNode: any): Map<string, any> {
   return out
 }
 
+/**
+ * The ROOT a value expression is read from: `var.settings` → "var", `local.x` → "local",
+ * a collection literal → "collection_value", a call → "function_call", anything else →
+ * "other". This is a fact about WHERE the value comes from — a declaration's VALUE is not a
+ * member SET, which is the distinction `mixes_in` turns on.
+ */
+function expressionRoot(attrNode: any): string {
+  const expr = findChild(attrNode, (n: any) => n.type === "expression")
+  if (!expr) return "missing_expression"
+  const value = kids(expr)[0]
+  if (!value) return "empty_expression"
+  if (value.type === "variable_expr") {
+    const id = findChild(value, (n: any) => n.type === "identifier")
+    return `variable_root:${id ? textOf(id) : "?"}`
+  }
+  return value.type
+}
+
 /** A single literal string value, or null when the expression is computed. */
 function literalPath(attrNode: any): string | null {
   const expr = findChild(attrNode, (n: any) => n.type === "expression")
@@ -148,10 +166,14 @@ const out: any = {
   },
   mixes_in: {
     dynamicBlocks: 0,
+    dynamicWithContentBlockChildren: 0,
+    dynamicForEachValueRoots: {} as Record<string, number>,
     forEachAttributeSites: 0,
+    forEachValueRoots: {} as Record<string, number>,
     lifecycleBlocks: 0,
     provisionerBlocks: 0,
     moduleBlocksWithSource: 0,
+    moduleBlocksWithProvidersArgument: 0,
     variableBlocks: 0,
     outputBlocks: 0,
   },
@@ -209,12 +231,28 @@ for (const f of files) {
           if (out.part_of.absentSamples.length < 10) out.part_of.absentSamples.push(`${rel}: path="${lit}" -> absent from the admitted population`)
         }
       }
-      if (h.type === "dynamic") out.mixes_in.dynamicBlocks++
+      if (h.type === "dynamic") {
+        out.mixes_in.dynamicBlocks++
+        // Does the generated block's own `content` block DECLARE nested members (the loop-over-a-
+        // block shape), or is the member set taken from somewhere else (a composer)?
+        const content = findChild(n, (x: any) => x.type === "body") ? findChild(findChild(n, (x: any) => x.type === "body"), (x: any) => x.type === "block") : null
+        if (content) {
+          const cbody = findChild(content, (x: any) => x.type === "body")
+          const hasBlock = cbody ? kids(cbody).some((x: any) => x.type === "block") : false
+          if (hasBlock) out.mixes_in.dynamicWithContentBlockChildren++
+        }
+        const fe = attrsOf(n).get("for_each")
+        if (fe) {
+          const root = expressionRoot(fe)
+          out.mixes_in.dynamicForEachValueRoots[root] = (out.mixes_in.dynamicForEachValueRoots[root] ?? 0) + 1
+        }
+      }
       if (h.type === "lifecycle") out.mixes_in.lifecycleBlocks++
       if (h.type === "provisioner") out.mixes_in.provisionerBlocks++
       if (h.type === "validation") out.decorates.validationBlocks++
       if (h.type === "precondition" || h.type === "postcondition") out.decorates.preconditionOrPostconditionBlocks++
       if (h.type === "module" && attrs.has("source")) out.mixes_in.moduleBlocksWithSource++
+      if (h.type === "module" && attrs.has("providers")) out.mixes_in.moduleBlocksWithProvidersArgument++
       if (h.type === "variable") out.mixes_in.variableBlocks++
       if (h.type === "output") out.mixes_in.outputBlocks++
       if (h.type === "resource" && h.labels[0] === "template_file") out.renders.templateFileOrDirResources++
@@ -224,7 +262,11 @@ for (const f of files) {
       const k = findChild(n, (x: any) => x.type === "identifier")
       if (k) {
         const key = textOf(k)
-        if (key === "for_each") out.mixes_in.forEachAttributeSites++
+        if (key === "for_each") {
+          out.mixes_in.forEachAttributeSites++
+          const root = expressionRoot(n)
+          out.mixes_in.forEachValueRoots[root] = (out.mixes_in.forEachValueRoots[root] ?? 0) + 1
+        }
         if (key === "depends_on") out.decorates.dependsOnAttributeSites++
       }
     }

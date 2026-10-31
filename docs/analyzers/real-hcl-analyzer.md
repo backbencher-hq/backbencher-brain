@@ -34,6 +34,7 @@ each entry says what the edge asserts here, and what it is not.
 | `extends` | — (ruled, below) | HCL has no type declaration to extend |
 | `implements` | — (ruled, below) | HCL has no interface to implement |
 | `instantiates` | — (ruled, below) | a `resource` block builds an instance of a type the PROVIDER declares, and no repository declares it |
+| `mixes_in` | — (ruled, below) | no HCL construct composes a MEMBER SET from one declaration into another; `dynamic` repeats a member set the enclosing block itself writes, and `lifecycle`/`provisioner` are already `contains` |
 
 ## Relationship ontology — what was changed in this wave
 
