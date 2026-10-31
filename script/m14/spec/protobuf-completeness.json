@@ -284,6 +284,28 @@
      "run": "npx tsx validation/m14/fixtures/protobuf/measurements/import-surface.mts (walks every admitted .proto; population admitted=907 across 22 repos, the gate's own line 'admitted files [0, 1) of 907')",
      "wouldFail": "an import whose target is a published SYMBOL rather than a path, or whose semantics share the importer's single scope (a textual/scope splice) \u2014 0 of the 1,708 import sites name a symbol, and each .proto keeps its own package scope"
     }
+   },
+   {
+    "id": "PB-REL-15",
+    "node_type": "option,field_options,field_option,enum_value_option",
+    "status": "RULED",
+    "question": "Is `decorates` emitted for an option application \u2014 `[deprecated = true]`, a custom `[(x.y) = ...]`, or a message/service-level `option`?",
+    "resolution": "RULED, and `decorates` is the type this decision is about. Instrument and probe: THE LADDER WALKED. R1 UNAVAILABLE: a decorator production is a language feature, and the protobuf specification has no decorator construct \u2014 its only declaration-annotation surface is the OPTION family, which is a descriptor-metadata slot; no published tree-sitter-proto build can carry a decorator production the language does not have. R2 NOT SANCTIONED: a patch would invent `@`-style syntax `protoc` rejects, the invented-syntax line. R3 WALKED on the existing `option` / `field_options` / `enum_value_option` node family and NOT TAKEN, for the ADJUDICATED-ONTOLOGY reason: MEASURED over the whole admitted population with validation/m14/fixtures/protobuf/measurements/option-surface.mts, which read every one of the 907 admitted .proto files (0 unreadable): 790 files carry option applications; 2,909 `option` statement sites (file, message, enum, service and method scope) and 4,840 field/enum-value option GROUPS with 5,771 entries, for 8,536 accounted APPLICATIONS (3,399 custom, 5,137 builtin). THE CALLABLE TEST (the csharp attribute precedent): 0 OF 8,536 option applications names a callable declared in the file \u2014 protobuf's only callable-shaped declarations are `rpc`s, and no option application names one. What a custom option name DOES resolve to is an EXTENSION FIELD: 84 applications name an `extend google.protobuf.*Options` field declared in the same file \u2014 a SymbolKind.Property, a PASSIVE METADATA slot. The fleet's contract (src/ast/types.ts, Decorates) is an APPLIED CALLABLE, and its own comment says the relation is not `references` because a mention 'says nothing about application' \u2014 an option name is a metadata KEY, applied to a declaration the same way a YAML key is applied to a node, and publishing a decorates edge for it would assert a callable application the language does not have. R3 is walked and not taken for the ontological reason, not because the grammar lacks the option nodes \u2014 it has them, and they are measured.",
+    "measured": {
+     "files_with_option_applications": 790,
+     "option_statement_sites": 2909,
+     "field_option_groups": 4840,
+     "field_option_entries": 5771,
+     "accounted_applications": 8536,
+     "custom_option_applications": 3399,
+     "builtin_option_applications": 5137,
+     "applications_naming_a_same_file_extension_field": 84,
+     "applications_naming_a_declared_callable": 0
+    },
+    "falsifier": {
+     "run": "npx tsx validation/m14/fixtures/protobuf/measurements/option-surface.mts (walks every admitted .proto; population admitted=907 across 22 repos, the gate's own line 'admitted files [0, 1) of 907')",
+     "wouldFail": "an option application whose name resolves to a CALLABLE declared in its file, or a published tree-sitter-proto build carrying a decorator production \u2014 0 of 8,536 applications name a declared `rpc`, and custom option names resolve to passive extension FIELDS (84 same-file)"
+    }
    }
   ]
  },
@@ -334,6 +356,13 @@
     "from": "THE LADDER WAS WALKED (PB-REL-14 carries the full record). R1 unavailable: the language has no part/part-of directive, so no published build carries it. R2 not sanctioned: a patch would invent syntax `protoc` rejects. R3 walked: `import` is the nearest node type \u2014 1,708 import sites in 611 of 907 files over the whole admitted population, of which 1,659 name an admitted file (97.1%) and 49 name only a string; the near miss is already emitted as the `imports` relation (PB-REL-7). Not taken because the contract's part SHARES THE LIBRARY'S SINGLE SCOPE and cannot be resolved as a separate module, while every .proto keeps its own package scope and compiles separately, AND because the only thing an import names is a PATH \u2014 the fleet's measured rule is that a part_of/mixes_in target must be SYMBOL-SHAPED (cpp: 0 of 4,612 path targets resolved), and no file/module symbol exists to receive it (minting one is the fabricated-symbol defect PB-REL-12 refuses). Measurement: validation/m14/fixtures/protobuf/measurements/import-surface.mts.",
     "count": 1708,
     "falsifier": "population admitted=907 .proto files across 22 repos (gate line: `admitted files [0, 1) of 907`, CHUNK; the probe walks all 907, 0 unreadable); wouldFail: an import whose target is a published symbol rather than a path, or whose semantics share the importer's single scope (0 of 1,708 sites; each file keeps its own package scope)"
+   },
+   {
+    "label": "decorates",
+    "evidence": "ontological (grammar-absence does NOT apply \u2014 the option node family IS in the served grammar and was measured; the reason is the ADJUDICATED ONTOLOGY of passive metadata, not a missing production)",
+    "from": "THE LADDER WAS WALKED (PB-REL-15 carries the full record). R1 unavailable: the protobuf language has no decorator construct; its only declaration-annotation surface is the option family, a descriptor-metadata slot. R2 not sanctioned: a patch would invent `@`-style syntax `protoc` rejects. R3 walked: `option`/`field_options`/`enum_value_option` are the nearest node types \u2014 8,536 accounted applications across 790 of 907 files (3,399 custom, 5,137 builtin; 2,909 option statements, 4,840 field-option groups / 5,771 entries). NOT TAKEN on the csharp attribute precedent: an attribute application is PASSIVE METADATA and a decorator is an APPLIED CALLABLE \u2014 and the callable test is measured, not assumed: 0 of 8,536 option applications names a callable declared in the file (the only callable-shaped declarations are `rpc`s), while 84 custom applications name a same-file `extend google.protobuf.*Options` FIELD \u2014 a SymbolKind.Property, the metadata slot itself. A decorates edge would assert an application of a callable that does not exist. Measurement: validation/m14/fixtures/protobuf/measurements/option-surface.mts.",
+    "count": 8536,
+    "falsifier": "population admitted=907 .proto files across 22 repos (gate line: `admitted files [0, 1) of 907`, CHUNK; the probe walks all 907, 0 unreadable); wouldFail: an option application whose name resolves to a callable declared in its file, or a published tree-sitter-proto build carrying a decorator production (0 of 8,536 applications; custom names resolve to passive extension fields, 84 same-file)"
    }
   ],
   "corpusUnexercised": [],
