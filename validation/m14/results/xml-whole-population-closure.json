@@ -9,7 +9,7 @@
     },
     "slices": [
       {
-        "file": "offset-0000.txt",
+        "file": "chunk-00000.txt",
         "range": [
           0,
           300
@@ -18,7 +18,7 @@
         "edges": 4817
       },
       {
-        "file": "offset-0300.txt",
+        "file": "chunk-00300.txt",
         "range": [
           300,
           600
@@ -27,7 +27,7 @@
         "edges": 4793
       },
       {
-        "file": "offset-0600.txt",
+        "file": "chunk-00600.txt",
         "range": [
           600,
           900
@@ -36,7 +36,7 @@
         "edges": 1202
       },
       {
-        "file": "offset-0900.txt",
+        "file": "chunk-00900.txt",
         "range": [
           900,
           1200
@@ -45,7 +45,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-1200.txt",
+        "file": "chunk-01200.txt",
         "range": [
           1200,
           1500
@@ -54,7 +54,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-1500.txt",
+        "file": "chunk-01500.txt",
         "range": [
           1500,
           1800
@@ -63,7 +63,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-1800.txt",
+        "file": "chunk-01800.txt",
         "range": [
           1800,
           2100
@@ -72,7 +72,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-2100.txt",
+        "file": "chunk-02100.txt",
         "range": [
           2100,
           2400
@@ -81,7 +81,7 @@
         "edges": 1313
       },
       {
-        "file": "offset-2400.txt",
+        "file": "chunk-02400.txt",
         "range": [
           2400,
           2700
@@ -90,7 +90,7 @@
         "edges": 1201
       },
       {
-        "file": "offset-2700.txt",
+        "file": "chunk-02700.txt",
         "range": [
           2700,
           3000
@@ -99,7 +99,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-3000.txt",
+        "file": "chunk-03000.txt",
         "range": [
           3000,
           3300
@@ -108,7 +108,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-3300.txt",
+        "file": "chunk-03300.txt",
         "range": [
           3300,
           3600
@@ -117,7 +117,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-3600.txt",
+        "file": "chunk-03600.txt",
         "range": [
           3600,
           3900
@@ -126,7 +126,7 @@
         "edges": 1278
       },
       {
-        "file": "offset-3900.txt",
+        "file": "chunk-03900.txt",
         "range": [
           3900,
           4200
@@ -135,7 +135,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-4200.txt",
+        "file": "chunk-04200.txt",
         "range": [
           4200,
           4500
@@ -144,7 +144,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-4500.txt",
+        "file": "chunk-04500.txt",
         "range": [
           4500,
           4800
@@ -153,7 +153,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-4800.txt",
+        "file": "chunk-04800.txt",
         "range": [
           4800,
           5100
@@ -162,7 +162,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-5100.txt",
+        "file": "chunk-05100.txt",
         "range": [
           5100,
           5400
@@ -171,7 +171,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-5400.txt",
+        "file": "chunk-05400.txt",
         "range": [
           5400,
           5700
@@ -180,7 +180,7 @@
         "edges": 1200
       },
       {
-        "file": "offset-5700.txt",
+        "file": "chunk-05700.txt",
         "range": [
           5700,
           6000
@@ -189,7 +189,7 @@
         "edges": 4451
       },
       {
-        "file": "offset-6000.txt",
+        "file": "chunk-06000.txt",
         "range": [
           6000,
           6300
@@ -198,7 +198,7 @@
         "edges": 5778
       },
       {
-        "file": "offset-6300.txt",
+        "file": "chunk-06300.txt",
         "range": [
           6300,
           6600
@@ -207,7 +207,7 @@
         "edges": 31446
       },
       {
-        "file": "offset-6600.txt",
+        "file": "chunk-06600.txt",
         "range": [
           6600,
           6900
@@ -216,7 +216,7 @@
         "edges": 6572
       },
       {
-        "file": "offset-6900.txt",
+        "file": "chunk-06900.txt",
         "range": [
           6900,
           7200
@@ -225,7 +225,7 @@
         "edges": 5308
       },
       {
-        "file": "offset-7200.txt",
+        "file": "chunk-07200.txt",
         "range": [
           7200,
           7500
@@ -234,7 +234,7 @@
         "edges": 3857
       },
       {
-        "file": "offset-7500.txt",
+        "file": "chunk-07500.txt",
         "range": [
           7500,
           7800
@@ -243,7 +243,7 @@
         "edges": 11164
       },
       {
-        "file": "offset-7800.txt",
+        "file": "chunk-07800.txt",
         "range": [
           7800,
           8100
@@ -252,7 +252,7 @@
         "edges": 10064
       },
       {
-        "file": "offset-8100.txt",
+        "file": "chunk-08100.txt",
         "range": [
           8100,
           8400
@@ -261,7 +261,7 @@
         "edges": 5721
       },
       {
-        "file": "offset-8400.txt",
+        "file": "chunk-08400.txt",
         "range": [
           8400,
           8700
@@ -270,16 +270,16 @@
         "edges": 4599
       },
       {
-        "file": "offset-8700.txt",
+        "file": "chunk-08700.txt",
         "range": [
           8700,
           9000
         ],
         "parsed": 300,
-        "edges": 17433
+        "edges": 17435
       },
       {
-        "file": "offset-9000.txt",
+        "file": "chunk-09000.txt",
         "range": [
           9000,
           9300
@@ -288,16 +288,16 @@
         "edges": 3433
       },
       {
-        "file": "offset-9300.txt",
+        "file": "chunk-09300.txt",
         "range": [
           9300,
           9600
         ],
         "parsed": 300,
-        "edges": 3564
+        "edges": 3565
       },
       {
-        "file": "offset-9600.txt",
+        "file": "chunk-09600.txt",
         "range": [
           9600,
           9900
@@ -306,7 +306,7 @@
         "edges": 18614
       },
       {
-        "file": "offset-9900.txt",
+        "file": "chunk-09900.txt",
         "range": [
           9900,
           10200
@@ -315,7 +315,7 @@
         "edges": 34160
       },
       {
-        "file": "offset-10200.txt",
+        "file": "chunk-10200.txt",
         "range": [
           10200,
           10500
@@ -324,7 +324,7 @@
         "edges": 11107
       },
       {
-        "file": "offset-10500.txt",
+        "file": "chunk-10500.txt",
         "range": [
           10500,
           10800
@@ -333,7 +333,7 @@
         "edges": 5576
       },
       {
-        "file": "offset-10800.txt",
+        "file": "chunk-10800.txt",
         "range": [
           10800,
           11100
@@ -342,7 +342,7 @@
         "edges": 5923
       },
       {
-        "file": "offset-11100.txt",
+        "file": "chunk-11100.txt",
         "range": [
           11100,
           11400
@@ -351,7 +351,7 @@
         "edges": 4711
       },
       {
-        "file": "offset-11400.txt",
+        "file": "chunk-11400.txt",
         "range": [
           11400,
           11605
@@ -365,10 +365,10 @@
     "closureRule": "resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = edges"
   },
   "closure": {
-    "edges": 225220,
-    "resolved": 193330,
+    "edges": 225223,
+    "resolved": 193331,
     "collRes": 0,
-    "ambDecl": 28427,
+    "ambDecl": 28429,
     "ambKind": 0,
     "unresolved": 95,
     "extOK": 3162,
@@ -379,7 +379,7 @@
     "bindFAIL": 0,
     "causeOK": 0,
     "causeFAIL": 0,
-    "sum": 225220,
+    "sum": 225223,
     "exact": true
   }
 }
