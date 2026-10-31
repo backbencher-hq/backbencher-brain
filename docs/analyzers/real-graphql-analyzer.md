@@ -2113,3 +2113,74 @@ in the same process under the same conditions. See REVIEW.md §I and §I.1.
 
 M12.38 / GitHub issue #177. The deep review that produced every number above is
 `reviews/graphql/master-review.md`.
+
+## The completion bar: `extends` + the four extended types, whole-population (2026-10-31)
+
+The tables above record the 2026-10 waves. THIS section is the m14 completion-bar verdict, and
+it is the authoritative one where they differ. Every number here comes from one whole-population
+instrument on the gate's OWN admitted set — **1,911 `.graphql`/`.gql` files in 22 repositories**
+(the arm's `admitted files [0, 1911)` line), 2,338,690 nodes, 0 parse failures — and M14 forbids a
+ruling without a count, a population and a falsifier.
+
+Instruments (both committed, re-runnable):
+- `validation/m14/fixtures/graphql/extended-census.mts` → `extended-census.json` — the construct
+  census for the five rows. Its controls all fire: the counters that read zero sit beside live
+  near-miss counts (3,179 `implements` clauses, 3,747 directive applications, 36,293 operations,
+  252 type-extension sites, 170 `#import` sites).
+- `validation/m14/instruments/graphql/incoming-declaration.json` — the DERIVED whole-population
+  declaration: 7 disjoint 300-wide slices tile `[0,1911)`, closure **exact** at **205,327** edges
+  (resolved 127,868 + external 35,512 + ambiguous 10,253 + otherUnresolved 31,694), five buckets per
+  type, `unclassed` 0, six cause rulings each carrying a population and a `falsifier{run,wouldFail}`.
+
+### `extends` — IMPLEMENTED, and corpus-unexercised (0 sites)
+
+The branch exists (`emitHeritage` labels a supertype `extends` when this document declares it as an
+object, input object, union or scalar) and is pinned by `ontology-heritage-and-surface`
+(`extends` Car → Vehicle, where the document declares Vehicle as an object type). The corpus never
+satisfies it: **0 of 3,179 `implements` clauses** — 3,121 name an interface declared in the same
+document, 58 name a supertype the document does not declare — resolve to an inheritance-shaped
+supertype (`extends.implementsConditionMet = 0`).
+
+The construct a reader will ask about is `extend type Foo`, and it is measured on BOTH halves:
+**252 type-extension sites** (76 where the file also declares the target, 176 where the extension is
+the file's only word about it) plus **95 `extend schema`** sites, 355 `extend` tokens. It is member
+addition to the SAME type — published as `contains` with `metadata.extension` — not an is-a clause,
+not a mixin (the block is anonymous; there is no member-set PROVIDER symbol and no supertype chain),
+and not file inclusion. The discriminator is in the census artefact under `extends.discriminator`,
+and the falsifier is `implementsConditionMet >= 1`. Ladder walked: R1 no published build exposes an
+inheritance production; R2 a patch cannot add syntax the language lacks; R3 the only supertype
+production is `ImplementsInterfaces`, already published as `implements`.
+
+### The four extended types — RULED, each with its count and falsifier
+
+| type | class | the construct it would have to be | measured near miss | falsifier |
+|---|---|---|---|---|
+| `decorates` | **ontological** | a declaration decorated by an APPLIED CALLABLE | 3,747 directive applications, **3,535 applied to declarations**; 600 directive definitions, 467 with arguments, **0 with an implementation body** (9 carry parser ERROR damage, counted apart); 2,182 resolve to a same-document definition | a definition with a body (the composer half of the callable test) |
+| `renders` | **grammar-absence** | a component element constructing a declared component | 36,293 executable operations / 765 files, 1,162 fragments, 796 executable-only (persisted-query) documents, 32 `@defer`/`@stream`/`@live` applications | a render/element construct naming a DECLARED component, or a component node type in the served build (0 of 142) |
+| `mixes_in` | **grammar-absence** | a type composing a distinct named member-set provider into a supertype chain | 252 type-extension sites (247 carrying members, 5 carrying `implements`) + 95 schema extensions; 3,179 `implements` clauses; **0** sites compose a named provider | an extension composing a distinct named member-set provider, or a mixin/trait production (0 of 142) |
+| `part_of` | **grammar-absence** | file inclusion whose target is a SYMBOL and shares the unit's scope | 12,556 comments; **170 `#import` sites / 131 files** (159 typed-from + 11 bare-path), 78 distinct targets, **156 name a file that exists on disk**; 1 symbol-shaped spelling (`shared`) and **0 naming a declaration** (it is a graphql-import config alias; 5,976 declared names searched) | an inclusion target that is a declared GraphQL name, or an include/paste production (0 of 142) |
+
+`decorates` is the one ruling whose R3 rung is REACHABLE — the grammar declares
+`Directive`/`DirectiveDefinition`, and an application IS attached to a declaration — and it is
+declined for the ontological reason the fleet accepted for C# attributes: a decorator is an APPLIED
+CALLABLE, and a directive definition in SDL is a signature whose implementation lives on the
+server, so an edge would assert an application the population cannot witness. The application
+remains a `uses` with `relationshipRole: directive_application`, which is its honest label.
+
+`part_of` is already published under its honest label: the `#import` convention IS emitted, as
+`imports` (170 whole-population edges, 156 external-licensed in the declaration). Relabelling it
+`part_of` would publish one fact twice, which ledger rule R10 forbids.
+
+### What pins this
+
+`validation/m14/fixtures/graphql/extended-types-and-near-misses.{graphql,expectation.json}` — one
+fixture that carries every construct a keyword scan would mislabel (an extension member, a directive
+definition with no body, an object-type-implements-interface clause, `extend schema`, a `#import`, an
+executable operation) and pins each ruled type at **0** by `expectRelationshipCount` while pinning
+the honest label beside it positive (`contains{extension}`, `implements`,
+`uses{relationshipRole=directive_application}`, `imports`, operation symbols). Run:
+`bun script/m14/run-fixtures.ts --lang graphql` → 6 pass / 0 fail.
+
+Coverage block gate after this: `graphql  declared=yes  impl 8  appl 8  excl 2  problems 0` —
+8/8, with `extends` disclosed as implemented-but-silent on the 120-file stride and substantiated by
+its own whole-population zero plus the reasoned `_why` (`coverage._implemented_measured.extends`).

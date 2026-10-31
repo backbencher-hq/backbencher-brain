@@ -192,19 +192,21 @@
     "gaps": [
       {
         "id": "GQ-G1",
-        "severity": "UNMEASURED",
+        "severity": "RULED — grammar-absence, attested",
         "relationship_type": "calls",
         "missing": "The analyzer emits no `calls` edge. Whether GraphQL HAS a call-shaped construct is the question the denominator must answer, and three candidate shapes exist that must each be counted or refuted on the tree: a field SELECTION (`user { name }` — the closest thing to an invocation), a directive APPLICATION (`@deprecated`), and an executable OPERATION entry point (`query Foo`).",
         "next_step": "Count each candidate shape on the 143-file corpus and the whole `.graphql` corpus, then either emit (a field selection as `calls` would duplicate the `references` edge already emitted — that duplication is the thing to measure before implementing) or rule with the count.",
-        "provenance": "firing instrument 2026-10-09: `calls` SILENT, and the whole-corpus census emits 0."
+        "provenance": "firing instrument 2026-10-09: `calls` SILENT, and the whole-corpus census emits 0.",
+        "resolution": "CLOSED 2026-10-31: `calls` is ruled grammar-absence with instruments in BOTH spaces (0 of 10 call-shaped node types among the 75 named types over 2,338,690 nodes; 0 of 22 keyword-shaped keys applies anything). Attested by validation/m14/fixtures/graphql/rulebook-space-probe.json read by ruling-attestation.json; NOT relabelled. See coverage.excluded."
       },
       {
         "id": "GQ-G2",
-        "severity": "UNMEASURED",
+        "severity": "MEASURED — implemented (corpus-unexercised)",
         "relationship_type": "extends",
         "missing": "GraphQL HAS inheritance-like constructs the analyzer models differently: `extend type X` (a type EXTENSION, which the analyzer folds into the extended type as members with `metadata.inExtension`), interface IMPLEMENTATION (emitted as `implements`), and union membership (emitted as `uses`). Whether any of them is an `extends` edge in the ontology's sense — a type declaring another type as its supertype — is unmeasured.",
         "next_step": "Count `TypeExtension`/`TypeSystemExtension` nodes (69 files / 88 nodes and 68 files / 83 nodes observed) and decide whether an extension is an `extends` edge or, as the analyzer currently assumes, membership folded into the type.",
-        "provenance": "firing instrument 2026-10-09: `extends` SILENT."
+        "provenance": "firing instrument 2026-10-09: `extends` SILENT.",
+        "resolution": "CLOSED 2026-10-31: `extends` IS implemented (emitHeritage, pinned by the heritage fixture) and CORPUS-UNEXERCISED: 0 inheritance-shaped sites over 3,179 implements clauses, with 252 type-extension sites measured and published as `contains`. The three-way discriminator (extends/mixes_in/part_of) is measured in validation/m14/fixtures/graphql/extended-census.json; see coverage.corpusUnexercised and coverage._implemented_measured.extends."
       },
       {
         "id": "GQ-G3",
@@ -216,11 +218,12 @@
       },
       {
         "id": "GQ-G4",
-        "severity": "UNMEASURED",
+        "severity": "RULED — grammar-absence, attested",
         "relationship_type": "instantiates",
         "missing": "GraphQL declares types; it does not construct instances. No constructor syntax exists in the grammar.",
         "next_step": "Confirm against the grammar's own node-type table (no constructor node type) and the corpus (0 candidate nodes), then rule INAPPLICABLE with both counts rather than prose.",
-        "provenance": "firing instrument 2026-10-09: `instantiates` SILENT."
+        "provenance": "firing instrument 2026-10-09: `instantiates` SILENT.",
+        "resolution": "CLOSED 2026-10-31: `instantiates` is ruled grammar-absence with instruments in both spaces (0 of 8 construction-shaped node types; 340 keyword-shaped keys with 0 constructing an instance of a declared type; excluded population 3,715 ObjectValue argument values named). Attested by rulebook-space-probe.json read by ruling-attestation.json; see coverage.excluded."
       },
       {
         "id": "GQ-G5",
@@ -244,9 +247,10 @@
     "decisions": [
       {
         "id": "GQ1",
-        "status": "UNVERIFIED BY THIS SPEC",
+        "status": "VERIFIED — MEASURED 2026-10-31",
         "question": "What is an `extend type X` — a second symbol, or members of the extended type?",
-        "resolution": "The analyzer's header states: an extension's members are emitted with `ownerName` = the extended type and `metadata.inExtension = true`; whether the extension also produces a symbol depends on whether the same file DECLARES the type (a pre-pass decides), because a second symbol would be a duplicate identity while a file with only the extension needs one for the `contains` edge to have a source."
+        "resolution": "The analyzer's header states: an extension's members are emitted with `ownerName` = the extended type and `metadata.inExtension = true`; whether the extension also produces a symbol depends on whether the same file DECLARES the type (a pre-pass decides), because a second symbol would be a duplicate identity while a file with only the extension needs one for the `contains` edge to have a source.",
+        "evidence": "252 type-extension sites over 1,911 files (76 where the file also declares the target, 176 where it does not); the extension contributes members with metadata.inExtension and is not an `extends` edge — see validation/m14/fixtures/graphql/extended-census.json. The 95 `extend schema` sites are a different construct (root operations/directives) and are counted apart."
       },
       {
         "id": "GQ2",
@@ -270,7 +274,12 @@
       "exports": "UNMEASURED",
       "uses": "UNMEASURED",
       "overrides": "UNMEASURED",
-      "implements": "UNMEASURED"
+      "implements": "UNMEASURED",
+      "extends": "IMPLEMENTED, whole-population count 0 and corpus-unexercised (0 of 3,179 implements clauses inheritance-shaped); source = the implementor type, target = the supertype the same document declares as an object/input/union/scalar. `implements` is the interface-conformance label on the same clause.",
+      "decorates": "RULED ontological — a directive application annotates a declaration but names a signature with no implementation body (0 of 600 definitions). No edge is published; the application remains a `uses` with role directive_application.",
+      "renders": "RULED grammar-absence — no component/element production; operations/fragments/@defer are request constructs, not rendered components. No edge is published.",
+      "mixes_in": "RULED grammar-absence — `extend type` adds members to the SAME type (published as `contains`) and `implements` is conformance; no member-set provider exists to be the target. No edge is published.",
+      "part_of": "RULED grammar-absence — `#import` is a comment convention naming FILE PATHS; the lane publishes it as `imports` (170 edges, 156 externally licensed in the declaration). No `part_of` edge is published."
     }
   },
   "_incoming_side": {
@@ -474,7 +483,8 @@
       "imports",
       "overrides",
       "references",
-      "uses"
+      "uses",
+      "extends"
     ],
     "excluded": [
       {
@@ -492,7 +502,7 @@
       {
         "label": "extends",
         "evidence": "zero-sites",
-        "from": "0 occurrences meet the BRANCH, which is a fact about this corpus rather than about the grammar: GraphQL writes `A implements B` and `A extends B` with the same rule, and the analyzer labels the clause `extends` only when the supertype is a Class or a Type IN THE SAME DOCUMENT — so the construct is expressible (`implements` fires 1,710 edges here) and the SITE COUNT is what is zero. Measured: 0 of 3,330 `implements` clauses resolve to an inheritance-shaped supertype declared in their own document; 3,225 name an interface and 105 name a supertype in another file. Instrument B in script/m14/graphql-ruled.ts, which carries `publishedCount: 0` / `publishedFiles: 0`; census: script/m14/tmp/graphql/out/ontology-census.json (extends_condition_met 0)."
+        "from": "0 inheritance-shaped SITES on the WHOLE admitted population of 1,911 .graphql/.gql files (22 repositories, gate-exact discovery, 2,338,690 nodes, 0 parse failures) — validation/m14/fixtures/graphql/extended-census.json: 3,179 `implements` clauses, of which 3,121 name an interface declared in the same document and 58 name a supertype this document does not declare; extends.implementsConditionMet = 0 (the analyzer's branch: a supertype the SAME document declares as an object, input object, union or scalar). The schema-extension syntax is measured rather than assumed: 252 `type` extension sites (76 declared-here + 176 declared-elsewhere) and 95 `schema` extensions, extend tokens 355 — every one of them member addition published as `contains`, none an is-a clause (extends.corpusHalf in the same artefact). The construct IS expressible and the branch IS pinned by validation/m14/fixtures/graphql/ontology-heritage-and-surface.expectation.json (`extends` Car -> Vehicle in a document that declares Vehicle as an object type), so this is CORPUS-UNEXERCISED, not grammar-absence."
       }
     ],
     "_retracted_exclusions": {
@@ -534,8 +544,137 @@
       "uses": {
         "edges": 50759
       },
-      "_sum": 205327
+      "_sum": 205327,
+      "extends": {
+        "edges": 0,
+        "_why": "the emission site exists and is pinned (validation/m14/fixtures/graphql/ontology-heritage-and-surface.expectation.json expects `extends` Car->Vehicle), but the corpus never exercises the branch: validation/m14/fixtures/graphql/extended-census.json measures extends.implementsConditionMet = 0 over 3,179 `implements` clauses on the whole 1,911-file admitted population; the construct the language actually writes (`implements`) is published as `implements`, and `extend type` is member addition published as `contains` (252 sites). The zero is a corpus fact, not a dead branch."
+      }
     },
-    "_from": "MEASURED whole-corpus, not sampled: 1,911 admitted files, SEVEN types firing and THREE ruled — and the three rulings are no longer prose. `calls` and `instantiates` are attested in BOTH spaces the arbiter requires (validation/m14/fixtures/graphql/ruling-attestation.json, whose pointers the gate verifies against validation/m14/fixtures/graphql/rulebook-space-probe.json), and `extends` is declared zero-sites rather than grammar-absence because the construct IS expressible here. HANDOFF §4 recorded `graphql 6/10 from=firing-log` with `calls extends imports instantiates` open as GAPS; `imports` was not a gap at all — it was a 143-file measurement generalised to a 1,911-file population — and it is implemented above, with the retraction and the population correction both recorded rather than overwritten."
+    "_from": "MEASURED whole-corpus, not sampled: 1,911 admitted files, SEVEN types firing and THREE ruled — and the three rulings are no longer prose. `calls` and `instantiates` are attested in BOTH spaces the arbiter requires (validation/m14/fixtures/graphql/ruling-attestation.json, whose pointers the gate verifies against validation/m14/fixtures/graphql/rulebook-space-probe.json), and `extends` is declared zero-sites rather than grammar-absence because the construct IS expressible here. HANDOFF §4 recorded `graphql 6/10 from=firing-log` with `calls extends imports instantiates` open as GAPS; `imports` was not a gap at all — it was a 143-file measurement generalised to a 1,911-file population — and it is implemented above, with the retraction and the population correction both recorded rather than overwritten.",
+    "zeroEmissionFacts": [
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "validation/m14/fixtures/graphql/extended-census.json — WHOLE admitted population (1,911 .graphql/.gql files, 22 repositories, gate-exact discovery, 2,338,690 nodes, 0 parse failures, wired grammar wasm/tree-sitter-graphql.wasm, 142 declared node types): 3,747 directive APPLICATIONS, of which decorates.counts.declarationContextApplications = 3,535 are applied to a DECLARATION (FieldDefinition 1,285, ObjectTypeDefinition 811, InputValueDefinition 480, EnumValueDefinition 397, …); 600 directive DEFINITIONS (directiveDefinitionsWithArguments 467, directiveDefinitionsWithImplementationBody 0, customDirectiveDefinitions 561, specDirectiveDefinitions 39, distinct declared/applied names 160). THE CALLABLE TEST FAILS ON THE COMPOSER HALF: an application names a definition whose SIGNATURE is declared, but 0 of 600 definitions carries an implementation BODY; 9 definitions carry parser ERROR damage (counted apart, decorates.counts.directiveDefinitionsWithErrorChild = 9), which the grammar-subtree walk excludes from the body test.",
+        "statement": "`decorates` is a decorated declaration -> decorator edge, and the fleet's adjudicated ontology defines the target as an APPLIED CALLABLE (src/ast/types.ts, Decorates: \"the runtime applies the decorator while the declaration is created\"). A GraphQL directive application IS applied to a declaration (3,535 declaration-context sites measured) and a directive definition DOES declare arguments (467 of 600), so the syntax is expressible and R3 is reachable — this is an ONTOLOGICAL ruling, not a grammar absence. What the document does not contain is the implementation: 0 of 600 definitions carries a body, so the applied thing is a SERVER-SIDE CONTRACT, exactly the case the fleet adjudicated for C# attributes and Java annotations (attributes are PASSIVE METADATA => ontological; validation/m14/verification/VOCABULARY-EXTENSION-PROPOSAL.md). An edge would assert an application the population cannot witness. LADDER, WALKED: R1 unavailable — no published tree-sitter-graphql build declares a decorator/annotation/attribute production, and the served build's own inventory (142 types) is searched for those stems in the artefact; R2 unavailable — a patch can add a production only for syntax the language has, and GraphQL has no decorator syntax: a directive is metadata by specification 3.13; R3 REACHABLE AND MEASURED — the existing Directive/DirectiveDefinition productions carry the construct, and the measurement above says the construct is metadata, which is why R3 is declined on the ontological reason rather than a grammar one.",
+        "construct": "a directive application whose definition declares an implementation body (an applied callable)",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "population": "1,911 admitted .graphql/.gql files in 22 repositories (the gate's own admitted set)",
+        "grammarInventory": "142 declared node types (wasm/tree-sitter-graphql.wasm, abi 15); 0 match decorat|annotat|attribute|pragma. Directive and DirectiveDefinition ARE declared — the near miss is a production, which is what makes the ruling ontological.",
+        "nearMiss": {
+          "construct": "directive applications applied to a declaration",
+          "count": 3535
+        },
+        "falsifier": "a directive definition carrying an IMPLEMENTATION BODY (directiveDefinitionsWithImplementationBody >= 1 in validation/m14/fixtures/graphql/extended-census.json), or a corpus site where an application's server-side implementation is resolvable inside the graph. Either retires the ontological ruling and returns `decorates` to the denominator."
+      },
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "from": "validation/m14/fixtures/graphql/extended-census.json — WHOLE admitted population (1,911 .graphql/.gql files, 22 repositories, 2,338,690 nodes, 0 parse failures): 0 detectors fired for a component/element render construct; the grammar's own inventory is 142 declared node types and 0 of them match render|component|element|jsx|vnode|template|slot. NEAR MISSES COUNTED, not dismissed: 36,293 executable operations over 765 files, 1,162 fragment definitions, 796 executable-only (persisted-query-style) documents, and 32 payload-shaping directive applications (@defer 29, @stream 2, @live 1).",
+        "statement": "Renders is a component element that constructs another declared component (src/ast/types.ts, Renders: target = the rendered COMPONENT). GraphQL declares a schema and executes REQUESTS: an operation is a document the server resolves against a schema, a fragment is a selection, and @defer/@stream shape a RESPONSE PAYLOAD — none of them creates an element naming a component. LADDER, WALKED: R1 unavailable — no published tree-sitter-graphql build adds a component/element production (the served build's 142 declared node types contain none, searched by stem in the artefact); R2 unavailable — a patch cannot add syntax the language does not have (GraphQL has no element/component form; adding one would define a different language); R3 unavailable — no existing node type carries a rendered component, and reading a request document as a render would be the fabrication the fleet's clean/java rulings refuse.",
+        "construct": "a component/element construct naming a declared component",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "population": "1,911 admitted .graphql/.gql files in 22 repositories (the gate's own admitted set)",
+        "grammarInventory": "142 declared node types; 0 named types match render|component|element|jsx|vnode|template|slot.",
+        "nearMiss": {
+          "construct": "executable operations / persisted-query documents / payload-shaping directives",
+          "count": 36293
+        },
+        "falsifier": "a corpus site where an element/component construct names a DECLARED component, or a component/element/render node type in the served build. Either retires the ruling — evaluated by validation/m14/fixtures/graphql/extended-census.json (renders.nearMisses and renders.grammarHalf.stems)."
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "from": "validation/m14/fixtures/graphql/extended-census.json — WHOLE admitted population (1,911 .graphql/.gql files, 22 repositories, 2,338,690 nodes): 0 sites compose a DISTINCT named member-set provider into a supertype chain; the grammar's own inventory is 142 declared node types and 0 of them match mixin|trait|with_clause|member_set|embed. THE NEAR MISS IS A PRODUCTION, COUNTED: 252 type-extension sites (76 declared-here + 176 declared-elsewhere), 247 carrying MEMBERS, 5 carrying `implements`; 95 schema extensions; and 3,179 `implements` clauses (3,121 interface-in-document, 0 inheritance-shaped).",
+        "statement": "`mixes_in` is a type COMPOSING ANOTHER TYPE'S MEMBER SET INTO ITS SUPERTYPE CHAIN (src/ast/types.ts, MixesIn: source = the class, target = the mixin; no conformance declared). GraphQL has no such construct: `extend type X` is the SAME type continued — the extension block is ANONYMOUS (no composing source symbol) and its members belong to the extended type itself, already published as `contains` with metadata.inExtension; and `implements` is CONFORMANCE, published as `implements`. The discriminator against `extends` is measured on both halves: an extension declares no second type and no supertype, and 0 of 3,179 `implements` clauses resolves to an inheritance-shaped supertype (extends.implementsConditionMet = 0). LADDER, WALKED: R1 unavailable — no published tree-sitter-graphql build has a mixin/trait/with-clause production; R2 unavailable — a patch would have to invent member-set composition the language does not have; R3 unavailable — the extension productions exist and are measured, and reading them as mixin composition would assert a provider symbol the document does not contain.",
+        "construct": "a type composing a distinct named member-set provider into a supertype chain",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "population": "1,911 admitted .graphql/.gql files in 22 repositories (the gate's own admitted set)",
+        "grammarInventory": "142 declared node types; 0 named types match mixin|trait|with_clause|member_set|embed. The extension family (TypeSystemExtension/TypeExtension/*TypeExtension, 11 declared names) and ImplementsInterfaces ARE declared — the near miss is a production, counted, and not a mixin.",
+        "nearMiss": {
+          "construct": "type-extension sites carrying members",
+          "count": 252
+        },
+        "falsifier": "an extension site composing a DISTINCT NAMED member-set provider into a supertype chain, or a mixin/trait/member-set production in the served build — evaluated by validation/m14/fixtures/graphql/extended-census.json (mixes_in.nearMisses and the grammar stems)."
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "from": "validation/m14/fixtures/graphql/extended-census.json — WHOLE admitted population (1,911 .graphql/.gql files, 22 repositories, 2,338,690 nodes): the grammar's own inventory is 142 declared node types and 0 of them match include|import|part|paste; the corpus's 12,556 comment nodes carry 170 `#import` convention sites over 131 files (159 typed-from + 11 bare-path forms, 78 distinct targets, 156 targets naming a file that EXISTS on disk). targetsSymbolShaped = 1 and symbolShapedTargetSitesNamingDeclaredSymbol = 0: the single symbol-shaped spelling (`shared`) is a graphql-import CONFIG ALIAS that nothing in the 1,911-file population declares (5,976 declared names searched). The convention is already PUBLISHED as `imports` — 170 whole-population edges, 156 external-licensed in the derived declaration validation/m14/instruments/graphql/incoming-declaration.json.",
+        "statement": "`part_of` is file inclusion that shares the including unit's single scope, with the target a part's file or module symbol (src/ast/types.ts, PartOf). GraphQL has no inclusion syntax: `#import` is a TOOLCHAIN convention over English comment text (`graphql-import-node`/`graphql-tools`), its target is a FILE PATH — a GraphQL name cannot contain a dot, so no declaration can answer one — and the one symbol-shaped target resolves to 0 declarations. The lane already publishes the construct under its honest label: `imports`, because it names a module and creates binding scope; the fleet's one-fact-one-label rule (ledger R10) forbids publishing the same site twice. LADDER, WALKED: R1 unavailable — no published tree-sitter-graphql build declares an include/import production; R2 unavailable — a patch would have to add a preprocessor the language does not have; R3 unavailable — no existing node includes a file (`comment` is a token whose text is English, and it is already read for `imports`).",
+        "construct": "a file inclusion whose target is a SYMBOL declared in the population",
+        "count": 0,
+        "files": 0,
+        "repos": 0,
+        "population": "1,911 admitted .graphql/.gql files in 22 repositories (the gate's own admitted set)",
+        "grammarInventory": "142 declared node types; 0 named types match include|import|part|paste; `comment` is the only token whose text can carry the convention, and it is read for `imports`.",
+        "nearMiss": {
+          "construct": "`#import` comment-convention sites published as `imports`",
+          "count": 170
+        },
+        "falsifier": "a corpus site where the inclusion target is a SYMBOL (a GraphQL name declared by the population) and the construct shares the including unit's scope, or a served build declaring an include/paste node type — evaluated by validation/m14/fixtures/graphql/extended-census.json (part_of.counts, including symbolShapedTargetSitesNamingDeclaredSymbol)."
+      }
+    ],
+    "_extended_census": {
+      "_what": "the whole-population instrument behind the five extended-type rows: validation/m14/fixtures/graphql/extended-census.mts writes validation/m14/fixtures/graphql/extended-census.json",
+      "_population": "1,911 admitted .graphql/.gql files in 22 repositories — the gate's own admitted line, cross-checked against the arm's `admitted files [0, 1911)` slice bounds",
+      "_grammar": "wasm/tree-sitter-graphql.wasm, abi 15: 2,338,690 nodes walked, 0 parse failures, 142 declared node types",
+      "_extends": {
+        "implementsClauses": 3179,
+        "implementsSupertypeInterfaceHere": 3121,
+        "implementsSupertypeNotDeclaredHere": 58,
+        "extendsConditionMet": 0,
+        "typeExtensionSites": 252,
+        "typeExtensionSitesDeclaredHere": 76,
+        "typeExtensionSitesDeclaredElsewhere": 176,
+        "schemaExtensionSites": 95,
+        "extendsKeywordTokens": 355
+      },
+      "_decorates": {
+        "directiveApplications": 3747,
+        "declarationContextApplications": 3535,
+        "executableContextApplications": 209,
+        "directiveDefinitions": 600,
+        "directiveDefinitionsWithArguments": 467,
+        "directiveDefinitionsWithImplementationBody": 0,
+        "directiveDefinitionsWithErrorChild": 9,
+        "customDirectiveDefinitions": 561,
+        "specDirectiveDefinitions": 39,
+        "distinctAppliedDirectiveNames": 160,
+        "applicationsNamingSpecBuiltin": 442,
+        "applicationsNamingAnyDeclaredDefinition": 3131,
+        "applicationsNamingUndeclaredDirective": 174
+      },
+      "_renders": {
+        "operationDefinitions": 36293,
+        "operationFiles": 765,
+        "fragmentDefinitions": 1162,
+        "executableOnlyDocuments": 796,
+        "deferStreamApplications": 32
+      },
+      "_mixesIn": {
+        "typeExtensionSites": 252,
+        "typeExtensionSitesCarryingMembers": 247,
+        "typeExtensionSitesCarryingImplements": 5,
+        "schemaExtensionSites": 95
+      },
+      "_partOf": {
+        "comments": 12556,
+        "importSites": 170,
+        "importFiles": 131,
+        "distinctTargets": 78,
+        "targetsPresentOnDisk": 156,
+        "targetsSymbolShaped": 1,
+        "symbolShapedTargetSitesNamingDeclaredSymbol": 0,
+        "declaredSymbolNamesInPopulation": 5976
+      },
+      "_controls": "all five construct counters fire on live near misses beside their zeros (extends: implements clauses 3,179 + extensions 252; decorates: applications 3,747 + definitions 600; renders: operations 36,293; mixes_in: member-carrying extensions 247; part_of: #import sites 170); the grammar-inventory control fires on Directive/ImplementsInterfaces/*Extension."
+    }
   }
 }
