@@ -306,6 +306,27 @@
      "run": "npx tsx validation/m14/fixtures/protobuf/measurements/option-surface.mts (walks every admitted .proto; population admitted=907 across 22 repos, the gate's own line 'admitted files [0, 1) of 907')",
      "wouldFail": "an option application whose name resolves to a CALLABLE declared in its file, or a published tree-sitter-proto build carrying a decorator production \u2014 0 of 8,536 applications name a declared `rpc`, and custom option names resolve to passive extension FIELDS (84 same-file)"
     }
+   },
+   {
+    "id": "PB-REL-16",
+    "node_type": "rpc,option,service",
+    "status": "RULED",
+    "question": "Is `renders` emitted for a protobuf construct \u2014 does anything RENDER a component?",
+    "resolution": "RULED, and `renders` is the type this decision is about. Instrument and probe: THE LADDER WALKED. R1 UNAVAILABLE: a render production would be a property of the LANGUAGE, and the protobuf specification defines no component, element or output construct \u2014 a .proto DECLARES types and operations; no published tree-sitter-proto build can carry a production the language does not have. R2 NOT SANCTIONED: a patch would have to invent JSX-like or component syntax `protoc` rejects \u2014 the invented-syntax line. R3 WALKED on the nearest node types (`rpc`, `service`, `option`) and NOT TAKEN: the counted near miss is the `google.api.*` annotation family, and it RENDERS NOTHING. MEASURED over the whole admitted population with validation/m14/fixtures/protobuf/measurements/renders-surface.mts, which read every one of the 907 admitted .proto files (0 unreadable): 81 files carry 1,220 `google.api.*` applications \u2014 field_behavior 662, http 314, resource_reference 118, method_signature 38, default_host 29, resource 27, oauth_scopes 26, field_info 6, plus smaller families; 338 services and 1,643 rpc methods exist, and 312 rpc methods carry at least one google.api annotation. The 314 `google.api.http` applications carry 445 HTTP binding keys (post 193, get 78, delete 25, patch 21, put 2, custom 0, body 126): what they SHAPE is a TRANSPORT surface, binding a method to a route \u2014 an HTTP path is not a rendered component, and no annotation names a declaration that produces another declaration's output. The fleet's contract (src/ast/types.ts, Renders) requires a rendering DECLARATION and a rendered COMPONENT; protobuf's nearest nodes are metadata annotations whose values are paths and scalars, and its `rpc` values are message types (already REFERENCES, PB-REL-5), not components. R3 is walked and not taken because the construct does not exist at any rung.",
+    "measured": {
+     "files_with_google_api_annotations": 81,
+     "google_api_applications": 1220,
+     "google_api_http_applications": 314,
+     "http_binding_keys": 445,
+     "services": 338,
+     "rpc_methods": 1643,
+     "rpc_methods_annotated": 312,
+     "rendered_components": 0
+    },
+    "falsifier": {
+     "run": "npx tsx validation/m14/fixtures/protobuf/measurements/renders-surface.mts (walks every admitted .proto; population admitted=907 across 22 repos, the gate's own line 'admitted files [0, 1) of 907')",
+     "wouldFail": "a construct that renders a component \u2014 a declaration that produces another declaration's output \u2014 or a published tree-sitter-proto build carrying a render production; 0 of the 1,220 google.api applications render anything, and the 314 http applications name HTTP paths (445 binding keys), not components"
+    }
    }
   ]
  },
@@ -363,6 +384,13 @@
     "from": "THE LADDER WAS WALKED (PB-REL-15 carries the full record). R1 unavailable: the protobuf language has no decorator construct; its only declaration-annotation surface is the option family, a descriptor-metadata slot. R2 not sanctioned: a patch would invent `@`-style syntax `protoc` rejects. R3 walked: `option`/`field_options`/`enum_value_option` are the nearest node types \u2014 8,536 accounted applications across 790 of 907 files (3,399 custom, 5,137 builtin; 2,909 option statements, 4,840 field-option groups / 5,771 entries). NOT TAKEN on the csharp attribute precedent: an attribute application is PASSIVE METADATA and a decorator is an APPLIED CALLABLE \u2014 and the callable test is measured, not assumed: 0 of 8,536 option applications names a callable declared in the file (the only callable-shaped declarations are `rpc`s), while 84 custom applications name a same-file `extend google.protobuf.*Options` FIELD \u2014 a SymbolKind.Property, the metadata slot itself. A decorates edge would assert an application of a callable that does not exist. Measurement: validation/m14/fixtures/protobuf/measurements/option-surface.mts.",
     "count": 8536,
     "falsifier": "population admitted=907 .proto files across 22 repos (gate line: `admitted files [0, 1) of 907`, CHUNK; the probe walks all 907, 0 unreadable); wouldFail: an option application whose name resolves to a callable declared in its file, or a published tree-sitter-proto build carrying a decorator production (0 of 8,536 applications; custom names resolve to passive extension fields, 84 same-file)"
+   },
+   {
+    "label": "renders",
+    "evidence": "grammar-absence",
+    "from": "R1 unavailable: the protobuf language declares types and operations; it has no component, element or output construct, so no published tree-sitter-proto build can carry a render production. R2 not sanctioned: a patch would invent JSX-like syntax `protoc` rejects. R3 walked: the nearest node types are `rpc`/`service`/`option`, and the counted near miss is the `google.api.*` annotation family \u2014 MEASURED over the whole admitted population (907 .proto files; validation/m14/fixtures/protobuf/measurements/renders-surface.mts): 81 files carry 1,220 google.api applications (field_behavior 662, http 314, resource_reference 118, method_signature 38, default_host 29, resource 27, oauth_scopes 26, field_info 6 + smaller), 338 services and 1,643 rpc methods exist, 312 methods annotated. The 314 google.api.http applications carry 445 HTTP binding keys (post 193, get 78, delete 25, patch 21, put 2, body 126) \u2014 they SHAPE a transport surface and render nothing: an HTTP path is not a rendered component, and no annotation names a declaration that produces another declaration's output. Rendered components: 0.",
+    "count": 1220,
+    "falsifier": "population admitted=907 .proto files across 22 repos (gate line: `admitted files [0, 1) of 907`, CHUNK; the probe walks all 907, 0 unreadable); wouldFail: a construct that renders a component, or a published tree-sitter-proto build carrying a render production (0 of 1,220 google.api applications render anything; the 314 http applications name HTTP paths, not components)"
    }
   ],
   "corpusUnexercised": [],
