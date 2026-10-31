@@ -141,7 +141,7 @@ import {
 } from "./language-extensions"
 
 export { LANES_A, LANES_B, FLEET_LANES, extensionsFor }
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import * as path from "node:path"
 import { createHash } from "node:crypto"
@@ -367,11 +367,49 @@ const CR = process.env.BB_CORPUS_ROOT ?? DEFAULT_CORPUS_ROOT
  * `Makefile` still passes (the basename table maps it to `make`); the script does not (detection
  * names no language for a spelling-only probe, and with its content names `bash`).
  */
-function admitByExtension(rel: string, exts: string[], lang: string): boolean {
+function admitByExtension(rel: string, exts: string[], lang: string, absPath?: string): boolean {
   const low = rel.toLowerCase()
   const base = low.slice(low.lastIndexOf("/") + 1)
-  if (exts.some((e) => low.endsWith(`.${e}`))) return true
+  if (exts.some((e) => low.endsWith(`.${e}`))) {
+    // ⇒⇒⇒ **`.m` IS TWO LANGUAGES AND THE EXTENSION TEST CANNOT TELL THEM APART.** MATLAB and
+    // Objective-C both write `.m`, so an extension-only admission gives the matlab lane the whole
+    // union — measured 2026-10-31: `matlab 1 parsed of 1 … corpus has 259 .m files`, and the sampled
+    // file was routed to the OBJECTIVE-C grammar (`NSTextView`, `objc_getAssociatedObject` in its
+    // unresolved targets), i.e. the lane would have published an Objective-C analyzer's edges under
+    // a MATLAB declaration. The router has always disambiguated by CONTENT
+    // (`language-detection.ts:405`: first 64 KB containing `function ` / `classdef ` is MATLAB,
+    // otherwise Objective-C), so the faithful admission is the router's own test, applied to the
+    // head of the file. BOTH lanes are filtered — objc loses the MATLAB half exactly as production
+    // does — and a file whose head cannot be read is NOT admitted (an unreadable file is not
+    // evidence that it belongs to this lane).
+    if (low.endsWith(".m") && (lang === "matlab" || lang === "objective-c") && absPath) {
+      const head = readHeadText(absPath, 65536)
+      if (head === null) return false
+      return detectLanguageFromPath(rel, head) === lang
+    }
+    return true
+  }
   return exts.some((e) => base === e) && detectLanguageFromPath(rel) === lang
+}
+
+/**
+ * The first `bytes` of a file as UTF-8, or null when it cannot be read. Bounded by construction:
+ * the router's own content sniffer reads the first 64 KB, so nothing beyond that can change the
+ * answer and nothing beyond it is read here.
+ */
+function readHeadText(absPath: string, bytes: number): string | null {
+  try {
+    const fd = openSync(absPath, "r")
+    try {
+      const buf = Buffer.alloc(bytes)
+      const n = readSync(fd, buf, 0, bytes, 0)
+      return buf.subarray(0, n).toString("utf8")
+    } finally {
+      closeSync(fd)
+    }
+  } catch {
+    return null
+  }
 }
 
 function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: number, onlyRepos?: Set<string>, offset = 0, hasOffset = false): {
@@ -427,7 +465,7 @@ function discoverFiles(lang: string, ext: string, exts: string[], maxFiles: numb
       continue
     }
     for (const rel of tracked) {
-      if (!admitByExtension(rel, exts, lang)) continue
+      if (!admitByExtension(rel, exts, lang, path.join(dir, rel))) continue
       const abs = path.join(dir, rel)
       try {
         // THE SIZE CAP IS PART OF THE POPULATION CLAIM, so it is counted and printed.
@@ -1885,6 +1923,8 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
   let caseFolded = 0
   let moduleQualified = 0
   let moduleQualifiedChannel = 0
+  let moduleQualifiedAbsent = 0
+  let moduleQualifiedMany = 0
   let joinAskedSlash = 0
   let joinAskedNamespace = 0
   let joinResolvedSlash = 0
@@ -1962,6 +2002,14 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
           // name model would report a genuine ambiguity, and the qualifier is what decides it.
           moduleVerdict = { outcome: "resolved" }
           moduleQualifiedChannel++
+        } else if (read.inModuleSites === 0) {
+          // THE MODULE'S FILE DECLARES THE NAME NOWHERE. Three things produce this shape and none of
+          // them is decidable here: a re-export (the module publishes the name from another module), a
+          // RECORD SELECTOR the analyzer does not publish as a declaration, or a name carried by a
+          // class instance. Counted so the next mechanism is priced before it is built.
+          moduleQualifiedAbsent++
+        } else {
+          moduleQualifiedMany++
         }
       }
     }
@@ -2123,6 +2171,7 @@ async function measure(lang: string, ext: string, maxFiles: number, useIndex: bo
     (CASE_INSENSITIVE_LANGUAGES.has(lang) ? "" : " (this language is not opt-in: the fold is inert)") +
     `\n  module-qualified resolution: ${moduleQualified} row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name` +
     `\n  module channel: ${moduleQualifiedChannel} row(s) resolved through it — the claimed module's file declares the name once, so the qualified spelling names that declaration even where the bare name is NOT unique project-wide` +
+    `\n  module channel refusals: ${moduleQualifiedAbsent} row(s) where the module's file declares the name NOWHERE (a re-export, an unpublished record selector, or a class-instance name) and ${moduleQualifiedMany} where it declares it more than once` +
     `\n`,
   )
   // THE CLASS-LIKE RULE'S OWN PRICE, printed on every arm for the join's reason: an arm that does not

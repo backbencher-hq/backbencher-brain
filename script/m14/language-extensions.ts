@@ -29,7 +29,9 @@
  * record of a decision that looks arbitrary until it is explained.
  */
 
-/** Laptop B's 23 lanes, from docs/analyzers/PROMPT-LAPTOP-B.md:15 — asserted, not inferred. */
+/** Laptop B's 23 lanes — asserted, not inferred, and this literal is the authority. It cited
+ *  `docs/analyzers/PROMPT-LAPTOP-B.md:15` until 2026-10-28, when that stale assignment document was
+ *  deleted; the lane set below was already the source of truth, so nothing operational moved. */
 export const LANES_B: Record<string, string> = {
   bash: "sh,bash,zsh", fsharp: "fs,fsi,fsx", zig: "zig", lua: "lua", julia: "jl", nim: "nim,nims,nimble",
   // RUBY AND SOLIDITY ADDED 2026-10-20 (Lead). The engine has an analyzer for both and BOTH HOLD
@@ -160,6 +162,15 @@ export const LANES_A: Record<string, string> = {
   html: "html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2", java: "java", javascript: "js,mjs,cjs,jsx", kotlin: "kt,kts",
   // PERL ADMISSES `perl` (the router maps it to perl; 0 corpus files, so the population is
   // unchanged and the correction is free — but the list said one thing and the router another).
+  // VBA AND MATLAB ARE LANES WITH ANALYZERS, SPECS AND FIXTURES BUT NO ENTRY IN EITHER MAP (2026-10-31,
+  // Lead). The coverage gate enumerates `src/ast/real-*-analyzer.ts`, so both lanes were READ and
+  // reported (`impl 0/0`, "no spec") while the population gate and every sweep could not measure them:
+  // an instrument that cannot see a lane cannot arm it, and a lane with no arm cannot carry a
+  // declaration. The extension lists are the ROUTER'S: `vba`/`bas`/`cls`/`frm` map to vba
+  // (language-detection.ts), and matlab is the content-disambiguated half of `.m` (see the note on
+  // admitByExtension in incoming-gate.ts — matlab is NOT admitted by extension alone).
+  vba: "vba,bas,cls,frm",
+  matlab: "m",
   "objective-c": "m,mm", perl: "pl,pm,t,pod,perl", python: "py,pyi,pyw", rust: "rs",
   scala: "scala,sc,sbt", svelte: "svelte", swift: "swift",
   typescript: "ts,tsx,mts,cts", vb: "vb", vue: "vue",
