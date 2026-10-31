@@ -370,3 +370,10 @@ src/ast/__*.ts
 *-scratch.ts
 *-scratch.mts
 .tmp-rewrite/
+
+# client-tooling bridge worktrees (contain auth tokens in data/; never commit)
+client-tooling-proxy-work/
+client-tooling2api-work/
+
+# The dedicated corpus root for the two lanes the shared corpus cannot measure (matlab, vba).
+.corpus-tail/

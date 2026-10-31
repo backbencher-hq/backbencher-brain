@@ -219,7 +219,7 @@
     ],
     "_measured": "2026-10-29"
   },
-  "_corpus_absence_2026_10_29": {
+  "_shared_corpus_finding_2026_10_31": {
     "_measured": "2026-10-29",
     "corpus_root": "$HOME/fixtures/repositories",
     "command": "find $HOME/fixtures/repositories -type f \\( -iname '*.bas' -o -iname '*.cls' -o -iname '*.frm' -o -iname '*.vba' \\) | sort",
@@ -244,5 +244,18 @@
     "ruling": "ANALYZER-PRESENT, CORPUS-ABSENT LANE. The corpus contains 2 files whose extension the router sends to vba (both `.cls`, both LaTeX document classes) and ZERO genuine VBA sources; `.bas`, `.frm` and `.vba` are absent entirely. CONSEQUENCE, STATED RATHER THAN SMOOTHED: the whole-population arm (DONE condition 2) cannot be run on genuine VBA in this tree, and an arm over the 2 admitted extension candidates would measure a LaTeX class parsed as VBA (an ERROR-node population) \u2014 so the arm is NOT run, NO whole-population edge count is claimed in this file, and `_implemented_measured` is deliberately absent. This lane's real validation is therefore its 10 fixtures (10 pass / 0 fail) plus the durable grammar inventory and the pinned wasm, not a corpus measurement. The owner's corpus decision is the gate on condition 2.",
     "falsifier": "A genuine VBA source (a `.bas`/`.frm`/`.vba` file or a `.cls` VBA class module carrying VBA syntax such as `Attribute VB_Name` and `Sub`/`Function` bodies) appearing under the corpus root or in any arm's admitted population \u2014 0 measured; re-run the command above after any corpus change, and an arm's expect-population must be the gate's own admitted N over whatever population the owner admits.",
     "_lead_measurement": "The Lead independently reported the same fact (2 extension candidates, the r-pkgdown .cls called out as almost certainly LaTeX); this block is the lane's own reproduction with the command and a classification of BOTH files."
+  },
+  "_corpus_root": {
+    "_status": "DONE \u2014 MEASURED ON A DEDICATED CORPUS ROOT. The shared corpus has no genuine VBA source (the retained `_shared_corpus_finding_2026_10_31` block is the measurement: 2 extension candidates, both LaTeX class files). So the lane's population is a SEPARATE root, fetched specifically for it, and named here.",
+    "root": ".corpus-tail (workspace-relative), containing one repository: VBA-Web",
+    "repository": {
+      "url": "https://github.com/VBA-tools/VBA-Web.git",
+      "head": "9dbcc751d177099f20c96c5ee332ec10ef47423c",
+      "tracked_files": 101,
+      "tracked_vba_files": 44
+    },
+    "admission": "the gate's own admission over that root: `admitted files [0, 44) of 44` \u2014 all 44 tracked `.bas`/`.cls`/`.frm` files, admitted by the router's own extension table (vba,bas,cls,frm); the VBA repository's `.cls` files are class modules, not LaTeX classes, which is exactly the collision the shared root suffers.",
+    "arm": "BB_CORPUS_ROOT=$PWD/.corpus-tail bun run script/m14/incoming-gate.ts vba 0 \u2014 44 parsed of 44 admitted, TOTAL 11,250 edges, one process; declaration validation/m14/instruments/vba/incoming-declaration.json (parsed=44/44 admitted=44 exts=vba,bas,cls,frm index=no, 14 types, 7 cause rulings)",
+    "why_not_the_shared_root": "adding a VBA repository to `.corpus` would change other lanes' populations and void their declarations; a dedicated root keeps the 48 intact and is stated in every number this lane publishes."
   }
 }

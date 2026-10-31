@@ -2,44 +2,43 @@
   "meta": {
     "lang": "matlab",
     "instrument": "script/m14/incoming-gate.ts over ONE WHOLE-POPULATION PROCESS (no slices, no merge — the run's own TOTAL row IS the closure); this declaration is DERIVED from that TABLE 1 by script/m14/sliced-declaration.ts, which refuses on any non-closure",
-    "sample": 3,
-    "corpusTotal": 3,
-    "parsed": 3,
-    "population": "parsed=3/3 admitted=3 exts=m index=no",
+    "sample": 365,
+    "corpusTotal": 365,
+    "parsed": 365,
+    "population": "parsed=365/365 admitted=365 exts=m index=no",
     "populationRule": {
       "rule": "the admitted set is the GIT-TRACKED set: per-checkout `git ls-files` over $PWD/.corpus, extensions m from the router's one table, files present on disk and at most 1 MiB"
     },
     "resolvedScope": "the file's OWN PROJECT (production's scope; index=no — the analyzer sees one file at a time, and the arbiter holds the project)",
-    "measuredEdges": 1634,
+    "measuredEdges": 56488,
     "slices": 1,
     "closure": {
-      "resolved": 0,
+      "resolved": 12200,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 1634,
+      "ambiguous": 8287,
+      "otherUnresolved": 36001,
       "unclassed": 0,
       "exact": true
     },
-    "generatedBy": "script/m14/sliced-declaration.ts",
-    "laneCause": "The wall in this lane is the POPULATION's content, not name collisions: 3 admitted files, all Objective-C by content, 0 genuine MATLAB constructs (0 classdef, 0 function definitions, 0 methods/properties/events sections, 0 +pkg/ or @Class/ folders). The analyzer is exercised by the fixture suite, which is the only genuine MATLAB source this lane has."
+    "generatedBy": "script/m14/sliced-declaration.ts"
   },
   "types": {
     "calls": {
-      "edges": 1524,
-      "resolved": 0,
+      "edges": 19030,
+      "resolved": 4275,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 1524,
+      "ambiguous": 2234,
+      "otherUnresolved": 12521,
       "unclassed": 0,
-      "_ambKind": 0,
+      "_ambKind": 1051,
       "_collRes": 0,
       "closure": {
-        "edges": 1524,
-        "resolved": 0,
+        "edges": 19030,
+        "resolved": 4275,
         "collRes": 0,
-        "ambDecl": 0,
-        "ambKind": 0,
-        "unresolved": 1524,
+        "ambDecl": 2234,
+        "ambKind": 1051,
+        "unresolved": 12521,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -51,21 +50,21 @@
       }
     },
     "uses": {
-      "edges": 0,
-      "resolved": 0,
+      "edges": 35520,
+      "resolved": 6171,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 0,
+      "ambiguous": 5918,
+      "otherUnresolved": 23431,
       "unclassed": 0,
-      "_ambKind": 0,
+      "_ambKind": 3450,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
-        "resolved": 0,
+        "edges": 35520,
+        "resolved": 6171,
         "collRes": 0,
-        "ambDecl": 0,
-        "ambKind": 0,
-        "unresolved": 0,
+        "ambDecl": 5918,
+        "ambKind": 3450,
+        "unresolved": 23431,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -77,18 +76,18 @@
       }
     },
     "contains": {
-      "edges": 0,
-      "resolved": 0,
+      "edges": 1627,
+      "resolved": 1627,
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
       "unclassed": 0,
       "_ambKind": 0,
-      "_collRes": 0,
+      "_collRes": 816,
       "closure": {
-        "edges": 0,
-        "resolved": 0,
-        "collRes": 0,
+        "edges": 1627,
+        "resolved": 1627,
+        "collRes": 816,
         "ambDecl": 0,
         "ambKind": 0,
         "unresolved": 0,
@@ -103,21 +102,21 @@
       }
     },
     "imports": {
-      "edges": 0,
+      "edges": 11,
       "resolved": 0,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 0,
+      "ambiguous": 9,
+      "otherUnresolved": 2,
       "unclassed": 0,
-      "_ambKind": 0,
+      "_ambKind": 9,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
+        "edges": 11,
         "resolved": 0,
         "collRes": 0,
-        "ambDecl": 0,
-        "ambKind": 0,
-        "unresolved": 0,
+        "ambDecl": 9,
+        "ambKind": 9,
+        "unresolved": 2,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -129,21 +128,21 @@
       }
     },
     "references": {
-      "edges": 110,
-      "resolved": 0,
+      "edges": 107,
+      "resolved": 37,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 110,
+      "ambiguous": 64,
+      "otherUnresolved": 6,
       "unclassed": 0,
-      "_ambKind": 0,
+      "_ambKind": 63,
       "_collRes": 0,
       "closure": {
-        "edges": 110,
-        "resolved": 0,
+        "edges": 107,
+        "resolved": 37,
         "collRes": 0,
-        "ambDecl": 0,
-        "ambKind": 0,
-        "unresolved": 110,
+        "ambDecl": 64,
+        "ambKind": 63,
+        "unresolved": 6,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -155,8 +154,8 @@
       }
     },
     "exports": {
-      "edges": 0,
-      "resolved": 0,
+      "edges": 16,
+      "resolved": 16,
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
@@ -164,8 +163,8 @@
       "_ambKind": 0,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
-        "resolved": 0,
+        "edges": 16,
+        "resolved": 16,
         "collRes": 0,
         "ambDecl": 0,
         "ambKind": 0,
@@ -181,21 +180,21 @@
       }
     },
     "extends": {
-      "edges": 0,
-      "resolved": 0,
+      "edges": 71,
+      "resolved": 5,
       "external": 0,
-      "ambiguous": 0,
-      "otherUnresolved": 0,
+      "ambiguous": 53,
+      "otherUnresolved": 13,
       "unclassed": 0,
-      "_ambKind": 0,
+      "_ambKind": 32,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
-        "resolved": 0,
+        "edges": 71,
+        "resolved": 5,
         "collRes": 0,
-        "ambDecl": 0,
-        "ambKind": 0,
-        "unresolved": 0,
+        "ambDecl": 53,
+        "ambKind": 32,
+        "unresolved": 13,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -207,21 +206,21 @@
       }
     },
     "implements": {
-      "edges": 0,
+      "edges": 1,
       "resolved": 0,
       "external": 0,
       "ambiguous": 0,
-      "otherUnresolved": 0,
+      "otherUnresolved": 1,
       "unclassed": 0,
       "_ambKind": 0,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
+        "edges": 1,
         "resolved": 0,
         "collRes": 0,
         "ambDecl": 0,
         "ambKind": 0,
-        "unresolved": 0,
+        "unresolved": 1,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -259,21 +258,21 @@
       }
     },
     "instantiates": {
-      "edges": 0,
-      "resolved": 0,
+      "edges": 96,
+      "resolved": 69,
       "external": 0,
       "ambiguous": 0,
-      "otherUnresolved": 0,
+      "otherUnresolved": 27,
       "unclassed": 0,
       "_ambKind": 0,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
-        "resolved": 0,
+        "edges": 96,
+        "resolved": 69,
         "collRes": 0,
         "ambDecl": 0,
         "ambKind": 0,
-        "unresolved": 0,
+        "unresolved": 27,
         "extOK": 0,
         "extUnk": 0,
         "extFAIL": 0,
@@ -363,20 +362,20 @@
       }
     },
     "part_of": {
-      "edges": 0,
+      "edges": 9,
       "resolved": 0,
       "external": 0,
-      "ambiguous": 0,
+      "ambiguous": 9,
       "otherUnresolved": 0,
       "unclassed": 0,
-      "_ambKind": 0,
+      "_ambKind": 9,
       "_collRes": 0,
       "closure": {
-        "edges": 0,
+        "edges": 9,
         "resolved": 0,
         "collRes": 0,
-        "ambDecl": 0,
-        "ambKind": 0,
+        "ambDecl": 9,
+        "ambKind": 9,
         "unresolved": 0,
         "extOK": 0,
         "extUnk": 0,
@@ -391,21 +390,75 @@
   },
   "causeRulings": {
     "calls_targets_not_decidable_from_the_published_name": {
-      "population": "parsed=3/3 admitted=3 exts=m index=no",
-      "count": 1524,
-      "what": "calls: 0 of 1524 edges resolved; the remaining 1524 are 0 ambiguous + 1524 unresolved (TABLE 1's own columns, summed over 1 slice(s) — EXACT, not sampled). CAUSE, MEASURED — THE POPULATION, NOT A NAME COLLISION: the admitted set is 3 files, and all three are Objective-C source the router admits to matlab by matching the English word `function ` inside a comment (the three files and their trigger lines are recorded in validation/m14/fixtures/matlab/measurements/matlab-constructs.txt). The population contains 0 classdef sections, 0 function definitions and 0 declarations of any kind, so an edge can only be unresolved: resolution binds a target to a DECLARATION, and this population declares no MATLAB symbol for any edge to reach. The count is TABLE 1's exact column over the whole population, not a sample.  The arm's worklist samples the ambiguous/unresolved names for this type: `isnan`, `FLTPigeonDeepEquals`, `FLTPigeonDeepHash`, `end`.",
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 14755,
+      "what": "calls: 4275 of 19030 edges resolved; the remaining 14755 are 2234 ambiguous + 12521 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). a call edge whose target is a NAME ONLY (`Clone`, `Errorf`, `Encode`, `Do`): the language lets many types declare the same method name and a call is disambiguated by its RECEIVER, which the published target spelling does not carry — so the arbiter sees several declarations of that name and the row is ambiguous, not wrong. The unresolved tail is calls into packages outside the admitted set. The arm's worklist samples the ambiguous/unresolved names for this type: `delete`, `sym`, `coriolis`, `I`, `obj`, `varargin`, `isa`, `inputname`.",
       "falsifier": {
-        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's resolved column for calls is the count",
-        "wouldFail": "a run in which one of those 1524 edges RESOLVES against a declaration in the admitted set (resolved > 0): that would mean the population does contain MATLAB declarations and the wall was the run's scope, not the population's content."
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for calls are the count",
+        "wouldFail": "a run in which one of those 14755 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "uses_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 29349,
+      "what": "uses: 6171 of 35520 edges resolved; the remaining 29349 are 5918 ambiguous + 23431 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). a `uses` edge whose target name is declared in several files of the project or in none of them (a field or package-level name read across files): the analyzer's scope is PER FILE, so a name it cannot see declared here is stated rather than resolved. The arm's worklist samples the ambiguous/unresolved names for this type: `issym`, `sym`, `t`, `G`, `obj`, `CGen`, `false`, `true`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for uses are the count",
+        "wouldFail": "a run in which one of those 29349 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "imports_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 11,
+      "what": "imports: 0 of 11 edges resolved; the remaining 11 are 9 ambiguous + 2 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). an import specifier naming a package the admitted set does not carry (a standard-library or third-party module path): an import names a MODULE and creates binding scope, so no per-file declaration can answer it. The arm's worklist samples the ambiguous/unresolved names for this type: `ETS2`, `ETS3`, `java.io`, `java.net`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for imports are the count",
+        "wouldFail": "a run in which one of those 11 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
       }
     },
     "references_targets_not_decidable_from_the_published_name": {
-      "population": "parsed=3/3 admitted=3 exts=m index=no",
-      "count": 110,
-      "what": "references: 0 of 110 edges resolved; the remaining 110 are 0 ambiguous + 110 unresolved (TABLE 1's own columns, summed over 1 slice(s) — EXACT, not sampled). CAUSE, MEASURED — THE POPULATION, NOT A NAME COLLISION: the admitted set is 3 files, and all three are Objective-C source the router admits to matlab by matching the English word `function ` inside a comment (the three files and their trigger lines are recorded in validation/m14/fixtures/matlab/measurements/matlab-constructs.txt). The population contains 0 classdef sections, 0 function definitions and 0 declarations of any kind, so an edge can only be unresolved: resolution binds a target to a DECLARATION, and this population declares no MATLAB symbol for any edge to reach. The count is TABLE 1's exact column over the whole population, not a sample.  The arm's worklist samples the ambiguous/unresolved names for this type: `import`, `nil`, `implementation.FLTAnEnumBox`, `FLTUnusedClass`.",
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 70,
+      "what": "references: 37 of 107 edges resolved; the remaining 70 are 64 ambiguous + 6 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). a reference whose target name is declared several times in the project, or nowhere in it: the read is a NAME, and the file-scoped analyzer can only answer for names it can see. The arm's worklist samples the ambiguous/unresolved names for this type: `ETS2`, `ETS3`, `plus`, `Navigation`, `r.ikine6s`, `r.ikine`, `bone`, `isempty`.",
       "falsifier": {
-        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's resolved column for references is the count",
-        "wouldFail": "a run in which one of those 110 edges RESOLVES against a declaration in the admitted set (resolved > 0): that would mean the population does contain MATLAB declarations and the wall was the run's scope, not the population's content."
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for references are the count",
+        "wouldFail": "a run in which one of those 70 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "extends_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 66,
+      "what": "extends: 5 of 71 edges resolved; the remaining 66 are 53 ambiguous + 13 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). the target names nothing this file declares. The arm's worklist samples the ambiguous/unresolved names for this type: `ETS2`, `ETS3`, `handle`, `Navigation`, `matlab.mixin.Copyable`, `uint8`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for extends are the count",
+        "wouldFail": "a run in which one of those 66 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "implements_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 1,
+      "what": "implements: 0 of 1 edges resolved; the remaining 1 are 0 ambiguous + 1 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). the target names nothing this file declares. The arm's worklist samples the ambiguous/unresolved names for this type: `dynamicprops`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for implements are the count",
+        "wouldFail": "a run in which one of those 1 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "instantiates_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 27,
+      "what": "instantiates: 69 of 96 edges resolved; the remaining 27 are 0 ambiguous + 27 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). the target names nothing this file declares. The arm's worklist samples the ambiguous/unresolved names for this type: `ets`, `prm`, `rrt`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for instantiates are the count",
+        "wouldFail": "a run in which one of those 27 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
+      }
+    },
+    "part_of_targets_not_decidable_from_the_published_name": {
+      "population": "parsed=365/365 admitted=365 exts=m index=no",
+      "count": 9,
+      "what": "part_of: 0 of 9 edges resolved; the remaining 9 are 9 ambiguous + 0 unresolved + 0 spelled as a binding + 0 with a declared cause (TABLE 1's own columns, summed over 1 slices — EXACT, not sampled). an inclusion whose target file is outside the admitted set or declares no symbol named after itself. The arm's worklist samples the ambiguous/unresolved names for this type: `ETS2`, `ETS3`.",
+      "falsifier": {
+        "run": "npx tsx script/m14/incoming-gate.ts matlab 0 (the whole population in one process) — TABLE 1's ambiguous + unresolved + bindOK + causeOK columns for part_of are the count",
+        "wouldFail": "a run in which one of those 9 edges resolves (the count falls) or one of the sampled names resolves to a SINGLE declaration — either would mean the wall was the run's scope, not the corpus's name collisions."
       }
     }
   },
@@ -414,7 +467,6 @@
     "THE POPULATION IS ONE WHOLE-POPULATION PROCESS, not a union of slices: every admitted file was measured by a single run, and that run's own TOTAL row is the closure the per-type sums are checked against.",
     "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: a resolved edge whose target had more than one declaration in the project, so production's own-file tie-break chose the row. The resolved column is a FLOOR on correct resolution, not a count of correct edges.",
     "`amb(kind)` IS A SUBSET OF `amb(decl)`: it counts distinct KINDS among the colliding declarations, while amb(decl) counts distinct DECLARATIONS.",
-    "THE WALL COUNTS ARE TABLE 1's EXACT COLUMNS, summed over the slices; the NAMES quoted in each ruling are the arm's own 25-name-capped worklist, cited as evidence of WHICH cause and never as a count.",
-    "THE POPULATION IS OBJECTIVE-C SOURCE ADMITTED BY THE ROUTER'S SUBSTRING TEST: the three admitted `.m` files are not MATLAB source (their text carries `#import`, `@interface`, `NSString`), and their comments contain the word `function ` that src/ast/language-detection.ts:405 matches. Every edge in this declaration is therefore a statement about what the MATLAB analyzer emits when production routes non-MATLAB text to it — not a statement about a MATLAB codebase. The genuine-MATLAB evidence for the analyzer's eleven types is the fixture suite (validation/m14/fixtures/matlab/, 12 fixtures, 0 fail), and the census (validation/m14/fixtures/matlab/measurements/matlab-constructs.txt) carries the construct counts that show the population declares nothing."
+    "THE WALL COUNTS ARE TABLE 1's EXACT COLUMNS, summed over the slices; the NAMES quoted in each ruling are the arm's own 25-name-capped worklist, cited as evidence of WHICH cause and never as a count."
   ]
 }
