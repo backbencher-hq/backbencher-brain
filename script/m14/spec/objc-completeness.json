@@ -1,7 +1,7 @@
 {
-  "language": "objc",
-  "grammar": "tree-sitter-objc (pinned wasm/wasm/tree-sitter-objc.wasm)",
-  "coverage": {
+ "language": "objc",
+ "grammar": "tree-sitter-objc (pinned wasm/wasm/tree-sitter-objc.wasm)",
+ "coverage": {
   "implemented": [
    "calls",
    "uses",
@@ -12,427 +12,476 @@
    "extends",
    "implements",
    "overrides",
-   "instantiates"
+   "instantiates",
+   "part_of"
   ],
-  "excluded": [],
+  "excluded": [
+   {
+    "label": "decorates",
+    "evidence": "ontological",
+    "from": "RULED ONTOLOGICAL after the ladder, over the WHOLE admitted population (validation/m14/measurements/objc-extended-census.json, produced by script/m14/objc-census.ts over the gate's own 259-file admitted list validation/m14/measurements/objc-population.txt, 259 parsed of 259, 0 failures; the arm that fixes the population is `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts objective-c 0`, population string parsed=259/259 admitted=259 exts=m,mm index=no). LADDER: R1 UNAVAILABLE \u2014 the pin is a LOCAL REBUILD of tree-sitter-grammars/tree-sitter-objc base 3.0.2 (wired wasm sha256 520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb; base, four patches and the surface/behaviour A/B are recorded in script/m14/verify-grammar-pins.ts), and no other published build changes what an Objective-C attribute MEANS. R2 UNAVAILABLE FOR A CONSTRUCT THAT DOES NOT EXIST \u2014 the vendored grammar already declares the attribute family (10 of its 222 named types: attribute_specifier, attribute, attribute_declaration, attributed_declarator, attributed_statement, availability_attribute_specifier, availability, property_attribute, property_attributes_declaration, availability_macro_specifier) and 0 of the 222 is a decorator/annotation-application production; a patch can only ADD a production, and there is no ObjC construct for it to bind to. R3 WALKED AND IT DECIDES \u2014 the attribute node types are present (validation/m14/measurements/objc-grammar-nodes.json, servedDigest 520bf5e05a6c, namedTypes 222), so the question is what an attribute ARGUMENT is. MEASURED: 175 attribute sites (attribute_specifier 175, C23 attribute_declaration 0; names visibility 95, used 70, unused 10), 49 availability attribute specifiers, 1,141 property attributes (`nonatomic`/`strong`/`copy` \u2014 declaration metadata), 0 compiler-directive application macros of the NS_SWIFT_NAME family in the admitted .m/.mm set (they live in headers, which this lane does not admit), and 992 block literals \u2014 anonymous closures, never an applied attribute. 95 of the 175 sites carry a CALL-SHAPED argument and ALL 95 are `__attribute__((visibility(\"default\")))`: a STRING VALUE the compiler interprets. declaredCalleeInAttribute 0 \u2014 not one attribute argument names a declaration in its own file \u2014 so callableAttributeArguments 0 and appliedCallableAttributeSites 0 (the ObjC/C `cleanup(fn)` family, the one attribute whose argument the compiler DOES invoke). CONTRACT (src/ast/types.ts:Decorates): 'a decorator is APPLIED TO a declaration ... the runtime applies it while the declaration is created', so the positive test is an attribute whose argument IS AN INVOKED CALLABLE; an Objective-C attribute is compile-time metadata on the declaration, never an invocation, so a decorates row would assert an application the language does not have. FALSIFIER (instrument-counted, two counters, both 0 today): any `cleanup`/`gnu::cleanup`/`__cleanup__` attribute site > 0 (appliedCallableAttributeSites), or any call-shaped attribute argument whose callee names a declared CALLABLE kind in its own file (callableAttributeArguments > 0) \u2014 either is the Rust `#[derive(Serialize)]` shape and would refute the ruling. Citation: validation/m14/measurements/objc-extended-census.json (counts + samples) and validation/m14/measurements/objc-grammar-nodes.json (the served build's own named types)."
+   },
+   {
+    "label": "renders",
+    "evidence": "ontological",
+    "from": "RULED ONTOLOGICAL after the ladder, over the WHOLE admitted population (validation/m14/measurements/objc-extended-census.json, 259/259 parsed, the gate's own admitted list; population string parsed=259/259 admitted=259 exts=m,mm index=no; grammar inventory validation/m14/measurements/objc-grammar-nodes.json, servedDigest 520bf5e05a6c, namedTypes 222). LADDER: R1 UNAVAILABLE \u2014 the pin is a local rebuild of tree-sitter-grammars/tree-sitter-objc 3.0.2 (wired wasm sha256 520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb), the newest published base, and no build can change the fact that Objective-C has no component/template production. R2 UNAVAILABLE FOR A CONSTRUCT THAT DOES NOT EXIST \u2014 0 of the grammar's 222 named types is render/component/view-body/element/JSX-shaped (the inventory is READ, not sampled), so a patch would have to INVENT a construct the language does not have. R3 WALKED AND IT DECIDES \u2014 no existing node type can express 'a component RENDERS another component': ObjC has no component, view or template concept at the syntax level. A program builds UI by CALLING methods (already `calls`) and by loading a RESOURCE named by a string. THE NEAR MISS IS MEASURED AND NAMED: UI loading by nib/storyboard \u2014 3 message-send sites (`initWithNibName:bundle:` / `nibWithNibName:` / `loadNibNamed:`) in 3 files passing 2 resource-name STRING LITERALS, with 0 string literals in the population ending in .xib/.storyboard/.nib. Each site is a CALL plus a STRING VALUE: neither declares one component as the rendered output of another, both are already published (the call as `calls`), and a nib file is a resource, not a symbol. renderShapedNodes 0 over all 259 files. FALSIFIER: any render-shaped node in an admitted file would print as a census sample and refute the ruling (renderShapedNodes > 0), or a construct in which a DECLARED symbol names another declaration as the thing it renders \u2014 the nib near miss would need the nib to BE a symbol and the loading site to DECLARE the rendered component, and the census counts 0 of each. Citation: validation/m14/measurements/objc-extended-census.json."
+   },
+   {
+    "label": "mixes_in",
+    "evidence": "informational",
+    "from": "RULED INFORMATIONAL \u2014 the member-set composition the vocabulary names IS present in the category construct, but the MIXIN side has no identity the type system can name, and the composition is already recorded under ONE symbol. MEASURED over the whole admitted population (validation/m14/measurements/objc-extended-census.json, 259/259 parsed, the gate's own admitted list): 260 category-shaped class_interface/class_implementation nodes \u2014 67 NAMED categories (`@interface Foo (Cat)`, label readable) and 193 ANONYMOUS class extensions (`@interface Foo ()`), so 74% of the construct has no mixin name at all. Of the 67 named categories exactly 1 label coincides with a declared type in its project, and that type is the EXTENDED CLASS ITSELF (`SDImageCache (SDImageCache)` -> kinds extension|class), i.e. a SELF-NAME, not a distinct mixin; 14 categories extend a class the same file also declares as a plain class, so class and category publish ONE name and a mixes_in row would be X -> X. The gate's own ambiguity column shows the same collision across the project (`[class|extension] 2 declarations` rows in the arm's worklist). The 193 anonymous extensions have no label to put on the target side, and the analyzer ALREADY attributes every category-declared method to the extended class (OBJCD1: 'its methods are owned by the EXTENDED class'), so the composition is published as the class's own `contains` member set \u2014 a second label would assert a compositional identity Objective-C does not declare. LADDER: R1 UNAVAILABLE \u2014 the pin is a local rebuild of tree-sitter-grammars/tree-sitter-objc 3.0.2 (wired wasm sha256 520bf5e05a6c...; script/m14/verify-grammar-pins.ts records base, patches and surface A/B), and no other build changes what a category LABEL means. R2 UNAVAILABLE FOR A CONSTRUCT THAT DOES NOT EXIST \u2014 the vendored grammar already parses the category as `class_interface` with an anonymous `(` token and the label as a plain identifier, and a patch can only ADD a production, while the missing piece is a DECLARATION for the label: Objective-C declares no type for a category name (0 of the grammar's 222 named types is a mixin/trait/composition production; the one in-project collision measured is a self-name). R3 WALKED AND IT DECIDES \u2014 the category node type exists and the analyzer already reads the `(` token and the label through it (OBJCD1), so R3 was fully taken for DETECTION; what R3 cannot produce is a TARGET IDENTITY. FALSIFIER: a run of script/m14/objc-census.ts whose sample categoryLabelPublishedAsTypeInProject contains ANY entry whose label is NOT the extended class's own name \u2014 that would be a declared type a label could compose, making the mixin side symbol-shaped \u2014 or a non-zero compositionShapedNodes (0 today, the counter reads mixin_declaration/trait_declaration/uses_clause/extends_clause over all 259 files). Citation: validation/m14/measurements/objc-extended-census.json."
+   }
+  ],
   "corpusUnexercised": [],
-  "_from": "TEN OF TEN MEASURED (2026-10-14, task-111). The reading is the whole admitted population through the production path: 262 files (259 .m + 3 .mm) across 9 repos, 262 parsed of 262, 0 parse failures. TEN types now fire — calls 12,534 in 246 files · uses 15,966 in 246 · contains 4,169 · instantiates 1,239 · references 851 · overrides 754 · extends 135 · implements 39 · exports 2 · IMPORTS 851. THE TENTH WAS A GAP AND IS NOW CLOSED BY RESTORING THIS LANE'S OWN COMMITTED CODE, not by re-wording and not by writing a second implementation. `imports` read ZERO relationship edges because NO `RelationshipType.Imports` push existed anywhere in src/ast/real-objective-c-analyzer.ts — the analyzer filled `imports` ImportInfo rows (preproc_include branch) and the indexer wrote them into the brain_import TABLE (src/ast/parallel-indexer.ts), while the ontology's `imports` RELATIONSHIP stayed empty. It was NOT grammar-absence (11 of the pinned grammar's 187 distinct named node types match the import vocabulary: preproc_include/module_import) and NOT zero-sites (856 import sites over the same 262 files by source-text scan), so it stayed in the denominator as a gap until measured. RESTORED FROM `be3415738` (`@import Module;` — the second dependency declaration): the include branch's `imports` edge beside its kept `references` twin, `isObjCModuleImport: false` written TOTAL, and the `module_import` branch. `git merge-base --is-ancestor be3415738 HEAD` exits 1. THE PIN PICKED AN OLDER REVISION THAN THE NEWEST, and that is why values were read before restoring: `b727b0fe4` (2026-10-06) also emits `imports` but relabels the module branch to `relationshipType: include_dependency`, which validation/m14/fixtures/objc/module-imports.expectation.json FORBIDS; `be3415738` (2026-10-04) matches the pin key for key (include_dependency + isObjCModuleImport:false for `#import`; module_import + isObjCModuleImport:true for `@import`). A pin agrees on VALUES, not on the presence of an emission. MOVEMENT, same population, BEFORE taken in a detached HEAD worktree and AFTER in the main tree with the same command: imports 0 -> 851; references 779 -> 851 (+72, the `@import` twins; the include twins already existed); and every other type BYTE-IDENTICAL (calls 12534 uses 15966 contains 4169 instantiates 1239 overrides 754 extends 135 implements 39 exports 2). NO FIXTURE MOVED: `run-fixtures.ts --lang objc` reads 11 pass / 5 fail on BOTH sides with an identical FAIL set. Both import fixtures are now green on EVERY `imports` row but remain RED on other causes — objc/module-imports on 3 `references` rows that pin `meta.reasonCode` (clang-module-name-not-resolved / include-target-not-resolved, the reason-code pass this branch does not carry at all: 0 occurrences of either string), and objc/linkage-and-imports on its `exports` and `instantiates` rows. The lane's score moved 9/10 -> 10/10 on the 851 measured edges, and that is the only claim this block makes. RESIDUAL COST, STATED BECAUSE THE LANE'S RESIDUAL GREW (incoming-gate, per-type row): imports 851 = resolved 0 · amb(decl) 0 · UNRESOLVED 851 · extOK 0 · ext? 0 · extFAIL 0. So this is +851 UNRESOLVED edges with NO external claim attached, not 851 resolved ones; TOTAL moved 35,617 -> 36,540. That is the honest state for `#import <Foundation/Foundation.h>`, which names a header outside the project, and it matches the C family's treatment of the same construct rather than being special to objc: the c lane's `.c`-only run reads `imports` 1,427 = resolved 0 · unresolved 1,427 · no claim. Whether a file-or-external CLAIM is the right treatment (the pins carry `fileLevel: true`, which puts the importing file in source_external, but pin NO claim marker) or whether unresolved is the intended end state is an OWNER/MASTER decision about the incoming arithmetic — NOT decided here, and NO claim was attached to make the column read better. CROSS-CHECK, STATED RATHER THAN ROUNDED: the independent source-text scan counted 856 sites (767 #import, 73 @import, 16 #include) while the analyzer publishes 851 edges (779 include + 72 module) — a 5-site residue recorded, not smoothed. AND THE TWO INSTRUMENTS DO NOT AGREE ON EVERY TYPE, which is recorded rather than merged: the census instrument above read contains 4,205 and overrides 790 on this population, while the incoming-gate runs read contains 4,169 and overrides 754 BEFORE AND AFTER. calls (12,534) and uses (15,966) agree exactly. The before/after pair that establishes the movement is one instrument on both sides; the other instrument's numbers are quoted as the earlier census, not as this block's movement. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `OBJECTIVE_C 0 types fired  NO CORPUS under objc` with all ten SILENT, which is a claim about the pin `objc` (it admits 0 files at this HEAD) and not about the 262-file population measured here. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified.",
+  "_from": "TEN OF TEN MEASURED (2026-10-14, task-111). The reading is the whole admitted population through the production path: 262 files (259 .m + 3 .mm) across 9 repos, 262 parsed of 262, 0 parse failures. TEN types now fire \u2014 calls 12,534 in 246 files \u00b7 uses 15,966 in 246 \u00b7 contains 4,169 \u00b7 instantiates 1,239 \u00b7 references 851 \u00b7 overrides 754 \u00b7 extends 135 \u00b7 implements 39 \u00b7 exports 2 \u00b7 IMPORTS 851. THE TENTH WAS A GAP AND IS NOW CLOSED BY RESTORING THIS LANE'S OWN COMMITTED CODE, not by re-wording and not by writing a second implementation. `imports` read ZERO relationship edges because NO `RelationshipType.Imports` push existed anywhere in src/ast/real-objective-c-analyzer.ts \u2014 the analyzer filled `imports` ImportInfo rows (preproc_include branch) and the indexer wrote them into the brain_import TABLE (src/ast/parallel-indexer.ts), while the ontology's `imports` RELATIONSHIP stayed empty. It was NOT grammar-absence (11 of the pinned grammar's 187 distinct named node types match the import vocabulary: preproc_include/module_import) and NOT zero-sites (856 import sites over the same 262 files by source-text scan), so it stayed in the denominator as a gap until measured. RESTORED FROM `be3415738` (`@import Module;` \u2014 the second dependency declaration): the include branch's `imports` edge beside its kept `references` twin, `isObjCModuleImport: false` written TOTAL, and the `module_import` branch. `git merge-base --is-ancestor be3415738 HEAD` exits 1. THE PIN PICKED AN OLDER REVISION THAN THE NEWEST, and that is why values were read before restoring: `b727b0fe4` (2026-10-06) also emits `imports` but relabels the module branch to `relationshipType: include_dependency`, which validation/m14/fixtures/objc/module-imports.expectation.json FORBIDS; `be3415738` (2026-10-04) matches the pin key for key (include_dependency + isObjCModuleImport:false for `#import`; module_import + isObjCModuleImport:true for `@import`). A pin agrees on VALUES, not on the presence of an emission. MOVEMENT, same population, BEFORE taken in a detached HEAD worktree and AFTER in the main tree with the same command: imports 0 -> 851; references 779 -> 851 (+72, the `@import` twins; the include twins already existed); and every other type BYTE-IDENTICAL (calls 12534 uses 15966 contains 4169 instantiates 1239 overrides 754 extends 135 implements 39 exports 2). NO FIXTURE MOVED: `run-fixtures.ts --lang objc` reads 11 pass / 5 fail on BOTH sides with an identical FAIL set. Both import fixtures are now green on EVERY `imports` row but remain RED on other causes \u2014 objc/module-imports on 3 `references` rows that pin `meta.reasonCode` (clang-module-name-not-resolved / include-target-not-resolved, the reason-code pass this branch does not carry at all: 0 occurrences of either string), and objc/linkage-and-imports on its `exports` and `instantiates` rows. The lane's score moved 9/10 -> 10/10 on the 851 measured edges, and that is the only claim this block makes. RESIDUAL COST, STATED BECAUSE THE LANE'S RESIDUAL GREW (incoming-gate, per-type row): imports 851 = resolved 0 \u00b7 amb(decl) 0 \u00b7 UNRESOLVED 851 \u00b7 extOK 0 \u00b7 ext? 0 \u00b7 extFAIL 0. So this is +851 UNRESOLVED edges with NO external claim attached, not 851 resolved ones; TOTAL moved 35,617 -> 36,540. That is the honest state for `#import <Foundation/Foundation.h>`, which names a header outside the project, and it matches the C family's treatment of the same construct rather than being special to objc: the c lane's `.c`-only run reads `imports` 1,427 = resolved 0 \u00b7 unresolved 1,427 \u00b7 no claim. Whether a file-or-external CLAIM is the right treatment (the pins carry `fileLevel: true`, which puts the importing file in source_external, but pin NO claim marker) or whether unresolved is the intended end state is an OWNER/MASTER decision about the incoming arithmetic \u2014 NOT decided here, and NO claim was attached to make the column read better. CROSS-CHECK, STATED RATHER THAN ROUNDED: the independent source-text scan counted 856 sites (767 #import, 73 @import, 16 #include) while the analyzer publishes 851 edges (779 include + 72 module) \u2014 a 5-site residue recorded, not smoothed. AND THE TWO INSTRUMENTS DO NOT AGREE ON EVERY TYPE, which is recorded rather than merged: the census instrument above read contains 4,205 and overrides 790 on this population, while the incoming-gate runs read contains 4,169 and overrides 754 BEFORE AND AFTER. calls (12,534) and uses (15,966) agree exactly. The before/after pair that establishes the movement is one instrument on both sides; the other instrument's numbers are quoted as the earlier census, not as this block's movement. AND THE FIRING LOG'S ROW IS NOT A CONTRADICTION: validation/m14/results/firing-laptop-b.current.log reads `OBJECTIVE_C 0 types fired  NO CORPUS under objc` with all ten SILENT, which is a claim about the pin `objc` (it admits 0 files at this HEAD) and not about the 262-file population measured here. CLOSURE: implemented 10 + corpusUnexercised 0 + gaps 0 = applicable 10 = 10 - 0 grammar-absence - 0 unclassified. ** ELEVEN OF THE FOURTEEN VOCABULARY VALUES ARE NOW EMITTED (2026-10-28).** The tenth (`imports`) was restored from this lane's own committed revision; the ELEVENTH (`part_of`) is IMPLEMENTED AT R3 on the EXISTING `preproc_include` node \u2014 an Objective-C `#import`/`#include` is FILE INCLUSION, not a name import, so the branch emits the inclusion row beside the kept `imports` + `references` pairs, with a SYMBOL-SHAPED target (framework/module or header stem) and the written path in metadata.partPath; fixture validation/m14/fixtures/objc/extended-part-of.{m,expectation.json}. The remaining three are RULED with whole-population counts and falsifiers in `excluded`: `decorates` (ontological \u2014 175 attribute sites, 95 call-shaped arguments, 0 applied callables), `renders` (ontological \u2014 0 render-shaped nodes, 0 .xib/.storyboard strings, 3 nib-loading call sites counted as the near miss), `mixes_in` (informational \u2014 260 category-shaped sites = 67 named categories + 193 anonymous class extensions, 1 label collision and it is the extended class's self-name, so the mixin side has no symbol identity). Population: 259 files (256 .m + 3 .mm), 9 repos, content-aware .m admission, 36,506 edges, closure EXACT in validation/m14/instruments/objc/incoming-declaration.json.",
   "_implemented_measured": {
-   "_unit": "edges published through the production path over the WHOLE admitted objective-c population — 262 files (259 .m + 3 .mm) across 9 repos, 262 parsed of 262, 0 parse failures, 0 analyze throws. Instrument .tmp-covb/census.mts --lane objc, which constructs the PRODUCTION parser (engine.getParser) and enumerates the grammar through that parser's own Language.",
+   "_unit": "edges published through the production path over the WHOLE admitted objective-c population \u2014 259 files (256 .m + 3 .mm) across 9 repos, 259 parsed of 259, 0 parse failures, 0 analyze throws, the gate's own admitted list under the content-aware .m admission (`bun run script/m14/incoming-gate.ts objective-c 0`, population line `259 parsed of 259 sampled`). The per-type edge counts are the ARM'S TABLE 1 rows and are CROSS-CHECKED by script/m14/objc-census.ts through production `parseFile` \u2014 the two instruments agree to the edge on all 11 implemented types (validation/m14/measurements/objc-extended-census.json `perType`).",
    "calls": {
-    "edges": 12534,
-    "files": 246
+    "edges": 12281,
+    "files": 243
    },
    "uses": {
-    "edges": 15966,
-    "files": 246
+    "edges": 14919,
+    "files": 243
    },
    "contains": {
-    "edges": 4205,
-    "files": 226
+    "edges": 4009,
+    "files": 223
    },
    "instantiates": {
-    "edges": 1239,
-    "files": 164
+    "edges": 1209,
+    "files": 162
    },
    "overrides": {
-    "edges": 790,
-    "files": 61
+    "edges": 786,
+    "files": 60
    },
    "references": {
-    "edges": 779,
-    "files": 258
+    "edges": 839,
+    "files": 259
    },
    "extends": {
-    "edges": 135,
-    "files": 79
+    "edges": 131,
+    "files": 77
    },
    "implements": {
-    "edges": 39,
-    "files": 25
+    "edges": 36,
+    "files": 23
    },
    "exports": {
-    "edges": 2,
-    "files": 1
+    "edges": 740,
+    "files": 236
    },
    "imports": {
-    "edges": 851
+    "edges": 839
    },
-   "_residual": "imports 851 = resolved 0 / amb(decl) 0 / unresolved 851, extOK 0, ext? 0, extFAIL 0 — +851 UNRESOLVED edges with NO claim attached (the c lane reads the same shape: 1427/0/1427). ** RULED BY THE LEAD 2026-10-14: UNRESOLVED IS THE INTENDED END STATE for these edges and no claim attaches.** The two cited reasons: (1) the declared-cause mechanism does not fit — incoming-rule.ts:243-254 makes `baseBeyondRunScope` property 3 REQUIRE that the reason be checked against its own target, with `base` an identifier that IS the target's owner, and `#import <Foundation/Foundation.h>` has NO identifier owner, so a cause claim cannot be honestly written for it; (2) an external claim is worse — `verifyExternalClaim` on a bare target is the §5l laundering vector, the exact thing the toml lane measured and refused. So the record is a SENTENCE, not a claim: edges to external modules the corpus does not carry; unresolved by design, and no claim mechanism in this instrument truthfully describes them. The +851 stays +851 and the column does not move."
+   "_residual": "imports 839 = resolved 0 / amb(decl) 0 / unresolved 839, extOK 0, ext? 0, extFAIL 0 \u2014 839 UNRESOLVED edges with NO claim attached (the c lane reads the same shape). ** RULED BY THE LEAD 2026-10-14: UNRESOLVED IS THE INTENDED END STATE for these edges and no claim attaches.** The two cited reasons: (1) the declared-cause mechanism does not fit \u2014 incoming-rule.ts:243-254 makes `baseBeyondRunScope` property 3 REQUIRE that the reason be checked against its own target, with `base` an identifier that IS the target's owner, and `#import <Foundation/Foundation.h>` has NO identifier owner, so a cause claim cannot be honestly written for it; (2) an external claim is worse \u2014 `verifyExternalClaim` on a bare target is the \u00a75l laundering vector, the exact thing the toml lane measured and refused. So the record is a SENTENCE, not a claim: edges to external modules the corpus does not carry; unresolved by design, and no claim mechanism in this instrument truthfully describes them. The 839 stays 839. THE part_of ROW BESIDE THEM IS THE INCLUSION FACT: 717 edges, buckets 212 resolved / 78 amb(decl) / 427 unresolved (gate TABLE 1), each bucket cause-ruled in validation/m14/instruments/objc/incoming-declaration.json.",
+   "part_of": {
+    "edges": 717,
+    "files": 238
+   }
   }
  },
-  "handled_verified": {
-    "types": [
-      "assignment_expression",
-      "binary_expression",
-      "block_literal",
-      "call_expression",
-      "case_statement",
-      "class_implementation",
-      "class_interface",
-      "conditional_expression",
-      "declaration",
-      "do_statement",
-      "field_expression",
-      "field_identifier",
-      "for_statement",
-      "function_declarator",
-      "function_definition",
-      "identifier",
-      "if_statement",
-      "init_declarator",
-      "instance_variable",
-      "message_expression",
-      "method_declaration",
-      "method_definition",
-      "parameterized_arguments",
-      "preproc_include",
-      "property_declaration",
-      "protocol_declaration",
-      "protocol_reference_list",
-      "string_content",
-      "string_literal",
-      "struct_declaration",
-      "struct_declarator",
-      "system_lib_string",
-      "type_identifier",
-      "type_name",
-      "while_statement",
-      "struct_specifier",
-      "union_specifier",
-      "enum_specifier",
-      "enumerator",
-      "enumerator_list",
-      "field_declaration",
-      "field_declaration_list",
-      "type_definition",
-      "macro_enum_arguments"
-    ],
-    "_notes": {
-      "macro_enum_arguments": "CONSULTED and WITNESSED 2026-10-12: the analyzer reads it to take the LAST identifier of `NS_ENUM(underlying, Name)` as the enum's name (src/ast/real-objective-c-analyzer.ts:571 — the same read the lane's doc records as NS_OPTIONS naming), and `macro-wrapped-enum-and-guarded.m` is a committed fixture whose parse tree contains the node."
-    }
-  },
-  "internal_silent": {
-    "types": [
-      "abstract_array_declarator",
-      "abstract_block_pointer_declarator",
-      "abstract_function_declarator",
-      "abstract_parenthesized_declarator",
-      "abstract_pointer_declarator",
-      "alignas_specifier",
-      "alignof_expression",
-      "argument_list",
-      "array_declarator",
-      "array_literal",
-      "array_type_specifier",
-      "at_expression",
-      "atdef_field",
-      "atomic_declaration",
-      "attribute",
-      "attribute_declaration",
-      "attribute_specifier",
-      "attributed_declarator",
-      "attributed_statement",
-      "availability",
-      "availability_attribute_specifier",
-      "available_expression",
-      "bitfield_clause",
-      "block_pointer_declarator",
-      "break_statement",
-      "cast_expression",
-      "catch_clause",
-      "char_literal",
-      "character",
-      "class_declaration",
-      "comma_expression",
-      "comment",
-      "compatibility_alias_declaration",
-      "compound_literal_expression",
-      "compound_statement",
-      "concatenated_string",
-      "continue_statement",
-      "declaration_list",
-      "dictionary_literal",
-      "dictionary_pair",
-      "else_clause",
-      "encode_expression",
-      "escape_sequence",
-      "expression_statement",
-      "false",
-      "field_designator",
-      "finally_clause",
-      "generic_arguments",
-      "generic_expression",
-      "generic_specifier",
-      "gnu_asm_clobber_list",
-      "gnu_asm_expression",
-      "gnu_asm_goto_list",
-      "gnu_asm_input_operand",
-      "gnu_asm_input_operand_list",
-      "gnu_asm_output_operand",
-      "gnu_asm_output_operand_list",
-      "gnu_asm_qualifier",
-      "goto_statement",
-      "implementation_definition",
-      "initializer_list",
-      "initializer_pair",
-      "instance_variables",
-      "keyword_declarator",
-      "labeled_statement",
-      "linkage_specification",
-      "macro_prefixed_objc_declaration",
-      "macro_specifier",
-      "macro_type_specifier",
-      "method_identifier",
-      "method_parameter",
-      "method_type",
-      "module_import",
-      "ms_asm_block",
-      "ms_based_modifier",
-      "ms_call_modifier",
-      "ms_declspec_modifier",
-      "ms_pointer_modifier",
-      "ms_restrict_modifier",
-      "ms_signed_ptr_modifier",
-      "ms_unaligned_ptr_modifier",
-      "ms_unsigned_ptr_modifier",
-      "null",
-      "number_literal",
-      "objc_bridge",
-      "offsetof_expression",
-      "parameter_declaration",
-      "parameter_list",
-      "parenthesized_declarator",
-      "parenthesized_expression",
-      "platform",
-      "pointer_declarator",
-      "pointer_expression",
-      "preproc_arg",
-      "preproc_call",
-      "preproc_def",
-      "preproc_defined",
-      "preproc_directive",
-      "preproc_elif",
-      "preproc_elifdef",
-      "preproc_else",
-      "preproc_function_def",
-      "preproc_if",
-      "preproc_ifdef",
-      "preproc_linemarker",
-      "preproc_params",
-      "preproc_undef",
-      "primitive_type",
-      "property_attribute",
-      "property_attributes_declaration",
-      "property_implementation",
-      "protocol_forward_declaration",
-      "protocol_qualifier",
-      "qualified_protocol_interface_declaration",
-      "range_expression",
-      "return_statement",
-      "selector_expression",
-      "sized_type_specifier",
-      "sizeof_expression",
-      "statement_identifier",
-      "storage_class_specifier",
-      "subscript_designator",
-      "subscript_expression",
-      "switch_statement",
-      "synchronized_statement",
-      "throw_statement",
-      "translation_unit",
-      "true",
-      "try_statement",
-      "type_descriptor",
-      "type_qualifier",
-      "typedefed_specifier",
-      "typeof_specifier",
-      "unary_expression",
-      "update_expression",
-      "va_arg_expression",
-      "variadic_parameter",
-      "version",
-      "version_number",
-      "visibility_specification",
-      "ERROR",
-      "MISSING",
-      "alignas_qualifier",
-      "extension_expression",
-      "subscript_range_designator",
-      "availability_macro_specifier"
-    ],
-    "_removed": {
-      "alignas_specifier": "REMOVED 2026-10-12: the pinned objc grammar (wasm/tree-sitter-objc.wasm) no longer declares this spelling (renamed), AND the analyzer never read it — 0 hits for `alignas` in src/ast/real-objective-c-analyzer.ts, and no fixture's parse tree contains the node. The row was a claim carried from an older grammar revision, so keeping it would be the one thing this gate must not do: report a row as grammar drift that nothing ever consulted. objc's current spellings of this family are classified above."
-    },
-    "_notes": {
-      "availability_macro_specifier": "produced by the pinned objc grammar and WITNESSED (validation/m14/fixtures/objc/macro-wrapped-enum-and-guarded.m contains one), but the analyzer consults it 0 times: a `handled_verified` row would be a claim the code does not back. Silent, with the witness recorded here so the next reader can close it by making the analyzer read it rather than by writing a new fixture.",
-      "subscript_range_designator": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission — measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
-      "extension_expression": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission — measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
-      "alignas_qualifier": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission — measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
-      "ERROR": "produced by every tree-sitter parser and not a construct; this lane's analyzer does not consult ERROR anywhere (measured src/ast/real-objective-c-analyzer.ts: no `type === \"ERROR\"` / `isError` read), so the row is silent by contract rather than handled. Silent here means the analyzer never looks, which is auditable.",
-      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-objective-c-analyzer.ts:41, :172, :241); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
-    }
-  },
-  "gap": {
-    "gaps": [
-      {
-        "node_type": "preproc_def, preproc_ifdef, preproc_if, preproc_else, preproc_elif, preproc_endif, preproc_call, preproc_function_def, preproc_parameter, preproc_arg",
-        "missing": "preprocessor conditional branches (ifdef/if/else) are not tracked as decision points or symbols; only preproc_include is consumed (imports)",
-        "issue": "objc wave (#267 family)"
-      },
-      {
-        "node_type": "block_expression, block_declarator, block_parameter, block_type, capture_specifier, capture, variable_declaration, function_declarator",
-        "missing": "block-literal inner declarations are anonymous (generated names, no symbols); captured variables are not emitted as distinct symbols",
-        "issue": "objc wave (#267 family)"
-      },
-      {
-        "node_type": "objective_c_expression, objective_c_statement, superclass_reference, protocol_qualifiers, protocol_list, category_interface, category_implementation, selector, property_identifier",
-        "missing": "obsolete/dead grammar-era names (pre-pinned-wasm aliases) — the pinned wasm has no such nodes; the analyzer never emits them. Documented to prevent future dead-literal regressions",
-        "issue": "objc wave (#267 family)"
-      }
-    ]
-  },
-  "design_decision": {
-    "decisions": [
-      {
-        "id": "OBJCD1",
-        "node_type": "class_interface, class_implementation",
-        "status": "RULED",
-        "question": "The pinned grammar parses BOTH plain classes and categories as class_interface/class_implementation — the category is distinguished by an anonymous `(` token after the class name.",
-        "resolution": "The analyzer scans the non-named children for the `(` token (pure AST, never source-text scanning). A category emits an Extension symbol (categoryName recorded) and NO inheritance edges; its methods are owned by the EXTENDED class. A plain class emits extends (the ONE superclass after the colon — never a protocol) + implements (protocols under parameterized_arguments). @interface + @implementation of the same class merge into one symbol (dedup key kind:owner:name without start line)."
-      },
-      {
-        "id": "OBJCD2",
-        "node_type": "message_expression",
-        "status": "RULED",
-        "question": "ObjC message sends `[receiver selector:arg]` — which node is the callee, and when is it an instantiation?",
-        "resolution": "The selector is the FIRST identifier AFTER the receiver (never the receiver itself), so `[NSString stringWithFormat:]` calls stringWithFormat, not NSString. When the selector is alloc or new, the RECEIVER is the instantiated class ([[Foo alloc] init] resolves the receiver leaf through the nested inner message) — instantiates, not calls. Method-body scope only (the analyzer guards activeScope !== global, so file-scope messages are not emitted)."
-      },
-      {
-        "id": "OBJCD3",
-        "node_type": "block_literal",
-        "status": "RULED",
-        "question": "Blocks `^{ ... }` are anonymous — should they produce symbols?",
-        "resolution": "No symbol (generated names are execution artifacts, same as C function pointers and closure literals elsewhere in the family). Their BODY message/calls ARE still captured (a block calling setHidden inside a method emits calls from the enclosing method scope)."
-      },
-      {
-        "id": "OBJCD4",
-        "node_type": "field_expression",
-        "status": "RULED",
-        "question": "ObjC dot-syntax property access (`self.next`, `w.next`, `self.origin.x`) parses as field_expression with a field_identifier — should these produce uses edges?",
-        "resolution": "Yes for READS (managed-OO family contract — dart/swift/csharp emit uses for member reads): a field_expression inside a method body emits uses -> the field name with isFieldRead metadata. The LHS of an assignment_expression is a WRITE, never a read, so it is excluded (pure AST: the walk carries the parent type — never source-text scanning). This mirrors the C analyzer's field_access handling while honoring the family's read-vs-write distinction."
-      },
-      {
-        "id": "OBJCD5",
-        "status": "FIXED",
-        "question": "Pointer/object-return C helper functions (`static NSArray * fn(...)`) were silently dropped: the defining declarator parses NESTED (function_definition > pointer_declarator > function_declarator; generic-return helpers add a generic_specifier sibling), but the name lookup only checked DIRECT function_declarator/identifier children. Worse than a missing symbol: because the function was never symbolized, activeScope stayed 'global' and the function's ENTIRE body (calls/uses/instantiates) was suppressed. First seen on real corpora (afnetworking 49 .m + sdwebimage 104 .m — Clyde's 4 files never exercised it): 46 of 110 C helpers affected; 180 differential-missing edges (60 + 120), both corpora at only ~97% coverage.",
-        "resolution": "The defining name is now the FIRST function_declarator in document order that is not inside the compound_statement (parameters nest any function-pointer declarators strictly after the head), then its first identifier child. The oracle already derived these edges (its inBody model does not depend on name resolution), so only the analyzer changed. Both corpora restored to 100% coverage / 0 missing / 0 unexplained. Gated by fixture objc/pointer-return-helpers (expectSymbols HelperObjects/MakeImage + their body calls) + mutant objc/drop-pointer-return-function-bodies.",
-        "issue": "M37.15 objc dual-lens pass (#608)"
-      },
-      {
-        "id": "OBJCD6",
-        "status": "FIXED",
-        "question": "Macro-invocation-as-declaration inside an @implementation ivar block (`@implementation Foo { SD_LOCK_DECLARE(_lock); }` — expands to `os_unfair_lock _lock;`) parses as a call_expression at class scope. The scope-only gate (activeScope !== 'global') treated the ivar area as callable because the class name is on the scope stack, fabricating `calls Foo -> SD_LOCK_DECLARE`. Found as the sole unexplained edge in the sdwebimage differential.",
-        "resolution": "The walk now carries an isInBody flag set only by real execution containers (method_definition/method_declaration/function_definition/block_literal). message_expression, call_expression, and field_expression edges require isInBody AND a non-global scope. Class ivar braces and @interface declaration areas are declaration contexts, never call sites. Gated by fixture objc/pointer-return-helpers (forbid calls Widget->LOCK_DECLARE) + mutant objc/emit-ivar-block-macro-calls.",
-        "issue": "M37.15 objc dual-lens pass (#608)"
-      },
-      {
-        "id": "OBJCD7",
-        "status": "FIXED",
-        "question": "ObjC method identity was the FIRST KEYWORD (leaf) of the selector. ObjC selectors are multi-keyword (`initWithNamespace:diskCacheDirectory:config:`); the full selector IS the method's name (runtime, clangd, Xcode). Leaf naming collapsed distinct methods sharing a first keyword into one symbol (last-wins range) and made message-send call targets unresolvable leaves. Corpus measure (sdwebimage + afnetworking, 1957 methods): 225 colliding method occurrences across 35 owners; SDImageCache alone lost 14 of 59 selectors (three initWithNamespace* overloads merged into one). This was analyzer-vs-oracle circular consistency: the wave-1 census called first-segment naming 'verified consistent' because BOTH sides used it — the family convention (csharp/dart/swift emit one row per declaration, never losing a distinct method) was never consulted.",
-        "resolution": "Method symbol identity is now the FULL selector (keyword: + remaining identifier: parts joined, trailing colon only when the final part takes no argument). Message-expression call targets use the same full-selector extraction with alloc/new detection on the first keyword (`[Foo alloc] initWith...:` = alloc+message, not a call to an 'alloc' selector; `[Foo new]` and `[Foo new:...]` = instantiates). Multi-segment selectors with a bare-last part (`imageFromCacheForKey:options:`) keep the trailing colon on all parts. Extraction was validated on all 1957 corpus methods (0 issues). Message call targets are also resolved through nested receivers. The oracle mirror emits identical full-selector message targets.",
-        "evidence": "selector-identity fixture pins expectSymbolCount=1 for each of the three initWithNamespace* overloads and setValue:/setValue:forKey: distinctness; forbidSymbols forbid the leaf names; calls pins target the full selectors. Corpus differentials: sdwebimage + afnetworking both 100% covered / 0 missing / 0 unexplained at full corpus. Regression mutant objc/collapse-selector-leaf-naming dies (3 fixture failures)."
-      },
-      {
-        "id": "OBJCD8",
-        "status": "FIXED",
-        "question": "ObjC was the ONLY inheritance-based language in the family with ZERO override machinery — no overrides edge was ever emitted (the analyzer's evidence tier had a dead `overrides -> structural` branch), yet `overrides` was in the differential's compared set for objc. ObjC overriding is implicit (selector reuse in a subclass), like ruby/php/python — NOT keyword-declared like swift. Every sibling OO language (java, csharp, dart, swift, cpp, groovy, kotlin, scala, ruby, php, python) has override resolution; objc had none.",
-        "resolution": "Implemented the M37.10 implicit-override family model: a subclass method whose IN-FILE superclass declares the SAME FULL SELECTOR is a VERIFIED override @0.95 (evidenceClass structural). When the first parent is an EXTERNAL base (not declared in this file), methods guess-override toward that base @0.5 (evidenceClass inferred, reasonCode first-parent-guess), excluding the universal roots NSObject/NSProxy (mirroring ruby's implicit Object exclusion — no per-method noise toward the root). The dead `overrides -> structural` evidence branch is now confidence-aware (0.95 -> structural, 0.5 -> inferred). The oracle mirror emits the same verified in-file overrides. sdwebimage gains 287 guess edges at full corpus (family precedent: rake 0->382, phpunit 0->94, cython 0->433); the F5 baseline row for objc was re-pinned with rationale.",
-        "evidence": "selector-identity fixture pins the verified in-file override EvictingCache.overrideable -> StoreCache.overrideable @0.95 (structural) plus the external-base guess StoreCacheTests.* -> SDTestCase.* @0.5 (inferred, first-parent-guess) and the root exclusion (StoreCache : NSObject emits no per-method guesses). Regression mutant objc/drop-override-machinery dies (2 fixture failures)."
-      },
-      {
-        "id": "OC-B",
-        "node_type": "class_interface (category) exports",
-        "status": "FIXED",
-        "question": "First OO review: a top-level category (`@interface NSString (Trim)`) carries no owner, so the exports pass emitted the extended class name as a top-level public export — claiming NSString is defined here.",
-        "resolution": "Categories are not top-level resolvable units (swift precedent: extension symbols exist but never export). The exports pass now skips Extension symbols. Gated by fixture objc/bare-value-reads forbidExports NSString + mutant objc/export-category-extension.",
-        "issue": "M49.OC1 objc first review"
-      },
-      {
-        "id": "OC-D",
-        "node_type": "struct_specifier, enum_specifier, type_definition",
-        "status": "FIXED",
-        "question": "First OO review: identical C code lost its entire type inventory in a .m file — typedefs, structs (+fields), enums (+members) had no symbols while the C analyzer symbolizes all of them (holy-c waves). The pinned objc wasm shares the C node shapes exactly.",
-        "resolution": "Ported C's symbol shapes (Struct + Property fields owned by the struct, Enum + EnumMember owned by the enum, Type for aliases, anonymous aggregates named by their typedef; definition-only so `struct Node *p` references stay silent). Type-USE references deliberately NOT ported: every ObjC signature mentions Foundation types, so C-style type-use references would be systematic noise. Gated by fixture objc/bare-value-reads Point/Color/Counter/Size pins + mutant objc/drop-c-type-inventory.",
-        "issue": "M49.OC1 objc first review"
-      },
-      {
-        "id": "OC-E",
-        "node_type": "identifier (bare value reads)",
-        "status": "FIXED",
-        "question": "First OO review: bare-identifier VALUE reads were invisible on both sides (receivers like [store ...], RHS, call args, returns, locals) — circular consistency hiding the managed-OO family contract (csharp CS-R1, dart, swift all emit member/value reads). Lanes could not see it; only the hostile battery could.",
-        "resolution": "Scope-bound inventory with the identical rule on both sides: per-definition value frames (params incl. block params, body locals incl. bare declarators, for-in variables) + block chain + same-file class ivar/property pre-scan + file globals (incl. pointer declarators and multi-declarators). Reads emit uses@0.9 (isBareRead); keywords, zero-arg selectors, declaration names, call callees (CGD17 parity), assignment-LHS writes (C span-match parity), for-in variables, @synthesize/@selector names, and self/super/nil/YES/NO/_cmd never read. Unbound names (types, macros, enum cases) stay silent. Cross-file ivars (headers) stay silent by translation-unit design. Same-key uses merges union the read-kind flags so field-read pins survive. Gated by fixture objc/bare-value-reads (21 expects, 4 forbids) + 4 mutants (drop + write/callee/selector fabrication).",
-        "issue": "M49.OC1 objc first review"
-      },
-      {
-        "id": "OC-R1",
-        "node_type": "update_expression operands",
-        "status": "RULED",
-        "question": "First OO review: `self.count++` emits uses->count on both sides — is an update operand a write (GOD4 gates Go inc/dec) or a read?",
-        "resolution": "READ (C parity, probe-verified: the C analyzer emits uses for `s->count++` and gates only assignment LHS). The GOD4 inc/dec gating was Go-selector-specific; ObjC follows its C-superset semantics. Pinned by fixture objc/bare-value-reads uses[tick->count].",
-        "issue": "M49.OC1 objc first review"
-      },
-      {
-        "id": "OC-R2",
-        "node_type": "property_implementation, selector_expression",
-        "status": "RULED",
-        "question": "First OO review: @synthesize names and @selector names — reads, references, or silent?",
-        "resolution": "SILENT (both sides): @synthesize wires storage without reading; @selector names a method without invoking it (unlike C# nameof-as-call, a SEL value is closer to a method pointer and no family member emits calls for it). @selector is load-bearing-silent (forbid uses[maker->fire] with a bound local of the same spelling); @synthesize is defensive-silent (class-scope, unobservable by edges) gated by forbid uses[Holder->_label] (class scope never sources reads) + mutant objc/emit-synthesize-as-bare-read.",
-        "issue": "M49.OC1 objc first review"
-      },
-      {
-        "id": "OC-F",
-        "node_type": "enumerator identifiers in value positions",
-        "status": "FIXED",
-        "question": "Second review: `case Red:`, `x == Alpha`, `return Beta` invisible on both sides — enum cases (OC-D symbols!) never entered the value inventory, though case labels and comparisons genuinely reference them.",
-        "resolution": "Same-file enum cases resolve last in the inventory (locals/params/ivars/globals shadow first). NS_ENUM/NS_OPTIONS need macro expansion AND live in headers — silent by unit design on both sides (verified: the macro error-recovers, cases unparseable). Gated by fixture objc/second-review + mutant objc/drop-enum-case-reads.",
-        "issue": "M49.OC2 objc second review"
-      },
-      {
-        "id": "OC-G",
-        "node_type": "call_expression under at_expression",
-        "status": "FIXED",
-        "question": "Second review: `@protocol(P)` emitted calls->protocol (dangling — nothing named protocol is invocable) while `@encode` stayed silent by shape and `@selector` by ruling (OC-R2). Directives named inconsistently.",
-        "resolution": "Calls with callee `protocol` directly under at_expression are skipped on both sides (message sends named protocol stay calls — real methods). Gated by fixture forbid + mutant objc/emit-protocol-directive-call.",
-        "issue": "M49.OC2 objc second review"
-      },
-      {
-        "id": "OC-H",
-        "node_type": "function_definition names as values",
-        "status": "FIXED",
-        "question": "Second review: `cb = helper` decay and bare function references silent — file-scope functions symbolized but never bound, though bare `helper` can never invoke a method (receivers required), so global attribution is exact.",
-        "resolution": "Defined function names join globals on both sides (locals shadow first; call-callee and declarator positions still skipped). Gated by fixture (uses without disturbing calls) + mutant objc/drop-function-decay-reads.",
-        "issue": "M49.OC2 objc second review"
-      },
-      {
-        "id": "OC-R3",
-        "node_type": "compound assignment, address-of, use-before-declaration",
-        "status": "RULED",
-        "question": "Second review: `x *= 2`/`+=` (folded into assignment_expression) gated as writes — but RMW reads the value! `&buf` reads without reading the value. `use-before-decl` locals invisible.",
-        "resolution": "Compound-assign LHS are writes (C SCD1 parity: `c->count += 1` gated there too; update_expression `++` stays the read form per OC-R1). Address-of emits on both sides (a reference, documented as read). Use-before-declaration in one scope is invalid C — silence on broken code is correct.",
-        "issue": "M49.OC2 objc second review"
-      }
-    ]
-  },
-  "label_coverage": {
-    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
-    "declared_gaps": [],
-    "declared_no_truth": [
-      {
-        "label": "overrides",
-        "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane — but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
-        "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
-      }
-    ]
+ "handled_verified": {
+  "types": [
+   "assignment_expression",
+   "binary_expression",
+   "block_literal",
+   "call_expression",
+   "case_statement",
+   "class_implementation",
+   "class_interface",
+   "conditional_expression",
+   "declaration",
+   "do_statement",
+   "field_expression",
+   "field_identifier",
+   "for_statement",
+   "function_declarator",
+   "function_definition",
+   "identifier",
+   "if_statement",
+   "init_declarator",
+   "instance_variable",
+   "message_expression",
+   "method_declaration",
+   "method_definition",
+   "parameterized_arguments",
+   "preproc_include",
+   "property_declaration",
+   "protocol_declaration",
+   "protocol_reference_list",
+   "string_content",
+   "string_literal",
+   "struct_declaration",
+   "struct_declarator",
+   "system_lib_string",
+   "type_identifier",
+   "type_name",
+   "while_statement",
+   "struct_specifier",
+   "union_specifier",
+   "enum_specifier",
+   "enumerator",
+   "enumerator_list",
+   "field_declaration",
+   "field_declaration_list",
+   "type_definition",
+   "macro_enum_arguments"
+  ],
+  "_notes": {
+   "macro_enum_arguments": "CONSULTED and WITNESSED 2026-10-12: the analyzer reads it to take the LAST identifier of `NS_ENUM(underlying, Name)` as the enum's name (src/ast/real-objective-c-analyzer.ts:571 \u2014 the same read the lane's doc records as NS_OPTIONS naming), and `macro-wrapped-enum-and-guarded.m` is a committed fixture whose parse tree contains the node."
   }
+ },
+ "internal_silent": {
+  "types": [
+   "abstract_array_declarator",
+   "abstract_block_pointer_declarator",
+   "abstract_function_declarator",
+   "abstract_parenthesized_declarator",
+   "abstract_pointer_declarator",
+   "alignas_specifier",
+   "alignof_expression",
+   "argument_list",
+   "array_declarator",
+   "array_literal",
+   "array_type_specifier",
+   "at_expression",
+   "atdef_field",
+   "atomic_declaration",
+   "attribute",
+   "attribute_declaration",
+   "attribute_specifier",
+   "attributed_declarator",
+   "attributed_statement",
+   "availability",
+   "availability_attribute_specifier",
+   "available_expression",
+   "bitfield_clause",
+   "block_pointer_declarator",
+   "break_statement",
+   "cast_expression",
+   "catch_clause",
+   "char_literal",
+   "character",
+   "class_declaration",
+   "comma_expression",
+   "comment",
+   "compatibility_alias_declaration",
+   "compound_literal_expression",
+   "compound_statement",
+   "concatenated_string",
+   "continue_statement",
+   "declaration_list",
+   "dictionary_literal",
+   "dictionary_pair",
+   "else_clause",
+   "encode_expression",
+   "escape_sequence",
+   "expression_statement",
+   "false",
+   "field_designator",
+   "finally_clause",
+   "generic_arguments",
+   "generic_expression",
+   "generic_specifier",
+   "gnu_asm_clobber_list",
+   "gnu_asm_expression",
+   "gnu_asm_goto_list",
+   "gnu_asm_input_operand",
+   "gnu_asm_input_operand_list",
+   "gnu_asm_output_operand",
+   "gnu_asm_output_operand_list",
+   "gnu_asm_qualifier",
+   "goto_statement",
+   "implementation_definition",
+   "initializer_list",
+   "initializer_pair",
+   "instance_variables",
+   "keyword_declarator",
+   "labeled_statement",
+   "linkage_specification",
+   "macro_prefixed_objc_declaration",
+   "macro_specifier",
+   "macro_type_specifier",
+   "method_identifier",
+   "method_parameter",
+   "method_type",
+   "module_import",
+   "ms_asm_block",
+   "ms_based_modifier",
+   "ms_call_modifier",
+   "ms_declspec_modifier",
+   "ms_pointer_modifier",
+   "ms_restrict_modifier",
+   "ms_signed_ptr_modifier",
+   "ms_unaligned_ptr_modifier",
+   "ms_unsigned_ptr_modifier",
+   "null",
+   "number_literal",
+   "objc_bridge",
+   "offsetof_expression",
+   "parameter_declaration",
+   "parameter_list",
+   "parenthesized_declarator",
+   "parenthesized_expression",
+   "platform",
+   "pointer_declarator",
+   "pointer_expression",
+   "preproc_arg",
+   "preproc_call",
+   "preproc_def",
+   "preproc_defined",
+   "preproc_directive",
+   "preproc_elif",
+   "preproc_elifdef",
+   "preproc_else",
+   "preproc_function_def",
+   "preproc_if",
+   "preproc_ifdef",
+   "preproc_linemarker",
+   "preproc_params",
+   "preproc_undef",
+   "primitive_type",
+   "property_attribute",
+   "property_attributes_declaration",
+   "property_implementation",
+   "protocol_forward_declaration",
+   "protocol_qualifier",
+   "qualified_protocol_interface_declaration",
+   "range_expression",
+   "return_statement",
+   "selector_expression",
+   "sized_type_specifier",
+   "sizeof_expression",
+   "statement_identifier",
+   "storage_class_specifier",
+   "subscript_designator",
+   "subscript_expression",
+   "switch_statement",
+   "synchronized_statement",
+   "throw_statement",
+   "translation_unit",
+   "true",
+   "try_statement",
+   "type_descriptor",
+   "type_qualifier",
+   "typedefed_specifier",
+   "typeof_specifier",
+   "unary_expression",
+   "update_expression",
+   "va_arg_expression",
+   "variadic_parameter",
+   "version",
+   "version_number",
+   "visibility_specification",
+   "ERROR",
+   "MISSING",
+   "alignas_qualifier",
+   "extension_expression",
+   "subscript_range_designator",
+   "availability_macro_specifier"
+  ],
+  "_removed": {
+   "alignas_specifier": "REMOVED 2026-10-12: the pinned objc grammar (wasm/tree-sitter-objc.wasm) no longer declares this spelling (renamed), AND the analyzer never read it \u2014 0 hits for `alignas` in src/ast/real-objective-c-analyzer.ts, and no fixture's parse tree contains the node. The row was a claim carried from an older grammar revision, so keeping it would be the one thing this gate must not do: report a row as grammar drift that nothing ever consulted. objc's current spellings of this family are classified above."
+  },
+  "_notes": {
+   "availability_macro_specifier": "produced by the pinned objc grammar and WITNESSED (validation/m14/fixtures/objc/macro-wrapped-enum-and-guarded.m contains one), but the analyzer consults it 0 times: a `handled_verified` row would be a claim the code does not back. Silent, with the witness recorded here so the next reader can close it by making the analyzer read it rather than by writing a new fixture.",
+   "subscript_range_designator": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission \u2014 measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
+   "extension_expression": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission \u2014 measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
+   "alignas_qualifier": "produced by the pinned objc grammar and not a construct this analyzer models: the row is silent BY CONTRACT, not by omission \u2014 measured 2026-10-12, `src/ast/real-objective-c-analyzer.ts` reads this spelling 0 times.",
+   "ERROR": "produced by every tree-sitter parser and not a construct; this lane's analyzer does not consult ERROR anywhere (measured src/ast/real-objective-c-analyzer.ts: no `type === \"ERROR\"` / `isError` read), so the row is silent by contract rather than handled. Silent here means the analyzer never looks, which is auditable.",
+   "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain \u2014 a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-objective-c-analyzer.ts:41, :172, :241); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+  }
+ },
+ "gap": {
+  "gaps": [
+   {
+    "node_type": "preproc_def, preproc_ifdef, preproc_if, preproc_else, preproc_elif, preproc_endif, preproc_call, preproc_function_def, preproc_parameter, preproc_arg",
+    "missing": "preprocessor conditional branches (ifdef/if/else) are not tracked as decision points or symbols; only preproc_include is consumed (imports)",
+    "issue": "objc wave (#267 family)"
+   },
+   {
+    "node_type": "block_expression, block_declarator, block_parameter, block_type, capture_specifier, capture, variable_declaration, function_declarator",
+    "missing": "block-literal inner declarations are anonymous (generated names, no symbols); captured variables are not emitted as distinct symbols",
+    "issue": "objc wave (#267 family)"
+   },
+   {
+    "node_type": "objective_c_expression, objective_c_statement, superclass_reference, protocol_qualifiers, protocol_list, category_interface, category_implementation, selector, property_identifier",
+    "missing": "obsolete/dead grammar-era names (pre-pinned-wasm aliases) \u2014 the pinned wasm has no such nodes; the analyzer never emits them. Documented to prevent future dead-literal regressions",
+    "issue": "objc wave (#267 family)"
+   }
+  ]
+ },
+ "design_decision": {
+  "decisions": [
+   {
+    "id": "OBJCD1",
+    "node_type": "class_interface, class_implementation",
+    "status": "RULED",
+    "question": "The pinned grammar parses BOTH plain classes and categories as class_interface/class_implementation \u2014 the category is distinguished by an anonymous `(` token after the class name.",
+    "resolution": "The analyzer scans the non-named children for the `(` token (pure AST, never source-text scanning). A category emits an Extension symbol (categoryName recorded) and NO inheritance edges; its methods are owned by the EXTENDED class. A plain class emits extends (the ONE superclass after the colon \u2014 never a protocol) + implements (protocols under parameterized_arguments). @interface + @implementation of the same class merge into one symbol (dedup key kind:owner:name without start line)."
+   },
+   {
+    "id": "OBJCD2",
+    "node_type": "message_expression",
+    "status": "RULED",
+    "question": "ObjC message sends `[receiver selector:arg]` \u2014 which node is the callee, and when is it an instantiation?",
+    "resolution": "The selector is the FIRST identifier AFTER the receiver (never the receiver itself), so `[NSString stringWithFormat:]` calls stringWithFormat, not NSString. When the selector is alloc or new, the RECEIVER is the instantiated class ([[Foo alloc] init] resolves the receiver leaf through the nested inner message) \u2014 instantiates, not calls. Method-body scope only (the analyzer guards activeScope !== global, so file-scope messages are not emitted)."
+   },
+   {
+    "id": "OBJCD3",
+    "node_type": "block_literal",
+    "status": "RULED",
+    "question": "Blocks `^{ ... }` are anonymous \u2014 should they produce symbols?",
+    "resolution": "No symbol (generated names are execution artifacts, same as C function pointers and closure literals elsewhere in the family). Their BODY message/calls ARE still captured (a block calling setHidden inside a method emits calls from the enclosing method scope)."
+   },
+   {
+    "id": "OBJCD4",
+    "node_type": "field_expression",
+    "status": "RULED",
+    "question": "ObjC dot-syntax property access (`self.next`, `w.next`, `self.origin.x`) parses as field_expression with a field_identifier \u2014 should these produce uses edges?",
+    "resolution": "Yes for READS (managed-OO family contract \u2014 dart/swift/csharp emit uses for member reads): a field_expression inside a method body emits uses -> the field name with isFieldRead metadata. The LHS of an assignment_expression is a WRITE, never a read, so it is excluded (pure AST: the walk carries the parent type \u2014 never source-text scanning). This mirrors the C analyzer's field_access handling while honoring the family's read-vs-write distinction."
+   },
+   {
+    "id": "OBJCD5",
+    "status": "FIXED",
+    "question": "Pointer/object-return C helper functions (`static NSArray * fn(...)`) were silently dropped: the defining declarator parses NESTED (function_definition > pointer_declarator > function_declarator; generic-return helpers add a generic_specifier sibling), but the name lookup only checked DIRECT function_declarator/identifier children. Worse than a missing symbol: because the function was never symbolized, activeScope stayed 'global' and the function's ENTIRE body (calls/uses/instantiates) was suppressed. First seen on real corpora (afnetworking 49 .m + sdwebimage 104 .m \u2014 Clyde's 4 files never exercised it): 46 of 110 C helpers affected; 180 differential-missing edges (60 + 120), both corpora at only ~97% coverage.",
+    "resolution": "The defining name is now the FIRST function_declarator in document order that is not inside the compound_statement (parameters nest any function-pointer declarators strictly after the head), then its first identifier child. The oracle already derived these edges (its inBody model does not depend on name resolution), so only the analyzer changed. Both corpora restored to 100% coverage / 0 missing / 0 unexplained. Gated by fixture objc/pointer-return-helpers (expectSymbols HelperObjects/MakeImage + their body calls) + mutant objc/drop-pointer-return-function-bodies.",
+    "issue": "M37.15 objc dual-lens pass (#608)"
+   },
+   {
+    "id": "OBJCD6",
+    "status": "FIXED",
+    "question": "Macro-invocation-as-declaration inside an @implementation ivar block (`@implementation Foo { SD_LOCK_DECLARE(_lock); }` \u2014 expands to `os_unfair_lock _lock;`) parses as a call_expression at class scope. The scope-only gate (activeScope !== 'global') treated the ivar area as callable because the class name is on the scope stack, fabricating `calls Foo -> SD_LOCK_DECLARE`. Found as the sole unexplained edge in the sdwebimage differential.",
+    "resolution": "The walk now carries an isInBody flag set only by real execution containers (method_definition/method_declaration/function_definition/block_literal). message_expression, call_expression, and field_expression edges require isInBody AND a non-global scope. Class ivar braces and @interface declaration areas are declaration contexts, never call sites. Gated by fixture objc/pointer-return-helpers (forbid calls Widget->LOCK_DECLARE) + mutant objc/emit-ivar-block-macro-calls.",
+    "issue": "M37.15 objc dual-lens pass (#608)"
+   },
+   {
+    "id": "OBJCD7",
+    "status": "FIXED",
+    "question": "ObjC method identity was the FIRST KEYWORD (leaf) of the selector. ObjC selectors are multi-keyword (`initWithNamespace:diskCacheDirectory:config:`); the full selector IS the method's name (runtime, clangd, Xcode). Leaf naming collapsed distinct methods sharing a first keyword into one symbol (last-wins range) and made message-send call targets unresolvable leaves. Corpus measure (sdwebimage + afnetworking, 1957 methods): 225 colliding method occurrences across 35 owners; SDImageCache alone lost 14 of 59 selectors (three initWithNamespace* overloads merged into one). This was analyzer-vs-oracle circular consistency: the wave-1 census called first-segment naming 'verified consistent' because BOTH sides used it \u2014 the family convention (csharp/dart/swift emit one row per declaration, never losing a distinct method) was never consulted.",
+    "resolution": "Method symbol identity is now the FULL selector (keyword: + remaining identifier: parts joined, trailing colon only when the final part takes no argument). Message-expression call targets use the same full-selector extraction with alloc/new detection on the first keyword (`[Foo alloc] initWith...:` = alloc+message, not a call to an 'alloc' selector; `[Foo new]` and `[Foo new:...]` = instantiates). Multi-segment selectors with a bare-last part (`imageFromCacheForKey:options:`) keep the trailing colon on all parts. Extraction was validated on all 1957 corpus methods (0 issues). Message call targets are also resolved through nested receivers. The oracle mirror emits identical full-selector message targets.",
+    "evidence": "selector-identity fixture pins expectSymbolCount=1 for each of the three initWithNamespace* overloads and setValue:/setValue:forKey: distinctness; forbidSymbols forbid the leaf names; calls pins target the full selectors. Corpus differentials: sdwebimage + afnetworking both 100% covered / 0 missing / 0 unexplained at full corpus. Regression mutant objc/collapse-selector-leaf-naming dies (3 fixture failures)."
+   },
+   {
+    "id": "OBJCD8",
+    "status": "FIXED",
+    "question": "ObjC was the ONLY inheritance-based language in the family with ZERO override machinery \u2014 no overrides edge was ever emitted (the analyzer's evidence tier had a dead `overrides -> structural` branch), yet `overrides` was in the differential's compared set for objc. ObjC overriding is implicit (selector reuse in a subclass), like ruby/php/python \u2014 NOT keyword-declared like swift. Every sibling OO language (java, csharp, dart, swift, cpp, groovy, kotlin, scala, ruby, php, python) has override resolution; objc had none.",
+    "resolution": "Implemented the M37.10 implicit-override family model: a subclass method whose IN-FILE superclass declares the SAME FULL SELECTOR is a VERIFIED override @0.95 (evidenceClass structural). When the first parent is an EXTERNAL base (not declared in this file), methods guess-override toward that base @0.5 (evidenceClass inferred, reasonCode first-parent-guess), excluding the universal roots NSObject/NSProxy (mirroring ruby's implicit Object exclusion \u2014 no per-method noise toward the root). The dead `overrides -> structural` evidence branch is now confidence-aware (0.95 -> structural, 0.5 -> inferred). The oracle mirror emits the same verified in-file overrides. sdwebimage gains 287 guess edges at full corpus (family precedent: rake 0->382, phpunit 0->94, cython 0->433); the F5 baseline row for objc was re-pinned with rationale.",
+    "evidence": "selector-identity fixture pins the verified in-file override EvictingCache.overrideable -> StoreCache.overrideable @0.95 (structural) plus the external-base guess StoreCacheTests.* -> SDTestCase.* @0.5 (inferred, first-parent-guess) and the root exclusion (StoreCache : NSObject emits no per-method guesses). Regression mutant objc/drop-override-machinery dies (2 fixture failures)."
+   },
+   {
+    "id": "OC-B",
+    "node_type": "class_interface (category) exports",
+    "status": "FIXED",
+    "question": "First OO review: a top-level category (`@interface NSString (Trim)`) carries no owner, so the exports pass emitted the extended class name as a top-level public export \u2014 claiming NSString is defined here.",
+    "resolution": "Categories are not top-level resolvable units (swift precedent: extension symbols exist but never export). The exports pass now skips Extension symbols. Gated by fixture objc/bare-value-reads forbidExports NSString + mutant objc/export-category-extension.",
+    "issue": "M49.OC1 objc first review"
+   },
+   {
+    "id": "OC-D",
+    "node_type": "struct_specifier, enum_specifier, type_definition",
+    "status": "FIXED",
+    "question": "First OO review: identical C code lost its entire type inventory in a .m file \u2014 typedefs, structs (+fields), enums (+members) had no symbols while the C analyzer symbolizes all of them (holy-c waves). The pinned objc wasm shares the C node shapes exactly.",
+    "resolution": "Ported C's symbol shapes (Struct + Property fields owned by the struct, Enum + EnumMember owned by the enum, Type for aliases, anonymous aggregates named by their typedef; definition-only so `struct Node *p` references stay silent). Type-USE references deliberately NOT ported: every ObjC signature mentions Foundation types, so C-style type-use references would be systematic noise. Gated by fixture objc/bare-value-reads Point/Color/Counter/Size pins + mutant objc/drop-c-type-inventory.",
+    "issue": "M49.OC1 objc first review"
+   },
+   {
+    "id": "OC-E",
+    "node_type": "identifier (bare value reads)",
+    "status": "FIXED",
+    "question": "First OO review: bare-identifier VALUE reads were invisible on both sides (receivers like [store ...], RHS, call args, returns, locals) \u2014 circular consistency hiding the managed-OO family contract (csharp CS-R1, dart, swift all emit member/value reads). Lanes could not see it; only the hostile battery could.",
+    "resolution": "Scope-bound inventory with the identical rule on both sides: per-definition value frames (params incl. block params, body locals incl. bare declarators, for-in variables) + block chain + same-file class ivar/property pre-scan + file globals (incl. pointer declarators and multi-declarators). Reads emit uses@0.9 (isBareRead); keywords, zero-arg selectors, declaration names, call callees (CGD17 parity), assignment-LHS writes (C span-match parity), for-in variables, @synthesize/@selector names, and self/super/nil/YES/NO/_cmd never read. Unbound names (types, macros, enum cases) stay silent. Cross-file ivars (headers) stay silent by translation-unit design. Same-key uses merges union the read-kind flags so field-read pins survive. Gated by fixture objc/bare-value-reads (21 expects, 4 forbids) + 4 mutants (drop + write/callee/selector fabrication).",
+    "issue": "M49.OC1 objc first review"
+   },
+   {
+    "id": "OC-R1",
+    "node_type": "update_expression operands",
+    "status": "RULED",
+    "question": "First OO review: `self.count++` emits uses->count on both sides \u2014 is an update operand a write (GOD4 gates Go inc/dec) or a read?",
+    "resolution": "READ (C parity, probe-verified: the C analyzer emits uses for `s->count++` and gates only assignment LHS). The GOD4 inc/dec gating was Go-selector-specific; ObjC follows its C-superset semantics. Pinned by fixture objc/bare-value-reads uses[tick->count].",
+    "issue": "M49.OC1 objc first review"
+   },
+   {
+    "id": "OC-R2",
+    "node_type": "property_implementation, selector_expression",
+    "status": "RULED",
+    "question": "First OO review: @synthesize names and @selector names \u2014 reads, references, or silent?",
+    "resolution": "SILENT (both sides): @synthesize wires storage without reading; @selector names a method without invoking it (unlike C# nameof-as-call, a SEL value is closer to a method pointer and no family member emits calls for it). @selector is load-bearing-silent (forbid uses[maker->fire] with a bound local of the same spelling); @synthesize is defensive-silent (class-scope, unobservable by edges) gated by forbid uses[Holder->_label] (class scope never sources reads) + mutant objc/emit-synthesize-as-bare-read.",
+    "issue": "M49.OC1 objc first review"
+   },
+   {
+    "id": "OC-F",
+    "node_type": "enumerator identifiers in value positions",
+    "status": "FIXED",
+    "question": "Second review: `case Red:`, `x == Alpha`, `return Beta` invisible on both sides \u2014 enum cases (OC-D symbols!) never entered the value inventory, though case labels and comparisons genuinely reference them.",
+    "resolution": "Same-file enum cases resolve last in the inventory (locals/params/ivars/globals shadow first). NS_ENUM/NS_OPTIONS need macro expansion AND live in headers \u2014 silent by unit design on both sides (verified: the macro error-recovers, cases unparseable). Gated by fixture objc/second-review + mutant objc/drop-enum-case-reads.",
+    "issue": "M49.OC2 objc second review"
+   },
+   {
+    "id": "OC-G",
+    "node_type": "call_expression under at_expression",
+    "status": "FIXED",
+    "question": "Second review: `@protocol(P)` emitted calls->protocol (dangling \u2014 nothing named protocol is invocable) while `@encode` stayed silent by shape and `@selector` by ruling (OC-R2). Directives named inconsistently.",
+    "resolution": "Calls with callee `protocol` directly under at_expression are skipped on both sides (message sends named protocol stay calls \u2014 real methods). Gated by fixture forbid + mutant objc/emit-protocol-directive-call.",
+    "issue": "M49.OC2 objc second review"
+   },
+   {
+    "id": "OC-H",
+    "node_type": "function_definition names as values",
+    "status": "FIXED",
+    "question": "Second review: `cb = helper` decay and bare function references silent \u2014 file-scope functions symbolized but never bound, though bare `helper` can never invoke a method (receivers required), so global attribution is exact.",
+    "resolution": "Defined function names join globals on both sides (locals shadow first; call-callee and declarator positions still skipped). Gated by fixture (uses without disturbing calls) + mutant objc/drop-function-decay-reads.",
+    "issue": "M49.OC2 objc second review"
+   },
+   {
+    "id": "OC-R3",
+    "node_type": "compound assignment, address-of, use-before-declaration",
+    "status": "RULED",
+    "question": "Second review: `x *= 2`/`+=` (folded into assignment_expression) gated as writes \u2014 but RMW reads the value! `&buf` reads without reading the value. `use-before-decl` locals invisible.",
+    "resolution": "Compound-assign LHS are writes (C SCD1 parity: `c->count += 1` gated there too; update_expression `++` stays the read form per OC-R1). Address-of emits on both sides (a reference, documented as read). Use-before-declaration in one scope is invalid C \u2014 silence on broken code is correct.",
+    "issue": "M49.OC2 objc second review"
+   },
+   {
+    "id": "OBJC-EXT-1",
+    "node_type": "preproc_include",
+    "status": "IMPLEMENTED",
+    "question": "#import/#include is textual inclusion that shares the translation unit's scope \u2014 is that the vocabulary's part_of, and on which node type?",
+    "resolution": "IMPLEMENTED AT R3 ON THE EXISTING `preproc_include` NODE \u2014 no grammar change. `#import`/`#include` is FILE INCLUSION: the header's text is spliced into THIS translation unit, its declarations enter this file's scope, and the header has no compilation unit of its own \u2014 the vocabulary's `part_of` contract (src/ast/types.ts:PartOf, 'a library unit INCLUDES a part file, one compilation unit'). R1 not needed (the construct and its node type already exist in the pinned grammar, 222 named types); R2 not needed (no patch); R3 TAKEN \u2014 the preproc_include branch the lane already read for `imports` now also emits the inclusion row, so nothing is relabelled away and no consumer loses a label it had. THE TARGET IS SYMBOL-SHAPED, NEVER THE WRITTEN PATH: a path target is resolved by name against the symbol table and resolves zero rows (measured 0 of 4,612 on the fleet's cpp include rows), so the target is the framework/module (first path segment of `<Framework/Header.h>`) or the declared type's stem (quoted `\"LocalType.h\"`), while the written path is preserved in `metadata.partPath`. `partRole:\"library\"` is mandatory on every row and says this file carries the directive and names the part; `isFileInclusion` marks the target as a file-side name; `evidenceClass:\"import_based\"` at confidence 1.0 because the directive IS the syntax. `@import Module;` (module_import) emits NO part_of row: a clang module is a separately compiled unit imported by name, the opposite of spliced text. MEASURED over the whole admitted population (validation/m14/measurements/objc-extended-census.json): 771 preproc_include sites (206 system, 565 quoted) -> 717 part_of edges in 238 files, where the site-to-edge difference is same-file duplicate-target collapse (two headers of one framework both name the same module); 71 `@import` sites emit none. Gate TABLE 1 buckets: resolved 212, amb(decl) 78, unresolved 427, extOK/ext?/extFAIL 0/0/0. The ambiguous rows are the class|extension name collision (a header stem that names a class the project also publishes as a category Extension symbol); the unresolved rows are framework headers outside the admitted set (.h is not in this lane's admission \u2014 the router spells this lane m,mm), and both walls are cause-ruled in validation/m14/instruments/objc/incoming-declaration.json. Gated by validation/m14/fixtures/objc/extended-part-of.{m,expectation.json}, authored BEFORE the run: fires three part_of rows (framework module / quoted stem / #include) and forbids a path target, a clang-module part_of, and a class- or method-scoped source."
+   },
+   {
+    "id": "OBJC-EXT-2",
+    "node_type": "class_interface (category)",
+    "status": "RULED",
+    "question": "A category `@interface Foo (Cat)` extends Foo's member set without conforming \u2014 is that the fleet's mixes_in, and can it be emitted?",
+    "resolution": "RULED INFORMATIONAL \u2014 the member-set composition the vocabulary names IS present in the category construct, but the MIXIN side has no identity the type system can name, and the composition is already recorded under ONE symbol. MEASURED over the whole admitted population (validation/m14/measurements/objc-extended-census.json, 259/259 parsed, the gate's own admitted list): 260 category-shaped class_interface/class_implementation nodes \u2014 67 NAMED categories (`@interface Foo (Cat)`, label readable) and 193 ANONYMOUS class extensions (`@interface Foo ()`), so 74% of the construct has no mixin name at all. Of the 67 named categories exactly 1 label coincides with a declared type in its project, and that type is the EXTENDED CLASS ITSELF (`SDImageCache (SDImageCache)` -> kinds extension|class), i.e. a SELF-NAME, not a distinct mixin; 14 categories extend a class the same file also declares as a plain class, so class and category publish ONE name and a mixes_in row would be X -> X. The gate's own ambiguity column shows the same collision across the project (`[class|extension] 2 declarations` rows in the arm's worklist). The 193 anonymous extensions have no label to put on the target side, and the analyzer ALREADY attributes every category-declared method to the extended class (OBJCD1: 'its methods are owned by the EXTENDED class'), so the composition is published as the class's own `contains` member set \u2014 a second label would assert a compositional identity Objective-C does not declare. LADDER: R1 UNAVAILABLE \u2014 the pin is a local rebuild of tree-sitter-grammars/tree-sitter-objc 3.0.2 (wired wasm sha256 520bf5e05a6c...; script/m14/verify-grammar-pins.ts records base, patches and surface A/B), and no other build changes what a category LABEL means. R2 UNAVAILABLE FOR A CONSTRUCT THAT DOES NOT EXIST \u2014 the vendored grammar already parses the category as `class_interface` with an anonymous `(` token and the label as a plain identifier, and a patch can only ADD a production, while the missing piece is a DECLARATION for the label: Objective-C declares no type for a category name (0 of the grammar's 222 named types is a mixin/trait/composition production; the one in-project collision measured is a self-name). R3 WALKED AND IT DECIDES \u2014 the category node type exists and the analyzer already reads the `(` token and the label through it (OBJCD1), so R3 was fully taken for DETECTION; what R3 cannot produce is a TARGET IDENTITY. FALSIFIER: a run of script/m14/objc-census.ts whose sample categoryLabelPublishedAsTypeInProject contains ANY entry whose label is NOT the extended class's own name \u2014 that would be a declared type a label could compose, making the mixin side symbol-shaped \u2014 or a non-zero compositionShapedNodes (0 today, the counter reads mixin_declaration/trait_declaration/uses_clause/extends_clause over all 259 files). Citation: validation/m14/measurements/objc-extended-census.json."
+   },
+   {
+    "id": "OBJC-EXT-3",
+    "node_type": "attribute_specifier, attribute_declaration, availability_attribute_specifier, property_attribute",
+    "status": "RULED",
+    "question": "Do Objective-C attributes (`__attribute__((...))`, C23 `[[...]]`, availability macros, `@property` attributes) express the vocabulary's decorates?",
+    "resolution": "RULED ONTOLOGICAL after the ladder, over the WHOLE admitted population (validation/m14/measurements/objc-extended-census.json, produced by script/m14/objc-census.ts over the gate's own 259-file admitted list validation/m14/measurements/objc-population.txt, 259 parsed of 259, 0 failures; the arm that fixes the population is `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts objective-c 0`, population string parsed=259/259 admitted=259 exts=m,mm index=no). LADDER: R1 UNAVAILABLE \u2014 the pin is a LOCAL REBUILD of tree-sitter-grammars/tree-sitter-objc base 3.0.2 (wired wasm sha256 520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb; base, four patches and the surface/behaviour A/B are recorded in script/m14/verify-grammar-pins.ts), and no other published build changes what an Objective-C attribute MEANS. R2 UNAVAILABLE FOR A CONSTRUCT THAT DOES NOT EXIST \u2014 the vendored grammar already declares the attribute family (10 of its 222 named types: attribute_specifier, attribute, attribute_declaration, attributed_declarator, attributed_statement, availability_attribute_specifier, availability, property_attribute, property_attributes_declaration, availability_macro_specifier) and 0 of the 222 is a decorator/annotation-application production; a patch can only ADD a production, and there is no ObjC construct for it to bind to. R3 WALKED AND IT DECIDES \u2014 the attribute node types are present (validation/m14/measurements/objc-grammar-nodes.json, servedDigest 520bf5e05a6c, namedTypes 222), so the question is what an attribute ARGUMENT is. MEASURED: 175 attribute sites (attribute_specifier 175, C23 attribute_declaration 0; names visibility 95, used 70, unused 10), 49 availability attribute specifiers, 1,141 property attributes (`nonatomic`/`strong`/`copy` \u2014 declaration metadata), 0 compiler-directive application macros of the NS_SWIFT_NAME family in the admitted .m/.mm set (they live in headers, which this lane does not admit), and 992 block literals \u2014 anonymous closures, never an applied attribute. 95 of the 175 sites carry a CALL-SHAPED argument and ALL 95 are `__attribute__((visibility(\"default\")))`: a STRING VALUE the compiler interprets. declaredCalleeInAttribute 0 \u2014 not one attribute argument names a declaration in its own file \u2014 so callableAttributeArguments 0 and appliedCallableAttributeSites 0 (the ObjC/C `cleanup(fn)` family, the one attribute whose argument the compiler DOES invoke). CONTRACT (src/ast/types.ts:Decorates): 'a decorator is APPLIED TO a declaration ... the runtime applies it while the declaration is created', so the positive test is an attribute whose argument IS AN INVOKED CALLABLE; an Objective-C attribute is compile-time metadata on the declaration, never an invocation, so a decorates row would assert an application the language does not have. FALSIFIER (instrument-counted, two counters, both 0 today): any `cleanup`/`gnu::cleanup`/`__cleanup__` attribute site > 0 (appliedCallableAttributeSites), or any call-shaped attribute argument whose callee names a declared CALLABLE kind in its own file (callableAttributeArguments > 0) \u2014 either is the Rust `#[derive(Serialize)]` shape and would refute the ruling. Citation: validation/m14/measurements/objc-extended-census.json (counts + samples) and validation/m14/measurements/objc-grammar-nodes.json (the served build's own named types)."
+   },
+   {
+    "id": "OBJC-EXT-4",
+    "node_type": "(grammar inventory)",
+    "status": "RULED",
+    "question": "Does Objective-C have a component that RENDERS another component, or a near miss worth counting?",
+    "resolution": "RULED ONTOLOGICAL after the ladder, over the WHOLE admitted population (validation/m14/measurements/objc-extended-census.json, 259/259 parsed, the gate's own admitted list; population string parsed=259/259 admitted=259 exts=m,mm index=no; grammar inventory validation/m14/measurements/objc-grammar-nodes.json, servedDigest 520bf5e05a6c, namedTypes 222). LADDER: R1 UNAVAILABLE \u2014 the pin is a local rebuild of tree-sitter-grammars/tree-sitter-objc 3.0.2 (wired wasm sha256 520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb), the newest published base, and no build can change the fact that Objective-C has no component/template production. R2 UNAVAILABLE FOR A CONSTRUCT THAT DOES NOT EXIST \u2014 0 of the grammar's 222 named types is render/component/view-body/element/JSX-shaped (the inventory is READ, not sampled), so a patch would have to INVENT a construct the language does not have. R3 WALKED AND IT DECIDES \u2014 no existing node type can express 'a component RENDERS another component': ObjC has no component, view or template concept at the syntax level. A program builds UI by CALLING methods (already `calls`) and by loading a RESOURCE named by a string. THE NEAR MISS IS MEASURED AND NAMED: UI loading by nib/storyboard \u2014 3 message-send sites (`initWithNibName:bundle:` / `nibWithNibName:` / `loadNibNamed:`) in 3 files passing 2 resource-name STRING LITERALS, with 0 string literals in the population ending in .xib/.storyboard/.nib. Each site is a CALL plus a STRING VALUE: neither declares one component as the rendered output of another, both are already published (the call as `calls`), and a nib file is a resource, not a symbol. renderShapedNodes 0 over all 259 files. FALSIFIER: any render-shaped node in an admitted file would print as a census sample and refute the ruling (renderShapedNodes > 0), or a construct in which a DECLARED symbol names another declaration as the thing it renders \u2014 the nib near miss would need the nib to BE a symbol and the loading site to DECLARE the rendered component, and the census counts 0 of each. Citation: validation/m14/measurements/objc-extended-census.json."
+   }
+  ]
+ },
+ "label_coverage": {
+  "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+  "declared_gaps": [],
+  "declared_no_truth": [
+   {
+    "label": "overrides",
+    "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane \u2014 but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
+    "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
+   }
+  ]
+ }
 }

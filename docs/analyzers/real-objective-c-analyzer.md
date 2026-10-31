@@ -98,8 +98,43 @@ sealed evidence instead of being averaged away.
 | extends | ✅ | `@interface Foo : Bar` → `Foo extends Bar`; `@protocol P <Q>` → `P extends Q` | 1.0 |
 | implements | ✅ | `@interface Foo : Bar <P1, P2>` → `Foo implements P1/P2` (protocol list via `parameterized_arguments`/`protocol_*` children). **The adoption list is selected by POSITION, not by shape** — see OC-ONT-6 below | 1.0 |
 | imports | ✅ | `preproc_include` → module name (pure-String unwrap of `system_lib_string` angle brackets / `string_content`) + framework detection (UIKit/Foundation/AppKit/Cocoa) | 1.0 |
+| part_of | ✅ | `preproc_include` (BOTH `#import` and `#include`) → FILE INCLUSION: the header's text is spliced into this translation unit and shares its scope, which `imports` (a dependency) and `references` (a mention) cannot say. Target is SYMBOL-SHAPED, never the written path: the framework/module for `<Framework/Header.h>` (first path segment), the declared type's stem for a quoted `"LocalType.h"`; the written path stays in `metadata.partPath`. `partRole: "library"`, `isFileInclusion`, `fileLevel`, `evidenceClass: "import_based"`. `@import Module;` (a separately compiled clang module) emits NO part_of row | 1.0 |
 | exports | ✅ | a file-scope declaration with EXTERNAL linkage (C99 6.2.2p5): `root → <name>` with `relationshipType: "module_export"`, `isExport`, `fileLevel`, `evidenceClass: "structural"`. A class, a protocol, a `typedef`, a function, a variable and a marker-bearing declaration (`FOUNDATION_EXPORT`, `extern` → `metadata.exportMarker`) all publish the same way. `static` is internal linkage and is NOT an export (its symbol keeps `visibility: "private"`); a member rides `contains`; a category label is never a unit (OC-B); an imported module is a dependency | 1.0 |
 | overrides | ✅ | a subclass method whose FULL SELECTOR matches a superclass method's: verified (`verified-base-declared-in-file`, 0.95) when the superclass is declared in this file, otherwise a deterministic below-threshold first-parent guess (`first-parent-guess`, 0.5). `NSObject`/`NSProxy` are excluded as the universal root | 0.95 / 0.5 |
+
+### part_of: `#import` is textual inclusion, and the target must be a name
+
+An Objective-C `#import`/`#include` is FILE INCLUSION, not a name import: the header's text is
+spliced into THIS translation unit, its declarations enter THIS file's scope, and the header has no
+compilation unit of its own — the vocabulary's `part_of` contract (`src/ast/types.ts:PartOf`). The
+existing `imports` row (the dependency `src/lsp` answers "what does this file depend on" with) and
+the `references` twin are KEPT: the part_of row is additive, so no consumer loses a label it had.
+
+The target is the name a consumer can resolve, never the path as written. A path target is resolved
+by name against the symbol table and resolves ZERO rows (measured on the fleet's cpp include rows:
+0 of 4,612), so the row names the framework/module (first path segment of `<Framework/Header.h>`) or
+the declared type's stem (quoted `"LocalType.h"`), and the written path is published in
+`metadata.partPath`. Measured over the whole admitted population (259 files, 9 repositories):
+771 `preproc_include` sites (206 system, 565 quoted) → 717 rows in 238 files, the site-to-row
+difference being same-file duplicate-target collapse (two headers of one framework both name the
+same module); 71 `@import` sites emit none. Gate buckets: 212 resolved, 78 ambiguous (a header stem
+that names a class the project also publishes as a category `Extension` — the class|extension name
+collision), 427 unresolved (framework headers outside the admitted set: this lane admits `.m`/`.mm`,
+not headers). Fixture: `validation/m14/fixtures/objc/extended-part-of.m` fires the three forms and
+forbids a path target, a clang-module part_of, and a class- or method-scoped source.
+
+### The three ruled extended values
+
+`decorates`, `renders` and `mixes_in` are RULED, each with a whole-population count and a falsifier
+in `script/m14/spec/objc-completeness.json`: `decorates` ONTOLOGICAL (175 attribute sites, 95
+call-shaped arguments and all 95 are `__attribute__((visibility("default")))` — a string the compiler
+interprets, never an invoked callable; `declaredCalleeInAttribute` 0, `appliedCallableAttributeSites`
+0), `renders` ONTOLOGICAL (0 render-shaped nodes in 259 files and 0 of the grammar's 222 named types;
+the near miss — 3 nib-loading call sites passing 2 resource-name string literals — is a CALL plus a
+STRING VALUE, not one component declaring another as rendered), and `mixes_in` INFORMATIONAL (260
+category-shaped sites = 67 named categories + 193 anonymous class extensions; 74% has no mixin name at
+all, the one in-project label collision is the extended class's own name, and the analyzer already
+attributes category members to the extended class — a row would say X → X).
 
 ### Honesty §4.1: one reason code per family, and what each one says
 

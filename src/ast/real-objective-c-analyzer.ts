@@ -7,7 +7,10 @@
  * (see the import comment below), so family-wide identity changes belong there, not here.
  * Grammar: tree-sitter-objc.wasm (WASM loaded by engine.ts).
  * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
- * implements, overrides, instantiates.
+ * implements, overrides, instantiates, part_of. The four remaining vocabulary values are RULED
+ * with whole-population counts and falsifiers in the spec (`decorates`/`renders` ontological,
+ * `mixes_in` informational); `part_of` is emitted from the `preproc_include` branch, because an
+ * `#import`/`#include` is textual inclusion into THIS compilation unit, not a name import.
  * Where its scripts/validations live: docs/analyzers/real-objective-c-analyzer.md,
  * script/m14/spec/objc-completeness.json, validation/m14/fixtures/objc/**, and the LANG_CONFIG
  * row in script/m14/completeness-inventory.ts (id "objc").
@@ -44,6 +47,36 @@ const DECLARATOR_WRAPPERS: ReadonlySet<string> = new Set([
   "abstract_pointer_declarator", "abstract_block_pointer_declarator", "block_pointer_declarator",
   "function_declarator",
 ])
+
+// THE SYMBOL-SHAPED TARGET of a `part_of` row for `#import`/`#include`.
+//
+// WHY NOT THE WRITTEN PATH. A relationship target is resolved by name against the
+// symbol table, so a path target resolves to zero rows and the row is a dead edge:
+// the same shape was measured at 0 of 4,612 on the fleet's cpp include rows. The
+// written path is still published — as `metadata.partPath`, where it is metadata
+// rather than identity — so no information is lost and the target stays a name a
+// consumer can look up.
+//
+// THE NAME THE READER CAN LOOK UP is the one with meaning in an Objective-C
+// translation unit: for a framework header (`<Foundation/Foundation.h>`,
+// `<AFNetworking/AFURLSessionManager.h>`) the MODULE is the first path segment, and
+// that module is what the include depends on; for a quoted project header
+// (`"LocalThing.h"`) the header STEM is the type/class the header declares — the
+// names the rest of the file spells. Both are identifiers, never paths.
+function objcPartTarget(writtenPath: string): string {
+  const segments = writtenPath.split("/").filter((segment) => segment.length > 0)
+  if (segments.length === 0) return writtenPath
+  if (segments.length > 1) {
+    // A framework header: the first segment is the module/framework name.
+    const module = segments[0]
+    const moduleDot = module.lastIndexOf(".")
+    return moduleDot > 0 ? module.slice(0, moduleDot) : module
+  }
+  // A quoted project header: the stem is the declared type's own name.
+  const file = segments[0]
+  const dot = file.lastIndexOf(".")
+  return dot > 0 ? file.slice(0, dot) : file
+}
 
 // Is this declaration's terminating `;` a MISSING token?
 //
@@ -414,6 +447,51 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               isSystem,
               module: modName,
               fileLevel: true,
+            },
+          })
+          // THE `part_of` ROW: `#import`/`#include` IS FILE INCLUSION, on the EXISTING
+          // `preproc_include` node type (no grammar change — the construct and its node
+          // already exist).
+          //
+          // WHY THE EXTRA LABEL, when `imports` is already here. `imports` says this file
+          // DEPENDS on a header. It cannot say the header's TEXT BECAME PART OF THIS
+          // COMPILATION UNIT, which is a different fact and the one `part_of` exists for:
+          // a header has no separate compilation unit, its declarations enter THIS file's
+          // scope, and it cannot be compiled on its own — the vocabulary's `part_of`
+          // contract (src/ast/types.ts:PartOf, "a library unit INCLUDES a part file, one
+          // compilation unit"). The same measurement that forced the label for php's
+          // include/require and erlang's `-include` applies verbatim: `#import` is textual
+          // inclusion, not a name import.
+          //
+          // WHAT IS NOT `part_of`: `@import Module;` (the `module_import` branch below) is a
+          // clang module — a separately compiled unit imported BY NAME, not spliced text —
+          // so that branch emits `imports` + `references` and NO part_of row.
+          //
+          // `partRole` is MANDATORY on every part_of row: "library", because THIS file is
+          // the library side of the pair — it carries the directive and names the part. The
+          // row is `import_based` at confidence 1.0 because the directive IS the syntax; no
+          // inference is involved. Direction: source "root" + `fileLevel` is this lane's
+          // file-scope convention (the same pair the `imports` row above uses), never a
+          // function scope — an #import is preprocessor-scope, not body-scope.
+          //
+          // THE TARGET IS SYMBOL-SHAPED (see objcPartTarget): the framework/module for an
+          // angle include, the declared type's stem for a quoted one; `partPath` carries the
+          // written path itself.
+          relationships.push({
+            source: "root",
+            target: objcPartTarget(modName),
+            type: ASTEngine.RelationshipType.PartOf,
+            confidence: 1.0,
+            line_number: this.nodeLine(modNode ?? node),
+            metadata: {
+              partRole: "library",
+              partPath: modName,
+              isFileInclusion: true,
+              isObjCImport: true,
+              isObjCModuleImport: false,
+              isSystem,
+              fileLevel: true,
+              evidenceClass: "import_based",
             },
           })
           // The `references` twin carries its OWN reason code (honesty §4.1: every row below
@@ -1667,6 +1745,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // is the tier's meaning.
       if (type === "exports") { md.evidenceClass = "structural"; continue }
       if (type === "imports" || type === "references") { md.evidenceClass = "import_based"; continue }
+      // `part_of` from an `#import`/`#include` is a DIRECTIVE, so it carries the same
+      // `import_based` tier as the `imports`/`references` rows beside it: the construct IS
+      // the syntax. The fallthrough below would call it `usage_contextual`, which is the
+      // tier for a call/use read out of context — the wrong claim for a preprocessor
+      // directive.
+      if (type === "part_of") { md.evidenceClass = "import_based"; continue }
       if (type === "calls" || type === "uses") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
