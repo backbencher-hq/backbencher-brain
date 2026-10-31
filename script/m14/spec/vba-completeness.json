@@ -1,0 +1,173 @@
+{
+  "language": "vba",
+  "grammar": "tree-sitter-vba (vendored at grammars/tree-sitter-vba/vba/grammar.js over grammars/tree-sitter-vba/common/define-grammar.js, version 0.14.5, MIT). src/ast/engine.ts:377 maps the engine key `vba` to `tree-sitter-vba`; engine.ts:1251-1252 resolves wasm/tree-sitter-vba.wasm; engine.ts:2443 dispatches to src/ast/real-vba-analyzer.ts (RealVbaAnalyzer). The wired wasm sha256 9e0615ad1a4fdf3abff07265fe84d95ba1f392df6f4bbecd0f3ddea92aee00de (7,829,271 bytes) EQUALS validation/m14/vba-grammar-pin.json's wasmSha256 — measured 2026-10-29 with sha256sum, 0 pin drift (unlike the vb lane's recorded stale pin).",
+  "_created": "2026-10-29, vba lane (permanent lane). This file is the lane's MEASUREMENT APPARATUS, created because the lane carried 9 fixture files, an analyzer and a grammar pin but NO spec at all, so the coverage-block gate read `vba impl 0/0` and could not ask the lane a single question. It is written the way the DONE peers were: the analyzer read, the PINNED grammar enumerated into a durable tracked artifact, and a `coverage` block whose every entry carries a measurement and a falsifier. It is NOT yet a completed audit and says so where it is short: `imports` and `overrides` are open GAPS, and the whole-population arm (DONE condition 2) has NOT run — no edge count in this file is a whole-population claim.",
+  "_grammar_inventory": {
+    "wasm": "wasm/tree-sitter-vba.wasm",
+    "wasmSha256": "9e0615ad1a4fdf3abff07265fe84d95ba1f392df6f4bbecd0f3ddea92aee00de",
+    "wasmBytes": 7829271,
+    "nodeTypeSlots": 418,
+    "distinctAllNames": 399,
+    "namedSlots": 183,
+    "distinctNamedSlots": 164,
+    "duplicateNamedSlots": 19,
+    "method": "bun script/m14/grammar-node-inventory.ts vba -> validation/m14/measurements/vba-grammar-nodes.json. The tool reads the LIVE PARSER the engine registry serves, enumerates nodeTypeCount/nodeTypeForId/nodeTypeIsNamed, and records the names beside the served digest. TWO NUMBERS, STATED BOTH WAYS ON PURPOSE: the grammar has 183 named SLOTS but 164 DISTINCT named names, because 19 names are repeated across precedence/alias ids (with_statement, block, for_each_statement, implicit_member_expression, qualified_member_expression and 14 more). Every count below that says `164` counts the vocabulary; no ruling here counts a slot twice.",
+    "pin_status": "FRESH AND MATCHING. validation/m14/vba-grammar-pin.json records wasmSha256 9e0615ad… and the wired file measures 9e0615ad… — 0 drift. THE PIN IS NOT REGISTERED ON TWO OTHER LANE TABLES, and that is recorded rather than smoothed: validation/m14/grammar-pins.json has NO `lanes.vba` row and validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md has no `vba` binding, so grammar-node-inventory.ts recorded servedDigest null for this lane. The digest above was verified directly against the pin, so the inventory is still citable; the registration gap is a Lead-side item, not an analysis defect.",
+    "relationship_contract": "validation/m14/vba-grammar-pin.json declares relationshipContract with 9 labels (calls, contains, decorates, exports, implements, imports, instantiates, references, uses) and ruledGaps with 5 (extends, overrides, renders, mixes_in, part_of). The lane is closing to THAT contract: 8 of its 9 contract labels are emitted today, `imports` is the one gap, and 4 of the 5 ruled gaps carry rulings in coverage.excluded below while the fifth, `overrides`, is measured before it is ruled. The fourteen-value denominator the coverage-block gate judges is 14; after this file's four rulings the gate computes applicable 10, and the lane reads 8/10 until imports and overrides close."
+  },
+  "_section_a": {
+    "_description": "Every DISTINCT named node type in exactly one bucket. The handled half is DERIVED BY SOURCE REFERENCE — the same method and the same caveat as the vb lane's block: a name is in `handled` when src/ast/real-vba-analyzer.ts names it as a quoted literal in code position (comments stripped). That is a NECESSARY condition for handling, NOT a sufficient one: a name that appears only in a helper, a field lookup or a read-side filter is not an emission. The stronger instrument — a live silence verification over the admitted population — has NOT been run for vba; the committed emission proofs are the 9 fixtures plus the source walk recorded in coverage._implemented_source_refs.",
+    "namedDistinct": 164,
+    "handled": 47,
+    "silent": 117,
+    "unclassified": 0,
+    "handled_types": [
+      "as_type_clause",
+      "assignment_statement",
+      "attribute_statement",
+      "block",
+      "byref_modifier",
+      "byval_modifier",
+      "call_expression",
+      "call_statement",
+      "case_clause",
+      "conditional_function_declaration",
+      "conditional_property_declaration",
+      "conditional_sub_declaration",
+      "const_declaration",
+      "const_declarator",
+      "declare_function_statement",
+      "declare_sub_statement",
+      "enum_declaration",
+      "enum_member",
+      "event_declaration",
+      "for_each_statement",
+      "for_statement",
+      "function_declaration",
+      "identifier",
+      "implements_statement",
+      "implicit_member_expression",
+      "new_expression",
+      "on_error_statement",
+      "optional_modifier",
+      "paramarray_modifier",
+      "parameter",
+      "property_get_declaration",
+      "property_let_declaration",
+      "property_set_declaration",
+      "qualified_member_expression",
+      "raise_event_statement",
+      "redim_statement",
+      "select_statement",
+      "set_statement",
+      "sub_declaration",
+      "type_declaration",
+      "type_expression",
+      "type_member",
+      "variable_declaration",
+      "variable_declarator",
+      "visibility",
+      "with_events_modifier",
+      "with_statement"
+    ],
+    "silent_note": "117 distinct named types are NEVER named by the analyzer. The complement is exactly derivable from validation/m14/measurements/vba-grammar-nodes.json and is deliberately not copied here. The largest families are preprocessor items (#If/#Const branches and their fragments), the seven frm_* form-designer property nodes, and loop/exit/declaration variant nodes. They are recorded as SILENCE OWED, not as a verdict: the lane's bar concerns the 14 relationship labels, and a node family's silence is a finding only where it hides an expressible relation — which is exactly the starting point for the imports and overrides gaps."
+  },
+  "_inventory_findings": {
+    "declare_statement_is_dead": "MEASURED 2026-10-29: `declare_statement` does not exist in this grammar — it is absent from all 418 ids (and the 399 distinct all-names) in validation/m14/measurements/vba-grammar-nodes.json — but src/ast/real-vba-analyzer.ts lists it in DECLARATIONS (line 34) and BODY_NODES (line 42), so both literals are DEAD branches that can never match. The live productions are declare_function_statement and declare_sub_statement (both present and named). validation/m14/grammar-audit-allowlist.json has NO vba entry, so the grammar-conformance audit (F1) cannot be presumed green for this lane: its baseline validation/m14/grammar-audit-baseline.json lists 46 lane rows and has NO vba row, so this lane's F1 status is UNMEASURED and the dead literals are the finding to remove in the implementation turn. This paragraph is a measurement, not a plan claim.",
+    "member_expression_supertype": "MEASURED 2026-10-29: grammars/tree-sitter-vba/common/define-grammar.js:68 declares `supertypes: ($) => [$.member_expression]`, and grammars/tree-sitter-vba/vba/src/node-types.json lists member_expression with the two concrete subtypes implicit_member_expression and qualified_member_expression. Tree-sitter supertypes are abstract and are NOT produced in parse trees — the wasm's nodeTypeIsNamed is false for its slot — so the analyzer's two `node.type === \"member_expression\"` literals (walk dispatch line 186, emitReads line 295) are DEAD branches: every member expression arrives as qualified_member_expression or implicit_member_expression (the qualified branch is what the member-access fixture pins). Harmless as written, but the grammar audit CANNOT see this class because the name exists among the wasm's ids, so it is recorded here. A whole-population probe of the concrete subtypes is owed in the implementation turn.",
+    "named_slot_duplicates": "19 duplicate named slots (183 slots over 164 distinct names) — with_statement, block, for_each_statement, implicit_member_expression, qualified_member_expression and 14 more each occupy more than one id. No emitted row is keyed by id, so this is an inventory-shape fact rather than an analyzer defect; it is recorded because a reader comparing this lane's 183 against the vb lane's 167 would otherwise think the vocabularies differ by construction."
+  },
+  "gap": {
+    "_description": "MEASURED GAPS — not a worklist of guesses. Each names its emission-site count, the existing node types an R3 implementation would read, and what the closing turn must measure. The coverage-block gate computes the denominator from implemented + ruled + gaps; these two are IN it.",
+    "gaps": [
+      {
+        "label": "imports",
+        "reason": "0 emission sites. src/ast/real-vba-analyzer.ts contains no RelationshipType.Imports emission at all — the only `Imports` reference in the file is an evidenceClass comparison at line 475 — and none of the 9 fixture expectation files contains an imports row. THE R3 CANDIDATE IS MEASURED, NOT ASSUMED: VBA has no source-level module import (references are project-level), but `Declare Function ... Lib \"<library>\"` and `Declare Sub ... Lib \"<library>\"` bind an external library procedure, and the grammar carries three library-bearing productions — declare_function_statement, declare_sub_statement and their sibling declare_statement does NOT exist (see _inventory_findings); 2 of those 3 are live named node types, with the library text carried in a field. Whether that binding IS the fleet's `imports` relation, or a different external-API fact that belongs to calls, is the gap turn's decision — taken with a site count over the admitted population. The pin's relationshipContract names imports as EXPRESSIBLE, so it is a GAP here and not a ruling."
+      },
+      {
+        "label": "overrides",
+        "reason": "0 emission sites. VBA has NO class inheritance, so there is no base-class member for an override to point at; the only same-name declaration surface is Property Get/Let/Set — three ACCESSOR declarations of ONE property — and the grammar carries property_get_declaration, property_let_declaration, property_set_declaration and conditional_property_declaration (4 named node types in all, measured in validation/m14/measurements/vba-grammar-nodes.json). Whether accessors are an override relation (they are not: no supertype exists to override, and the fleet's `overrides` means a member over a supertype member) or whether the lane must rule overrides is decided in the gap turn AFTER the R1/R2/R3 ladder is walked and recorded. The pin declares overrides a ruled gap; a ruling still needs its count and falsifier before it is admitted to coverage.excluded, so it stays a gap until then."
+      }
+    ]
+  },
+  "design_decision": {
+    "_description": "Rulings are recorded with their measurements in coverage.excluded.from and _extended_types_2026_10_29. This block names their identities so a reader can find them, and records the one thing that is NOT a ruling.",
+    "decisions": [
+      "VBA-D1 renders: grammar-absence, 0 sites, measured on the lane's own durable inventory with the near-miss family named and counted (7 frm_* form-designer node types; 3 *_fragment #If partition nodes, not markup).",
+      "VBA-D2 mixes_in: grammar-absence, 0 sites; the two composition-adjacent surfaces measured and NAMED — implements_statement (conformance, already published) and with_statement (scoping sugar, already published as uses) — plus the event-binding surface (event_declaration, with_events_modifier).",
+      "VBA-D3 part_of: grammar-absence, 0 sites; VBA has no textual inclusion of any kind, and #If conditional compilation selects lines inside one module instead of including another unit.",
+      "VBA-D4 extends: grammar-absence, 0 sites; VBA has no inheritance at all (no Inherits keyword, no base-class production).",
+      "VBA-D5 decorates: IMPLEMENTED — Attribute statements are the lane's decoration surface, the analyzer emits the relation at a live named production (attribute_statement), four fixtures pin it, and the nearest DONE peer in the same grammar family publishes the same relation from the same construct (script/m14/spec/vb-completeness.json, VB-D0). The competing csharp precedent (attribute = passive metadata -> ontological exclusion, script/m14/spec/csharp-completeness.json) is recorded here as a DIFFERENT LANGUAGE's decision rather than restated as this lane's; the pin's relationshipContract names decorates, so this lane keeps it implemented."
+    ]
+  },
+  "coverage": {
+    "implemented": [
+      "calls",
+      "contains",
+      "decorates",
+      "exports",
+      "implements",
+      "instantiates",
+      "references",
+      "uses"
+    ],
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VBA-D1 (2026-10-29) — GRAMMAR-ABSENCE, MEASURED ON THE LANE'S OWN DURABLE INVENTORY: 0 of the 164 distinct named node types in validation/m14/measurements/vba-grammar-nodes.json match the render/component/markup stem scan (render|component|jsx|template|widget|markup|html), over 418 node-type slots and 183 named slots. THE 3 *fragment HITS ARE COUNTED AND NAMED, and they are not markup: else_fragment, elseif_fragment and end_if_fragment are #If conditional-compilation partitions of ONE file. THE NEAREST UI SURFACE IS COUNTED AND NAMED: the 7 frm_* named node types (frm_begin_block, frm_begin_property_block, frm_blob_reference, frm_property_statement, frm_property_text, frm_quoted_property_text, frm_version_statement) are the .frm form-designer property block — a declarative layout deserialization with no production that binds an element to rendered output; a .frm designer line is read as attributes/contains, and the fleet's renders relation needs a markup production this grammar does not carry. R2 (grammar patch) is unavailable IN PRINCIPLE: a patched node would fire on 0 sites, because no admitted VBA source writes markup. FALSIFIER: any admitted VBA file whose wired grammar parses a markup/component production into a named node, or any admitted site whose text is a markup tag the lane could call rendered output — 0 measured. The corpus-side site count is carried by the whole-population arm before the lane claims DONE; this ruling's grammar-side half is complete as measured here."
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VBA-D2 (2026-10-29) — GRAMMAR-ABSENCE, 0 of the 164 distinct named node types match the mixin/trait/embed/compose stem scan (measurement artifact validation/m14/measurements/vba-grammar-nodes.json). THE NEAR MISSES ARE MEASURED AND NAMED, NOT ASSERTED: VBA's two composition-adjacent surfaces are implements_statement — interface CONFORMANCE, 1 named node type, already published as the implements relation — and with_statement — scoping sugar over ONE receiver, 1 named node type, already published as uses; the event surface event_declaration and with_events_modifier (2 named node types) is event BINDING, the inverse direction of member composition, and it is published as calls (raise_event_statement) / metadata. VBA has NO mixin: no construct composes another type's MEMBERS without Implements. R1/R2/R3 were walked: no newer published build adds a mixin production (the language has none); a patched node would fire on 0 sites; and no existing node type expresses member composition (implements is conformance and is already published). FALSIFIER: an admitted site where a VBA declaration acquires another type's MEMBERS without Implements — 0 measured; or any named node type carrying a mixin/composition production — 0 of 164 measured."
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VBA-D3 (2026-10-29) — GRAMMAR-ABSENCE, 0 of the 164 distinct named node types is a part-inclusion production (measurement artifact validation/m14/measurements/vba-grammar-nodes.json): 0 match include/import/part stems. The only 'fragment' names are the 3 #If partitions else_fragment, elseif_fragment and end_if_fragment, which SELECT LINES inside one module and include no other unit. VBA has NO textual inclusion of any kind — a module is referenced through the PROJECT, never spliced — and #Include does not exist in the language. preprocessor_if and preprocessor_block (2 named node types, beside the 3 fragments) are conditional COMPILATION by line selection, not part_of: the construct contains its own file's lines and names no unit. The fleet's part_of names ANOTHER UNIT AS A PART sharing one scope, and this language has no such construct. FALSIFIER: any admitted site carrying an inclusion directive the wired grammar parses into a named node — 0 measured; or any node type whose child is another module's text — 0 of 164 measured."
+      },
+      {
+        "label": "extends",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VBA-D4 (2026-10-29) — GRAMMAR-ABSENCE, 0 of the 164 distinct named node types match the inheritance stem scan (inherit|extend|deriv|super|base) over 418 slots (measurement artifact validation/m14/measurements/vba-grammar-nodes.json). VBA has NO class inheritance: a class module IMPLEMENTS interfaces (implements_statement, already published as implements) and has no base class to extend; no `Inherits` keyword exists in the language. THE LADDER WAS WALKED AND IS RECORDED HERE: R1 (a different/newer published build) is unavailable IN PRINCIPLE because the construct is absent from the LANGUAGE, not from this build; R2 (patch the grammar) would fire on 0 sites because no admitted source writes an inheritance clause; R3 (an existing node type) cannot express a supertype link because no node carries one — implements carries interface conformance and is a different relation, already published. FALSIFIER: any admitted VBA file carrying an inheritance declaration the wired grammar parses into a named node — 0 measured; or any named node type carrying a supertype/base link — 0 of 164 measured."
+      }
+    ],
+    "corpusUnexercised": [],
+    "_from": "DERIVATION, MEASURED 2026-10-29 at the lane's creation. EMISSION SITES WERE READ BEFORE THE BLOCK WAS WRITTEN: src/ast/real-vba-analyzer.ts emits 8 of the 14 labels (calls, contains, decorates, exports, implements, instantiates, references, uses — per-type line numbers in _implemented_source_refs), and has ZERO emission sites for imports and overrides (every RelationshipType reference in the file was read; `Imports` appears only as an evidenceClass comparison at line 475). That is why imports and overrides are GAPS rather than exclusions: the grammar may well express them, and the pin's relationshipContract names imports as expressible. FIXTURE EVIDENCE: validation/m14/fixtures/vba carries 9 fixture/expectation pairs, authored before this measurement, and `bun script/m14/run-fixtures.ts --lang vba` reads 9 pass / 0 fail. WHOLE-POPULATION ARM IS PENDING (DONE condition 2): the per-type edge counts over the gate's admitted N are NOT in this block, there is deliberately no `_implemented_measured` map yet, and no figure here is a whole-population claim — the numbers that will appear there are the arm's, not a fixture's. The lane therefore reads 8/10 by the gate's own arithmetic (14 - 4 grammar-absences = 10; imports and overrides in the denominator as gaps), and the lane is NOT done until the arm lands and those two close.",
+    "_implemented_source_refs": {
+      "_method": "read from src/ast/real-vba-analyzer.ts on 2026-10-29; line numbers are the emit sites, not the declaration sites. This map is NOT a measurement of the admitted population — it is the doability half that says each implemented label has a live production to read.",
+      "calls": "src/ast/real-vba-analyzer.ts:222 (emitCall, from call_statement / call_expression) and :287 (emitEventRaise -> calls with metadata.eventRaise, from raise_event_statement). Fixtures pinning it: validation/m14/fixtures/vba/representative.expectation.json, adversarial.expectation.json, control-flow.expectation.json, loops-and-select.expectation.json, nested-with.expectation.json.",
+      "contains": "src/ast/real-vba-analyzer.ts:153 (declaration nested inside a body or type declaration). Fixture: validation/m14/fixtures/vba/representative.expectation.json.",
+      "decorates": "src/ast/real-vba-analyzer.ts:210 (emitAttribute, from attribute_statement; source = enclosing declaration, target = the attribute name, metadata.attributeForm). Fixtures: validation/m14/fixtures/vba/class-module.expectation.json, conditional.expectation.json, form-module.expectation.json, representative.expectation.json.",
+      "exports": "src/ast/real-vba-analyzer.ts:163 (public top-level declaration -> root). Fixtures: validation/m14/fixtures/vba/class-module.expectation.json, conditional.expectation.json, representative.expectation.json.",
+      "implements": "src/ast/real-vba-analyzer.ts:189 (implements_statement -> the interface name). Fixture: validation/m14/fixtures/vba/adversarial.expectation.json.",
+      "instantiates": "src/ast/real-vba-analyzer.ts:281 (new_expression -> the constructed type). Fixture: validation/m14/fixtures/vba/representative.expectation.json.",
+      "references": "src/ast/real-vba-analyzer.ts:198 (as_type_clause / type_expression -> the type name). Fixtures: validation/m14/fixtures/vba/adversarial.expectation.json, control-flow.expectation.json, representative.expectation.json.",
+      "uses": "src/ast/real-vba-analyzer.ts:233 (with_statement receiver), :242 (control-flow reads: On Error, ReDim, For/For Each binders, Select/Case values), :260 (member receiver), :299 (assignment/set right-hand reads), :318 (identifier reads). Fixtures: validation/m14/fixtures/vba/adversarial.expectation.json, control-flow.expectation.json, loops-and-select.expectation.json, member-access.expectation.json, representative.expectation.json."
+    },
+    "_pending_arm": "DONE condition 2 (whole-population arm + DERIVED declaration) has not run. Command shape when it does: npx tsx script/m14/sliced-declaration.ts --lang vba --slices <dir> --exts vba,bas,cls,frm --expect-population <the gate's own admitted N> [--closure <merge>] --write. The extension entry is already in place at script/m14/language-extensions.ts:172 (`vba: \"vba,bas,cls,frm\"`). What the arm must return before this file claims DONE: a per-type edge count for each of the 8 implemented labels over the admitted population, a site count for the imports and overrides decisions, and the grammar-silence probe named in _inventory_findings."
+  },
+  "_extended_types_2026_10_29": {
+    "_question": "the four extended relationship values are this lane's gap surface: one is IMPLEMENTED, three are RULED with a class, a count and a falsifier, and the two ten-value types that the analyzer does not yet emit are GAPS rather than ruled.",
+    "decorates": "IMPLEMENTED (VBA-D5). Emitted from attribute_statement (a live named production in this grammar, 1 named node type), source = enclosing declaration, target = the attribute name, metadata.attributeForm = attribute_statement. Four fixtures pin it, including a negative row in validation/m14/fixtures/vba/conditional.expectation.json's family (the conditionally compiled Attribute is still a decoration, not an export). The whole-population edge count is the arm's to measure and is NOT claimed here. The competing csharp precedent (attribute = passive metadata -> ontological exclusion) is recorded in design_decision and is not adopted: the nearest DONE peer in this grammar family publishes decorates from the same construct (script/m14/spec/vb-completeness.json), and this lane's pin names decorates in its relationshipContract.",
+    "renders": "RULED grammar-absence (VBA-D1), count 0, on the lane's own inventory: 0 of 164 distinct named types match the render/component/markup scan; the 3 *fragment hits are #If partitions; the 7 frm_* form-designer nodes are counted as the nearest UI surface and are declarative layout, not a rendering production.",
+    "mixes_in": "RULED grammar-absence (VBA-D2), count 0, with the near misses NAMED and already published: implements_statement (conformance -> implements), with_statement (scoping -> uses), and the event surface (event_declaration, with_events_modifier -> calls/metadata).",
+    "part_of": "RULED grammar-absence (VBA-D3), count 0: no textual inclusion; #If selects lines inside one module; the 3 *fragment nodes contain their own file's lines and name no other unit.",
+    "extends": "RULED grammar-absence (VBA-D4), count 0, ladder walked and recorded (R1 unavailable in principle, R2 fires on 0 sites, R3 cannot express a supertype link).",
+    "imports": "GAP (not ruled): 0 emission sites; the R3 candidate measured — declare_function_statement / declare_sub_statement (2 live named node types) carry the `Lib \"<library>\"` external-library binding. The closing turn takes the site count and decides between publishing the binding as imports and recording it as a different external-API fact.",
+    "overrides": "GAP (not ruled): 0 emission sites; VBA has no inheritance, and Property Get/Let/Set are 4 named accessor productions of ONE property (property_get_declaration, property_let_declaration, property_set_declaration, conditional_property_declaration). The ladder must be walked before any ruling is admitted.",
+    "_artifacts": [
+      "script/m14/spec/vba-completeness.json (this block + coverage)",
+      "validation/m14/measurements/vba-grammar-nodes.json (the grammar-side inventory the rulings cite)",
+      "validation/m14/vba-grammar-pin.json (contract and wired wasm sha)",
+      "src/ast/real-vba-analyzer.ts (analyzer under measurement)",
+      "validation/m14/fixtures/vba/ (9 fixture/expectation pairs, 9 pass / 0 fail)"
+    ],
+    "_measured": "2026-10-29"
+  }
+}
