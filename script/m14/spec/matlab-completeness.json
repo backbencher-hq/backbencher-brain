@@ -1,0 +1,181 @@
+{
+  "language": "matlab",
+  "grammar": "tree-sitter-matlab (pinned wasm wasm/tree-sitter-matlab.wasm; node-types.json in the vendored grammar carries 148 node types, 76 named)",
+  "_authority": "CREATED 2026-10-31 and it is the most important line in the file: this lane's admissible population is THREE FILES, and every one of them is Objective-C source that the router's `.m` content test (src/ast/language-detection.ts:405: the first 64 KB containing `function ` or `classdef ` is MATLAB, otherwise Objective-C) admits by matching the ENGLISH WORD `function ` inside a comment. That is measured, not asserted: validation/m14/fixtures/matlab/census-constructs.ts walked the whole admitted population and printed the three paths, and each trigger line is a prose sentence (`/// A no-op function taking no arguments and returning no value`; `This function is not called at exact time intervals`; `not take full function from downloader options`). So the population is the GATE's and PRODUCTION's — the router says these files are MATLAB, so this lane measures them — but the corpus exercises NO genuine MATLAB construct in that population, and every per-type measurement below says so with a count rather than hiding it. Nothing in this file is copied from another language's rows: the implemented types are those the ANALYZER demonstrably emits (fixtures, `validation/m14/fixtures/matlab/`, 5 fixtures, 0 fail), the exclusions are grammar-inventory plus ontological rulings with their own counts and falsifiers, and the seven remaining types are GAPS, not rulings.",
+  "_created": "2026-10-31",
+  "_lane": "matlab (engine language id and coverage-gate lane key; the campaign lane key is `matlab`, no alias). Corpus root $HOME/fixtures/repositories.",
+  "coverage": {
+    "_why_declared_now": "DECLARED 2026-10-31 on the WHOLE admitted population, with the population string printed by the census and by the incoming gate, per HANDOFF §5.1/§7.1. The lane had no spec, so the coverage gate reported `matlab NO - - - - no spec file` while the lane's analyzer, fixtures and router entry existed: an instrument that cannot see a lane cannot arm it. `implemented` is the four types the analyzer emits TODAY (src/ast/real-matlab-analyzer.ts: calls, uses, contains, extends); the three extended types are RULED with counts and cited artifacts; the seven canonical types still to close are GAPS and are named in `gap.gaps`. THE POPULATION IS 3 FILES AND THAT IS A FACT ABOUT THIS CORPUS, NOT AN INSTRUMENT SHORTFALL — and it is stated in `_population` together with the stronger fact the census found: all three are Objective-C by content.",
+    "_population": {
+      "_unit": "admitted files [0,3) of 3 — the WHOLE admissible population (no stride, no cap), recomputed by validation/m14/fixtures/matlab/census-constructs.ts over $HOME/fixtures/repositories at the gate's own admission predicate (ROUTER TABLE `.m` for lane matlab AND the router's content test on the first 64 KiB, 1 MiB engine cap). Transcript: validation/m14/fixtures/matlab/measurements/matlab-constructs.txt",
+      "admitted": 3,
+      "tracked_m_files_on_the_corpus": 412,
+      "excluded_tracked_but_absent_unreadable": 153,
+      "excluded_over_the_1MiB_cap": 0,
+      "excluded_as_objective_c_by_the_router": 256,
+      "arithmetic_check": "3 admitted + 153 absent + 256 routed to objective-c = 412 tracked `.m` files, which is the independent count the Lead's census reported — the admission rule reproduces the tracking total exactly, so no file is silently lost or double-counted",
+      "corpus_file_set_sha256": "fe4e4996189ebd91ad3d322430a55869e37495aa8d8696ea35362ae0506cd8dd",
+      "files": [
+        "flutter-packages/packages/pigeon/platform_tests/alternate_language_test_plugin/darwin/alternate_language_test_plugin/Sources/alternate_language_test_plugin/CoreTests.gen.m",
+        "flutter-packages/packages/video_player/video_player_avfoundation/darwin/video_player_avfoundation/Sources/video_player_avfoundation_objc/FVPTextureBasedVideoPlayer.m",
+        "sdwebimage/SDWebImage/Core/SDWebImageDownloaderOperation.m"
+      ],
+      "content_finding": "ALL THREE ADMITTED FILES ARE OBJECTIVE-C. Each carries the router's marker as the English word `function ` inside a comment — the marker lookups are recorded in the transcript, and the files' own text carries `#import`, `@interface`, `@implementation`, `NSString`, `nonatomic` and `@property`. The router's content test is a substring test on the head, and prose that uses the word `function` satisfies it. The analyzer parses them with the MATLAB grammar because that is what production does for this spelling+content, which is exactly why its emissions on this population are reported rather than suppressed: suppressing them would hide the population defect, and this lane's job is to measure what production admits.",
+      "genuine_matlab_constructs_in_the_population": "0 classdef sections, 0 function definitions, 0 methods/properties/events/enumeration sections, 0 `+pkg/` or `@Class/` folders — measured by the same walk (validation/m14/fixtures/matlab/measurements/matlab-constructs.txt, POPULATION SHAPE)",
+      "matlab_scripts_are_not_in_this_population": "STATED, NOT HIDDEN: a MATLAB SCRIPT (a `.m` file with no `function`/`classdef`) is routed to Objective-C by the router's own rule, so it is NOT in this lane's population. The three admitted files are the whole population and none of them is a script in the MATLAB sense; the population is the production router's answer, which is what this lane is required to measure."
+    },
+    "implemented": [
+      "calls",
+      "uses",
+      "contains",
+      "extends"
+    ],
+    "excluded": [
+      {
+        "label": "decorates",
+        "evidence": "ontological",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL — the csharp-annotation precedent: an annotation is PASSIVE METADATA a tool reads, and a decorator is an APPLIED CALLABLE; a `decorates` row for a MATLAB attribute list would assert an application the vocabulary does not credit). THE LADDER WAS WALKED FIRST AND ITS RUNGS ARE UNAVAILABLE BY MEASUREMENT: R1/R2 — the vendored grammar's own inventory (grammars/tree-sitter-matlab/node-types.json) carries 148 node types of which 76 are named, and 0 of the 76 is a decorator/annotation production that wraps or applies to a declaration; the grammar DOES carry `attribute` and `attributes` (2 of the 76 named types), and those are exactly the class the adjudicated ontology holds to be passive metadata — a parenthesised ACCESS-SPECIFICATION list (`properties (SetAccess=private)`, `methods (Static)`) that the runtime reads off the declaration, never a callable applied to it. R3 (express on an existing node type) therefore EXISTS on `attributes` and is NOT TAKEN for the ONTOLOGICAL reason, never for difficulty: publishing `decorates property -> SetAccess` would credit metadata with an application. MEASURED SITES over the WHOLE admitted population (admitted files [0,3) of 3, transcript validation/m14/fixtures/matlab/measurements/matlab-constructs.txt): attributes lists 0, attribute entries 0, distinct attribute spellings 0 — the opportunity is counted, and it is 0 in this population because no admitted file is genuine MATLAB. THE DOABILITY HALF IS PINNED ELSEWHERE, NOT LOST: the fixture validation/m14/fixtures/matlab/class-surface.m exercises `properties (SetAccess=private)` and `methods (Access=private)` and the analyzer publishes the resulting VISIBILITY on the property/method symbols rather than inventing a relationship. FALSIFIER (an instrument in the tree counts it): (1) a decorator/annotation production in the SERVED grammar that APPLIES to a declaration — counted 0 of the 76 named node types; the census line turning non-zero refutes the ruling; (2) an attribute site in the admitted population whose attribute is invoked as a callable applied to the declaration — counted 0 of 0 attribute sites in 0 of 3 files."
+      },
+      {
+        "label": "renders",
+        "evidence": "ontological",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL — MATLAB has no markup/component template construct, and the only component-shaped model it has is App Designer, whose UI is a CONTAINER TREE OF WIDGET CONSTRUCTOR CALLS inside a `.mlapp` archive, not a component symbol a file-scoped analyzer can render). THE LADDER WAS WALKED FIRST AND THE RUNGS ARE UNAVAILABLE BY MEASUREMENT: R1/R2 — the served grammar's own inventory (grammars/tree-sitter-matlab/node-types.json, 148 node types / 76 named) carries 0 render/component/template/markup/widget production, so a grammar patch could not be built from the language; R3 could express `uifigure(...)`/`uicontrol(...)` as ordinary `function_call` nodes (the construct IS a call), and R3 is NOT TAKEN because the edge it would publish has NO VALID TARGET: the contract is 'a component RENDERS another component', and a UI widget constructor's first argument is a PARENT CONTAINER object or a name/value list, not a declared component symbol — the runtime wires the tree, and the analyzer has no component model to point at. MEASURED SITES over the WHOLE admitted population (admitted files [0,3) of 3, transcript validation/m14/fixtures/matlab/measurements/matlab-constructs.txt): UI component constructor calls 0 (0 of the 23 widget constructor spellings appear; the constructor-name census is printed and empty); `.mlapp` files on the corpus tree 0 — and a `.mlapp` is a ZIP archive the ROUTER admits to no lane, so the App Designer route does not reach this lane's population either. FALSIFIER (an instrument in the tree counts it): a UI constructor call whose first argument is an IDENTIFIER naming a DECLARED component symbol — counted 0 of 0 constructor sites; or a served-grammar production that carries a rendered-component reference — counted 0 of the 76 named node types. The `.mlapp` count turning non-zero on the corpus tree would also reopen the question, and the census prints it."
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "ontological",
+        "from": "RULED UNDECIDABLE (ONTOLOGICAL — MATLAB has no mixin/trait/composition clause; its only multi-parent construct is the SUPERCLASS LIST, and every base in it is an IS-A base whose members are INHERITED, which is `extends`, not a composed member set). THE LADDER WAS WALKED FIRST AND ITS RUNGS ARE UNAVAILABLE BY MEASUREMENT: R1/R2 — the served grammar's own inventory (grammars/tree-sitter-matlab/node-types.json, 148 node types / 76 named) carries `superclasses` (with `<` and `&`) as the inheritance production and 0 mixin/with/trait/include/composition production; a grammar patch would have to INVENT a construct MATLAB does not have. R3 exists — the `&` sites are ordinary `superclasses` children — and R3 is NOT TAKEN because the relation it would publish is a DIFFERENT relation from the one measured: a base named after `&` is still a superclass (the class IS-A it, and `isa()` answers true), so labelling it `mixes_in` would publish a conformance under the composition label. MEASURED SITES over the WHOLE admitted population (admitted files [0,3) of 3, transcript validation/m14/fixtures/matlab/measurements/matlab-constructs.txt): classes with a superclasses node 0, classes with TWO OR MORE bases (`&` sites) 0, superclass entries 0 — the construct is counted and is absent from this population. THE CORPUS-FREE HALF IS PINNED BY A FIXTURE: validation/m14/fixtures/matlab/class-and-methods.m pins `classdef Report < BaseReport` as `extends` (a single base, which is inheritance, never relabelled). FALSIFIER (an instrument in the tree counts it): (1) a grammar production that composes a class from another class's member set WITHOUT an IS-A base (a `with`/`include`/`mixin` clause) — counted 0 of the 76 named node types; (2) a `classdef X < Y & Z` site where a base is NOT an IS-A superclass — counted 0 of 0 superclass entries over the population. A single such site refutes the ruling."
+      }
+    ],
+    "corpusUnexercised": [
+      {
+        "label": "uses",
+        "evidence": "corpus-unexercised",
+        "from": "the analyzer PUBLISHES uses — src/ast/real-matlab-analyzer.ts emits it from `field_expression` receivers/members and from free identifier reads — and the admitted population does not exercise it: 0 edges in 0 of 3 files over the whole population (transcript validation/m14/fixtures/matlab/measurements/matlab-constructs.txt, ANALYZER EMISSIONS). The doability half is pinned by two fixtures authored BEFORE this run: validation/m14/fixtures/matlab/class-and-methods.m expects uses `total -> obj` (field_receiver) and uses `total -> Data` (field_member), and validation/m14/fixtures/matlab/functions.m expects uses `summarize -> values`; both pass in `bun script/m14/run-fixtures.ts --lang matlab`. The reason the population is silent is stated in `_population`: no admitted file contains a MATLAB declaration for a use edge to leave."
+      },
+      {
+        "label": "contains",
+        "evidence": "corpus-unexercised",
+        "from": "the analyzer PUBLISHES contains — src/ast/real-matlab-analyzer.ts emits it for declarations nested in a class or nested function — and the admitted population does not exercise it: 0 edges in 0 of 3 files over the whole population (transcript validation/m14/fixtures/matlab/measurements/matlab-constructs.txt, ANALYZER EMISSIONS). The doability half is pinned by three fixtures authored BEFORE this run: validation/m14/fixtures/matlab/class-and-methods.m (Report -> Data, Report -> total), validation/m14/fixtures/matlab/class-surface.m (Surface -> Changed, Surface -> Ready, Surface -> helper) and validation/m14/fixtures/matlab/nested-and-script.m (outer -> inner); all pass in `bun script/m14/run-fixtures.ts --lang matlab`. The population has 0 classdef sections and 0 function definitions, so containment cannot fire on it — a population fact, not an implementation gap."
+      },
+      {
+        "label": "extends",
+        "evidence": "corpus-unexercised",
+        "from": "the analyzer PUBLISHES extends — src/ast/real-matlab-analyzer.ts emits it from the `superclasses` node — and the admitted population does not exercise it: 0 edges in 0 of 3 files over the whole population (transcript validation/m14/fixtures/matlab/measurements/matlab-constructs.txt, ANALYZER EMISSIONS; classes with a superclasses node 0). The doability half is pinned by a fixture authored BEFORE this run: validation/m14/fixtures/matlab/class-and-methods.m expects extends `Report -> BaseReport`; it passes in `bun script/m14/run-fixtures.ts --lang matlab`. The population has 0 classdef sections, so inheritance cannot fire on it."
+      }
+    ],
+    "_implemented_measured": {
+      "_unit": "WHOLE admitted population: admitted files [0,3) of 3, corpus root $HOME/fixtures/repositories, admission = the gate's own predicate (ROUTER TABLE `.m` for matlab AND the router's content test on the first 64 KiB, 1 MiB cap), 3 walked, 0 tree failures, 0 parseFile failures; production parseFile per file. Transcript: validation/m14/fixtures/matlab/measurements/matlab-constructs.txt. THE POPULATION'S CONTENT IS DISCLOSED IN `_population`: all three files are Objective-C source admitted by the router's prose-marker test, so the counts below are what production emits on the files production routes to this lane — not a claim that genuine MATLAB syntax was exercised.",
+      "calls": {
+        "edges": 1615,
+        "files": 3,
+        "note": "the analyzer emits calls from `function_call` nodes; on this population every edge leaves the synthetic `root` source because no MATLAB declaration exists to own it. The count is real for this population and the population's content is stated above."
+      },
+      "uses": {
+        "edges": 0,
+        "files": 0,
+        "_why": "the predicate CAN fire and does so on genuine MATLAB: fixture validation/m14/fixtures/matlab/class-and-methods.m expects uses `total -> obj` and uses `total -> Data`, and validation/m14/fixtures/matlab/functions.m expects uses `summarize -> values`; all pass under `bun script/m14/run-fixtures.ts --lang matlab` (5 pass, 0 fail). Zero over the admitted population is the POPULATION's content (validation/m14/fixtures/matlab/measurements/matlab-constructs.txt): no admitted file declares a MATLAB symbol."
+      },
+      "contains": {
+        "edges": 0,
+        "files": 0,
+        "_why": "the predicate CAN fire and does so on genuine MATLAB: fixtures validation/m14/fixtures/matlab/class-and-methods.m (Report -> Data, Report -> total), validation/m14/fixtures/matlab/class-surface.m (Surface -> Changed/Ready/helper) and validation/m14/fixtures/matlab/nested-and-script.m (outer -> inner) all pass under `bun script/m14/run-fixtures.ts --lang matlab` (5 pass, 0 fail). Zero over the admitted population is the POPULATION's content (validation/m14/fixtures/matlab/measurements/matlab-constructs.txt): 0 classdef sections, 0 function definitions."
+      },
+      "extends": {
+        "edges": 0,
+        "files": 0,
+        "_why": "the predicate CAN fire and does so on genuine MATLAB: fixture validation/m14/fixtures/matlab/class-and-methods.m expects extends `Report -> BaseReport` and passes under `bun script/m14/run-fixtures.ts --lang matlab` (5 pass, 0 fail). Zero over the admitted population is the POPULATION's content (validation/m14/fixtures/matlab/measurements/matlab-constructs.txt): classes with a superclasses node 0."
+      }
+    },
+    "denominator": {
+      "n": 11,
+      "_why": "the owner's bar: the expressible set is the fourteen-value vocabulary minus the three RULED extended types (decorates, renders, mixes_in). The seven types not yet closed are GAPS, not exclusions — they are expressible in MATLAB and stay inside n, so the lane reads n-implemented/n rather than n/n until they are implemented: that is the honest reading of a lane with work still in flight.",
+      "types": [
+        "calls",
+        "uses",
+        "contains",
+        "extends",
+        "imports",
+        "references",
+        "exports",
+        "implements",
+        "overrides",
+        "instantiates",
+        "part_of"
+      ]
+    }
+  },
+  "handled_verified": {
+    "_description": "MEASURED, not UNMEASURED. A declaration node or relationship construct the analyzer demonstrably handles on the fixtures, cross-checked against the grammar's own node-type inventory (grammars/tree-sitter-matlab/node-types.json, 148 node types / 76 named) and the census's construct counts. This is the handled half of the five-bucket ledger; the derived declaration in `arm` (sliced-declaration.ts) carries the whole-population buckets and will reconcile against this list.",
+    "types": [
+      { "construct": "function_definition", "grammarNode": "function_definition", "emits": "symbol function / method / constructor; contains when nested", "pinnedBy": "validation/m14/fixtures/matlab/functions.m, nested-and-script.m, class-and-methods.m" },
+      { "construct": "class_definition", "grammarNode": "class_definition", "emits": "symbol class; contains for section members", "pinnedBy": "validation/m14/fixtures/matlab/class-and-methods.m, class-surface.m" },
+      { "construct": "superclasses", "grammarNode": "superclasses", "emits": "extends", "pinnedBy": "validation/m14/fixtures/matlab/class-and-methods.m" },
+      { "construct": "properties / events / enumeration / methods", "grammarNode": "properties, property, events, enum, enumeration, methods", "emits": "symbols property / event / enum_member / method; contains from the owning class", "pinnedBy": "validation/m14/fixtures/matlab/class-and-methods.m, class-surface.m" },
+      { "construct": "function_call", "grammarNode": "function_call", "emits": "calls", "pinnedBy": "validation/m14/fixtures/matlab/ambiguity.m, functions.m, nested-and-script.m" },
+      { "construct": "field_expression", "grammarNode": "field_expression", "emits": "uses (field_receiver + field_member)", "pinnedBy": "validation/m14/fixtures/matlab/class-and-methods.m" },
+      { "construct": "assignment RHS / identifier read", "grammarNode": "assignment, identifier", "emits": "uses", "pinnedBy": "validation/m14/fixtures/matlab/functions.m" },
+      { "construct": "script source_file", "grammarNode": "source_file", "emits": "calls from the synthetic `root` source", "pinnedBy": "validation/m14/fixtures/matlab/nested-and-script.m" }
+    ]
+  },
+  "internal_silent": {
+    "_description": "MEASURED — deliberately empty, and the emptiness is a measurement, not a placeholder. The analyzer's emission sites were enumerated in the census and the fixture suite fires all four implemented types, so no construct is classified as correctly-inert yet. When the seven gap types are implemented this list stays empty unless a construct is proven inert by a ruling.",
+    "types": []
+  },
+  "gap": {
+    "_description": "MEASURED — the seven types still inside n that the analyzer does not emit yet. Each is EXPRESSIBLE on node types the pinned grammar already carries (the ladder's R3 rung), so none is a ruling: they are work, and the census already counted their candidate sites so the implementation turns have a denominator.",
+    "gaps": [
+      { "label": "imports", "grammarNodes": "command / command_name / command_argument (MATLAB's `import` is a command statement, not a call), plus the `import a.b` and `import a.*` spellings", "measuredCandidateSites": "9 command sites whose command_name is `import` in 3 files over the admitted population (census transcript); every one of those 9 arguments is an Objective-C preprocessor header (`<Foundation/Foundation.h>`), so 0 of 9 is a symbol-shaped MATLAB package target — the measurement that will decide the ruling's wording", "next": "R3 implementation + fixtures authored BEFORE the run (fire on `import mypkg.f`, forbid on the header-path spelling and on non-`import` commands)" },
+      { "label": "references", "grammarNodes": "handle_operator (`@fn`), metaclass_operator (`?ClassName`), superclass qualifier in function_call (`f@SuperClass`), indirect_access `(...)`", "measuredCandidateSites": "27 handle_operator sites, 60 metaclass_operator sites, 23 superclass-qualifier sites over the admitted population (census transcript) — all of them artifacts of Objective-C text read by the MATLAB grammar, so the population measurement is disclosed and the implementation is pinned by fixtures instead", "next": "R3 implementation + fixtures (fire + forbid), then the whole-population arm re-measures" },
+      { "label": "exports", "grammarNodes": "source_file + function_definition: the file<->function identity is a fact about the language (one primary function per file; a file's names are its public surface), so an `exports` row needs a source symbol and a symbol-shaped target the analyzer already has", "measuredCandidateSites": "0 primary functions matching their file basename, 0 local functions, 0 `+pkg/` and 0 `@Class/` folders over the admitted population (census transcript) — a fact about the population, not about the language", "next": "decide the honest direction (function exports the file-scoped name) against the fleet's exports contract, implement R3, fixtures" },
+      { "label": "implements", "grammarNodes": "superclasses (the `&` list is MULTIPLE superclass conformance, which is implements territory, not mixes_in: the base is an IS-A base like every other superclass)", "measuredCandidateSites": "0 classes with superclasses, 0 `&` sites over the admitted population (census transcript); the language construct exists in the grammar (`superclasses`: `<` with `&` repeats) and is MEASURED, so the type is expressible", "next": "measure `&` semantics against the fleet's implements contract, implement R3, fixtures (single base stays extends; every additional base is the implements half)" },
+      { "label": "overrides", "grammarNodes": "methods / function_definition inside a classdef that has superclasses (the grammar carries no override marker; shadowing is a NAME fact)", "measuredCandidateSites": "0 function definitions inside a classdef with superclasses over the admitted population (census transcript)", "next": "implement the file-scoped shadowing rule (method name matches a method declared in a base declared in the same file), fixtures authored first" },
+      { "label": "instantiates", "grammarNodes": "function_call whose callee name is a class (MATLAB object construction is the class name applied to arguments; the grammar cannot distinguish it from a function call)", "measuredCandidateSites": "0 class names declared in the population, 0 call sites to a declared class name (census transcript)", "next": "implement the file-scoped class-name rule, fixtures authored first" },
+      { "label": "part_of", "grammarNodes": "none textual — MATLAB's namespace is `+pkg/` FOLDERS in the path, and the analyzer already receives the file path (`analyze(rootNode, content, filePath)`); a package membership row would be derived from the PATH, and its target (`mypkg`) is symbol-shaped", "measuredCandidateSites": "0 files under a `+pkg/` folder and 0 under an `@Class/` folder over the admitted population; package folders 0 (census transcript)", "next": "this is the lane's most interesting question — measure whether a file's package membership is `part_of` (a folder-based namespace, no textual inclusion) and rule/implement it on that measurement; fixtures needed for the `+pkg/` spelling" }
+    ]
+  },
+  "design_decision": {
+    "description": "MEASURED decisions forced by this lane's population, each naming the question, the answer and what pins it.",
+    "decisions": [
+      {
+        "question": "The population the gate admits for matlab is 3 `.m` files, all Objective-C by content (the router's `function ` substring matches English prose in comments). Should the lane measure them, exclude them, or report the router defect and stop?",
+        "answer": "MEASURE THEM AND DISCLOSE. Production routes these files to the MATLAB grammar, so they ARE the lane's population; replacing or filtering them would be a workaround that makes the lane's denominator disagree with production's. Every count in this spec is over that population, `_population` states the content fact with the three trigger lines, and the fixture suite carries the doability evidence for the types the population cannot exercise. The routing defect itself is a report for the Lead (it is production code, not the analyzer).",
+        "pinnedBy": "validation/m14/fixtures/matlab/census-constructs.ts + validation/m14/fixtures/matlab/measurements/matlab-constructs.txt (admitted 3, tracked 412 = 3 + 153 absent + 256 routed to objective-c), and the incoming gate's own line `corpus has 3 .m files across 2 repos`"
+      },
+      {
+        "question": "Are `uses`, `contains`, `extends` IMPLEMENTED or GAPS when the admitted population emits 0 of each?",
+        "answer": "IMPLEMENTED AND CORPUS-UNEXERCISED. The analyzer has an emission site for each and the fixtures fire all three, so they are not unimplemented; the population is silent because it contains no MATLAB declaration. The gate's stronger route requires a population claim AND a cited doability study for a zero, both supplied in `_implemented_measured`, and the corpusUnexercised list names each type so it can never be read as a double count.",
+        "pinnedBy": "`bun script/m14/run-fixtures.ts --lang matlab` (5 pass, 0 fail) + the census's per-type emission counts"
+      },
+      {
+        "question": "Is the lane's denominator the ten canonical types or the fourteen-value vocabulary?",
+        "answer": "FOURTEEN. Three extended types are RULED (decorates, renders, mixes_in) with counts and falsifiers, so n = 11; the seven canonical types still to implement are GAPS inside n. That is the owner's bar and the coverage gate's default limb.",
+        "pinnedBy": "this `coverage` block's arithmetic: implemented 4 + corpus-unexercised 0 (they are already in implemented) + gaps 7 = 11 = applicable"
+      }
+    ]
+  },
+  "_firingLog": {
+    "instrument": "script/m14/firing-check.mjs",
+    "row": "NONE — the firing log validation/m14/results/firing-laptop-b.current.log carries 48 lane rows and matlab is not one of them, so the coverage gate reports the lane as NOT FIRED (a MEASUREMENT GAP, never a silence). The census is the stronger substitute: it walks the WHOLE admitted population rather than a one-repo stride sample and prints per-type edges and per-construct sites.",
+    "population_substitute": "validation/m14/fixtures/matlab/measurements/matlab-constructs.txt — whole-population, 3/3 walked, 0 failures"
+  },
+  "_incoming_side": {
+    "_description": "THE SECOND ACCEPTANCE CRITERION, measured but not yet split. The incoming gate refuses the sample-scope verdict only because every edge is unresolved — the population contains no MATLAB declaration for any edge to resolve against — so the split work is deferred to the whole-population arm (sliced-declaration at population 3), where the denominator is the arm's own 3 files and the cause census is counted on them.",
+    "gate_line_measured": {
+      "command": "bun run script/m14/incoming-gate.ts matlab 1",
+      "reading": "FAIL — 0 ambiguous + 1441 unresolved of 1441 edges; population `1 parsed of 1 sampled (corpus has 3 .m files across 2 repos; stride sample)`; grammar log `language: matlab`",
+      "interpretation": "a STATEMENT ABOUT THE POPULATION, not about resolution: the sampled file declares nothing the edges could bind to. The arm re-runs at population 3 and the cause census will classify its edges."
+    },
+    "fleet_policy_that_applies_here": [
+      "A PATH or URI target can never be a published name, so it is NEVER a resolution defect and is never counted as one — this applies directly to the 9 `import <Foundation/Foundation.h>`-shaped command sites the census found: they are Objective-C preprocessor headers, not MATLAB import targets.",
+      "A bare-identifier claim is verified through the TARGET itself (`verifyExternalClaim`), so `extFAIL` is expected to be 0.",
+      "The population is the gate's own sentence — `admitted files [a,b) of N` — and every claim here carries it."
+    ]
+  },
+  "_next_in_priority_order": [
+    "(a) Close the seven gaps on R3, authoring each fixture BEFORE its run (fire + forbid), then re-run the whole-population census so the spec's counts move from 0 to measured: imports (command/import, symbol-shaped targets only), references (handle/metaclass/superclass-qualifier), exports, implements (`&` list), overrides, instantiates, part_of (`+pkg/` folders — the lane's most interesting question).",
+    "(b) Whole-population ARM at population 3 (sliced-declaration.ts --lang matlab --slices <dir> --exts m --expect-population 3 --closure --write) and reconcile its derived five-bucket declaration against this spec.",
+    "(c) Report the router's measured `.m` content-test false positive (3 of 3 admitted files are Objective-C; the trigger is the English word `function ` inside comments) to the Lead — it is production code and out of this lane's write scope, but it is the fact that makes this lane's population what it is.",
+    "(d) The no-regex gate: this analyzer must appear ZERO times in `bash script/m14/no-regex-gate.sh` output (pay any regex debt at implementation time)."
+  ]
+}
