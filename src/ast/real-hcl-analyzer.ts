@@ -2,8 +2,8 @@
 // WHAT THIS FILE IS: the HCL / Terraform analyzer — pure tree-sitter AST extraction over
 //   `config_file` → `body` blocks (resource, data, module, variable, output, locals, terraform)
 //   and their attributes; Terraform's expression language is walked for references and calls.
-// RELATIONSHIP SURFACE: contains, references, calls, imports, exports, extends, overrides, uses
-//   (the lane rules the OO-only kinds out; see the completeness spec's RULED entries).
+// RELATIONSHIP SURFACE: contains, references, calls, imports, exports, extends, overrides, uses,
+//   part_of (the lane rules the OO-only kinds out; see the completeness spec's RULED entries).
 // DOCS: docs/analyzers/real-hcl-analyzer.md (lane record) and docs/analyzers/hcl.md.
 // SPEC + FIXTURES: script/m14/spec/hcl-completeness.json · validation/m14/fixtures/hcl/.
 // CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
@@ -64,6 +64,14 @@ import { ASTEngine } from "./engine"
  *                      produces no edge and therefore no dangling call advice.
  *       * `exports`    document root → each top-level block.
  *       * `imports`    a `module` block → its `source`.
+ *       * `part_of`    a terragrunt `include` block → the INCLUDED file's root-module
+ *                      symbol. `include` is the one construct in the corpus that
+ *                      MERGES another file's configuration into this one; the
+ *                      written path is kept in `metadata.partPath` and the target
+ *                      is the included file's symbol, never the path (the arbiter
+ *                      resolves targets against symbol names). A computed path
+ *                      (function call / interpolated template) names no file this
+ *                      parse can know and publishes nothing.
  *       * every relationship carries `line`: the 1-based line of the node the
  *         TARGET NAME is written on (M59.A7 — the site, not the declaration
  *         start), so navigation lands on the reference, not the block header.
@@ -442,6 +450,45 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (source) {
             addRelationship(qualified, source, ASTEngine.RelationshipType.Imports, this.findModuleSourceLine(node) ?? node.startPosition.row + 1, {
               hclSite: "module-source",
+            })
+          }
+        }
+
+        // terragrunt `include` — the ONE construct in this corpus that MERGES another
+        // file's configuration into this one (terragrunt splices the included config's
+        // blocks into the child, which is why a root file's remote_state/dependencies
+        // are visible in a child). That is the textual-inclusion fact `part_of`
+        // asserts, so it is the R3 rung for the type: the `block` node already exists,
+        // no grammar change is needed.
+        //
+        // MEASURED OVER THE WHOLE ADMITTED POPULATION before this was written
+        // (script/m14/hcl-extended-census.ts, .tmp-hcl/part-of-include.json): 287
+        // include blocks — 279 with a literal `path`, of which 28 name an existing
+        // tracked file (the resolvable class) and 251 name a file absent from the
+        // corpus (the arm's unresolved wall, ruled with a count rather than guessed
+        // away), and 8 computed. A module `source` is NOT this relation: it references
+        // a separate unit addressed `module.NAME.*` and never splices its members into
+        // the caller (measured separately: 2,042 module sources, 941 local / 496
+        // registry / 193 vcs / 364 other / 49 dynamic), so the module branch above
+        // keeps `imports` and earns no `part_of`.
+        //
+        // The target is the included file's ROOT-MODULE SYMBOL (the file stem — the
+        // same spelling `documentName()` gives every HCL file), never the written
+        // path: the arbiter resolves a target string against symbol names and has no
+        // space for a filesystem path. The written path stays in `metadata.partPath`,
+        // where a reader can check it against the source line.
+        if (blockType === "include") {
+          const part = this.findIncludePath(node)
+          if (part) {
+            addRelationship(ownerPath, part.symbol, ASTEngine.RelationshipType.PartOf, part.line, {
+              hclSite: "terragrunt-include",
+              // MANDATORY on every `part_of` row (types.ts): the direction is the
+              // directive's own — THIS file carries the included file as a part.
+              partRole: "library",
+              partPath: part.text,
+              partSymbol: part.symbol,
+              isHclIncludePart: true,
+              evidenceClass: "include_literal",
             })
           }
         }
@@ -961,6 +1008,116 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return base.length > 0 ? base : "hcl"
+  }
+
+  /**
+   * A terragrunt `include` block's `path`, ONLY when it is a single STRING
+   * LITERAL — `{ text, symbol, line }`, or null when the block names nothing
+   * this parse can know.
+   *
+   * WHAT IS REFUSED AND WHY. A computed value is not a file: `find_in_parent_folders()`
+   * is a function call whose result depends on the working directory tree, and
+   * `"${get_terragrunt_dir()}/root.hcl"` is an interpolated template whose static
+   * `root.hcl` half is one segment of a computed path. Publishing either would be a
+   * `part_of` whose target is an expression — an edge to nothing — so both publish
+   * NOTHING rather than a guess. The guard is structural (node types), not a
+   * spelling test: any interpolation, call, variable read, index, arithmetic or
+   * conditional anywhere in the value marks it computed.
+   *
+   * The SYMBOL is the included file's root-module symbol spelling: the basename's
+   * stem, with the same extension suffixes `documentName()` strips — because the
+   * arbiter resolves a target string against symbol names, and every HCL file's
+   * root symbol is named from its stem (`root.hcl` → `root`). The path itself is
+   * returned separately for `metadata.partPath`.
+   */
+  private findIncludePath(blockNode: Node): { text: string; symbol: string; line: number } | null {
+    const body = this.findChild(blockNode, (n) => n.type === "body")
+    if (!body) return null
+    for (let i = 0; i < body.namedChildCount; i++) {
+      const attr = body.namedChild(i)
+      if (attr?.type !== "attribute") continue
+      const key = this.findChild(attr, (n) => n.type === "identifier")
+      if (key?.text !== "path") continue
+      const expr = this.findChild(attr, (n) => n.type === "expression")
+      if (!expr) return null
+      if (this.expressionIsComputed(expr)) return null
+      const literal = this.findDescendant(expr, (n) => n.type === "template_literal")
+      if (!literal) return null
+      const text = literal.text
+      const symbol = this.includePartSymbol(text)
+      if (!symbol) return null
+      return { text, symbol, line: key.startPosition.row + 1 }
+    }
+    return null
+  }
+
+  /**
+   * True when the value is a runtime expression rather than a literal this parse
+   * can name. Kept as a node-type walk (never source text): the grammar's own
+   * vocabulary is the contract, so a future construct cannot slip past a spelling
+   * test.
+   */
+  private expressionIsComputed(expr: Node): boolean {
+    const COMPUTED = new Set([
+      "template_interpolation",
+      "function_call",
+      "variable_expr",
+      "get_attr",
+      "index",
+      "legacy_index",
+      "splat",
+      "attr_splat",
+      "full_splat",
+      "for_expr",
+      "conditional",
+      "binary_operation",
+      "unary_operation",
+    ])
+    let computed = false
+    const visit = (n: any): void => {
+      if (computed || !n) return
+      if (COMPUTED.has(n.type)) {
+        computed = true
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) visit(n.namedChild(i))
+    }
+    visit(expr)
+    return computed
+  }
+
+  /**
+   * The symbol-shaped target for an included file's path: its basename's stem.
+   * `./lib/root.hcl` → `root`, `root.hcl` → `root`, `x` → `x`.
+   *
+   * A name carrying characters that can only come from an expression or a glob
+   * (`$`, braces, quotes, `*`, `?`, shell metacharacters) is refused: the
+   * `expressionIsComputed` walk already excludes interpolations, so this is the
+   * second guard that keeps a path-shaped or glob-shaped string out of the target
+   * slot. Empty is refused for the same reason a label-less block names nothing.
+   */
+  private includePartSymbol(pathText: string): string {
+    const slash = pathText.lastIndexOf("/")
+    const base = slash >= 0 ? pathText.slice(slash + 1) : pathText
+    if (base.length === 0) return ""
+    for (let i = 0; i < base.length; i++) {
+      const c = base.charCodeAt(i)
+      if (
+        c <= 32 || c === 34 || c === 39 || c === 96 || c === 36 || c === 40 || c === 41 ||
+        c === 123 || c === 125 || c === 91 || c === 93 || c === 42 || c === 63 ||
+        c === 59 || c === 124 || c === 38 || c === 60 || c === 62 || c === 92 || c === 126
+      ) {
+        return ""
+      }
+    }
+    const lower = base.toLowerCase()
+    for (const suffix of [".tfvars", ".tofu", ".hcl", ".tf"]) {
+      if (lower.endsWith(suffix)) {
+        const stem = base.slice(0, base.length - suffix.length)
+        return stem.length > 0 ? stem : ""
+      }
+    }
+    return base
   }
 
   /**

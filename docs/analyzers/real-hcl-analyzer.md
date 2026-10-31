@@ -16,7 +16,7 @@
   `val`), 0 missing, 0 extra** in both directions. See `PIN.md`.
 - Wiring: `ASTEngine` → `RealHclAnalyzer`
 
-## What each of the ten relationship types means IN THIS LANGUAGE
+## What each of the relationship types means IN THIS LANGUAGE
 
 The general taxonomy is not self-explanatory for a configuration language, so
 each entry says what the edge asserts here, and what it is not.
@@ -30,6 +30,7 @@ each entry says what the edge asserts here, and what it is not.
 | `calls` | the enclosing block calls a **callable this same file declares** (`function "f" {}`) | not a call to a Terraform global. `merge(…)`, `length(…)` and `provider::test::is_true(…)` declare nothing a repository can declare, so they carry no edge |
 | `exports` | the document root publishes a top-level block as part of its surface | not a module export in the JS sense; a Terraform module's outputs are `output` blocks, which are among the exported blocks |
 | `imports` | a `module` block names an external module by its `source` path | not a code import. The target is a filesystem path or a registry coordinate and binds to no symbol |
+| `part_of` | a terragrunt `include` block SPLICES the included file's configuration into this document: terragrunt merges the included blocks into the child, so the included file is a PART of this one | not module inclusion. A `module { source = … }` is a separate unit addressed `module.NAME.*` whose members never become this document's own; it earns `imports`, never `part_of` |
 | `extends` | — (ruled, below) | HCL has no type declaration to extend |
 | `implements` | — (ruled, below) | HCL has no interface to implement |
 | `instantiates` | — (ruled, below) | a `resource` block builds an instance of a type the PROVIDER declares, and no repository declares it |
