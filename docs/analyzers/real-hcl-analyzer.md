@@ -33,7 +33,7 @@ each entry says what the edge asserts here, and what it is not.
 | `part_of` | a terragrunt `include` block SPLICES the included file's configuration into this document: terragrunt merges the included blocks into the child, so the included file is a PART of this one | not module inclusion. A `module { source = … }` is a separate unit addressed `module.NAME.*` whose members never become this document's own; it earns `imports`, never `part_of` |
 | `extends` | — (ruled, below) | HCL has no type declaration to extend |
 | `implements` | — (ruled, below) | HCL has no interface to implement |
-| `instantiates` | — (ruled, below) | a `resource` block builds an instance of a type the PROVIDER declares, and no repository declares it |
+| `instantiates` | a `resource` / `data` block constructs an instance of the PROVIDER TYPE its first label names (`resource "aws_instance" "web"` instantiates `aws_instance`); the source is the document root, the target is the type label as written, and `metadata.instanceType`/`instanceKind`/`instanceName` say which instance and which half of the provider schema | not a declaration — a provider type is declared by a provider BINARY, in no repository, so the target resolves externally or not at all, and no symbol is invented for it. IMPLEMENTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 blocks over 444 labels, 0 labels declared as a type |
 | `mixes_in` | — (ruled, below) | no HCL construct composes a MEMBER SET from one declaration into another; `dynamic` repeats a member set the enclosing block itself writes, and `lifecycle`/`provisioner` are already `contains` |
 
 ## Relationship ontology — what was changed in this wave
@@ -493,6 +493,30 @@ The analyzer contains **zero** regular-expression literals and no
 line count. Labels come from the `template_literal` grammar field, object values
 from the `val` field, function callees from the `function_call` node's `identifier`
 child, and all reference extraction is node-type and field driven.
+
+## The extended values — what each one was measured against
+
+`part_of` is EMITTED at R3 (HCL-D11): terragrunt `include` SPLICES the included file's configuration
+into the child, so the included file is a PART of the including document. Whole admitted population:
+287 include blocks, 22 literal `path` (all inside the admitted set), 265 computed
+(`find_in_parent_folders(...)` / interpolated templates, refused), and exactly 22 `part_of` edges over
+17 files — 22/22 literal sites, the census's own control. A module `source` is the discriminator, not
+this relation: 2,042 sites, members stay namespaced `module.NAME.*`, so `imports` only.
+
+`instantiates` is EMITTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 `resource`/`data` blocks over 444
+distinct type labels, and **0 of those labels is a declaration of a TYPE** in the corpus — the 42
+address collisions are 14 variables / 12 modules / 6 outputs / 2 providers / 4 label-less resource
+blocks / 1 label-less data block / 3 DSL blocks, i.e. NAMES that happen to spell provider types, and
+997 of the 3,932 sites carry one, so the arm's `resolved` column for this type is an UPPER BOUND on
+correct type binding. Shape pinned by `instantiates-resource-type.tf` (pre-change 13 pass / 1 fail,
+post-change 14 pass / 0 fail).
+
+`mixes_in` is RULED (HCL-D12): 374 `dynamic` blocks write their generated members in the source
+`content` block (15 with nested block children, 359 attribute-only) and iterate VALUES (859 `for_each`
+sites: 306 identifier reads / 263 calls / 218 conditionals / 41 for-expressions / 28 collections / 3
+literals), so it is a loop-over-a-block, not member-set composition; `lifecycle` 227 and `provisioner`
+294 are members the enclosing resource itself declares (already `contains`); module `source` 2,042 keeps
+its members namespaced `module.NAME.*` (HCL-D11).
 
 ## Complexity envelope
 

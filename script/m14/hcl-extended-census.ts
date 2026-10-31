@@ -177,6 +177,18 @@ const out: any = {
     variableBlocks: 0,
     outputBlocks: 0,
   },
+  instantiates: {
+    resourceOrDataBlocks: 0,
+    distinctResourceTypeLabels: 0,
+    labelsDeclaredAsAnAddress: 0,
+    labelsDeclaredByKind: {} as Record<string, number>,
+    sitesWithCollidingLabel: 0,
+    collisionSamples: [] as string[],
+    labelsDeclaredAsABlockType: 0,
+    targetLabelSamples: [] as string[],
+    declaredAddressSamples: [] as string[],
+    _why: "the CONSTRUCT occurs but the RELATION binds nothing: no resource/data type label is a declaration in the corpus (a provider type is declared by a provider binary, in no repository)",
+  },
   decorates: {
     validationBlocks: 0,
     preconditionOrPostconditionBlocks: 0,
@@ -196,6 +208,10 @@ const out: any = {
 }
 
 const includeFiles = new Set<string>()
+const declaredAddresses = new Set<string>()
+const declaringKind = new Map<string, string>()
+const resourceTypeLabels = new Map<string, number>()
+const blockTypesSeen = new Set<string>()
 for (const f of files) {
   let src: string
   try { src = readFileSync(f, "utf8") } catch { out.parse.parseFailed++; continue }
@@ -204,6 +220,17 @@ for (const f of files) {
   out.parse.filesVisited++
   const rel = f.slice(CR.length + 1)
   const dir = path.dirname(f)
+  const collectAddress = (h: { type: string; labels: string[] }): string => {
+    if (h.type === "resource" || h.type === "data") {
+      if (h.labels.length >= 2) return `${h.labels[0]}.${h.labels[1]}`
+      if (h.labels.length === 1) return h.labels[0]
+      return h.type
+    }
+    if (h.type === "variable" || h.type === "output" || h.type === "module" || h.type === "provider") {
+      return h.labels[0] ?? h.type
+    }
+    return h.labels.length > 0 ? `${h.type}.${h.labels.join(".")}` : h.type
+  }
   walk(root, (n) => {
     if (n.type === "block") {
       const h = blockHeader(n)
@@ -255,6 +282,20 @@ for (const f of files) {
       if (h.type === "module" && attrs.has("providers")) out.mixes_in.moduleBlocksWithProvidersArgument++
       if (h.type === "variable") out.mixes_in.variableBlocks++
       if (h.type === "output") out.mixes_in.outputBlocks++
+      // `instantiates` census: every resource/data block, its TYPE label, and whether the label is
+      // a DECLARATION in the corpus (the only thing that could bind the relation).
+      const addr = collectAddress(h)
+      declaredAddresses.add(addr)
+      if (!declaringKind.has(addr)) declaringKind.set(addr, `${h.type} @ ${rel}:${n.startPosition.row + 1}`)
+      if (h.type === "resource" || h.type === "data") {
+        out.instantiates.resourceOrDataBlocks++
+        const label = h.labels[0]
+        if (label) {
+          resourceTypeLabels.set(label, (resourceTypeLabels.get(label) ?? 0) + 1)
+          if (out.instantiates.targetLabelSamples.length < 10) out.instantiates.targetLabelSamples.push(`${rel}:${n.startPosition.row + 1} ${h.type} "${label}"`)
+        }
+      }
+      blockTypesSeen.add(h.type)
       if (h.type === "resource" && h.labels[0] === "template_file") out.renders.templateFileOrDirResources++
       if (h.type === "data" && (h.labels[0] === "template_file" || h.labels[0] === "template_dir")) out.renders.templateFileOrDirResources++
     }
@@ -305,8 +346,26 @@ for (const rel of out.part_of.includeFiles) {
 }
 out.part_of.emittedPartOfEdges = emitted
 out.part_of.emittedEdgeFiles = emittedFilesWithEdges
+// THE `instantiates` DERIVATION: a resource/data type label is bindable only if it is a DECLARATION
+// in the corpus. Both readings are counted so the corpus-unexercised `_why` is a measurement rather
+// than a claim: 0 of the labels is an address, and 0 of them is even a declared block type.
+out.instantiates.distinctResourceTypeLabels = resourceTypeLabels.size
+let collidingSites = 0
+for (const [label, count] of resourceTypeLabels) if (declaredAddresses.has(label)) collidingSites += count
+out.instantiates.sitesWithCollidingLabel = collidingSites
+for (const label of resourceTypeLabels.keys()) {
+  if (declaredAddresses.has(label)) {
+    out.instantiates.labelsDeclaredAsAnAddress++
+    const decl = declaringKind.get(label) ?? "?"
+    const kind = decl.split(" ")[0]
+    out.instantiates.labelsDeclaredByKind[kind] = (out.instantiates.labelsDeclaredByKind[kind] ?? 0) + 1
+    if (out.instantiates.collisionSamples.length < 12) out.instantiates.collisionSamples.push(`${label} -> declared by ${decl}`)
+    if (out.instantiates.declaredAddressSamples.length < 10) out.instantiates.declaredAddressSamples.push(label)
+  }
+  if (blockTypesSeen.has(label)) out.instantiates.labelsDeclaredAsABlockType++
+}
 writeFileSync(OUT, JSON.stringify(out, null, 2))
-console.log(JSON.stringify({ population: out.population, part_of: { includeBlocks: out.part_of.includeBlocks, noPathAttribute: out.part_of.noPathAttribute, literalPath: out.part_of.literalPath, computedPath: out.part_of.computedPath, literalPresentInPopulation: out.part_of.literalPresentInPopulation, literalAbsentFromPopulation: out.part_of.literalAbsentFromPopulation, emittedPartOfEdges: out.part_of.emittedPartOfEdges, emittedEdgeFiles: out.part_of.emittedEdgeFiles, emittedFiles: out.part_of.emittedFiles, includeFiles: out.part_of.includeFiles.length }, mixes_in: out.mixes_in, decorates: out.decorates, renders: out.renders, parse: out.parse }, null, 2))
+console.log(JSON.stringify({ population: out.population, part_of: { includeBlocks: out.part_of.includeBlocks, noPathAttribute: out.part_of.noPathAttribute, literalPath: out.part_of.literalPath, computedPath: out.part_of.computedPath, literalPresentInPopulation: out.part_of.literalPresentInPopulation, literalAbsentFromPopulation: out.part_of.literalAbsentFromPopulation, emittedPartOfEdges: out.part_of.emittedPartOfEdges, emittedEdgeFiles: out.part_of.emittedEdgeFiles, emittedFiles: out.part_of.emittedFiles, includeFiles: out.part_of.includeFiles.length }, mixes_in: out.mixes_in, instantiates: out.instantiates, decorates: out.decorates, renders: out.renders, parse: out.parse }, null, 2))
 if (out.part_of.emittedPartOfEdges !== out.part_of.literalPath) {
   console.error(`CONTROL FAILED: the production path emitted ${out.part_of.emittedPartOfEdges} part_of edge(s) over ${out.part_of.includeFiles.length} include file(s) but ${out.part_of.literalPath} literal path site(s) were counted. One edge per literal site is the contract; a mismatch means the census and the analyzer disagree and neither number can be cited.`)
   process.exit(3)

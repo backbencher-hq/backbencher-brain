@@ -3,7 +3,8 @@
 //   `config_file` → `body` blocks (resource, data, module, variable, output, locals, terraform)
 //   and their attributes; Terraform's expression language is walked for references and calls.
 // RELATIONSHIP SURFACE: contains, references, calls, imports, exports, extends, overrides, uses,
-//   part_of (the lane rules the OO-only kinds out; see the completeness spec's RULED entries).
+//   part_of, instantiates (the lane rules the OO-only kinds out; see the completeness spec's RULED
+//   entries. `instantiates` is implemented and CORPUS-UNEXERCISED — HCL-D13).
 // DOCS: docs/analyzers/real-hcl-analyzer.md (lane record) and docs/analyzers/hcl.md.
 // SPEC + FIXTURES: script/m14/spec/hcl-completeness.json · validation/m14/fixtures/hcl/.
 // CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
@@ -433,6 +434,38 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
         addRelationship(ownerPath, qualified, ASTEngine.RelationshipType.Contains, node.startPosition.row + 1, {
           hclSite: "block",
         })
+
+        // `instantiates` — a `resource` / `data` block constructs an instance of the PROVIDER TYPE
+        // its FIRST label names (`resource "aws_instance" "web"` instantiates `aws_instance`). The
+        // source is the declaring document's root-module symbol (it owns the block) and the target
+        // is the type label AS WRITTEN — symbol-shaped, and deliberately NOT a declaration the
+        // analyzer invents: the provider type is declared by a provider BINARY, in no repository.
+        //
+        // THE CORPUS-UNEXERCISED FACT, measured over the whole admitted population (9,329 files /
+        // 16 repos; validation/m14/fixtures/hcl/extended-census.current.json): 3,932 resource/data
+        // blocks over 444 distinct type labels, and 0 of those labels is declared as an address
+        // anywhere in the corpus. So every edge published here resolves externally or not at all —
+        // which is the contract's own shape for a construction site naming a type the project does
+        // not carry, NOT a reason to publish nothing: the fixture pins that the analyzer CAN emit
+        // the relation (validation/m14/fixtures/hcl/instantiates-resource-type.tf), and the corpus
+        // supplies the targets only outside the tracked set. Emission is unconditional on purpose:
+        // a resolver-gated emission would be invisible on this corpus and could not be counted.
+        //
+        // A nested block (`lifecycle`, `dynamic`/`content`) is a MEMBER of its enclosing declaration
+        // and names no type, a `module` block names a SOURCE, and a `variable` declares a value —
+        // none of those instantiates anything, which is why only `resource`/`data` are read here.
+        if (blockType === "resource" || blockType === "data") {
+          const providerType = labels[0]
+          if (providerType) {
+            addRelationship(rootName, providerType, ASTEngine.RelationshipType.Instantiates, node.startPosition.row + 1, {
+              hclSite: "provider-type",
+              instanceType: providerType,
+              instanceKind: blockType,
+              instanceName: labels[1] ?? "",
+              evidenceClass: "structural",
+            })
+          }
+        }
 
         // Module blocks import an external module source. The source is
         // published TWICE on purpose: as an `ImportInfo` (which the indexer
