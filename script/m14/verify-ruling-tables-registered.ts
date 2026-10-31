@@ -108,8 +108,9 @@ for (const lang of UNADJUDICATED) {
  * So the population is stated, not inferred, and the gate only makes claims about it.
  */
 const LANES_B = [
-  // The authoritative 23 from docs/analyzers/PROMPT-LAPTOP-B.md.15, not a list I
-  // reconstructed. My earlier list had 27 entries and was wrong in BOTH directions:
+  // The authoritative 23, asserted in `script/m14/language-extensions.ts` (LANES_B) — not a list
+  // reconstructed here, and no longer a citation to the assignment document, which was deleted
+  // 2026-10-28 as stale. My earlier list had 27 entries and was wrong in BOTH directions:
   //
   //   it included 6 lanes that are NOT laptop B's — groovy, haskell, java, python,
   //     ruby, scala — so this gate was making claims about other laptops' backlog;

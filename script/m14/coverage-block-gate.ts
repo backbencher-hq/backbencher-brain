@@ -717,8 +717,11 @@ for (const lane of allLanes) {
     // gate must not disagree with the row it audits — but the wording is corrected, and the
     // consequence is reported as a finding rather than buried. See
     // docs/analyzers/HANDOFF.md §5.9: whether `unclassified` may shrink the denominator is an OPEN
-    // decision, because PROMPT-LAPTOP-B §3.1 allows a denominator to shrink only via a RULED verdict
-    // carrying a corpus measurement, and `unclassified` is by definition unmeasured.
+    // decision, because a denominator may shrink only via a RULED verdict carrying a corpus
+    // measurement, and `unclassified` is by definition unmeasured. (This cited §3.1 of
+    // docs/analyzers/PROMPT-LAPTOP-B.md, deleted 2026-10-28 as stale; the RULE is enforced by this
+    // gate and by the per-lane coverage blocks, so the citation was pointing at a copy of a rule
+    // that lives here.)
     else {
       unclassified.push(label)
       problems.push(`excluded "${label}" is classed "${cls ?? "(none)"}" — the evidence classes are grammar-absence, zero-sites, and the RULING CLASSES (grammar-remedy-ruled, ontological, informational, adjudication). ${LEGACY

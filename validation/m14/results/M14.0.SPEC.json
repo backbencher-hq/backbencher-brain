@@ -1,84 +1,10 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "cac1dea9a9ed80e75fe19c6353ab893c15245ce26b873770dd3ad91ed6fd7910",
-    "sealedAt": "2026-10-17T23:38:24.000Z"
+    "contentSha256": "fd24778cb31303a3bcf41c66d9d0bae66c4dad2a0086447f072bf145627a2949",
+    "sealedAt": "2026-10-28T20:14:26.000Z"
   },
   "checks": [
-    {
-      "description": "scala: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "scala: 9 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "scala: 10 ruled, 11 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (scala)",
-      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 21 decisions",
-      "id": "section-a-structural",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "9 relationship kinds pinned by scala fixtures",
-      "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throw_target, throws_type, type_alias, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for scala (6)",
-      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
-      "id": "section-c-payload-matrix",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "scala3:scala at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor scala3:scala: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "scala avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "scala3:scala 12.8 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "scala analyzer docs present and committed",
-      "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md",
-      "id": "section-g-docs",
-      "language": "scala",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "scala",
-      "status": "pass"
-    },
     {
       "description": "go: every named node type classified",
       "id": "inventory-fully-classified",
@@ -968,80 +894,6 @@
       "status": "pass"
     },
     {
-      "description": "scss: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "scss: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "scss: 0 ruled, 0 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (scss)",
-      "detail": "86 types, 16 handled, 70 silent, 0 gaps, 0 decisions",
-      "id": "section-a-structural",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "8 relationship kinds pinned by scss fixtures; 8 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, extends, imports, overrides, references, uses; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for scss (2)",
-      "detail": "complexity, parameters",
-      "id": "section-c-payload-matrix",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "element-plus:scss at documented residual floor (SCSS-D1: missing 56, unexplained 3)",
-      "detail": "floor element-plus:scss: missing=56, unexplained=3 — expected 56/3 per SCSS-D1 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "scss avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "element-plus:scss 21.691 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "scss analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-scss-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "scss",
-      "status": "pass"
-    },
-    {
       "description": "csharp: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "csharp",
@@ -1116,228 +968,6 @@
       "status": "pass"
     },
     {
-      "description": "toml: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "toml: 2 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "toml: 1 ruled, 0 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (toml)",
-      "detail": "21 types, 18 handled, 2 silent, 2 gaps, 1 decisions",
-      "id": "section-a-structural",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "4 relationship kinds pinned by toml fixtures; 4 emitted and all accounted for",
-      "detail": "pinned: contains, exports, imports, references; emitted: contains, exports, imports, references",
-      "id": "section-b-relationship-kinds",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for toml (1)",
-      "detail": "complexity",
-      "id": "section-c-payload-matrix",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "2 tier(s) pinned: import_based, structural",
-      "id": "section-d-evidence-tiers",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "cargo:toml at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor cargo:toml: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "toml avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "cargo:toml 1.3 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "toml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-toml-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "toml",
-      "status": "pass"
-    },
-    {
-      "description": "css: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "css: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "css: 14 ruled, 4 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (css)",
-      "detail": "66 types, 59 handled, 7 silent, 0 gaps, 18 decisions",
-      "id": "section-a-structural",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "5 relationship kinds pinned by css fixtures; 5 emitted and all accounted for",
-      "detail": "pinned: contains, imports, overrides, references, uses; emitted: contains, imports, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for css (1)",
-      "detail": "complexity",
-      "id": "section-c-payload-matrix",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "svelte:css at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor svelte:css: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "css avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "svelte:css 1.408 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "css analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-css-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "css",
-      "status": "pass"
-    },
-    {
-      "description": "solidity: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity: 0 ruled, 7 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (solidity)",
-      "detail": "126 types, 98 handled, 21 silent, 0 gaps, 7 decisions",
-      "id": "section-a-structural",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "10 relationship kinds pinned by solidity fixtures; 10 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for solidity (1)",
-      "detail": "complexity",
-      "id": "section-c-payload-matrix",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity:solidity at documented residual floor (SOL-SCOPE: missing 2, unexplained 21)",
-      "detail": "floor solidity:solidity: missing=2, unexplained=21 — expected 2/21 per SOL-SCOPE (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "solidity:solidity 5.3 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-solidity-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
       "description": "svelte: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "svelte",
@@ -1409,154 +1039,6 @@
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "svelte",
-      "status": "pass"
-    },
-    {
-      "description": "swift: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "swift: 3 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "swift: 10 ruled, 20 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (swift)",
-      "detail": "179 types, 60 handled, 118 silent, 3 gaps, 30 decisions",
-      "id": "section-a-structural",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "10 relationship kinds pinned by swift fixtures; 10 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for swift (2)",
-      "detail": "complexity, visibility",
-      "id": "section-c-payload-matrix",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "swift-nio:swift at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor swift-nio:swift: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "swift avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "swift-nio:swift 92.1 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "swift analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-swift-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "swift",
-      "status": "pass"
-    },
-    {
-      "description": "cpp: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp: 12 ruled, 14 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (cpp)",
-      "detail": "212 types, 44 handled, 148 silent, 0 gaps, 26 decisions",
-      "id": "section-a-structural",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "10 relationship kinds pinned by cpp fixtures; 10 emitted and all accounted for",
-      "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for cpp (2)",
-      "detail": "complexity, qualified_calls",
-      "id": "section-c-payload-matrix",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "fmt:cpp at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "fmt:cpp 154.1 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-cpp-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "cpp",
       "status": "pass"
     },
     {
@@ -1708,80 +1190,6 @@
       "status": "pass"
     },
     {
-      "description": "erlang: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "erlang: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "erlang: 40 ruled, 1 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (erlang)",
-      "detail": "134 types, 104 handled, 30 silent, 0 gaps, 41 decisions",
-      "id": "section-a-structural",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "8 relationship kinds pinned by erlang fixtures; 8 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, implements, imports, instantiates, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for erlang (1)",
-      "detail": "complexity",
-      "id": "section-c-payload-matrix",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "rebar3:erlang at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor rebar3:erlang: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "erlang avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "rebar3:erlang 8 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "erlang analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-erlang-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "erlang",
-      "status": "pass"
-    },
-    {
       "description": "groovy: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "groovy",
@@ -1853,80 +1261,6 @@
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "groovy",
-      "status": "pass"
-    },
-    {
-      "description": "haskell: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "haskell: 10 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "haskell: 11 ruled, 0 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (haskell)",
-      "detail": "176 types, 54 handled, 86 silent, 10 gaps, 11 decisions",
-      "id": "section-a-structural",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "10 relationship kinds pinned by haskell fixtures; 10 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for haskell (1)",
-      "detail": "complexity",
-      "id": "section-c-payload-matrix",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "cabal:haskell at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "haskell avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "cabal:haskell 11.1 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "haskell analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-haskell-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "haskell",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "haskell",
       "status": "pass"
     },
     {
@@ -2226,80 +1560,6 @@
       "status": "pass"
     },
     {
-      "description": "javascript: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: 14 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript: 33 ruled, 19 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (javascript)",
-      "detail": "118 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
-      "id": "section-a-structural",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "9 relationship kinds pinned by javascript fixtures; 9 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for javascript (5)",
-      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
-      "id": "section-c-payload-matrix",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, inferred, structural",
-      "id": "section-d-evidence-tiers",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "lodash:javascript 1724.9 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "javascript analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md + head comment present",
-      "id": "section-g-docs",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "javascript",
-      "status": "pass"
-    },
-    {
       "description": "elixir: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "elixir",
@@ -2448,6 +1708,154 @@
       "status": "pass"
     },
     {
+      "description": "yaml: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: 4 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml: 8 ruled, 8 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (yaml)",
+      "detail": "38 types, 36 handled, 2 silent, 4 gaps, 16 decisions",
+      "id": "section-a-structural",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by yaml fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, imports, overrides, references, uses, yaml_action_use, yaml_action_use_unverified, yaml_alias, yaml_depends_on, yaml_duplicate_key, yaml_keyword_include, yaml_merge, yaml_resource_ref, yaml_schema_publication, yaml_tag_include, yaml_workflow_call, yaml_workflow_call_unverified; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for yaml (3)",
+      "detail": "complexity, docstring, qualifiedCalls",
+      "id": "section-c-payload-matrix",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "kubernetes:yaml at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor kubernetes:yaml: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "kubernetes:yaml 31.459 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "yaml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-yaml-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "yaml",
+      "status": "pass"
+    },
+    {
+      "description": "scss: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "scss: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "scss: 0 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (scss)",
+      "detail": "86 types, 16 handled, 70 silent, 0 gaps, 0 decisions",
+      "id": "section-a-structural",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "8 relationship kinds pinned by scss fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, imports, overrides, references, uses; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for scss (2)",
+      "detail": "complexity, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "element-plus:scss at documented residual floor (SCSS-D1: missing 56, unexplained 3)",
+      "detail": "floor element-plus:scss: missing=56, unexplained=3 — expected 56/3 per SCSS-D1 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "scss avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "element-plus:scss 21.691 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "scss analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-scss-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "scss",
+      "status": "pass"
+    },
+    {
       "description": "hcl: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "hcl",
@@ -2522,83 +1930,675 @@
       "status": "pass"
     },
     {
-      "description": "yaml: every named node type classified",
+      "description": "erlang: every named node type classified",
       "id": "inventory-fully-classified",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "yaml: 4 confirmed gaps declared",
+      "description": "erlang: 0 confirmed gaps declared",
       "id": "gap-list-present",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "yaml: 8 ruled, 8 pending owner",
+      "description": "erlang: 40 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "every named node type classified (yaml)",
-      "detail": "38 types, 36 handled, 2 silent, 4 gaps, 16 decisions",
+      "description": "every named node type classified (erlang)",
+      "detail": "134 types, 104 handled, 30 silent, 0 gaps, 41 decisions",
       "id": "section-a-structural",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "8 relationship kinds pinned by yaml fixtures; 8 emitted and all accounted for",
-      "detail": "pinned: calls, contains, declared_type, exports, extends, imports, overrides, references, uses, yaml_action_use, yaml_action_use_unverified, yaml_alias, yaml_depends_on, yaml_duplicate_key, yaml_keyword_include, yaml_merge, yaml_resource_ref, yaml_schema_publication, yaml_tag_include, yaml_workflow_call, yaml_workflow_call_unverified; emitted: calls, contains, exports, extends, imports, overrides, references, uses",
+      "description": "8 relationship kinds pinned by erlang fixtures; 8 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, implements, imports, instantiates, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, references, uses",
       "id": "section-b-relationship-kinds",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "Matrix 1b payload rows pinned for yaml (3)",
-      "detail": "complexity, docstring, qualifiedCalls",
+      "description": "Matrix 1b payload rows pinned for erlang (1)",
+      "detail": "complexity",
       "id": "section-c-payload-matrix",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "kubernetes:yaml at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor kubernetes:yaml: missing=0, unexplained=0 (differential-baseline.json)",
+      "description": "rebar3:erlang at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor rebar3:erlang: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "yaml avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "kubernetes:yaml 31.459 ms/file",
+      "description": "erlang avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "rebar3:erlang 8 ms/file",
       "id": "section-f-perf-budget",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
-      "description": "yaml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-yaml-analyzer.md + head comment present",
+      "description": "erlang analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-erlang-analyzer.md + head comment present",
       "id": "section-g-docs",
-      "language": "yaml",
+      "language": "erlang",
       "status": "pass"
     },
     {
       "description": "cross-language consistency checks all pass",
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
-      "language": "yaml",
+      "language": "erlang",
+      "status": "pass"
+    },
+    {
+      "description": "css: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css: 14 ruled, 4 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (css)",
+      "detail": "66 types, 59 handled, 7 silent, 0 gaps, 18 decisions",
+      "id": "section-a-structural",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "5 relationship kinds pinned by css fixtures; 5 emitted and all accounted for",
+      "detail": "pinned: contains, imports, overrides, references, uses; emitted: contains, imports, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for css (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "svelte:css at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor svelte:css: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "svelte:css 1.408 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "css analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-css-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "css",
+      "status": "pass"
+    },
+    {
+      "description": "swift: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "swift: 3 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "swift: 10 ruled, 20 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (swift)",
+      "detail": "179 types, 60 handled, 118 silent, 3 gaps, 30 decisions",
+      "id": "section-a-structural",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "10 relationship kinds pinned by swift fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for swift (2)",
+      "detail": "complexity, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "swift-nio:swift at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor swift-nio:swift: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "swift avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "swift-nio:swift 92.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "swift analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-swift-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "swift",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: 10 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell: 11 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (haskell)",
+      "detail": "176 types, 54 handled, 86 silent, 10 gaps, 11 decisions",
+      "id": "section-a-structural",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "10 relationship kinds pinned by haskell fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for haskell (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cabal:haskell at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor cabal:haskell: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "cabal:haskell 11.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "haskell analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-haskell-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "haskell",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: 12 ruled, 14 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (cpp)",
+      "detail": "212 types, 44 handled, 148 silent, 0 gaps, 26 decisions",
+      "id": "section-a-structural",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "10 relationship kinds pinned by cpp fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for cpp (2)",
+      "detail": "complexity, qualified_calls",
+      "id": "section-c-payload-matrix",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "fmt:cpp at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "fmt:cpp 154.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-cpp-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "toml: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "toml: 2 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "toml: 1 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (toml)",
+      "detail": "21 types, 18 handled, 2 silent, 2 gaps, 1 decisions",
+      "id": "section-a-structural",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "4 relationship kinds pinned by toml fixtures; 4 emitted and all accounted for",
+      "detail": "pinned: contains, exports, imports, references; emitted: contains, exports, imports, references",
+      "id": "section-b-relationship-kinds",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for toml (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "2 tier(s) pinned: import_based, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "cargo:toml at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor cargo:toml: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "toml avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "cargo:toml 1.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "toml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-toml-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "toml",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 14 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript: 33 ruled, 24 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (javascript)",
+      "detail": "118 types, 89 handled, 19 silent, 14 gaps, 57 decisions",
+      "id": "section-a-structural",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "12 relationship kinds pinned by javascript fixtures; 12 emitted and all accounted for",
+      "detail": "pinned: calls, contains, decorates, exports, extends, imports, instanceof_check, instantiates, mixes_in, overrides, references, renders, uses; emitted: calls, contains, decorates, exports, extends, imports, instantiates, mixes_in, overrides, references, renders, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for javascript (5)",
+      "detail": "qualified_calls, docstrings, complexity, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, inferred, structural",
+      "id": "section-d-evidence-tiers",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "lodash:javascript at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor lodash:javascript: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "lodash:javascript 1724.9 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "javascript analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "javascript",
+      "status": "pass"
+    },
+    {
+      "description": "scala: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala: 9 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala: 11 ruled, 40 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (scala)",
+      "detail": "173 types, 135 handled, 9 silent, 9 gaps, 51 decisions",
+      "id": "section-a-structural",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "11 relationship kinds pinned by scala fixtures; 11 emitted and all accounted for",
+      "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, exports, expression_use, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, mixes_in, overrides, pattern_type, references, return_type, self_type, throw_target, throws_type, type_alias, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, mixes_in, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for scala (6)",
+      "detail": "qualified_calls, docstrings, complexity, typeParameters, visibility, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala3:scala at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor scala3:scala: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "scala3:scala 3.8 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "scala analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "scala",
+      "status": "pass"
+    },
+    {
+      "description": "solidity: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity: 0 ruled, 7 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (solidity)",
+      "detail": "126 types, 102 handled, 17 silent, 0 gaps, 7 decisions",
+      "id": "section-a-structural",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "11 relationship kinds pinned by solidity fixtures; 11 emitted and all accounted for",
+      "detail": "pinned: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for solidity (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity:solidity at documented residual floor (SOL-SCOPE: missing 2, unexplained 21)",
+      "detail": "floor solidity:solidity: missing=2, unexplained=21 — expected 2/21 per SOL-SCOPE (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "solidity:solidity 5.3 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/real-solidity-analyzer.md + head comment present",
+      "id": "section-g-docs",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "solidity",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "fbacafc0ed6d7c11ddc92e552177704ccb325a3f",
-  "committedAt": "2026-10-17T19:38:24-04:00",
+  "commit": "414aa07f7a40e6514731a074be67c4839d75efd1",
+  "committedAt": "2026-10-28T16:14:26-04:00",
   "data": {
     "languages": {
       "c": {
@@ -3636,7 +3636,12 @@
           "JSD51",
           "JSD52",
           "JSD53",
-          "JSD54"
+          "JSD54",
+          "JSD55",
+          "JSD56",
+          "JSD57",
+          "JSD58",
+          "JSD59"
         ],
         "ruledDecisions": [
           "D1",
@@ -3675,11 +3680,11 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "118 types, 89 handled, 19 silent, 14 gaps, 52 decisions",
+            "detail": "118 types, 89 handled, 19 silent, 14 gaps, 57 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, exports, extends, imports, instanceof_check, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, imports, instantiates, overrides, references, uses",
+            "detail": "pinned: calls, contains, decorates, exports, extends, imports, instanceof_check, instantiates, mixes_in, overrides, references, renders, uses; emitted: calls, contains, decorates, exports, extends, imports, instantiates, mixes_in, overrides, references, renders, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -4263,7 +4268,7 @@
           "G8: field accesses h.value (reads AND writes) emit no Uses on the receiver — scala has no field-access uses collector (only extension methods emit Uses); family gap vs java/groovy/kotlin",
           "G9: self-type references lost — trait Logging { self: Service => } emits no reference to Service"
         ],
-        "nodeTypeCount": 189,
+        "nodeTypeCount": 173,
         "pendingDecisions": [
           "ScalaD-D",
           "ScalaD-E",
@@ -4275,7 +4280,36 @@
           "ScalaD-K",
           "ScalaD-L",
           "ScalaD-M",
-          "ScalaD-N"
+          "ScalaD-N",
+          "SDJ-1",
+          "SDJ-2",
+          "SDJ-7",
+          "SDJ-3",
+          "SDJ-4",
+          "SDJ-5",
+          "SDJ-6",
+          "SDJ-8",
+          "SDJ-9",
+          "SDJ-10",
+          "SDJ-11",
+          "SDJ-12",
+          "SDJ-13",
+          "SDJ-15",
+          "SDJ-16",
+          "SDJ-17",
+          "SDJ-18",
+          "SDJ-19",
+          "SDJ-20",
+          "SDJ-21",
+          "SDJ-22",
+          "SDJ-23",
+          "SDJ-24",
+          "SCL-ONT-1",
+          "SCL-ONT-2",
+          "SCL-ONT-3",
+          "SCL-ONT-4",
+          "SCL-ONT-5",
+          "SCL-DETECT-1"
         ],
         "ruledDecisions": [
           "D1",
@@ -4287,15 +4321,16 @@
           "F6.GI.SCALA",
           "ScalaD-A",
           "ScalaD-B",
-          "ScalaD-C"
+          "ScalaD-C",
+          "SCL-MIXIN-1"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 21 decisions",
+            "detail": "173 types, 135 handled, 9 silent, 9 gaps, 51 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, overrides, pattern_type, references, return_type, self_type, throw_target, throws_type, type_alias, uses",
+            "detail": "pinned: calls, cast_target, contains, declared_type, derives_type, exports, expression_use, extends, given_type, implements, imports, instanceof_check, instantiates, method_value, mixes_in, overrides, pattern_type, references, return_type, self_type, throw_target, throws_type, type_alias, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, mixes_in, overrides, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -4311,11 +4346,11 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "scala3:scala 12.8 ms/file",
+            "detail": "scala3:scala 3.8 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md",
+            "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4379,11 +4414,11 @@
         "ruledDecisions": [],
         "sections": {
           "section-a-structural": {
-            "detail": "126 types, 98 handled, 21 silent, 0 gaps, 7 decisions",
+            "detail": "126 types, 102 handled, 17 silent, 0 gaps, 7 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "detail": "pinned: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -5038,8 +5073,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-17T19:38:24-04:00",
-  "regeneratedAtCommit": "fbacafc0ed6d7c11ddc92e552177704ccb325a3f",
+  "regeneratedAt": "2026-10-28T16:14:26-04:00",
+  "regeneratedAtCommit": "414aa07f7a40e6514731a074be67c4839d75efd1",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

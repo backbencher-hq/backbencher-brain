@@ -136,8 +136,8 @@
         "bytes": 6400
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "c6d79fb062fca2ac929a30894df6843f9137d799375c655cb8df92e03e9bdc1f",
-        "bytes": 171393
+        "sha256": "ef142efb69119ae4ab129f857a2b5fc572925799f45a8ec2e13540b5fc53ea69",
+        "bytes": 186802
       },
       "src/ast/service-topology-builder.ts": {
         "sha256": "69e73f6bfa795ac560da00fd3590c1c1f021d0ba07fdc1601ef32ac424dc86f4",
@@ -308,7 +308,7 @@
         "bytes": 79498
       }
     },
-    "digest": "7ec7757ec5ad5e8332f1efd9b2b38e6d9076797ed83943f4456696e856b5bc05",
+    "digest": "603b89fdc285224ee17135ca80f2291e11dc9e2d425946372445da6b83df9737",
     "parser": {
       "path": "grammars/tree-sitter-groovy/tree-sitter-groovy.wasm",
       "sha256": "bd4f689b8afd004d3bb69ecd8c4d23990284fdc9c322375707b599a40f160062",
@@ -518,23 +518,23 @@
   "perFile": {
     "BaseService.groovy": {
       "symbols": 11,
-      "relationships": 19
+      "relationships": 30
     },
     "Features.groovy": {
       "symbols": 16,
-      "relationships": 24
+      "relationships": 29
     },
     "Negative.groovy": {
       "symbols": 10,
-      "relationships": 20
+      "relationships": 23
     },
     "Repository.groovy": {
       "symbols": 3,
-      "relationships": 9
+      "relationships": 14
     },
     "UserService.groovy": {
       "symbols": 11,
-      "relationships": 43
+      "relationships": 55
     }
   },
   "passing": {
@@ -542,21 +542,21 @@
     "passed": false,
     "metrics": {
       "expected": 130,
-      "observedResolved": 154,
-      "truePositive": 125,
-      "falsePositive": 29,
-      "falseNegative": 5,
+      "observedResolved": 183,
+      "truePositive": 110,
+      "falsePositive": 73,
+      "falseNegative": 20,
       "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 0.8116883116883117,
-      "recall": 0.9615384615384616,
-      "falsePositiveRate": 0.18831168831168832,
-      "falseNegativeRate": 0.038461538461538464,
+      "precision": 0.6010928961748634,
+      "recall": 0.8461538461538461,
+      "falsePositiveRate": 0.3989071038251366,
+      "falseNegativeRate": 0.15384615384615385,
       "unknownRate": 0
     },
-    "earliestFailingLayer": "relationships",
+    "earliestFailingLayer": "ast_extraction",
     "truePositiveIds": [
       "rel:BaseService.groovy:calls:findAll:findByFilter",
       "rel:BaseService.groovy:contains:Audited:createdAt",
@@ -574,9 +574,7 @@
       "rel:Features.groovy:calls:describe:toUpperCase",
       "rel:Features.groovy:contains:Color:GREEN",
       "rel:Features.groovy:contains:Color:RED",
-      "rel:Features.groovy:contains:Color:constructor",
       "rel:Features.groovy:contains:Color:hex",
-      "rel:Features.groovy:contains:Robot:constructor",
       "rel:Features.groovy:contains:Robot:describe",
       "rel:Features.groovy:contains:Robot:name",
       "rel:Features.groovy:contains:Robot:walk",
@@ -592,7 +590,6 @@
       "rel:Negative.groovy:calls:useList:size",
       "rel:Negative.groovy:contains:Counter:add",
       "rel:Negative.groovy:contains:Counter:bump",
-      "rel:Negative.groovy:contains:Counter:constructor",
       "rel:Negative.groovy:contains:Counter:count",
       "rel:Negative.groovy:contains:Counter:interpolate",
       "rel:Negative.groovy:contains:Counter:label",
@@ -610,13 +607,11 @@
       "rel:UserService.groovy:calls:save:completedFuture",
       "rel:UserService.groovy:calls:save:getId",
       "rel:UserService.groovy:calls:save:put",
-      "rel:UserService.groovy:contains:User:constructor",
       "rel:UserService.groovy:contains:User:getId",
       "rel:UserService.groovy:contains:User:getName",
       "rel:UserService.groovy:contains:User:id",
       "rel:UserService.groovy:contains:User:name",
       "rel:UserService.groovy:contains:UserService:User",
-      "rel:UserService.groovy:contains:UserService:constructor",
       "rel:UserService.groovy:contains:UserService:format",
       "rel:UserService.groovy:contains:UserService:save",
       "rel:UserService.groovy:contains:UserService:store",
@@ -648,7 +643,6 @@
       "symbol:Features.groovy:14:method:greeting",
       "symbol:Features.groovy:17:class:Robot",
       "symbol:Features.groovy:18:property:name",
-      "symbol:Features.groovy:20:constructor:constructor",
       "symbol:Features.groovy:24:method:walk",
       "symbol:Features.groovy:28:method:describe",
       "symbol:Features.groovy:36:class:MathSpec",
@@ -658,11 +652,8 @@
       "symbol:Features.groovy:6:enum_member:GREEN",
       "symbol:Features.groovy:6:enum_member:RED",
       "symbol:Features.groovy:8:property:hex",
-      "symbol:Features.groovy:9:constructor:constructor",
-      "symbol:Negative.groovy:18:class:Counter",
       "symbol:Negative.groovy:20:property:count",
       "symbol:Negative.groovy:21:property:label",
-      "symbol:Negative.groovy:23:constructor:constructor",
       "symbol:Negative.groovy:27:method:add",
       "symbol:Negative.groovy:31:method:bump",
       "symbol:Negative.groovy:37:method:interpolate",
@@ -674,85 +665,138 @@
       "symbol:Repository.groovy:8:method:find",
       "symbol:UserService.groovy:10:class:UserService",
       "symbol:UserService.groovy:11:property:store",
-      "symbol:UserService.groovy:13:constructor:constructor",
-      "symbol:UserService.groovy:16:method:format",
-      "symbol:UserService.groovy:21:method:save",
       "symbol:UserService.groovy:27:class:User",
       "symbol:UserService.groovy:28:property:id",
-      "symbol:UserService.groovy:29:property:name",
-      "symbol:UserService.groovy:31:constructor:constructor",
-      "symbol:UserService.groovy:36:method:getId",
-      "symbol:UserService.groovy:39:method:getName"
+      "symbol:UserService.groovy:29:property:name"
     ],
     "falsePositiveIds": [
       "rel:BaseService.groovy:exports:com.example.base:Audited",
       "rel:BaseService.groovy:exports:com.example.base:BaseService",
       "rel:BaseService.groovy:exports:com.example.base:Entity",
-      "rel:BaseService.groovy:imports:Audited:java.util.List",
-      "rel:BaseService.groovy:imports:Audited:java.util.Optional",
+      "rel:BaseService.groovy:imports:com.example.base:java.util.List",
+      "rel:BaseService.groovy:imports:com.example.base:java.util.Optional",
+      "rel:BaseService.groovy:references:Audited:Date",
+      "rel:BaseService.groovy:references:BaseService:String",
+      "rel:BaseService.groovy:references:findAll:List",
+      "rel:BaseService.groovy:references:findAll:T",
+      "rel:BaseService.groovy:references:findByFilter:List",
+      "rel:BaseService.groovy:references:findByFilter:String",
+      "rel:BaseService.groovy:references:findByFilter:T",
+      "rel:BaseService.groovy:references:format:String",
+      "rel:BaseService.groovy:references:getId:String",
+      "rel:BaseService.groovy:references:getName:String",
+      "rel:Features.groovy:contains:Color:Color",
+      "rel:Features.groovy:contains:Robot:Robot",
       "rel:Features.groovy:exports:com.example.features:Color",
       "rel:Features.groovy:exports:com.example.features:MathSpec",
       "rel:Features.groovy:exports:com.example.features:Robot",
       "rel:Features.groovy:exports:com.example.features:Walkable",
-      "rel:Features.groovy:imports:Color:java.util.List",
+      "rel:Features.groovy:exports:com.example.features:globalHelper",
+      "rel:Features.groovy:imports:com.example.features:java.util.List",
       "rel:Features.groovy:overrides:Robot.walk:walk",
+      "rel:Features.groovy:references:Robot:String",
+      "rel:Features.groovy:references:describe:String",
+      "rel:Features.groovy:references:greeting:String",
       "rel:Features.groovy:uses:describe:name",
+      "rel:Negative.groovy:contains:Counter:Counter",
       "rel:Negative.groovy:exports:com.example.negative:Counter",
-      "rel:Negative.groovy:imports:Counter:java.util.List",
+      "rel:Negative.groovy:imports:com.example.negative:java.util.List",
+      "rel:Negative.groovy:references:Counter:String",
+      "rel:Negative.groovy:references:interpolate:String",
       "rel:Negative.groovy:uses:bump:count",
       "rel:Repository.groovy:exports:com.example.repo:Repository",
-      "rel:Repository.groovy:imports:Repository:java.util.List",
-      "rel:Repository.groovy:imports:Repository:java.util.Optional",
+      "rel:Repository.groovy:imports:com.example.repo:java.util.List",
+      "rel:Repository.groovy:imports:com.example.repo:java.util.Optional",
+      "rel:Repository.groovy:references:find:Optional",
+      "rel:Repository.groovy:references:find:String",
+      "rel:Repository.groovy:references:find:T",
+      "rel:Repository.groovy:references:save:T",
+      "rel:UserService.groovy:contains:User:User",
+      "rel:UserService.groovy:contains:UserService:UserService",
       "rel:UserService.groovy:exports:com.example.service:UserService",
-      "rel:UserService.groovy:imports:UserService:com.example.base.BaseService",
-      "rel:UserService.groovy:imports:UserService:com.example.base.Entity",
-      "rel:UserService.groovy:imports:UserService:com.example.repo.Repository",
-      "rel:UserService.groovy:imports:UserService:java.util.HashMap",
-      "rel:UserService.groovy:imports:UserService:java.util.Map",
-      "rel:UserService.groovy:imports:UserService:java.util.concurrent.CompletableFuture",
+      "rel:UserService.groovy:imports:com.example.service:com.example.base.BaseService",
+      "rel:UserService.groovy:imports:com.example.service:com.example.base.Entity",
+      "rel:UserService.groovy:imports:com.example.service:com.example.repo.Repository",
+      "rel:UserService.groovy:imports:com.example.service:java.util.HashMap",
+      "rel:UserService.groovy:imports:com.example.service:java.util.Map",
+      "rel:UserService.groovy:imports:com.example.service:java.util.concurrent.CompletableFuture",
       "rel:UserService.groovy:overrides:User.getId:getId",
       "rel:UserService.groovy:overrides:User.getName:getName",
       "rel:UserService.groovy:overrides:UserService.format:format",
-      "rel:UserService.groovy:overrides:UserService.save:save"
+      "rel:UserService.groovy:overrides:UserService.save:save",
+      "rel:UserService.groovy:references:User:String",
+      "rel:UserService.groovy:references:UserService:Map",
+      "rel:UserService.groovy:references:UserService:String",
+      "rel:UserService.groovy:references:UserService:User",
+      "rel:UserService.groovy:references:format:String",
+      "rel:UserService.groovy:references:getId:String",
+      "rel:UserService.groovy:references:getName:String",
+      "rel:UserService.groovy:references:save:CompletableFuture",
+      "rel:UserService.groovy:references:save:User",
+      "symbol:Features.groovy:20:constructor:Robot",
+      "symbol:Features.groovy:9:constructor:Color",
+      "symbol:Negative.groovy:19:class:Counter",
+      "symbol:Negative.groovy:23:constructor:Counter",
+      "symbol:UserService.groovy:13:constructor:UserService",
+      "symbol:UserService.groovy:17:method:format",
+      "symbol:UserService.groovy:22:method:save",
+      "symbol:UserService.groovy:31:constructor:User",
+      "symbol:UserService.groovy:37:method:getId",
+      "symbol:UserService.groovy:40:method:getName"
     ],
     "falseNegativeIds": [
+      "rel:Features.groovy:contains:Color:constructor",
       "rel:Features.groovy:contains:MathSpec:addition works",
+      "rel:Features.groovy:contains:Robot:constructor",
+      "rel:Negative.groovy:contains:Counter:constructor",
+      "rel:UserService.groovy:contains:User:constructor",
+      "rel:UserService.groovy:contains:UserService:constructor",
       "rel:UserService.groovy:overrides:User.getId:Entity.getId",
       "rel:UserService.groovy:overrides:User.getName:Entity.getName",
       "rel:UserService.groovy:overrides:UserService.format:BaseService.format",
-      "rel:UserService.groovy:overrides:UserService.save:Repository.save"
+      "rel:UserService.groovy:overrides:UserService.save:Repository.save",
+      "symbol:Features.groovy:20:constructor:constructor",
+      "symbol:Features.groovy:9:constructor:constructor",
+      "symbol:Negative.groovy:18:class:Counter",
+      "symbol:Negative.groovy:23:constructor:constructor",
+      "symbol:UserService.groovy:13:constructor:constructor",
+      "symbol:UserService.groovy:16:method:format",
+      "symbol:UserService.groovy:21:method:save",
+      "symbol:UserService.groovy:31:constructor:constructor",
+      "symbol:UserService.groovy:36:method:getId",
+      "symbol:UserService.groovy:39:method:getName"
     ],
     "unknownIds": [],
     "unsupportedIds": [],
     "minimizedFailure": {
       "expected": [
         {
-          "id": "rel:UserService.groovy:overrides:UserService.format:BaseService.format",
-          "layer": "relationships",
-          "kind": "relationship",
+          "id": "symbol:UserService.groovy:13:constructor:constructor",
+          "layer": "ast_extraction",
+          "kind": "symbol",
           "file": "UserService.groovy",
-          "sourceId": "UserService.format",
-          "targetId": "BaseService.format",
+          "line": 13,
           "attributes": {
-            "type": "overrides"
+            "name": "constructor",
+            "symbolKind": "constructor"
           },
           "expectedState": "resolved",
           "evidence": {
             "authority": "manual_audit",
-            "reference": "@Override format — declaring ancestor is BaseService (declared in BaseService.groovy)"
+            "reference": "UserService() {}"
           }
         }
       ],
       "observed": [
         {
-          "id": "rel:BaseService.groovy:imports:Audited:java.util.List",
-          "layer": "relationships",
-          "kind": "relationship",
-          "file": "BaseService.groovy",
-          "sourceId": "Audited",
-          "targetId": "java.util.List",
+          "id": "symbol:Features.groovy:9:constructor:Color",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "Features.groovy",
+          "line": 9,
           "attributes": {
-            "type": "imports"
+            "name": "Color",
+            "symbolKind": "constructor"
           },
           "state": "resolved"
         }
@@ -763,11 +807,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:groovy",
-      "wallTimeMs": 94.168066,
-      "userCpuMs": 252.062,
-      "systemCpuMs": 18.626,
-      "peakRssBytes": 315588608,
-      "rssDeltaBytes": 19922944,
+      "wallTimeMs": 211.349599,
+      "userCpuMs": 359.928,
+      "systemCpuMs": 29.806,
+      "peakRssBytes": 311386112,
+      "rssDeltaBytes": 14462976,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -55,6 +55,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // of the wasm here is a swap the pin catches.
   vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
   vba: { wasm: "tree-sitter-vba.wasm", analyzerFile: "real-vba-analyzer", className: "RealVbaAnalyzer", ext: "bas,cls,frm" },
+  matlab: { wasm: "tree-sitter-matlab.wasm", analyzerFile: "real-matlab-analyzer", className: "RealMatlabAnalyzer", ext: "m" },
   clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj,cljc,cljs" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },

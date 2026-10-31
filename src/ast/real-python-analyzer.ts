@@ -5360,7 +5360,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the php lane's owner pass reads the ancestor column), so a store-level reader sees NULL — measured
    * at 0% survival by `.tmp-py/seam-metadata-probe.mts` over the priced files. The SYMBOL crosses
    * (which is what the mechanism is for); the provenance FIELD does not. That gap is PY-D26 in
-   * `docs/analyzers/LAPTOP-B-STATUS.md`, declared with its numbers rather than fixed here, because the
+   * `docs/analyzers/real-python-analyzer.md`, declared with its numbers rather than fixed here, because the
    * allowlist's own rule is that a key belongs there once a READER consumes it and no store-level
    * reader consumes this one yet.
    *

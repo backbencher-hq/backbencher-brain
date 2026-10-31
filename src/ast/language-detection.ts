@@ -9,7 +9,7 @@ export type DetectedLanguage =
   // relation between them. That is why the analyzer declines `overrides`/`implements` rather than
   // reusing the managed-OO ontology, and why `<:` is published as `extends` only.
   | "julia"
-  | "csharp" | "vb" | "fsharp" | "r" | "sql"
+  | "csharp" | "vb" | "vba" | "matlab" | "fsharp" | "r" | "sql"
   | "bash" | "powershell" | "hcl" | "terraform" | "objective-c"
   | "markdown" | "toml" | "xml" | "protobuf" | "make"
   // The Solidity lane routes `.sol` below (SOL-21). Its absence here meant the route
@@ -167,7 +167,9 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   php: "php", phpt: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
   ex: "elixir", exs: "elixir", erl: "erlang", hrl: "erlang",
   hs: "haskell", lhs: "haskell", icl: "clean", dcl: "clean", clj: "clojure", cljs: "clojure", cljc: "clojure", edn: "clojure",
-  swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
+  swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", vba: "vba", bas: "vba", cls: "vba", frm: "vba",
+  matlab: "matlab",
+  fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
   r: "r", sql: "sql", sh: "bash", bash: "bash", zsh: "bash", ps1: "powershell", psm1: "powershell", psd1: "powershell",
   sol: "solidity",
   // Terraform is HCL, and `.tf` files ARE Terraform — the same relationship `sass`
@@ -398,6 +400,12 @@ export function detectLanguageFromPath(filePath: string, content?: string): Dete
     return null
   }
   const ext = basename.slice(dot + 1).toLowerCase()
+  // MATLAB and Objective-C both use `.m`. Keep Objective-C as the default,
+  // while recognizing MATLAB's unambiguous declaration forms.
+  if (ext === "m" && content) {
+    const head = content.slice(0, 65536)
+    if (head.includes("function ") || head.includes("classdef ")) return "matlab"
+  }
   const byExtension = EXTENSION_LANGUAGE[ext]
   if (ext === "h" && content && content.length > 0) {
     const head = content.length > 65536 ? content.slice(0, 65536) : content

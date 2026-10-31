@@ -95,16 +95,39 @@ const MUTANTS: Mutant[] = [
     defectClass: "fabricated-target",
     description:
       "PRE-FIX SHAPE: `namingToken` had no case for `tuple_type`, so `Function F() As (Range As ValueRange, Name As String)` published the `references` target `(Range As ValueRange, Name As String)` -- a PARAMETER LIST. Simulated by deleting the `tuple_type` branch, which is the same resulting behaviour: `namingToken` returns the node and `nameText` returns its whole text.",
+    // RE-WIRED 2026-10-28: the branch now RECURSES into each element and counts
+    // the zero-element boundary (`tuple-type-has-no-single-name`) instead of
+    // looping with a local `ty`. The mutant's find text was pinned to the older
+    // shape and reported NOT-APPLIED, which is a dead gate rather than a green
+    // one — deleting the whole branch is still the defect (the tuple then falls
+    // through to `namingToken` and publishes its parameter list as one target).
     find: `    if (typeNode.type === "tuple_type") {
+      let emitted = 0
       for (const el of this.namedChildrenOfType(typeNode, "tuple_element")) {
-        const ty = el.childForFieldName("type")
-        if (ty) this.pushTypeReference(from, ty, role)
+        const elType = el.childForFieldName("type") ?? el
+        this.pushTypeReference(from, elType, role)
+        emitted++
       }
+      if (emitted === 0) this.note("tuple-type-has-no-single-name")
       return
     }
 `,
     replace: ``,
     requires: 'if (typeNode.type === "tuple_type") {',
+  },
+  {
+    id: "vb/symbol-metadata-clobbers-access-level",
+    defectClass: "fabricated-metadata",
+    description:
+      "PRE-FIX SHAPE, and it was live: `pushSymbol` wrote the declaration's own `accessLevel` into `metadata` and then spread the caller's `extra` AFTER it, so every visitor that passes its own metadata (the type visitor passes `grammarNode`, `sealed`, `partial`) REPLACED the record. The producer-side fix was documented as landed and was defeated one line later by spread order: `pushExport`'s `?? \"assembly\"` fallback then stood in for the measurement and a modifier-less (`Friend`) class's public member reported `ownerAccessLevel: assembly`. The lane pins `friend` on `InternalOnly -> LooksPublic`, and this mutant is what makes that assertion load-bearing rather than incidental.",
+    find: `      metadata: {
+        ...((extraMetadata ?? {}) as Record<string, unknown>),
+        accessLevel: [...this.exportLevelsOf(node, kind).levels].join("+"),
+      },
+      ...rest,`,
+    replace: `      metadata: { accessLevel: [...this.exportLevelsOf(node, kind).levels].join("+") },
+      ...extra,`,
+    requires: 'accessLevel: [...this.exportLevelsOf(node, kind).levels].join("+"),',
   },
   {
     id: "vb/duplicate-relationship-rows-restored",
@@ -133,6 +156,30 @@ const MUTANTS: Mutant[] = [
       return`,
     replace: `      return`,
     requires: 'this.note("construction-without-readable-name")',
+  },
+  {
+    id: "vb/decorates-suppressed",
+    defectClass: "relationship-loss",
+    description:
+      "THE PRE-FIX SHAPE OF `decorates`, restored exactly: the emitter returns for every declaration, which is what the lane shipped before 2026-10-28 — 202 attribute-list sites over the 58-file population published NOTHING, because `inAttributePosition` suppresses the attribute name from `references` (an earlier differential finding) and no other type claimed the construct. This is the edit the whole fixture exists for: `expectRelationships` on `decorates Legacy -> Obsolete`, `decorates _a -> NonSerialized` and `decorates Store -> Serializable` must all go red, and they are the only rows in the suite that can see it.",
+    find: `    const holder = this.attributeBearingNode(declNode)
+    if (holder === null) return`,
+    replace: `    const holder = this.attributeBearingNode(declNode)
+    if (holder !== null) return`,
+    requires: "const holder = this.attributeBearingNode(declNode)",
+  },
+  {
+    id: "vb/decorates-inherits-enclosing-type-attributes",
+    defectClass: "relationship-fabrication",
+    description:
+      "THE UNBOUNDED CLIMB, which is the defect `attributeBearingNode`'s parent guard exists for: `Keep` is a member of `Store`, `Store` carries `<System.Serializable()>`, and a climb that does not stop at field_declaration/declaration_statement walks past the member to the enclosing type and publishes `decorates Keep -> Serializable` — an attribute that decorates the CONTAINER reported as decorating its member. A fixture with only positive rows cannot see this: the emission is correct for every declaration that owns its attributes, so the kill comes from the forbid row `decorates Keep -> Serializable`, which is the one assertion that makes the guard load-bearing.",
+    find: `      if (parent.type !== "field_declaration" && parent.type !== "declaration_statement") {
+        return null
+      }`,
+    replace: `      if (false) {
+        return null
+      }`,
+    requires: 'parent.type !== "field_declaration" && parent.type !== "declaration_statement"',
   },
 ]
 

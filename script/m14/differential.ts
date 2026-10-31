@@ -24,6 +24,18 @@ import { derivePerlTruth } from "./perl-truth"
 import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
+// PARITY WITH PRODUCTION, and the difference is not cosmetic. The analyzer's parse path
+// (`pool-worker.ts` / `engine.ts`) decodes bytes with `decodeSourceText`, which STRIPS a
+// UTF-8 BOM; this harness read the file with `readFileSync(path, "utf8")`, which KEEPS it.
+// On the pinned PowerShell corpus that is one file in 553 —
+// `test/powershell/Language/Parser/MethodInvocation.Tests.ps1` opens with a BOM — and the
+// grammar wraps the ENTIRE program in a single ERROR node because of it, so every rule this
+// file's oracle gates on `damaged` (declarations, contains, param lists) derived NOTHING for
+// that file while the analyzer, reading BOM-free bytes in production, published 127 rows.
+// Measured on the reconciliation run of 2026-10-28: 56 of the file's unexplained rows, and
+// every one of them a truth gap rather than an analyzer fabrication. The harness has to see
+// the bytes production sees.
+import { decodeSourceText } from "../../src/util/source-text"
 import { createHash } from "crypto"
 // J9: ONE declaration of the platform prototype chains, imported by the oracle here AND by
 // src/ast/real-javascript-analyzer.ts. Two copies could drift apart without anything
@@ -123,6 +135,14 @@ import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
 import { deriveJuliaUsesTruth, deriveJuliaReferencesTruth } from "./oracles/julia-refs"
+// JULIA fleet-phase wiring (2026-10-27): the lane's last three oracles existed and were referenced
+// by NOTHING — imports, exports and overrides were stored and audited against no truth. The docs'
+// own §8 row 3 named the three-line fix; this is it, and the label allowlist gains the same three
+// in the SAME change, because an oracle without an allowance compares nothing and an allowance
+// without an oracle turns every analyzer row into a fabrication.
+import { deriveJuliaImportsTruth } from "./oracles/julia-imports"
+import { deriveJuliaExportsTruth } from "./oracles/julia-exports"
+import { deriveJuliaOverridesTruth } from "./oracles/julia-overrides"
 // M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
@@ -23821,7 +23841,7 @@ async function main() {
         for (const f of sample) {
           try { prevTree?.delete?.() } catch { /* an aborted instance refuses politely */ }
           prevTree = null
-          const content = fs.readFileSync(f, "utf8")
+          const content = decodeSourceText(fs.readFileSync(f)).text
           let r0
           let tree0: any = null
           try { tree0 = parser.parse(content); r0 = tree0?.rootNode } catch { continue }
@@ -23876,7 +23896,7 @@ async function main() {
       prevTree = null
       const relPath = path.relative(repoDir, f)
       let content: string
-      try { content = fs.readFileSync(f, "utf8") } catch (err) { noteSkip("unreadable", relPath, err); continue }
+      try { content = decodeSourceText(fs.readFileSync(f)).text } catch (err) { noteSkip("unreadable", relPath, err); continue }
       let root
       let result
       const tf0 = performance.now()
@@ -24928,6 +24948,19 @@ async function main() {
         for (const e of deriveJuliaReferencesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // The three labels the lane emitted with no truth behind them: imports, exports and
+        // overrides. Their oracles derive the rule from Julia's own semantics and share no rule
+        // table with the analyzer; the allowlist below admits the same three, so the comparison is
+        // two-sided rather than an oracle pushed into a set that filters it out.
+        for (const e of deriveJuliaImportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJuliaExportsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJuliaOverridesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "swift") {
         for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
@@ -25546,6 +25579,10 @@ async function main() {
           // has an oracle behind it, which is the point of the allowlist: a label in the comparison
           // set with nothing behind it is not coverage, it is a number.
           ...(lang === "julia" ? ["uses", "references"] : []),
+          // ★ 2026-10-27: imports, exports and overrides join in the SAME change as their oracles.
+          // These were the lane's three DERIVATION findings: 3,385 imports, 2,797 exports and 3
+          // overrides were stored, compared against zero truth rows, and printed as if covered.
+          ...(lang === "julia" ? ["imports", "exports", "overrides"] : []),
           // M60: dart joins the contains-audited set. Its containment surface — the
           // backbone the graph is navigated by, and the largest unadmitted blob the
           // label-coverage sweep found — had no independent truth at any scale, and
@@ -25760,6 +25797,26 @@ async function main() {
           ...(lang === "scss" ? ["uses", "references", "imports", "contains"] : []),
           ...(lang === "powershell" ? ["exports"] : []),
           ...(lang === "powershell" ? ["references"] : []),
+          // M60 #278 / ontology review 2026-10-27: the three CLASS-HIERARCHY labels.
+          // `extends`/`implements`/`overrides` are in the base compared set, but this
+          // lane's oracle had no rule for any of them — so the analyzer's rows were
+          // filtered out by this allowlist, the truth side had nothing, and the harness
+          // printed NEITHER a MISSING nor an unexplained row. That is the un-audited
+          // shape that reads as coverage and is not: three of the lane's emitted kinds
+          // were compared against nothing at all. The oracle now derives all three from
+          // the class header and the in-file member sets (see the EXTENDS/IMPLEMENTS and
+          // OVERRIDES blocks), so admitting them here is the other half of the same
+          // change — a rule that derives but is not admitted, or an allowlist entry with
+          // no rule behind it, are both defects this file has already recorded.
+          ...(lang === "powershell" ? ["extends", "implements", "overrides"] : []),
+          // ... and the two dependency labels. `part_of` is the dot-source contract's
+          // label (`.` runs the file in the caller's scope) and `imports` is the
+          // module-load channel; BOTH were emitted by the analyzer and filtered out
+          // here, and neither had an oracle rule — the same two-sided absence the
+          // extends/implements note above records. They are admitted together with
+          // the rules that derive them (see the `part_of` branch in the calls loop and
+          // the IMPORTS/REFERENCES block).
+          ...(lang === "powershell" ? ["imports", "part_of"] : []),
           // M60 Solidity: `contains` and `uses` are the two largest and most
           // obviously correct classes in the lane — every declaration contained by
           // its nearest enclosing declaration, and every positional identifier
@@ -25773,7 +25830,16 @@ async function main() {
           // derivation is independent). Naming only two would leave the lane's
           // second-largest kind unaudited and every one of its edges counted as a
           // confident fabrication, which is the #910 trap this comment sits inside.
-          ...(lang === "solidity" ? ["uses", "contains", "calls", "references", "exports", "imports"] : []),
+          // M60 Solidity, 2026-10-27: `decorates` JOINS the set. The analyzer emits it for
+          // an APPLIED MODIFIER that resolves IN FILE (SOL-17's resolution discriminator),
+          // and the oracle now derives exactly the same half — in-file modifier →
+          // `decorates`, in-file type → `calls`, else `calls`. Before this, the label was
+          // emitted 144 times over the corpus and compared against nothing: the allowlist
+          // filtered the analyzer side, so those rows could not be audited at all, and the
+          // truth side's unconditional `calls` for the same sites produced 2 MISSING rows
+          // on every draw containing `onlyOwner`/`whenNotPaused`. A label is comparable
+          // exactly when the lane's oracle derives it, and now it does.
+          ...(lang === "solidity" ? ["uses", "contains", "calls", "references", "exports", "imports", "decorates"] : []),
           // M14 F10: css is comparable on exactly the four kinds its oracle
           // derives. Naming them is not bookkeeping — the allowlist filters the
           // ANALYZER side, so a kind that the oracle derives but the allowlist
@@ -25955,7 +26021,12 @@ async function main() {
       // A PATH-LIKE imports target is compared EXACTLY as written (the specifier is the fact); dotted module
       // names ("java.util") keep the old behaviour for now, and the includes() fallback is disabled for
       // path-like targets for the same reason — a containment test on "sol" is not evidence.
-      const PATH_EXT = new Set(["sol","h","hh","hpp","hxx","c","cc","cpp","cxx","cu","js","jsx","mjs","cjs","ts","tsx","mts","cts","py","pyi","pyw","dart","rb","java","go","rs","json","yaml","yml","toml","md","css","scss","sass","html","proto","hrl","erl"])
+      // PowerShell's three extensions joined this set on 2026-10-27 with its `part_of`
+      // admission: a dot-source target is the file's BASENAME, so `lib.ps1` has to be
+      // read as path-like or `normTarget` collapses it to the token `ps1` and every
+      // dot-source matches every other one. The same degenerate shape the c/erlang
+      // notes above record, one extension at a time.
+      const PATH_EXT = new Set(["sol","h","hh","hpp","hxx","c","cc","cpp","cxx","cu","js","jsx","mjs","cjs","ts","tsx","mts","cts","py","pyi","pyw","dart","rb","java","go","rs","json","yaml","yml","toml","md","css","scss","sass","html","proto","hrl","erl","ps1","psm1","psd1"])
       const isPathLikeImport = (t: string): boolean => {
         if (t.length === 0) return false
         if (t.startsWith(".") || t.includes("/") || t.includes("\\")) return true
@@ -26876,10 +26947,16 @@ const BASH_ORACLE_BUILTINS = new Set([
 export function derivePowershellEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
-  const push = (label: string, from: string, target: string) => {
+  const push = (label: string, from: string, target: string, at?: any) => {
     from = (from ?? "").trim()
     target = (target ?? "").trim()
     if (!from || !target) return
+    // BB_PS_TRUTH_TRACE: name the NODE that produced a truth edge. Gated and silent by default —
+    // the same shape as `--debug-truth` for typescript — because a differential edge otherwise
+    // carries no site, and a wrong truth row cannot be traced back to the rule that made it.
+    if (process.env.BB_PS_TRUTH_TRACE === "1" && (target.includes(process.env.BB_PS_TRUTH_FILTER ?? "\u0000"))) {
+      console.log(`[truth] ${label} ${from} -> ${target}  ${at?.type ?? "?"}@${(at?.startPosition?.row ?? -1) + 1}`)
+    }
     // Site-agnostic matching in this harness (label + target, never the line), so
     // one row per (label, from, target) is the right grain. The per-site contract
     // is what the fixture lane pins; F5 cannot see it.
@@ -26889,13 +26966,92 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     edges.push({ label, from, target })
   }
 
+  // A LITERAL IS NOT A VARIABLE, and neither is language machinery.
+  //
+  // `$true`, `$false` and `$null` are the three PowerShell literals; the rest of
+  // this set is the documented automatic-variable surface (about_Automatic_
+  // Variables and about_Preference_Variables) — the pipeline's current object, the
+  // last-command status triple, the error record and its members, the host, the
+  // call-stack frame, the PS-version table and the per-platform booleans. None of
+  // them is a name the file declares and none is a read of program data, so
+  // emitting `uses -> true` or `uses -> _` is simply wrong, and it was wrong in
+  // this function's first version on 29 of the first 147 disagreements.
+  //
+  // This list is written from the DOCUMENTATION and is deliberately a SEPARATE
+  // list from the analyzer's. The point of F5 is that a mistake in one is not
+  // automatically a mistake in the other, so the two are not derived from a
+  // shared table — and where they disagree, that disagreement is itself the
+  // finding, which is why this comment says "deliberately" rather than "to keep
+  // them in sync".
+  //
+  // IT GOVERNS DECLARATIONS AS WELL AS READS, which is why it sits here and not beside
+  // the read pass: a `param($input)` or `$matches = @{}` is a REBINDING of engine state,
+  // not a declaration of a project symbol (the analyzer's PS8 contract). Measured before
+  // that rule existed: 40+ MISSING `contains` rows over the admitted population — `args`,
+  // `input`, `matches`, `psItem`, `MyInvocation`, `PSScriptRoot`, `PSCommandPath`, `HOME`,
+  // `PID`, `OFS`, `pwd`, `profile`, `Host`, `event` — every one a row this function
+  // declared and the analyzer was right to refuse.
+  const NOT_A_READ = new Set([
+    // literals
+    "true", "false", "null",
+    // the pipeline's current object and its aliases
+    "_", "psitem", "input", "args", "this",
+    // `foreach` AND `switch` ARE **NOT** IN THIS SET, and their absence is the PS8 rule read
+    // from the other side. They are language KEYWORDS, not automatic variables: `$switch = 1`
+    // and `$foreach = @()` are legal variables, and this set was suppressing every read of
+    // them while the analyzer's own PS8 change had already removed both from ITS suppression
+    // list. Measured on the 2026-10-28 reconciliation: the `$switch` reads of msi.tests.ps1 /
+    // exe.tests.ps1 and two `$foreach` reads were truth-SILENT and analyzer-published, i.e.
+    // this side was the one that had not caught up with the language.
+    // the process and the host: `$PID` is the current process id, `$PSHOME`,
+    // `$PSCulture`, `$PSUICulture`, `$PROFILE`, `$NestedPromptLevel` and
+    // `$EnabledExperimentalFeatures` are all documented automatic/preference
+    // variables. `$PID` was the one measured here (`uses -> PID` on 27 edges over
+    // the primary corpus) — the analyzer's automatic-variable table already
+    // suppressed it, so every such row was counted MISSING against an oracle that
+    // had misread a documented automatic variable as program data.
+    "pid", "pshome", "psculture", "psuiculture", "profile", "nestedpromptlevel",
+    "enabledexperimentalfeatures",
+    // last-command status
+    "?", "^", "$", "lastexitcode",
+    // the error record and its members
+    "error", "erroractionpreference", "errorview", "senderinfo", "event",
+    "eventargs", "eventsubscriber", "sender", "sourceeventargs", "matches",
+    "stacktrace", "invocationinfo", "psinvocationinfo", "scriptstacktrace",
+    "executioncontext", "host", "home", "pwd", "shellid",
+    // the version table and the platform booleans
+    "psversiontable", "psedition", "iscoreclr", "islinux", "ismacos", "iswindows",
+    "nativecommanduseerroractionpreference", "ofs", "consolefilename",
+    // the call site
+    "myinvocation", "psboundparameters", "pscmdlet", "pscommandpath",
+    "psscriptroot", "pscommandline", "pscmdletbindingmetadata",
+  ])
+  /** PS8's set, as a predicate. A name in it never becomes a project symbol (declaration)
+   *  and never becomes a project read — the two halves are one rule. */
+  const isAutomaticName = (nm: string): boolean => NOT_A_READ.has(String(nm ?? "").trim().toLowerCase())
+
+  // DAMAGE IS A PROPERTY OF THE NODE'S OWN TEXT, NOT OF ITS ANCESTRY.
+  //
+  // The first version walked ANCESTORS and refused anything under an ERROR or a missing
+  // token. That is wrong in both directions on this corpus. A grammar failure produces an
+  // ERROR that wraps a whole STATEMENT or PROGRAM, and every node under it is a perfectly
+  // good parse of real source — measured 2026-10-28: 105 of 546 files contain an ERROR and 8
+  // are wrapped at the root; `ConsoleHost.Tests.ps1:1093` (`$csi = [char]0x9b`) is a real
+  // declaration the ancestry rule refused, while the analyzer published it, so it read as an
+  // analyzer fabrication. The reverse is just as wrong: a node built FROM recovery text can
+  // sit beside a healthy ancestor and be published as a fact.
+  //
+  // The correct question is "was THIS node parsed from recovery text" — i.e. does its own
+  // subtree contain an ERROR or a missing token. That is the same definition the harness's
+  // other oracle uses (`damaged` at the c-family block), and the analyzer's `withinRecovery`
+  // is being aligned to it in the same change, so the two sides apply ONE policy.
   const damaged = (n: any): boolean => {
-    let p: any = n?.parent ?? null
-    let d = 0
-    while (p && d < 24) {
-      if (p.type === "ERROR" || p.isMissing) return true
-      p = p.parent
-      d++
+    const st: any[] = [n]
+    while (st.length > 0) {
+      const x: any = st.pop()
+      if (!x) continue
+      if (x.type === "ERROR" || x.isMissing) return true
+      for (let i = 0; i < x.childCount; i++) { const c = x.child(i); if (c) st.push(c) }
     }
     return false
   }
@@ -26932,6 +27088,31 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     }
     return out
   }
+  /**
+   * THE VALUE OF A `command_elements` TOKEN, WITH THE GRAMMAR'S QUOTED WRAPPER UNWRAPPED.
+   *
+   * The served grammar wraps EVERY quoted argument as
+   * `array_literal_expression > unary_expression > string_literal`, so a rule that reads a
+   * command's direct children sees a node of type `array_literal_expression` where it
+   * expected a string. Measured on the authoritative corpus: `Import-Module
+   * "$PSScriptRoot/…/ci.psm1"` derived NO import, `New-Object "System.…Attribute"` derived
+   * NO instantiation, and `Export-ModuleMember -Function 'A', 'B'` published ONE of the two
+   * names — three separate rules, one wrapper. A quoted comma LIST is one wrapper containing
+   * several values, which is why the export rule has to read all of them and this helper
+   * returns only the FIRST: a caller that wants a single value is exactly a caller that is
+   * reading a single value.
+   */
+  const unwrappedValueText = (t: any): string | null => {
+    if (!t) return null
+    if (t.type === "generic_token" || t.type === "string_literal" || t.type === "expandable_string_literal" || t.type === "variable") return t.text
+    const quoted = descendants(t, "string_literal")[0] ?? descendants(t, "expandable_string_literal")[0]
+    if (quoted) return quoted.text
+    const bare = descendants(t, "generic_token")[0]
+    if (bare) return bare.text
+    const variable = descendants(t, "variable")[0]
+    if (variable) return variable.text
+    return null
+  }
 
   // A PowerShell declaration name, read from whichever shape carries it. The
   // grammar spells a class method's name as `simple_name`, a function's as
@@ -26939,14 +27120,52 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // `variable` under `script_parameter` — this function reads all four and does
   // not ask the analyzer where they are.
   const declName = (n: any): string => {
+    // THE BRACED SPELLING IS THE SAME NAME — on this path too.
+    //
+    // `bareName` normalises `${a}` to `a` everywhere else, but this helper stripped only the
+    // sigil, so a class property written `[string]${config-file}` was named `{config-file}` —
+    // braces retained — while the analyzer named it `config-file`. Measured on
+    // powershell/build.psm1: `contains -> {config-file}`, `-> {test-framework}`,
+    // `-> {stack-trace}` and `-> {run-date}`, four phantom MISSING rows from one declaration
+    // form. A braced name is one name, and it is read through the same helper as every other.
     for (const t of ["function_name", "simple_name", "variable", "member_name", "type_identifier", "generic_token"]) {
       const f = field(n, t)
-      if (f?.text) return f.text.replace(/^\$/, "")
+      if (f?.text) return bareName(f.text)
     }
     for (const c of kids(n)) {
-      if (["function_name", "simple_name", "variable", "member_name", "type_identifier"].includes(c.type)) return c.text.replace(/^\$/, "")
+      if (["function_name", "simple_name", "variable", "member_name", "type_identifier"].includes(c.type)) return bareName(c.text)
     }
     return ""
+  }
+
+  // THE BRACED SPELLING IS THE SAME NAME. `${TESTDRIVE}` and `$TESTDRIVE` are one
+  // variable in PowerShell, and the grammar keeps the whole braced form in the node's
+  // text. Stripping only the sigil published `{TESTDRIVE}`, `{TestDrive}` and every
+  // other braced spelling as a name NO symbol can have — 9 + 8 rows over the primary
+  // corpus — while the analyzer had already normalised them (its braced-variable branch
+  // exists for exactly this, and `per-site-lines-psb2` pins the line arithmetic). This
+  // is the oracle's version of the same normalisation, written once so every rule below
+  // uses it.
+  const bareName = (text: string | undefined | null): string => {
+    let t = String(text ?? "").trim().replace(/^[$@]/, "")
+    if (t.startsWith("{") && t.endsWith("}")) t = t.slice(1, -1)
+    // A QUOTED MEMBER NAME IS THE SAME MEMBER.
+    //
+    // `$this."config-file"` and `$this.config-file` name one member; the grammar hands the
+    // quoted spelling to the member pass with the quotes still in `member_name.text`, and
+    // this function published `uses -> "config-file"` — a target carrying quotes, which no
+    // declaration can have. The analyzer publishes `config-file`, so every such row became a
+    // phantom MISSING beside a phantom UNEXPLAINED for one fact. Measured on
+    // powershell/build.psm1: 109 quoted member targets (`$this."config-file"`,
+    // `$failure."stack-trace"`, `$asm."test-framework"`), the file's largest class.
+    // Quote-stripping is safe on this helper: a DECLARATION name cannot be quoted, and the
+    // one place the lane keeps a quoted spelling is a HASHTABLE KEY, which is read with its
+    // own text handling and never through this function.
+    if (t.length >= 2) {
+      const q = t.charCodeAt(0)
+      if ((q === 34 || q === 39) && t.charCodeAt(t.length - 1) === q) t = t.slice(1, -1)
+    }
+    return t
   }
 
   // --- scope: which declaration owns a node -------------------------------
@@ -26979,6 +27198,98 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     return owner
   })()
 
+  // --- identity: POWERSHELL IS CASE-INSENSITIVE, so a READ resolves to its declaration ---
+  //
+  // A PowerShell variable name is case-insensitive: `$X` and `$x` are one variable, and a
+  // store that binds a read records the DECLARED spelling. The analyzer does exactly that
+  // (measured: `$local = 1; $LOCAL` publishes `local`), so this function publishing the
+  // SOURCE spelling manufactured a MISSING truth row beside an UNEXPLAINED analyzer row for
+  // ONE fact. Measured on powershell/build.psm1 alone: 34 such pairs, the largest
+  // `qualified-vs-bare` bucket on the corpus.
+  //
+  // THREE THINGS THIS MAP MUST NOT DO, each measured on the reconciliation run of
+  // 2026-10-28 (546 files; the first version of this map cost 1,139 unexplained rows):
+  //
+  //   1. IT MUST NOT RESOLVE A MEMBER. `$obj.Name` is a dynamic member read; the analyzer
+  //      publishes the spelling AS WRITTEN (its member rule never resolves a receiver that
+  //      the file did not type), so a map that rewrote `CompletionText` to a hashtable key
+  //      `completionText` — and `Verbose` to `verbose`, and 900 others — broke a match that
+  //      was already correct. Member reads are pushed verbatim below, and this map is
+  //      consulted ONLY on a variable read.
+  //   2. IT MUST NOT RESOLVE ACROSS NAMESPACES. Filling the map from every `contains` edge
+  //      put class PROPERTIES, hashtable KEYS and ENUM members into the same namespace as
+  //      variables, so `$ast` beside a property `Ast` resolved to `Ast` (18 rows on
+  //      TypeInference.Tests.ps1 alone). Only a variable declaration registers here.
+  //   3. IT MUST NOT LOOK IN ANOTHER FRAME. The analyzer resolves a read against ITS OWN
+  //      frame only: `$outerVar = 1; function F { $OUTERVAR }` publishes `OUTERVAR` as
+  //      written (measured), because a function frame cannot see the file frame's store.
+  //      The first map fell back to the file frame and rewrote that read.
+  //
+  // The spelling is the FIRST declaration in SOURCE ORDER, which is also what the analyzer
+  // records when one frame declares the same case-insensitive name twice. Registration
+  // order is NOT that order — the parameter pass runs before the assignment pass, so
+  // `param($SubSystem)` at line 395 used to beat `$subSystem` at line 192 — which is why the
+  // map keeps offsets and resolves to the smallest one instead of the first one added.
+  const varDeclSpellings = new Map<string, Array<{ name: string; at: number }>>()
+  const rememberVarDecl = (owner: string, name: string, at: number): void => {
+    if (!owner || !name) return
+    const ok = owner.toLowerCase()
+    let list = varDeclSpellings.get(ok)
+    if (!list) { list = []; varDeclSpellings.set(ok, list) }
+    if (list.some((d) => d.at === at && d.name === name)) return
+    list.push({ name, at })
+    list.sort((a, b) => a.at - b.at)
+  }
+  // A NAME THAT TWO DIFFERENT SYMBOLS SHARE IS NOT A BINDING TARGET.
+  //
+  // The analyzer retargets a variable read only when the qualified name is UNIQUE among the
+  // file's symbols — its own guard, measured: `TabCompletion.Tests.ps1` declares a hashtable
+  // key `TextInput` (line 1323) and a parameter `$TextInput` (1337), so the qualified name
+  // `TabCompletion.Tests.ps1.TextInput` names two symbols and the analyzer publishes
+  // `$textInput` (1581) AS WRITTEN. This map canonicalised it anyway and manufactured 46
+  // UNEXPLAINED rows over the admitted population. The key is EXACT-CASE because the
+  // analyzer's uniqueness test is: `$TextInput` and `$textInput` are different qualified
+  // names even though they are the same variable.
+  const nonVarQualified = new Set<string>()
+  const noteNonVar = (owner: string, name: string): void => {
+    if (!owner || !name) return
+    nonVarQualified.add(`${owner.toLowerCase()}\u0000${name}`)
+  }
+  const canonicalName = (owner: string, name: string): string => {
+    const list = varDeclSpellings.get(owner.toLowerCase())
+    if (!list) return name
+    const nk = name.toLowerCase()
+    for (const d of list) {
+      if (d.name.toLowerCase() !== nk) continue
+      if (nonVarQualified.has(`${owner.toLowerCase()}\u0000${d.name}`)) return name
+      return d.name
+    }
+    return name
+  }
+
+  // ONE ROW PER DECLARED SYMBOL, NOT ONE PER SITE.
+  //
+  // `push` dedupes on (label, from, target), and for a VARIABLE that is not the identity the
+  // store uses: PowerShell variable names are case-insensitive, so `param($TextInput)` at
+  // line 1337 and `$textInput = …` at 1581 are ONE symbol, and the analyzer keeps the FIRST
+  // declaration's spelling (`declareSymbol` dedupes on owner+lowercased name+kind). This
+  // function emitted a contains row PER SITE, so every later spelling produced a row no
+  // single-symbol store can carry and the comparison scored it MISSING — measured 104 rows
+  // over the admitted population, all pure case differences (`expected`/`Expected`,
+  // `testCases`/`testcases`, `PSVersion`/`psVersion`). The passes are also NOT in source
+  // order (parameters first, then assignments), so the winner is chosen by OFFSET.
+  const declRows: Array<{ kind: "variable" | "property"; owner: string; name: string; at: number }> = []
+  const recordVarDecl = (owner: string, name: string, at: number): void => {
+    if (!owner || !name) return
+    declRows.push({ kind: "variable", owner, name, at })
+    rememberVarDecl(owner, name, at)
+  }
+  const recordPropDecl = (owner: string, name: string, at: number): void => {
+    if (!owner || !name) return
+    declRows.push({ kind: "property", owner, name, at })
+    noteNonVar(owner, name)
+  }
+
   // --- pass 1: declarations, so a forward reference resolves --------------
   // Two passes are not decoration: a function defined at the bottom of a .psm1
   // is called by one at the top, and a single-pass oracle would report every such
@@ -26990,6 +27301,8 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   for (const n of descendants(root, "class_statement")) { const nm = declName(n); if (nm) declared.add(nm) }
   for (const n of descendants(root, "enum_statement")) { const nm = declName(n); if (nm) declared.add(nm) }
   for (const n of descendants(root, "class_method_definition")) { const nm = declName(n); if (nm) declared.add(nm) }
+  // (a constructor's symbol name is `constructor`; it is a member name, not a callable name,
+  // so it is registered by the contains pass below rather than into the callable set)
   for (const n of descendants(root, "class_property_definition")) { const nm = declName(n); if (nm) declared.add(nm) }
   // There is NO `filter_statement` rule: `filter` is a keyword the grammar folds into
   // `function_statement`, so a PowerShell filter is already in the set above. Naming a
@@ -26997,29 +27310,143 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // matches nothing and reads as implemented.
 
   // --- CONTAINS: a declaration is contained by its owner -------------------
-  for (const n of descendants(root, "function_statement")) { const nm = declName(n); if (nm) push("contains", ownerOf(n), nm) }
-  for (const n of descendants(root, "class_statement")) { const nm = declName(n); if (nm) push("contains", ownerOf(n), nm) }
-  for (const n of descendants(root, "enum_statement")) { const nm = declName(n); if (nm) push("contains", ownerOf(n), nm) }
-  for (const n of descendants(root, "class_method_definition")) { const nm = declName(n); if (nm && !damaged(n)) push("contains", ownerOf(n), nm) }
-  for (const n of descendants(root, "class_property_definition")) { const nm = declName(n); if (nm && !damaged(n)) push("contains", ownerOf(n), nm) }
-  for (const n of descendants(root, "enum_member")) { const nm = declName(n); if (nm) push("contains", ownerOf(n), nm) }
+  // Every non-variable declaration is ALSO registered as a qualified-name owner, because a
+  // variable read cannot be retargeted onto a name a second symbol shares (see `canonicalName`).
+  const pushDecl = (owner: string, nm: string, site?: any): void => {
+    noteNonVar(owner, nm)
+    push("contains", owner, nm, site)
+  }
+  for (const n of descendants(root, "function_statement")) { const nm = declName(n); if (nm) pushDecl(ownerOf(n), nm, n) }
+  for (const n of descendants(root, "class_statement")) { const nm = declName(n); if (nm) pushDecl(ownerOf(n), nm, n) }
+  for (const n of descendants(root, "enum_statement")) { const nm = declName(n); if (nm) pushDecl(ownerOf(n), nm, n) }
+  // A CONSTRUCTOR IS NAMED `constructor` — PowerShell WRITES it with the class's own name,
+  // which makes the natural symbol name a SELF-EDGE (`Class -> Class`) the store refuses, so
+  // the lane synthesises `constructor` (PS4). This side read the written name, published
+  // `contains testAssembly -> testAssembly`, and every real constructor row was UNEXPLAINED.
+  // The discriminator is the language's own spelling rule: a method whose name equals its
+  // enclosing class's name IS the constructor.
+  for (const n of descendants(root, "class_method_definition")) {
+    const nm = declName(n)
+    if (!nm || damaged(n)) continue
+    const owner = ownerOf(n)
+    pushDecl(owner, nm.toLowerCase() === owner.toLowerCase() ? "constructor" : nm, n)
+  }
+  for (const n of descendants(root, "class_property_definition")) {
+    const nm = declName(n)
+    if (nm && !damaged(n)) recordPropDecl(ownerOf(n), nm, n.startIndex)
+  }
+  for (const n of descendants(root, "enum_member")) { const nm = declName(n); if (nm) pushDecl(ownerOf(n), nm, n) }
   // Parameters: a script-level `param` block declares into the file, a function's
   // into the function. Read from the `param_block`'s own position rather than
   // from any statement ordering, because the G1 finding is that a script-level
   // param block is NOT reliably the first child of the file.
+  // WHOSE PARAM BLOCK IS IT? OWNERSHIP BY POSITION, NOT BY ANCESTRY.
+  //
+  // `ownerOf` answers "the nearest enclosing function", which is NOT the question a
+  // parameter block asks: a `param_block` inside an attribute's script block, or inside a
+  // nested block in a body, belongs to the BLOCK, and is not the enclosing function's
+  // parameter list. Measured on build.psm1:1741 —
+  // `[ArgumentCompleter({param($c,$p,$word) …})]` — the ancestry rule published
+  // `contains Start-PSPester -> p` and `-> word`, two rows the analyzer correctly carries no
+  // symbol for: it reads a function's parameters from its own DIRECT `script_block`'s DIRECT
+  // `param_block`, and a file's from a param block at file scope (`atFileScope()`). Those two
+  // positions are the whole rule, and nothing else is a declaration.
+  const paramBlockOwner = (pb: any): string | null => {
+    const blk = pb.parent
+    if (blk && blk.type === "script_block") {
+      const decl = blk.parent
+      if (decl && (decl.type === "function_statement" || decl.type === "filter_statement")) {
+        return declName(decl) || null
+      }
+    }
+    let p: any = pb.parent
+    let d = 0
+    while (p && d < 64) {
+      if (
+        p.type === "function_statement" || p.type === "filter_statement" ||
+        p.type === "class_statement" || p.type === "class_method_definition" ||
+        p.type === "attribute"
+      ) return null
+      if (p.type === "program") break
+      p = p.parent
+      d++
+    }
+    return moduleName
+  }
   for (const pb of descendants(root, "param_block")) {
-    for (const sp of descendants(pb, "script_parameter")) {
-      if (damaged(sp)) continue
-      const v = descendants(sp, "variable")[0]
-      if (v?.text) push("contains", ownerOf(pb), v.text.replace(/^\$/, ""))
+    const owner = paramBlockOwner(pb)
+    if (!owner) continue
+    // THE PARAMETERS OF **THIS** BLOCK, NOT OF A BLOCK NESTED IN IT. `descendants(pb,
+    // "script_parameter")` walked the whole subtree, so a function whose parameter carries an
+    // `[ArgumentCompleter({param($c,$p,$word) …})]` attribute had the COMPLETER's three
+    // bindings declared as the function's own — `contains Start-PSPester -> p` and `-> word`,
+    // measured on build.psm1:1741. The block's parameters are the direct children of its own
+    // `parameter_list`; a nested param block is a different scope and is visited by this same
+    // loop on its own iteration (where paramBlockOwner refuses it, as it must).
+    const ownParams: any[] = []
+    for (const pl of kids(pb)) {
+      if (pl.type !== "parameter_list") continue
+      for (const sp of kids(pl)) if (sp.type === "script_parameter") ownParams.push(sp)
+    }
+    for (const sp of ownParams) {
+      // THE NAME, NOT THE WHOLE PARAMETER, DECIDES DAMAGE. A parameter whose default value or
+      // attribute fails to parse still binds a name — `$validated = Test-WduLifecycleRawProjection
+      // -Compiled … -Utf8Json …` is the measured case on the assignment side, and the same
+      // grammar failure can sit in a default (`param($x = [broken)`). This function asked the
+      // SUBTREE question, refused the declaration, and then the read pass — which publishes
+      // every variable — turned the assignment's LEFT side into `uses validated`: one damaged
+      // initializer manufactured a phantom READ and swallowed a real CONTAINS row. That pair
+      // is now the largest single disagreement class on the corpus (165 `uses` MISSING + 99
+      // `contains` UNEXPLAINED before this change).
+      const directName = kids(sp).find((c: any) => c.type === "variable")
+      if (directName ? damaged(directName) : damaged(sp)) continue
+      // THE PARAMETER'S OWN NAME IS A DIRECT CHILD. `descendants(sp, "variable")[0]`
+      // returned the DEFAULT VALUE's variable when the parameter carried an attribute:
+      // `[Parameter(Mandatory = $true)] [string]$LastReleaseTag` put `$true` FIRST, so
+      // this function declared a parameter named `true` (and `null`, and `this`, wherever
+      // a default or an attribute spelling put one) and never declared the parameter.
+      // Measured on tools/releaseTools.psm1: 2 phantom `contains -> true` rows from two
+      // `Mandatory = $true` attributes, against parameters that had no containment at all.
+      const direct = kids(sp).find((c: any) => c.type === "variable")
+      const nm = direct?.text ? bareName(direct.text) : declName(sp)
+      if (!nm) continue
+      // PS8 — a parameter naming a documented automatic variable REBINDS engine state; it
+      // does not declare a project symbol, and the analyzer carries none for it.
+      if (isAutomaticName(nm)) continue
+      recordVarDecl(owner, nm, sp.startIndex)
     }
   }
   // A variable assigned at statement level is a declaration, owned by its scope.
   for (const asn of descendants(root, "assignment_expression")) {
-    if (damaged(asn)) continue
     const lhs = field(asn, "left_assignment_expression") ?? firstOfType(asn, "left_assignment_expression")
     const v = lhs ? descendants(lhs, "variable")[0] : null
-    if (v?.text) push("contains", ownerOf(asn), v.text.replace(/^\$/, ""))
+    // THE BINDING TARGET IS THE DAMAGE TEST, not the initializer (see the parameter pass).
+    if (lhs ? damaged(lhs) : damaged(asn)) continue
+    // A MEMBER OR ELEMENT TARGET IS NOT A DECLARATION OF THE RECEIVER. `$PSStyle.Foreground.Red
+    // = 'x'` assigns a PROPERTY; `$Error.Clear()` is a call; `$arr[$i] = 1` assigns one
+    // element. The first variable under the LHS is the receiver in all three, and this
+    // function was declaring it — 13 `contains -> PSStyle`, 17 `contains -> Error` and the
+    // whole element-write family, none of which the analyzer publishes (the lane's
+    // declaration rule is a variable BINDING, and a property is not one).
+    if (lhs && (descendants(lhs, "member_access").length > 0 || descendants(lhs, "element_access").length > 0)) continue
+    const name = bareName(v?.text)
+    // NOT EVERY ASSIGNMENT TARGET DECLARES ANYTHING, and this side was declaring all of
+    // them. The lane's contract says it in one row: `$global:`/`$script:`/`$env:`
+    // qualified names and automatic variables are NEVER declarations. `$null = Do-Thing`
+    // is the idiom for discarding output, `$this = …` is not a declaration of a variable
+    // named this, and `$env:Path = …` writes an environment variable. The analyzer obeys
+    // the contract; this function did not, and the disagreement was 164 `contains -> null`
+    // rows plus 45 `this`, 54 `global:PSDefaultParameterValues` and 29 `env:PSModulePath`
+    // over the primary corpus — every one counted as a MISSING edge and read as a drop.
+    if (!name) continue
+    // `$Error` and `$PSStyle` join every documented automatic/preference variable here: a
+    // write to one is a reset of engine state, not a declaration of a project symbol — the
+    // analyzer's PS8 table and this set are the same rule, and the seven-name regex that used
+    // to stand here declared `$matches`, `$args`, `$HOME`, `$PID`, `$OFS`, `$profile` and
+    // thirty more that the analyzer was right to refuse.
+    if (isAutomaticName(name)) continue
+    if (name.includes(":")) continue
+    recordVarDecl(ownerOf(asn), name, asn.startIndex)
   }
   // A HASHTABLE LITERAL'S KEYS ARE DECLARATIONS, wherever the literal appears.
   //
@@ -27049,10 +27476,32 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // same round, which is a good illustration of why a measured improvement has to
   // be attributed to ONE change at a time.
   for (const he of descendants(root, "hash_entry")) {
-    if (damaged(he)) continue
     const key = firstOfType(he, "key_expression")
+    // THE KEY IS THE DAMAGE TEST, not the entry: a value that fails to parse does not stop
+    // the slot from being named (the same rule the parameter and assignment passes now use).
+    if (key ? damaged(key) : damaged(he)) continue
     const nm = key ? descendants(key, "simple_name")[0] ?? key : null
-    const text = nm?.text?.replace(/^['"]|['"]$/g, "").replace(/^[$@]/, "") ?? ""
+    // VERBATIM, QUOTES INCLUDED — the analyzer publishes a quoted key's own spelling
+    // (`'application/json'`), the externality lane depends on the leading quote byte, and
+    // two fixtures pin it. This side strips only the declaration sigil.
+    const rawKey = String(nm?.text ?? "")
+    // A QUOTED KEY IS A LITERAL NAME, WHATEVER IT CONTAINS — the analyzer's PS15 rule read
+    // from the source. `'$schema'` (JSON Schema's manifest key) and `"PowerShell executable"`
+    // (a data table's row name) are names a file declares; a DOUBLE-quoted key that
+    // interpolates (`"$mainModule.psd1"`) is dynamic; and a BARE key carrying `$` is a
+    // variable in key position (`@{ $key = 1 }`), which declares nothing.
+    let quoted = false
+    let interpolating = false
+    if (rawKey.length >= 2) {
+      const q = rawKey.charCodeAt(0)
+      if ((q === 34 || q === 39) && rawKey.charCodeAt(rawKey.length - 1) === q) {
+        quoted = true
+        if (q === 34 && rawKey.slice(1, -1).includes("$")) interpolating = true
+      }
+    }
+    if (quoted) { if (interpolating) continue }
+    else if (rawKey.includes("$") || rawKey.includes(" ")) continue
+    const text = rawKey.replace(/^[$@]/, "")
     // Three things are not slot names, and each produced phantom containments: a
     // key that is a LITERAL (`@{ $true = 2 }` — the guard missed these for two
     // rounds because it compared the raw text against /^true$/ and the text is
@@ -27061,8 +27510,19 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     // `contains -> env:TMP` names nothing that can be declared), and an empty key.
     if (!text) continue
     if (/^(true|false|null)$/i.test(text)) continue
-    if (text.includes(":")) continue
-    push("contains", ownerOf(he), text)
+    // A QUOTED KEY IS A NAME, COLON AND ALL. The scope-prefix guard exists for `$env:TMP`
+    // in key position — an environment-variable READ, not a slot name. A key the file
+    // QUOTES is a literal slot name and may contain any character, including a colon:
+    // `@{ "Microsoft.PowerShell:ExecutionPolicy" = … }` and `@{ 'it:skip' = … }` are real
+    // hashtables in the corpus, and the colon guard dropped 52 containments the analyzer
+    // had published correctly (`contains Start-PSBuild ->
+    // "Microsoft.PowerShell:ExecutionPolicy"`, `contains -> "it:skip"`). A quoted spelling
+    // is kept VERBATIM — the analyzer does, and two fixtures pin the leading quote byte.
+    const quotedKey = text.length >= 2 &&
+      (text.charCodeAt(0) === 34 || text.charCodeAt(0) === 39) &&
+      text.charCodeAt(text.length - 1) === text.charCodeAt(0)
+    if (!quotedKey && text.includes(":")) continue
+    recordPropDecl(ownerOf(he), text, he.startIndex)
   }
 
   // --- CALLS: a command is a call ----------------------------------------
@@ -27070,17 +27530,123 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // name is the FIRST token of the command's name node — the command may be
   // written `Verb-Noun` or `& $var` or `.\script.ps1`, and the analyzer's
   // treatment of the last two is exactly the kind of thing this gate is for.
+  //
+  // A COMMAND THE LANE MODELS AS SOMETHING ELSE IS NOT ALSO A CALL. Four commands have
+  // a more specific edge and the analyzer publishes only that one: `Export-ModuleMember`
+  // (exports), `Import-Module` and `using` (imports + references, PS21), and `New-Object`
+  // (instantiates). This function emitted BOTH labels, so the truth side carried a call
+  // nobody makes and the primary corpus measured 88 `calls -> Import-Module`, 82
+  // `calls -> New-Object`, 16 `calls -> using` and four `Export-ModuleMember` rows that
+  // could never match. A directive is not a call to a function of the same name.
+  // FLOW KEYWORDS AND NAMED BLOCKS REACH COMMAND POSITION in this grammar, and neither is
+  // a call: `else {` at the start of a damaged `if` parses as a command named `else`, and
+  // `begin`/`process`/`end` inside an advanced function do too. The analyzer drops both
+  // by name (its FLOW_KEYWORDS and NAMED_BLOCK_KEYWORDS sets, built from the language
+  // reference); this function only dropped the four directives below and published 14
+  // `calls -> else` edges over the primary corpus. The list here is the DOCUMENTED
+  // keyword surface, written from the language reference rather than imported.
+  const KEYWORDS_NOT_CALLS = new Set([
+    "else", "elseif", "finally", "try", "catch", "trap", "begin", "process", "end",
+    "clean", "dynamicparam", "do", "while", "until", "for", "foreach", "switch",
+    "if", "function", "filter", "workflow", "class", "enum", "configuration",
+    "break", "continue", "return", "exit", "throw", "param",
+    "in", "notin", "as", "is", "isnot", "and", "or", "xor", "not", "band", "bor",
+    "bxor", "bnot", "shl", "shr", "eq", "ne", "gt", "ge", "lt", "le", "like",
+    "notlike", "match", "notmatch", "contains", "notcontains", "replace", "split",
+    "join", "get", "set", "hidden", "static",
+  ])
+  const NOT_A_CALL = new Set(["export-modulemember", "import-module", "using", "new-object"])
+  // THE NAME OF A COMMAND WITH AN INVOCATION OPERATOR IS ONE LEVEL DOWN. `. ./lib.ps1`
+  // and `& ./run.ps1` parse as `command > command_invokation_operator + command_name_expr
+  // > command_name`, so `field(c, "command_name")` is null for BOTH and this function
+  // fell through to a different pass that stripped the leading `.` as if it were an
+  // operator ON THE NAME — publishing `calls -> /lib.ps1` for a dot-source (the path with
+  // its first character eaten) and `calls -> /run.ps1` for an ampersand invocation. The
+  // operator and the name are two separate facts in this tree, and reading them as one
+  // string is how a path becomes a name.
+  const commandNameOf = (c: any): any => {
+    const direct = field(c, "command_name")
+    if (direct) return direct
+    const expr = kids(c).find((k: any) => k.type === "command_name_expr")
+    if (!expr) return null
+    return descendants(expr, "command_name")[0] ?? expr
+  }
+  const invocationOperatorOf = (c: any): string => {
+    const op = kids(c).find((k: any) => k.type === "command_invokation_operator")
+    return op ? op.text.trim() : ""
+  }
   for (const c of descendants(root, "command")) {
     if (damaged(c)) continue
-    const nm = field(c, "command_name")
+    const nm = commandNameOf(c)
     if (!nm) continue
     // A path command or an invocation operator is a call to a PROGRAM, and the
     // program name is the path — emitted as written, which is what a reader of the
     // graph expects to see.
     const text = nm.text.trim()
     if (!text) continue
-    // Strip a leading invocation operator if the grammar attached it to the name.
-    push("calls", ownerOf(c), text.replace(/^[.&]+\s*/, ""))
+    // Strip a leading invocation operator if the grammar attached it to the name — AND a
+    // sigil. `& $ScriptBlock` is a call to the variable's value, and this lane stores
+    // variables STRIPPED (PS19), so `calls -> $ScriptBlock` is a target no symbol can have
+    // (found in the F5 MISSING sample for tools/releaseTools.psm1).
+    const raw = text
+    // A QUOTED PATH IS A PATH, NOT A QUOTED NAME. `& "$PSHOME/pwsh" -NoProfile` is how a
+    // script invokes the host binary, and the analyzer publishes the path with its
+    // interpolation intact and no quotes. This function kept the quotes, so every such
+    // row was counted MISSING against a target that cannot be a symbol (`calls ->
+    // "$PSHOME/pwsh"`, 16 rows) while the analyzer's own row was unexplained.
+    const unquoted = raw.replace(/^['"]|['"]$/g, "")
+    const op = invocationOperatorOf(c)
+    // THE DOT-SOURCE IS AN INCLUSION, NOT A CALL — the `part_of` contract's positive
+    // test, and the analyzer has published it that way since the relabel. `.` runs the
+    // file in the CALLER's scope (it becomes part of the including unit); `&` runs it in
+    // a child scope and stays a call. This function had no `part_of` rule at all, so the
+    // analyzer's part_of rows were filtered out of the comparison by the allowlist and
+    // never audited, while its own reading of the same line was a `calls -> /lib.ps1`
+    // with the first character of the path eaten.
+    if (op === "." && (unquoted.includes("/") || unquoted.includes("\\") || /\.ps(m?1|d1)$/i.test(unquoted))) {
+      const base = unquoted.split(/[\\/]/).pop() ?? ""
+      if (base) push("part_of", ownerOf(c), base)
+      continue
+    }
+    // `& $sb` RUNS THE VARIABLE'S VALUE, so it reads the variable; it is not a call to a
+    // function named `sb`. The analyzer labels it `uses` with `isInvokedVariable`, and
+    // this function stripped the `$` and called the NAME — 14 `calls -> sb` rows over the
+    // primary corpus, every one of them a variable read the analyzer had already
+    // published correctly. A path built from a variable (`"$PSScriptRoot/x.ps1"`) is
+    // still a call: it names a FILE, and the separator is what tells the two apart.
+    if (unquoted.startsWith("$") && !unquoted.includes("/") && !unquoted.includes("\\")) {
+      push("uses", ownerOf(c), canonicalName(ownerOf(c), unquoted.replace(/^\$/, "")))
+      continue
+    }
+    if (NOT_A_CALL.has(unquoted.toLowerCase())) continue
+    if (KEYWORDS_NOT_CALLS.has(unquoted.toLowerCase())) continue
+    // A SCRIPT BLOCK IS NOT A COMMAND NAME.
+    //
+    // `try { … }` in ARGUMENT position is a grammar recovery shape: the block's own text
+    // becomes the command name, and this function published `calls -> { try { 1; throw … } }`
+    // — a target that is source text, not a name. Measured on
+    // test/powershell/Language/Scripting/TryCatch.Tests.ps1: 24 such truth rows, and the
+    // analyzer published 7 of its own from the same recovery, with different whitespace, so
+    // each side's rows were unexplained to the other. A NAME has no whitespace, no braces
+    // and no statement separator; anything that has them is recovery text and is not a
+    // callable. The dot-source test below needs the same guard, because a recovered block's
+    // text can also contain a `/` (a `1/$a` inside the block) and was published as a
+    // `part_of` to a file named after a fragment of a try-block.
+    let nameShaped = true
+    for (let i = 0; i < unquoted.length; i++) {
+      const ch = unquoted.charCodeAt(i)
+      if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 123 || ch === 125 || ch === 59) { nameShaped = false; break }
+    }
+    if (!nameShaped) continue
+    // A COMMAND IS CALLED BY ITS NAME AS WRITTEN. PowerShell resolves a command
+    // case-insensitively at run time against the commands DEFINED at that moment — a
+    // function defined inside a `Describe` block is not visible at file scope until the
+    // block runs — and the analyzer publishes the call as written (measured: a declared
+    // `Invoke-Widget` called as `Invoke-WIDGET` publishes `Invoke-WIDGET`). The first
+    // version of the spelling map resolved this against the file's `contains` names and
+    // manufactured 12 UNEXPLAINED `calls` rows on msi.tests.ps1 alone (`Invoke-MsiExec` vs
+    // a `function Invoke-Msiexec` inside a block). The as-written spelling is the contract.
+    push("calls", ownerOf(c), unquoted)
   }
   // A method call: `invokation_expression` with an argument list. The target is
   // the FULL dotted/static chain (`Math::Max`, `$x.Run`, `Shape.New`) because
@@ -27103,12 +27669,20 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
       // from position around the separator, not from fields.
       const typeText = ch[sep - 1].text.replace(/^\[/, "").replace(/\]$/, "")
       const method = ch[sep + 1]?.text ?? ""
-      if (method) push("calls", ownerOf(iv), `${typeText}::${method}`)
+      // `[T]::new(...)` CONSTRUCTS. `calls -> T::new` is a call to a method that is not a
+      // method, and the analyzer publishes `instantiates` for it (854 rows at whole
+      // population). The construction is emitted by the instantiates block below, which
+      // reads the type POSITIONALLY because `invokation_expression` carries no `object`
+      // field — so this branch hands it the node rather than guessing again.
+      if (method && !/^new$/i.test(method)) push("calls", ownerOf(iv), `${typeText}::${method}`)
+      else if (method) push("instantiates", ownerOf(iv), typeText)
     } else {
       // Instance: `$r.Name.ToUpper()` calls `ToUpper`, and the receiver is already
       // carried by the containment that put this statement in its owner.
       const nm = firstOfType(iv, "name", "member_name", "simple_name")
-      if (nm?.text) push("calls", ownerOf(iv), nm.text)
+      // As written, for the same reason a command call is: the receiver's type decides the
+      // method, and the file does not name it. (See the identity block's defect 1.)
+      if (nm?.text) push("calls", ownerOf(iv), bareName(nm.text))
     }
   }
   // `foreach`/`where` style invocations the grammar models separately.
@@ -27135,10 +27709,46 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // language's own evaluation order rather than by copying the analyzer's output:
   // the same answer, reached by a different route, which is the only kind of
   // agreement between an oracle and an analyzer that is worth anything.
+  // THE RECEIVER OF A CHAIN IS NOT A READ — the lane has already ruled on this, and
+  // this function was on the wrong side of the ruling. `member-reads-psb5` pins it: for
+  // `$names[$index]` the readable name is the KEY, and publishing the RECEIVER beside it
+  // is the pre-fix shape that fixture forbids by name. The analyzer's PS9 note says the
+  // same thing in its own words. This function's general read pass did not know about
+  // chains, so it emitted `uses r` for `$r.Directory.Name`, `uses Map` for
+  // `$Map.Keys` and `uses File` for `$File.Name` — 3 of the last 3 MISSING rows on the
+  // six-shape reproduction, and the same class in the corpus. The receiver spans are
+  // collected once below, keyed by BYTE OFFSET (never by node identity: this file's
+  // `staticObjects` comment records what that costs).
+  const receiverKey = (n: any): string => `${n.startIndex}:${n.endIndex}`
+  const receiverSpans = new Set<string>()
+  for (const ma of descendants(root, "member_access")) {
+    const first = kids(ma)[0]
+    if (first && first.type === "variable") receiverSpans.add(receiverKey(first))
+  }
+  for (const el of descendants(root, "element_access")) {
+    const first = kids(el)[0]
+    if (first && first.type === "variable") receiverSpans.add(receiverKey(first))
+  }
   for (const ma of descendants(root, "member_access")) {
     if (damaged(ma)) continue
     const nm = firstOfType(ma, "name", "member_name")
-    if (nm?.text) push("uses", ownerOf(ma), nm.text)
+    if (nm?.text) {
+      // A DYNAMIC MEMBER NAME IS A VARIABLE, NOT A MEMBER NAME. `$Module.Params.$alias`
+      // indexes the hashtable with the VALUE of `$alias`; the grammar puts that variable
+      // in the member-name slot, and this function pushed its text verbatim — `uses ->
+      // $alias`, a `$`-prefixed target no symbol can have, while the analyzer published
+      // the stripped name. bareName strips the sigil the same way it does everywhere else.
+      //
+      // AND THE MEMBER NAME IS **NOT** CANONICALISED. A member read resolves against the
+      // RECEIVER's type at run time, which the file may never name (`$result.CompletionText`
+      // on a pscustomobject is a hashtable key), so the analyzer publishes the spelling AS
+      // WRITTEN — measured: `$obj.NAME` and `$obj.Name` publish `NAME` and `Name`, and
+      // `$this.CONFIGFILE` publishes `CONFIGFILE` beside its `[string]$ConfigFile` property.
+      // The first version of the spelling map rewrote these to a same-named key elsewhere in
+      // the file and turned 912 correct `uses` rows into UNEXPLAINED ones (see the identity
+      // block above, defect 1). A member name is its own fact: as written.
+      push("uses", ownerOf(ma), bareName(nm.text))
+    }
   }
   // `$result['dest']` reads the SLOT `dest`, so a string index is a use of that
   // slot's name and not merely a subscript. Ansible's module surface is built on
@@ -27160,14 +27770,46 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     // correct oracle can emit. The `member_access` branch above was already correct
     // because it goes through the name-validity helper, and the general name
     // helper strips too — this branch was the one that read `.text` directly.
-    for (const v of descendants(el, "variable")) {
-      if (!v.text) continue
-      const bare = v.text.charCodeAt(0) === 36 /* $ */ ? v.text.slice(1) : v.text
-      if (bare) push("uses", ownerOf(el), bare)
+    // THE VARIABLE LOOP THAT USED TO SIT HERE IS GONE, and its absence is the fix. It
+    // walked every `variable` under the element access and pushed each one raw — with no
+    // automatic-variable check, no declaration-site check and no receiver check — so
+    // `$ordered["key$_"] = $_` published `uses _` (the interpolated `$_` inside the
+    // key), `uses key$_` (a grammar artifact of an interpolation split across two `$`),
+    // and `uses $parameter` (a `$`-prefixed target no symbol can have). The general read
+    // pass below already publishes every key variable with all three guards, so this
+    // loop was not a second reading; it was a second RULE, and a worse one. What the
+    // element access owns is its LITERAL keys, below.
+    // ONLY A LITERAL **BETWEEN THE BRACKETS** IS A KEY. The first version read every
+    // string literal under the element access, which includes literals in the RECEIVER:
+    // `($_ -split '\s', 2)[0]` published `uses Find-RequiredSDK -> \s` — a truth row whose
+    // target is a regex fragment and which no analyzer could ever publish, because `\s` is
+    // not a name. The subscript is the token sequence between `[` and `]`, and the numeric
+    // branch below already reads that range; this is the same range for string keys.
+    const sub = kids(el)
+    const openAt = sub.findIndex((k: any) => k.text === "[")
+    const closeAt = openAt >= 0 ? sub.findIndex((k: any, i: number) => i > openAt && k.text === "]") : -1
+    if (openAt >= 0 && closeAt > openAt) {
+      for (const k of sub.slice(openAt + 1, closeAt)) {
+        for (const sl of k.type === "string_literal" ? [k] : descendants(k, "string_literal")) {
+          const t = sl.text.replace(/^['"]|['"]$/g, "")
+          if (t) push("uses", ownerOf(el), t)
+        }
+      }
     }
-    for (const sl of descendants(el, "string_literal")) {
-      const t = sl.text.replace(/^['"]|['"]$/g, "")
-      if (t) push("uses", ownerOf(el), t)
+    // A NUMERIC KEY IS AN ELEMENT-ACCESS KEY TOO. `$ps.Streams.Error[0]` reads element
+    // `0`, and the analyzer publishes it (`isElementAccess` + `isNumericIndex`); this
+    // function published only variable and string keys, so every numeric subscript was
+    // scored as an unexplained analyzer edge (3 on one file, measured).
+    // A NUMERIC KEY IS A KEY ONLY WHEN IT IS THE WHOLE SUBSCRIPT. `$a[0]` reads element
+    // 0; `$a[$i-1]` reads the VARIABLES and the arithmetic is not a name. Emitting every
+    // decimal literal under the element access published `uses 1` for `$a[$i-1]` — 7 rows
+    // over the primary corpus — against an analyzer that (rightly) publishes nothing.
+    if (openAt >= 0 && closeAt > openAt) {
+      const between = sub.slice(openAt + 1, closeAt).filter((k: any) => k.type !== "command_argument_sep")
+      const sole = between.length === 1 ? between[0] : null
+      const lit = sole && sole.type === "logical_expression" ? descendants(sole, "decimal_integer_literal")[0] : null
+      const whole = lit && lit.text.trim() === sole.text.trim()
+      if (lit && whole) push("uses", ownerOf(el), lit.text.trim())
     }
   }
   // A DECLARED TYPE is a use — EXCEPT when it is the object of a static call, in
@@ -27217,64 +27859,230 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     const sep = ch.findIndex((k) => k.type === "::" || k.text === "::")
     if (sep > 0) staticObjects.add(spanKey(ch[sep - 1]))
   }
+  // THE TYPE IS ONE NAME, NOT ITS DOTS. The previous version walked the nested
+  // `type_name`s and emitted the first identifier of EACH, so `[System.IO.FileInfo]`
+  // produced `uses System` and `uses IO` — two fragments, neither of which is a type —
+  // and never produced `FileInfo` at all; `[System.Collections.Generic.List[string]]`
+  // produced four fragments. The analyzer publishes the type spec AS WRITTEN
+  // (`System.IO.FileInfo`, arguments included) because that is the name a reader can
+  // resolve, and the harness compares targets by their last dotted segment, so a
+  // fragment can only ever match a coincidence. MEASURED over the primary corpus, this
+  // was the largest single MISSING class: `uses string` 556, `int` 186, `System` 151,
+  // `switch` 145, `bool` 65, `Automation` 62, `Management` 62, `PSCustomObject` 50.
+  //
+  // Two exclusions, both semantic and both stated rather than copied:
+  //   · a TYPE ACCELERATOR (`[string]`, `[int]`, `[hashtable]`, `[switch]`, …) is the
+  //     language's own shorthand for a BCL type, not a dependency on a declared or
+  //     external symbol. The analyzer's PS12 rule skips them, and the list below is the
+  //     DOCUMENTED accelerator table (about_Type_Accelerators) written out by hand, not
+  //     imported — the two are allowed to disagree, and where they do, that is a finding.
+  //   · a PARAMETER'S or a RETURN TYPE is metadata on a declaration, not a use edge: the
+  //     analyzer records it on the symbol (`type:`) and emits no `uses` for it. Every
+  //     `param([string]$x)` would otherwise manufacture a `uses string`, which is also
+  //     why the accelerator list alone is not enough (a typed parameter of a class type
+  //     is metadata too).
+  const PS_TYPE_ACCELERATORS = new Set([
+    "array", "bigint", "bool", "boolean", "byte", "char", "cimclass", "ciminstance",
+    "cimtype", "cultureinfo", "datetime", "decimal", "double", "float", "guid",
+    "hashtable", "int", "int16", "int32", "int64", "ipaddress", "long", "object",
+    "ordered", "psobject", "pscredential", "pscustomobject", "psmoduleinfo", "psvariable",
+    "powershell", "ref", "regex", "runspace", "runspacefactory", "sbyte", "scriptblock",
+    "securestring", "single", "string", "switch", "timespan", "type", "uint",
+    "uint16", "uint32", "uint64", "ulong", "uri", "ushort", "void", "wmi", "wmiclass",
+    "wmisearcher", "xml",
+  ])
+  const typeIsDeclarationMetadata = (n: any): boolean => {
+    // A parameter list or an attribute is metadata; a class method's return type is a
+    // DIRECT child of the method (the body is under script_block, so a descendant test
+    // would also hide a local typed declaration inside the body).
+    if (n.parent?.type === "class_method_definition") return true
+    let p: any = n.parent
+    let d = 0
+    while (p && d < 12) {
+      if (p.type === "script_parameter" || p.type === "class_method_parameter" ||
+          p.type === "class_property_parameter" || p.type === "param_block" ||
+          p.type === "attribute") return true
+      p = p.parent
+      d++
+    }
+    return false
+  }
   for (const tl of descendants(root, "type_literal")) {
     if (damaged(tl)) continue
     if (staticObjects.has(spanKey(tl))) continue
-    for (const tn of descendants(tl, "type_name")) {
-      const nm = firstOfType(tn, "type_identifier", "simple_name")
-      if (nm?.text) push("uses", ownerOf(tl), nm.text)
-    }
+    if (typeIsDeclarationMetadata(tl)) continue
+    const full = tl.text.replace(/^\[/, "").replace(/\]$/, "").trim()
+    if (!full) continue
+    // AN ARRAY OF AN ACCELERATOR IS STILL AN ACCELERATOR: `[string[]]` and `[int[]]` are
+    // the language's own shorthands with an array suffix, and the analyzer's PS12 check
+    // normalises them the same way. Without the suffix strip they arrived as unknown
+    // types `string[]` (24 rows) and `int[]` (8), each a MISSING edge for a type the
+    // analyzer was right not to publish.
+    const bare = full.replace(/(\[\])+$/, "")
+    if (PS_TYPE_ACCELERATORS.has(bare.toLowerCase())) continue
+    push("uses", ownerOf(tl), full)
   }
   // A variable that is READ but not declared: the oracle's own test is "a
   // variable that is not the target of a contains edge in this file and not a
   // declaration site", which is a different rule from the analyzer's automatic-
   // variable and case-insensitive-suppression tables.
-  const declaredVars = new Set<string>()
-  for (const e of edges) if (e.label === "contains") declaredVars.add(e.target.toLowerCase())
-  // A LITERAL IS NOT A VARIABLE, and neither is language machinery.
+  // THE READ RULE IS "READ", NOT "UNDECLARED". The first version skipped every variable
+  // whose name had a `contains` edge — so a read of any local, parameter or hashtable key
+  // produced NO truth row, while the analyzer emits one per read. That is not a different
+  // model of PowerShell, it is an omission: `$tag_hash = git rev-parse "$LastReleaseTag^0"`
+  // READS `$LastReleaseTag`, whether or not the same function declares it. Measured on
+  // tools/releaseTools.psm1: 149 of 165 unexplained `uses` rows were reads of names the
+  // function itself declares.
   //
-  // `$true`, `$false` and `$null` are the three PowerShell literals; the rest of
-  // this set is the documented automatic-variable surface (about_Automatic_
-  // Variables and about_Preference_Variables) — the pipeline's current object, the
-  // last-command status triple, the error record and its members, the host, the
-  // call-stack frame, the PS-version table and the per-platform booleans. None of
-  // them is a name the file declares and none is a read of program data, so
-  // emitting `uses -> true` or `uses -> _` is simply wrong, and it was wrong in
-  // this function's first version on 29 of the first 147 disagreements.
+  // What must be excluded is the DECLARATION SITE, not the declared NAME. A variable node
+  // is a declaration site when it is the assignment's target (plain `=` only — `+=` reads
+  // as well as writes), a parameter's own name, a hashtable key, or a foreach/catch binder.
+  const declVarSpans = new Set<string>()
+  const spanOf = (n: any): string => `${n.startIndex}:${n.endIndex}`
+  for (const asn of descendants(root, "assignment_expression")) {
+    const lhs = field(asn, "left_assignment_expression") ?? firstOfType(asn, "left_assignment_expression")
+    if (!lhs) continue
+    // THE BINDING TARGET IS THE DAMAGE TEST — the same rule the contains pass now uses.
+    // Gating on the whole assignment refused a clean `$validated` whose INITIALIZER the
+    // grammar recovered as an ERROR, so the target was never marked a declaration site and
+    // the read pass published `uses validated` for the variable being defined. That single
+    // disagreement produced BOTH sides of a pair: a phantom `uses` truth row and a `contains`
+    // analyzer row with no truth behind it.
+    if (damaged(lhs)) continue
+    const ch = kids(asn)
+    const op = ch.find((k: any) => /^[-+*/%]?=$/.test(k.text) || k.type === "assignment_operator")
+    if (op && op.text !== "=") continue // a compound assignment READS its target
+    // THE TARGET SITS AT THE BOTTOM OF A WRAPPER CHAIN, NOT AMONG THE LHS'S CHILDREN.
+    // `$y = 1` parses as left_assignment_expression > logical_expression >
+    // bitwise_expression > comparison_expression > additive_expression >
+    // multiplicative_expression > format_expression > range_expression >
+    // array_literal_expression > unary_expression > variable — eleven levels — and a
+    // typed declaration (`[string]$a = …`) adds a cast_expression on top. The previous
+    // rule asked the LHS for a DIRECT `variable` child, found none, and therefore never
+    // marked the assignment's own target as a declaration site. The read pass then
+    // published `uses y` for the variable being DEFINED: over the primary corpus,
+    // `uses result` 127, `uses e` 30, `uses actual` 24, `uses out` 19, `uses y` on every
+    // plain assignment — the single largest phantom class in the lane. The contains
+    // pass above already descends (`descendants(lhs, "variable")[0]`); this is the same
+    // rule, so the two halves of this function can no longer disagree about what a
+    // declaration site is.
+    const target = descendants(lhs, "variable")[0]
+    if (target) declVarSpans.add(spanOf(target))
+  }
+  for (const sp of descendants(root, "script_parameter")) {
+    const v = kids(sp).find((c: any) => c.type === "variable")
+    if (v) declVarSpans.add(spanOf(v))
+  }
+  // A CLASS MEMBER'S OWN NAME AND ITS PARAMETERS ARE DECLARATION SITES TOO.
+  // `class Fancy { [System.Text.StringBuilder] $Buf; [void] Add([System.IO.FileInfo] $File) }`
+  // published `uses Buf`, `uses File` and `uses N` — reads of names the class is
+  // declaring. The analyzer emits none of them: a property declaration is not a read of
+  // its own name, and a parameter's name is a binder. Same rule as every other binder.
+  for (const cp of descendants(root, "class_property_definition")) {
+    const v = kids(cp).find((c: any) => c.type === "variable")
+    if (v) declVarSpans.add(spanOf(v))
+  }
+  for (const mp of [...descendants(root, "class_method_parameter"), ...descendants(root, "class_property_parameter")]) {
+    const v = kids(mp).find((c: any) => c.type === "variable")
+    if (v) declVarSpans.add(spanOf(v))
+  }
+  for (const he of descendants(root, "hash_entry")) {
+    const key = firstOfType(he, "key_expression")
+    if (!key) continue
+    const v = descendants(key, "variable")[0]
+    if (v) declVarSpans.add(spanOf(v))
+  }
+  for (const fe of [...descendants(root, "foreach_statement"), ...descendants(root, "catch_clause")]) {
+    const v = descendants(fe, "variable")[0]
+    if (v) declVarSpans.add(spanOf(v))
+  }
+
+  // --- CONTAINS: inline function parameters are declarations ---------------
+  // `function Inline($a, $b)` declares two parameters in the function, and this
+  // function had no rule for them: the param-block loop is nested under
+  // `param_block`, and the INLINE form has no param block, so `contains Inline -> a`
+  // and `-> b` were never derived while the analyzer declared both. A parameter is a
+  // declaration in either spelling; the owner is the enclosing function.
+  for (const sp of descendants(root, "script_parameter")) {
+    const v = kids(sp).find((c: any) => c.type === "variable")
+    // The NAME is the damage test (the parameter-pass rule, stated there once).
+    if (v ? damaged(v) : damaged(sp)) continue
+    let p: any = sp.parent
+    let inParamBlock = false
+    let d = 0
+    while (p && d < 6) {
+      if (p.type === "param_block") { inParamBlock = true; break }
+      if (p.type === "function_statement" || p.type === "script_block") break
+      p = p.parent
+      d++
+    }
+    if (inParamBlock) continue
+    if (v?.text) {
+      const nm = bareName(v.text)
+      if (isAutomaticName(nm)) continue
+      recordVarDecl(ownerOf(sp), nm, sp.startIndex)
+    }
+  }
+
+  // --- CONTAINS: a foreach binder declares a variable ----------------------
+  // `foreach ($item in $Map.Keys)` declares `item` in the enclosing scope, exactly as
+  // an assignment does, and the analyzer publishes `contains -> item`. This function
+  // declared nothing for the binder, so every foreach loop in the corpus produced one
+  // unexplained containment — measured as `contains Use-Typed -> item` on the shape
+  // reproduction and 47 `contains` rows in the primary lane's unexplained sample. The
+  // binder is the FIRST variable under the statement, which is also the rule this
+  // function's read pass needs (it is a declaration site, not a read).
+  for (const fe of descendants(root, "foreach_statement")) {
+    const v = descendants(fe, "variable")[0]
+    if (v ? damaged(v) : damaged(fe)) continue
+    if (v?.text) {
+      const nm = bareName(v.text)
+      if (isAutomaticName(nm)) continue
+      recordVarDecl(ownerOf(fe), nm, fe.startIndex)
+    }
+  }
+
+  // --- CONTAINS: flush the declaration rows, one per SYMBOL ----------------
   //
-  // This list is written from the DOCUMENTATION and is deliberately a SEPARATE
-  // list from the analyzer's. The point of F5 is that a mistake in one is not
-  // automatically a mistake in the other, so the two are not derived from a
-  // shared table — and where they disagree, that disagreement is itself the
-  // finding, which is why this comment says "deliberately" rather than "to keep
-  // them in sync".
-  const NOT_A_READ = new Set([
-    // literals
-    "true", "false", "null",
-    // the pipeline's current object and its aliases
-    "_", "psitem", "input", "args", "foreach", "switch", "this",
-    // last-command status
-    "?", "^", "$", "lastexitcode",
-    // the error record and its members
-    "error", "erroractionpreference", "errorview", "senderinfo", "event",
-    "eventargs", "eventsubscriber", "sender", "sourceeventargs", "matches",
-    "stacktrace", "invocationinfo", "psinvocationinfo", "scriptstacktrace",
-    "executioncontext", "host", "home", "pwd", "shellid",
-    // the version table and the platform booleans
-    "psversiontable", "psedition", "iscoreclr", "islinux", "ismacos", "iswindows",
-    "nativecommanduseerroractionpreference", "ofs", "consolefilename",
-    // the call site
-    "myinvocation", "psboundparameters", "pscmdlet", "pscommandpath",
-    "psscriptroot", "pscommandline", "pscmdletbindingmetadata",
-  ])
+  // Placed after EVERY variable-declaration form, because the flush is the only place the
+  // rows are emitted and a form added below it would record into a list nobody reads.
+  // Sorted by offset so the FIRST declaration in source order wins, which is the analyzer's
+  // rule (`declareSymbol` returns early when the key exists, and its walk is in source order).
+  // A property and a variable with the same spelling are DIFFERENT symbols (the store's key is
+  // owner+name+kind), so the identity is per kind — that is why the class property and hashtable
+  // key passes share one tag: the analyzer stores both as `SymbolKind.Property`.
+  {
+    const seenDecl = new Set<string>()
+    for (const d of declRows.sort((a, b) => a.at - b.at)) {
+      const k = `${d.kind}\u0000${d.owner.toLowerCase()}\u0000${d.name.toLowerCase()}`
+      if (seenDecl.has(k)) continue
+      seenDecl.add(k)
+      push("contains", d.owner, d.name)
+    }
+  }
+
+  // --- USES: the bare variable read ---------------------------------------
+  // THIS PASS RUNS AFTER EVERY DECLARATION PASS, and that placement is part of the
+  // identity rule rather than tidiness: a read resolves to the spelling of the frame's
+  // FIRST declaration in source order, so every declaration — parameter block, assignment,
+  // inline parameter, foreach binder — has to be registered before the first read asks.
+  // It used to sit above the CONTAINS passes, when the map was filled by `push` itself;
+  // the map is now filled by `rememberVarDecl` at each variable-declaration SITE, and the
+  // two form declarations below (inline parameters, foreach binders) are the ones that
+  // would otherwise be invisible to every read in the file.
   for (const v of descendants(root, "variable")) {
     if (damaged(v)) continue
-    const name = v.text.replace(/^[$@]/, "")
+    if (declVarSpans.has(spanOf(v))) continue
+    if (receiverSpans.has(spanOf(v))) continue
+    const name = bareName(v.text)
     if (!name) continue
     const lower = name.toLowerCase()
-    if (declaredVars.has(lower)) continue
     if (NOT_A_READ.has(lower)) continue
-    push("uses", ownerOf(v), name)
+    // A QUALIFIED NAME (`$script:x`, `$env:x`) IS NOT A VARIABLE OF THIS FRAME. The `:`
+    // is kept by bareName, so the name can never equal a declaration's, and the map
+    // returns it unchanged — but the analyzer publishes these reads with the SCOPE PREFIX
+    // (`uses script:x` is its own documented form, PS19), so the row is emitted as written.
+    push("uses", ownerOf(v), canonicalName(ownerOf(v), name))
   }
 
   // --- EXPORTS: Export-ModuleMember ---------------------------------------
@@ -27287,32 +28095,229 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     if (!nm || !/^export-modulemember$/i.test(nm.text.trim())) continue
     const els = field(c, "command_elements")
     if (!els) continue
-    const named = kids(els).filter((k) => k.type === "command_parameter")
+    // ONE TRAVERSAL, INDICES — NOT NODE IDENTITY ACROSS TWO.
+    //
+    // web-tree-sitter hands out a FRESH JavaScript wrapper every time `.child(i)` is
+    // called, so a node taken from one `kids()` array is never `===` to the same node
+    // from a second `kids()` call. The previous version built `named` from one arrays
+    // and then called `all.indexOf(p)` on another: the answer was -1 for EVERY
+    // parameter, the value loop started at index 0, and it hit the `-Function`
+    // parameter itself on its first step and `break`ed. The branch was therefore dead
+    // on BOTH forms — no truth row was ever produced for `exports` — and the harness
+    // reported the analyzer's exports as unexplained fabrications (13–17 per lane)
+    // while its own "COMPARED WITH NO TRUTH" note blamed a missing oracle. The repo
+    // already records this exact trap for `staticObjects`; this is the same mistake in
+    // a rule written later, which is why the comment is here and not only there.
+    const all = kids(els)
+    const named = all.filter((k) => k.type === "command_parameter")
+    // A QUOTED LIST ELEMENT IS A WRAPPED TOKEN, AND THIS RULE READ ONLY BARE ONES.
+    //
+    // The served grammar wraps every quoted value as
+    // `array_literal_expression > unary_expression > string_literal`, so `-Function
+    // 'Start-Benchmarking', 'Compare-BenchmarkResult'` reaches this loop as two WRAPPERS and
+    // the direct-child type test matched neither — the module published ONE of its two
+    // exported functions and the second read as an analyzer fabrication. Measured on
+    // test/perf/perf.psm1:207, the exact line the analyzer's own G6 note records from the
+    // other side of this comparison. The unwrap is one helper, used by the flagged and the
+    // unflagged form, so the two arms cannot disagree about what a value is.
+    // A LIST IS ONE TOKEN, AND THIS RULE HAS TO READ EVERY ELEMENT OF IT.
+    // `-Function 'A', 'B'` does not arrive as two sibling string literals: the whole
+    // comma list is ONE `array_literal_expression` whose children are
+    // `unary_expression > string_literal` pairs. Reading the first quoted descendant of
+    // that token published `A` and dropped `B`, so a module that exports two functions
+    // had one of them in the graph and the other scored as an analyzer fabrication.
+    // Measured on test/perf/perf.psm1:207 (`'Start-Benchmarking',
+    // 'Compare-BenchmarkResult'`), the same line the analyzer's G6 note records.
+    const exportValues = (t: any): string[] => {
+      if (t.type === "generic_token" || t.type === "simple_name") return [t.text.trim()]
+      if (t.type === "string_literal" || t.type === "expandable_string_literal" || t.type === "variable") {
+        const v = bareName(t.text)
+        return v ? [v] : []
+      }
+      const out: string[] = []
+      const seenSpans = new Set<string>()
+      const walk = (n: any): void => {
+        for (const c of kids(n)) {
+          if (c.type === "string_literal" || c.type === "expandable_string_literal") {
+            const key = `${c.startIndex}:${c.endIndex}`
+            if (!seenSpans.has(key)) { seenSpans.add(key); const v = bareName(c.text); if (v) out.push(v) }
+            continue
+          }
+          if (c.type === "generic_token" || c.type === "simple_name") {
+            const key = `${c.startIndex}:${c.endIndex}`
+            if (!seenSpans.has(key)) { seenSpans.add(key); const v = c.text.trim(); if (v) out.push(v) }
+            continue
+          }
+          walk(c)
+        }
+      }
+      walk(t)
+      return out
+    }
+    const exportable = (v: string): string | null => {
+      if (!v) return null
+      // A WILDCARD IS NOT A NAME. `Export-ModuleMember -Function *` publishes the
+      // WHOLE module surface to the runtime and names no symbol; the lane's PS25
+      // rule refuses it for exactly that reason (a `*` is not legal in a
+      // PowerShell identifier). This side published `exports -> *`, which can never
+      // resolve and was the first sampled MISSING row on ansible's LinkUtil module.
+      if (v.includes("*") || v.includes("$")) return null
+      return v
+    }
     for (const p of named) {
       const flag = p.text.replace(/^-/, "").toLowerCase()
       if (flag !== "function" && flag !== "variable" && flag !== "alias" && flag !== "cmdlet") continue
       // The value follows the parameter, and the grammar puts a
-      // `command_argument_sep` between them, so the bare tokens after this
-      // parameter and before the next one are the names.
-      const all = kids(els)
+      // `command_argument_sep` between them, so the tokens after this parameter
+      // and before the next one are the names.
       const at = all.indexOf(p)
       for (let i = at + 1; i < all.length; i++) {
         const t = all[i]
         if (t.type === "command_parameter") break
         if (t.type === "command_argument_sep") continue
-        if (t.type === "generic_token" || t.type === "variable" || t.type === "simple_name" || t.type === "string_literal") {
-          push("exports", moduleName, t.text.replace(/^['"]|['"]$/g, "").replace(/^\$/, ""))
+        for (const raw of exportValues(t)) {
+          const exportName = exportable(raw)
+          if (exportName) push("exports", moduleName, exportName)
         }
       }
     }
     // `Export-ModuleMember A, B, C` — bare names, no flag. Read as every
     // non-separator token that is not a parameter.
     if (named.length === 0) {
-      for (const t of kids(els)) {
+      for (const t of all) {
         if (t.type === "command_argument_sep") continue
-        if (t.type === "generic_token" || t.type === "simple_name") push("exports", moduleName, t.text)
+        for (const raw of exportValues(t)) {
+          const exportName = exportable(raw)
+          if (exportName) push("exports", moduleName, exportName)
+        }
       }
     }
+  }
+
+  // --- EXTENDS / IMPLEMENTS: the class header ------------------------------
+  // PowerShell's class header is POSITIONAL: `class Kid : Base, IShape` names at most
+  // one base CLASS and any number of INTERFACES, with no syntactic marker separating
+  // the two — the language resolves class-vs-interface at run time, so the header's
+  // order is the only information that exists. Both sides read it the same way: the
+  // first name after `:` is the base, the rest are interfaces. The analyzer has always
+  // emitted both labels; this function had NO rule for either, so the harness's
+  // allowlist filtered the analyzer's rows out of the comparison and the two labels
+  // were never audited on this lane — the un-audited-label shape this file records in
+  // four other places.
+  const classHeaderNames = (cs: any): string[] => {
+    const ch = kids(cs)
+    const colon = ch.findIndex((k: any) => k.text === ":")
+    if (colon < 0) return []
+    const names: string[] = []
+    for (let i = colon + 1; i < ch.length; i++) {
+      const k = ch[i]
+      if (k.text === "{") break
+      if (k.type === "simple_name" || k.type === "type_identifier") names.push(k.text)
+    }
+    return names
+  }
+  // A CLASS IS ITS DECLARATIONS, UNIONED — the analyzer's PS28 rule, and the corpus measures
+  // why this side needs it too. `scripting.Classes.inheritance.tests.ps1` redeclares `A`, `B`,
+  // `C` and `D` across ~40 `It` blocks and the LAST `class B` declares only a constructor. A
+  // name -> LAST-node map therefore compared the derived class against an EMPTY base and
+  // published no `overrides`: 9 `overrides B -> A` analyzer rows were UNEXPLAINED here while
+  // the truth held a bare `extends` (measured 2026-10-28). Every pair is a real `class B : A`
+  // and `class A` in the SAME file, so the union is the honest reading.
+  //
+  // The FIRST declaration carrying a base wins, mirroring the analyzer's `baseClassByClass`
+  // (its `set` sits inside `if (baseClass)`, so a base-less redeclaration cannot erase the
+  // earlier base — a later `class A` says nothing about the base of the earlier one).
+  const classDeclaredName = new Map<string, string>()
+  const classBaseWritten = new Map<string, string>()
+  const classNodeList: any[] = []
+  for (const cs of descendants(root, "class_statement")) {
+    if (damaged(cs)) continue
+    const nm = declName(cs)
+    if (!nm) continue
+    const key = nm.toLowerCase()
+    classNodeList.push(cs)
+    if (!classDeclaredName.has(key)) classDeclaredName.set(key, nm)
+    const names = classHeaderNames(cs)
+    if (names[0]) push("extends", nm, names[0])
+    for (const n of names.slice(1)) push("implements", nm, n)
+    if (names[0] && !classBaseWritten.has(key)) classBaseWritten.set(key, names[0])
+  }
+
+  // --- OVERRIDES: a subclass member that re-declares a base member ---------
+  // PowerShell has NO `override` keyword: class methods are virtual by default, so a
+  // subclass member that matches a base member's name AND KIND overrides it. Matching
+  // is case-insensitive because PowerShell identifiers are, and `hidden`/`static` take
+  // a member out of the override surface — the two modifiers the language uses to say
+  // a member is not virtual. The analyzer's edge is class -> base with the member in
+  // `metadata.overridesMember`, so this function emits the same shape from the same
+  // facts, reached by its own walk. The previous rule looked for a class_attribute
+  // whose TEXT mentioned `override` — a keyword PowerShell does not have — so it was
+  // dead code that read as implemented, and every real override was unexplained.
+  const isStaticOrHidden = (member: any): boolean => {
+    for (const attr of kids(member)) {
+      if (attr.type !== "class_attribute") continue
+      const t = attr.text.toLowerCase()
+      if (t.includes("static") || t.includes("hidden")) return true
+    }
+    return false
+  }
+  // TWO MEMBER SETS, because the two ROLES have different rules. A CANDIDATE is any declared
+  // method of the class — `memberOverrides` refuses only on the BASE side — while a BASE
+  // member must be neither `hidden` nor `static`, the two modifiers PowerShell uses to say a
+  // member is not overridable. Properties are in NEITHER set: the analyzer's candidates are
+  // methods only and its kind test requires equality, so a property can never satisfy an
+  // override — PS26 recorded that asymmetry as a decision, and this side reads it the same
+  // way instead of inventing the other direction.
+  const classMethodsAll = new Map<string, Set<string>>()
+  const classMethodsVirtual = new Map<string, Set<string>>()
+  for (const cs of classNodeList) {
+    const nm = declName(cs)
+    if (!nm) continue
+    const key = nm.toLowerCase()
+    let all = classMethodsAll.get(key)
+    if (!all) { all = new Set(); classMethodsAll.set(key, all) }
+    let virt = classMethodsVirtual.get(key)
+    if (!virt) { virt = new Set(); classMethodsVirtual.set(key, virt) }
+    for (const mm of descendants(cs, "class_method_definition")) {
+      if (damaged(mm)) continue
+      const methodName = declName(mm)
+      if (!methodName) continue
+      const leaf = methodName.toLowerCase()
+      // A CONSTRUCTOR IS WRITTEN WITH THE CLASS'S NAME (PS4's synthesised `constructor`); it
+      // is not a candidate and cannot be overridden by a same-named method.
+      if (leaf === key) continue
+      all.add(leaf)
+      if (!isStaticOrHidden(mm)) virt.add(leaf)
+    }
+  }
+  // A CLASS NAME IS CASE-INSENSITIVE, like every other PowerShell identifier, and the TARGET is
+  // the DECLARATION's spelling. `canonicalName` cannot answer this: the identity map is
+  // variable-only and frame-scoped (the 2026-10-28 fix), so class lookup has its own map.
+  const classKeyOf = (written: string): string | null => {
+    const k = written.toLowerCase()
+    return classDeclaredName.has(k) ? k : null
+  }
+  for (const [key, candidates] of classMethodsAll) {
+    const className = classDeclaredName.get(key)!
+    const overriddenBases = new Set<string>()
+    for (const memberName of candidates) {
+      let written = classBaseWritten.get(key)
+      const visited = new Set<string>([key])
+      let guard = 0
+      // THE WHOLE CHAIN, as the analyzer walks it: a subclass may override a member its base
+      // INHERITED rather than declared, and the edge names the base that DECLARES it.
+      while (written && guard++ < 8) {
+        const baseKey = classKeyOf(written)
+        if (!baseKey || visited.has(baseKey)) break
+        visited.add(baseKey)
+        if (classMethodsVirtual.get(baseKey)?.has(memberName)) {
+          overriddenBases.add(classDeclaredName.get(baseKey)!)
+          break
+        }
+        written = classBaseWritten.get(baseKey)
+      }
+    }
+    for (const base of overriddenBases) push("overrides", className, base)
   }
 
   // --- INSTANTIATES: New-Object and ::new() -------------------------------
@@ -27337,20 +28342,41 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
         const t = all[i]
         if (t.type === "command_parameter") break
         if (t.type === "command_argument_sep") continue
-        typeName = t.text.replace(/^['"]|['"]$/g, "")
+        // THE QUOTED FORM IS WRAPPED: `New-Object "System.Text.StringBuilder"` is ONE
+        // `array_literal_expression`, and the direct-child type test this loop used
+        // matched nothing — the corpus's dynamic-parameter builder
+        // (`New-Object "System.Management.Automation.ParameterAttribute"`, 30 sites)
+        // derived NO instantiation while the analyzer published one per site.
+        const v = unwrappedValueText(t)
+        if (!v) continue
+        typeName = v.replace(/^['"]|['"]$/g, "")
         break
       }
     }
     if (!typeName) {
       for (const t of all) {
         if (t.type === "command_argument_sep" || t.type === "command_parameter") continue
-        if (t.type === "generic_token" || t.type === "simple_name" || t.type === "string_literal" || t.type === "member_access_expression") {
-          typeName = t.type === "member_access_expression" ? t.text : t.text.replace(/^['"]|['"]$/g, "")
-          break
-        }
+        const v = unwrappedValueText(t)
+        if (!v) continue
+        typeName = v.replace(/^['"]|['"]$/g, "")
+        break
       }
     }
-    if (typeName) push("instantiates", ownerOf(c), typeName)
+    // AN ACCELERATOR IS NOT A CONSTRUCTED TYPE. `New-Object psobject` builds a box, and
+    // `psobject`/`PSObject`/`ordered` are the language's own spellings, not dependencies;
+    // the analyzer suppresses accelerator names at this exact site (PS18/PS29). Without
+    // this, 10 `instantiates -> psobject` and 9 `instantiates -> PSObject` rows were
+    // counted as MISSING against an analyzer that was right to publish nothing.
+    // A DYNAMIC TYPE NAME IS A VARIABLE READ, NOT A CONSTRUCTION. `New-Object -TypeName
+    // "$crypto_ns.X509Certificate2"` names the type at run time through a variable, and
+    // the analyzer routes that to `uses` (PS29) because `instantiates` would assert the
+    // target IS a type when the source only says it holds one. Publishing the raw
+    // `$crypto_ns.X509Certificate2` as an instantiated type was a target no symbol can
+    // have and a claim the file does not make.
+    if (typeName.includes("$")) continue
+    if (typeName && !PS_TYPE_ACCELERATORS.has(typeName.replace(/\[\]$/, "").toLowerCase())) {
+      push("instantiates", ownerOf(c), typeName)
+    }
   }
   // `[Type]::new(...)` — a static call whose name is `new` is a construction.
   for (const iv of descendants(root, "invokation_expression")) {
@@ -27363,29 +28389,165 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     push("instantiates", ownerOf(iv), typeText)
   }
 
-  // --- OVERRIDES: a class method that overrides a base method ------------
-  for (const m of descendants(root, "class_method_definition")) {
-    if (damaged(m)) continue
-    const mods = kids(m).map((k) => k.type)
-    if (!mods.includes("class_attribute")) continue
-    // The `override` marker is a class_attribute whose text mentions it; the
-    // grammar has no dedicated node for it, so the check is textual and is
-    // recorded as textual rather than dressed up as a structural test.
-    const attrText = kids(m).filter((k) => k.type === "class_attribute").map((k) => k.text).join(" ")
-    if (!/override/i.test(attrText)) continue
-    const nm = declName(m)
-    if (nm) push("overrides", ownerOf(m), nm)
+  // --- IMPORTS / REFERENCES: the four declaration forms -------------------
+  //
+  // A module the file LOADS is a dependency, and this lane records it twice: `imports`
+  // (the load) and `references` (the name resolution), with `metadata.via` naming the
+  // form — the contract's PS7/PS21/PS23 rows. This function had NO `imports` rule at
+  // all: the label was therefore never compared on this lane, and the four forms were
+  // invisible to F5 in the one direction that can disagree. Written from the language's
+  // four documented forms, not from the analyzer's branches:
+  //   `Import-Module ./x.psm1`      cmdlet (and its `ipmo` alias), flag or positional
+  //   `using module ./y.psm1`       the statement form
+  //   `using namespace System.IO`   a NAMESPACE, but the same dependency channel
+  //   `#requires -Module Pester`    a comment directive the engine enforces at run time
+  // Each emits BOTH labels, because a name that is loaded and a name that is resolved
+  // are two facts the graph consumer asks for separately (PS23 made the same argument
+  // for keeping `via` on every row).
+  const pushImport = (target: string) => {
+    if (!target) return
+    push("imports", moduleName, target)
+    push("references", moduleName, target)
   }
-
-  // --- REFERENCES: a `using` statement names a namespace or module -------
+  // Import-Module's parameters that take NO value. A flag is not a module name, and
+  // taking it for one is how `-Force` becomes an import.
+  const IMPORT_MODULE_SWITCHES = new Set([
+    "force", "passthru", "disablenamechecking", "noclobber", "global", "verbose",
+    "debug", "whatif", "confirm", "skipeditioncheck", "usewindowspowershell",
+  ])
   for (const c of descendants(root, "command")) {
     if (damaged(c)) continue
-    const nm = field(c, "command_name")
-    if (!nm || !/^using$/i.test(nm.text.trim())) continue
+    const nm = commandNameOf(c)
+    if (!nm) continue
+    const lower = nm.text.trim().toLowerCase()
     const els = field(c, "command_elements")
     if (!els) continue
-    const toks = kids(els).filter((t) => t.type === "generic_token" || t.type === "simple_name").map((t) => t.text)
-    if (toks.length >= 2) push("references", moduleName, toks[1])
+    const all = kids(els)
+    const valueToken = (t: any) => unwrappedValueText(t) !== null
+    // THE MODULE SPECIFIER IS THE TEXT, SIGILS INCLUDED.
+    //
+    // `bareName` strips a leading `$` (and braces) because it names a VARIABLE; an import
+    // target names a MODULE, and a quoted path expression keeps its `$` in the source. The
+    // two spellings of one path disagreed here: `Import-Module $PSScriptRoot/../x.psm1` is a
+    // `generic_token` whose text is the whole path with its sigil, while
+    // `Import-Module "$PSScriptRoot/../x.psm1"` had the sigil stripped — measured on
+    // powershell/test/packaging/macos/package-validation.tests.ps1:7, where the two sides
+    // published `$PSScriptRoot/../../../build.psm1` and `PSScriptRoot/../../../build.psm1`
+    // and a path-like target is compared EXACTLY (see isPathLikeImport).
+    const clean = (t: any) => String(unwrappedValueText(t) ?? "").replace(/^['"]|['"]$/g, "")
+    // A DYNAMIC MODULE NAME IS NOT A MODULE NAME. `Import-Module $m` names no module the
+    // graph can join: `$m` holds a string at run time, and publishing `imports -> $m`
+    // asserts a dependency on something called `$m`. A dynamic PATH is a different fact —
+    // it is a path expression with an embedded variable, and its text names the file — so
+    // the guard is about shape, not about the sigil alone.
+    const isDynamicModuleName = (v: string): boolean =>
+      v.startsWith("$") && !(v.includes("/") || v.includes("\\") || /\.(ps1|psm1|psd1)$/i.test(v))
+    if (lower === "import-module" || lower === "ipmo") {
+      // The VALUE of a parameter is the next non-separator token after it, and a token
+      // consumed that way is not positional. The first version of this loop looked one
+      // step ahead (past the `command_argument_sep` it usually is not), and separately
+      // pushed EVERY value token it later walked over as if it were positional — so
+      // `-ErrorAction Stop` produced `imports Stop` even when the flag was recognised.
+      // One index, one consumption rule, no second pass.
+      const nextValueAt = (from: number): number => {
+        for (let j = from + 1; j < all.length; j++) {
+          if (all[j].type === "command_argument_sep") continue
+          return j
+        }
+        return -1
+      }
+      for (let i = 0; i < all.length; i++) {
+        const t = all[i]
+        if (t.type === "command_argument_sep") continue
+        if (t.type === "command_parameter") {
+          // `-Name:X` and `-Name X` are one parameter; the colon form's value sits INSIDE
+          // the parameter token, which this reader does not consume, so the flag is
+          // normalised to the name before it is compared (the analyzer reads the same way).
+          const flagRaw = t.text.replace(/^-/, "").toLowerCase()
+          const flagColon = flagRaw.indexOf(":")
+          const flag = flagColon >= 0 ? flagRaw.slice(0, flagColon) : flagRaw
+          const at = nextValueAt(i)
+          if (at < 0) continue
+          const next = all[at]
+          // A PARAMETER'S VALUE IS THAT PARAMETER'S, AND ONLY `-Name`/`-Assembly` NAME A
+          // MODULE. The earlier rule skipped the COMMON parameters by name, which fixed
+          // `-ErrorAction Stop` and could not fix the values that are perfectly shaped as
+          // module names: `-ErrorVariable ErrorImportingModule` and `-RequiredVersion 1.0`
+          // were still imported (measured on ParameterBinding.Tests.ps1:52 during the
+          // 2026-10-28 reconciliation). The cmdlet's module-naming surface is the whole
+          // rule, and the analyzer reads it the same way (`IMPORT_MODULE_MODULE_PARAMETERS`).
+          const namesModule = flag === "name" || flag === "assembly"
+          if (next.type === "command_parameter" || !valueToken(next)) continue
+          i = at
+          if (!namesModule) continue
+          const v = clean(next)
+          if (v && !IMPORT_MODULE_SWITCHES.has(v.toLowerCase()) && !isDynamicModuleName(v)) pushImport(v)
+          continue
+        }
+        if (valueToken(t)) {
+          const v = clean(t)
+          if (v && !IMPORT_MODULE_SWITCHES.has(v.toLowerCase()) && !isDynamicModuleName(v)) pushImport(v)
+        }
+      }
+    } else if (lower === "using") {
+      const toks = all.filter((t: any) => t.type === "generic_token" || t.type === "simple_name").map((t: any) => t.text)
+      // `using module X` / `using namespace X` — the directive names the KIND, the
+      // second token names the dependency.
+      if (toks.length >= 2 && (toks[0].toLowerCase() === "module" || toks[0].toLowerCase() === "namespace")) {
+        pushImport(toks[1])
+      }
+    }
+  }
+  // `#requires -Module Pester` / `#requires -Modules A, B`. The directive is a COMMENT
+  // to the grammar, so this reads the token text — the same reason the analyzer's PS22
+  // note gives for char/index scanning here: a comment has no children, only text.
+  // `#requires -Version 5.1` IS A DEPENDENCY ROW ON THIS LANE, AND THE ORACLE MIRRORED ONLY
+  // THE MODULE HALF. The analyzer publishes the version constraint as `references` carrying
+  // `metadata.requiresVersion` (PS24), because a file's minimum runtime is a fact a consumer
+  // asks for — and this function derived only `-Module`/`-Modules`, so every version directive
+  // was an UNEXPLAINED analyzer row. A version is not a symbol, which is exactly why the row
+  // has to be DERIVED here as well: the comparison is between two readings of the same
+  // directive, not between a symbol table and a number.
+  for (const cm of descendants(root, "comment")) {
+    const text = cm.text
+    if (!/^#\s*requires\b/i.test(text.trim())) continue
+    const at = text.toLowerCase().indexOf("-version")
+    if (at < 0) continue
+    const rest = text.slice(at + "-version".length).trim().replace(/^[:=]\s*/, "")
+    const token = rest.split(/\s/)[0]?.replace(/^['"]|['"]$/g, "") ?? ""
+    // A VERSION IS DIGITS AND DOTS. The analyzer learns the same rule from the corpus the
+    // hard way: a `#requires -Version` inside a test's STRING TABLE produced
+    // `references -> 5.0`n7";` (Parser.Tests.ps1:1340), a target with a quote and a
+    // statement separator in it. Byte test, no regex on the value.
+    let versionShaped = token.length > 0
+    let dots = 0
+    for (let i = 0; i < token.length; i++) {
+      const ch = token.charCodeAt(i)
+      if (ch === 46) { dots++; continue }
+      if (ch < 48 || ch > 57) { versionShaped = false; break }
+    }
+    if (versionShaped && dots >= 1) push("references", moduleName, token)
+  }
+  for (const cm of descendants(root, "comment")) {
+    const text = cm.text
+    // THE COMMENT MUST BE THE DIRECTIVE, NOT MERELY MENTION IT. Searching every comment
+    // for "-module" published the words that FOLLOW that substring as imports: ansible's
+    // WebRequest header comment is prose that says "... -module ..." in a sentence, and
+    // the rule emitted `imports -> $module`, `imports -> #>`, `imports -> Invoke-With-
+    // WebRequest` — three names from a sentence, none of them a module this file loads.
+    // `#requires` is a DIRECTIVE: it begins the comment, and the engine only honours it
+    // there. An import oracle that fires on prose is worse than one that fires on nothing.
+    if (!/^#\s*requires\b/i.test(text.trim())) continue
+    const at = text.toLowerCase().indexOf("-module")
+    if (at < 0) continue
+    let rest = text.slice(at + 7)
+    if (rest.startsWith("s")) rest = rest.slice(1)
+    rest = rest.replace(/^\s*[:=]?\s*/, "")
+    for (const tok of rest.split(/[\s,]+/)) {
+      const v = tok.replace(/^['"]|['"]$/g, "")
+      if (!v || v.startsWith("-")) break
+      pushImport(v)
+    }
   }
 
   return edges

@@ -2,35 +2,13 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-27T05:07:45.623Z",
+  "generatedAt": "2026-10-31T18:52:29.747Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 1,
-  "analyzersScanned": 48,
-  "byClassification": {
-    "needs_review": 1
-  },
-  "byReceiverCategory": {
-    "identifier": 1
-  },
-  "perFile": [
-    {
-      "file": "real-julia-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-julia-analyzer.ts",
-          "line": 58,
-          "column": 15,
-          "source": "/^[ \t]*name[ \t]*=[ \t]*\"([^\"]+)\"/m",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    }
-  ]
+  "totalRegexUsages": 0,
+  "analyzersScanned": 50,
+  "byClassification": {},
+  "byReceiverCategory": {},
+  "perFile": []
 }

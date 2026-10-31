@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "e7b02f30940a48e2ae801fda2868108e0cb6f2108a557e8959ce7062efe488ce",
-    "sealedAt": "2026-10-17T22:26:28.000Z"
+    "contentSha256": "1aa73c33ef60c6515e5b431d09674d1117e72e2855b6ece2f4cba4f0d3feab06",
+    "sealedAt": "2026-10-31T04:58:57.000Z"
   },
   "checks": [
     {
@@ -18,8 +18,8 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (44/45 languages pass)",
-      "detail": "unregistered r type \"library_import\"; unregistered r type \"library_dependency\"; unregistered r type \"namespace_access\"; regression r 0->3",
+      "description": "per-literal shrink-only register with reasons (34/47 languages pass)",
+      "detail": "unregistered cpp type \"unique_ptr\"; unregistered cpp type \"shared_ptr\"; unregistered cpp type \"weak_ptr\"; unregistered cpp type \"auto_ptr\"; unregistered cpp type \"optional\"; unregistered cpp type \"reference_wrapper\"; unregistered cpp type \"atomic\"; unregistered dart type \"mixes_in\"; unregistered dart type \"mixes_in\"; unregistered dart type \"mixes_in\"",
       "id": "dead-literal-gate",
       "status": "fail"
     },
@@ -30,15 +30,75 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "9cd965b3819b20c55254317facc0030541931099",
-  "committedAt": "2026-10-17T18:26:28-04:00",
+  "commit": "8a3358879aa75ff01c8eaa799f0705904dfe14c8",
+  "committedAt": "2026-10-31T00:58:57-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
         "countRegressions": [
           {
             "from": 0,
+            "lang": "cpp",
+            "to": 7
+          },
+          {
+            "from": 0,
+            "lang": "dart",
+            "to": 7
+          },
+          {
+            "from": 0,
+            "lang": "vb",
+            "to": 1
+          },
+          {
+            "from": 0,
+            "lang": "javascript",
+            "to": 3
+          },
+          {
+            "from": 0,
+            "lang": "objective-c",
+            "to": 1
+          },
+          {
+            "from": 0,
+            "lang": "perl",
+            "to": 13
+          },
+          {
+            "from": 0,
+            "lang": "php",
+            "to": 2
+          },
+          {
+            "from": 0,
+            "lang": "powershell",
+            "to": 208
+          },
+          {
+            "from": 0,
             "lang": "r",
+            "to": 3
+          },
+          {
+            "from": 0,
+            "lang": "ruby",
+            "to": 2
+          },
+          {
+            "from": 0,
+            "lang": "rust",
+            "to": 2
+          },
+          {
+            "from": 0,
+            "lang": "sql",
+            "to": 2
+          },
+          {
+            "from": 0,
+            "lang": "typescript",
             "to": 3
           }
         ],
@@ -46,6 +106,1700 @@
         "recordIsV1": false,
         "shrunk": [],
         "unregistered": [
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "unique_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "shared_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "weak_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "auto_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "optional"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "reference_wrapper"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 2968,
+            "literal": "atomic"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 2048,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 2086,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 4365,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 4294,
+            "literal": "field_signature"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 4326,
+            "literal": "instance_creation_expression"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 4362,
+            "literal": "part_of"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "dart",
+            "line": 4382,
+            "literal": "renders"
+          },
+          {
+            "context": "real-vb-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "vb",
+            "line": 2858,
+            "literal": "local_declaration_statement"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "javascript",
+            "line": 4427,
+            "literal": "class_expression"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "javascript",
+            "line": 4766,
+            "literal": "required_parameter"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "javascript",
+            "line": 4766,
+            "literal": "optional_parameter"
+          },
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "objective-c",
+            "line": 1753,
+            "literal": "part_of"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "ARRAY"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "HASH"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "SCALAR"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "CODE"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "REF"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "GLOB"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "LVALUE"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "REGEXP"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "IO"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "VSTRING"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "kind": "type",
+            "lang": "perl",
+            "line": 339,
+            "literal": "UNKNOWN"
+          },
+          {
+            "context": "real-perl-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "perl",
+            "line": 1572,
+            "literal": "hash_expression"
+          },
+          {
+            "context": "real-perl-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "perl",
+            "line": 2355,
+            "literal": "array_expression"
+          },
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "php",
+            "line": 3877,
+            "literal": "part_of"
+          },
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "php",
+            "line": 3886,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "adsi"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.DirectoryServices.DirectoryEntry"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "adsisearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.DirectoryServices.DirectorySearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "alias"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.AliasAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "allowemptycollection"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.AllowEmptyCollectionAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "allowemptystring"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.AllowEmptyStringAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "allow_null"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.AllowNullAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "array"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Array"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "bigint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Numerics.BigInteger"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "bool"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Boolean"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "byte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Byte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "char"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Char"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "cimclass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimClass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "cimconverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimConverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ciminstance"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimInstance"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "cimtype"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimType"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "cmdletbinding"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.CmdletBindingAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "cultureinfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Globalization.CultureInfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "datetime"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.DateTime"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "decimal"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Decimal"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "double"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Double"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "dsclocalconfigurationmanager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "Microsoft.PowerShell.DesiredStateConfiguration.LocalConfigurationManager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "dscproperty"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.DscPropertyAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "dscresource"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.DscResourceAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "float"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Single"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Single"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "guid"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Guid"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "hashtable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Collections.Hashtable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "initialsessionstate"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.Runspaces.InitialSessionState"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "int"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Int32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Int32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "int16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Int16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Int16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "int32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "int64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Int64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Int64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ipaddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Net.IPAddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ipendpoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Net.IPEndPoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "long"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "mailaddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Net.Mail.MailAddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "moduleinfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSModuleInfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "nullable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Nullable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "object"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Object"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "objectsecurity"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Security.AccessControl.ObjectSecurity"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ordered"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Collections.Specialized.OrderedDictionary"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "outputtype"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.OutputTypeAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "parameter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ParameterAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "physicaladdress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Net.NetworkInformation.PhysicalAddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "psobject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSObject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "pscredential"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSCredential"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "pscustomobject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSCustomObject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "pslistmodifier"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSListModifier"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "psprimitivedictionary"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSPrimitiveDictionary"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "pstypenameattribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSTypeNameAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "psvariable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSVariable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ref"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSReference"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "regex"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Text.RegularExpressions.Regex"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "runspace"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.Runspaces.Runspace"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "runspacefactory"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.Runspaces.RunspaceFactory"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "sbyte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.SByte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "scriptblock"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ScriptBlock"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "securestring"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Security.SecureString"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "semver"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.SemanticVersion"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "short"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "single"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "string"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.String"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.SwitchParameter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "timespan"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.TimeSpan"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "type"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Type"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "uint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.UInt32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.UInt32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "uint16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.UInt16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.UInt16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "uint32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "uint64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.UInt64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.UInt64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ulong"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "uri"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Uri"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "ushort"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatecount"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateCountAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatedrive"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateDriveAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatelength"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateLengthAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatenotnull"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateNotNullAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatenotnullorempty"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateNotNullOrEmptyAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatepattern"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidatePatternAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validaterange"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateRangeAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validatescript"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateScriptAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "validateset"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateSetAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "version"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Version"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "void"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Void"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "wildcardpattern"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.WildcardPattern"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "wmi"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.ManagementObject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "wmiclass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.ManagementClass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "wmisearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.ManagementObjectSearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "xml"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Xml.XmlDocument"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "bitconverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.BitConverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "console"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Console"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "convert"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Convert"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "datetimeoffset"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.DateTimeOffset"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "enum"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Enum"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "environment"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Environment"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "experimentalfeature"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ExperimentalFeature"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "gc"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.GC"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "linebreakpoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.LineBreakpoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "math"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Math"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "powershell"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PowerShell"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "proxycommand"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.ProxyCommand"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "psserializer"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSSerializer"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "securityprotocoltype"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Net.SecurityProtocolType"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "servicepointmanager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Net.ServicePointManager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "tuple"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Tuple"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "waithandle"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 1069,
+            "literal": "System.Threading.WaitHandle"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "powershell",
+            "line": 3611,
+            "literal": "class_property_parameter"
+          },
           {
             "context": "real-r-analyzer.ts:const:PACKAGE_NAMESPACE_SUBTYPES",
             "kind": "type",
@@ -66,6 +1820,69 @@
             "lang": "r",
             "line": 76,
             "literal": "namespace_access"
+          },
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "ruby",
+            "line": 3227,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "ruby",
+            "line": 3265,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
+            "kind": "field",
+            "lang": "rust",
+            "line": 4486,
+            "literal": "token_tree"
+          },
+          {
+            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
+            "kind": "field",
+            "lang": "rust",
+            "line": 4571,
+            "literal": "token_tree"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "sql",
+            "line": 2484,
+            "literal": "inherit_clause"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "sql",
+            "line": 3506,
+            "literal": "inherit_specification"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "typescript",
+            "line": 4824,
+            "literal": "spread_pattern"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
+            "kind": "field",
+            "lang": "typescript",
+            "line": 8729,
+            "literal": "role"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
+            "kind": "field",
+            "lang": "typescript",
+            "line": 8730,
+            "literal": "target"
           }
         ]
       },
@@ -127,7 +1944,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 238,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 31,
+        "referencedTypeLiterals": 32,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -165,7 +1982,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 288,
         "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 80,
+        "referencedTypeLiterals": 81,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -184,7 +2001,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 75,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 22,
+        "referencedTypeLiterals": 25,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -203,10 +2020,46 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 496,
         "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 96,
-        "status": "pass",
+        "referencedTypeLiterals": 106,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "unique_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "shared_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "weak_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "auto_ptr"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "optional"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "reference_wrapper"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "line": 2968,
+            "literal": "atomic"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-cpp.wasm"
@@ -221,8 +2074,8 @@
         "oracleFieldCount": 26,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
-        "referencedFieldLiterals": 7,
-        "referencedTypeLiterals": 109,
+        "referencedFieldLiterals": 8,
+        "referencedTypeLiterals": 110,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -259,11 +2112,47 @@
         "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
-        "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 99,
-        "status": "pass",
+        "referencedFieldLiterals": 5,
+        "referencedTypeLiterals": 115,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 2048,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 2086,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 4365,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 4294,
+            "literal": "field_signature"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 4326,
+            "literal": "instance_creation_expression"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 4362,
+            "literal": "part_of"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 4382,
+            "literal": "renders"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-dart.wasm"
@@ -335,8 +2224,8 @@
         "oracleFieldCount": 35,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 213,
-        "referencedFieldLiterals": 12,
-        "referencedTypeLiterals": 56,
+        "referencedFieldLiterals": 14,
+        "referencedTypeLiterals": 57,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -393,7 +2282,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 68,
+        "referencedTypeLiterals": 73,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -438,27 +2327,27 @@
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-html-analyzer.ts:1038, the `<input type=...>` label counter): an HTML input-type ATTRIBUTE VALUE, not a parse-tree node reference. `type` is a lowercased attribute string from `attrs[\"type\"]`, so the comparison is live and correct and the grammar declares no node by this name. Waived, not fixed — there is nothing to fix, and the swift `String` entry is the same shape.",
-            "line": 1484,
+            "line": 1502,
             "literal": "hidden"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1484,
+            "line": 1502,
             "literal": "submit"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1484,
+            "line": 1502,
             "literal": "button"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1484,
+            "line": 1502,
             "literal": "reset"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1484,
+            "line": 1502,
             "literal": "image"
           }
         ],
@@ -477,8 +2366,8 @@
         "oracleFieldCount": 40,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
-        "referencedFieldLiterals": 12,
-        "referencedTypeLiterals": 91,
+        "referencedFieldLiterals": 13,
+        "referencedTypeLiterals": 103,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -496,11 +2385,27 @@
         "oracleFieldCount": 38,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
-        "referencedFieldLiterals": 16,
-        "referencedTypeLiterals": 65,
-        "status": "pass",
+        "referencedFieldLiterals": 17,
+        "referencedTypeLiterals": 75,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "line": 4427,
+            "literal": "class_expression"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "line": 4766,
+            "literal": "required_parameter"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "line": 4766,
+            "literal": "optional_parameter"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-javascript.wasm"
@@ -554,7 +2459,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
         "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 25,
+        "referencedTypeLiterals": 26,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -592,7 +2497,7 @@
         "oracleGrammars": 2,
         "oracleNodeTypeCount": 282,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 4,
+        "referencedTypeLiterals": 5,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -606,6 +2511,25 @@
           0
         ]
       },
+      "matlab": {
+        "analyzer": "src/ast/real-matlab-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 10,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 199,
+        "referencedFieldLiterals": 5,
+        "referencedTypeLiterals": 20,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-matlab.wasm"
+        ],
+        "wasmFieldCounts": [
+          10
+        ]
+      },
       "objective-c": {
         "analyzer": "src/ast/real-objective-c-analyzer.ts",
         "fieldless": false,
@@ -613,10 +2537,16 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 560,
         "referencedFieldLiterals": 4,
-        "referencedTypeLiterals": 65,
-        "status": "pass",
+        "referencedTypeLiterals": 66,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-objective-c-analyzer.ts:comparison",
+            "line": 1753,
+            "literal": "part_of"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-objc.wasm"
@@ -632,10 +2562,76 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
         "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 55,
-        "status": "pass",
+        "referencedTypeLiterals": 74,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "ARRAY"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "HASH"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "SCALAR"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "CODE"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "REF"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "GLOB"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "LVALUE"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "REGEXP"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "IO"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "VSTRING"
+          },
+          {
+            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "line": 339,
+            "literal": "UNKNOWN"
+          },
+          {
+            "context": "real-perl-analyzer.ts:comparison",
+            "line": 1572,
+            "literal": "hash_expression"
+          },
+          {
+            "context": "real-perl-analyzer.ts:comparison",
+            "line": 2355,
+            "literal": "array_expression"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-perl.wasm"
@@ -651,10 +2647,21 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 82,
-        "status": "pass",
+        "referencedTypeLiterals": 84,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "line": 3877,
+            "literal": "part_of"
+          },
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "line": 3886,
+            "literal": "mixes_in"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-php.wasm"
@@ -670,10 +2677,1051 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 423,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 38,
-        "status": "pass",
+        "referencedTypeLiterals": 253,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "adsi"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.DirectoryServices.DirectoryEntry"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "adsisearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.DirectoryServices.DirectorySearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "alias"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.AliasAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "allowemptycollection"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.AllowEmptyCollectionAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "allowemptystring"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.AllowEmptyStringAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "allow_null"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.AllowNullAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "array"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Array"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "bigint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Numerics.BigInteger"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "bool"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Boolean"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "byte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Byte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "char"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Char"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "cimclass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimClass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "cimconverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimConverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ciminstance"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimInstance"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "cimtype"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "Microsoft.Management.Infrastructure.CimType"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "cmdletbinding"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.CmdletBindingAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "cultureinfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Globalization.CultureInfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "datetime"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.DateTime"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "decimal"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Decimal"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "double"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Double"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "dsclocalconfigurationmanager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "Microsoft.PowerShell.DesiredStateConfiguration.LocalConfigurationManager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "dscproperty"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.DscPropertyAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "dscresource"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.DscResourceAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "float"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Single"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Single"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "guid"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Guid"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "hashtable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Collections.Hashtable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "initialsessionstate"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.Runspaces.InitialSessionState"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "int"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Int32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Int32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "int16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Int16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Int16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "int32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "int64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Int64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Int64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ipaddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Net.IPAddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ipendpoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Net.IPEndPoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "long"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "mailaddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Net.Mail.MailAddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "moduleinfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSModuleInfo"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "nullable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Nullable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "object"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Object"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "objectsecurity"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Security.AccessControl.ObjectSecurity"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ordered"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Collections.Specialized.OrderedDictionary"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "outputtype"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.OutputTypeAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "parameter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ParameterAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "physicaladdress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Net.NetworkInformation.PhysicalAddress"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "psobject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSObject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "pscredential"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSCredential"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "pscustomobject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSCustomObject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "pslistmodifier"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSListModifier"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "psprimitivedictionary"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSPrimitiveDictionary"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "pstypenameattribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSTypeNameAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "psvariable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSVariable"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ref"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSReference"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "regex"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Text.RegularExpressions.Regex"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "runspace"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.Runspaces.Runspace"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "runspacefactory"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.Runspaces.RunspaceFactory"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "sbyte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.SByte"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "scriptblock"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ScriptBlock"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "securestring"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Security.SecureString"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "semver"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.SemanticVersion"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "short"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "single"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "string"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.String"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.SwitchParameter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "timespan"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.TimeSpan"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "type"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Type"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "uint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.UInt32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.UInt32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "uint16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.UInt16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.UInt16"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "uint32"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "uint64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.UInt64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.UInt64"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ulong"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "uri"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Uri"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "ushort"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatecount"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateCountAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatedrive"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateDriveAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatelength"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateLengthAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatenotnull"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateNotNullAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatenotnullorempty"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateNotNullOrEmptyAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatepattern"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidatePatternAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validaterange"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateRangeAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validatescript"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateScriptAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "validateset"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ValidateSetAttribute"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "version"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Version"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "void"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Void"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "wildcardpattern"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.WildcardPattern"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "wmi"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.ManagementObject"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "wmiclass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.ManagementClass"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "wmisearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.ManagementObjectSearcher"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "xml"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Xml.XmlDocument"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "bitconverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.BitConverter"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "console"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Console"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "convert"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Convert"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "datetimeoffset"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.DateTimeOffset"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "enum"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Enum"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "environment"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Environment"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "experimentalfeature"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ExperimentalFeature"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "gc"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.GC"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "linebreakpoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.LineBreakpoint"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "math"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Math"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "powershell"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PowerShell"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "proxycommand"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.ProxyCommand"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "psserializer"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Management.Automation.PSSerializer"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "securityprotocoltype"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Net.SecurityProtocolType"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "servicepointmanager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Net.ServicePointManager"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "tuple"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Tuple"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "waithandle"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
+            "line": 1069,
+            "literal": "System.Threading.WaitHandle"
+          },
+          {
+            "context": "real-powershell-analyzer.ts:comparison",
+            "line": 3611,
+            "literal": "class_property_parameter"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-powershell.wasm"
@@ -707,8 +3755,8 @@
         "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 266,
-        "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 80,
+        "referencedFieldLiterals": 16,
+        "referencedTypeLiterals": 85,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -761,11 +3809,22 @@
         "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 286,
-        "referencedFieldLiterals": 4,
-        "referencedTypeLiterals": 63,
-        "status": "pass",
+        "referencedFieldLiterals": 5,
+        "referencedTypeLiterals": 64,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "line": 3227,
+            "literal": "mixes_in"
+          },
+          {
+            "context": "real-ruby-analyzer.ts:comparison",
+            "line": 3265,
+            "literal": "mixes_in"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-ruby.wasm"
@@ -780,10 +3839,21 @@
         "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
-        "referencedFieldLiterals": 15,
-        "referencedTypeLiterals": 84,
-        "status": "pass",
-        "unknownFields": [],
+        "referencedFieldLiterals": 17,
+        "referencedTypeLiterals": 87,
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
+            "line": 4486,
+            "literal": "token_tree"
+          },
+          {
+            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
+            "line": 4571,
+            "literal": "token_tree"
+          }
+        ],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -800,7 +3870,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 90,
+        "referencedTypeLiterals": 94,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -838,19 +3908,30 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 823,
         "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 52,
-        "status": "pass",
+        "referencedTypeLiterals": 55,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 2484,
+            "literal": "inherit_clause"
+          },
+          {
+            "context": "real-sql-analyzer.ts:comparison",
+            "line": 3506,
+            "literal": "inherit_specification"
+          }
+        ],
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
-            "line": 903,
+            "line": 1037,
             "literal": "table"
           },
           {
             "justification": "M14.0.F1 register repayment (2026-10-08, real-sql-analyzer.ts:922 adoptLateDeclaredIndexOwners): this is the symbol-metadata TAG THE ANALYZER ITSELF WRITES — `createSymbol(..., { type: \"index\", indexName, table, columns })` at real-sql-analyzer.ts:2380, read back as `symbol.metadata?.type !== \"index\"` — not a parse-tree node reference. The pinned sql grammar declares no node named `index` (its index productions are `create_index` / `alter_index` / `drop_index` / `index_fields` / `index_hint` / `keyword_index`), and no comparison in this analyzer ever tests a node against it. Waived, not fixed: deleting the comparison would drop the CREATE INDEX symbols' owner adoption, which is a behaviour change with no grammar conformance to buy. Same shape as the sql `table`/`grant_statement` and typescript `default_export_expression` entries above — an analyzer-owned payload compared against a literal, making no grammar claim. The site carries a comment saying so.",
-            "line": 1111,
+            "line": 1245,
             "literal": "index"
           }
         ],
@@ -866,7 +3947,7 @@
         "fieldless": false,
         "oracleFieldCount": 48,
         "oracleGrammars": 3,
-        "oracleNodeTypeCount": 457,
+        "oracleNodeTypeCount": 461,
         "referencedFieldLiterals": 6,
         "referencedTypeLiterals": 34,
         "status": "pass",
@@ -880,7 +3961,7 @@
         ],
         "wasmFieldCounts": [
           4,
-          43,
+          40,
           38
         ]
       },
@@ -891,89 +3972,89 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 109,
+        "referencedTypeLiterals": 113,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M49.S1 (real-swift-analyzer.ts ENUM_RAW_VALUE_TYPES): this is a TYPE-NAME table (Swift raw-value enum types), not a parse-tree node reference. The audit scanner counts string literals in const initializers it treats as node-type sets; every literal in this set is a Swift stdlib type name compared against enum rawType payloads. No grammar conformance claim is made by these literals.",
-            "line": 103,
+            "line": 106,
             "literal": "String"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Character"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Int"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Int8"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Int16"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Int32"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Int64"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "UInt"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "UInt8"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "UInt16"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "UInt32"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "UInt64"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Float"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Float32"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Float64"
           },
           {
             "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
-            "line": 103,
+            "line": 106,
             "literal": "Double"
           }
         ],
@@ -1008,16 +4089,33 @@
         "fieldless": false,
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
-        "oracleNodeTypeCount": 386,
-        "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 105,
-        "status": "pass",
-        "unknownFields": [],
-        "unknownNodeTypes": [],
+        "oracleNodeTypeCount": 394,
+        "referencedFieldLiterals": 27,
+        "referencedTypeLiterals": 116,
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
+            "line": 8729,
+            "literal": "role"
+          },
+          {
+            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
+            "line": 8730,
+            "literal": "target"
+          }
+        ],
+        "unknownNodeTypes": [
+          {
+            "context": "real-typescript-analyzer.ts:comparison",
+            "line": 4824,
+            "literal": "spread_pattern"
+          }
+        ],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 6426,
+            "line": 8108,
             "literal": "default_export_expression"
           }
         ],
@@ -1027,7 +4125,7 @@
           "tree-sitter-javascript.wasm"
         ],
         "wasmFieldCounts": [
-          43,
+          40,
           44,
           38
         ]
@@ -1039,10 +4137,16 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 451,
         "referencedFieldLiterals": 18,
-        "referencedTypeLiterals": 48,
-        "status": "pass",
+        "referencedTypeLiterals": 52,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-vb-analyzer.ts:comparison",
+            "line": 2858,
+            "literal": "local_declaration_statement"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-vbnet.wasm"
@@ -1051,14 +4155,33 @@
           54
         ]
       },
+      "vba": {
+        "analyzer": "src/ast/real-vba-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 65,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 401,
+        "referencedFieldLiterals": 20,
+        "referencedTypeLiterals": 31,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-vba.wasm"
+        ],
+        "wasmFieldCounts": [
+          65
+        ]
+      },
       "vue": {
         "analyzer": "src/ast/real-vue-analyzer.ts",
         "fieldless": false,
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
-        "oracleNodeTypeCount": 420,
+        "oracleNodeTypeCount": 424,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 50,
+        "referencedTypeLiterals": 51,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1070,7 +4193,7 @@
         ],
         "wasmFieldCounts": [
           0,
-          43,
+          40,
           38
         ]
       },
@@ -1119,7 +4242,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 51,
+        "referencedTypeLiterals": 53,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1133,10 +4256,10 @@
       }
     },
     "summary": {
-      "fail": 1,
-      "languagesAudited": 45,
-      "pass": 44,
-      "totalUnknownReferences": 3
+      "fail": 13,
+      "languagesAudited": 47,
+      "pass": 34,
+      "totalUnknownReferences": 254
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1164,8 +4287,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-17T18:26:28-04:00",
-  "regeneratedAtCommit": "9cd965b3819b20c55254317facc0030541931099",
+  "regeneratedAt": "2026-10-31T00:58:57-04:00",
+  "regeneratedAtCommit": "8a3358879aa75ff01c8eaa799f0705904dfe14c8",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

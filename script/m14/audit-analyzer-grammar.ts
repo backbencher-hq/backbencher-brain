@@ -62,6 +62,8 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   // skip it -- which is the difference between "the VB lane passes F1" and
   // "nothing checked VB".
   { language: "vb", wasm: "tree-sitter-vbnet.wasm", analyzer: "real-vb-analyzer.ts" },
+  { language: "vba", wasm: "tree-sitter-vba.wasm", analyzer: "real-vba-analyzer.ts" },
+  { language: "matlab", wasm: "tree-sitter-matlab.wasm", analyzer: "real-matlab-analyzer.ts" },
   { language: "go", wasm: "tree-sitter-go.wasm", analyzer: "real-go-analyzer.ts" },
   { language: "graphql", wasm: "tree-sitter-graphql.wasm", analyzer: "real-graphql-analyzer.ts" },
   { language: "groovy", wasm: "tree-sitter-groovy.wasm", analyzer: "real-groovy-analyzer.ts" },

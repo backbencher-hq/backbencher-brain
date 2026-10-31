@@ -362,6 +362,16 @@ async function main() {
           preRelabel: "instantiates 2,251 (2,235 template + 16 delegate new) + renders 26 (delegate JSX) = 2,277 for the two labels",
           postRelabel: `instantiates ${typeCounts["instantiates"] ?? 0} + renders ${typeCounts["renders"] ?? 0} = ${(typeCounts["instantiates"] ?? 0) + (typeCounts["renders"] ?? 0)} — TOTAL UNCHANGED at 2,277`,
         },
+        // THE DIFFERENTIAL THREE-ARM CROSS-CHECK, carried IN THE ARTIFACT rather than
+        // appended by hand (a generated file with a hand-edit is not reproducible): the
+        // 200-file draw run three ways, same population, same hash both sides.
+        differentialCrossCheck: {
+          note: "the 200-file differential draw, run three ways to isolate the relabel's effect (the SAME population, the SAME hash both sides)",
+          preRelabel_bothSidesInstantiates: "element-plus unexplained-by-label instantiates=448,imports=150 · vue-element-admin instantiates=297,extends=9,imports=8 (analyzer reverted + oracle reverted)",
+          postRelabel_oracleOnlyReverted: "renders COMPARED WITH NO TRUTH (492 comparable) — the reverted oracle derives no renders truth, proving the oracle move is load-bearing",
+          postRelabel_bothMoved: "element-plus unexplained-by-label renders=458,imports=150 · vue-element-admin renders=297,extends=9,imports=8",
+          verdict: "THE SAME ROWS, THE SAME COUNTS, THE LABEL MOVED ON BOTH SIDES: 448->458 on element-plus (the +10 are delegate JSX renders rows, a DIFFERENT construct that was already renders and already uncompared before), 297->297 EXACT on vue-element-admin. The normalization gap (oracle target as-written `el-button` vs analyzer target registry-name `ElButton`, the F31 rule) PREDATES the relabel and is unchanged by it — it is the lane's known open seam, not a regression the relabel introduced. TOTAL unexplained identical at 608/314 and MISSING identical at 600/305 in all three arms.",
+        },
       },
     },
   }

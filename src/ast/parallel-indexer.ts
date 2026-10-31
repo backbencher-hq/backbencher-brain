@@ -254,6 +254,10 @@ export const ParallelIndexerConfig = {
     ".nim",
     ".vb",
     ".vbs",
+    ".bas",
+    ".cls",
+    ".frm",
+    ".matlab",
     ".proto",
   ]),
 

@@ -1,45 +1,57 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "8ba96c17fd24150480e57044ac2ed6cdb5d2dfaf366f829201bf6192fa6c501a",
-    "sealedAt": "2026-10-20T23:19:14.000Z"
+    "contentSha256": "b74ae092b2ed5b1143468f2753dc65cf4a9702dc691005c2eaa9f216d1eae045",
+    "sealedAt": "2026-10-31T18:51:56.000Z"
   },
   "checks": [
     {
       "description": "vb adversarial fixtures",
-      "detail": "2/5 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-vb",
-      "status": "fail"
+      "status": "pass"
+    },
+    {
+      "description": "vba adversarial fixtures",
+      "detail": "10/10 fixtures pass",
+      "id": "fixtures-vba",
+      "status": "pass"
+    },
+    {
+      "description": "matlab adversarial fixtures",
+      "detail": "12/12 fixtures pass",
+      "id": "fixtures-matlab",
+      "status": "pass"
     },
     {
       "description": "clojure adversarial fixtures",
-      "detail": "79/79 fixtures pass",
+      "detail": "81/81 fixtures pass",
       "id": "fixtures-clojure",
       "status": "pass"
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "91/93 fixtures pass",
+      "detail": "94/94 fixtures pass",
       "id": "fixtures-javascript",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "61/64 fixtures pass",
+      "detail": "64/64 fixtures pass",
       "id": "fixtures-vue",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "53/53 fixtures pass",
+      "detail": "54/54 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "117/119 fixtures pass",
+      "detail": "120/120 fixtures pass",
       "id": "fixtures-typescript",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
@@ -49,127 +61,127 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "60/81 fixtures pass",
+      "detail": "82/82 fixtures pass",
       "id": "fixtures-groovy",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "70/70 fixtures pass",
+      "detail": "71/71 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "81/81 fixtures pass",
+      "detail": "83/83 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "52/52 fixtures pass",
+      "detail": "53/53 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "54/55 fixtures pass",
+      "detail": "57/57 fixtures pass",
       "id": "fixtures-cpp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "30/30 fixtures pass",
+      "detail": "34/34 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "63/63 fixtures pass",
+      "detail": "65/65 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "34/34 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
     {
       "description": "zig adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "17/17 fixtures pass",
       "id": "fixtures-zig",
       "status": "pass"
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "25/25 fixtures pass",
+      "detail": "26/26 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "50/50 fixtures pass",
+      "detail": "52/52 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "17/21 fixtures pass",
+      "detail": "22/22 fixtures pass",
       "id": "fixtures-swift",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "17/17 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
     {
       "description": "r adversarial fixtures",
-      "detail": "22/22 fixtures pass",
+      "detail": "24/24 fixtures pass",
       "id": "fixtures-r",
       "status": "pass"
     },
     {
       "description": "lua adversarial fixtures",
-      "detail": "15/15 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-lua",
       "status": "pass"
     },
     {
       "description": "julia adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-julia",
       "status": "pass"
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "33/33 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
     {
       "description": "protobuf adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-protobuf",
       "status": "pass"
     },
     {
       "description": "ruby adversarial fixtures",
-      "detail": "11/12 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-ruby",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "perl adversarial fixtures",
-      "detail": "14/22 fixtures pass",
+      "detail": "24/24 fixtures pass",
       "id": "fixtures-perl",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "haskell adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-haskell",
       "status": "pass"
     },
@@ -181,19 +193,19 @@
     },
     {
       "description": "yaml adversarial fixtures",
-      "detail": "37/37 fixtures pass",
+      "detail": "40/40 fixtures pass",
       "id": "fixtures-yaml",
       "status": "pass"
     },
     {
       "description": "xml adversarial fixtures",
-      "detail": "33/33 fixtures pass",
+      "detail": "36/36 fixtures pass",
       "id": "fixtures-xml",
       "status": "pass"
     },
     {
       "description": "erlang adversarial fixtures",
-      "detail": "29/29 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-erlang",
       "status": "pass"
     },
@@ -205,43 +217,43 @@
     },
     {
       "description": "sql adversarial fixtures",
-      "detail": "17/17 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-sql",
       "status": "pass"
     },
     {
       "description": "hcl adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-hcl",
       "status": "pass"
     },
     {
       "description": "make adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-make",
       "status": "pass"
     },
     {
       "description": "fsharp adversarial fixtures",
-      "detail": "15/15 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-fsharp",
       "status": "pass"
     },
     {
       "description": "nim adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-nim",
       "status": "pass"
     },
     {
       "description": "graphql adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-graphql",
       "status": "pass"
     },
     {
       "description": "html adversarial fixtures",
-      "detail": "19/19 fixtures pass",
+      "detail": "20/20 fixtures pass",
       "id": "fixtures-html",
       "status": "pass"
     },
@@ -253,25 +265,25 @@
     },
     {
       "description": "css adversarial fixtures",
-      "detail": "23/23 fixtures pass",
+      "detail": "25/25 fixtures pass",
       "id": "fixtures-css",
       "status": "pass"
     },
     {
       "description": "markdown adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-markdown",
       "status": "pass"
     },
     {
       "description": "scss adversarial fixtures",
-      "detail": "14/14 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-scss",
       "status": "pass"
     },
     {
       "description": "bash adversarial fixtures",
-      "detail": "35/35 fixtures pass",
+      "detail": "36/36 fixtures pass",
       "id": "fixtures-bash",
       "status": "pass"
     },
@@ -283,22 +295,27 @@
     },
     {
       "description": "powershell adversarial fixtures",
-      "detail": "19/19 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-powershell",
       "status": "pass"
     },
     {
       "description": "solidity adversarial fixtures",
-      "detail": "32/32 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-solidity",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "3c844dc729b634340c35143876ddcd45be81cd7b",
-  "committedAt": "2026-10-20T19:19:14-04:00",
+  "commit": "b6141ca84b9ffbb2a93798ab623d51196dc9b60c",
+  "committedAt": "2026-10-31T14:51:56-04:00",
   "data": {
     "details": [
+      {
+        "fixture": "vb/attributes-as-decorations",
+        "ok": true,
+        "problems": []
+      },
       {
         "fixture": "vb/declaration-shapes",
         "ok": true,
@@ -306,14 +323,8 @@
       },
       {
         "fixture": "vb/edge-endpoint-integrity",
-        "ok": false,
-        "problems": [
-          "expected metadata.vbGaps = {\"construction-without-readable-name\":1,\"relationship-duplicate-rows-collapsed\":1}; got {\"tuple-type-has-no-single-name\":1,\"relationship-duplicate-rows-collapsed\":1}",
-          "expected relationship not found: {\"comment\":\"FIX 1a. The construction is WHOLE -- `New StackFrame(1)` -- so the constructed type is StackFrame. `.GetMethod` is a call on the object just built and `.Name` a property of its result; neither is a type anything constructs.\",\"type\":\"instantiates\",\"from\":\"Trace\",\"target\":\"StackFrame\",\"meta.qualifiedConstruction\":false}; got: imports[root->System]@1; imports[root->Generic]@1; exports[root->Endpoints]@1; contains[Endpoints->Trace]@1; exports[Endpoints->Trace]@1; references[Trace->String]@0.6; uses[Trace->Name]@1; calls[Trace->StackFrame]@0.6; instantiates[Trace->StackFrame]@0.6; uses[Trace->Count]@1; uses[Trace->Empty]@1; uses[Trace->List]@0.7; uses[Trace->Text]@1; calls[Trace->System]@0.6; instantiates[Trace->System]@0.6; calls[Trace->ToString]@0.6; contains[Endpoints->GetEnumerator]@1; exports[Endpoints->GetEnumerator]@1; references[GetEnumerator->IEnumerator]@0.6; implements[GetEnumerator->IEnumerable.GetEnumerator]@0.7; calls[GetEnumerator->GetEnumerator]@1; calls[GetEnumerator->List]@0.6; instantiates[GetEnumerator->List]@0.6; contains[Endpoints->Requirements]@1; exports[Endpoints->Requirements]@1; contains[Endpoints->ThreeStrings]@1; exports[Endpoints->ThreeStrings]@1; references[ThreeStrings->String]@0.6; contains[Endpoints->Twice]@1; exports[Endpoints->Twice]@1",
-          "expected relationship not found: {\"comment\":\"FIX 1b, and the half that must NOT regress. `New System.Text.StringBuilder` holds only `New System`; the type continues in the access chain, so climbing is REQUIRED and StringBuilder is the answer. This row is the control for the fix: a repair that stopped climbing would satisfy the forbid rows above while making this one disappear, so it is pinned.\",\"type\":\"instantiates\",\"from\":\"Trace\",\"target\":\"StringBuilder\",\"meta.qualifiedConstruction\":true}; got: imports[root->System]@1; imports[root->Generic]@1; exports[root->Endpoints]@1; contains[Endpoints->Trace]@1; exports[Endpoints->Trace]@1; references[Trace->String]@0.6; uses[Trace->Name]@1; calls[Trace->StackFrame]@0.6; instantiates[Trace->StackFrame]@0.6; uses[Trace->Count]@1; uses[Trace->Empty]@1; uses[Trace->List]@0.7; uses[Trace->Text]@1; calls[Trace->System]@0.6; instantiates[Trace->System]@0.6; calls[Trace->ToString]@0.6; contains[Endpoints->GetEnumerator]@1; exports[Endpoints->GetEnumerator]@1; references[GetEnumerator->IEnumerator]@0.6; implements[GetEnumerator->IEnumerable.GetEnumerator]@0.7; calls[GetEnumerator->GetEnumerator]@1; calls[GetEnumerator->List]@0.6; instantiates[GetEnumerator->List]@0.6; contains[Endpoints->Requirements]@1; exports[Endpoints->Requirements]@1; contains[Endpoints->ThreeStrings]@1; exports[Endpoints->ThreeStrings]@1; references[ThreeStrings->String]@0.6; contains[Endpoints->Twice]@1; exports[Endpoints->Twice]@1",
-          "expected relationship not found: {\"comment\":\"FIX 3. A tuple type names SEVERAL types, so it emits one `references` edge per element rather than the single name `namingToken` could return.\",\"type\":\"references\",\"from\":\"Requirements\",\"target\":\"ValueRange\",\"meta.role\":\"returnType\"}; got: imports[root->System]@1; imports[root->Generic]@1; exports[root->Endpoints]@1; contains[Endpoints->Trace]@1; exports[Endpoints->Trace]@1; references[Trace->String]@0.6; uses[Trace->Name]@1; calls[Trace->StackFrame]@0.6; instantiates[Trace->StackFrame]@0.6; uses[Trace->Count]@1; uses[Trace->Empty]@1; uses[Trace->List]@0.7; uses[Trace->Text]@1; calls[Trace->System]@0.6; instantiates[Trace->System]@0.6; calls[Trace->ToString]@0.6; contains[Endpoints->GetEnumerator]@1; exports[Endpoints->GetEnumerator]@1; references[GetEnumerator->IEnumerator]@0.6; implements[GetEnumerator->IEnumerable.GetEnumerator]@0.7; calls[GetEnumerator->GetEnumerator]@1; calls[GetEnumerator->List]@0.6; instantiates[GetEnumerator->List]@0.6; contains[Endpoints->Requirements]@1; exports[Endpoints->Requirements]@1; contains[Endpoints->ThreeStrings]@1; exports[Endpoints->ThreeStrings]@1; references[ThreeStrings->String]@0.6; contains[Endpoints->Twice]@1; exports[Endpoints->Twice]@1",
-          "expected relationship not found: {\"comment\":\"FIX 3, second element. Both are `role: returnType` because both element types are part of the declared return type.\",\"type\":\"references\",\"from\":\"Requirements\",\"target\":\"String\",\"meta.role\":\"returnType\"}; got: imports[root->System]@1; imports[root->Generic]@1; exports[root->Endpoints]@1; contains[Endpoints->Trace]@1; exports[Endpoints->Trace]@1; references[Trace->String]@0.6; uses[Trace->Name]@1; calls[Trace->StackFrame]@0.6; instantiates[Trace->StackFrame]@0.6; uses[Trace->Count]@1; uses[Trace->Empty]@1; uses[Trace->List]@0.7; uses[Trace->Text]@1; calls[Trace->System]@0.6; instantiates[Trace->System]@0.6; calls[Trace->ToString]@0.6; contains[Endpoints->GetEnumerator]@1; exports[Endpoints->GetEnumerator]@1; references[GetEnumerator->IEnumerator]@0.6; implements[GetEnumerator->IEnumerable.GetEnumerator]@0.7; calls[GetEnumerator->GetEnumerator]@1; calls[GetEnumerator->List]@0.6; instantiates[GetEnumerator->List]@0.6; contains[Endpoints->Requirements]@1; exports[Endpoints->Requirements]@1; contains[Endpoints->ThreeStrings]@1; exports[Endpoints->ThreeStrings]@1; references[ThreeStrings->String]@0.6; contains[Endpoints->Twice]@1; exports[Endpoints->Twice]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vb/loop-and-using-bindings",
@@ -322,22 +333,123 @@
       },
       {
         "fixture": "vb/member-read-and-construction",
-        "ok": false,
-        "reason": "missing expectation file"
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vb/ontology-exports-instantiates-uses",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"InternalOnly\",\"target\":\"LooksPublic\",\"line_number\":104,\"comment\":\"A modifier-less top-level CLASS defaults to `Friend`, so `InternalOnly` is not an export of the assembly (`root -> InternalOnly` is in forbidRelationships) while its Public member still is, carrying `ownerAccessLevel: friend`. The edge is not suppressed by the container's visibility: a `Friend` type is assembly-visible to a FRIEND ASSEMBLY, which is per-project configuration this analyzer never sees.\",\"meta.ownerAccessLevel\":\"friend\"}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"Builds\",\"target\":\"Timer\",\"line_number\":134,\"comment\":\"CONSTRUCTION SURFACE 4: `As New T()`. The `New` keyword is inlined away by the grammar's `as_clause` rule -- 0 of 30,001 as_clause nodes carry an `As` or `New` token -- so this is a word-bounded char scan of the node's own span. `As New Timers.Timer()` puts an `array_type` in `declared_type` because the `()` reads as bounds, so the target is the ELEMENT type.\",\"meta.constructionForm\":\"as-new\"}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"Builds\",\"target\":\"List\",\"line_number\":137,\"comment\":\"a GENERIC `As New`: the target is `List`, not the type argument `String`. `calleeLeaf` skips a `type_argument_list`, the same exclusion the heritage path and every other name in this analyzer apply.\"}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"WithArgs\",\"target\":\"Widget\",\"line_number\":149,\"comment\":\"CONSTRUCTION SURFACE 2: `New Foo(1, 2)` with arguments is an `array_creation_expression` with a `type` field and a `bounds` field and NO `function` field. Keying on `invocation_expression` alone dropped every one of these: 15,181 on the lane corpus, in 1,687 of 2,658 files.\",\"meta.constructionForm\":\"new-with-bounds\",\"meta.evidenceClass\":\"inferred\"}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"Qualified\",\"target\":\"Size\",\"line_number\":160,\"comment\":\"CONSTRUCTION SURFACE 4: a QUALIFIED construction. `New System.Drawing.Size(3, 4)` does not parse as one construction -- the `object_creation_expression` holds only `New System` and the type is the LAST leaf of the enclosing access chain. Publishing that node's own `type` field gave `instantiates -> System`, a namespace nobody constructs: the grammar's fragmentation turned into a fact about the program.\",\"meta.qualifiedConstruction\":true}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"CalleeIsNotARead\",\"target\":\"StringBuilder\",\"line_number\":192}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"DottedPath\",\"target\":\"StringBuilder\",\"line_number\":212,\"comment\":\"the same qualified-construction rule reached through the `As New` surface\"}; got: imports[root->Generic]@1; imports[root->Text]@1; exports[root->Api]@1; contains[Api->Explicitly]@1; exports[Api->Explicitly]@1; contains[Api->ImplicitlyPublic]@1; exports[Api->ImplicitlyPublic]@1; contains[Api->ImplicitlyPublicToo]@1; exports[Api->ImplicitlyPublicToo]@1; contains[Api->Hidden]@1; contains[Api->Assembly]@1; contains[Api->BothHalves]@1; exports[Api->BothHalves]@1; contains[Api->HeirsOnly]@1; contains[Api->_implicitPrivate]@1; references[_implicitPrivate->Integer]@0.6; contains[Api->_publicField]@1; exports[Api->_publicField]@1; references[_publicField->Integer]@0.6; contains[Api->_friendField]@1; references[_friendField->Integer]@0.6; contains[Api->InAModule]@1; exports[Api->InAModule]@1; references[InAModule->Integer]@0.6; exports[root->Coord]@1; contains[Coord->X]@1; exports[Coord->X]@1; references[X->Integer]@0.6; contains[Coord->_hidden]@1; references[_hidden->Integer]@0.6",
-          "forbidden relationship present: {\"type\":\"calls\",\"from\":\"EmptyArgs\",\"target\":\"Widget\",\"comment\":\"the same for the argument-less construction surface\"} (found calls[EmptyArgs->Widget]@0.6)"
-        ]
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/adversarial",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/class-module",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/conditional",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/control-flow",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/declare-lib-imports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/form-module",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/loops-and-select",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/member-access",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/nested-with",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vba/representative",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/+mypkg/pkgfunc",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/Base",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/Multi",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/Widget",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/ambiguity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/class-and-methods",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/class-surface",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/functions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/heritage",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/imports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/nested-and-script",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "matlab/references",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "clojure/active-function-source",
@@ -510,6 +622,11 @@
         "problems": []
       },
       {
+        "fixture": "clojure/language-namespace-slash",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clojure/letfn",
         "ok": true,
         "problems": []
@@ -655,6 +772,11 @@
         "problems": []
       },
       {
+        "fixture": "clojure/renders-component",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clojure/require-declarations",
         "ok": true,
         "problems": []
@@ -771,6 +893,11 @@
       },
       {
         "fixture": "javascript/binding-sites-are-not-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/call-shaped-heritage-mixins",
         "ok": true,
         "problems": []
       },
@@ -1046,10 +1173,8 @@
       },
       {
         "fixture": "javascript/local-binding-declaration-identity",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"shadowed\",\"target\":\"shadowed\\u0000value\",\"line_number\":24,\"meta.localBinding\":true,\"comment\":\"R2 POSITIVE: the read of the OUTER declaration is a DIFFERENT declaration, so it is a SECOND row. Before the fix this row did not exist (the outer read was dropped).\"}; got: uses[shadowed->shadowed\u0000limit]@0.6; uses[shadowed->shadowed\u0000value]@0.6; uses[readTwice->readTwice\u0000total]@0.6; uses[readTwice->readTwice\u0000first]@0.6; uses[readTwice->readTwice\u0000second]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "javascript/member-owner-containment",
@@ -1058,15 +1183,8 @@
       },
       {
         "fixture": "javascript/non-name-callee-refused",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"(fn)\",\"note\":\"parenthesised callee — source text\"} (found calls[direct->(fn)]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"(0, helper.other)\",\"note\":\"the TypeScript import-interop sequence callee, written by every tsc-compiled file — the shape that produced most of the ts corpus's 550 rows\"} (found calls[direct->(0, helper.other)]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"(cond ? a : b)\",\"note\":\"conditional callee\"} (found calls[direct->(cond ? a : b)]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"define()\",\"note\":\"call-expression callee — the same site as the `calls define` expect row, so this pair also pins that only the INNER call is published\"} (found calls[direct->define()]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"\\\"text\\\"\",\"note\":\"string-literal callee, quotes included — a target that could never name a symbol\"} (found calls[direct->\"text\"]@0.9)",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"[]\",\"note\":\"array-literal callee\"} (found calls[direct->[]]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "javascript/optional-chaining",
@@ -1320,22 +1438,13 @@
       },
       {
         "fixture": "vue/heuristic-evidence-floor",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"value\",\"meta.isFieldAccess\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"source\",\"meta.chainRoot\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"load\",\"target\":\"mod\",\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"HeuristicBox\",\"target\":\"@/vendor/missing:*\",\"meta.unresolved\":true,\"meta.evidenceClass\":\"inferred\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"HeuristicBox\",\"target\":\"default\",\"meta.evidenceClass\":\"structural\"}; got: imports[HeuristicBox->@/vendor/missing:*]@0.6; uses[load->load\u0000mod]@0.6; uses[peek->peek\u0000source]@0.6; uses[peek->value]@0.6; uses[HeuristicBox->title]@0.95; contains[HeuristicBox->data]@1; contains[HeuristicBox->title]@1; contains[HeuristicBox->state]@1; contains[HeuristicBox->load]@1; contains[HeuristicBox->peek]@1",
-          "forbidden relationship present: {\"type\":\"uses\",\"from\":\"peek\",\"target\":\"value\",\"meta.evidenceClass\":\"usage_contextual\",\"comment\":\"a 0.6 field read is a guess about a property the analyzer cannot see; src/lsp/evidence_tier.ts rule 2 requires `inferred` below the 0.7 floor, and rule 1 means nothing downstream will ever correct a stored confident class\"} (found uses[peek->value]@0.6)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/js-default-export-delegate-row",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"PlainPanel\",\"target\":\"default\",\"confidenceMin\":1,\"line_number\":20,\"meta.isDefault\":true}; got: imports[PlainPanel->vue:defineComponent]@1; calls[PlainPanel->defineComponent]@0.9; uses[PlainPanel->String]@0.6; uses[PlainPanel->title]@0.95; contains[PlainPanel->title]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/js-type-inference",
@@ -1509,10 +1618,8 @@
       },
       {
         "fixture": "vue/ts-default-export",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"TypedPanel\",\"target\":\"default\",\"confidenceMin\":1,\"line_number\":18,\"meta.isDefault\":true,\"meta.sfcDefaultExport\":true}; got: calls[TypedPanel->defineComponent]@0.9; imports[TypedPanel->vue:defineComponent]@1; uses[TypedPanel->title]@0.95; contains[TypedPanel->title]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "vue/ts-script-interface",
@@ -1701,6 +1808,11 @@
       },
       {
         "fixture": "svelte/render-tag-argument-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/renders-component-tags",
         "ok": true,
         "problems": []
       },
@@ -2125,6 +2237,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/mixin-application",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/module-leaf-declaration-file.d",
         "ok": true,
         "problems": []
@@ -2281,10 +2398,8 @@
       },
       {
         "fixture": "typescript/re-export-empty-clause",
-        "ok": false,
-        "problems": [
-          "expected import not found: {\"module\":\"./ns\",\"items\":[\"*\"],\"alias\":\"ns\",\"meta.reExport\":true,\"note\":\"the name ASKED FOR is `*` (the whole module) and the LOCAL BINDING `ns` rides `alias`. The old pin recorded items:[\\\"ns\\\"], which asks ./ns for a name ./ns does not export\"}; got: [{\"module\":\"./real\",\"items\":[\"real\"]},{\"module\":\"./star\",\"items\":[\"*\"]},{\"module\":\"./ns\",\"items\":[\"ns\"]}]"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "typescript/re-export-module-dependency",
@@ -2368,14 +2483,8 @@
       },
       {
         "fixture": "typescript/type-reference-uses-surfaces",
-        "ok": false,
-        "problems": [
-          "expected 1 relationship(s) {\"type\":\"uses\",\"from\":\"Undeclared\",\"target\":\"Declared\"}; got 0",
-          "expected 1 relationship(s) {\"type\":\"uses\",\"from\":\"Alias\",\"target\":\"Declared\"}; got 0",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"Undeclared\",\"target\":\"Declared\",\"meta.declaredTypeRole\":\"declared_type\"}; got: uses[fromFunctionBody->Undeclared]@0.9; uses[fromFunctionBody->Alias]@0.9; uses[fromFunctionBody->inner]@0.85; references[fromFunctionBody->moduleScoped]@0.8; uses[fromReturnType->Undeclared]@0.9; references[fromReturnType->moduleScoped]@0.8; uses[fromAnImportedType->Declared]@0.9; references[fromAnImportedType->moduleScoped]@0.8; imports[type-reference-uses-surfaces->NotInThisFile]@1; exports[type-reference-uses-surfaces->fromFunctionBody]@1; exports[type-reference-uses-surfaces->fromReturnType]@1; exports[type-reference-uses-surfaces->fromAnImportedType]@1; contains[Declared->inner]@1; contains[Undeclared->inner]@1; references[Undeclared->Declared]@0.95; references[Alias->Declared]@0.95; references[moduleScoped->Declared]@0.95; references[fromAnImportedType->NotInThisFile]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"Alias\",\"target\":\"Declared\",\"meta.declaredTypeRole\":\"type_alias\"}; got: uses[fromFunctionBody->Undeclared]@0.9; uses[fromFunctionBody->Alias]@0.9; uses[fromFunctionBody->inner]@0.85; references[fromFunctionBody->moduleScoped]@0.8; uses[fromReturnType->Undeclared]@0.9; references[fromReturnType->moduleScoped]@0.8; uses[fromAnImportedType->Declared]@0.9; references[fromAnImportedType->moduleScoped]@0.8; imports[type-reference-uses-surfaces->NotInThisFile]@1; exports[type-reference-uses-surfaces->fromFunctionBody]@1; exports[type-reference-uses-surfaces->fromReturnType]@1; exports[type-reference-uses-surfaces->fromAnImportedType]@1; contains[Declared->inner]@1; contains[Undeclared->inner]@1; references[Undeclared->Declared]@0.95; references[Alias->Declared]@0.95; references[moduleScoped->Declared]@0.95; references[fromAnImportedType->NotInThisFile]@0.95",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"moduleScoped\",\"target\":\"Declared\",\"meta.declaredTypeRole\":\"declared_type\"}; got: uses[fromFunctionBody->Undeclared]@0.9; uses[fromFunctionBody->Alias]@0.9; uses[fromFunctionBody->inner]@0.85; references[fromFunctionBody->moduleScoped]@0.8; uses[fromReturnType->Undeclared]@0.9; references[fromReturnType->moduleScoped]@0.8; uses[fromAnImportedType->Declared]@0.9; references[fromAnImportedType->moduleScoped]@0.8; imports[type-reference-uses-surfaces->NotInThisFile]@1; exports[type-reference-uses-surfaces->fromFunctionBody]@1; exports[type-reference-uses-surfaces->fromReturnType]@1; exports[type-reference-uses-surfaces->fromAnImportedType]@1; contains[Declared->inner]@1; contains[Undeclared->inner]@1; references[Undeclared->Declared]@0.95; references[Alias->Declared]@0.95; references[moduleScoped->Declared]@0.95; references[fromAnImportedType->NotInThisFile]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "typescript/type-usage-graph",
@@ -2814,12 +2923,8 @@
       },
       {
         "fixture": "groovy/anonymous-body-overrides",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"anonymous_TypeCodec.bsonType\",\"target\":\"bsonType\",\"line_number\":23,\"confidenceMin\":0.9,\"comment\":\"the defect: the anonymous body's method overrides the CONSTRUCTED type's member. confidenceMin 0.9 is load-bearing — a fix that left the hierarchy entry out and relied on the tier-3 first-parent guess would emit this row at 0.5, and the pin must see the difference.\",\"meta.overriddenOwner\":\"TypeCodec\"}; got: extends[Registry->BaseCodec]@1; instantiates[Registry->TypeCodec]@0.95; overrides[anonymous_TypeCodec.bsonType->bsonType]@1; overrides[Registry.bsonType->bsonType]@1; contains[TypeCodec->bsonType]@1; contains[BaseCodec->bsonType]@1; contains[Registry->DEFAULT]@1; contains[Registry->anonymous_TypeCodec]@1; contains[anonymous_TypeCodec->bsonType]@1; contains[Registry->bsonType]@1",
-          "expected relationship not found: {\"type\":\"contains\",\"from\":\"anonymous_TypeCodec\",\"target\":\"bsonType\",\"line_number\":23}; got: extends[Registry->BaseCodec]@1; instantiates[Registry->TypeCodec]@0.95; overrides[anonymous_TypeCodec.bsonType->bsonType]@1; overrides[Registry.bsonType->bsonType]@1; contains[TypeCodec->bsonType]@1; contains[BaseCodec->bsonType]@1; contains[Registry->DEFAULT]@1; contains[Registry->anonymous_TypeCodec]@1; contains[anonymous_TypeCodec->bsonType]@1; contains[Registry->bsonType]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Registry.bsonType\",\"target\":\"bsonType\",\"line_number\":27,\"comment\":\"control: the named subclass's own override (same pass, same file) is unchanged\",\"meta.overriddenOwner\":\"BaseCodec\"}; got: extends[Registry->BaseCodec]@1; instantiates[Registry->TypeCodec]@0.95; overrides[anonymous_TypeCodec.bsonType->bsonType]@1; overrides[Registry.bsonType->bsonType]@1; contains[TypeCodec->bsonType]@1; contains[BaseCodec->bsonType]@1; contains[Registry->DEFAULT]@1; contains[Registry->anonymous_TypeCodec]@1; contains[anonymous_TypeCodec->bsonType]@1; contains[Registry->bsonType]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/anonymous-field-member",
@@ -2838,11 +2943,8 @@
       },
       {
         "fixture": "groovy/as-cast",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"String\",\"meta.relationshipType\":\"cast_type\"}; got: contains[CastSvc->run]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"Set\",\"meta.relationshipType\":\"cast_type\"}; got: contains[CastSvc->run]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/assert-comma-841",
@@ -2851,19 +2953,13 @@
       },
       {
         "fixture": "groovy/attribution-visibility",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"Svc\",\"target\":\"Cfg\",\"meta.relationshipType\":\"declared_type\"}; got: contains[Svc->cfg]@1; contains[Svc->cap]@1; contains[Svc->leak]@1; contains[Svc->hidden]@1; contains[Svc->guard]@1; contains[Svc->greet]@1; uses[cap->limit]@0.6",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"greet\",\"target\":\"String\",\"meta.relationshipType\":\"return_type\"}; got: contains[Svc->cfg]@1; contains[Svc->cap]@1; contains[Svc->leak]@1; contains[Svc->hidden]@1; contains[Svc->guard]@1; contains[Svc->greet]@1; uses[cap->limit]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/cast-types",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"String\",\"meta.relationshipType\":\"cast_type\"}; got: contains[CastSvc->run]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"List\",\"meta.relationshipType\":\"cast_type\"}; got: contains[CastSvc->run]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/chained-field-access",
@@ -2872,11 +2968,8 @@
       },
       {
         "fixture": "groovy/class-body-dot-continuation-841",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"Cfg\",\"target\":\"Path\",\"line_number\":9,\"meta.relationshipType\":\"declared_type\"}; got: calls[Cfg->toURI]@0.7; calls[Cfg->toAbsolutePath]@0.7; uses[Cfg->parent]@0.6; calls[Cfg->builder]@0.7; calls[Cfg->excludeTimestamps]@0.7; calls[Cfg->excludeVersion]@0.7; calls[methodChainControl->builder]@0.7; calls[methodChainControl->excludeTimestamps]@0.7; calls[methodChainControl->excludeVersion]@0.7; calls[sameLineControl->excludeVersion]@0.7; calls[sameLineControl->excludeTimestamps]@0.7; calls[sameLineControl->builder]@0.7; contains[Cfg->scriptDir]@1; contains[Cfg->builder]@1; contains[Cfg->methodChainControl]@1; contains[Cfg->sameLineControl]@1; uses[Cfg->location]@0.6; uses[Cfg->codeSource]@0.6; uses[Cfg->protectionDomain]@0.6",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"Cfg\",\"target\":\"Builder\",\"line_number\":17,\"meta.relationshipType\":\"declared_type\",\"note\":\"PRE-FIX this edge existed but with source `(script)` and meta.declaredOn `local_variable_declaration` — a field read as a local\"}; got: calls[Cfg->toURI]@0.7; calls[Cfg->toAbsolutePath]@0.7; uses[Cfg->parent]@0.6; calls[Cfg->builder]@0.7; calls[Cfg->excludeTimestamps]@0.7; calls[Cfg->excludeVersion]@0.7; calls[methodChainControl->builder]@0.7; calls[methodChainControl->excludeTimestamps]@0.7; calls[methodChainControl->excludeVersion]@0.7; calls[sameLineControl->excludeVersion]@0.7; calls[sameLineControl->excludeTimestamps]@0.7; calls[sameLineControl->builder]@0.7; contains[Cfg->scriptDir]@1; contains[Cfg->builder]@1; contains[Cfg->methodChainControl]@1; contains[Cfg->sameLineControl]@1; uses[Cfg->location]@0.6; uses[Cfg->codeSource]@0.6; uses[Cfg->protectionDomain]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/class-decorators",
@@ -2910,20 +3003,18 @@
       },
       {
         "fixture": "groovy/ctor-field-split-lines",
-        "ok": false,
-        "problems": [
-          "expected symbol not found: {\"name\":\"Split\",\"kind\":\"constructor\",\"ownerName\":\"Split\"}; got: Split:class, distance:property, constructor:constructor, valueOf:method",
-          "expected relationship not found: {\"type\":\"contains\",\"from\":\"Split\",\"target\":\"Split\",\"line_number\":19,\"meta.isContained\":true}; got: instantiates[valueOf->Split]@0.95; contains[Split->distance]@1; contains[Split->constructor]@1; contains[Split->valueOf]@1; uses[Split->distance]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/ctor-identity",
-        "ok": false,
-        "problems": [
-          "expected symbol not found: {\"name\":\"Alpha\",\"kind\":\"constructor\",\"ownerName\":\"Alpha\"}; got: Alpha:class, constructor:constructor, Beta:class, constructor:constructor",
-          "expected symbol not found: {\"name\":\"Beta\",\"kind\":\"constructor\",\"ownerName\":\"Beta\"}; got: Alpha:class, constructor:constructor, Beta:class, constructor:constructor",
-          "forbidden symbol present: {\"name\":\"constructor\"} (found constructor:constructor)"
-        ]
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/decorates-edges",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/default-package-unit",
@@ -2937,11 +3028,8 @@
       },
       {
         "fixture": "groovy/duplicate-parse-field",
-        "ok": false,
-        "problems": [
-          "expected symbol not found: {\"name\":\"Split\",\"kind\":\"constructor\",\"ownerName\":\"Split\"}; got: Split:class, center:property, distance:property, constructor:constructor, valueOf:method",
-          "expected relationship not found: {\"type\":\"contains\",\"from\":\"Split\",\"target\":\"Split\",\"line_number\":24,\"meta.isContained\":true}; got: instantiates[valueOf->Split]@0.95; contains[Split->center]@1; contains[Split->distance]@1; contains[Split->constructor]@1; contains[Split->valueOf]@1; uses[Split->center]@1; uses[Split->distance]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/empty-name-refusal",
@@ -2965,18 +3053,8 @@
       },
       {
         "fixture": "groovy/exports-publication",
-        "ok": false,
-        "problems": [
-          "expected export not found: {\"name\":\"scriptHelper\"}; got: [\"Publisher\",\"Greeter\",\"Shade\",\"Hidden\",\"Shielded\"]",
-          "expected export not found: {\"name\":\"otherHelper\"}; got: [\"Publisher\",\"Greeter\",\"Shade\",\"Hidden\",\"Shielded\"]",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"com.acme.pub\",\"target\":\"Publisher\",\"meta.relationshipType\":\"exported_type\",\"meta.kind\":\"class\",\"meta.evidenceClass\":\"structural\",\"confidenceMin\":1}; got: contains[Publisher->label]@1; contains[Publisher->describe]@1; contains[Greeter->greet]@1; contains[Shade->RED]@1; contains[Shade->GREEN]@1; contains[Hidden->secret]@1; contains[Shielded->guard]@1; exports[com.acme.pub->Publisher]@1; exports[com.acme.pub->Greeter]@1; exports[com.acme.pub->Shade]@1; exports[com.acme.pub->Hidden]@0.6; exports[com.acme.pub->Shielded]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"com.acme.pub\",\"target\":\"Greeter\",\"meta.relationshipType\":\"exported_type\",\"meta.kind\":\"interface\"}; got: contains[Publisher->label]@1; contains[Publisher->describe]@1; contains[Greeter->greet]@1; contains[Shade->RED]@1; contains[Shade->GREEN]@1; contains[Hidden->secret]@1; contains[Shielded->guard]@1; exports[com.acme.pub->Publisher]@1; exports[com.acme.pub->Greeter]@1; exports[com.acme.pub->Shade]@1; exports[com.acme.pub->Hidden]@0.6; exports[com.acme.pub->Shielded]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"com.acme.pub\",\"target\":\"Shade\",\"meta.relationshipType\":\"exported_type\",\"meta.kind\":\"enum\"}; got: contains[Publisher->label]@1; contains[Publisher->describe]@1; contains[Greeter->greet]@1; contains[Shade->RED]@1; contains[Shade->GREEN]@1; contains[Hidden->secret]@1; contains[Shielded->guard]@1; exports[com.acme.pub->Publisher]@1; exports[com.acme.pub->Greeter]@1; exports[com.acme.pub->Shade]@1; exports[com.acme.pub->Hidden]@0.6; exports[com.acme.pub->Shielded]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"com.acme.pub\",\"target\":\"scriptHelper\",\"meta.relationshipType\":\"exported_function\",\"meta.dottedName\":\"com.acme.pub.scriptHelper\"}; got: contains[Publisher->label]@1; contains[Publisher->describe]@1; contains[Greeter->greet]@1; contains[Shade->RED]@1; contains[Shade->GREEN]@1; contains[Hidden->secret]@1; contains[Shielded->guard]@1; exports[com.acme.pub->Publisher]@1; exports[com.acme.pub->Greeter]@1; exports[com.acme.pub->Shade]@1; exports[com.acme.pub->Hidden]@0.6; exports[com.acme.pub->Shielded]@0.6",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"com.acme.pub\",\"target\":\"otherHelper\",\"meta.relationshipType\":\"exported_function\"}; got: contains[Publisher->label]@1; contains[Publisher->describe]@1; contains[Greeter->greet]@1; contains[Shade->RED]@1; contains[Shade->GREEN]@1; contains[Hidden->secret]@1; contains[Shielded->guard]@1; exports[com.acme.pub->Publisher]@1; exports[com.acme.pub->Greeter]@1; exports[com.acme.pub->Shade]@1; exports[com.acme.pub->Hidden]@0.6; exports[com.acme.pub->Shielded]@0.6",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"Hidden\"} (found exports[com.acme.pub->Hidden]@0.6)",
-          "forbidden relationship present: {\"type\":\"exports\",\"target\":\"Shielded\"} (found exports[com.acme.pub->Shielded]@0.6)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/field-decorators",
@@ -2985,10 +3063,8 @@
       },
       {
         "fixture": "groovy/fq-annotations",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"FqService.render\",\"targetEndsWith\":\"Base.render\"}; got: extends[FqService->Base]@1; overrides[FqService.render->render]@1; contains[Base->render]@1; contains[FqService->render]@1; contains[FqService->save]@1; exports[com.acme.groovy->Base]@1; exports[com.acme.groovy->FqService]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/fqn-extends",
@@ -3022,11 +3098,8 @@
       },
       {
         "fixture": "groovy/grammar-rebuild-constructs",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"Rebuilt\",\"target\":\"super\"}; got: calls[constructor->super]@1; calls[convert->add]@0.7; calls[tagged->each]@0.7; calls[tagged->fn]@0.7; calls[spreadCall->convert]@0.7; calls[spreadCall->isEmpty]@0.7; instantiates[spreadCall->IllegalStateException]@0.95; contains[Rebuilt->mapWith]@1; contains[Rebuilt->constructor]@1; contains[Rebuilt->convert]@1; contains[Rebuilt->tagged]@1; contains[Rebuilt->spreadCall]@1; uses[Rebuilt->name]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"convert\",\"target\":\"String\",\"meta.relationshipType\":\"cast_type\"}; got: calls[constructor->super]@1; calls[convert->add]@0.7; calls[tagged->each]@0.7; calls[tagged->fn]@0.7; calls[spreadCall->convert]@0.7; calls[spreadCall->isEmpty]@0.7; instantiates[spreadCall->IllegalStateException]@0.95; contains[Rebuilt->mapWith]@1; contains[Rebuilt->constructor]@1; contains[Rebuilt->convert]@1; contains[Rebuilt->tagged]@1; contains[Rebuilt->spreadCall]@1; uses[Rebuilt->name]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/grammar-residuals-841",
@@ -3070,14 +3143,8 @@
       },
       {
         "fixture": "groovy/imports-dependency-edge",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.acme.dep\",\"target\":\"java.util.List\",\"line_number\":3,\"meta.relationshipType\":\"single_type_import\",\"meta.fileLevel\":true,\"meta.isGroovyImport\":true,\"meta.isStatic\":false,\"meta.isWildcard\":false,\"meta.evidenceClass\":\"import_based\",\"confidenceMin\":1}; got: references[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@1; references[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@1; references[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@1; references[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@1; calls[run->sort]@0.7; instantiates[run->HashMap]@0.95; contains[Dep->items]@1; contains[Dep->run]@1; exports[com.acme.dep->Dep]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.acme.dep\",\"target\":\"java.util.Map\",\"line_number\":4,\"meta.relationshipType\":\"type_on_demand_import\",\"meta.fileLevel\":true,\"meta.isWildcard\":true,\"meta.isStatic\":false,\"meta.evidenceClass\":\"import_based\"}; got: references[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@1; references[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@1; references[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@1; references[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@1; calls[run->sort]@0.7; instantiates[run->HashMap]@0.95; contains[Dep->items]@1; contains[Dep->run]@1; exports[com.acme.dep->Dep]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.acme.dep\",\"target\":\"java.util.Collections.sort\",\"line_number\":5,\"meta.relationshipType\":\"static_member_import\",\"meta.fileLevel\":true,\"meta.isWildcard\":false,\"meta.isStatic\":true,\"meta.evidenceClass\":\"import_based\"}; got: references[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@1; references[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@1; references[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@1; references[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@1; calls[run->sort]@0.7; instantiates[run->HashMap]@0.95; contains[Dep->items]@1; contains[Dep->run]@1; exports[com.acme.dep->Dep]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"com.acme.dep\",\"target\":\"groovy.transform.CompileStatic\",\"line_number\":6,\"meta.relationshipType\":\"single_type_import\",\"meta.fileLevel\":true,\"meta.isWildcard\":false,\"meta.isStatic\":false,\"meta.evidenceClass\":\"import_based\"}; got: references[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@0.9; imports[Dep->java.util.List]@1; references[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@0.9; imports[Dep->java.util.Map]@1; references[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@0.9; imports[Dep->java.util.Collections.sort]@1; references[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@0.9; imports[Dep->groovy.transform.CompileStatic]@1; calls[run->sort]@0.7; instantiates[run->HashMap]@0.95; contains[Dep->items]@1; contains[Dep->run]@1; exports[com.acme.dep->Dep]@1",
-          "forbidden relationship present: {\"type\":\"imports\",\"source\":\"Dep\",\"note\":\"sourcing the dependency at the primary type resolves source_symbol_id, so parallel-indexer never writes source_external and bb_graph's file-level dependencies query cannot return it\"} (found imports[Dep->java.util.List]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/imports-dependency",
@@ -3106,10 +3173,8 @@
       },
       {
         "fixture": "groovy/lambda-expression",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"String\",\"line_number\":25,\"comment\":\"the lambda's typed parameter is a reference at the lambda's line\"}; got: calls[run->toUpperCase]@0.7; calls[run->target]@0.7; calls[run->filter]@0.7; calls[run->ofNullable]@0.7; calls[run->isEmpty]@0.7; calls[run->doubler]@0.7; calls[run->target]@0.7; calls[run->label]@0.7; calls[run->supplier]@0.7; contains[LambdaHolder->target]@1; contains[LambdaHolder->run]@1; uses[run->Optional]@0.6; uses[run->util]@0.6"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/line-continuation-841",
@@ -3118,31 +3183,18 @@
       },
       {
         "fixture": "groovy/lines-825",
-        "ok": false,
-        "problems": [
-          "expected Wrapped range startLine=19; got 18 (full: {\"startLine\":18,\"startColumn\":1,\"endLine\":32,\"endColumn\":2,\"startIndex\":185,\"endIndex\":436})",
-          "expected relationship not found: {\"type\":\"contains\",\"from\":\"Wrapped\",\"target\":\"use\",\"line_number\":26}; got: references[Marker->com.acme.lines.Marker]@0.9; imports[Marker->com.acme.lines.Marker]@0.9; imports[Marker->com.acme.lines.Marker]@1; extends[Wrapped->Plain]@1; implements[Wrapped->Marker]@1; implements[Wrapped->Second]@1; calls[use->build]@0.7; calls[use->configure]@0.7; overrides[Wrapped.use->use]@1; contains[Marker->use]@1; contains[Second->more]@1; contains[Plain->use]@1; contains[Plain->more]@1; contains[Wrapped->label]@1; contains[Wrapped->use]@1; uses[Wrapped->label]@0.6; exports[com.acme.lines->Marker]@1; exports[com.acme.lines->Second]@1; exports[com.acme.lines->Plain]@1; exports[com.acme.lines->Wrapped]@1",
-          "expected relationship not found: {\"type\":\"overrides\",\"from\":\"Wrapped.use\",\"target\":\"use\",\"line_number\":26,\"meta.overriddenOwner\":\"Plain\"}; got: references[Marker->com.acme.lines.Marker]@0.9; imports[Marker->com.acme.lines.Marker]@0.9; imports[Marker->com.acme.lines.Marker]@1; extends[Wrapped->Plain]@1; implements[Wrapped->Marker]@1; implements[Wrapped->Second]@1; calls[use->build]@0.7; calls[use->configure]@0.7; overrides[Wrapped.use->use]@1; contains[Marker->use]@1; contains[Second->more]@1; contains[Plain->use]@1; contains[Plain->more]@1; contains[Wrapped->label]@1; contains[Wrapped->use]@1; uses[Wrapped->label]@0.6; exports[com.acme.lines->Marker]@1; exports[com.acme.lines->Second]@1; exports[com.acme.lines->Plain]@1; exports[com.acme.lines->Wrapped]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"Wrapped\",\"target\":\"String\",\"line_number\":23}; got: references[Marker->com.acme.lines.Marker]@0.9; imports[Marker->com.acme.lines.Marker]@0.9; imports[Marker->com.acme.lines.Marker]@1; extends[Wrapped->Plain]@1; implements[Wrapped->Marker]@1; implements[Wrapped->Second]@1; calls[use->build]@0.7; calls[use->configure]@0.7; overrides[Wrapped.use->use]@1; contains[Marker->use]@1; contains[Second->more]@1; contains[Plain->use]@1; contains[Plain->more]@1; contains[Wrapped->label]@1; contains[Wrapped->use]@1; uses[Wrapped->label]@0.6; exports[com.acme.lines->Marker]@1; exports[com.acme.lines->Second]@1; exports[com.acme.lines->Plain]@1; exports[com.acme.lines->Wrapped]@1",
-          "forbidden relationship present: {\"type\":\"contains\",\"from\":\"Wrapped\",\"target\":\"use\",\"line_number\":25,\"note\":\"pre-fix: the `@Deprecated` line; the method is written on 26\"} (found contains[Wrapped->use]@1)",
-          "forbidden relationship present: {\"type\":\"overrides\",\"from\":\"Wrapped.use\",\"target\":\"use\",\"line_number\":25,\"note\":\"pre-fix: the override attributed to its `@Deprecated` annotation\",\"meta.overriddenOwner\":\"Plain\"} (found overrides[Wrapped.use->use]@1)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/method-refs",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"Foo\",\"meta.relationshipType\":\"method_reference\"}; got: calls[run->map]@0.7; calls[run->stream]@0.7; contains[Foo->bar]@1; contains[RefSvc->run]@1; references[RefSvc->Foo]@0.9"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/multicatch-and-varargs",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"IOException\",\"meta.relationshipType\":\"declared_type\"}; got: calls[run->risky]@0.7; calls[run->log]@0.7; calls[runQualified->riskyQualified]@0.7; calls[runQualified->log]@0.7; extends[VarSub->VarBase]@1; overrides[VarSub.bar->bar]@1; contains[Catcher->run]@1; contains[Catcher->risky]@1; contains[Catcher->log]@1; contains[Catcher->runQualified]@1; contains[Catcher->riskyQualified]@1; contains[VarBase->bar]@1; contains[VarSub->bar]@1; references[Catcher->java.io.IOException]@0.95; references[Catcher->java.sql.SQLException]@0.95",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"SQLException\",\"meta.relationshipType\":\"declared_type\"}; got: calls[run->risky]@0.7; calls[run->log]@0.7; calls[runQualified->riskyQualified]@0.7; calls[runQualified->log]@0.7; extends[VarSub->VarBase]@1; overrides[VarSub.bar->bar]@1; contains[Catcher->run]@1; contains[Catcher->risky]@1; contains[Catcher->log]@1; contains[Catcher->runQualified]@1; contains[Catcher->riskyQualified]@1; contains[VarBase->bar]@1; contains[VarSub->bar]@1; references[Catcher->java.io.IOException]@0.95; references[Catcher->java.sql.SQLException]@0.95",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"Exception\",\"meta.relationshipType\":\"declared_type\"}; got: calls[run->risky]@0.7; calls[run->log]@0.7; calls[runQualified->riskyQualified]@0.7; calls[runQualified->log]@0.7; extends[VarSub->VarBase]@1; overrides[VarSub.bar->bar]@1; contains[Catcher->run]@1; contains[Catcher->risky]@1; contains[Catcher->log]@1; contains[Catcher->runQualified]@1; contains[Catcher->riskyQualified]@1; contains[VarBase->bar]@1; contains[VarSub->bar]@1; references[Catcher->java.io.IOException]@0.95; references[Catcher->java.sql.SQLException]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/multihop-override-resolution",
@@ -3176,19 +3228,13 @@
       },
       {
         "fixture": "groovy/parameters-payload",
-        "ok": false,
-        "problems": [
-          "expectParameters: symbol Holder in Holder not found"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/pattern-refs",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"describe\",\"target\":\"Point\",\"meta.relationshipType\":\"instanceof_expression\"}; got: calls[describe->length]@0.7; contains[Point->x]@1; contains[Point->y]@1; contains[ShapeSvc->describe]@1; contains[ShapeSvc->pick]@1; contains[ShapeSvc->describeQualified]@1; contains[ShapeSvc->pickQualified]@1; references[ShapeSvc->acme.shapes.Circle]@0.95; references[ShapeSvc->acme.shapes.Rect]@0.95; references[ShapeSvc->acme.shapes.Square]@0.95",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"describe\",\"target\":\"String\",\"meta.relationshipType\":\"instanceof_expression\"}; got: calls[describe->length]@0.7; contains[Point->x]@1; contains[Point->y]@1; contains[ShapeSvc->describe]@1; contains[ShapeSvc->pick]@1; contains[ShapeSvc->describeQualified]@1; contains[ShapeSvc->pickQualified]@1; references[ShapeSvc->acme.shapes.Circle]@0.95; references[ShapeSvc->acme.shapes.Rect]@0.95; references[ShapeSvc->acme.shapes.Square]@0.95",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"pick\",\"target\":\"Point\",\"meta.relationshipType\":\"case_pattern\"}; got: calls[describe->length]@0.7; contains[Point->x]@1; contains[Point->y]@1; contains[ShapeSvc->describe]@1; contains[ShapeSvc->pick]@1; contains[ShapeSvc->describeQualified]@1; contains[ShapeSvc->pickQualified]@1; references[ShapeSvc->acme.shapes.Circle]@0.95; references[ShapeSvc->acme.shapes.Rect]@0.95; references[ShapeSvc->acme.shapes.Square]@0.95"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/pure-field-chain",
@@ -3232,22 +3278,13 @@
       },
       {
         "fixture": "groovy/scoped-type-recovery-refusal",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"(script)\",\"target\":\"Integer\",\"line_number\":8,\"meta.relationshipType\":\"declared_type\",\"meta.declaredOn\":\"formal_parameter\",\"note\":\"the ONE type actually written in the file, still published — the refusal must not take a well-formed name with it\"}; got: calls[(script)->\"package ${packageName}\"]@0.7; calls[(script)->${className}]@0.7; calls[(script)->$]@0.7; calls[(script)->Controller]@0.7"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/scoped-type-references",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"Fields\",\"target\":\"String\",\"line_number\":10,\"meta.relationshipType\":\"declared_type\",\"note\":\"type ARGUMENTS are types in their own right and must keep being emitted\"}; got: contains[Outer->Criterion]@1; contains[Outer->Projection]@1; contains[Fields->field]@1; contains[Fields->entries]@1; contains[Fields->make]@1; references[Fields->Outer.Criterion]@0.95; references[Fields->java.util.Map.Entry]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Projection]@0.95; exports[acme->Outer]@1; exports[acme->Fields]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"Fields\",\"target\":\"Boolean\",\"line_number\":10,\"meta.relationshipType\":\"declared_type\"}; got: contains[Outer->Criterion]@1; contains[Outer->Projection]@1; contains[Fields->field]@1; contains[Fields->entries]@1; contains[Fields->make]@1; references[Fields->Outer.Criterion]@0.95; references[Fields->java.util.Map.Entry]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Projection]@0.95; exports[acme->Outer]@1; exports[acme->Fields]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"make\",\"target\":\"Outer.Criterion\",\"line_number\":12,\"meta.relationshipType\":\"return_type\"}; got: contains[Outer->Criterion]@1; contains[Outer->Projection]@1; contains[Fields->field]@1; contains[Fields->entries]@1; contains[Fields->make]@1; references[Fields->Outer.Criterion]@0.95; references[Fields->java.util.Map.Entry]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Projection]@0.95; exports[acme->Outer]@1; exports[acme->Fields]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"make\",\"target\":\"Outer.Criterion\",\"line_number\":12,\"meta.relationshipType\":\"declared_type\",\"meta.declaredOn\":\"formal_parameter\"}; got: contains[Outer->Criterion]@1; contains[Outer->Projection]@1; contains[Fields->field]@1; contains[Fields->entries]@1; contains[Fields->make]@1; references[Fields->Outer.Criterion]@0.95; references[Fields->java.util.Map.Entry]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Projection]@0.95; exports[acme->Outer]@1; exports[acme->Fields]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"make\",\"target\":\"Outer.Criterion\",\"line_number\":13,\"meta.relationshipType\":\"declared_type\",\"meta.declaredOn\":\"local_variable_declaration\"}; got: contains[Outer->Criterion]@1; contains[Outer->Projection]@1; contains[Fields->field]@1; contains[Fields->entries]@1; contains[Fields->make]@1; references[Fields->Outer.Criterion]@0.95; references[Fields->java.util.Map.Entry]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Projection]@0.95; exports[acme->Outer]@1; exports[acme->Fields]@1",
-          "expected relationship not found: {\"type\":\"references\",\"source\":\"make\",\"target\":\"Outer.Projection\",\"line_number\":14,\"meta.relationshipType\":\"cast_type\",\"meta.declaredOn\":\"binary_expression\",\"note\":\"`as` coercion: the as-type node is reached through the same collector. declaredOn is the NODE KIND the type is declared on — groovy's as-coercion IS a binary_expression in the pinned grammar (probe-verified: binary_expression{left: identifier, operator: `as`, type: scoped_type_identifier}) — matching how the field/local positions report field_declaration / local_variable_declaration. AUTHORING CORRECTION: this want first said `as_cast`, which is the marker the lane's inert PRE-#742-rebuild branch emits (that branch is kept only for an older wasm and never runs against the shipped grammar). The analyzer was right and the expectation was wrong; the measured value is pinned instead, so the fixture records the live node kind rather than a marker from dead code.\"}; got: contains[Outer->Criterion]@1; contains[Outer->Projection]@1; contains[Fields->field]@1; contains[Fields->entries]@1; contains[Fields->make]@1; references[Fields->Outer.Criterion]@0.95; references[Fields->java.util.Map.Entry]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Criterion]@0.95; references[Fields->Outer.Projection]@0.95; exports[acme->Outer]@1; exports[acme->Fields]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/script-methods",
@@ -3271,17 +3308,8 @@
       },
       {
         "fixture": "groovy/type-usage-graph",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"List\",\"meta.relationshipType\":\"declared_type\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"String\",\"meta.relationshipType\":\"declared_type\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"m2\",\"target\":\"Map\",\"meta.relationshipType\":\"return_type\",\"comment\":\"KAD6: return-type refs carry return_type (pre-fix: declared_type mislabel) and source to m2 (pre-fix: TypeGraph)\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"Integer\",\"meta.relationshipType\":\"declared_type\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"IOException\",\"meta.relationshipType\":\"throws_type\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"Set\",\"meta.relationshipType\":\"declared_type\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"Number\",\"meta.relationshipType\":\"declared_type\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1",
-          "expected relationship not found: {\"type\":\"references\",\"target\":\"List\",\"meta.relationshipType\":\"instanceof_expression\"}; got: references[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@0.9; imports[TypeGraph->java.util.List]@1; contains[TypeGraph->f]@1; contains[TypeGraph->m2]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "groovy/typed-closure-params-841",
@@ -3345,6 +3373,11 @@
       },
       {
         "fixture": "kotlin/complexity-parity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/composable-renders",
         "ok": true,
         "problems": []
       },
@@ -3645,6 +3678,11 @@
       },
       {
         "fixture": "scala/abstract-members",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/annotated-supertype",
         "ok": true,
         "problems": []
       },
@@ -3994,6 +4032,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/self-type-implements",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/self-type-ref",
         "ok": true,
         "problems": []
@@ -4279,6 +4322,11 @@
         "problems": []
       },
       {
+        "fixture": "c/part-of-quoted-include",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/prototype-member-names-972",
         "ok": true,
         "problems": []
@@ -4400,14 +4448,8 @@
       },
       {
         "fixture": "cpp/friend-definition-body-owner",
-        "ok": false,
-        "problems": [
-          "forbidden symbol present: {\"name\":\"operator==\"} (found operator==:function)",
-          "expected 0 symbol(s) named \"operator==\"; got 1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"global\",\"target\":\"lo_\"}; got: uses[a->lo_]@1; uses[b->lo_]@1; uses[operator==->lo_]@0.9; uses[compare->lo_]@0.9; contains[param_type->a]@1; contains[param_type->b]@1; contains[param_type->lo_]@1; contains[OutOfLine->compare]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"global\",\"target\":\"a\"}; got: uses[a->lo_]@1; uses[b->lo_]@1; uses[operator==->lo_]@0.9; uses[compare->lo_]@0.9; contains[param_type->a]@1; contains[param_type->b]@1; contains[param_type->lo_]@1; contains[OutOfLine->compare]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"global\",\"target\":\"b\"}; got: uses[a->lo_]@1; uses[b->lo_]@1; uses[operator==->lo_]@0.9; uses[compare->lo_]@0.9; contains[param_type->a]@1; contains[param_type->b]@1; contains[param_type->lo_]@1; contains[OutOfLine->compare]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "cpp/friend-definition-published",
@@ -4520,6 +4562,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/part-of-quoted-include",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/payload-and-complexity",
         "ok": true,
         "problems": []
@@ -4546,6 +4593,11 @@
       },
       {
         "fixture": "cpp/reason-code-4",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/receiver-walker-gaps",
         "ok": true,
         "problems": []
       },
@@ -4630,6 +4682,11 @@
         "problems": []
       },
       {
+        "fixture": "rust/decorates-attribute-application",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/error-file-payload",
         "ok": true,
         "problems": []
@@ -4660,12 +4717,22 @@
         "problems": []
       },
       {
+        "fixture": "rust/mixes-in-derive-composition",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/module-surface",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "rust/new-instantiates-target",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/part-of-include-macro",
         "ok": true,
         "problems": []
       },
@@ -4686,6 +4753,11 @@
       },
       {
         "fixture": "rust/relationship-kinds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/renders-component-tag",
         "ok": true,
         "problems": []
       },
@@ -4791,6 +4863,11 @@
       },
       {
         "fixture": "python/declaration-name-is-a-declaration",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/decorated-definition-is-a-real-node",
         "ok": true,
         "problems": []
       },
@@ -5035,6 +5112,11 @@
         "problems": []
       },
       {
+        "fixture": "python/ruled-out-extended-values",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/same-name-class-scopes",
         "ok": true,
         "problems": []
@@ -5071,6 +5153,11 @@
       },
       {
         "fixture": "go/dot-import-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/embedding-halves",
         "ok": true,
         "problems": []
       },
@@ -5190,6 +5277,11 @@
         "problems": []
       },
       {
+        "fixture": "go/renders-template-execution",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/return-type-shapes",
         "ok": true,
         "problems": []
@@ -5261,6 +5353,11 @@
       },
       {
         "fixture": "zig/kinds-and-owners",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "zig/mixes-in-usingnamespace",
         "ok": true,
         "problems": []
       },
@@ -5406,6 +5503,11 @@
       },
       {
         "fixture": "csharp/record-struct-kind",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/render-host-component",
         "ok": true,
         "problems": []
       },
@@ -5640,6 +5742,16 @@
         "problems": []
       },
       {
+        "fixture": "dart/renders-components",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/ruled-out-decorates",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/type-references",
         "ok": true,
         "problems": []
@@ -5701,10 +5813,8 @@
       },
       {
         "fixture": "swift/exports-visibility",
-        "ok": false,
-        "problems": [
-          "export invariant violated: export(s) [\"WinSDK\",\"Utils\"] do not resolve to a top-level symbol (membership rides Contains)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "swift/external-override",
@@ -5718,19 +5828,8 @@
       },
       {
         "fixture": "swift/imports-exports",
-        "ok": false,
-        "problems": [
-          "export invariant violated: export(s) [\"ReExported\"] do not resolve to a top-level symbol (membership rides Contains)",
-          "expected relationship not found: {\"type\":\"imports\",\"source\":\"root\",\"target\":\"Swift.Optional\",\"meta.isModuleDependency\":true,\"note\":\"kind-restricted import: the module path is the `identifier` node, the `struct` keyword is not part of it\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Store\",\"meta.visibility\":\"public\",\"meta.isModuleSurface\":true,\"meta.evidenceClass\":\"structural\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"count\",\"meta.visibility\":\"public\",\"meta.evidenceClass\":\"structural\",\"note\":\"`public private(set) var` — the setter is private, the declaration is public\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"constructor\",\"meta.visibility\":\"public\",\"meta.evidenceClass\":\"structural\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"bump\",\"meta.visibility\":\"public\",\"meta.evidenceClass\":\"structural\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Base\",\"meta.visibility\":\"open\",\"meta.evidenceClass\":\"structural\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Proto\",\"meta.visibility\":\"public\",\"meta.evidenceClass\":\"structural\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"added\",\"meta.visibility\":\"public\",\"meta.evidenceClass\":\"structural\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"ReExported\",\"meta.isReExport\":true,\"meta.evidenceClass\":\"structural\",\"note\":\"@_exported import — the one construct whose name is literally an export\"}; got: exports[imports-exports->Store]@1; exports[imports-exports->Base]@1; exports[imports-exports->Proto]@1; instantiates[makeHolder->Local]@1; instantiates[makeHolder->Pair]@1; contains[Store->count]@1; contains[Store->constructor]@1; contains[Store->bump]@1; contains[Store->hidden]@1; contains[Store->implicit]@1; contains[Proto->requirement]@1; contains[Store->added]@1; contains[Internal->value]@1; contains[Pair->a]@1; references[root->Foundation]@1; references[root->Swift.Optional]@1; references[root->MyModule]@1; references[root->ReExported]@1; exports[imports-exports->ReExported]@1; imports[root->Foundation]@1; imports[root->Swift]@1; imports[root->MyModule]@1; imports[root->ReExported]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "swift/inheritance-conformance-fixes",
@@ -5754,15 +5853,8 @@
       },
       {
         "fixture": "swift/module-exports",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Repository\"}; got: exports[module-exports->Repository]@1; exports[module-exports->BaseService]@1; exports[module-exports->Resettable]@1; exports[module-exports->Handler]@1; exports[module-exports->topLevelHelper]@1; exports[module-exports->Service]@1; implements[Repository->Codable]@1; uses[find->name]@0.6; contains[Repository->name]@1; contains[Repository->find]@1; contains[BaseService->describe]@1; contains[Resettable->reset]@1; contains[Service->counter]@1; contains[Service->run]@1; contains[Service->overridable]@1; contains[InternalStore->touch]@1; contains[Repository->encoded]@1; contains[ImplicitInternal->quietly]@1; contains[RecoveredNominal->ok]@1; references[root->Foundation]@1; imports[root->Foundation]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"BaseService\"}; got: exports[module-exports->Repository]@1; exports[module-exports->BaseService]@1; exports[module-exports->Resettable]@1; exports[module-exports->Handler]@1; exports[module-exports->topLevelHelper]@1; exports[module-exports->Service]@1; implements[Repository->Codable]@1; uses[find->name]@0.6; contains[Repository->name]@1; contains[Repository->find]@1; contains[BaseService->describe]@1; contains[Resettable->reset]@1; contains[Service->counter]@1; contains[Service->run]@1; contains[Service->overridable]@1; contains[InternalStore->touch]@1; contains[Repository->encoded]@1; contains[ImplicitInternal->quietly]@1; contains[RecoveredNominal->ok]@1; references[root->Foundation]@1; imports[root->Foundation]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Resettable\"}; got: exports[module-exports->Repository]@1; exports[module-exports->BaseService]@1; exports[module-exports->Resettable]@1; exports[module-exports->Handler]@1; exports[module-exports->topLevelHelper]@1; exports[module-exports->Service]@1; implements[Repository->Codable]@1; uses[find->name]@0.6; contains[Repository->name]@1; contains[Repository->find]@1; contains[BaseService->describe]@1; contains[Resettable->reset]@1; contains[Service->counter]@1; contains[Service->run]@1; contains[Service->overridable]@1; contains[InternalStore->touch]@1; contains[Repository->encoded]@1; contains[ImplicitInternal->quietly]@1; contains[RecoveredNominal->ok]@1; references[root->Foundation]@1; imports[root->Foundation]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Handler\"}; got: exports[module-exports->Repository]@1; exports[module-exports->BaseService]@1; exports[module-exports->Resettable]@1; exports[module-exports->Handler]@1; exports[module-exports->topLevelHelper]@1; exports[module-exports->Service]@1; implements[Repository->Codable]@1; uses[find->name]@0.6; contains[Repository->name]@1; contains[Repository->find]@1; contains[BaseService->describe]@1; contains[Resettable->reset]@1; contains[Service->counter]@1; contains[Service->run]@1; contains[Service->overridable]@1; contains[InternalStore->touch]@1; contains[Repository->encoded]@1; contains[ImplicitInternal->quietly]@1; contains[RecoveredNominal->ok]@1; references[root->Foundation]@1; imports[root->Foundation]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"topLevelHelper\"}; got: exports[module-exports->Repository]@1; exports[module-exports->BaseService]@1; exports[module-exports->Resettable]@1; exports[module-exports->Handler]@1; exports[module-exports->topLevelHelper]@1; exports[module-exports->Service]@1; implements[Repository->Codable]@1; uses[find->name]@0.6; contains[Repository->name]@1; contains[Repository->find]@1; contains[BaseService->describe]@1; contains[Resettable->reset]@1; contains[Service->counter]@1; contains[Service->run]@1; contains[Service->overridable]@1; contains[InternalStore->touch]@1; contains[Repository->encoded]@1; contains[ImplicitInternal->quietly]@1; contains[RecoveredNominal->ok]@1; references[root->Foundation]@1; imports[root->Foundation]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Service\"}; got: exports[module-exports->Repository]@1; exports[module-exports->BaseService]@1; exports[module-exports->Resettable]@1; exports[module-exports->Handler]@1; exports[module-exports->topLevelHelper]@1; exports[module-exports->Service]@1; implements[Repository->Codable]@1; uses[find->name]@0.6; contains[Repository->name]@1; contains[Repository->find]@1; contains[BaseService->describe]@1; contains[Resettable->reset]@1; contains[Service->counter]@1; contains[Service->run]@1; contains[Service->overridable]@1; contains[InternalStore->touch]@1; contains[Repository->encoded]@1; contains[ImplicitInternal->quietly]@1; contains[RecoveredNominal->ok]@1; references[root->Foundation]@1; imports[root->Foundation]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "swift/payload-and-complexity",
@@ -5771,12 +5863,13 @@
       },
       {
         "fixture": "swift/reexported-import",
-        "ok": false,
-        "problems": [
-          "export invariant violated: export(s) [\"Basic\"] do not resolve to a top-level symbol (membership rides Contains)",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Basic\",\"line_number\":11,\"note\":\"exportForm metadata is @_exported_import. Line 11 is `import Basic`; the declaration starts at 10 (`@_exported`), so this pin is what proves the edge is lined at the module NAME and not the declaration.\"}; got: exports[reexported-import->Holder]@1; uses[describe->value]@0.6; contains[Holder->value]@1; contains[Holder->constructor]@1; contains[Holder->describe]@1; references[root->Basic]@1; references[root->Foundation]@1; references[root->PackageInternal]@1; references[root->Mixed.Submodule]@1; references[root->Basic]@1; exports[reexported-import->Basic]@1; exports[reexported-import->Mixed.Submodule]@1; imports[root->Basic]@1; imports[root->Foundation]@1; imports[root->PackageInternal]@1; imports[root->Mixed]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"source\":\"root\",\"target\":\"Mixed.Submodule\",\"line_number\":14,\"comment\":\"a DOTTED module name is a module name, not a qualifier to be stripped: SwiftCompilerSources re-exports submodules this way, and the re-exports census found Mixed.Submodule among the 40 sites\"}; got: exports[reexported-import->Holder]@1; uses[describe->value]@0.6; contains[Holder->value]@1; contains[Holder->constructor]@1; contains[Holder->describe]@1; references[root->Basic]@1; references[root->Foundation]@1; references[root->PackageInternal]@1; references[root->Mixed.Submodule]@1; references[root->Basic]@1; exports[reexported-import->Basic]@1; exports[reexported-import->Mixed.Submodule]@1; imports[root->Basic]@1; imports[root->Foundation]@1; imports[root->PackageInternal]@1; imports[root->Mixed]@1"
-        ]
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/renders-view-body",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "swift/scoped-import-metadata",
@@ -5810,6 +5903,11 @@
       },
       {
         "fixture": "objc/export-markers-and-prototypes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "objc/extended-part-of",
         "ok": true,
         "problems": []
       },
@@ -5989,12 +6087,27 @@
         "problems": []
       },
       {
+        "fixture": "r/F23-mixes-in-split",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "r/F24-r5-statement-form",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "lua/callee-shape",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "lua/closure-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "lua/decorator-application",
         "ok": true,
         "problems": []
       },
@@ -6064,7 +6177,27 @@
         "problems": []
       },
       {
+        "fixture": "julia/callable-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "julia/decorated-declarations",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "julia/dispatch-and-hierarchy",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "julia/extended-values",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "julia/extends-shapes",
         "ok": true,
         "problems": []
       },
@@ -6085,6 +6218,16 @@
       },
       {
         "fixture": "julia/modules-and-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "julia/part-of-include",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "julia/struct-fields",
         "ok": true,
         "problems": []
       },
@@ -6244,6 +6387,11 @@
         "problems": []
       },
       {
+        "fixture": "php/trait-mixins",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/typed-class-const",
         "ok": true,
         "problems": []
@@ -6280,6 +6428,11 @@
       },
       {
         "fixture": "protobuf/imports-and-editions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "protobuf/message-tree-contains",
         "ok": true,
         "problems": []
       },
@@ -6349,9 +6502,14 @@
         "problems": []
       },
       {
+        "fixture": "ruby/mixin-discriminator",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "ruby/ontology-factory-and-names",
-        "ok": false,
-        "reason": "missing expectation file"
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "ruby/ontology-imports-exports",
@@ -6389,6 +6547,11 @@
         "problems": []
       },
       {
+        "fixture": "perl/external-deps-perl1",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "perl/import-argument-items",
         "ok": true,
         "problems": []
@@ -6410,110 +6573,48 @@
       },
       {
         "fixture": "perl/ontology-composition",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"Ontology::Roles\",\"target\":\"Two\",\"line_number\":8,\"note\":\"the SECOND word of the SAME node, on the same line. Reading only the first loses every role after the first in every `qw()` composition in a corpus.\"}; got: implements[Ontology::Roles->Plain]@0.9; implements[Ontology::Roles->One]@0.9; implements[Ontology::Roles->Three]@0.9; implements[Ontology::Roles->Five]@0.9; contains[Ontology::Roles->name]@1; contains[Ontology::Roles->has spaces]@1; contains[Ontology::Roles->old]@1; contains[Ontology::Roles->constructor]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"Ontology::Roles\",\"target\":\"Four\",\"line_number\":9}; got: implements[Ontology::Roles->Plain]@0.9; implements[Ontology::Roles->One]@0.9; implements[Ontology::Roles->Three]@0.9; implements[Ontology::Roles->Five]@0.9; contains[Ontology::Roles->name]@1; contains[Ontology::Roles->has spaces]@1; contains[Ontology::Roles->old]@1; contains[Ontology::Roles->constructor]@1",
-          "expected relationship not found: {\"type\":\"implements\",\"from\":\"Ontology::Roles\",\"target\":\"Six\",\"line_number\":10}; got: implements[Ontology::Roles->Plain]@0.9; implements[Ontology::Roles->One]@0.9; implements[Ontology::Roles->Three]@0.9; implements[Ontology::Roles->Five]@0.9; contains[Ontology::Roles->name]@1; contains[Ontology::Roles->has spaces]@1; contains[Ontology::Roles->old]@1; contains[Ontology::Roles->constructor]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-exports",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"alpha\",\"line_number\":12,\"meta.exportArray\":\"EXPORT\",\"meta.reasonCode\":\"exporter-array-declaration\",\"meta.evidenceClass\":\"import_based\",\"note\":\"tier: the source states this edge: a declaration or a written name, confidence >= 0.9\"}; got: ",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"beta\",\"line_number\":12,\"note\":\"BOTH words of one `qw(...)` node claim the line the node is on. Reading only the first would lose half of every Exporter array in a corpus.\"}; got: ",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"gamma\",\"line_number\":13,\"meta.exportArray\":\"EXPORT_OK\",\"note\":\"the OPTIONAL half. Reading only `@EXPORT` lost it: exports across seven corpora went from 795 to 2,170.\"}; got: ",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"all\",\"line_number\":14,\"meta.exportTag\":\"EXPORT_TAGS\",\"note\":\"a `%EXPORT_TAGS` KEY is an exported TAG name, and it is the fat-comma key rather than the payload\"}; got: ",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"some\",\"line_number\":14,\"meta.exportTag\":\"EXPORT_TAGS\"}; got: "
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-four-labels",
-        "ok": false,
-        "problems": [
-          "expected 5 relationship(s) {\"type\":\"exports\"}; got 0",
-          "expected 5 relationship(s) {\"type\":\"imports\"}; got 0",
-          "expected 3 relationship(s) {\"type\":\"references\"}; got 0",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"alpha\",\"line_number\":5,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"exporter-surface\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"beta\",\"line_number\":5,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"exporter-surface\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"gamma\",\"line_number\":7,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"exporter-surface\",\"note\":\"own line inside a WRAPPED @EXPORT_OK list: the assignment starts on 6, the name is written on 7\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"delta\",\"line_number\":8,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"exporter-surface\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"all\",\"line_number\":10,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"exporter-surface\",\"note\":\"a %EXPORT_TAGS KEY, not a sub: the fat-comma keys are the tag names callers pass to `-tag => 1`\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"strict\",\"line_number\":1,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"module-load-site\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"warnings\",\"line_number\":2,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"module-load-site\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"feature\",\"line_number\":3,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"module-load-site\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"Runtime::Only\",\"line_number\":12,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"module-load-site\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"Lazy::Load\",\"line_number\":13,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"module-load-site\",\"note\":\"`require`, so `perlLoadKind` is `require` rather than `use`; both are loads and the row is the same fact\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"reads_packages\",\"target\":\"Config::Limits::MAX\",\"line_number\":25,\"meta.evidenceClass\":\"usage_contextual\",\"meta.reasonCode\":\"qualified-name-access\",\"note\":\"the SIGIL'D shape: a fully-qualified package variable read\",\"confidenceMin\":0.9,\"confidenceMax\":0.9}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"reads_packages\",\"target\":\"Ontology::VERSION\",\"line_number\":26,\"meta.evidenceClass\":\"usage_contextual\",\"meta.reasonCode\":\"qualified-name-access\",\"note\":\"the BAREWORD shape: a package-qualified name in value position. Its own package's variable, which is why the self-reference guard on `extends` does not apply here\",\"confidenceMin\":0.9,\"confidenceMax\":0.9}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"reads_packages\",\"target\":\"Config::Limits\",\"line_number\":27,\"meta.evidenceClass\":\"usage_contextual\",\"meta.reasonCode\":\"qualified-name-access\",\"note\":\"a bareword CLASS NAME as a value (`my $name = Config::Limits;`) — a package read that is not a receiver and not a callee\",\"confidenceMin\":0.9,\"confidenceMax\":0.9}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"takes_code_slots\",\"target\":\"beta\",\"line_number\":39,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"code-slot-reference\",\"note\":\"`\\\\&beta` — the reference, not the invocation; the invocation is `$runner->()` on L43 and publishes NO calls edge because a code slot is not a name\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"takes_code_slots\",\"target\":\"alpha\",\"line_number\":40,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"code-slot-reference\",\"note\":\"`\\\\&Ontology::alpha` — the LEAF is published, matching how `calls` and `overrides` address methods\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"takes_code_slots\",\"target\":\"gamma\",\"line_number\":42,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"code-slot-reference\",\"note\":\"reached through `local *Ontology::slot = \\\\&gamma;` — the slot reference is the RIGHT side; the glob itself is a write and is not published\",\"confidenceMin\":1}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"reads_packages\",\"target\":\"Limits.constructor\",\"line_number\":34,\"meta.evidenceClass\":\"structural\",\"meta.reasonCode\":\"concrete-invocant\",\"note\":\"`Config::Limits::->new($limit)`. The `::` suffix is stripped by `constructorLeaf`; before that the target was `.constructor` and resolved at neither end. Measured on perl5: version::->new (cpan/version/t/02derived.t:71), IO::File::->new (dist/IO/lib/IO/Handle.pm:329), Bar::->new (dist/base/t/fields-5_6_0.t:223).\"}; got: calls[reads_packages->helper]@0.9; instantiates[reads_packages->.constructor]@0.9; uses[takes_code_slots->beta]@0.9; uses[takes_code_slots->alpha]@0.9; uses[takes_code_slots->gamma]@0.9; contains[Ontology->VERSION]@1; contains[Ontology->reads_packages]@1; contains[Ontology->takes_code_slots]@1",
-          "forbidden relationship present: {\"type\":\"instantiates\",\"target\":\".constructor\",\"note\":\"the pre-fix shape: `leafName(\\\"Config::Limits::\\\")` is the empty string, so the edge published an EMPTY owner. This is rule R7's fabricated endpoint in its purest form — it is the one forbid in the file that can be satisfied by a target nobody could name.\"} (found instantiates[reads_packages->.constructor]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-imports",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"strict\",\"line_number\":6,\"confidenceMin\":1,\"meta.isImport\":true,\"meta.fileLevel\":true,\"meta.relationshipType\":\"use_module\",\"meta.isPragma\":true,\"meta.reasonCode\":\"use-module-load\",\"meta.evidenceClass\":\"import_based\",\"note\":\"tier: the source states this edge: a declaration or a written name, confidence >= 0.9\"}; got: ",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"Mojo::Base\",\"line_number\":8,\"meta.relationshipType\":\"use_module\",\"note\":\"a HERITAGE pragma is also a module dependency — `parent.pm` is perl core, so skipping these would publish a graph with the load missing\"}; got: ",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"Runtime::Lazy\",\"line_number\":12,\"confidenceMax\":0.9,\"meta.relationshipType\":\"require_module\",\"meta.reasonCode\":\"runtime-require\",\"note\":\"a runtime `require` is a real dependency and is BELOW 1.0: which of two modules loads is not decided by this file\"}; got: ",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"Runtime::Inside\",\"line_number\":14,\"meta.relationshipType\":\"require_module\",\"note\":\"`require` INSIDE A SUB BODY — the shape a file-scoped scan misses. 39 such sites in mojo alone.\"}; got: ",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"integer\",\"line_number\":18,\"meta.isPragma\":true,\"note\":\"`use` INSIDE A SUB BODY: a perl pragma is lexically scoped. mojo's lib/Mojo/Util.pm writes `use integer;` at lines 263, 296 and 492, all inside subs.\"}; got: "
-        ]
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "perl/ontology-mixin-composition",
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-push-declarations",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"assigned\",\"line_number\":20,\"meta.reasonCode\":\"exporter-array-declaration\",\"meta.evidenceClass\":\"import_based\",\"note\":\"the ASSIGNMENT spelling, kept beside the push forms so the two rules stay separable: same label, same confidence, DIFFERENT reasonCode. A label census that cannot tell them apart cannot say which one a rule reads.\"}; got: contains[Ontology::Push->own]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"pushed_one\",\"line_number\":21,\"meta.reasonCode\":\"exporter-array-push\",\"meta.evidenceClass\":\"import_based\",\"note\":\"`push @EXPORT_OK, qw(pushed_one pushed_two)` — the Exporter's other declaration API. Before this rule a module's exported API was silently half of what it is: the assignment half only.\"}; got: contains[Ontology::Push->own]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"pushed_two\",\"line_number\":21,\"meta.reasonCode\":\"exporter-array-push\",\"meta.evidenceClass\":\"import_based\",\"note\":\"the SECOND name of the same word list. `wordValues` returns every word, so a `push` of `qw(a b)` cannot publish only the first — the same defect the bare-`extends` fix had in `with qw(RoleA RoleB)`.\"}; got: contains[Ontology::Push->own]@1",
-          "expected relationship not found: {\"type\":\"exports\",\"from\":\"global\",\"target\":\"pushed_three\",\"line_number\":22,\"meta.reasonCode\":\"exporter-array-push\",\"meta.evidenceClass\":\"import_based\",\"note\":\"the FAT-COMMA spelling `push @EXPORT => qw{...}`, which perl5's own Test2::Tools::Spec writes at lines 19-20. `=>` auto-quotes its left operand, so the argument list is the same list; a rule that treats a top-level `=>` as a KEY/VALUE SPECIFICATION — right for `with 'Role' => {...}` and for `use`, wrong here — would read the array as a SLOT name and drop both names.\"}; got: contains[Ontology::Push->own]@1",
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"global\",\"target\":\"Base\",\"line_number\":24,\"meta.reasonCode\":\"isa-array-push\",\"meta.evidenceClass\":\"structural\",\"note\":\"`push @ISA, 'Ontology::Base', 'Exporter'` — inheritance by push. It routes through `addBase`, not a direct emit, for the reason the bare-`extends` fix gives: `packageBases` is what the OVERRIDE resolver reads, so an inheritance edge published by a route the resolver cannot see leaves `overrides` one hop short. The target is the LEAF (`Base`), the lane's convention for `extends`.\"}; got: contains[Ontology::Push->own]@1",
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"global\",\"target\":\"Exporter\",\"line_number\":24,\"meta.reasonCode\":\"isa-array-push\",\"meta.evidenceClass\":\"structural\",\"note\":\"the SECOND base of the same push, and it is a real inheritance edge: perl5's DB_File.pm:202 writes `push @ISA, qw(Tie::Hash Exporter)` for exactly this reason.\"}; got: contains[Ontology::Push->own]@1",
-          "expected relationship not found: {\"type\":\"extends\",\"from\":\"Ontology::Push\",\"target\":\"Second\",\"line_number\":27,\"meta.reasonCode\":\"isa-array-push\",\"meta.evidenceClass\":\"structural\",\"note\":\"the QUALIFIED form `push @Ontology::Push::ISA => 'Ontology::Second'`. The owner is the package in the varname, and the `package` BLOCK form is what proves the lexical package is inside the braces (it does not leak past the closing brace).\"}; got: contains[Ontology::Push->own]@1"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-references",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"literal\",\"target\":\"Ontology::Types\",\"line_number\":6,\"meta.reasonCode\":\"bless-class-literal\",\"meta.evidenceClass\":\"usage_contextual\",\"note\":\"tier: the source states this edge: a declaration or a written name, confidence >= 0.9\"}; got: calls[tested->isa]@0.9; references[tested->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[dynamic->isa]@0.9; contains[Ontology::Types->make]@1; contains[Ontology::Types->literal]@1; contains[Ontology::Types->tested]@1; contains[Ontology::Types->claims]@1; contains[Ontology::Types->kind]@1; contains[Ontology::Types->notkind]@1; contains[Ontology::Types->notkind2]@1; contains[Ontology::Types->dynamic]@1; contains[Ontology::Types->runtime]@1; contains[Ontology::Types->computed]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"tested\",\"target\":\"Ontology::Other\",\"line_number\":7,\"meta.reasonCode\":\"isa-class-literal\",\"note\":\"`$obj->isa('X')` is perl's TYPE TEST. It used to produce `calls -> isa`, naming a UNIVERSAL builtin that no project declares.\"}; got: calls[tested->isa]@0.9; references[tested->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[dynamic->isa]@0.9; contains[Ontology::Types->make]@1; contains[Ontology::Types->literal]@1; contains[Ontology::Types->tested]@1; contains[Ontology::Types->claims]@1; contains[Ontology::Types->kind]@1; contains[Ontology::Types->notkind]@1; contains[Ontology::Types->notkind2]@1; contains[Ontology::Types->dynamic]@1; contains[Ontology::Types->runtime]@1; contains[Ontology::Types->computed]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"claims\",\"target\":\"Ontology::Role\",\"line_number\":8,\"meta.reasonCode\":\"does-role-literal\",\"note\":\"the ROLE half of the same test. `implements` points class -> role and cannot express the subject -> role direction this line carries, so this is the only edge that does.\"}; got: calls[tested->isa]@0.9; references[tested->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[dynamic->isa]@0.9; contains[Ontology::Types->make]@1; contains[Ontology::Types->literal]@1; contains[Ontology::Types->tested]@1; contains[Ontology::Types->claims]@1; contains[Ontology::Types->kind]@1; contains[Ontology::Types->notkind]@1; contains[Ontology::Types->notkind2]@1; contains[Ontology::Types->dynamic]@1; contains[Ontology::Types->runtime]@1; contains[Ontology::Types->computed]@1",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"kind\",\"target\":\"Ontology::Types\",\"line_number\":9,\"meta.reasonCode\":\"ref-class-comparison\",\"note\":\"the type test written as a COMPARISON. The node is `equality_expression` in this grammar, NOT `binary_expression` — looking for the latter reports 0 occurrences of a construct mojo uses 67 times.\"}; got: calls[tested->isa]@0.9; references[tested->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[dynamic->isa]@0.9; contains[Ontology::Types->make]@1; contains[Ontology::Types->literal]@1; contains[Ontology::Types->tested]@1; contains[Ontology::Types->claims]@1; contains[Ontology::Types->kind]@1; contains[Ontology::Types->notkind]@1; contains[Ontology::Types->notkind2]@1; contains[Ontology::Types->dynamic]@1; contains[Ontology::Types->runtime]@1; contains[Ontology::Types->computed]@1",
-          "forbidden relationship present: {\"type\":\"calls\",\"target\":\"isa\",\"note\":\"the pre-fix shape of line 7: `isa` is a UNIVERSAL builtin, so the edge named a method nothing defines\"} (found calls[tested->isa]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-require-and-universal",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"via_universal\",\"target\":\"Ontology::Universal\",\"line_number\":12,\"meta.reasonCode\":\"universal-isa-literal\",\"meta.evidenceClass\":\"usage_contextual\",\"note\":\"`UNIVERSAL::isa($self, 'Ontology::Universal')` — the FUNCTION spelling of the type test the method branch reads as `$self->isa('Ontology::Universal')`. The class is the LAST argument in both spellings, which is the fact the reader shares.\"}; got: calls[via_universal->isa]@0.9; calls[via_universal_last_arg->isa]@0.9; calls[not_a_type->can]@0.9; calls[not_a_type2->isa]@0.9; calls[via_isa->isa]@0.9; references[via_isa->Universal]@0.9; calls[global->import]@0.9; calls[global->constant]@0.9",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"via_universal_last_arg\",\"target\":\"Ontology::Universal\",\"line_number\":16,\"meta.reasonCode\":\"universal-isa-literal\",\"meta.evidenceClass\":\"usage_contextual\",\"note\":\"the THREE-ARGUMENT form `UNIVERSAL::isa($self, ref($self), 'Ontology::Universal')`, which perl's own UNIVERSAL documents. The rule reads the LAST argument, so the shape that carries two values before the class still names the class.\"}; got: calls[via_universal->isa]@0.9; calls[via_universal_last_arg->isa]@0.9; calls[not_a_type->can]@0.9; calls[not_a_type2->isa]@0.9; calls[via_isa->isa]@0.9; references[via_isa->Universal]@0.9; calls[global->import]@0.9; calls[global->constant]@0.9",
-          "expected relationship not found: {\"type\":\"references\",\"from\":\"via_isa\",\"target\":\"Ontology::Universal\",\"line_number\":26,\"meta.reasonCode\":\"isa-class-literal\",\"meta.evidenceClass\":\"usage_contextual\",\"note\":\"the METHOD spelling, pinned beside the function one so the two rules are separable by reasonCode. Same label, same target, different construct.\"}; got: calls[via_universal->isa]@0.9; calls[via_universal_last_arg->isa]@0.9; calls[not_a_type->can]@0.9; calls[not_a_type2->isa]@0.9; calls[via_isa->isa]@0.9; references[via_isa->Universal]@0.9; calls[global->import]@0.9; calls[global->constant]@0.9",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"./lib/Bootstrap.pm\",\"line_number\":27,\"meta.relationshipType\":\"require_file\",\"meta.specifier\":\"path\",\"meta.evidenceClass\":\"import_based\",\"note\":\"`require './lib/Bootstrap.pm'` — the specifier is a FILENAME, not a module name, and it is WRITTEN, which is what makes it an edge rather than an inference. The target is the path as written, with the sigil-free `./` kept: a resolver needs the string the file wrote, and collapsing `./lib/Bootstrap.pm` to `Bootstrap` would be the MR11 leaf-collapse a fourth time.\"}; got: calls[via_universal->isa]@0.9; calls[via_universal_last_arg->isa]@0.9; calls[not_a_type->can]@0.9; calls[not_a_type2->isa]@0.9; calls[via_isa->isa]@0.9; references[via_isa->Universal]@0.9; calls[global->import]@0.9; calls[global->constant]@0.9",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"Ontology::Runtime\",\"line_number\":28,\"meta.relationshipType\":\"require_module\",\"meta.reasonCode\":\"runtime-require\",\"meta.evidenceClass\":\"import_based\",\"note\":\"the MODULE spelling, pinned beside the path one. Same label, same confidence, different `relationshipType`, so a consumer can tell \\\"names a module\\\" from \\\"names a path\\\" — which is the difference between a `brain_import` row a symbol resolver can chase and one it can only display.\"}; got: calls[via_universal->isa]@0.9; calls[via_universal_last_arg->isa]@0.9; calls[not_a_type->can]@0.9; calls[not_a_type2->isa]@0.9; calls[via_isa->isa]@0.9; references[via_isa->Universal]@0.9; calls[global->import]@0.9; calls[global->constant]@0.9",
-          "expected relationship not found: {\"type\":\"imports\",\"from\":\"global\",\"target\":\"constant\",\"line_number\":31,\"meta.relationshipType\":\"require_module\",\"meta.reasonCode\":\"runtime-require\",\"meta.evidenceClass\":\"import_based\",\"note\":\"`require constant;` loads CPAN's module NAMED `constant` — perl5's cpan/Scalar-List-Utils/t/dualvar.t:76 writes `require constant; import constant HAVE_THREADS => 1;`. The lane used to refuse ANY dependency whose module name was `constant`, because `use constant NAME => v` is a DECLARATION and not a dependency; the `use` form never reaches that refusal (the use_statement case handles it as a declaration and breaks first), so the guard only ever dropped real loads. One MISSING truth row in a 685-row file, and it is the whole file.\"}; got: calls[via_universal->isa]@0.9; calls[via_universal_last_arg->isa]@0.9; calls[not_a_type->can]@0.9; calls[not_a_type2->isa]@0.9; calls[via_isa->isa]@0.9; references[via_isa->Universal]@0.9; calls[global->import]@0.9; calls[global->constant]@0.9"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/ontology-uses",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"slot\",\"target\":\"Ontology::Reads::handler\",\"line_number\":8,\"meta.reasonCode\":\"code-slot-reference\",\"meta.evidenceClass\":\"usage_contextual\",\"note\":\"tier: the source states this edge: a declaration or a written name, confidence >= 0.9\"}; got: uses[slot->handler]@0.9; uses[top->SIGINT]@0.9; calls[called->handler]@0.9; calls[check->isa]@0.9; references[check->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[probe->can]@0.9; references[probe->maybe_missing]@0.9; contains[Ontology::Reads->HANDLER]@1; contains[Ontology::Reads->QUEUE]@1; contains[Ontology::Reads->TABLE]@1; contains[Ontology::Reads->slot]@1; contains[Ontology::Reads->top]@1; contains[Ontology::Reads->typed]@1; contains[Ontology::Reads->called]@1; contains[Ontology::Reads->config]@1; contains[Ontology::Reads->queue]@1; contains[Ontology::Reads->table]@1; contains[Ontology::Reads->dynamic]@1; contains[Ontology::Reads->blessed]@1; contains[Ontology::Reads->check]@1; contains[Ontology::Reads->claims]@1; contains[Ontology::Reads->probe]@1; contains[Ontology::Reads->built]@1; contains[Ontology::Reads->listed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"top\",\"target\":\"SIGINT\",\"line_number\":9,\"meta.reasonCode\":\"code-slot-reference\",\"note\":\"the unqualified case. This is the ONLY `uses` edge the lane emitted before this wave, which is why a dead-by-construction rewrite read as a working rule.\"}; got: uses[slot->handler]@0.9; uses[top->SIGINT]@0.9; calls[called->handler]@0.9; calls[check->isa]@0.9; references[check->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[probe->can]@0.9; references[probe->maybe_missing]@0.9; contains[Ontology::Reads->HANDLER]@1; contains[Ontology::Reads->QUEUE]@1; contains[Ontology::Reads->TABLE]@1; contains[Ontology::Reads->slot]@1; contains[Ontology::Reads->top]@1; contains[Ontology::Reads->typed]@1; contains[Ontology::Reads->called]@1; contains[Ontology::Reads->config]@1; contains[Ontology::Reads->queue]@1; contains[Ontology::Reads->table]@1; contains[Ontology::Reads->dynamic]@1; contains[Ontology::Reads->blessed]@1; contains[Ontology::Reads->check]@1; contains[Ontology::Reads->claims]@1; contains[Ontology::Reads->probe]@1; contains[Ontology::Reads->built]@1; contains[Ontology::Reads->listed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"typed\",\"target\":\"builtin::is_bool\",\"line_number\":10,\"meta.reasonCode\":\"code-slot-reference\",\"note\":\"a code-slot reference written where the grammar types a CALL: there is no `refgen_expression` in `defined &builtin::is_bool` at all. The discriminator is the ARGUMENT LIST, not the leading `&`, because `&foo(@args)` is perl's explicit-call syntax.\"}; got: uses[slot->handler]@0.9; uses[top->SIGINT]@0.9; calls[called->handler]@0.9; calls[check->isa]@0.9; references[check->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[probe->can]@0.9; references[probe->maybe_missing]@0.9; contains[Ontology::Reads->HANDLER]@1; contains[Ontology::Reads->QUEUE]@1; contains[Ontology::Reads->TABLE]@1; contains[Ontology::Reads->slot]@1; contains[Ontology::Reads->top]@1; contains[Ontology::Reads->typed]@1; contains[Ontology::Reads->called]@1; contains[Ontology::Reads->config]@1; contains[Ontology::Reads->queue]@1; contains[Ontology::Reads->table]@1; contains[Ontology::Reads->dynamic]@1; contains[Ontology::Reads->blessed]@1; contains[Ontology::Reads->check]@1; contains[Ontology::Reads->claims]@1; contains[Ontology::Reads->probe]@1; contains[Ontology::Reads->built]@1; contains[Ontology::Reads->listed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"config\",\"target\":\"Config::SSL_ERROR\",\"line_number\":12,\"meta.reasonCode\":\"qualified-variable-read\",\"note\":\"a READ of another package's declared variable. The target keeps its full qualification: a leaf would collapse two packages' same-named globals onto one node.\"}; got: uses[slot->handler]@0.9; uses[top->SIGINT]@0.9; calls[called->handler]@0.9; calls[check->isa]@0.9; references[check->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[probe->can]@0.9; references[probe->maybe_missing]@0.9; contains[Ontology::Reads->HANDLER]@1; contains[Ontology::Reads->QUEUE]@1; contains[Ontology::Reads->TABLE]@1; contains[Ontology::Reads->slot]@1; contains[Ontology::Reads->top]@1; contains[Ontology::Reads->typed]@1; contains[Ontology::Reads->called]@1; contains[Ontology::Reads->config]@1; contains[Ontology::Reads->queue]@1; contains[Ontology::Reads->table]@1; contains[Ontology::Reads->dynamic]@1; contains[Ontology::Reads->blessed]@1; contains[Ontology::Reads->check]@1; contains[Ontology::Reads->claims]@1; contains[Ontology::Reads->probe]@1; contains[Ontology::Reads->built]@1; contains[Ontology::Reads->listed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"queue\",\"target\":\"Ontology::Reads::QUEUE\",\"line_number\":13,\"meta.reasonCode\":\"qualified-variable-read\"}; got: uses[slot->handler]@0.9; uses[top->SIGINT]@0.9; calls[called->handler]@0.9; calls[check->isa]@0.9; references[check->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[probe->can]@0.9; references[probe->maybe_missing]@0.9; contains[Ontology::Reads->HANDLER]@1; contains[Ontology::Reads->QUEUE]@1; contains[Ontology::Reads->TABLE]@1; contains[Ontology::Reads->slot]@1; contains[Ontology::Reads->top]@1; contains[Ontology::Reads->typed]@1; contains[Ontology::Reads->called]@1; contains[Ontology::Reads->config]@1; contains[Ontology::Reads->queue]@1; contains[Ontology::Reads->table]@1; contains[Ontology::Reads->dynamic]@1; contains[Ontology::Reads->blessed]@1; contains[Ontology::Reads->check]@1; contains[Ontology::Reads->claims]@1; contains[Ontology::Reads->probe]@1; contains[Ontology::Reads->built]@1; contains[Ontology::Reads->listed]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"table\",\"target\":\"Ontology::Reads::TABLE\",\"line_number\":14,\"meta.reasonCode\":\"qualified-variable-read\"}; got: uses[slot->handler]@0.9; uses[top->SIGINT]@0.9; calls[called->handler]@0.9; calls[check->isa]@0.9; references[check->Other]@0.9; calls[claims->DOES]@0.9; references[claims->Role]@0.9; calls[probe->can]@0.9; references[probe->maybe_missing]@0.9; contains[Ontology::Reads->HANDLER]@1; contains[Ontology::Reads->QUEUE]@1; contains[Ontology::Reads->TABLE]@1; contains[Ontology::Reads->slot]@1; contains[Ontology::Reads->top]@1; contains[Ontology::Reads->typed]@1; contains[Ontology::Reads->called]@1; contains[Ontology::Reads->config]@1; contains[Ontology::Reads->queue]@1; contains[Ontology::Reads->table]@1; contains[Ontology::Reads->dynamic]@1; contains[Ontology::Reads->blessed]@1; contains[Ontology::Reads->check]@1; contains[Ontology::Reads->claims]@1; contains[Ontology::Reads->probe]@1; contains[Ontology::Reads->built]@1; contains[Ontology::Reads->listed]@1",
-          "forbidden relationship present: {\"type\":\"uses\",\"target\":\"handler\",\"note\":\"line 11 `&Ontology::Reads::handler(1)` HAS an argument list, so it is perl's explicit-CALL syntax and the `calls` edge owns it. The two labels must not overlap.\"} (found uses[slot->handler]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "perl/override-companion-base",
@@ -6551,6 +6652,21 @@
         "problems": []
       },
       {
+        "fixture": "haskell/alias-module-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "haskell/bare-type-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "haskell/decorates-th-splices",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "haskell/exports-and-ffi",
         "ok": true,
         "problems": []
@@ -6571,7 +6687,22 @@
         "problems": []
       },
       {
+        "fixture": "haskell/part-of-cpp-include",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "haskell/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "haskell/re-export-claims",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "haskell/ruled-extended-types",
         "ok": true,
         "problems": []
       },
@@ -7016,6 +7147,11 @@
         "problems": []
       },
       {
+        "fixture": "yaml/config-extends-key",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "yaml/dependency-marker-name",
         "ok": true,
         "problems": []
@@ -7057,6 +7193,11 @@
       },
       {
         "fixture": "yaml/framework-shape",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "yaml/include-vars-file",
         "ok": true,
         "problems": []
       },
@@ -7107,6 +7248,11 @@
       },
       {
         "fixture": "yaml/root-anchored-action",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "yaml/schema-composition-allof",
         "ok": true,
         "problems": []
       },
@@ -7281,7 +7427,17 @@
         "problems": []
       },
       {
+        "fixture": "xml/xinclude-part-of",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "xml/xsd-declared-name-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "xml/xsd-definition-composition",
         "ok": true,
         "problems": []
       },
@@ -7317,6 +7473,11 @@
       },
       {
         "fixture": "xml/xsd-type-derivation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "xml/xsl-include-part-of",
         "ok": true,
         "problems": []
       },
@@ -7397,6 +7558,11 @@
       },
       {
         "fixture": "erlang/export-import-macro-er3",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "erlang/extended-part-of",
         "ok": true,
         "problems": []
       },
@@ -7601,12 +7767,22 @@
         "problems": []
       },
       {
+        "fixture": "sql/sqld18-inherit-constructs",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "sql/sqld2-trigger-when",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "sql/sqld3-routine-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "sql/sqld30-same-name-containment",
         "ok": true,
         "problems": []
       },
@@ -7671,6 +7847,11 @@
         "problems": []
       },
       {
+        "fixture": "hcl/instantiates-resource-type",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "hcl/moved",
         "ok": true,
         "problems": []
@@ -7701,6 +7882,11 @@
         "problems": []
       },
       {
+        "fixture": "hcl/terragrunt-include",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "make/computed-target-prereqs",
         "ok": true,
         "problems": []
@@ -7722,6 +7908,11 @@
       },
       {
         "fixture": "make/operator-trimmed-name",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "make/part-of-include",
         "ok": true,
         "problems": []
       },
@@ -7816,6 +8007,11 @@
         "problems": []
       },
       {
+        "fixture": "fsharp/part-of-load/host",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "fsharp/qualified-name-seam",
         "ok": true,
         "problems": []
@@ -7866,6 +8062,11 @@
         "problems": []
       },
       {
+        "fixture": "nim/include-part",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "nim/mac",
         "ok": true,
         "problems": []
@@ -7886,6 +8087,11 @@
         "problems": []
       },
       {
+        "fixture": "nim/pragma-decorates",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "nim/reexport",
         "ok": true,
         "problems": []
@@ -7897,6 +8103,11 @@
       },
       {
         "fixture": "graphql/executable-and-descriptions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "graphql/extended-types-and-near-misses",
         "ok": true,
         "problems": []
       },
@@ -7922,6 +8133,11 @@
       },
       {
         "fixture": "html/element-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "html/embedded-extended-types",
         "ok": true,
         "problems": []
       },
@@ -8066,6 +8282,11 @@
         "problems": []
       },
       {
+        "fixture": "css/calls-and-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "css/chain-term-kind-must-match",
         "ok": true,
         "problems": []
@@ -8151,6 +8372,11 @@
         "problems": []
       },
       {
+        "fixture": "css/part-of-plain-file-import",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "css/recovered-import-shape-is-an-import",
         "ok": true,
         "problems": []
@@ -8177,6 +8403,11 @@
       },
       {
         "fixture": "css/stylesheet-is-the-module-symbol",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/brace-include-part-of",
         "ok": true,
         "problems": []
       },
@@ -8262,6 +8493,11 @@
       },
       {
         "fixture": "scss/import-statement-emits-imports-edge",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/include-foreign-mixin-mixes-in",
         "ok": true,
         "problems": []
       },
@@ -8426,6 +8662,11 @@
         "problems": []
       },
       {
+        "fixture": "bash/part-of-source-inclusion",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "bash/payload-and-complexity",
         "ok": true,
         "problems": []
@@ -8581,7 +8822,22 @@
         "problems": []
       },
       {
+        "fixture": "powershell/command-position-psd10",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/data-shapes-psb10",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/dotnet-shorthand-psb27",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/env-provider-psd11",
         "ok": true,
         "problems": []
       },
@@ -8606,6 +8862,11 @@
         "problems": []
       },
       {
+        "fixture": "powershell/import-path-expression-psb25",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/imports-psb12",
         "ok": true,
         "problems": []
@@ -8621,7 +8882,17 @@
         "problems": []
       },
       {
+        "fixture": "powershell/module-and-scope-psd13",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/module-surface-psb9",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/name-context-psd14",
         "ok": true,
         "problems": []
       },
@@ -8646,6 +8917,11 @@
         "problems": []
       },
       {
+        "fixture": "powershell/part-of-dot-source-psb19",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/payload-psb11",
         "ok": true,
         "problems": []
@@ -8656,12 +8932,32 @@
         "problems": []
       },
       {
+        "fixture": "powershell/relative-path-psb18",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/reserved-words-psb4",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "powershell/ruled-extended-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/static-call-psb22",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/suppression-and-params-psb7",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/type-accelerator-psd12",
         "ok": true,
         "problems": []
       },
@@ -8706,6 +9002,11 @@
         "problems": []
       },
       {
+        "fixture": "solidity/external-deps-sol26",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "solidity/external-override-sol11",
         "ok": true,
         "problems": []
@@ -8732,6 +9033,11 @@
       },
       {
         "fixture": "solidity/licence-sol22",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "solidity/modifier-decorates-relabel",
         "ok": true,
         "problems": []
       },
@@ -8781,6 +9087,16 @@
         "problems": []
       },
       {
+        "fixture": "solidity/sol25/sol25-lib",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "solidity/sol25/sol25-use",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "solidity/state-location-transient",
         "ok": true,
         "problems": []
@@ -8797,6 +9113,11 @@
       },
       {
         "fixture": "solidity/unicode-string-literal",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "solidity/using-directive-is-not-a-mix-in",
         "ok": true,
         "problems": []
       },
@@ -8834,11 +9155,11 @@
     "summary": {
       "bash": {
         "fail": 0,
-        "pass": 35
+        "pass": 36
       },
       "c": {
         "fail": 0,
-        "pass": 52
+        "pass": 53
       },
       "clean": {
         "fail": 0,
@@ -8846,23 +9167,23 @@
       },
       "clojure": {
         "fail": 0,
-        "pass": 79
+        "pass": 81
       },
       "cpp": {
-        "fail": 1,
-        "pass": 54
+        "fail": 0,
+        "pass": 57
       },
       "csharp": {
         "fail": 0,
-        "pass": 25
+        "pass": 26
       },
       "css": {
         "fail": 0,
-        "pass": 23
+        "pass": 25
       },
       "dart": {
         "fail": 0,
-        "pass": 50
+        "pass": 52
       },
       "elixir": {
         "fail": 0,
@@ -8870,43 +9191,43 @@
       },
       "erlang": {
         "fail": 0,
-        "pass": 29
+        "pass": 30
       },
       "fsharp": {
         "fail": 0,
-        "pass": 15
+        "pass": 16
       },
       "go": {
         "fail": 0,
-        "pass": 32
+        "pass": 34
       },
       "graphql": {
         "fail": 0,
-        "pass": 5
+        "pass": 6
       },
       "groovy": {
-        "fail": 21,
-        "pass": 60
+        "fail": 0,
+        "pass": 82
       },
       "haskell": {
         "fail": 0,
-        "pass": 5
+        "pass": 11
       },
       "hcl": {
         "fail": 0,
-        "pass": 12
+        "pass": 14
       },
       "html": {
         "fail": 0,
-        "pass": 19
+        "pass": 20
       },
       "java": {
         "fail": 0,
         "pass": 79
       },
       "javascript": {
-        "fail": 2,
-        "pass": 91
+        "fail": 0,
+        "pass": 94
       },
       "json": {
         "fail": 0,
@@ -8914,115 +9235,123 @@
       },
       "julia": {
         "fail": 0,
-        "pass": 5
+        "pass": 11
       },
       "kotlin": {
         "fail": 0,
-        "pass": 70
+        "pass": 71
       },
       "lua": {
         "fail": 0,
-        "pass": 15
+        "pass": 16
       },
       "make": {
         "fail": 0,
-        "pass": 10
+        "pass": 11
       },
       "markdown": {
         "fail": 0,
-        "pass": 11
+        "pass": 12
+      },
+      "matlab": {
+        "fail": 0,
+        "pass": 12
       },
       "nim": {
         "fail": 0,
-        "pass": 13
+        "pass": 15
       },
       "objc": {
         "fail": 0,
-        "pass": 16
+        "pass": 17
       },
       "perl": {
-        "fail": 8,
-        "pass": 14
+        "fail": 0,
+        "pass": 24
       },
       "php": {
         "fail": 0,
-        "pass": 32
+        "pass": 33
       },
       "powershell": {
         "fail": 0,
-        "pass": 19
+        "pass": 30
       },
       "protobuf": {
         "fail": 0,
-        "pass": 13
+        "pass": 14
       },
       "python": {
         "fail": 0,
-        "pass": 63
+        "pass": 65
       },
       "r": {
         "fail": 0,
-        "pass": 22
+        "pass": 24
       },
       "ruby": {
-        "fail": 1,
-        "pass": 11
+        "fail": 0,
+        "pass": 13
       },
       "rust": {
         "fail": 0,
-        "pass": 30
+        "pass": 34
       },
       "scala": {
         "fail": 0,
-        "pass": 81
+        "pass": 83
       },
       "scss": {
         "fail": 0,
-        "pass": 14
+        "pass": 15
       },
       "solidity": {
         "fail": 0,
-        "pass": 32
+        "pass": 37
       },
       "sql": {
         "fail": 0,
-        "pass": 17
+        "pass": 19
       },
       "svelte": {
         "fail": 0,
-        "pass": 53
+        "pass": 54
       },
       "swift": {
-        "fail": 4,
-        "pass": 17
+        "fail": 0,
+        "pass": 22
       },
       "toml": {
         "fail": 0,
         "pass": 11
       },
       "typescript": {
-        "fail": 2,
-        "pass": 117
+        "fail": 0,
+        "pass": 120
       },
       "vb": {
-        "fail": 3,
-        "pass": 2
+        "fail": 0,
+        "pass": 6
+      },
+      "vba": {
+        "fail": 0,
+        "pass": 10
       },
       "vue": {
-        "fail": 3,
-        "pass": 61
+        "fail": 0,
+        "pass": 64
       },
       "xml": {
         "fail": 0,
-        "pass": 33
+        "pass": 36
       },
       "yaml": {
         "fail": 0,
-        "pass": 37
+        "pass": 40
       },
       "zig": {
         "fail": 0,
-        "pass": 16
+        "pass": 17
       }
     }
   },
@@ -9039,8 +9368,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-20T19:19:14-04:00",
-  "regeneratedAtCommit": "3c844dc729b634340c35143876ddcd45be81cd7b",
+  "regeneratedAt": "2026-10-31T14:51:56-04:00",
+  "regeneratedAtCommit": "b6141ca84b9ffbb2a93798ab623d51196dc9b60c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

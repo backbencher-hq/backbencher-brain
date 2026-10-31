@@ -4,12 +4,14 @@
  *
  * Author: Muhammad Ishaq Khan.
  *
- * THE RELATIONSHIP TYPES THIS FILE COVERS: all ten of the ontology — `contains`, `imports`,
- * `references`, `calls`, `uses`, `extends`, `implements`, `overrides`, `instantiates`, `exports` —
- * read off VB's class/interface declarations, `Inherits`/`Implements` clauses, `Overrides` members,
- * `New` object creation and `Imports` statements. THIS LANE IS NOT YET GATED by the completeness
- * inventory (no `LANG_CONFIG` entry), so its sections A-H are not yet machine-verified; this header
- * exists so the ceremony half is in place when the config is proposed.
+ * THE RELATIONSHIP TYPES THIS FILE COVERS: all eleven it publishes — `contains`, `imports`,
+ * `references`, `calls`, `uses`, `extends`, `implements`, `overrides`, `instantiates`, `exports`
+ * and `decorates` (added 2026-10-28) — read off VB's class/interface declarations,
+ * `Inherits`/`Implements` clauses, `Overrides` members, `New` object creation, attribute lists and
+ * `Imports` statements. THE REMAINING THREE EXTENDED VALUES ARE RULED, NOT MISSING: `renders`,
+ * `mixes_in` and `part_of` are GRAMMAR-ABSENCE, each with a count and a falsifier (VB-D1/D2/D3 in
+ * script/m14/spec/vb-completeness.json), so the lane reads 11 implemented + 3 excluded = 11
+ * applicable and passes all six conditions of script/m14/completion-gate.ts.
  *
  * WHERE THE RECORD LIVES: docs/analyzers/real-vb-analyzer.md; spec
  * script/m14/spec/vb-completeness.json; fixtures validation/m14/fixtures/vb; grammar side
@@ -160,6 +162,10 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   private index = new Map<string, ASTEngine.UniversalSymbol>()
   /** Every name declared in THIS file, for same-file edge confidence. */
   private declaredNames = new Set<string>()
+  /** `<declaration>\u0000<attributeLeaf>\u0000<line>` — one `decorates` edge per attribute
+   *  OCCURRENCE, so a node visited twice (a declared symbol and its declarator) cannot
+   *  publish the same decoration twice. */
+  private attributeEdgeKeys = new Set<string>()
   /** The declaration chain we are inside, innermost last. */
   private ownerStack: ASTEngine.UniversalSymbol[] = []
   /** Scopes that take part in name resolution: namespaces and types. */
@@ -1119,6 +1125,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.imports = []
     this.index = new Map()
     this.declaredNames = new Set()
+    this.attributeEdgeKeys = new Set()
     this.ownerStack = []
     this.typeStack = []
     this.memberNames = new Map()
@@ -1364,6 +1371,111 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     return this.ownerStack.length > 0 ? this.ownerStack[this.ownerStack.length - 1] : null
   }
 
+  /**
+   * THE NODE THAT CARRIES THIS DECLARATION'S ATTRIBUTE LISTS.
+   *
+   * The attributes do NOT always sit on the node the symbol is published from, and that is a
+   * grammar fact rather than a choice: `field_declaration` carries
+   * `repeat(field("attributes", $.attribute_list))` and then `commaSep1($.variable_declarator)`,
+   * while this analyzer publishes one symbol per DECLARATOR (visitField's `pushSymbol(text, kind,
+   * decl, ...)`). Reading only the declarator's own children would lose every attribute on every
+   * field and every local — silently, which is the class of gap a completeness audit exists for.
+   *
+   * SO THE CLIMB IS EXACTLY TWO SHAPES AND NO MORE. A declarator is reached from
+   * `field_declaration` or `declaration_statement`; anything else is refused rather than walked, so
+   * a member can never inherit the enclosing TYPE's attributes (which is what an unbounded climb
+   * would do on `Public Class C` followed by `Sub M()`: M is not decorated by C's `<Obsolete>`).
+   */
+  private attributeBearingNode(declNode: Node): Node | null {
+    let cur: Node | null = declNode
+    for (let i = 0; cur !== null && i < 3; i++) {
+      if (cur.namedChildCount > 0 && this.namedChildrenOfType(cur, "attribute_list").length > 0) {
+        return cur
+      }
+      const parent: Node | null = cur.parent
+      if (parent === null) return null
+      if (parent.type !== "field_declaration" && parent.type !== "declaration_statement") {
+        return null
+      }
+      cur = parent
+    }
+    return null
+  }
+
+  /**
+   * DECORATES — a declaration's attribute lists, published as edges.
+   *
+   * `<Obsolete("use V2")> Public Class Legacy` is ONE syntactic event carrying TWO facts, and the
+   * fleet's vocabulary keeps them apart: the attribute NAME is a type mention (not a value read,
+   * which is why `inAttributePosition` suppresses it from `references` — a differential finding, not
+   * an oversight), and the APPLYING declaration is what the attribute decorates. This publishes the
+   * second as `decorates <declaration> -> <attribute leaf>`.
+   *
+   * WHY THE TARGET IS THE LEAF: the arbiter binds a target by NAME against the project's own
+   * declarations, so `System.Obsolete` is unresolvable BY CONSTRUCTION while `Obsolete` resolves
+   * exactly when the project declares its own attribute type (rust's ruling for this type, applied
+   * here). The written spelling is not lost — it rides in `attributeName`, so the leaf is the KEY
+   * and the spelling is the EVIDENCE.
+   *
+   * GRAMMAR BASIS, MEASURED RATHER THAN ASSUMED: in grammars/tree-sitter-vbnet/grammar.js every
+   * declaration production carries `repeat(field("attributes", $.attribute_list))` — class,
+   * structure, interface, module, enum, enum_member, delegate, field, property, getter, setter,
+   * method, constructor, event, operator, the four interface member forms, parameter and
+   * declaration_statement — and `attribute` is
+   * `seq(field("name", $._name_reference), optional(field("arguments", $.attribute_argument_list)))`.
+   * The name is therefore a FIELD read, not a positional guess.
+   *
+   * WHAT IS NOT REACHABLE, AND IS COUNTED RATHER THAN SILENT: `<Assembly: …>` / `<Module: …>` live in
+   * `global_attribute_section` and a file-level `file_attribute_section` decorates the FILE. Neither
+   * has a declaration to name as a source, so neither publishes an edge here; each is counted by
+   * `note("attribute-without-declaration")` and ruled in the lane's spec, which is the difference
+   * between a disclosed gap and a gap.
+   */
+  private pushAttributeDecorations(declNode: Node, symName: string, kind: ASTEngine.SymbolKind): void {
+    const holder = this.attributeBearingNode(declNode)
+    if (holder === null) return
+    for (const list of this.namedChildrenOfType(holder, "attribute_list")) {
+      for (const attr of this.namedChildrenOfType(list, "attribute")) {
+        const nameNode =
+          attr.childForFieldName("name") ??
+          this.namedChildrenOfType(attr, "qualified_name")[0] ??
+          this.namedChildrenOfType(attr, "global_qualified_name")[0] ??
+          this.namedChildrenOfType(attr, "identifier")[0]
+        if (!nameNode) { this.note("attribute-without-name"); continue }
+        const written = this.nameText(nameNode)
+        const leaf = written.split(".").pop() ?? written
+        if (leaf.length === 0) { this.note("attribute-without-name"); continue }
+        const line = this.nodeLine(nameNode)
+        const key = `${symName}\u0000${leaf}\u0000${line}`
+        if (this.attributeEdgeKeys.has(key)) continue
+        this.attributeEdgeKeys.add(key)
+        const resolved = this.declaredNames.has(leaf)
+        const args = attr.childForFieldName("arguments")
+        const attributeTarget = this.namedChildrenOfType(holder, "attribute_target")[0]
+        this.relationships.push({
+          source: symName,
+          target: leaf,
+          type: RelationshipType.Decorates,
+          confidence: resolved ? 1.0 : 0.8,
+          line_number: line,
+          metadata: {
+            // THE WRITTEN SPELLING, preserved: the edge's target is the resolvable key, this is
+            // the evidence a reader (and the differential) checks it against.
+            attributeName: written,
+            attributeLeaf: leaf,
+            // `declaration` for a member/type attribute; a target prefix (`Assembly:`) is carried
+            // when the grammar recorded one, which is how a global section is visibly different.
+            attributeForm: attributeTarget ? "target" : "declaration",
+            ...(attributeTarget ? { attributeTarget: attributeTarget.text } : {}),
+            argumentCount: args ? args.namedChildCount : 0,
+            decoratedKind: kind,
+            resolved,
+          },
+        })
+      }
+    }
+  }
+
   private pushSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
@@ -1378,16 +1490,67 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
     const owner = this.currentOwner()
+    // THE CALLER'S METADATA IS MERGED, NOT SPREAD OVER THIS ONE, and the difference
+    // is a whole measured row. `...extra` used to come AFTER `metadata`, so any
+    // visitor that passed its own metadata (`visitType` passes `grammarNode`,
+    // `sealed`, `partial`; the namespace visitor passes `grammarNode`) REPLACED the
+    // record written here, and the accessibility was gone before `pushExport` read
+    // it. The `?? "assembly"` fallback then stood in for the measurement, which is
+    // exactly the defect the comment below describes as fixed -- it was fixed in the
+    // producer and defeated one line later by the spread order, so `InternalOnly`'s
+    // public member still reported `ownerAccessLevel: assembly` for a `Friend`
+    // container. Found by `vb/ontology-exports-instantiates-uses`, which asserts
+    // `friend` on that row.
+    const { metadata: extraMetadata, ...rest } = extra
+    // ★ THE QUALIFIED ALIAS — and it is the difference between 71 unresolved `overrides` rows and 0.
+    //
+    // A member's edge target is spelled `<BaseType>.<member>` (`ApplicationPropPageBase.Dispose`,
+    // `IPropertyPageSiteInternal.GetLocaleID`) because the bare member name is a SELF-EDGE and answers
+    // nothing (see `pushOverride`). The arbiter binds a target by NAME against the key space, and the
+    // analyzer published only bare names — so EVERY qualified target was unresolvable BY CONSTRUCTION,
+    // even where the base type AND the member sit in the same repository. MEASURED 2026-10-28 on the
+    // 58-file arm: `overrides` 71 of 71 unresolved and `implements` 61 of its 77 member rows
+    // unresolved, while the dump showed the targets were project members that the run already held.
+    //
+    // THE FAMILY'S OWN MECHANISM, NOT A NEW ONE: the gate prints `endpoint keys indexed: name + N
+    // qualifiedName alias(es)` and the css lane's record is why it does. So the fix is to PUBLISH the
+    // alias the targets already spell, not to respell the targets — a target that names a declaration
+    // must keep its full path, because that path is what makes it checkable.
+    //
+    // NESTED TYPES COMPOSE (`Outer.Inner.member`) because the owner's own qualifiedName is used as the
+    // prefix rather than its bare name; a top-level symbol's alias IS its name, so nothing changes for
+    // a type, an import or a namespace.
+    // THE ALIAS MUST BE THE SPELLING THIS LANE'S OWN EDGES USE, or it joins nothing: the first cut
+    // prefixed the owner's FULL qualifiedName (which the namespace stack had already made
+    // `Common.ShellUtil.BroadcastMessageEventsHelper`) while `pushOverride`/`pushHeritage` spell the
+    // target `<BaseType>.<member>` — measured INERT, 0 rows resolved by the join. The prefix here is
+    // therefore the owner's NAME, which is exactly the segment those targets carry.
+    const qualifiedName = owner && owner.name !== name ? `${owner.name}.${name}` : name
     const sym: ASTEngine.UniversalSymbol = {
       name,
+      qualifiedName,
       kind,
       range: this.range(node),
       ...(owner ? { ownerName: owner.name, ownerKind: owner.kind } : {}),
-      metadata: {},
-      ...extra,
+      // THE SYMBOL'S OWN ACCESSIBILITY, stamped where the symbol is published so a
+      // consumer (and `pushExport`'s `ownerAccessLevel`) reads ONE record instead of
+      // re-deriving the modifiers from the tree. It used to be absent, and the
+      // `?? "assembly"` fallback in `pushExport` then reported a `Friend` type's
+      // member as `ownerAccessLevel: assembly` -- the default standing in for a
+      // measured fact, on the one row whose whole point is that the default differs.
+      metadata: {
+        ...((extraMetadata ?? {}) as Record<string, unknown>),
+        accessLevel: [...this.exportLevelsOf(node, kind).levels].join("+"),
+      },
+      ...rest,
     }
     this.symbols.push(sym)
     this.declaredNames.add(name)
+    // DECORATES IS EMITTED HERE, WITH CONTAINMENT AND FOR THE SAME REASON: one place, so there is
+    // no visitor that can forget it. The attribute lists live on the DECLARATION while a field's
+    // symbol is published from its DECLARATOR, so the holder is resolved explicitly rather than
+    // read off `node` — see `attributeBearingNode` for the measured grammar shape.
+    this.pushAttributeDecorations(node, name, kind)
     // CONTAINMENT IS EMITTED HERE, ONCE, FOR EVERY SYMBOL.
     //
     // It used to be pushed by each visitor, and that is how a whole class of
@@ -1905,8 +2068,10 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    * visitor -- so nothing ever read a member's clause. The whole member-level
    * form was simply not collected, on every member in the language.
    *
-   * The TARGET IS THE FULL QUALIFIED NAME, deliberately, and this is the one
-   * place the last-segment naming rule does not apply. Everywhere else a dotted
+   * The TARGET IS THE FULL QUALIFIED NAME, deliberately, and this is ONE OF TWO
+   * places the last-segment naming rule does not apply — the other is
+   * `visitImports`, whose target is a namespace PATH (`System.Collections.Generic`),
+   * changed 2026-10-28 for the reason recorded there. Everywhere else a dotted
    * name is reduced to its last segment, because that is the name a reader
    * navigates to. Here the member is only identified BY its interface: the method
    * is named `Refresh` precisely because it implements `IThing.Refresh`, so
@@ -2186,8 +2351,16 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   private visitImports(node: Node): void {
     const names = this.nameReferencesOf(node)
     for (const nameNode of names) {
+      // ★ THE TARGET IS THE NAMESPACE AS WRITTEN, NOT ITS LAST SEGMENT. `Imports
+      // Microsoft.VisualStudio.Interop` names THAT namespace; publishing `Interop` published a segment
+      // that exists in dozens of namespaces and in this project's own symbols, and it is where 54 of this
+      // lane's AMBIGUOUS edges came from (dumped: `imports -> Interop`, ShellUtil.vb:5 and DTEUtils.vb:4).
+      // An import target is a PATH in every lane that has one (python `pkg.mod`, go `encoding/json`), and a
+      // path is checkable against a namespace declaration while a bare segment is not. The LINE stays on
+      // the leaf token, because that is the node that carries the last-segment name the reader lands on.
       const token = this.namingToken(nameNode, nameNode.text)
-      const text = this.nameText(token ?? nameNode)
+      const written = nameNode.text.replace(/\s+/g, "").trim()
+      const text = written.length > 0 ? written : this.nameText(token ?? nameNode)
       if (text.length === 0) continue
       const range = this.range(nameNode)
       this.imports.push({
@@ -2551,6 +2724,30 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       if (!sym) continue
       if (declared) this.pushTypeReference(sym, declared, "fieldType")
+      // `As New T(...)` IS a construction, the fourth of VB's four construction
+      // surfaces, and the one NO expression walk can reach: the `New` hangs off
+      // the declaration's own `as_clause` rather than inside any statement. The
+      // grammar gives this `as_clause` form an `arguments` field the plain
+      // `As T` form does not carry, and that field IS the discriminator -- both
+      // keywords are inlined away by the grammar's `as_clause` rule, measured
+      // at 0 of 30,001 `as_clause` nodes carrying an `As` or `New` token, so a
+      // token test has nothing to read and a bare span scan cannot tell
+      // `As New T` from `As T` (the two trees are identical without the field).
+      // `As New T()` (empty parens) carries no `arguments` either -- the `()`
+      // reads as bounds and lands in `declared_type` as an `array_type` -- so
+      // the char-scan predicate `startsWithAsNewClause` covers the paren-less
+      // and empty-parens shapes, and `childForFieldName("arguments")` covers
+      // the argument-bearing one. Both go through `pushConstruction`, which
+      // names the ELEMENT type when `declared_type` is an `array_type`.
+      if (asClause && this.asClauseIsConstruction(asClause)) {
+        const tyNode = declared ?? asClause
+        // THE SOURCE IS THE CONTAINING TYPE, NOT THE FIELD. A field initializer is
+        // declared inside its type, and the type is the declaration a consumer
+        // navigates to; sourcing the edge at `_timer` made a VARIABLE look like the
+        // thing that constructs, and the fixture pins `Builds -> Timer`. The field
+        // symbol stays the `contains` endpoint, which is unaffected.
+        this.pushConstruction(tyNode, owner ?? sym)
+      }
     }
     // A field with an initializer can call a constructor: `= New Foo()`.
     this.collectBodyEdges(node, null)
@@ -2645,6 +2842,28 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const c of this.kids(n)) visit(c)
         return
       }
+      // `Dim x As New T(...)` -- THE FOURTH SURFACE IN A LOCAL DECLARATION, and the
+      // shape no expression walk can reach: the `New` hangs off the declarator's own
+      // `as_clause`, so there is no `object_creation_expression` in the body at all.
+      // `visitField` reads the FIELD form and attributes it to the containing type;
+      // this reads the LOCAL form and attributes it to the enclosing declaration
+      // (`CalleeIsNotARead -> StringBuilder`, `DottedPath -> StringBuilder`).
+      // A FIELD's declarator is skipped here because `visitField` already read it --
+      // the same clause reached from two walks would publish the edge twice.
+      if (n.type === "variable_declarator" && source) {
+        let p: Node | null = n.parent
+        let fieldOwned = false
+        for (let guard = 0; guard < 8 && p; guard++, p = p.parent) {
+          if (p.type === "field_declaration") { fieldOwned = true; break }
+          if (p.type === "local_declaration_statement" || p.type === "using_statement" || p.type === "for_each_statement") break
+        }
+        if (!fieldOwned) {
+          const asClause = this.namedChildrenOfType(n, "as_clause")[0]
+          if (asClause && this.asClauseIsConstruction(asClause)) {
+            this.pushConstruction(asClause.childForFieldName("declared_type") ?? asClause, source)
+          }
+        }
+      }
       // A CONSTRUCTION IS A CALL, and the grammar does not agree on one node type
       // for it. `New Box()` is an `invocation_expression` whose `function` is an
       // `object_creation_expression`; `New Box(1, 2)` -- any construction WITH
@@ -2661,32 +2880,14 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `Integer()`, and it is published as a call to `Integer` at 0.6 because this
       // file does not declare it.
       if (n.type === "array_creation_expression") {
-        const ty = n.childForFieldName("type")
-        const token = ty ? this.calleeLeaf(ty) : null
-        const target = this.nameText(token)
-        if (source && target.length > 0) {
-          this.relationships.push({
-            source: source.name,
-            target,
-            type: RelationshipType.Calls,
-            confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
-            line_number: this.nodeLine(token ?? ty ?? n),
-            metadata: {
-              argumentCount: n.namedChildCount > 1 ? n.namedChildCount - 1 : 0,
-              calleeIsQualified: false,
-              callLine: this.nodeLine(token ?? ty ?? n),
-              constructed: true,
-              constructionNode: n.type,
-            },
-          })
-          // `instantiates` is the family's OTHER name for the same site: csharp
-          // publishes `object_creation_expression` as `instantiates` and leaves the
-          // `calls` edge to the invocation shape. A construction is both -- it calls
-          // the constructor and it creates a value of the type -- and emitting both
-          // is what lets bb_graph answer "what does this method construct" without
-          // inferring it from a call edge's `constructed` flag.
-          this.pushInstantiation(source, target, token ?? ty ?? n, n.type)
-        }
+        // ONE LABEL, NOT TWO. A construction is an `instantiates` edge and NOTHING
+        // ELSE: publishing the `calls` edge beside it counted one syntactic event
+        // twice under two labels and put a constructor in the call graph, which is
+        // the drift `vb/ontology-exports-instantiates-uses` forbids by name
+        // (`calls EmptyArgs -> Widget`). `pushConstruction` is the one emitter, so
+        // the form, the fragment flag and the array/node distinction are stamped in
+        // ONE place and cannot disagree between the two walks.
+        this.pushConstruction(n, source)
         for (const c of this.kids(n)) visit(c)
         return
       }
@@ -2700,7 +2901,15 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       // and excluding the two other slots is what keeps it from duplicating
       // `calls`.
       if (n.type === "member_access_expression" || n.type === "with_member_access_expression") {
-        if (!this.isCalleeOrIndexSlot(n)) {
+        // The WRITE half of the read definition. A value read is "neither a call
+        // nor a write", and the other walk (`collectBodyEdges`, the one that
+        // re-stamps earliest sites) already enforces it through
+        // `isAssignmentLhs`. This walk did not, so `_g.Reading = value`
+        // published a `uses` edge off an assignment's LEFT side -- one line,
+        // two labels, which is exactly the calls/uses drift the lane's own
+        // mutation log names. The test is span-based, so the right-hand side
+        // of the same statement keeps its read.
+        if (!this.isCalleeOrIndexSlot(n) && !this.isAssignmentLhs(n)) {
           const token = this.calleeLeaf(n)
           const target = this.nameText(token)
           if (target.length > 0) this.pushUse(source, target, n, token)
@@ -2758,26 +2967,25 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       // invocation_expression, so neither branch above reaches it, and it was
       // therefore not a `calls` edge either.
       if (n.type === "object_creation_expression") {
-        const ty = n.childForFieldName("type")
-        const token = ty ? this.calleeLeaf(ty) : null
-        const target = this.nameText(token)
-        if (source && target.length > 0) {
-          this.relationships.push({
-            source: source.name,
-            target,
-            type: RelationshipType.Calls,
-            confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
-            line_number: this.nodeLine(token ?? ty ?? n),
-            metadata: {
-              argumentCount: n.namedChildCount > 1 ? n.namedChildCount - 1 : 0,
-              calleeIsQualified: false,
-              callLine: this.nodeLine(token ?? ty ?? n),
-              constructed: true,
-              constructionNode: n.type,
-            },
-          })
-          this.pushInstantiation(source, target, token ?? ty ?? n, n.type)
-        }
+        // A FRAGMENT names the wrong type from its own `type` field.
+        // `New System.Text.StringBuilder()` parses as an invocation whose
+        // function is an access chain whose innermost object is
+        // `object_creation_expression(New System)` -- the grammar holds only the
+        // FIRST segment and the type continues in the chain. The invocation
+        // branch above already skipped this callee (`calleeIsConstruction`), so
+        // THIS branch is the only one that will ever name the constructed type,
+        // and reading `n`'s own `type` field published `instantiates -> System`
+        // -- a namespace nobody constructs. The fragment-aware leaf (the same
+        // climb `pushConstruction` uses) is what turns the grammar's
+        // fragmentation into the right answer, StringBuilder.
+        //
+        // AND ONE LABEL: the `calls` edge this branch used to push beside the
+        // `instantiates` one is gone, for the reason the array branch above
+        // states. `pushConstruction` also stamps `constructionForm` and
+        // `qualifiedConstruction`, which is what makes a whole construction
+        // (`New StackFrame(1).GetMethod()`) distinguishable from a namespace
+        // prefix (`New System.Text.StringBuilder`) in the graph itself.
+        this.pushConstruction(n, source)
       }
       // AN ARGUMENT-BEARING CALL, which this grammar calls an
       // `array_access_expression`. See the class-level note for why two signals
@@ -3117,6 +3325,23 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const key = `${src.name}\u0000${target}`
     const line = this.nodeLine(token ?? n)
+    // ★ MEASURED AND REFUSED (2026-10-28): the owner channel on this population RESOLVES NOTHING AND
+    // COSTS 14 RESOLUTIONS. Emitting `metadata.owner` from `Me.X`/`MyClass.X`/`MyBase.X` put 444 rows on
+    // the channel: 368 re-bound (all of them rows whose bare name already resolved), 76 declined — 67
+    // `noMember`, 9 `ownerAbsent` — and production HOLDS A DECLINED ROW NULL, so 14 rows that resolved by
+    // name stopped resolving. Net 5,721 -> 5,707. The mechanism has to pay to stay, and this one does not:
+    // it is removed from the EMISSION (the helper stays because the qualified-alias work below reads the
+    // same syntax), and the 1,439 unresolved `uses` rows are left to the real cause — a read of a local,
+    // a parameter or a framework member, none of which is a published declaration.
+    // ★ THE OWNER CHANNEL WAS MEASURED TWICE ON THIS LANE AND REFUSED BOTH TIMES — the numbers live in
+    // `validation/m14/instruments/vb/incoming-declaration.json` (`_owner_channel_measured_and_refused`).
+    // UNGUARDED (`Me.X`/`MyBase.X`, 444 rows): net −14, because 76 rows were DECLINED and production holds a
+    // declined row NULL. GUARDED (only where the enclosing type declares the member, 319 rows): resolved
+    // 318 · declined 1 — and the resolved 318 were rows whose BARE NAME already resolved, so the net was −1.
+    // A stated owner WITHDRAWS the name binding; it therefore has to resolve something the name model could
+    // not, and on this population it does not. The 267 ambiguous rows live on TYPED receivers
+    // (`dte.Value`, `Resources.GetObject`), which need a per-file type map this analyzer does not have —
+    // that is the work item, not this emission.
     const prior = this.useIndex.get(key)
     if (prior !== undefined) {
       // The dedup must not make the raw count invisible, so the edge's own
@@ -3295,7 +3520,15 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private pushConstruction(n: Node, source: ASTEngine.UniversalSymbol | null): void {
     const token = this.constructionTargetLeaf(n)
-    const target = this.nameText(token)
+    // A PREDEFINED TYPE IS A NAME THE GRAMMAR SPELLS AS A KEYWORD TOKEN, and
+    // `New Integer(10)` is exactly that shape: the `type` field is a
+    // `predefined_type` whose text IS the VB spelling the fixture pins. The
+    // identifier walk above finds no leaf under it, so without this the edge would
+    // be counted as unnameable and lost -- which is a measurement of the walk, not
+    // of the language.
+    const tyField = n.childForFieldName("type")
+    const predefined = token === null && tyField !== null && tyField.type === "predefined_type" ? tyField : null
+    const target = this.nameText(token ?? predefined)
     if (target.length === 0) {
       // COUNTED, not dropped in silence. `New String() {"a", "b"}` is
       // `(array_creation_expression type: (array_type element_type:
@@ -3320,11 +3553,22 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       target,
       type: RelationshipType.Instantiates,
       confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
-      line_number: this.nodeLine(token ?? n),
+      line_number: this.nodeLine(token ?? predefined ?? n),
       metadata: {
         constructionNode: n.type,
         constructionForm: this.constructionFormOf(n),
         qualifiedConstruction: this.constructionIsFragment(n),
+        // THE ARRAY-NODE DISTINCTION, kept on the row because the two facts differ:
+        // this grammar gives every construction WITH arguments an
+        // `array_creation_expression`, so `New Gauge(1)` and `New Gauge()` are the
+        // same language construct on two different nodes. Recording which node
+        // produced the edge is what stops a reader inferring an array from it.
+        constructsArray: n.type === "array_creation_expression",
+        // The instantiation facts `pushInstantiation` used to stamp on the second
+        // copy of this row, kept here so one emitter carries the whole shape.
+        isNew: true,
+        constructedType: target,
+        resolvedInFile: this.declaredNames.has(target),
       },
     })
   }
@@ -3334,6 +3578,12 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (n.type === "array_creation_expression") {
       return n.childForFieldName("bounds") !== null ? "new-with-bounds" : "new-array-initializer"
     }
+    // The fourth surface. An `as_clause`-borne construction reaches this method
+    // with the DECLARED TYPE node rather than the clause itself, because that
+    // is the node whose leaf names the constructed type -- so the form is read
+    // off the enclosing clause, whose `arguments` field is the representable
+    // half of the discriminator (see `asClauseIsConstruction`).
+    if (n.parent?.type === "as_clause" && this.asClauseIsConstruction(n.parent)) return "as-new"
     return n.parent?.type === "invocation_expression" ? "new-then-invoke" : "new"
   }
 
@@ -3385,6 +3635,23 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Is this `as_clause` a CONSTRUCTION (`As New T`) rather than a plain type
+   * annotation (`As T`)? Two signals, one per shape, because the grammar
+   * inlines both keywords away and the argument-less form is otherwise
+   * byte-identical to the plain one:
+   *
+   *   `As New T(a, b)` carries an `arguments` field the plain form never has;
+   *   `As New T` / `As New T()` does not, so the node's own span is read with
+   *   the word-bounded scan above (`As Namespace` and `As NewType` are both
+   *   rejected there by the boundary test, which is why the span is scanned
+   *   and not matched by substring).
+   */
+  private asClauseIsConstruction(asClause: Node): boolean {
+    if (asClause.childForFieldName("arguments") !== null) return true
+    return RealVbAnalyzer.startsWithAsNewClause(asClause.text)
+  }
+
+  /**
    * A type NAME this file uses, as a `references` edge.
    *
    * Emitted only for a name this file does not itself declare, because a type
@@ -3392,16 +3659,25 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    * between the same pair is noise a consumer has to filter.
    */
   private pushTypeReference(from: ASTEngine.UniversalSymbol, typeNode: Node, role: string): void {
-    // A TUPLE IS NOT A TYPE NAME, so there is nothing for a `references` edge to
-    // name. `As (ExpressionSyntax, SyntaxToken, ExpressionSyntax)` and
-    // `As Function(assembly As Assembly, typeName As String)` are both `tuple_type`
-    // in this grammar, and both were published as the WHOLE parenthesised text --
-    // a target that is not a name in the file, not navigable, and unmatchable by an
-    // oracle. The lane's differential derived the element types instead and
-    // reported the whole-text rows as UNEXPLAINED, which is the right verdict on
-    // them. Counted rather than dropped silently.
+    // A TUPLE NAMES SEVERAL TYPES, so it emits ONE `references` EDGE PER ELEMENT
+    // rather than one edge whose target is the whole parenthesised text.
+    // `As (ExpressionSyntax, SyntaxToken, ExpressionSyntax)` was published as
+    // `(ExpressionSyntax, SyntaxToken, ExpressionSyntax)` -- a string that is not a
+    // name in the file, not navigable, and unmatchable by an oracle; the lane's own
+    // differential derived the element types and reported the whole-text rows as
+    // UNEXPLAINED, which was the right verdict on them. Recursing is what makes the
+    // element rows carry the SAME role and the same built-in handling as every
+    // other type reference, instead of a second implementation that can drift. A
+    // tuple whose elements name nothing keeps the gap note, so the boundary stays a
+    // count rather than silence.
     if (typeNode.type === "tuple_type") {
-      this.note("tuple-type-has-no-single-name")
+      let emitted = 0
+      for (const el of this.namedChildrenOfType(typeNode, "tuple_element")) {
+        const elType = el.childForFieldName("type") ?? el
+        this.pushTypeReference(from, elType, role)
+        emitted++
+      }
+      if (emitted === 0) this.note("tuple-type-has-no-single-name")
       return
     }
     const token = this.namingToken(typeNode, typeNode.text)

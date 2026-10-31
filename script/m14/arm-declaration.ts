@@ -161,6 +161,28 @@ for (const row of rows) {
 }
 
 const extList = EXTS
+// THE CAVEAT NUMBERS ARE READ FROM THIS ARM, NOT REMEMBERED FROM THE LAST ONE.
+// They were literals, so a re-run transcribed the new TABLE 1 beside caveats that
+// still quoted the previous arm's resolved/ambiguous/external counts. A reader
+// comparing the two halves of one declaration would have found them disagreeing.
+const fmt = (n: number): string => n.toLocaleString("en-US")
+const totalResolved = rows.reduce((s, r) => s + r.resolved, 0)
+const totalAmbiguous = rows.reduce((s, r) => s + r.ambiguous, 0)
+const totalAmbKind = rows.reduce((s, r) => s + r.ambKind, 0)
+const totalCollRes = rows.reduce((s, r) => s + r.collRes, 0)
+const totalExternal = rows.reduce((s, r) => s + r.external, 0)
+const totalVerifiedExternal = Object.values(perType).reduce((s, r: any) => s + num(r?.project?.externalVerified), 0)
+const totalUnverifiedExternal = Object.values(perType).reduce((s, r: any) => s + num(r?.project?.externalUnverified), 0)
+const totalRefutedExternal = Object.values(perType).reduce((s, r: any) => s + num(r?.project?.externalRefuted), 0)
+const totalExternalClaims = totalExternal + totalRefutedExternal
+// The binding channel, summed the same way. A lane caveat that QUOTES a binding count must read it
+// from here rather than remember it — the same rule the resolved/ambiguous totals now follow.
+const totalBindingVerified = Object.values(perType).reduce((s, r: any) => s + num(r?.project?.bindingVerified), 0)
+const totalBindingRefuted = Object.values(perType).reduce((s, r: any) => s + num(r?.project?.bindingRefuted), 0)
+const totalBindingUnverified = Object.values(perType).reduce((s, r: any) => s + num(r?.project?.bindingUnverified), 0)
+/** One type's row, for a caveat that states that type's own counts. */
+const rowOf = (t: string): any => rows.find((r) => r.type === t)
+const importsProject: any = (perType as any)?.imports?.project ?? {}
 /**
  * THE INDEX ARM IS READ OFF THE COMMAND THAT RAN, NEVER ASSUMED.
  *
@@ -180,13 +202,13 @@ const LANE_CAVEATS: Record<string, Record<string, string>> = {
     indexNo:
       "INDEX=NO, AND THAT IS THE HONEST ARM: there is no INDEX_SPECS entry for powershell in script/m14/incoming-gate.ts, so no production project index is built. TABLE 1's scope is the gate's own per-repository declaration table, built from every file this whole-population run parsed (1,181 admitted, 30 repositories). A reader must not read `resolved` as 'the production index bound it'.",
     collResSubset:
-      "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: a resolved edge whose target had MORE THAN ONE declaration, so production's own-file tie-break chose the row. 14,155 of 84,901 resolved edges. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+      `\`collRes\` IS A SUBSET OF \`resolved\` AND IS NEVER ADDED: a resolved edge whose target had MORE THAN ONE declaration, so production's own-file tie-break chose the row. ${fmt(totalCollRes)} of ${fmt(totalResolved)} resolved edges. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.`,
     ambKindSubset:
-      "`amb(kind)` IS A SUBSET OF `amb(decl)`: 8,474 of 16,184. Two different questions about the same edges, and only the by-declaration count is in the closure.",
+      `\`amb(kind)\` IS A SUBSET OF \`amb(decl)\`: ${fmt(totalAmbKind)} of ${fmt(totalAmbiguous)}. Two different questions about the same edges, and only the by-declaration count is in the closure.`,
     externalIsAClaim:
-      "EXTERNAL IS A CLAIM, NOT A RESOLUTION: 27,886 edges carry an external claim, of which 24,355 the project CONFIRMS, 3,446 no check can reach (ext?) and 85 it REFUTES (extFAIL). A refuted claim is charged to otherUnresolved and to clause 4, never folded into `external`.",
+      `EXTERNAL IS A CLAIM, NOT A RESOLUTION: ${fmt(totalExternalClaims)} edges carry an external claim, of which ${fmt(totalVerifiedExternal)} the project CONFIRMS, ${fmt(totalUnverifiedExternal)} no check can reach (ext?) and ${fmt(totalRefutedExternal)} it REFUTES (extFAIL). A refuted claim is charged to otherUnresolved and to clause 4, never folded into \`external\`.`,
     refutedClaims:
-      "85 EXTERNAL CLAIMS ARE REFUTED by the project's own declarations — a measured defect, not a wall, and the arm's clause 4 reports it (extFAIL 85). They stay in the closure so the number is visible.",
+      `${fmt(totalRefutedExternal)} EXTERNAL CLAIMS ARE REFUTED by the project's own declarations — a measured defect, not a wall, and the arm's clause 4 reports it (extFAIL ${fmt(totalRefutedExternal)}). They stay in the closure so the number is visible.`,
     absentFiles:
       "3 TRACKED FILES ARE ABSENT FROM DISK (`excluded.absent`), so the population is the tracked set MINUS files that cannot be read. They are counted, not silently dropped.",
     partOf:
@@ -197,18 +219,21 @@ const LANE_CAVEATS: Record<string, Record<string, string>> = {
   julia: {
     indexNo:
       "INDEX=NO, AND THAT IS THE HONEST ARM: there is no INDEX_SPECS entry for julia in script/m14/incoming-gate.ts, so no production project index is built. `resolved` therefore means THE ANALYZER'S OWN FILE SCOPE — a key this lane found in the file — and NOT what a symbol-indexed lane means by the word. The per-file analyzer cannot know which file declares a method called in a function body; JUL-D7/JUL-D19 price that wall and the method-table pass that belongs to the resolver.",
+    // THE ARITHMETIC IS TEMPLATED, NOT TYPED. These two caveats were hand-written with one run's
+    // numbers and survived three re-measurements, so the declaration quoted a resolved count the arm
+    // had already replaced. A caveat about THIS arm must be read off THIS arm.
     collResSubset:
-      "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: 417 of 109,123 resolved edges are a tie-break pick among colliding declarations. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.",
+      `\`collRes\` IS A SUBSET OF \`resolved\` AND IS NEVER ADDED: ${fmt(totalCollRes)} of ${fmt(totalResolved)} resolved edges are a tie-break pick among colliding declarations. The fleet's indexer measures 37,318 of 49,729 such picks as WRONG, so this lane's resolved column is a FLOOR on correct resolution, not a count of correct edges.`,
     ambKindSubset:
-      "`amb(kind)` IS A SUBSET OF `amb(decl)`: 34,409 of 65,774. It counts distinct KINDS among the colliding declarations and is never added to any bucket.",
+      `\`amb(kind)\` IS A SUBSET OF \`amb(decl)\`: ${fmt(totalAmbKind)} of ${fmt(totalAmbiguous)}. It counts distinct KINDS among the colliding declarations and is never added to any bucket.`,
     externalIsAClaim:
-      "EXTERNAL IS A CLAIM, NOT A RESOLUTION: 1,243 `imports` edges carry a bare-name external claim, all 1,243 are VERIFIED by the project's own facts, and 0 are unverified or refuted. The dotted claim was withdrawn on 2026-10-10 (JUL-D8): it was refuted 69% of the time, and the 108 true dotted claims it removed are reported as gaps rather than believed.",
+      `EXTERNAL IS A CLAIM, NOT A RESOLUTION: ${fmt(num(importsProject.externalVerified))} \`imports\` edges carry a bare-name external claim, all ${fmt(num(importsProject.externalVerified))} are VERIFIED by the project's own facts, and ${fmt(num(importsProject.externalUnverified) + num(importsProject.externalRefuted))} are unverified or refuted. The dotted claim was withdrawn on 2026-10-10 (JUL-D8): it was refuted 69% of the time, and the 108 true dotted claims it removed are reported as gaps rather than believed.`,
     binding:
-      "882 edges carry a BINDING claim (`BINDING_SEP`), all verified and 0 refuted. The claim is checked BEFORE the declaration count, so a binding that the project declares would land in the refuted column rather than quietly passing.",
+      `${fmt(totalBindingVerified)} edges carry a BINDING claim (\`BINDING_SEP\`), all verified and ${fmt(totalBindingRefuted)} refuted${totalBindingUnverified ? ` (${fmt(totalBindingUnverified)} unverified)` : ""}. The claim is checked BEFORE the declaration count, so a binding that the project declares would land in the refuted column rather than quietly passing.`,
     partOf:
-      "`part_of` IS A DIRECTIVE RELATION AND ITS TARGET IS A FILE'S OWN NAME: 826 rows, ALL 826 unresolved, because the target is a basename (`part.jl`) and this lane publishes no file symbol; the written path is kept in `metadata.partPath`. The arm counts them unresolved by construction rather than calling them resolved by spelling. 826 is the whole-population count, not the 1,034 include SITES the closure arm measured over a different population — the difference is dynamic/shadowed includes, which stay `calls`.",
+      `\`part_of\` IS A DIRECTIVE RELATION AND ITS TARGET IS A FILE'S OWN NAME: ${fmt(rowOf("part_of")?.edges ?? 0)} rows, ALL ${fmt(rowOf("part_of")?.otherUnresolved ?? 0)} unresolved, because the target is a basename (\`part.jl\`) and this lane publishes no file symbol; the written path is kept in \`metadata.partPath\`. The arm counts them unresolved by construction rather than calling them resolved by spelling. ${fmt(rowOf("part_of")?.edges ?? 0)} is the whole-population count, not the 1,034 include SITES the closure arm measured over a different population — the difference is dynamic/shadowed includes, which stay \`calls\`.`,
     decorates:
-      "`decorates` IS A MACRO APPLIED TO A DECLARATION: 2,679 rows (389 resolved, 1,576 ambiguous, 714 unresolved), direction DECORATED DECLARATION -> DECORATOR. The unresolved half is mostly `Base.@kwdef`/`@inline`/`@doc`, whose decorator is a `Base` binding no file of the project declares; the direction is not reversed to make them resolve. `@time f()` is a macro CALL and stays `calls` (the fixture pins both sides).",
+      `\`decorates\` IS A MACRO APPLIED TO A DECLARATION: ${fmt(rowOf("decorates")?.edges ?? 0)} rows (${fmt(rowOf("decorates")?.resolved ?? 0)} resolved, ${fmt(rowOf("decorates")?.ambiguous ?? 0)} ambiguous, ${fmt(rowOf("decorates")?.otherUnresolved ?? 0)} unresolved), direction DECORATED DECLARATION -> DECORATOR. The unresolved half is mostly \`Base.@kwdef\`/\`@inline\`/\`@doc\`, whose decorator is a \`Base\` binding no file of the project declares; the direction is not reversed to make them resolve. \`@time f()\` is a macro CALL and stays \`calls\` (the fixture pins both sides).`,
     ruledTypes:
       "`renders` AND `mixes_in` PUBLISH ZERO ROWS AND EACH IS A RULING WITH A WALKED LADDER, A COUNT AND A FALSIFIER (script/m14/spec/julia-completeness.json, `coverage.excluded`): the served build has 0 of 224 names expressing either construct, the 1,985-file population produces 0 of 149 node types for either, and the nearest constructs are ordinary calls (`render(...)`, 3 call edges in 2 files) and single-supertype declarations (`struct ... <:`, 1,706 sites), which are already published as `calls` and `extends`. They appear here as DECLARED ZEROS, so 'measured nothing' and 'never measured' are different rows.",
   },

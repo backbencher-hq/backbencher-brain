@@ -35,3 +35,23 @@ Write tools (`bb_edit`, `bb_index`, `bb_annotate`) change the index or source â€
 
 Commit messages are authored by the repository owner. Do not add agent
 attribution footers â€” no "Generated with a tool", no "
+
+## Context compaction (client patched 2026-10-28)
+
+The client-tooling client on this machine compacts automatically. Its defaults were measured in the
+binary: trigger at 320k tokens (0.8 x 400k budget), post-compaction target ~160k, 12k verbatim
+tail, plus a cache-expiry trigger after 15 minutes idle at 40k tokens. That is why a long task
+was erased around 30% of a 1M window.
+
+It is patched to: trigger at 720k tokens (~69% of the 1M window), post-compaction target 432k,
+60k verbatim tail, no idle/cache-expiry trigger. The npm launcher metadata is pinned to 99.0.0
+so an update cannot silently replace the patched binary.
+
+- Patch script: `~/.config/manicode/client-tooling-compaction-patch.py` (`--check`, `--restore`).
+  The second install at `~/.khushal_file/.config/manicode/client-tooling` is patched identically;
+  use `--binary ~/.khushal_file/.config/manicode/client-tooling` to check or re-apply it.
+- If compaction fires before ~700k tokens, the patch is gone (binary replaced). Say so and
+  re-run the script instead of continuing with lost history.
+- When compaction does fire, the produced summary is a mechanical action log, not a handoff.
+  Keep the task, decisions and verified state in files under `docs/analyzers/`; anything that
+  lives only in the transcript is expected to be lost.

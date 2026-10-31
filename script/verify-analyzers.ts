@@ -53,6 +53,8 @@ const samples: Record<string, [string, string]> = {
   xml: ["s.xml", "<config><name>test</name></config>"],
   nim: ["s.nim", "proc add(a, b: int): int =\n  a + b"],
   vb: ["s.vb", "Module M\n  Sub Main()\n    Dim x As Integer = 1\n  End Sub\nEnd Module"],
+  vba: ["s.bas", "Attribute VB_Name = \"M\"\nOption Explicit\nPublic Sub Main()\n  Dim x As Long\n  x = 1\nEnd Sub"],
+  matlab: ["s.m", "function y = add(a, b)\ny = a + b;\nend"],
   protobuf: ["s.proto", 'syntax = "proto3";\nmessage User { string name = 1; }'],
 }
 

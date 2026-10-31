@@ -374,6 +374,8 @@ export namespace ASTEngine {
     // 0 crash files, up from 38.67 % on Microsoft's own VisualBasic.Core when
     // the upstream grammar was first wired.
     vb: "tree-sitter-vbnet",
+    vba: "tree-sitter-vba",
+    matlab: "tree-sitter-matlab",
 
 // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
     // (the `nim: "__generic__"` line that used to sit here is gone — see below)
@@ -1244,6 +1246,14 @@ export namespace ASTEngine {
         // See grammars/tree-sitter-vbnet/PIN.md.
         case "vb": {
           languageWasmPath = resolveWasm("tree-sitter-vbnet/tree-sitter-vbnet.wasm")
+          break
+        }
+        case "vba": {
+          languageWasmPath = resolveWasm("tree-sitter-vba.wasm")
+          break
+        }
+        case "matlab": {
+          languageWasmPath = resolveWasm("tree-sitter-matlab.wasm")
           break
         }
 
@@ -2430,6 +2440,10 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
         return new (await import("./real-markdown-analyzer")).RealMarkdownAnalyzer()
       case "vb":
         return new (await import("./real-vb-analyzer")).RealVbAnalyzer()
+      case "vba":
+        return new (await import("./real-vba-analyzer")).RealVbaAnalyzer()
+      case "matlab":
+        return new (await import("./real-matlab-analyzer")).RealMatlabAnalyzer()
       case "toml":
         return new (await import("./real-toml-analyzer")).RealTomlAnalyzer()
       default:

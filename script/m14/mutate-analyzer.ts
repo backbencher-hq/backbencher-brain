@@ -92,6 +92,8 @@ import { YAML_MUTANTS } from "../m60/yaml-mutants"
 // AFTER:  63 selected, the lane ids present. Main had this import; this branch did not.
 // The other 10 orphaned registries are orphaned on BOTH sides and are NOT this lane's delta.
 import { JAVASCRIPT_MUTANTS } from "./javascript-mutants"
+import { VBA_MUTANTS } from "./vba-mutants"
+import { MATLAB_MUTANTS } from "./matlab-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2535,6 +2537,8 @@ export const MUTANTS: Mutant[] = [
   // PORTED FROM ORIGINAL MAIN, the second half of the same 2-line delta: an import with no spread
   // is still an orphan, and a spread with no import does not compile. Both lines or neither.
   ...JAVASCRIPT_MUTANTS,
+  ...VBA_MUTANTS,
+  ...MATLAB_MUTANTS,
   ...CLEAN_MUTANTS,
   // task-7 batch A: three registries whose `Mutant[]` comes from this file's own exported type, so
   // their entries are canonically shaped by construction. An import with no spread is still an

@@ -623,6 +623,18 @@ export function keepSymbol(s: any, lang: string): boolean {
     // to RESERVED below rather than being dropped, so a placeholder is still refused
     // while a declared `unknown` survives.
   ])
+  // JULIA DOES NOT RESERVE `this`, and the corpus says so in its own words: `Baz.jl` — a depot
+  // package shipped inside julia's test tree (`julia/test/depot/packages/Baz/81oLe/src/Baz.jl`) —
+  // is a four-line module whose last statement is `this = "Baz"`. That is a legal top-level
+  // binding, and the analyzer publishes it as `contains Baz -> Baz.this`; the universal list
+  // deleted the symbol here, so the edge named nothing. MEASURED on the 200-file direct draw: one
+  // missing `contains` row, and the only one left in the label.
+  //
+  // This is the same shape as the paragraph above (`this` is a local in lua's float view) that the
+  // list's own history never finished: the language that reserves it must be consulted, not the
+  // word. Kept narrow — julia, and only this name — rather than moving `this` out of the universal
+  // set for every lane, because no other lane has produced a counterexample.
+  if (lang === "julia" && name === "this") return true
   if (UNIVERSAL.has(name)) return false
 
   // Reserved words, consulted ONLY for a language that reserves them. Measured
@@ -1073,7 +1085,45 @@ export function filterNoiseRelationships(
     // does not END with the identity, so it fails here and dies in the other tests. (xml lane,
     // 2026-10-27, measured both ways before this correction landed.)
     const DERIVED_TEMPLATE_ID = /xsl:template\[[^\]]*\](?:#\d+)?$/
-    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf) && !DERIVED_TEMPLATE_ID.test(leaf)) return false
+    // ★ THE CONSULTATION, NOT THE PATTERN, WAS THE LAST DEFECT (xml lane, round 2): the ban hands
+    // every exemption the LEAF, and `extractLeaf` strips `:`/`.` segments — so this exemption was
+    // being shown `section|priority=]#0`, a string that cannot contain `xsl:template[` BY
+    // CONSTRUCTION. A pattern verified against the right string still never fires if the code
+    // path hands it a different one; only a store-path probe can see that, which is why the round-1
+    // fix looked green in a leaf-blind check. THE DERIVED exemption therefore consults the WHOLE
+    // TARGET (qualification only prepends, so the identity is the target's suffix). The three
+    // leaf-tested exemptions KEEP their consultations and that is CORRECT for them: ruby's `<=>`
+    // and scss's `@mixin x` carry no `:`/`.` so the leaf IS the whole target for those spellings.
+    // ★ A DECLARED SIGNATURE NAME IS NOT A SNIPPET (solidity lane, 2026-10-28).
+    //
+    // The ban below refuses a leaf carrying `(` or `)` because a call expression IS the canonical
+    // snippet — and that reasoning is right about source text and wrong about a NAME. Solidity
+    // publishes its synthesised public getter under its EXTERNAL SIGNATURE (`balance()`), because a
+    // Solidity identifier cannot contain `(`, so `<var>()` can never collide with the variable, a
+    // function, or anything else — the spelling is the identity, and it is the name the analyzer
+    // DECLARED as a symbol. MEASURED, and the measurement is the reason this exemption exists:
+    // direct `analyze()` returns 7 rows for the probe contract and `parseFile` returns 5 — the two
+    // rows it eats are `contains Vault -> balance()` and `references balance -> balance()`, i.e.
+    // BOTH halves of SOL-3. Over the 389-file corpus that is 58 `contains` + 58 `references` rows,
+    // gone between the analyzer and the store, so the getter was a symbol nothing reached: absent
+    // rather than mis-bound, which is the silent class this programme keeps finding.
+    //
+    // ⇒ THE TEST IS THE DECLARATION, NOT THE SPELLING. `declaredNames` is the set of symbol names
+    // THIS call kept, so a target that equals one is by definition a name the analyzer published,
+    // and a published name cannot be a source fragment. THE CONTROLS STAY GREEN and are the point:
+    // `foo()` that nothing declares is still refused (that IS a snippet), `foo(a, b)` carries a
+    // space and a comma and is refused unless declared, `foo (a)` is refused, and every other rule
+    // in this filter still applies to the kept row — only this one shape test is answered by
+    // evidence rather than by shape.
+    //
+    // Scope: an identifier followed by EMPTY parens, exactly. A declared name with arguments in
+    // its spelling is not something any lane publishes, and admitting the general parenthesised
+    // form would weaken the ban for every lane to fix one.
+    const DECLARED_SIGNATURE = /^[A-Za-z_$][A-Za-z0-9_$]*\(\)$/
+    const isDeclaredSignature =
+      DECLARED_SIGNATURE.test(leaf) &&
+      ((declaredNames?.has(leaf) ?? false) || (declaredNames?.has(target) ?? false))
+    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf) && !DERIVED_TEMPLATE_ID.test(target) && !isDeclaredSignature) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
