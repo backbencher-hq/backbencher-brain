@@ -201,11 +201,17 @@ const out: any = {
   },
   renders: {
     templatefileCallees: 0,
+    templatefileWithLiteralPath: 0,
+    templatefileLiteralPathExists: 0,
+    templatefileLiteralPathAdmitted: 0,
     templatestringCallees: 0,
     templateDirCallees: 0,
     templateFileOrDirResources: 0,
     quotedTemplateNodes: 0,
     heredocTemplateNodes: 0,
+    declarationTargetCandidates: 0,
+    targetNote: "a template render produces a STRING from template text; no HCL construct names a DECLARATION as the rendered target, and no admitted file is a template input in this corpus",
+    samples: [] as string[],
   },
   parse: { filesVisited: 0, parseFailed: 0 },
 }
@@ -336,7 +342,32 @@ for (const f of files) {
     if (n.type === "function_call") {
       const id = findChild(n, (x: any) => x.type === "identifier" || x.type === "get_attr")
       const name = id ? textOf(id) : ""
-      if (name === "templatefile") out.renders.templatefileCallees++
+      if (name === "templatefile") {
+        out.renders.templatefileCallees++
+        // The FIRST argument is the template path. Measure whether it is a literal naming a file in
+        // the admitted population — the only way a render could name a DECLARATION this index has.
+        const args = findChild(n, (x: any) => x.type === "function_arguments")
+        const firstArg = args ? kids(args).find((x: any) => x.type === "expression") : null
+        const lit = firstArg ? (() => {
+          const expr = firstArg
+          const COMPUTED = new Set(["template_interpolation", "function_call", "variable_expr", "get_attr", "index", "legacy_index", "for_expr", "conditional", "binary_operation", "unary_operation"])
+          let computed = false
+          walk(expr, (x) => { if (COMPUTED.has(x.type)) computed = true })
+          if (computed) return null
+          let v: string | null = null
+          walk(expr, (x) => { if (v === null && x.type === "template_literal") v = textOf(x) })
+          return v
+        })() : null
+        if (lit !== null) {
+          out.renders.templatefileWithLiteralPath++
+          const abs = path.resolve(dir, lit)
+          if (existsSync(abs)) {
+            out.renders.templatefileLiteralPathExists++
+            if (admitted.has(abs)) out.renders.templatefileLiteralPathAdmitted++
+          }
+          if (out.renders.samples.length < 10) out.renders.samples.push(`${rel}:${n.startPosition.row + 1} templatefile("${lit}") exists=${existsSync(abs)} admitted=${admitted.has(abs)}`)
+        }
+      }
       if (name === "templatestring") out.renders.templatestringCallees++
       if (name === "template_dir") out.renders.templateDirCallees++
     }

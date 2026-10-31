@@ -36,6 +36,7 @@ each entry says what the edge asserts here, and what it is not.
 | `instantiates` | a `resource` / `data` block constructs an instance of the PROVIDER TYPE its first label names (`resource "aws_instance" "web"` instantiates `aws_instance`); the source is the document root, the target is the type label as written, and `metadata.instanceType`/`instanceKind`/`instanceName` say which instance and which half of the provider schema | not a declaration — a provider type is declared by a provider BINARY, in no repository, so the target resolves externally or not at all, and no symbol is invented for it. IMPLEMENTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 blocks over 444 labels, 0 labels declared as a type |
 | `mixes_in` | — (ruled, below) | no HCL construct composes a MEMBER SET from one declaration into another; `dynamic` repeats a member set the enclosing block itself writes, and `lifecycle`/`provisioner` are already `contains` |
 | `decorates` | — (ruled, below) | no HCL construct applies a CALLABLE to a declaration. `validation` / `precondition` / `postcondition` are assertion blocks whose condition is EVALUATED, and `depends_on` is ordering metadata — both are already `contains`/`references` |
+| `renders` | — (ruled, below) | HCL HAS templates (`quoted_template` 3,710, `heredoc_template` 3,506) and they render STRINGS from text plus values — no construct names a DECLARATION as the rendered target (`templatefile()` 60 sites, 0 literal paths; 0 declaration-target candidates) |
 
 ## Relationship ontology — what was changed in this wave
 
@@ -518,6 +519,13 @@ with a call), and `depends_on` 883 (ordering addresses, already `references`); 0
 callables over the whole population. R1 has no decorator production in the 64-name grammar, R2 would
 have to invent syntax HCL does not have, R3's only decoration-shaped nodes are those measured near
 misses — so the relation would assert an applied callable the vocabulary does not credit.
+
+`renders` is RULED (HCL-D15) — ONTOLOGICAL, NOT GRAMMAR-ABSENCE: the grammar HAS the template
+productions, and `templatefile()` 60 / `templatestring()` 2 / `template_file`·`template_dir` sources 21
+render a STRING from text plus values; 0 of the 60 templatefile paths is literal and 0 names an admitted
+file, and 0 declaration-target candidates exist over the whole population. R1 has no declaration-target
+notion, R2 would have to invent one, R3's template nodes are already read (interpolated references are
+published), so the relation's second half does not exist.
 
 `mixes_in` is RULED (HCL-D12): 374 `dynamic` blocks write their generated members in the source
 `content` block (15 with nested block children, 359 attribute-only) and iterate VALUES (859 `for_each`
