@@ -4,6 +4,33 @@
   "_authority": "CREATED 2026-10-31, UPDATED the same day after the seven gap types were closed on R3. It is the most important line in the file: this lane's admissible population is THREE FILES, and every one of them is Objective-C source that the router's `.m` content test (src/ast/language-detection.ts:405: the first 64 KB containing `function ` or `classdef ` is MATLAB, otherwise Objective-C) admits by matching the ENGLISH WORD `function ` inside a comment. That is measured, not asserted: validation/m14/fixtures/matlab/census-constructs.ts walked the whole admitted population and printed the three paths, and each trigger line is a prose sentence (`/// A no-op function taking no arguments and returning no value`; `This function is not called at exact time intervals`; `not take full function from downloader options`). So the population is the GATE's and PRODUCTION's — the router says these files are MATLAB, so this lane measures them — but the corpus exercises NO genuine MATLAB construct in that population, and every per-type measurement below says so with a count rather than hiding it. The eleven implemented types are the analyzer's emission sites (all eleven pinned by the fixture suite, `validation/m14/fixtures/matlab/`: 12 fixtures, 0 fail); the three extended types are RULED with grammar-inventory plus measured site counts and falsifiers. Nothing is copied from another language's rows.",
   "_created": "2026-10-31",
   "_lane": "matlab (engine language id and coverage-gate lane key; the campaign lane key is `matlab`, no alias). Corpus root $HOME/fixtures/repositories.",
+  "_corpus_absence": {
+    "_status": "ANALYZER-PRESENT, CORPUS-ABSENT — RECORDED 2026-10-31 AND NOT A DONE CLAIM. The lane's analyzer, fixtures and grammar are real; the CORPUS contains no genuine MATLAB source. This block exists so the measurement is durable even if the working session is lost: the three admitted files are Objective-C, and every whole-population number in this spec is a statement about that population — not about a MATLAB codebase. The Lead has taken the corpus-absence disposition (and the router false-positive) to the owner; until that decision lands this lane must NOT be read as DONE.",
+    "measurement": {
+      "tracked_m_files_on_the_corpus": 412,
+      "admitted_by_the_gate": 3,
+      "excluded_tracked_but_absent_unreadable": 153,
+      "excluded_routed_to_objective_c_by_content": 256,
+      "arithmetic": "3 admitted + 153 absent + 256 routed to objective-c = 412 tracked `.m` files — the admission rule reproduces the tracking total exactly",
+      "all_three_admitted_files_are_objective_c": true,
+      "genuine_matlab_constructs_in_the_population": "0 classdef sections, 0 function definitions, 0 methods/properties/events/enumeration sections, 0 `+pkg/` folders, 0 `@Class/` folders",
+      "router_trigger_named": "src/ast/language-detection.ts:405 — `if (ext === \"m\" && content) { const head = content.slice(0, 65536); if (head.includes(\"function \") || head.includes(\"classdef \")) return \"matlab\" }`. The test is a SUBSTRING test, so it fires on the ENGLISH WORD `function ` inside a COMMENT. All three admitted files trigger through a comment:",
+      "trigger_lines": [
+        "pigeon …/CoreTests.gen.m:1187 — `/// A no-op function taking no arguments and returning no value, to sanity`",
+        "video_player …/FVPTextureBasedVideoPlayer.m:130 — `// Ensure video sampling at regular intervals. This function is not called at exact time intervals`",
+        "SDWebImage …/SDWebImageDownloaderOperation.m:574 — `// … not take full function from downloader options …`"
+      ],
+      "emission_consequence": "the whole-population arm reads calls 1524 edges + references 110 edges over the 3 files and 0 of every other type — Objective-C text routed through the MATLAB grammar. No genuine MATLAB construct is exercised by the population."
+    },
+    "commands": [
+      "npx tsx validation/m14/fixtures/matlab/census-constructs.ts   # -> validation/m14/fixtures/matlab/measurements/matlab-constructs.txt (admitted 3, tracked 412 = 3 + 153 + 256, POPULATION SHAPE 0 classdef/0 functions, command-name census proving the #import text)",
+      "bun run script/m14/incoming-gate.ts matlab m 0   # -> `population: 3 parsed of 3 sampled (corpus has 3 .m files across 2 repos)`; TABLE 1 calls 1524 / references 110",
+      "bun script/m14/run-fixtures.ts --lang matlab   # -> matlab 12 pass, 0 fail (the lane's ONLY genuine MATLAB source)",
+      "bash script/m14/no-regex-gate.sh   # -> PASS, 0 regex literals; matlab absent"
+    ],
+    "what_the_lane_can_honestly_claim": "the eleven implemented relationship types are pinned by 12 fixtures (0 fail) authored before each run; the three excluded extended types are ruled from the served grammar's own inventory (148 node types / 76 named) plus measured site counts; the population counts are stated with their Objective-C content. What the lane CANNOT claim is a whole-population arm over MATLAB source: there is no MATLAB source in the corpus to arm.",
+    "known_instrument_gap_stated_not_a_lane_defect": "the completion gate reads this lane's `implemented` condition as failing because its firing-log instrument has NO MATLAB ROW (`validation/m14/results/firing-laptop-b.current.log` carries 48 lane rows; matlab is not one) — the same instrument gap vba has. That is the instrument's blindness to the lane, not a measurement of the analyzer, and it is reported rather than papered over."
+  },
   "coverage": {
     "_why_declared_now": "DECLARED 2026-10-31 on the WHOLE admitted population, with the population string printed by the census and by the incoming gate, per HANDOFF §5.1/§7.1. The lane had no spec, so the coverage gate reported `matlab NO - - - - no spec file` while the analyzer, fixtures and router entry existed; an instrument that cannot see a lane cannot arm it. ELEVEN types are implemented — the analyzer's own emission sites: calls, uses, contains, extends (the original four), plus imports, references, exports, implements, overrides, instantiates, part_of (closed on RUNG R3, `express on node types the pinned grammar already has`, with fixtures authored BEFORE the run). The three extended types are RULED (decorates, renders, mixes_in), so applicable = 14 − 3 = 11 and the lane reads 11/11. THE POPULATION IS 3 FILES AND THAT IS A FACT ABOUT THIS CORPUS — and the stronger fact the census found is that all three are Objective-C by content, stated in `_population` together with the emission consequence.",
     "_population": {

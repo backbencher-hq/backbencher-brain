@@ -209,11 +209,31 @@
       "extends",
       "implements",
       "overrides",
-      "instantiates"
+      "instantiates",
+      "decorates"
     ],
-    "excluded": [],
+    "excluded": [
+      {
+        "label": "renders",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VB-D1 (2026-10-28) — GRAMMAR-ABSENCE, MEASURED ON THE WIRED BUILD'S OWN INVENTORY: 0 of the 168 named node types the gate universe carries (166 distinct names + ERROR/MISSING, `_section_a`) matches the render/component stem scan (render|component|jsx|template|fragment|widget). THE SURFACE IS ABSENT ON ALL THREE AXES AND EACH WAS MEASURED SEPARATELY rather than inferred from one: the GRAMMAR has no such production; the ROUTER routes no markup file to this lane; and the CORPUS holds none — 0 tracked `.aspx`, 0 `.ascx`, 0 `.vbhtml`, 0 `.master` over every repository in the corpus root (measured 2026-10-28 by `git ls-files` per repository). The 58 admitted `.vb` files are code-behind and library sources, and a rendered component is a MARKUP construct that VB.NET's grammar does not express. THE NEAREST CODE CONSTRUCT IS CONSTRUCTION AND IS ALREADY PUBLISHED: `new_expression` / object creation is `instantiates` (459 edges), which is instantiation, not rendering. R2 (a grammar patch) is unavailable IN PRINCIPLE here: a patched node would fire on 0 sites, because no source in the admitted population writes a markup tag. FALSIFIER that would void this ruling: any admitted `.vb` file carrying a component/markup tag the wired grammar parses into a named node — 0 measured."
+      },
+      {
+        "label": "mixes_in",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VB-D2 (2026-10-28) — GRAMMAR-ABSENCE, 0 of the 168 named node types match the mixin/composition stem scan (mixin|trait|with_clause|embed). THE NEAR MISSES ARE MEASURED, NOT ASSERTED: VB's two composition surfaces are `Inherits` and `Implements`, and BOTH ARE ALREADY PUBLISHED as the supertype/conformance relations they are — extends 32 edges, implements 82 edges over the 58-file population (`script/m14/residual-gate.ts --lane vb`, 2026-10-28). The third candidate is `Partial`, measured 2 occurrences over the same 58 files: a partial declaration SPLITS one unit across files, so its row would be X→X, and the fleet's own precedent refuses that (csharp's `partial`; scala's self-type information test). VB has NO mixin: a `Module`'s members are brought into scope by `Imports`, which is a NAME-RESOLUTION directive and adds no member to any type, and no VB construct composes another type's members without inheritance or implementation. FALSIFIER: an admitted site where a VB declaration acquires another type's MEMBERS without `Inherits`/`Implements` — 0 measured."
+      },
+      {
+        "label": "part_of",
+        "evidence": "grammar-absence",
+        "count": 0,
+        "from": "VB-D3 (2026-10-28) — GRAMMAR-ABSENCE, 0 of the 168 named node types is a part-inclusion production (stem scan part|include|fragment|split). `#Include` DOES NOT EXIST IN VB.NET — measured 0 occurrences of `#Include` or `Include(` over the 58-file population — and `Partial` (2) is the X→X split already rejected in VB-D2. `#Region` is a folding directive that names no unit at all. The fleet's `part_of` names ANOTHER UNIT AS A PART, sharing one scope and importing nothing (the rust `mod`-vs-`include` ruling, L-2026-10-21-06); VB has no textual inclusion of any kind, which is also why `#Include` absence is a language fact rather than a corpus fact. FALSIFIER: any admitted `.vb` site carrying an inclusion directive the wired grammar parses into a node — 0 measured."
+      }
+    ],
     "corpusUnexercised": [],
-    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path: 58 parsed of 58 admitted .vb files across 2 repos, 0 parse failures, 0 degraded (`npx tsx script/m14/residual-gate.ts --lane vb`, which invokes `script/m14/incoming-gate.ts vb vb 0`; artifact validation/m14/measurements/task105/vb-whole-population-gate.txt). ALL TEN types fire, each measured with its own count: calls 2,212 · uses 3,532 · contains 2,366 · imports 363 · references 2,759 · exports 594 · extends 32 · implements 82 · overrides 76 · instantiates 374 — TOTAL 12,390, exactly the sum of the ten rows. Emission sites were read in src/ast/real-vb-analyzer.ts before the run: Calls at L2571/L2629/L2668/L2709, Uses at L2772/L3031, Contains at L1310, Imports at L2105, References at L3314, Exports at L1426, Extends at L1611, Implements at L1616/L1623, Overrides at L822 (pushOverride, reached from the `Overrides` modifier at L2195/L2283/L2311), Instantiates at L2810/L3221 — so every count above has a site as well as a measurement. THE POPULATION IS THIN AND ITS PROVENANCE IS NOT VB, and that is stated rather than smoothed: the 58 admitted files are 57 in the `fsharp` repo's vsintegration tree and 1 in `Fake`, while this lane's OWN canonical census population — `roslyn-vb`, the 2,658 tracked .vb files over p3d/dismt/pcl/tankex/runtime that script/m14/vb-ontology-census.ts defaults to (VB_CORPUS ?? \"roslyn-vb\") and that validation/m14/fixtures/vb/ontology-exports-instantiates-uses.expectation.json cites — is ABSENT from this corpus root. An incomplete run is a LOWER BOUND: this block shows all ten types FIRE and says nothing about a representative VB corpus. 1 file holds content and returned nothing and the artifact NAMES it (fsharp/vsintegration/src/FSharp.ProjectSystem.PropertyPages/My Project/Application.Designer.vb); its kind is deliberately not decided here. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim and no zero-sites entry. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. GATE NOTE, recorded because it is a blind spot rather than a property of this lane: the firing log's row for `vb` is labelled VISUAL_BASIC (script/m14/firing-check.mjs:39, corpus `moo`) and marks all ten SILENT, and coverage-block-gate.ts's LOG_ALIASES has no `vb -> VISUAL_BASIC` entry — so the gate's silence check never fires for this lane. The per-type counts below are supplied anyway, so the silence would be substantiated even if the alias existed.",
+    "_from": "DERIVATION, MEASURED 2026-10-14 at HEAD 3759640979f78953ad04a89a06d6006f47de4ccd. WHOLE admitted population on the production path: 58 parsed of 58 admitted .vb files across 2 repos, 0 parse failures, 0 degraded (`npx tsx script/m14/residual-gate.ts --lane vb`, which invokes `script/m14/incoming-gate.ts vb vb 0`; artifact validation/m14/measurements/task105/vb-whole-population-gate.txt). ALL TEN types fire, each measured with its own count: calls 2,212 · uses 3,532 · contains 2,366 · imports 363 · references 2,759 · exports 594 · extends 32 · implements 82 · overrides 76 · instantiates 374 — TOTAL 12,390, exactly the sum of the ten rows. Emission sites were read in src/ast/real-vb-analyzer.ts before the run: Calls at L2571/L2629/L2668/L2709, Uses at L2772/L3031, Contains at L1310, Imports at L2105, References at L3314, Exports at L1426, Extends at L1611, Implements at L1616/L1623, Overrides at L822 (pushOverride, reached from the `Overrides` modifier at L2195/L2283/L2311), Instantiates at L2810/L3221 — so every count above has a site as well as a measurement. THE POPULATION IS THIN AND ITS PROVENANCE IS NOT VB, and that is stated rather than smoothed: the 58 admitted files are 57 in the `fsharp` repo's vsintegration tree and 1 in `Fake`, while this lane's OWN canonical census population — `roslyn-vb`, the 2,658 tracked .vb files over p3d/dismt/pcl/tankex/runtime that script/m14/vb-ontology-census.ts defaults to (VB_CORPUS ?? \"roslyn-vb\") and that validation/m14/fixtures/vb/ontology-exports-instantiates-uses.expectation.json cites — is ABSENT from this corpus root. An incomplete run is a LOWER BOUND: this block shows all ten types FIRE and says nothing about a representative VB corpus. 1 file holds content and returned nothing and the artifact NAMES it (fsharp/vsintegration/src/FSharp.ProjectSystem.PropertyPages/My Project/Application.Designer.vb); its kind is deliberately not decided here. NO TYPE IS EXCLUDED: the language expresses all ten and the whole admitted population fires all ten, so there is no grammar-absence claim and no zero-sites entry. ARITHMETIC: 10 implemented + 0 corpus-unexercised + 0 gaps = 10 applicable = 10 − 0 grammar-absence − 0 unclassified. GATE NOTE, recorded because it is a blind spot rather than a property of this lane: the firing log's row for `vb` is labelled VISUAL_BASIC (script/m14/firing-check.mjs:39, corpus `moo`) and marks all ten SILENT, and coverage-block-gate.ts's LOG_ALIASES has no `vb -> VISUAL_BASIC` entry — so the gate's silence check never fires for this lane. The per-type counts below are supplied anyway, so the silence would be substantiated even if the alias existed. | 2026-10-28 (R5) SUPERSEDES THE TEN-TYPE READING ABOVE: `decorates` is now IMPLEMENTED (209 edges over the same 58-file population; see `_extended_types_2026_10_28` and coverage.implemented) and `renders`/`mixes_in`/`part_of` are RULED grammar-absence with counts and falsifiers (VB-D1/D2/D3), so the arithmetic above (10 implemented + 0 excluded = 10 applicable) is the 2026-10-14 state and the current one is 11 implemented + 3 excluded = 11 applicable.",
     "_implemented_measured": {
       "_unit": "edges published through the production path over the WHOLE admitted 58-file vb population (2 repos, 0 parse failures) — CLOSURE block of validation/m14/measurements/task105/vb-whole-population-gate.txt, whose ten per-type rows sum to its own TOTAL of 12,390",
       "calls": {
@@ -245,8 +265,26 @@
       },
       "instantiates": {
         "edges": 374
-      }
+      },
+      "decorates": {
+        "edges": 209
+      },
+      "_superseded_2026_10_28": "THE TEN COUNTS BELOW ARE THE 2026-10-14 READING AND ARE SUPERSEDED, not deleted: the current arm over the same 58-file population reads calls 1838 · uses 3141 · contains 2366 · imports 372 · references 2759 · exports 594 · extends 32 · implements 82 · overrides 76 · instantiates 459 · decorates 209 = 11,928 edges (resolved 5,715 · externalVerified 2,118 · ambiguous 267 · unresolved 3,828). The differences are the 2026-10-28 changes (the `decorates` emission, the imports PATH target, and the qualifiedName alias) plus a population that was re-admitted between the two readings — a reader must NOT mix a row from one block with a row from the other."
     }
+  },
+  "_extended_types_2026_10_28": {
+    "_question": "the four extended relationship values are the whole of this lane's gap; one is now IMPLEMENTED and three are RULED with a class, a count and a falsifier",
+    "decorates": "IMPLEMENTED (VB-D0). 209 edges over the 58-file admitted population through the production path (`parseFile`, direct walk — the residual arm prints only the ten types the spec listed before this change, so its closure could not show the eleventh; this count is the direct measurement). Source = the DECORATED DECLARATION, target = the attribute's LEAF (`System.Serializable` -> `Serializable`) because the arbiter binds by name against the project, and the written spelling rides in `metadata.attributeName`. Metadata per row: attributeName, attributeLeaf, attributeForm, argumentCount, decoratedKind, resolved. THE HOLDER IS RESOLVED BY A BOUNDED CLIMB (field_declaration / declaration_statement only): a field's symbol is published from its DECLARATOR while the grammar puts `repeat(field(\"attributes\", $.attribute_list))` on the DECLARATION, so a declarator-only read loses every field attribute (measured shape: `<_a, _b_>` is one declaration, two declarators, two rows). Fixture: validation/m14/fixtures/vb/attributes-as-decorations.vb (+ expectation), whose forbid rows pin the three defects a naive emission produces: the attribute's ARGUMENT read as a second attribute, attributes leaking from an enclosing type onto a member, and the attribute name returning to `references` (which `inAttributePosition` suppresses by an earlier differential finding). All 209 rows carry `resolved: false` because the framework attribute types are not declared in these projects — a measured wall, ruled in the incoming declaration, NOT laundered as external.",
+    "renders": "RULED grammar-absence (VB-D1), count 0, on three separately measured axes: 168 node types scanned, 0 markup files routed, 0 markup files in the corpus.",
+    "mixes_in": "RULED grammar-absence (VB-D2), count 0, with the near misses counted: extends 32 / implements 82 (already the supertype and conformance relations), Partial 2 (X→X, refused by precedent).",
+    "part_of": "RULED grammar-absence (VB-D3), count 0: no `#Include` in the language (0 occurrences), Partial is X→X, `#Region` names no unit.",
+    "_artifacts": [
+      "script/m14/spec/vb-completeness.json (this block + coverage.excluded)",
+      "validation/m14/fixtures/vb/attributes-as-decorations.vb",
+      "validation/m14/fixtures/vb/attributes-as-decorations.expectation.json",
+      "validation/m14/verification/VB-STATE.md (state note)"
+    ],
+    "_measured": "2026-10-28"
   },
   "_section_a": {
     "wasm": "wasm/tree-sitter-vbnet.wasm (VENDORED: built from grammars/tree-sitter-vbnet; grammar-pins.json lanes.vb)",
@@ -261,7 +299,27 @@
     "unclassified": 0,
     "stale": 0,
     "method": "web-tree-sitter nodeTypeIsNamed/nodeTypeForId on the PINNED VENDORED wasm; ERROR/MISSING injected per the gate's own rule; anonymous keyword/punctuation tokens are NOT rows.",
+    "_durable_inventory_2026_10_28": "THE INVENTORY IS NOW A TRACKED ARTIFACT: `validation/m14/measurements/vb-grammar-nodes.json` (bun script/m14/grammar-node-inventory.ts vb) — 167 named types over 450 ids, served digest recorded beside them. IT REPLACES the ephemeral `.tmp-f48/cov/grammar-nodes.mts` derivation this block cited, and that replacement is the point of the tool: a `.tmp-` path is in no commit, so the grammar-side half of a ruling could not be checked by anyone who cloned the repository. THE THREE EXCLUSIONS BELOW ARE RE-MEASURED AGAINST IT: renders 0 · mixes_in 0 · part_of 0 stem matches, and the LINQ family is 6 node types (`aggregate_clause`, `aggregate_element`, `aggregate_function`, `group_by_clause`, `join_clause`, `let_clause`) whose SITE COUNTS are not yet measured — that is open work, not a ruling.",
     "pin_drift_finding": "validation/m14/grammar-pins.json lanes.vb.wired sha256 c6182994… / 4,073,046 B does not match the wired file 4d8d8e0e… / 4,083,368 B, and the pinned vendored grammar.js is 74,567 B while the tree has 76,000 B: the vendored grammar was repaired AFTER the pin was recorded. The SPEC matches the wired wasm (145+21=166 named types, 0 stale), so the spec is current and the PIN is stale; re-record the pin.",
     "measured": "2026-10-17"
+  },
+  "_grammar_silence_census_2026_10_28": {
+    "_method": "PARSE-ONLY CENSUS over the whole admitted population through the live parser the engine serves (getParser('vb'), the same wasm the product loads), every named node visited: 58 of 58 files parsed under the 1 MiB cap.",
+    "_counts": {
+      "query_expression": 0,
+      "from_clause": 0,
+      "join_clause": 0,
+      "group_by_clause": 0,
+      "let_clause": 0,
+      "aggregate_clause": 0,
+      "select_clause": 0,
+      "where_clause": 0,
+      "order_by_clause": 0,
+      "anonymous_object_creation_expression": 0,
+      "date_literal": 0,
+      "tuple_expression": 217
+    },
+    "_ruling": "THE LINQ HALF OF THE 21 SILENT NODE TYPES IS CORPUS-ABSENCE, NOT A GAP, AND IT IS NOW COUNTED RATHER THAN ASSUMED: 0 sites of every query clause over the whole admitted population. The construct EXISTS in the language and the grammar carries it (6 nodes), so this is a statement about this corpus and not about VB — a representative VB corpus (the absent `roslyn-vb`, 2,658 files) would have to be re-censused before the number travels. WHAT WOULD CHANGE THE RULING: any admitted site of a query clause, which is why the census is a count and not a sentence.",
+    "_tuple_expression": "217 sites in 21 files — the REAL remaining silence, and it is a VALUE construct (`(a, b)`), not a dependency: its elements are reads of locals or parameters, which the family contract publishes no symbols for (DARTD8). Publishing them as `uses` would add 217 rows that CANNOT resolve by construction, i.e. it would move the metric down while adding no checkable fact. Recorded as a measured construct, deliberately not emitted, and the falsifier is a tuple element that names a PROJECT DECLARATION (none measured)."
   }
 }

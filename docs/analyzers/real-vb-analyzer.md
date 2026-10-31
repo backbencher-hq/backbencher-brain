@@ -61,9 +61,33 @@ minimal repro under `grammars/_vendored/vbnet/repro-cases/`:
 | `calls` | enclosing method/property/field-init → callee | 1.0 in-file, 0.6 not | the **callee name leaf** |
 | `extends` | type → base type | 1.0 in-file, 0.7 not | the base name leaf |
 | `implements` | type/member → interface | 1.0 in-file, 0.7 not | the interface name leaf |
-| `imports` | `root` → namespace | 1.0 | the imported name leaf; carries `isImport` + `include_dependency` |
+| `imports` | `root` → namespace | 1.0 | the namespace path **as written** (`System.Collections.Generic`); carries `isImport` + `include_dependency` |
 | `references` | declaration → a type it names | 0.6 | the type name leaf |
 | `overrides` | member → itself (base member unknown) | 0.6 | the member's name node |
+| `uses` | declaration → a name it **reads** (a member read that is neither the callee, nor an index head, nor a write) | 0.9 in-file, 0.7 not | the read name leaf; one edge per `(source, target)` with `metadata.sites` reporting the merged sites and the earliest line |
+| `instantiates` | the declaration that constructs → the constructed type | 1.0 in-file, 0.6 not | the constructed type's name leaf |
+| `exports` | owner type/module, or `root` → the type/member it publishes | 1.0 | the declared name leaf |
+| `decorates` | the **decorated declaration** → the attribute's name leaf | 1.0 in-file, 0.8 not | the attribute's name node |
+| `writes` | — **not emitted** — a member assignment is a disclosed gap, not a read; see the `uses` section | — | — |
+
+**`decorates` (2026-10-28)** publishes the attribute lists the grammar attaches to a declaration
+(`repeat(field("attributes", $.attribute_list))` on every declaration production). The target is the
+attribute's LEAF (`System.Obsolete` → `Obsolete`) because the arbiter binds a target by name against
+the project, and the written spelling rides in `metadata.attributeName` beside `attributeForm`,
+`argumentCount`, `decoratedKind` and `resolved`. The holder is resolved by a **bounded climb**
+(`field_declaration` / `declaration_statement` only): a field's symbol is published from its
+DECLARATOR while the attribute list sits on the DECLARATION, and an unbounded climb would let a
+member inherit its enclosing type's attributes — the defect the fixture's `forbid` row pins.
+Attribute names stay out of `references` (`inAttributePosition`, an earlier differential finding);
+this type is where the construct is published instead. Measured: **209 edges** over the 58-file
+admitted population, all unresolved because the framework attribute types are not declared in these
+projects — ruled as a wall with a population and a falsifier in the lane's incoming declaration.
+
+**The other three extended values are RULED, not missing:** `renders`, `mixes_in` and `part_of` are
+grammar-absence (VB-D1/D2/D3, `script/m14/spec/vb-completeness.json`): 0 of the 168 named node
+types matches any of their stems, 0 markup files are routed to this lane, `#Include` does not exist
+in the language (0 occurrences) and the only near-miss, `Partial` (2 occurrences), is X→X and
+refused by the fleet's own precedent.
 
 **Every relationship carries `line_number`** (M59.A7), 1-based, on the node that
 *names* the thing, per site rather than per set. Measured: **0 of 33,910 edges**
@@ -74,6 +98,27 @@ name starts on — a three-line chained call gets one site line per call.
 `imports` carries `isImport` and `include_dependency` because the family contract
 (C# and C publish import dependencies that way) is what the completeness
 section-B pin and the tier classifier read.
+
+**`imports` NAMED ITS LAST SEGMENT UNTIL 2026-10-28, AND THAT WAS A DEFECT.** `Imports
+System.Collections.Generic` published `Generic` — a segment that collides with the project's own symbols
+(54 of the lane's 320 ambiguous edges were exactly that) and that the ruling layer's `importPath` claim
+cannot reach, because the claim is synthesized only for a DOTTED path. MEASURED on the 58-file arm:
+ambiguous 320 → 267, unresolved 4,047 → 3,828, externalVerified 1,831 → 2,118, resolved 5,721 → 5,715.
+The six lost resolutions are imports whose LEAF named a project declaration — a namespace path is not
+that declaration, so those six were mis-bindings. Fixture `vb/declaration-shapes` pins the new spelling
+and FORBIDS the leaf.
+
+**One syntactic event, one label.** A construction is `instantiates` and NOT also
+`calls`: publishing both counted `New Box(1, 2)` twice under two names and put a
+constructor in the call graph, so `calls EmptyArgs -> Widget` and `calls Build ->
+Box` are now `forbidRelationships` rows in the lane's fixtures. The family's own
+convention agrees — `real-csharp-analyzer.ts` emits `instantiates` for
+`object_creation_expression` and its `calls` rule excludes it.
+
+This table is the CURRENT contract and the four `###` sections further down are
+the measurement narrative that produced it: two of them found a gap that is now
+closed and one records a ruling that was later reversed. They are kept because
+their counts are the evidence, not because their headings describe today's code.
 
 ## Complexity
 
@@ -104,7 +149,11 @@ section-B pin and the tier classifier read.
 
 ## Measured state
 
-Over 435 real `.vb` files through `ASTEngine.parseFile`:
+Over 435 real `.vb` files through `ASTEngine.parseFile` — the pre-addition sample,
+so these counts cover the **seven** kinds that existed then and not `uses`,
+`instantiates` or `exports` (see the payload section for the AFTER measurement and
+its population; the `roslyn-vb` corpus this sample came from is not on the machine
+this note was written on, so it is not re-run rather than re-estimated):
 
 | | |
 |---|---:|
@@ -281,22 +330,43 @@ Whole corpus, population derived: **3,751 `.vb` files, 3,751 parsed, 0 throws.**
 The grammar produced **208 distinct named node types and 43 distinct anonymous
 tokens**.
 
-### `instantiates` — **GAP**, and a large one
+### `instantiates` — **was a GAP**; emitted since 2026-10-07, one label since 2026-10-28
+
+**STATUS: emitted.** The type landed in `81f0f703d` (2026-10-07); what changed on
+2026-10-28 is the LABEL RULE: `pushConstruction` is now the single emitter for all
+four VB construction surfaces and the `calls` edge that used to sit beside it is
+gone (a construction is one event and it is `instantiates`; the family's csharp
+lane draws the same line and its `calls` rule excludes
+`object_creation_expression`). Measured on the 57-file `.vb` population present on
+this machine, `script/m14/vb-payload-latency.ts`: **459 `instantiates` edges,
+156.5 KiB** — and the `calls` class no longer contains them. The counts below are
+the measurement that made the gap visible in the first place.
 
 | construct | count | files |
 |---|---:|---:|
 | `object_creation_expression` (plus the `New` inside an `invocation_expression`) | 16,871 | 1,266 |
 | `array_creation_expression` (`New T(args)` with arguments) | 18,636 | 1,457 |
 
-**35,507 construction sites.** VB.NET has the construct in bulk and the analyzer
-publishes a `calls` edge for every one of them — carrying
-`metadata.constructed: true` — but no `instantiates` edge exists anywhere in the
-file. The family contract for `instantiates` is csharp's
-`object_creation_expression` → `{source: enclosing, target: constructed type,
-confidence: 0.95, metadata: {isNew: true}}`, and the shape transfers to VB
-unchanged because the construct is the same construct.
+**35,507 construction sites.** VB.NET has the construct in bulk, and when this was
+measured the analyzer published a `calls` edge for every one of them — carrying
+`metadata.constructed: true` — with no `instantiates` edge anywhere in the file.
+The family contract for `instantiates` is csharp's `object_creation_expression` →
+`{source: enclosing, target: constructed type, confidence: 0.95, metadata: {isNew:
+true}}`, and the shape transfers to VB unchanged because the construct is the same
+construct. VB's four surfaces (`New Foo`, `New Foo(a)`, `As New Foo()`, `New
+A.B.C(x)`) each reach the one emitter, which stamps `constructionNode`,
+`constructionForm`, `qualifiedConstruction` and `constructsArray` so a reader can
+tell `New String() {"a"}` from `New Gauge(1)` in the graph itself.
 
-### `uses` — **GAP**
+### `uses` — **was a GAP**; emitted since 2026-10-07, and it is not a write
+
+**STATUS: emitted** (landed `81f0f703d`, 2026-10-07). 0.9 when the file declares
+the read name, 0.7 when it does not (the honesty contract's reason code is
+`metadata.resolvedInFile`). Measured on the 57-file population present on this
+machine: **3,141 `uses` edges, 737.9 KiB**, the largest relationship class in the
+lane — larger than `references`. What changed on 2026-10-28 is the exclusion at
+the end of this section: a member WRITE is not a `uses` edge, and the fixture now
+forbids one instead of asserting it.
 
 | construct | count | files |
 |---|---:|---:|
@@ -320,7 +390,25 @@ A second measured fact shapes the callee test: `obj.M().N()` puts the
 the `invocation_expression`, so the climb has to pass through it or every chained
 call's leading segment reads as a use.
 
-### `exports` — **RULED**, with the measurement that rules it
+A third fact CLOSES one row the fixture used to assert, and the fixture now
+forbids it instead: **a member write is not a use.** `Me._name = "x"` is
+`assignment_statement` → `member_access_expression` → identifiers, and an earlier
+reading of the contract published `uses QualifiedRead -> _name` for it on the
+grounds that a member name is a member name. That conflates two classes the
+family keeps apart: `uses` is a value read (go's GO1 and csharp's CS-D4/CS-R1
+define it as a read that is neither a call nor a write), and a write neither reads
+nor calls. The analyzer never emitted the edge — there is no member-write branch
+in the `uses` path — so the correction is to the fixture, and
+`forbidRelationships` now asserts the absence so a future "let's be generous with
+member names" change fails a test instead of quietly re-overlapping the classes.
+
+The honest half of that correction is what is NOT being claimed: this analyzer
+publishes **no `writes` edges at all** (0 in the fixture's own dump), so the
+assignment is a DISCLOSED GAP, not a represented fact. Filling the gap is a
+separate piece of work with its own census; absorbing the write into `uses` would
+not have filled it, it would have mislabelled a mutation as a read.
+
+### `exports` — the ruling below was **REVERSED**; the measurement is why it was possible to reverse it
 
 Two measurements, because a grammar cannot see a CONVENTION and the json lane's
 own table records that a grammar-inventory-only ruling on `exports` was unsound:
@@ -341,6 +429,34 @@ own table records that a grammar-inventory-only ruling on `exports` was unsound:
 The ruling is falsifiable, which is what makes it a ruling: a probe finding a
 non-zero count of an export-bearing node type overturns it, and this probe is
 committed so that it can be re-run.
+
+**SUPERSEDED — the analyzer publishes `exports` edges and has since `81f0f703d`
+(2026-10-07); this doc said RULED until 2026-10-28, and that lag is itself the
+finding. The two instruments above are not overturned.** No export-bearing node type was ever
+found; what the instruments measured is that the *grammar* has no export
+construct, and that is still true. What changed is the reading of Instrument B:
+an `exports` edge here is not a claim that VB has an export *statement*. It is a
+claim that a declaration carries a modifier that publishes it, and the edge
+records WHICH accessibility did the publishing — `accessLevel` (the member's own,
+read from its modifiers, or the documented default when it writes none),
+`accessFromModifier` (whether the file wrote it), `role`, and `ownerAccessLevel`
+(the container's own level, so a `Public` member of a `Friend` class is one
+filter away instead of invisible). Measured on the 57-file population present on
+this machine: **594 `exports` edges, 139.2 KiB** — and the member-level model is
+pinned by rows the fixture asserts, not by prose: a modifier-less top-level class
+is NOT an export of the assembly (`root -> InternalOnly` is a `forbidRelationships`
+row) while its `Public` member IS (`InternalOnly -> LooksPublic`, carrying
+`ownerAccessLevel: friend`).
+
+That last cell is also where this lane found the defect worth naming: the
+producer already stamped each symbol's `accessLevel`, and `pushExport` read it with
+a `?? "assembly"` fallback — but `pushSymbol` spread the caller's `extra` AFTER
+its own `metadata`, so every visitor that passes metadata (`visitType` passes
+`grammarNode`, `sealed`, `partial`) **erased** the accessibility and the fallback
+stood in for the measurement. The fix is a merge, and
+`vb/symbol-metadata-clobbers-access-level` in `script/m14/vb-mutate-local.ts`
+reinstates the spread order and requires the lane to go RED, so the assertion is
+load-bearing rather than incidental.
 
 ### The grammar defect the tuple-return finding exposes
 
@@ -384,6 +500,24 @@ can actually filter on:
 | extends | 272 | 1.19 | 62.8 KiB | 1.37 |
 | implements | 101 | 0.44 | 18.1 KiB | 0.39 |
 
+**SUPERSEDED by the one-label change (2026-10-28), and the numbers above are
+left as measured rather than restated.** They were taken while a construction was
+published as `calls` carrying `metadata.constructed`; a construction is now
+`instantiates` and nothing else, so the `calls` rows above over-count by exactly
+the construction sites and `instantiates` under-counts by the same. The
+`roslyn-vb` corpus (3,751 files) this sample was drawn from is not present on the
+machine this note was written on, so the AFTER row is **not** re-measured — a
+different population wearing the same label is not the same measurement. What is
+measured, on the only `.vb` population on disk (**57 files under `fsharp`**,
+DERIVED by sorted walk, same instrument, `script/m14/vb-payload-latency.ts`):
+11,708 relationships, 2,970.0 KiB, of which `uses` 3,141 / `references` 2,759 /
+`contains` 2,366 / `calls` 1,838 / `exports` 594 / `instantiates` 459 / `imports`
+361. (The lane's residual gate over the same population prints **11,710** with
+`imports` 363 — the two instruments differ by exactly two import rows, and the
+difference is recorded rather than smoothed.) Two facts follow and both are
+checkable: the `calls` class now carries **no** construction, and the two types
+this ontology pass added are 3,600 of 11,708 edges (30.7 %).
+
 **This is a regression against a green budget and it is reported as one.** The
 workstream's rule is "report it — do not quietly re-baseline"; nothing here changed
 a baseline. Two honest qualifications, both measured rather than asserted:
@@ -393,9 +527,12 @@ a baseline. Two honest qualifications, both measured rather than asserted:
    defect 1 and the `Sub New*`/argument-bearing-construction repairs landing in the
    same branch: a construction with arguments (`New Box(1, 2)`) was an
    `array_creation_expression` with no `function` field, so reading the callee from
-   `function` dropped them. `uses` (4,519 edges, 1073.8 KiB) and `instantiates`
-   (677 edges, 180.2 KiB) — the two types this ontology pass added — account for
-   1,253.8 KiB of the 2,182.8 KiB growth, and `calls` for more than the rest.
+   `function` dropped them. Those construction repairs are now published as
+   `instantiates` rather than `calls` (one label, see the table above), so the
+   `calls` growth this bullets attributes is partly a label that later moved.
+   `uses` (4,519 edges, 1073.8 KiB) and `instantiates` (677 edges, 180.2 KiB) —
+   the two types this ontology pass added — account for 1,253.8 KiB of the
+   2,182.8 KiB growth as measured then, and `calls` for more than the rest.
 2. **The workstream's own comparison is against `bb_graph`'s un-narrowed default,
    which is a per-QUESTION payload, not a per-corpus one.** 4600.4 KiB over 300
    files is 15.33 KiB/file; the 795 KiB (ripgrep) figure is a whole-repo graph
