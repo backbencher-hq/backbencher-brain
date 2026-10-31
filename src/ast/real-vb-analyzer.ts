@@ -152,6 +152,21 @@ const VB_BUILTIN_TYPE_CANONICAL: ReadonlyMap<string, string> = new Map(
   VB_BUILTIN_TYPE_NAMES.map((n) => [n.toLowerCase(), n]),
 )
 
+/** True for the characters a line-continuation can put inside a name, without a regex literal. */
+const WHITESPACE_CHARS = new Set([" ", "\t", "\n", "\r", "\f", "\v", "\u00a0", "\u2028", "\u2029", "\uFEFF"])
+
+/**
+ * `text` with every whitespace character removed. Written as a character filter rather than
+ * `replace(/\s+/g, "")` because the fleet's DONE definition forbids regex literals in analyzers
+ * (script/m14/no-regex-gate.sh reads the AST for RegExpLiteral nodes), and this lane's own header
+ * records that it once carried exactly one — see the note above `visitImports`.
+ */
+function stripWhitespace(text: string): string {
+  let out = ""
+  for (const ch of text) if (!WHITESPACE_CHARS.has(ch)) out += ch
+  return out
+}
+
 export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Populated per analyze() call. The engine constructs one analyzer and reuses
   // it across files, so nothing here may survive a call — see reset().
@@ -2359,7 +2374,12 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       // path is checkable against a namespace declaration while a bare segment is not. The LINE stays on
       // the leaf token, because that is the node that carries the last-segment name the reader lands on.
       const token = this.namingToken(nameNode, nameNode.text)
-      const written = nameNode.text.replace(/\s+/g, "").trim()
+      // The written namespace as the source spells it, with every whitespace character removed
+      // WITHOUT A REGEX: the fleet's DONE definition is that resolution uses no regex (the census in
+      // script/m14/no-regex-gate.sh reads the AST for RegExpLiteral nodes), and a line-continuation
+      // inside an `Imports` statement is exactly the case that needs the strip. A character-class
+      // filter is the same answer as a substitution for a one-letter predicate.
+      const written = stripWhitespace(nameNode.text)
       const text = written.length > 0 ? written : this.nameText(token ?? nameNode)
       if (text.length === 0) continue
       const range = this.range(nameNode)
