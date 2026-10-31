@@ -263,6 +263,27 @@
      "run": "npx tsx validation/m14/fixtures/protobuf/measurements/extend-surface.mts (walks every admitted .proto; population admitted=907 across 22 repos, the gate's own line 'admitted files [0, 1) of 907')",
      "wouldFail": "a construct in the admitted population that places a member-set into a type's supertype chain, or any published tree-sitter-proto build carrying a mixin production \u2014 0 of 218 extend blocks are such a construct"
     }
+   },
+   {
+    "id": "PB-REL-14",
+    "node_type": "import",
+    "status": "RULED",
+    "question": "Is `part_of` emitted for `import \"x.proto\"` \u2014 does a .proto file INCLUDE another file as a part of one library unit?",
+    "resolution": "RULED, and `part_of` is the type this decision is about. Instrument and probe: THE LADDER WALKED. R1 UNAVAILABLE: `part` is a language feature (a directive and a directive-having file), and the protobuf specification defines none \u2014 no published tree-sitter-proto build can carry a production the language does not have. R2 NOT SANCTIONED: a patch would have to invent a `part`/`part of` syntax `protoc` rejects, the invented-syntax line. R3 WALKED on the existing `import` node and NOT TAKEN: MEASURED over the whole admitted population with validation/m14/fixtures/protobuf/measurements/import-surface.mts, which read every one of the 907 admitted .proto files (0 unreadable): 1,708 `import` sites in 611 files (4 public, 3 weak, 10 editions-feature imports at R3's level of detail), and 1,659 of the 1,708 paths name a file the population admits \u2014 49 name only a string (the docker/swarmkit Go-style import roots, whose vendored tree is a different module path). The contract (src/ast/types.ts, PartOf) is a library unit INCLUDING a part file where the part SHARES THE LIBRARY'S SINGLE SCOPE, imports nothing, AND CANNOT BE RESOLVED AS A SEPARATE MODULE. The protobuf import fails the defining element twice: (1) SEMANTICS \u2014 every .proto has its own `package` scope and is compiled as a separate unit; an import gives the importer visibility to the imported file's package, it does not splice the imported file's declarations into the importer's single scope (the near miss is already the `imports` relation, which this lane emits: PB-REL-7); (2) TARGET SHAPE \u2014 the only thing an import names is a PATH. The fleet's measured rule for this type is that a part_of/mixes_in target must be SYMBOL-SHAPED (cpp measured 0 of 4,612 path targets resolving), and the analyzer publishes no file/module symbol here: a path target resolves 0 rows, and minting a per-file symbol to receive the edge would put a symbol in the graph protobuf does not declare \u2014 the same reasoning PB-REL-12 applies to the package. R3 is walked and not taken for the adjudicated-ontology reason, not because the grammar lacks an import node \u2014 it has one, and it is measured.",
+    "measured": {
+     "import_sites": 1708,
+     "files_with_imports": 611,
+     "targets_naming_an_admitted_file": 1659,
+     "targets_only_a_string": 49,
+     "import_public": 4,
+     "import_weak": 3,
+     "import_option": 10,
+     "path_targets_resolving_to_symbols": 0
+    },
+    "falsifier": {
+     "run": "npx tsx validation/m14/fixtures/protobuf/measurements/import-surface.mts (walks every admitted .proto; population admitted=907 across 22 repos, the gate's own line 'admitted files [0, 1) of 907')",
+     "wouldFail": "an import whose target is a published SYMBOL rather than a path, or whose semantics share the importer's single scope (a textual/scope splice) \u2014 0 of the 1,708 import sites name a symbol, and each .proto keeps its own package scope"
+    }
    }
   ]
  },
@@ -306,6 +327,13 @@
     "from": "THE LADDER WAS WALKED (PB-REL-13 carries the full record). R1 unavailable: the protobuf language defines no mixin clause, so no published build can carry the production. R2 not sanctioned: a patch would invent syntax `protoc` rejects. R3 walked: `extend` is the nearest node type \u2014 218 extend blocks in 64 files over the whole admitted population (907 .proto files across 22 repositories), 89 same-file targets and 129 cross-file (124 google.protobuf.* runtime options + 5 corpus declarations), ALL 218 targets symbol-shaped. But the contract (src/ast/types.ts:141-148) composes a member-set into a SUPERTYPE CHAIN, and protobuf has no supertype chain (PB-REL-1's intersection 0); the composition is declared by the extender into a field-number range, the extended message's own declaration never names it, and the composer (the extend block) emits no symbol by design (PB-REL-2). The only symbol-shaped endpoints are the extended message (target) and the declaring scope (a package namespace or enclosing message \u2014 not a mixin), so the relation cannot be asserted without inventing its source. Measurement: validation/m14/fixtures/protobuf/measurements/extend-surface.mts. JSON's DONE-lane mixes_in exclusion used the same adjudication shape for allOf/$ref (26,654 pointers, no composition) \u2014 the near-miss is counted there too.",
     "count": 218,
     "falsifier": "population admitted=907 .proto files across 22 repos (gate line: `admitted files [0, 1) of 907`, CHUNK; the probe walks all 907, 0 unreadable); wouldFail: a protobuf construct that places a member-set into a type's supertype chain, or any published tree-sitter-proto build carrying a mixin production (0 of the 218 extend blocks are such a construct)"
+   },
+   {
+    "label": "part_of",
+    "evidence": "ontological (grammar-absence does NOT apply \u2014 the `import` node is in the served grammar and was measured; the reason is the ADJUDICATED ONTOLOGY of a module load, not a missing production)",
+    "from": "THE LADDER WAS WALKED (PB-REL-14 carries the full record). R1 unavailable: the language has no part/part-of directive, so no published build carries it. R2 not sanctioned: a patch would invent syntax `protoc` rejects. R3 walked: `import` is the nearest node type \u2014 1,708 import sites in 611 of 907 files over the whole admitted population, of which 1,659 name an admitted file (97.1%) and 49 name only a string; the near miss is already emitted as the `imports` relation (PB-REL-7). Not taken because the contract's part SHARES THE LIBRARY'S SINGLE SCOPE and cannot be resolved as a separate module, while every .proto keeps its own package scope and compiles separately, AND because the only thing an import names is a PATH \u2014 the fleet's measured rule is that a part_of/mixes_in target must be SYMBOL-SHAPED (cpp: 0 of 4,612 path targets resolved), and no file/module symbol exists to receive it (minting one is the fabricated-symbol defect PB-REL-12 refuses). Measurement: validation/m14/fixtures/protobuf/measurements/import-surface.mts.",
+    "count": 1708,
+    "falsifier": "population admitted=907 .proto files across 22 repos (gate line: `admitted files [0, 1) of 907`, CHUNK; the probe walks all 907, 0 unreadable); wouldFail: an import whose target is a published symbol rather than a path, or whose semantics share the importer's single scope (0 of 1,708 sites; each file keeps its own package scope)"
    }
   ],
   "corpusUnexercised": [],
