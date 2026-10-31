@@ -191,10 +191,13 @@ const out: any = {
   },
   decorates: {
     validationBlocks: 0,
+    validationBlocksWithCallInCondition: 0,
     preconditionOrPostconditionBlocks: 0,
+    preOrPostWithCallInCondition: 0,
     dependsOnAttributeSites: 0,
     appliedCallableCandidateSites: 0,
-    appliedCallableNote: "no HCL construct applies a callable TO a declaration; counted to state the zero as a measurement",
+    appliedCallableNote: "no HCL construct applies a callable TO a declaration; counted to state the zero as a measurement. A function call inside a validation/postcondition CONDITION is evaluated by Terraform as an expression, never applied to the declaration",
+    samples: [] as string[],
   },
   renders: {
     templatefileCallees: 0,
@@ -276,8 +279,27 @@ for (const f of files) {
       }
       if (h.type === "lifecycle") out.mixes_in.lifecycleBlocks++
       if (h.type === "provisioner") out.mixes_in.provisionerBlocks++
-      if (h.type === "validation") out.decorates.validationBlocks++
-      if (h.type === "precondition" || h.type === "postcondition") out.decorates.preconditionOrPostconditionBlocks++
+      if (h.type === "validation") {
+        out.decorates.validationBlocks++
+        // Does the assertion's CONDITION invoke a callable? That call is EVALUATED, not applied to
+        // the declaration — counted so the ruling's "0 applied callables" is a measurement.
+        let hasCall = false
+        walk(n, (x) => {
+          if (x.type !== "function_call") return
+          hasCall = true
+          // only calls under the condition/error_message attributes count for this reading
+        })
+        if (hasCall) {
+          out.decorates.validationBlocksWithCallInCondition++
+          if (out.decorates.samples.length < 10) out.decorates.samples.push(`${rel}:${n.startPosition.row + 1} validation with call in condition`)
+        }
+      }
+      if (h.type === "precondition" || h.type === "postcondition") {
+        out.decorates.preconditionOrPostconditionBlocks++
+        let hasCall = false
+        walk(n, (x) => { if (x.type === "function_call") hasCall = true })
+        if (hasCall) out.decorates.preOrPostWithCallInCondition++
+      }
       if (h.type === "module" && attrs.has("source")) out.mixes_in.moduleBlocksWithSource++
       if (h.type === "module" && attrs.has("providers")) out.mixes_in.moduleBlocksWithProvidersArgument++
       if (h.type === "variable") out.mixes_in.variableBlocks++

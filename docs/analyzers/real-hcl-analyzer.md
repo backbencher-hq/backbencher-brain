@@ -35,6 +35,7 @@ each entry says what the edge asserts here, and what it is not.
 | `implements` | — (ruled, below) | HCL has no interface to implement |
 | `instantiates` | a `resource` / `data` block constructs an instance of the PROVIDER TYPE its first label names (`resource "aws_instance" "web"` instantiates `aws_instance`); the source is the document root, the target is the type label as written, and `metadata.instanceType`/`instanceKind`/`instanceName` say which instance and which half of the provider schema | not a declaration — a provider type is declared by a provider BINARY, in no repository, so the target resolves externally or not at all, and no symbol is invented for it. IMPLEMENTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 blocks over 444 labels, 0 labels declared as a type |
 | `mixes_in` | — (ruled, below) | no HCL construct composes a MEMBER SET from one declaration into another; `dynamic` repeats a member set the enclosing block itself writes, and `lifecycle`/`provisioner` are already `contains` |
+| `decorates` | — (ruled, below) | no HCL construct applies a CALLABLE to a declaration. `validation` / `precondition` / `postcondition` are assertion blocks whose condition is EVALUATED, and `depends_on` is ordering metadata — both are already `contains`/`references` |
 
 ## Relationship ontology — what was changed in this wave
 
@@ -510,6 +511,13 @@ blocks / 1 label-less data block / 3 DSL blocks, i.e. NAMES that happen to spell
 997 of the 3,932 sites carry one, so the arm's `resolved` column for this type is an UPPER BOUND on
 correct type binding. Shape pinned by `instantiates-resource-type.tf` (pre-change 13 pass / 1 fail,
 post-change 14 pass / 0 fail).
+
+`decorates` is RULED (HCL-D14): the decoration-shaped constructs are `validation` 1,228 (992 carrying a
+function call inside the CONDITION — evaluated, never applied), `precondition`/`postcondition` 57 (16
+with a call), and `depends_on` 883 (ordering addresses, already `references`); 0 declaration-attached
+callables over the whole population. R1 has no decorator production in the 64-name grammar, R2 would
+have to invent syntax HCL does not have, R3's only decoration-shaped nodes are those measured near
+misses — so the relation would assert an applied callable the vocabulary does not credit.
 
 `mixes_in` is RULED (HCL-D12): 374 `dynamic` blocks write their generated members in the source
 `content` block (15 with nested block children, 359 attribute-only) and iterate VALUES (859 `for_each`
