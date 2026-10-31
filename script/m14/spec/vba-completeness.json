@@ -152,7 +152,54 @@
       "references": "src/ast/real-vba-analyzer.ts:209 (as_type_clause / type_expression -> the type name). Fixtures: validation/m14/fixtures/vba/adversarial.expectation.json, control-flow.expectation.json, representative.expectation.json.",
       "uses": "src/ast/real-vba-analyzer.ts:283 (with_statement receiver), :292 (control-flow reads: On Error, ReDim, For/For Each binders, Select/Case values), :310 (member receiver), :351 (assignment/set right-hand reads), :370 (identifier reads). Fixtures: validation/m14/fixtures/vba/adversarial.expectation.json, control-flow.expectation.json, loops-and-select.expectation.json, member-access.expectation.json, representative.expectation.json."
     },
-    "_pending_arm": "DONE condition 2 (whole-population arm + DERIVED declaration) is NOT AVAILABLE IN THIS TREE: the corpus holds 0 genuine VBA files (2 extension candidates, both LaTeX; see _corpus_absence_2026_10_29), and an arm over them would measure a LaTeX document class parsed as VBA \u2014 an ERROR-node population, not a VBA population. The extension entry is already in place at script/m14/language-extensions.ts:172 (`vba: \"vba,bas,cls,frm\"`). When the owner's corpus decision supplies a genuine population, the arm is: npx tsx script/m14/sliced-declaration.ts --lang vba --slices <dir> --exts vba,bas,cls,frm --expect-population <the gate's own admitted N> [--closure <merge>] --write; the resulting counts (and only those) would enter a new `_implemented_measured` block with `_unit` naming that population."
+    "_pending_arm": "DONE condition 2 (whole-population arm + DERIVED declaration) is NOT AVAILABLE IN THIS TREE: the corpus holds 0 genuine VBA files (2 extension candidates, both LaTeX; see _corpus_absence_2026_10_29), and an arm over them would measure a LaTeX document class parsed as VBA \u2014 an ERROR-node population, not a VBA population. WHAT IS READY, SO THE ARM IS ONE COMMAND: coverage._implemented_measured carries per-type fixture counts from script/m14/vba-fixture-census.ts -> validation/m14/measurements/vba-fixture-census.json (edges/files per type, 105 edges over 10 files), the extension entry is in place at script/m14/language-extensions.ts:172 (`vba: \"vba,bas,cls,frm\"`), and the command is: npx tsx script/m14/sliced-declaration.ts --lang vba --slices <dir> --exts vba,bas,cls,frm --expect-population <the gate's own admitted N> [--closure <merge>] --write. When that runs, its per-type counts (and only those) replace the fixture block's rows for population purposes, with `_unit` naming the admitted population; the fixture block stays as the lane's own baseline.",
+    "_implemented_measured": {
+      "_unit": "FIXTURE POPULATION: the 10 files under validation/m14/fixtures/vba, measured through the live parser and the production analyzer by script/m14/vba-fixture-census.ts -> validation/m14/measurements/vba-fixture-census.json (10 fixtures, 36 symbols, 105 relationships). THIS IS NOT THE ADMITTED CORPUS POPULATION: the corpus holds 0 genuine VBA files (see _corpus_absence_2026_10_29), so no whole-population claim is made anywhere in this file. These rows are the fixture evidence the implemented list rests on and the baseline the sliced arm will be compared against when a VBA corpus arrives.",
+      "_why": "The corpus is absent, not measured-by-choice: 2 extension candidates corpus-wide, both LaTeX document classes, 0 VBA sources (command and file list in _corpus_absence_2026_10_29; per-fixture counts in validation/m14/measurements/vba-fixture-census.json). An arm over those 2 files would measure a LaTeX class parsed as VBA, so it is not run and these fixture counts are not laundered as coverage.",
+      "_population_kind": "fixture",
+      "_instrument": "script/m14/vba-fixture-census.ts",
+      "_artifact": "validation/m14/measurements/vba-fixture-census.json",
+      "calls": {
+        "edges": 13,
+        "files": 6
+      },
+      "contains": {
+        "edges": 10,
+        "files": 6
+      },
+      "decorates": {
+        "edges": 10,
+        "files": 10
+      },
+      "exports": {
+        "edges": 18,
+        "files": 9
+      },
+      "implements": {
+        "edges": 1,
+        "files": 1
+      },
+      "imports": {
+        "edges": 6,
+        "files": 3
+      },
+      "instantiates": {
+        "edges": 1,
+        "files": 1
+      },
+      "references": {
+        "edges": 7,
+        "files": 4
+      },
+      "uses": {
+        "edges": 39,
+        "files": 7
+      },
+      "_total": {
+        "edges": 105,
+        "files": 10
+      }
+    }
   },
   "_extended_types_2026_10_29": {
     "_question": "the four extended relationship values are this lane's gap surface: one is IMPLEMENTED (decorates), three are RULED with a class, a count and a falsifier (renders, mixes_in, part_of); the two ten-value types the analyzer did not emit at lane creation are now CLOSED \u2014 imports IMPLEMENTED (VBA-D7) and overrides RULED (VBA-D6).",
