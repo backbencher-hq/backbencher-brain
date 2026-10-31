@@ -154,7 +154,7 @@
     "node_type": "message_or_enum_type,type",
     "status": "RULED",
     "question": "Is `references` emitted as its OWN label? This is not a missing construct, and the difference is the whole point of the ruling.",
-    "resolution": "RULED, and `references` is the type this decision is about. Instrument and probe: RULED, instrument A (grammar inventory), for the SEPARATE label only. Protobuf's only references are TYPE references \u2014 there is no expression, no variable read and no value use, because the language has no expression. The construct occurs constantly (10,166 `message_or_enum_type` nodes at this corpus size) and it IS emitted, as  the references label: a field's declared type, a map VALUE type, a oneof_field's type, and both of an rpc's request and response. A SCALAR produces no edge, decided structurally \u2014 a `type` node holding a `message_or_enum_type` child is a reference, one with no named children is a keyword \u2014 so an unrecognised scalar is safe by construction rather than by being absent from a hardcoded list. The `references` label stays unused because there is no SECOND KIND of reference for it to name, and emitting both labels on one node would make one edge mean two things. OVERTURN: any observed construct that references a name other than a type.",
+    "resolution": "RULED, and `references` is the type this decision is about. Instrument and probe: RULED, instrument A (grammar inventory), for the SEPARATE label only. Protobuf's only references are TYPE references \u2014 there is no expression, no variable read and no value use, because the language has no expression. The construct occurs constantly (10,166 `message_or_enum_type` nodes at this corpus size) and it IS emitted, as  the references label: a field's declared type, a map VALUE type, a oneof_field's type, and both of an rpc's request and response. A SCALAR produces no edge, decided structurally \u2014 a `type` node holding a `message_or_enum_type` child is a reference, one with no named children is a keyword \u2014 so an unrecognised scalar is safe by construction rather than by being absent from a hardcoded list. SUPERSEDED IN PART 2026-10-27: the sentence above — the one saying the `references` label stays unused — described the state before the label moved. The type-position edges are now emitted AS `references` — 13,275 edges, all 6 emission sites, 1:1 from `uses`, no edge gained or lost — because the fleet's type-position contract names a field's declared type `references` (the c, java and csharp type-position precedent). The `uses` label is retired to a measured grammar-absence (see coverage.excluded): a name READ AS A VALUE has no construct in a language with no expression. The rest of this ruling still holds: a SCALAR produces no edge, decided structurally; and there is still no SECOND KIND of reference. OVERTURN: any observed construct that references a name other than a type.",
     "measured": {
      "message_or_enum_type_nodes": 10166,
      "intersection": 0,
@@ -251,7 +251,7 @@
   "implemented": [
    "contains",
    "imports",
-   "uses",
+   "references",
    "exports",
    "overrides"
   ],
@@ -275,6 +275,11 @@
     "label": "instantiates",
     "evidence": "grammar-absence",
     "from": "whole-corpus firing over ALL 128 admitted .proto files (pb-googleapis, `[corpus=pb-googleapis WHOLE]`, 128/128 parsed, 0 degraded, instrument self-test PASS): instantiates 0 edges. A .proto declares types; it does not construct values."
+   },
+   {
+    "label": "uses",
+    "evidence": "grammar-absence",
+    "from": "RETIRED BY THE 1:1 RELABEL, and the construct itself is a grammar absence. The `uses` contract is a name READ AS A VALUE; protobuf has no expression, no variable and no value read at all, which is the same fact PB-REL-5 recorded from the other side. MEASURED, not asserted: the label carried 13,275 edges over the whole 821-file / 18-repository population (PB-REL-9, `uses_edges 13275`), every one of them a TYPE-POSITION name, and all 13,275 moved 1:1 to `references` in one relabel (6 emission sites, no edge gained or lost — the counts are equal before and after). The label now emits 0. The served grammar's own named-type inventory carries no expression or value-read family: 50 named types, 0 of them an expression/variable/value-use node (validation/m14/measurements/protobuf-grammar-nodes.json, served digest 4624eb6d4b78). TOML, the DONE configuration-language precedent, excludes `uses` by the same class for the same reason."
    }
   ],
   "corpusUnexercised": [],
@@ -286,8 +291,9 @@
    "imports": {
     "edges": 368
    },
-   "uses": {
-    "edges": 1159
+   "references": {
+    "edges": 13275,
+    "_population": "PB-REL-9's whole-corpus measurement over the 821-file / 18-repository population (validation/m14/spec/protobuf-completeness.json _corpus). The 13,275 edges were measured under the retired `uses` label and moved 1:1 to `references` on 2026-10-27, so the count is the same edges and the label is the fleet's type-position contract: a field's declared type NAMES a type the way a query would (c/java/csharp type-position precedent). Emission sites: 6 (fieldType, groupType, mapValueType, oneofFieldType, rpcRequest, rpcResponse)."
    },
    "exports": {
     "edges": 4,
