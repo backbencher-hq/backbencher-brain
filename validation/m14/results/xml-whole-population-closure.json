@@ -367,9 +367,9 @@
   "closure": {
     "edges": 225223,
     "resolved": 193331,
-    "collRes": 0,
+    "collRes": 184317,
     "ambDecl": 28429,
-    "ambKind": 0,
+    "ambKind": 345,
     "unresolved": 95,
     "extOK": 3162,
     "extPending": 206,

@@ -231,6 +231,17 @@ function main(): void {
   for (const s of slices) {
     merged.edges += s.terms.edges
     for (const k of TERM_NAMES) merged[k] += s.terms[k]
+    // ⇒⇒⇒ **THE BESIDE-THE-CLOSURE SUMS ARE STILL SUMS.** `collRes` and `ambKind` are parsed out of
+    // every slice's TOTAL row and PRINTED and WRITTEN into the closure's meta, but this accumulator
+    // only ever added the eleven TERM_NAMES — so the artifact reported both as 0 while the slices
+    // carried real values. Measured 2026-10-31 by the markdown lane, doing the addition: its closure
+    // meta read `collRes 0 · ambKind 0` against true sums of 197,513 and 2. Neither number is a term
+    // of the eleven-term check (they are SUBSETS, printed beside it and never added), which is exactly
+    // why nothing refused: an unreported number and a falsely-zeroed number look the same to a check
+    // that never reads them. The declaration is unaffected (it reads the per-type rows), but the
+    // closure artifact is a published measurement and a false zero in it is a false statement.
+    merged.collRes += s.terms.collRes
+    merged.ambKind += s.terms.ambKind
   }
 
   // ── (c) THE ELEVEN TERMS SUM TO THE MERGED EDGE COUNT ──────────────────────────────────────────
