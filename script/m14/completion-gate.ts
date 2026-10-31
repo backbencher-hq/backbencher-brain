@@ -562,17 +562,53 @@ const judgeLane = (lane: string, row: GateRow): LaneVerdict => {
       const unresolvedTotal = entries.reduce((a, [, r]) => a + Number((r as any)?.otherUnresolved ?? 0), 0)
       const externalTotal = entries.reduce((a, [, r]) => a + Number((r as any)?.external ?? 0), 0)
       const edgeTotal = resolvedTotal + ambiguousTotal + unresolvedTotal + externalTotal + unclassedTotal
+      // ⇒⇒⇒ **THE BUCKETS ARE A PARTITION OF THE CLOSURE, AND THIS GATE NEVER CHECKED IT — IT ONLY
+      // PRINTED THE EQUATION.** The fifth condition read the five buckets, summed them, and called the
+      // sum "edges": so a declaration whose buckets were 94 SHORT of its own per-type edge counts read
+      // clean, because `edges` was never read from the declaration at all. Measured 2026-10-31 (bash
+      // lane, doing the addition by hand): `calls` had 47,309 edges and 47,215 bucket rows — the 94
+      // were `extUnk`, dropped by the generator's bucket mapping and invisible here; haskell 67, swift
+      // 5, xml 206, zig 8 carried the same gap. THE GENERATOR IS FIXED (extUnk and bindUnk now fold
+      // into the buckets they belong to, and it refuses to write a non-partition), and this gate now
+      // COMPARES every type's buckets against that type's own `edges`. A non-partition is a hole in
+      // the instrument and it fails the condition instead of reading as a round number.
+      // THE CHECK NEEDS PER-TYPE `edges`, AND OLDER DECLARATIONS DO NOT CARRY IT: they publish the
+      // five buckets and the totals, not the per-type edge count, so a comparison against
+      // `edges ?? 0` would read every legacy declaration as a 100% hole (measured: the first version
+      // of this check failed the gate's OWN POSITIVE CONTROL on ruby, 0 stated edges vs 85,102
+      // buckets). So the partition is asserted WHERE IT CAN BE ASSERTED — any declaration whose rows
+      // carry `edges` — and a declaration that cannot answer is REPORTED AS UNCHECKED rather than
+      // passed or failed on a number it does not contain.
+      const hasPerTypeEdges = entries.some(([, r]) => Number.isFinite(Number((r as any)?.edges)))
+      const declaredEdges = entries.reduce((a, [, r]) => a + Number((r as any)?.edges ?? 0), 0)
+      const partitionBad = hasPerTypeEdges
+        ? entries
+            .filter(([, r]) => {
+              const row: any = r
+              const sum = buckets.reduce((n, b) => n + Number(row?.[b] ?? 0), 0)
+              return sum !== Number(row?.edges ?? 0)
+            })
+            .map(([t]) => t)
+        : []
+      const partitionOk = hasPerTypeEdges ? partitionBad.length === 0 && declaredEdges === edgeTotal : true
       // ⇒⇒⇒ **UNCLASSED IS A CEILING OF ZERO** — the instrument can only classify an edge into a
       // bucket, so an edge it cannot classify at all is a hole in the instrument, and the fleet's own
       // rule is that the ceiling is 0, ALWAYS.
       const unclassedOk = unclassedTotal === 0
       const bucketsOk = bad.length === 0
       conditions.set("resolved", {
-        ok: bucketsOk && unclassedOk,
+        ok: bucketsOk && unclassedOk && partitionOk,
         detail:
           `edges ${edgeTotal} = resolved ${resolvedTotal} + external ${externalTotal} + ambiguous ${ambiguousTotal} + otherUnresolved ${unresolvedTotal} + unclassed ${unclassedTotal}` +
           (unclassedOk ? "" : ` — *** UNCLASSED IS ${unclassedTotal}, AND THE CEILING IS 0, ALWAYS ***`) +
           (bucketsOk ? "" : ` — bad bucket values: ${bad.join(", ")}`) +
+          (partitionOk
+            ? hasPerTypeEdges
+              ? ""
+              : " — the partition IS NOT CHECKABLE from this declaration: its rows carry no per-type `edges`, so a reader cannot add the buckets back to the closure (declarations written by the current sliced-declaration.ts do carry it)"
+            : ` — *** THE BUCKETS ARE NOT A PARTITION: the declaration states ${declaredEdges} per-type edges but the five buckets sum to ${edgeTotal}` +
+              (partitionBad.length ? ` (types off: ${partitionBad.join(", ")})` : "") +
+              ` — an edge that is in the closure and in no bucket is a hole in the generator, not a rounding ***`) +
           (caveatList.length > 0
             ? `; THE LANE'S OWN RESOLUTION CAVEATS (a stated caveat is a ruling, and it is printed so no reader assumes this bucket means what another lane's bucket means): ${caveatList.join(" | ")}`
             : `; *** NO RESOLUTION CAVEATS DECLARED — so a reader must assume this lane's buckets mean what every other lane's buckets mean, and that assumption is NOT CHECKED ***`),

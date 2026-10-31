@@ -201,13 +201,31 @@ for (const l of LABELS) {
   types[l] = {
     edges: r.edges,
     resolved: r.resolved,
-    external: r.extOK,
+    // ⇒⇒⇒ **THE ELEVEN TERMS ARE THE EDGE COUNT, AND THE FIVE BUCKETS MUST BE A PARTITION OF THEM.**
+    // The first version of this mapping wrote `external: r.extOK` and `otherUnresolved: r.unresolved
+    // + r.bindOK + r.causeOK` and DROPPED `extUnk` and `bindUnk` — so on any type carrying an
+    // external-unknown or binding-unknown row the five buckets did NOT sum to `edges`. It was silent
+    // for months and the completion gate printed the equation without ever comparing it; the bash lane
+    // found it by doing the addition (calls 47,309 edges vs 47,215 buckets = its 94 extUnk rows) and
+    // named the same gap on haskell (67), swift (5), xml (206) and zig (8). ⇒ THE MAPPING NOW FOLDS
+    // BOTH UNKNOWN CLASSES INTO THE BUCKET THAT MEANS "not resolved here", and the assertion below
+    // REFUSES TO WRITE a declaration whose rows are not a partition.
+    external: r.extOK + r.extUnk,
     ambiguous: r.ambDecl,
-    otherUnresolved: r.unresolved + r.bindOK + r.causeOK,
+    otherUnresolved: r.unresolved + r.bindOK + r.bindUnk + r.causeOK,
     unclassed: 0,
     _ambKind: r.ambKind,
     _collRes: r.collRes,
     closure: { edges: r.edges, resolved: r.resolved, collRes: r.collRes, ambDecl: r.ambDecl, ambKind: r.ambKind, unresolved: r.unresolved, extOK: r.extOK, extUnk: r.extUnk, extFAIL: r.extFAIL, bindOK: r.bindOK, bindUnk: r.bindUnk, bindFAIL: r.bindFAIL, causeOK: r.causeOK, causeFAIL: r.causeFAIL },
+  }
+}
+
+// ⇒⇒⇒ THE PARTITION CHECK, AT THE GENERATOR, BECAUSE THE DECLARATION IS THE ARTIFACT A READER TRUSTS.
+for (const [label, t] of Object.entries(types) as [string, any][]) {
+  const sum = t.resolved + t.external + t.ambiguous + t.otherUnresolved + t.unclassed
+  if (sum !== t.edges) {
+    console.error(`REFUSED (7): ${label}'s five buckets sum to ${sum} but its edges are ${t.edges} (shortfall ${t.edges - sum}) — the buckets are not a partition of the closure`)
+    process.exit(7)
   }
 }
 
@@ -243,7 +261,9 @@ for (const l of LABELS) {
 const decl = {
   meta: {
     lang,
-    instrument: `script/m14/incoming-gate.ts over ${sliceCount} DISJOINT slices (a union, merged by script/m14/merge-arm-slices.ts and cross-checked here); this declaration is DERIVED from the slices' own TABLE 1 by script/m14/sliced-declaration.ts, which refuses on any non-closure`,
+    instrument: HAS_CLOSURE_DECL
+      ? `script/m14/incoming-gate.ts over ${sliceCount} DISJOINT slice(s) (a union, merged by script/m14/merge-arm-slices.ts and cross-checked here); this declaration is DERIVED from the slices' own TABLE 1 by script/m14/sliced-declaration.ts, which refuses on any non-closure`
+      : `script/m14/incoming-gate.ts over ONE WHOLE-POPULATION PROCESS (no slices, no merge — the run's own TOTAL row IS the closure); this declaration is DERIVED from that TABLE 1 by script/m14/sliced-declaration.ts, which refuses on any non-closure`,
     sample: parsed, corpusTotal: admitted, parsed,
     population: POP,
     populationRule: { rule: `the admitted set is the GIT-TRACKED set: per-checkout \`git ls-files\` over $PWD/.corpus, extensions ${exts} from the router's one table, files present on disk and at most 1 MiB` },
@@ -257,7 +277,9 @@ const decl = {
   causeRulings,
   resolution_caveats: [
     "A CAUSE IS STATED, NOT RESOLVED: unresolved rows live in otherUnresolved (which also holds the binding-spelled and declared-cause rows), never in resolved, and the analyzer's scope is PER FILE with index=no — a target declared in another file of the project is genuinely out of its reach and the arbiter (which holds the project) is what answers it.",
-    "THE POPULATION IS A UNION OF DISJOINT SLICES, not one process: the merge refuses a hole, an overlap and a closure whose eleven terms do not sum, and this generator re-checks the union against the closure artifact before writing.",
+    HAS_CLOSURE_DECL
+      ? "THE POPULATION IS A UNION OF DISJOINT SLICES, not one process: the merge refuses a hole, an overlap and a closure whose eleven terms do not sum, and this generator re-checks the union against the closure artifact before writing."
+      : "THE POPULATION IS ONE WHOLE-POPULATION PROCESS, not a union of slices: every admitted file was measured by a single run, and that run's own TOTAL row is the closure the per-type sums are checked against.",
     "`collRes` IS A SUBSET OF `resolved` AND IS NEVER ADDED: a resolved edge whose target had more than one declaration in the project, so production's own-file tie-break chose the row. The resolved column is a FLOOR on correct resolution, not a count of correct edges.",
     "`amb(kind)` IS A SUBSET OF `amb(decl)`: it counts distinct KINDS among the colliding declarations, while amb(decl) counts distinct DECLARATIONS.",
     "THE WALL COUNTS ARE TABLE 1's EXACT COLUMNS, summed over the slices; the NAMES quoted in each ruling are the arm's own 25-name-capped worklist, cited as evidence of WHICH cause and never as a count.",
