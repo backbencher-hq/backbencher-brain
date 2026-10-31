@@ -183,8 +183,13 @@ Recorded for the supervisor rather than worked around: the fix is a shared file.
 Measured with `validation/m14/measurements/hcl/hcl-corpus-census.ts` (production
 `parseFile` from `src/ast/pool-worker.ts`, never `analyze()`) and
 `validation/m14/measurements/hcl/hcl-construct-probe.ts` (instruments A and B).
-Corpus: **9,329 tracked files / 16 repositories / 2,035,319 nodes**, every tracked
-file whose path routes to `hcl` — a census, not a sample.
+Corpus — **TWO populations, and every count on this page says which one it is.** The **CENSUS** is
+**9,329 tracked files / 16 repositories / 2,035,319 nodes** (root `$HOME/fixtures/repositories`,
+exts `tf,hcl,tfvars,tofu`, files present on disk and ≤1 MiB; the lane's own walk) — every construct count
+below is a CENSUS count. **THE ARM POPULATION IS 11,139 admitted** (the gate's own line, root
+`$PWD/.corpus`, same extensions; 38 width-300 slices, contiguous [0, 11,139), closure exact 307,748) and
+IS the declaration's (`validation/m14/instruments/hcl/incoming-declaration.json`). A count from one
+population is never quoted as the other's.
 
 | Type | Verdict | Edges | Files | Example sites |
 | --- | --- | --- | --- | --- |
