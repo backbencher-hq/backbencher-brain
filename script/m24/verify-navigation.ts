@@ -1650,14 +1650,14 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string; oracle?: Muta
     to: "    searchedIndex: true,\n  };\n}",
   },
   {
-    // §15.3 (permanent, F7 rule): edgeLocationDetailed's read-failure branch is
-    // replaced by the fabricated zero-width range that used to live there — a
-    // plausible-looking target for a row the component cannot verify. Caught by
-    // the "no fabricated line" assertion in navMutantOracle (it asserts
-    // edgeLocation returns null for an unreadable path).
+    // §15.3 (permanent, F7 rule): edgeLocationDetailed's fresh-read failure branch is replaced by the
+    // fabricated zero-width range that used to live there — a plausible-looking target for a row the
+    // component cannot verify. (The cached-read-error fast path is a second, equivalent branch; the harness's
+    // oracle uses an unreadable path that takes this fresh-read branch.) Caught by the "no fabricated line"
+    // assertion in navMutantOracle (it asserts edgeLocation returns null for an unreadable path).
     name: "position: fabricated line-only location restored on read failure (§15.3)",
-    from: "    return {\n      location: null,\n      absence: {\n        reason: \"unresolvable_location\",\n        language: languageForPath(path),\n        detail: `source file could not be read (${(error as Error).message}); the stored line is omitted rather than emitted unverified`,\n        searchedIndex: true,\n      },\n    };",
-    to: "    void error;\n    const line = Math.max(0, lineStart - 1);\n    return { location: { path, line, character: 0, endLine: line, endCharacter: 0 }, absence: null };",
+    from: "      return {\n        location: null,\n        absence: {\n          reason: \"unresolvable_location\",\n          language: languageForPath(path),\n          detail: `source file could not be read (${(error as Error).message}); the stored line is omitted rather than emitted unverified`,\n          searchedIndex: true,\n        },\n      };",
+    to: "      void error;\n      const line = Math.max(0, lineStart - 1);\n      return { location: { path, line, character: 0, endLine: line, endCharacter: 0 }, absence: null };",
   },
   {
     // §5 rule 1 (permanent, F7 rule): the inline byte->UTF-16 walk comes back

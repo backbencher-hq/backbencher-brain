@@ -181,6 +181,12 @@ for (const name of root.commands) {
 // counted as a top-level command.
 
 const cliSrc = read("src/cli/index.ts")
+// Commander chains may spread one `.option(` over several lines with the flag string on the NEXT line
+// (`--file` and `--exclude` are written that way). The declaration scan below reads line by line, so
+// without flattening those continuations it silently misses real options and reports the declarations
+// and the parsed help as disagreeing. Flatten ONLY the `(.option( + newline` continuation; the flag
+// strings themselves stay on their original lines after it.
+const cliSrcFlat = cliSrc.replace(/\.option\(\s*\r?\n\s*/g, ".option(")
 const declaredFlags = new Map<string, Set<string>>()
 const declaredSubcommands = new Map<string, Set<string>>()
 const declaredCommands: string[] = []
@@ -191,7 +197,7 @@ const varToCommand = new Map<string, string>()
   let currentCmd: string | null = null
   let pendingTop = false
   let pendingVar: string | null = null
-  for (const line of cliSrc.split("\n")) {
+  for (const line of cliSrcFlat.split("\n")) {
     if (/^\s*program\s*$/.test(line)) {
       owner = "program"
       currentCmd = null
