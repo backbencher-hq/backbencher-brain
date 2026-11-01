@@ -177,29 +177,55 @@ type StoredModels = { model: string; count: number }[]
 // Reads embedding models from the project's brain.db WITHOUT creating or
 // writing it: opens the file directly in readonly mode. Missing DB or table
 // yields [] — diagnosed as "no index yet", not an error.
-function readStoredModels(projectId: string, dataDir: string): StoredModels {
+interface StoredModelsRead {
+  models: StoredModels
+  /** Why the index could not be read, or null. "Unreadable" is NOT "empty": see the finding below. */
+  unreadable: string | null
+}
+
+/**
+ * Open a project DB read-only from whichever SQLite the current runtime provides.
+ *
+ * THE RUNTIME MATTERS HERE, AND THE OLD CODE ASSUMED ONE. This used better-sqlite3 only; that driver is
+ * UNAVAILABLE under Bun ("'better-sqlite3' is not yet supported in Bun"), so `bb doctor` run from the
+ * documented Bun-from-source path caught the failure and reported the index as EMPTY. Measured 2026-11-01:
+ * a project whose index held 14 provider vectors printed only "No embedding configuration / Fix: bb setup"
+ * and never said it held vectors — while the same project under Node read them fine. A diagnostic tool whose
+ * answer changes with the runtime must say which one it could not read, not silently choose "none".
+ */
+function openProjectDbReadonly(dbPath: string): any {
+  // Anchor require at the repo root package.json — a bare require() from src/setup/ fails to resolve under
+  // the compiled ESM bundle (the M30 P0 class: works under tsx, broken in dist).
+  const require = createRequire(path.join(ROOT_PKG, "package.json"))
+  if (typeof (globalThis as any).Bun !== "undefined") {
+    const { Database } = require("bun:sqlite")
+    return new Database(dbPath, { readonly: true })
+  }
+  const Database = require("better-sqlite3")
+  return new Database(dbPath, { readonly: true, fileMustExist: true })
+}
+
+function readStoredModels(projectId: string, dataDir: string): StoredModelsRead {
   const dbPath = path.join(dataDir, "projects", projectId, "brain.db")
-  if (!existsSync(dbPath)) return []
+  if (!existsSync(dbPath)) return { models: [], unreadable: null }
   try {
-    // Anchor require at the repo root package.json — a bare require() from
-    // src/setup/ fails to resolve under the compiled ESM bundle (the M30 P0
-    // class: works under tsx, broken in dist).
-    const require = createRequire(path.join(ROOT_PKG, "package.json"))
-    const Database = require("better-sqlite3")
-    const db = new Database(dbPath, { readonly: true, fileMustExist: true })
+    const db = openProjectDbReadonly(dbPath)
     try {
       const rows = db
         .prepare(
           `SELECT embedding_model AS model, COUNT(*) AS count FROM brain_semantic_embedding WHERE project_id = ? GROUP BY embedding_model`,
         )
         .all(projectId) as { model: string; count: number }[]
-      return rows.map((r) => ({ model: String(r.model), count: Number(r.count) }))
+      return { models: rows.map((r) => ({ model: String(r.model), count: Number(r.count) })), unreadable: null }
     } finally {
       db.close()
     }
-  } catch {
-    // Table missing (old index) or driver unavailable: treat as no stored data.
-    return []
+  } catch (e: any) {
+    // Table missing on an old index is NOT an unreadable file: distinguish by message. Anything else is a
+    // read failure and must be reported as unknown-not-empty.
+    const message = String(e?.message ?? e)
+    if (message.includes("no such table")) return { models: [], unreadable: null }
+    return { models: [], unreadable: message.slice(0, 200) }
   }
 }
 
@@ -290,7 +316,23 @@ export function runDoctorChecks(opts: {
   // 2. Model consistency: winning model vs stored embedding models.
   const winnerTier = state.tiers.find((t) => t.complete)
   const winnerModel = winnerTier?.model
-  const storedModels = opts.storedModels ?? (opts.projectId ? readStoredModels(opts.projectId, dataDir) : [])
+  const storedRead: StoredModelsRead = opts.storedModels
+    ? { models: opts.storedModels, unreadable: null }
+    : opts.projectId
+      ? readStoredModels(opts.projectId, dataDir)
+      : { models: [], unreadable: null }
+  const storedModels = storedRead.models
+  if (storedRead.unreadable) {
+    findings.push({
+      id: "index-unreadable",
+      severity: "warn",
+      message:
+        `This project's index exists but doctor could not read its embedding table from this runtime ` +
+        `(${storedRead.unreadable}). Stored vectors are UNKNOWN, not absent — the model-consistency checks ` +
+        `below cannot run.`,
+      fix: "run the shipped binary (npx backbencher-brain doctor) or check the database file permissions",
+    })
+  }
   if (winnerModel && storedModels.length > 0) {
     const matches = storedModels.filter((s) => s.model === winnerModel)
     if (matches.length === 0) {
@@ -313,6 +355,27 @@ export function runDoctorChecks(opts: {
         })
       }
     }
+  } else if (!winnerModel && storedModels.length > 0) {
+    // NO CONFIG, BUT THE INDEX HOLDS VECTORS. This is the real-world case measured 2026-11-01: a project
+    // indexed from a directory whose bb.json configured a provider, diagnosed later from a different
+    // directory (or with `bb doctor --dir <project>`). Neither "model-mismatch" nor "no-index" fired —
+    // `no-index` needs a winner model and the mismatch branches need one too — so doctor printed only
+    // "No embedding configuration / Fix: bb setup" and never told the user the index ALREADY has vectors
+    // from a model that queries in this configuration cannot compare with. `bb health` showed them; doctor
+    // did not. Say what the index holds, and why it is not comparable.
+    const total = storedModels.reduce((sum, m) => sum + m.count, 0)
+    const storedDesc = storedModels.map((s) => `${s.model} (${s.count} rows)`).join(", ")
+    const mixed = storedModels.length > 1
+    findings.push({
+      id: "stored-unconfigured",
+      severity: "info",
+      message:
+        `The index holds ${total.toLocaleString()} vector(s) from ${storedDesc}, but no embedding provider is ` +
+        `configured from this directory. Queries would use ${localLabel}, which is a DIFFERENT embedding space, ` +
+        `so those vectors are not comparable to new queries.` +
+        (mixed ? " The index also contains vectors from more than one model, so even a configured query compares only one of them." : ""),
+      fix: "bb setup (or run bb doctor from the directory whose config built this index)",
+    })
   } else if (winnerModel && storedModels.length === 0) {
     findings.push({
       id: "no-index",

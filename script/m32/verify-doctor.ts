@@ -224,6 +224,55 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   t.cleanup()
 }
 
+// A9. Stored vectors with NO configured provider: doctor must say what the index holds.
+//
+// Measured real-world case, 2026-11-01: a project indexed from a directory whose bb.json configured the
+// nvidia provider, later diagnosed from another directory (or via `bb doctor --dir <project>`): no winner
+// model, stored models present. Neither mismatch branch could fire and `no-index` needed a winner, so doctor
+// printed only "No embedding configuration / Fix: bb setup" — never that the index already held vectors that
+// this configuration cannot compare with (`bb health` showed them; doctor did not).
+{
+  const t = tmpEnv()
+  const r = doctor.runDoctorChecks({
+    cwd: t.proj,
+    env: {},
+    dataDir: t.dataDir,
+    storedModels: [{ model: "provider-model-p", count: 14 }],
+  })
+  const f = findings(r)
+  check("A9: stored vectors with no config produce stored-unconfigured", f.has("stored-unconfigured"), JSON.stringify([...f.keys()]))
+  check("A9: the stored model and count are named", f.get("stored-unconfigured")?.message?.includes("provider-model-p") && f.get("stored-unconfigured")?.message?.includes("14"))
+  check("A9: the message says the vectors are not comparable", String(f.get("stored-unconfigured")?.message ?? "").includes("DIFFERENT embedding space"))
+  check("A9: no mismatch is claimed without a winner model", !f.has("model-mismatch") && !f.has("model-mixed"))
+  const rEmpty = doctor.runDoctorChecks({ cwd: t.proj, env: {}, dataDir: t.dataDir, storedModels: [] })
+  check("A9: no stored vectors → no stored-unconfigured claim", !findings(rEmpty).has("stored-unconfigured"))
+  const rMixed = doctor.runDoctorChecks({
+    cwd: t.proj,
+    env: {},
+    dataDir: t.dataDir,
+    storedModels: [{ model: "provider-model-p", count: 10 }, { model: "local-word-vectors-v3", count: 4 }],
+  })
+  check("A9: a mixed index is called out in the same finding", String(findings(rMixed).get("stored-unconfigured")?.message ?? "").includes("more than one model"))
+  t.cleanup()
+}
+
+// A10. An index that exists but cannot be read is UNKNOWN, never "no stored vectors".
+{
+  const t = tmpEnv()
+  const fakeProjectId = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+  const dir = path.join(t.dataDir, "projects", fakeProjectId)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(path.join(dir, "brain.db"), "this is not a sqlite database\n")
+  const r = doctor.runDoctorChecks({ cwd: t.proj, env: {}, dataDir: t.dataDir, projectId: fakeProjectId })
+  const f = findings(r)
+  check("A10: unreadable index produces index-unreadable", f.has("index-unreadable"), JSON.stringify([...f.keys()]))
+  check("A10: the finding says vectors are UNKNOWN, not absent", String(f.get("index-unreadable")?.message ?? "").includes("UNKNOWN, not absent"))
+  // Missing DB is different: no unreadable claim, and (with no config) no stored-vector claim either.
+  const rMissing = doctor.runDoctorChecks({ cwd: t.proj, env: {}, dataDir: t.dataDir, projectId: "0000000000000000000000000000000000000000" })
+  check("A10: a missing index is not claimed unreadable", !findings(rMissing).has("index-unreadable"))
+  t.cleanup()
+}
+
 // ---------------------------------------------------------------------------
 // B. Mutants — each planted defect must be caught
 // ---------------------------------------------------------------------------
@@ -287,6 +336,32 @@ const mutants: Mutant[] = [
       try {
         const r = m.runDoctorChecks({ cwd: fx.dir, env: {}, dataDir: fx.dataDir, storedModels: [{ model: "different", count: 5 }] })
         return !r.findings.some((f: any) => f.id === "model-mismatch")
+      } finally { fx.cleanup() }
+    },
+  },
+  {
+    name: "unreadable index silently treated as empty",
+    mutate: (src) => src.replace('id: "index-unreadable",', 'id: "index-unreadable-removed",'),
+    probe: async (m) => {
+      const fx = mutantFixture(0o600, undefined)
+      try {
+        const id = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        const dir = path.join(fx.dataDir, "projects", id)
+        mkdirSync(dir, { recursive: true })
+        writeFileSync(path.join(dir, "brain.db"), "not a database\n")
+        const r = m.runDoctorChecks({ cwd: fx.dir, env: {}, dataDir: fx.dataDir, projectId: id })
+        return !r.findings.some((f: any) => f.id === "index-unreadable")
+      } finally { fx.cleanup() }
+    },
+  },
+  {
+    name: "stored-vectors-without-config finding removed",
+    mutate: (src) => src.replace('id: "stored-unconfigured",', 'id: "stored-unconfigured-removed",'),
+    probe: async (m) => {
+      const fx = mutantFixture(0o600, undefined)
+      try {
+        const r = m.runDoctorChecks({ cwd: fx.dir, env: {}, dataDir: fx.dataDir, storedModels: [{ model: "provider-model-p", count: 14 }] })
+        return !r.findings.some((f: any) => f.id === "stored-unconfigured")
       } finally { fx.cleanup() }
     },
   },
