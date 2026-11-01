@@ -120,7 +120,7 @@ try {
   harness.check("unmodified file mode reports fresh", filePayload.stale === false)
 
   // The escape is refused as an MCP ERROR ENVELOPE (isError + a message), which
-  // is what the handler's own M40.A7 contract requires. This assertion used to
+  // is what the handler's own error-envelope contract requires. This assertion used to
   // demand a THROWN error, so it only passed while the handler leaked raw
   // throws out of the tool call — i.e. the gate was pinning the defect it
   // claimed to be guarding. Read the envelope, and assert it carries no content.

@@ -1,10 +1,21 @@
-// script/m15/verify-search-complete.ts — M15.S1-S8 (bb_search) GENUINE redo.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Replacement for the original S-verifier whose S2/S4/S5/S7/S8 sections carried
-// auto-pass assertions (count >= 0, ck(..., true), nk(..., true), a fabricated
-// "rake" fixture). Every section now exercises a real code path, a real
-// measurement, or a real repository; a self-audit at S7 forbids hollow
-// assertions in this file itself.
+// WHAT THIS FILE IS — the behavioural gate for bb_search: nine sections that run
+//   the real handler/engines over a fixture and a real repository, from argument
+//   routing and bounds through content routes, freshness, paging and regex.
+// WHICH TOOL IT SERVES — bb_search (read; modes symbols/content/symbol/file).
+// WHY IT IS SHAPED THIS WAY — a gate that writes `known-gap` evidence and still
+//   exits 0 cannot fail a build, so the exit code is decided by the cumulative
+//   failure count, and `BB_M15_PLANT_FAILURE=1` injects a failure to prove that
+//   path. Sections are independent `emit()` documents so a failure is attributable.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/s1..s8.json.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_search/{handler,descriptor}.ts,
+//   src/intelligence/search/*, the other search gates.
+// CONTRACTS IT MUST NOT BREAK — no hollow assertions (`ck(..., true)`), every
+//   negative case observed on a real code path, and a non-zero exit for any
+//   failed check.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
