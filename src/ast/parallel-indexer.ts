@@ -16,6 +16,7 @@ import {
 } from "./pool-diagnostics"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
+import { resolveScopedProjectFile } from "./scoped-path"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
 import { decideWatchdog, WATCHDOG_MIN_STALL_MS, WATCHDOG_TICK_MS } from "./watchdog-policy"
 import { isTestFileCandidate } from "./test-classification"
@@ -886,6 +887,26 @@ async function discoverAndFilterFiles(
 ): Promise<string[]> {
   const files: string[] = []
   const eligibleOnly = mode === "eligible-only"
+  // ONE PATH CONTRACT FOR SCOPED RUNS. `files` may arrive from the CLI (`--file`), the MCP index tool,
+  // or the edit path; each used to pass whatever spelling it had into `brain_file.path`. A relative
+  // spelling is later judged by `purgeDeletedFiles` against the process cwd and deleted. Resolve every
+  // override against the PROJECT directory here, once, and refuse the run when one cannot be resolved:
+  // silently dropping an invalid override is how "reindex this file" became "nothing to index".
+  const refusedScoped: string[] = []
+  if (filesOverride && filesOverride.length > 0) {
+    const normalized: string[] = []
+    for (const input of filesOverride) {
+      const resolved = resolveScopedProjectFile(projectPath, input)
+      if (resolved.ok) normalized.push(resolved.absolute)
+      else refusedScoped.push(`${String(input)} (${resolved.reason}: ${resolved.resolved})`)
+    }
+    if (refusedScoped.length > 0) {
+      throw new Error(
+        `scoped file path refused — the request must name a file inside ${projectPath}: ${refusedScoped.join("; ")}`,
+      )
+    }
+    filesOverride = normalized
+  }
   const startTime = Date.now()
   const { readFile, stat: statFile } = await import("fs/promises")
   const { createHash } = await import("crypto")
@@ -958,6 +979,9 @@ async function discoverAndFilterFiles(
   const structuralExtensions = new Set([".json", ".yaml", ".yml", ".toml", ".xml", ".xsd", ".dtd", ".md", ".proto"])
 
   async function processFile(fullPath: string) {
+    // The store keys a file by this path. `brain_file.path` is absolute for every discovery path; a
+    // scoped override that bypassed discovery must not be the one relative row in the table.
+    fullPath = path.resolve(projectPath, fullPath)
     try {
       const fileStat = await statFile(fullPath)
       foundFiles.add(fullPath)
@@ -2440,6 +2464,20 @@ let embeddingFlushWaiters: Array<() => void> = []
  */
 export function pendingEmbeddingCount(): number {
   return backgroundEmbedQueuedItems
+}
+
+/**
+ * Is ANY embedding work in flight — an active job, queued jobs, or queued items?
+ *
+ * `pendingEmbeddingCount()` counts ITEMS waiting in the module-level queue. While a job is being drained
+ * it has been REMOVED from that queue and `backgroundEmbedActive` is true, so the count can be 0 while the
+ * provider call and its DB writes are still running. Measured 2026-11-01: a fresh demo index printed
+ * "0 embeddings" and "Embedding Coverage … no vectors" and then wrote 14 vectors — the CLI had asked
+ * only the item counter. Callers that need DURABILITY (the CLI report, the in-run health verdict) must
+ * ask this instead, and then await `flushBackgroundEmbeddings`.
+ */
+export function embeddingDrainPending(): boolean {
+  return backgroundEmbedActive || backgroundEmbedJobs.length > 0 || backgroundEmbedQueuedItems > 0
 }
 const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
 
@@ -7866,12 +7904,20 @@ export async function runPostProcessing(
     try {
       _t = Date.now()
       const { runIndexHealthCheck } = await import("../brain/brain-index-health")
-      const health = await runIndexHealthCheck(projectId)
+      // Embeddings are still being written in the background at this point; the coverage check must
+      // not grade a half-drained table as "no vectors, keyword-only". Defer it, and let the CLI print
+      // the authoritative health line after the drain (measured lie, 2026-11-01).
+      const embeddingsStillDraining = embeddingDrainPending()
+      const health = await runIndexHealthCheck(projectId, { deferEmbeddingCoverage: embeddingsStillDraining })
       recordPhase("integrity", Date.now() - _t, "ok")
       integrityHealth = health.overallHealth
       _log.log(`  ✓ health check in ${Date.now()-_t}ms`)
       const warnCount = health.checks.filter((c) => c.status !== "ok").length
-      if (warnCount > 0) {
+      if (health.deferredEmbeddingCoverage) {
+        _log.log(
+          `  · index health: ${health.overallHealth}% — embedding coverage deferred until the embedding drain finishes`,
+        )
+      } else if (warnCount > 0) {
         _log.log(`  ⚠️  Index health: ${health.overallHealth}% — ${warnCount} warnings (run bb_health(integrity=true) for details)`)
         for (const c of health.checks.filter((c) => c.status === "error")) {
           _log.log(`    ❌ ${c.name}: ${c.description}`)
@@ -8298,10 +8344,53 @@ export async function purgeDeletedFiles(projectId: ProjectID, projectPath: strin
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const rows = rawDb.prepare(`SELECT id, path FROM brain_file WHERE project_id = ?`).all(projectId) as any[]
   const { existsSync } = await import("fs")
+  const { canonicalProjectRoot } = await import("./scoped-path")
+  // THE PURGE MUST JUDGE PATHS THE WAY THE STORE WROTE THEM, AND THE WAY THE PROJECT IS ROOTED.
+  //
+  // This used to be `existsSync(r.path)` with r.path taken on trust and relative paths resolved
+  // against the PROCESS CWD. A scoped `--file src/util/math.ts` run stored that relative spelling;
+  // the next run from another directory therefore judged the LIVE file deleted and removed its
+  // symbols, relationships and embeddings (reproduced 2026-11-01: 11 files → 10, exit 0). Two fixes:
+  //   1. resolve a relative row against the PROJECT root, and heal it to the absolute spelling the
+  //      rest of the index uses, so the anomaly cannot survive one more run;
+  //   2. never delete a row whose path resolves outside the project — a row that names another tree
+  //      is a different defect (already refused by the write paths), and deleting local files is not
+  //      a repair for it.
+  const projectRoot = canonicalProjectRoot(projectPath)
   const deadIds: string[] = []
+  const healed: Array<{ id: string; path: string; relative: string }> = []
+  let keptOutside = 0
   for (const r of rows) {
-    // brain_file.path stores the absolute path at index time.
-    if (typeof r.path === "string" && !existsSync(r.path)) deadIds.push(r.id)
+    const raw = typeof r.path === "string" ? r.path : ""
+    if (raw.length === 0) continue
+    const absolute = path.isAbsolute(raw) ? raw : path.resolve(projectRoot, raw)
+    const inside = absolute === projectRoot || absolute.startsWith(projectRoot + path.sep)
+    if (!inside) {
+      keptOutside++
+      continue
+    }
+    let exists = false
+    try {
+      exists = existsSync(absolute)
+    } catch {
+      exists = false
+    }
+    if (exists) {
+      if (!path.isAbsolute(raw)) healed.push({ id: r.id, path: absolute, relative: path.relative(projectRoot, absolute) })
+      continue
+    }
+    deadIds.push(r.id)
+  }
+  if (healed.length > 0) {
+    const heal = rawDb.prepare(`UPDATE brain_file SET path = ?, relative_path = ? WHERE id = ?`)
+    const txHeal = rawDb.transaction((items: Array<{ id: string; path: string; relative: string }>) => {
+      for (const h of items) heal.run(h.path, h.relative, h.id)
+    })
+    txHeal(healed)
+    log.info("purgeDeletedFiles: healed relative brain_file.path rows to absolute", { count: healed.length })
+  }
+  if (keptOutside > 0) {
+    log.warn("purgeDeletedFiles: refused to purge rows whose path is outside the project", { count: keptOutside, projectRoot })
   }
   if (deadIds.length === 0) return 0
   const deleteRelBySource = rawDb.prepare(`DELETE FROM brain_relationship WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)

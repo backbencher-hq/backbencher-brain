@@ -100,6 +100,14 @@ export interface IndexHealthReport {
   /** M64.I3: ok / scoredChecks, 0-100. Informational checks do not count. */
   overallHealth: number
   /**
+   * True when the caller asked for Embedding Coverage to be deferred because the embedding drain is
+   * still writing vectors. The check is then ABSENT from `checks` — not passing, not failing — and the
+   * caller is expected to re-run the battery after the drain. Added 2026-11-01 after a measured lie:
+   * a fresh index printed `❌ Embedding Coverage: … holds no vectors, so semantic search is
+   * keyword-only` while the drain was about to write 12 (and, on a real repo, 1,117) vectors.
+   */
+  deferredEmbeddingCoverage?: boolean
+  /**
    * A64.V1: the honest summary word, derived rather than asserted. `overallHealth`
    * alone is a RATIO of checks, so a project with nothing indexed scores 92%
    * (measured: 11 of 12 checks "ok" on an empty DB — every "is this data
@@ -137,6 +145,14 @@ export interface IndexHealthReport {
 // ─── Core Validation ───────────────────────────────────────────────────────
 
 export interface IndexHealthOptions {
+  /**
+   * Defer the Embedding Coverage check while the background embedding drain is still running. The
+   * indexer calls it this way on the hot path (it checks health BEFORE waiting for the drain), and the
+   * CLI re-runs the battery after the drain and prints the authoritative verdict. Without this, a
+   * healthy run printed an error-level "no vectors, keyword-only" claim about vectors that landed
+   * seconds later. See deferredEmbeddingCoverage on the report.
+   */
+  deferEmbeddingCoverage?: boolean
   /**
    * M64.N1: how the two disk-touching checks (Hash Drift, Files Missing) choose
    * which files to look at.
@@ -214,8 +230,9 @@ export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHe
   // 7. Files missing from disk
   checks.push(await checkMissingFiles(rawDb, projectId, diskScan, preResolved))
 
-  // 8. Embedding coverage
-  checks.push(await checkEmbeddingCoverage(rawDb, projectId))
+  // 8. Embedding coverage — deferred while the embedding drain still has work (see option docs)
+  const deferredEmbeddingCoverage = options.deferEmbeddingCoverage === true
+  if (!deferredEmbeddingCoverage) checks.push(await checkEmbeddingCoverage(rawDb, projectId))
 
   // 9. Syntax error files
   checks.push(await checkSyntaxErrorFiles(rawDb, projectId))
@@ -268,6 +285,7 @@ export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHe
     projectId,
     timestamp: Date.now(),
     overallHealth,
+    deferredEmbeddingCoverage,
     verdict,
     indexStatus: completeness.indexStatus,
     staleness,

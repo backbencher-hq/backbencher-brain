@@ -20,6 +20,7 @@ import { bbProjectsDir } from "../util/bb-data-dir"
 import { LogLevel, setLogLevel } from "../util/log"
 import { computeCheckoutFingerprint, readStoredFingerprint } from "../ast/fingerprint"
 import { FRESHNESS_REMEDIATION } from "../brain/freshness"
+import { describeScopedPathRefusal, resolveScopedProjectFile } from "../ast/scoped-path"
 import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../ast/auto-refresh"
 import { resolveRowsFreshnessDetailed } from "../brain/freshness"
 
@@ -88,6 +89,18 @@ async function cmdIndex(
       process.exitCode = 1
       return
     }
+  }
+  // Resolve a scoped `--file` BEFORE any side effect (no adoption, no lock, no "indexing" banner, no
+  // DB write). A refusal must be the first and only thing the user sees.
+  let resolvedScopedFile: string | null = null
+  if (opts.file) {
+    const resolved = resolveScopedProjectFile(abs, opts.file)
+    if (!resolved.ok) {
+      console.error(`✗ ${describeScopedPathRefusal(resolved)}`)
+      process.exitCode = 1
+      return
+    }
+    resolvedScopedFile = resolved.absolute
   }
   // M40.A1: standalone post-processing — re-runs the five heavy phases +
   // integrity check WITHOUT re-parsing. The remediation for stale derived
@@ -204,7 +217,9 @@ async function cmdIndex(
   const indexOpts: Parameters<typeof indexProjectParallel>[2] = { onProgress: (s) => {} }
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
   if (opts.file) {
-    indexOpts.files = [opts.file]
+    // Resolved and validated before the run started (see resolvedScopedFile above), so this block
+    // only consumes the ABSOLUTE path the store requires.
+    indexOpts.files = [resolvedScopedFile!]
     // M40.A5 (matrix row: "--file <p> → single-file reindex + scoped post-pass"):
     // incremental mode scopes the derived pass to this file. Unchanged files
     // still skip (the mtime/size check applies to overrides too) → honest
@@ -296,31 +311,33 @@ async function cmdIndex(
   progress.clear()
   const secs = ((Date.now() - t) / 1000).toFixed(1)
   const db = await BrainDatabase.getRawInstance(pid)
-  const files = (db.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
-  const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
-  const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
-  const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
-  // Reclaim the run's WAL. Nothing in bb truncates it, so it is the sum of
-  // everything written since the file was created — the previous full index left
-  // 766 MB beside a 6.9 GB database, and bb_health reported it (correctly) as a
-  // cost on every later read. The writes have stopped here, which is what makes a
-  // TRUNCATE checkpoint cheap and final. A run now states its own footprint.
-  const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
-  const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
-  console.log(`  index space: ${formatEndSpace(endSpace)}`)
+  // ── EMBEDDINGS ARE WRITES THE REPORT MUST INCLUDE ──────────────────────────────────────────────────
+  // The index (files/symbols/relationships) is complete when indexProjectParallel returns; its VECTORS
+  // may still be draining in the background. This block used to run AFTER the counts were read, so a
+  // fresh run reported `0 embeddings` while the drain wrote 12 (measured demo) and 1,117 (measured
+  // apollo-server) rows; the in-run health block then graded the table as "no vectors, keyword-only".
+  // Drain first, then read every number the report prints, then let health grade the drained table.
+  //
+  // The drain can outlive the index by minutes (measured 2026-10-08: 427 s index, ~10 minutes of silence
+  // after it), which is indistinguishable from a hang unless it is announced, bounded and reported.
   // The index is complete; its VECTORS may not be. The background embedding
   // drainer holds the event loop until its queue empties, so the command can sit
   // silent for minutes AFTER the summary — measured 2026-10-08: a 427 s index
   // followed by ~10 minutes of no output at all, which is indistinguishable from a
   // hang (bb's own closing line invites reporting exactly that). Announce the wait,
   // bound it, and report how it ended.
-  const { pendingEmbeddingCount, flushBackgroundEmbeddings } = await import("../ast/parallel-indexer")
+  const { pendingEmbeddingCount, embeddingDrainPending, flushBackgroundEmbeddings } = await import("../ast/parallel-indexer")
   const pendingAtEnd = pendingEmbeddingCount()
-  if (pendingAtEnd > 0) {
+  // WAIT FOR THE WHOLE QUEUE, NOT JUST ITS ITEM COUNTER. An active drain job is no longer "queued", so
+  // the item count can read 0 while provider calls and their writes are in flight — measured 2026-11-01:
+  // a run printed "0 embeddings" and an error-level "no vectors" health verdict, then wrote 14 vectors.
+  if (embeddingDrainPending()) {
     const waitMs = Number(process.env.BB_EMBEDDING_DRAIN_WAIT_MS || 300000)
     const waitSecs = Math.round(waitMs / 1000)
     console.log(
-      `  finishing ${pendingAtEnd.toLocaleString()} embedding(s) — the index and its relationships are already complete; these are vectors (waiting up to ${waitSecs}s)`,
+      pendingAtEnd > 0
+        ? `  finishing ${pendingAtEnd.toLocaleString()} embedding(s) — the index and its relationships are already complete; these are vectors (waiting up to ${waitSecs}s)`
+        : `  finishing embedding work — the index and its relationships are already complete; vectors are still being written (waiting up to ${waitSecs}s)`,
     )
     const drain = await flushBackgroundEmbeddings({ timeoutMs: waitMs })
     if (drain.resolved === "drained") {
@@ -329,6 +346,44 @@ async function cmdIndex(
       console.log(
         `  ⚠ ${drain.pendingItems.toLocaleString()} embedding(s) still queued after ${waitSecs}s — semantic search is partial for those symbols; run \`bb index --changed\` to finish them`,
       )
+    }
+  }
+
+  // READ THE NUMBERS AFTER THE DRAIN. These are the values every line below prints and the values the
+  // user will check against `bb stats`; a snapshot taken before the drain is a false report.
+  const files = (db.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
+  const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
+  const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
+  const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
+  // Reclaim the run's WAL. Nothing in bb truncates it, so it is the sum of everything written since the
+  // file was created — the previous full index left 766 MB beside a 6.9 GB database, and bb_health
+  // reported it (correctly) as a cost on every later read. The writes have stopped here (the embedding
+  // drain included), which is what makes a TRUNCATE checkpoint cheap and final. A run states its own
+  // footprint.
+  const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
+  const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
+  console.log(`  index space: ${formatEndSpace(endSpace)}`)
+  // THE AUTHORITATIVE HEALTH LINE, after the drain — the in-run battery deferred Embedding Coverage
+  // while vectors were still being written (see runIndexHealthCheck's deferEmbeddingCoverage), so this
+  // is the one verdict that grades a complete index. `bb health` runs the same battery later; the two
+  // must agree on the same DB.
+  if (!stats.cancelled) {
+    try {
+      const { runIndexHealthCheck } = await import("../brain/brain-index-health")
+      const finalHealth = await runIndexHealthCheck(pid)
+      const problemChecks = finalHealth.checks.filter((c) => c.status === "error" || c.status === "warn")
+      if (problemChecks.length === 0) {
+        console.log(`  ✅ index health (after embeddings): ${finalHealth.overallHealth}% — all checks passed`)
+      } else {
+        console.log(
+          `  ⚠️  index health (after embeddings): ${finalHealth.overallHealth}% — ${problemChecks.length} warning(s) (run bb health for details)`,
+        )
+        for (const c of finalHealth.checks) {
+          if (c.status === "error") console.log(`    ❌ ${c.name}: ${c.description}`)
+        }
+      }
+    } catch (healthErr: any) {
+      console.log(`  ⚠ index health could not be re-checked after the embedding drain: ${healthErr?.message ?? healthErr}`)
     }
   }
   // A run that indexed nothing new is a success, but "✓ indexed 0 files" reads
@@ -389,7 +444,15 @@ async function cmdIndex(
     console.log(`  embeddings incomplete: ${parts.join(", ")}`)
     console.log(`    semantic search is degraded — run \`bb doctor\` to check the embedding provider`)
   }
-  const embModels = stats.summary?.embedModels ?? []
+  // Models present in the DB — read AFTER the drain, for the same reason as the counts above.
+  const embModels: Array<{ model: string; dimension: number; count: number }> = db
+    .prepare(
+      `SELECT embedding_model AS model, vector_dimension AS dimension, COUNT(*) AS count
+         FROM brain_semantic_embedding
+        GROUP BY embedding_model, vector_dimension
+        ORDER BY count DESC`,
+    )
+    .all() as Array<{ model: string; dimension: number; count: number }>
   if (embModels.length > 1) {
     console.log(
       `  ⚠ index holds ${embModels.length} embedding models — bb_ask searches only one, so the rest are ignored:`,
@@ -934,7 +997,10 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--no-setup", "skip the first-run embedding setup prompt")
     .option("--skip-post-processing", "parse + store only; SKIP relationship resolution/enrichment/gravity/taint/health (derived data goes stale until: bb index --post)")
     .option("--post", "re-run relationship/enrichment/gravity/taint/health phases only — no re-parse (remediation for stale derived data after --changed/--resume/agent edits)")
-    .option("--file <path>", "reindex a single file's symbols + relationships (runs a scoped derived-data pass for that file)")
+    .option(
+      "--file <path>",
+      "reindex a single file's symbols + relationships, relative to <dir> or absolute and must be inside the project (runs a scoped derived-data pass for that file; refuses a missing/outside path)",
+    )
     .option("--changed", "reindex only files changed since the last index (runs the bounded derived-data pass for touched files — relationships stay current)")
     .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files; runs the bounded derived-data pass)")
     .option("--import <db>", "adopt an existing brain.db file (re-home a moved project's index)")
