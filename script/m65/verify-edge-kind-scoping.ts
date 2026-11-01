@@ -66,10 +66,19 @@ const check = (id: string, pass: boolean, detail: string) => checks.push({ id, p
  * the reason it may. A declaration is a review surface; a silent one is not.
  */
 const DECLARED_ALL_KINDS_DOORS: Record<string, string> = {
-  "src/mcp/tool-handlers.ts":
-    "the bb_graph / bb_analyze door: its all-kinds default is DOCUMENTED (docs/tools/bb_graph.md), " +
-    "the composition of every answer is published as summary.edgesByType, summary.scope.relationshipTypes " +
-    "names the kinds searched, and a caller can pass relationshipTypes",
+  // The split moved the agent door out of the 2,892-line tool-handlers.ts into
+  // one module per tool. bb_graph is NOT listed: its call always forwards the
+  // `relationshipTypes` option (including `undefined`, which is the engine's
+  // documented all-kinds default), so the inventory below sees it as carrying
+  // the option; the disclosure a reader needs is on its own page and gate.
+  "src/mcp/tools/bb_analyze/handler.ts":
+    "the bb_analyze graph modes' door: their all-kinds default is DOCUMENTED (docs/tools/bb_analyze.md), " +
+    "the answer publishes its composition and the kinds searched, and a caller can pass relationshipTypes; " +
+    "mode `impact` walks the declared dependency kinds instead",
+  "src/mcp/tools/shared.ts":
+    "the shared graph-walk helper behind the analyze modes: it forwards the caller's relationshipTypes " +
+    "unchanged and takes the engine default when none is given, which is the documented all-kinds policy " +
+    "of the modes that call it",
   "src/ast/graph.ts":
     "legacy BFS helper: it does not default at all — it passes Object.values(RelationshipType) explicitly, " +
     "so the full kind set is NAMED at the call site rather than inherited",
@@ -420,10 +429,17 @@ async function main() {
   // the check cannot rot in the same way the row did.
   {
     const engineSrc = readFileSync(path.join(ROOT, "src/intelligence/graph/graph-engine.ts"), "utf8")
-    const kinds = (engineSrc.match(/const DEFAULT_REL_TYPES = \[([\s\S]*?)\]/)?.[1] ?? "")
-      .split(",")
-      .map((s) => s.trim().replace(/["']/g, ""))
-      .filter(Boolean)
+    // Parse the DECLARATIONS, not the commentary. The first version split the
+    // array body on "," and counted comment words as kinds (it read 18 kinds from
+    // a 14-kind array), then required a hardcoded 10 — so a correct document and
+    // a correct engine could never both pass. The expectation now comes from the
+    // array itself, and comment text is removed before anything is counted.
+    const body = engineSrc.match(/const DEFAULT_REL_TYPES = \[([\s\S]*?)\]/)?.[1] ?? ""
+    const declarative = body
+      .split("\n")
+      .map((line) => line.replace(/\/\/.*$/, ""))
+      .join("\n")
+    const kinds = [...declarative.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]!)
     const docRow =
       readFileSync(path.join(ROOT, "docs/GRAPH_ENGINE.md"), "utf8")
         .split("\n")
@@ -431,7 +447,7 @@ async function main() {
     const missingKinds = kinds.filter((k) => !docRow.includes(`\`${k}\``))
     check(
       "S2-the-documented-default-is-the-engine's-own-list",
-      kinds.length === 10 && docRow !== "" && missingKinds.length === 0,
+      kinds.length > 0 && docRow !== "" && missingKinds.length === 0,
       `DEFAULT_REL_TYPES holds ${kinds.length} kind(s); docs/GRAPH_ENGINE.md's \`relationshipTypes\` row ` +
         (docRow === ""
           ? "was not found at all"
