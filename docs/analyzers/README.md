@@ -2,9 +2,9 @@
 
 One canonical page per analyzer. Every supported language has exactly one file here —
 `docs/analyzers/<language>.md` — and it is the page the documentation gate measures
-(`script/m14/verify-analyzer-docs.ts`): it must carry the eleven sections of
-[`TEMPLATE.md`](./TEMPLATE.md) with content, and its relationship-ontology table must
-leave no cell unexplained.
+(`script/m14/verify-analyzer-docs.ts`): it must carry the eight measured sections of
+[`TEMPLATE.md`](./TEMPLATE.md) with content (the template's three further headings are recommended,
+not gated), and its relationship-ontology table must leave no cell unexplained.
 
 The pre-2026-11-01 split (`real-<language>-analyzer.md` for the structured page plus a
 second `<language>.md` verdict/journal page) is gone: the structured page took the
@@ -68,6 +68,71 @@ record; it is history, not a contract.
 | `xml` | [`xml.md`](./xml.md) | `src/ast/real-xml-analyzer.ts` |
 | `yaml` | [`yaml.md`](./yaml.md) | `src/ast/real-yaml-analyzer.ts` |
 | `zig` | [`zig.md`](./zig.md) | `src/ast/real-zig-analyzer.ts` |
+
+## Documentation completeness (measured)
+
+`validation/m14/results/analyzer-docs.json` records the last gate run; regenerate it by running the gate,
+do not hand-edit it. The gate requires these **eight measured sections** with content — `Language`,
+`Symbol contract`, `Relationship ontology`, `Supported constructs`, `Regex inventory`, `Complexity envelope`,
+`Differential ground truth`, `Corpus validation` — plus an explained relationship-ontology table. The template
+also carries `Unsupported / explicit-unknown constructs`, `Evidence pointers` and `Issue`; those are recommended,
+not gated. A page already short when the gate was written is recorded as baseline and allowed to stay short;
+losing a section fails.
+
+| Measured state | Count |
+| --- | --- |
+| canonical pages present | 50 / 50 |
+| complete on all eight measured sections | 18 / 50 |
+| missing at least one measured section | 32 |
+| unexplained relationship-ontology cells | 20 languages |
+| fully complete (sections + no unexplained ontology cell) | 16 / 50 |
+
+### Missing measured sections
+
+| Language | Missing measured sections |
+| --- | --- |
+| `julia` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `lua` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `makefile` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `matlab` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `vba` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `json` | Language, Symbol contract, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `protobuf` | Language, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `scss` | Language, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `zig` | Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `clean` | Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `powershell` | Language, Symbol contract, Relationship ontology, Supported constructs, Differential ground truth, Corpus validation |
+| `vb` | Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `php` | Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `r` | Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `ruby` | Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
+| `solidity` | Language, Symbol contract, Relationship ontology, Differential ground truth, Corpus validation |
+| `bash` | Language, Symbol contract, Differential ground truth, Corpus validation |
+| `erlang` | Supported constructs, Regex inventory, Complexity envelope, Differential ground truth |
+| `graphql` | Supported constructs, Regex inventory, Differential ground truth, Corpus validation |
+| `swift` | Supported constructs, Regex inventory, Differential ground truth, Corpus validation |
+| `elixir` | Supported constructs, Regex inventory, Differential ground truth |
+| `haskell` | Supported constructs, Regex inventory, Differential ground truth |
+| `perl` | Supported constructs, Differential ground truth, Corpus validation |
+| `cpp` | Complexity envelope, Corpus validation |
+| `hcl` | Supported constructs, Corpus validation |
+| `markdown` | Differential ground truth, Corpus validation |
+| `python` | Regex inventory, Corpus validation |
+| `clojure` | Corpus validation |
+| `css` | Complexity envelope |
+| `html` | Complexity envelope |
+| `kotlin` | Corpus validation |
+| `sql` | Corpus validation |
+
+### Unexplained relationship-ontology cells
+
+These pages have no relationship-ontology claim table at all (the same gap is counted in the missing list above):
+
+`bash`, `c`, `clean`, `cpp`, `groovy`, `hcl`, `json`, `julia`, `kotlin`, `lua`, `makefile`, `matlab`, `powershell`, `protobuf`, `r`, `ruby`, `solidity`, `vb`, `vba`, `zig`
+
+The full per-language rows, with the exact missing headings and cell gaps, are in the JSON artifact. Fixing this
+debt is editorial work on the pages; the structure and the canonical names are done, and this table is the
+measured worklist rather than an assumption.
 
 ## Verifying a page
 

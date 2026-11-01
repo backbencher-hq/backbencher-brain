@@ -4,6 +4,30 @@
 are `README.md`, `EMBEDDINGS.md`, `CHANGELOG.md`, `docs/man/`, `docs/tools/`, `docs/indexing/` and
 `docs/data/public-tools.json`; everything else is repository documentation and internal evidence.
 
+## Repository map
+
+Where things live, and what each top-level directory is for (this is the folder-level index — one map, kept
+in one place, instead of a README in every directory that can drift from the code):
+
+| Path | What it is |
+| --- | --- |
+| `src/` | The product source. `src/ast/` parses languages into evidence; `src/storage/` owns the SQLite layer; `src/intelligence/` contains the search/semantic/graph/analysis/pattern/security/doc/visualization/migration/edit/health engines; `src/mcp/` (registry, descriptors, handlers) and `src/cli/` are the adapters; `src/lsp/` is the language server; `src/setup/` and `src/config/` own setup, doctor and configuration. Module contracts: [`ARCHITECTURE.md`](./ARCHITECTURE.md). |
+| `script/` | The verification machinery: top-level `script/verify-*.ts` gates for shipped surfaces, `script/mNN/` milestone gates and instruments, `script/m14/` the analyzer campaign (specs, fixtures, lane instruments), `script/tool-docs/` the curation sources for the generated tool references, `script/perf/` measurement probes, `script/lib/` shared harness. What is a gate vs an instrument, and which runtime each needs: [`../script/README.md`](../script/README.md). |
+| `validation/` | Evidence: gate results (JSON) and human-readable review/verification pages, organised by milestone (`validation/m14/`, `m25/`, …). Gate-produced, not hand-edited; provenance and re-run rules: [`../validation/README.md`](../validation/README.md). |
+| `docs/` | This documentation tree (indexing, tools, analyzers, architecture and the historical milestone records). |
+| `reviews/` | Per-analyzer and cross-cutting review records used as evidence for analyzer claims; historical, not current contracts. |
+| `archive/` | Recovered code from branches deleted on 2026-11-01 (`archive/unmerged-pre-merge-2026-11-01/`) and removed pre-consolidation docs (`archive/docs-pre-consolidation/`), preserved because tracked evidence cites them. |
+| `ide/` | Editor integrations: VS Code-family extension, Zed extension, LSP4IJ template for JetBrains IDEs, Helix config. Start at [`../ide/README.md`](../ide/README.md). |
+| `website/` | The Next.js site (backbencher.cc); numbers on it are generated from the pinned artifacts (`website/README.md`). |
+| `grammars/` | Vendored/pinned Tree-sitter grammar sources and their `PIN.md`/`PROVENANCE.md` records; the pinned WASM binaries live in `wasm/`. |
+| `wasm/` | The pinned Tree-sitter WASM artifacts the engine loads; digest pins live in `src/ast/engine.ts`. |
+| `bin/` | The `bb` launcher; `dist/` is build output (ignored), and the compiled path is what npm/Node runs. |
+| `test/` | Harness suites and fixtures that are not part of the gate suite (CLI surface, indexing lifecycle, demo fixtures): [`../test/README.md`](../test/README.md). |
+| `plans/` | Small machine-readable plan inputs still read by milestone instruments (for example the M11 corpus plan). |
+
+`node_modules/`, `dist/`, `local-archive/`, `dsh-local-patches/`, the client-tooling worktrees and other
+machine-local directories are ignored; they are not repository content.
+
 ## Start here
 
 | If you want to… | Read |
@@ -58,8 +82,8 @@ the `0.3.0` release removed them, and `bb --help` lists exactly these sixteen.
 
 One canonical page per analyzer: [`analyzers/README.md`](./analyzers/README.md) indexes all fifty
 (`docs/analyzers/<language>.md`). Those pages are measured by `script/m14/verify-analyzer-docs.ts` against
-[`analyzers/TEMPLATE.md`](./analyzers/TEMPLATE.md) (eleven required sections, plus an explained
-relationship-ontology table). Older lane journals that tracked code and validation evidence cite are kept under
+[`analyzers/TEMPLATE.md`](./analyzers/TEMPLATE.md) (eight measured sections, plus an explained
+relationship-ontology table; the measured worklist is on the analyzer index). Older lane journals that tracked code and validation evidence cite are kept under
 [`analyzers/history/`](./analyzers/history/) rather than mixed into the canonical set.
 
 ## Architecture and programs

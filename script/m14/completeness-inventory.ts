@@ -448,7 +448,10 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/elixir.md"],
     differentialCheck: "differential-elixir",
     perfKey: "elixir:elixir",
-    requiredKinds: ["calls","contains","exports","implements","imports","instantiates","overrides","references","uses"],
+    // `mixes_in` (ELX-M14, 2026-10-24): `use Mod` is a mixin application and the analyzer publishes it as
+    // `mixes_in`, a 1:1 relabel of the former `uses{isMixin:true}` row. Section B runs the lane over its own
+    // fixtures and requires every emitted kind to be named here; the fixture pins already carry mixes_in.
+    requiredKinds: ["calls","contains","exports","implements","imports","instantiates","mixes_in","overrides","references","uses"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "elixir (branch/arm count; 5 fixtures pin it)" },
       parameters: { key: "expectParameters", pin: "elixir (parameter list + defaults; 2 fixtures pin it)" },
