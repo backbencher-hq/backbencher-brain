@@ -127,7 +127,9 @@ function isNoiseCandidate(row: Candidate): boolean {
 }
 
 export async function searchSymbols(projectId: ProjectID, rawQuery: string, options: SearchOptions = {}): Promise<SearchResults> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  // READ-ONLY handle: a symbol query must not run schema migrations or move the
+  // WAL. The handle validates the index and fails loudly instead of creating one.
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   if (options.mode === "content") {
     const { searchContent } = await import("./content-search")
     return searchContent(projectId, rawQuery, options)

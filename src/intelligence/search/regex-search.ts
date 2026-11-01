@@ -141,7 +141,9 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
   // Validate the caller's pattern BEFORE opening the index: an invalid regex is
   // a named error about the request, not something a database failure can mask.
   const expression = compileRegex(pattern, options.caseSensitive === true)
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  // READ-ONLY handle: a regex query scans the index, it never migrates or writes
+  // it (the same read contract as the symbol and content engines).
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
 
   const params: unknown[] = [projectId]
   let filters = ""

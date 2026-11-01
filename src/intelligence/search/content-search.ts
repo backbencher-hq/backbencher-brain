@@ -271,7 +271,11 @@ function normalizeOffset(value: unknown): number {
 // docstring phase caps at PHASE_CAP matches. Scoring mirrors rankWithLike
 // (name +3, qualified_name +2, docstring +1) so both paths agree on weights.
 export async function searchContent(projectId: ProjectID, query: string, options: SearchOptions = {}): Promise<SearchResults> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  // READ-ONLY handle: a content query must not run schema migrations, move the
+  // WAL or create objects in the project index. The handle validates the index
+  // and fails loudly instead of creating a database. (The maintenance build
+  // rebuildContentSearchIndex intentionally keeps the read-write handle.)
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const maxResults = normalizePageSize(options.maxResults)
   const offset = normalizeOffset(options.offset)
   const trimmed = String(query ?? "").trim()

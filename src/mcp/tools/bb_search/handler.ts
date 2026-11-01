@@ -70,7 +70,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       } catch (e: any) {
         return textResult(`bb_search mode=file: ${e?.message ?? "invalid path"}`, true)
       }
-      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
       // Looked up by the INDEXED relative path first, not by the realpath'd
       // absolute one. resolveSafeReadPath returns realpathSync(candidate) while
       // brain_file.path holds the path the indexer was given, so a project
@@ -122,7 +122,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       // JSON.stringify of an array drops those properties, so the wire response must
       // wrap the results in an explicit envelope — otherwise the mode and freshness
       // metadata silently vanish for every MCP/CLI consumer.
-      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
       // The pass is rerunnable — when the first pass finds stale
       // files within budget we repair them inline and run AGAIN so the answer
       // reflects the repair, with the decision declared on the answer.
@@ -197,7 +197,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       return textResult(JSON.stringify(pass1.answer, null, 2))
     }
     if (mode === "symbol") {
-      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
       // Rerunnable pass — repair stale files inline within
       // budget, then answer from the SECOND pass so the answer reflects the
       // repair (declared).
@@ -351,7 +351,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     // staleCount) — only when it found staleness do we resolve the row map
     // ourselves (no added stat cost on the fresh path) to build the repair set.
     if ((pass1.results.staleCount ?? 0) > 0) {
-      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
       const detail = resolveRowsFreshnessDetailed(raw, projectId as any, pass1.rows)
       const staleFiles = collectStaleFiles(raw, pass1.rows, detail.statuses)
       if (staleFiles.length > 0) {

@@ -38,7 +38,7 @@ async function emit(code: string, issue: string, file: string) {
   const totalPassed = passed + negativePassed
   const e = { issue, code, tool: "bb_search", verified: failed === 0, checks: checks + negatives, passed: totalPassed, failed, negatives, generatedAt: new Date().toISOString() }
   writeFileSync(path.resolve("validation/m15/results/" + file), JSON.stringify(e, null, 2) + "\n")
-  console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
+  console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + (passed + negativePassed) + "/" + (checks + negatives) + " passed, " + negatives + " negatives)")
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0 }
 
@@ -65,7 +65,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   // ═══════════════════════════════════════════════════════════════════════
   // S1: routing — every search mode is wired through handler + validation
   // ═══════════════════════════════════════════════════════════════════════
-  const handlerSrc = searchSrc("src/mcp/tool-handlers.ts")
+  const handlerSrc = searchSrc("src/mcp/tools/bb_search/handler.ts")
   const registrySrc = searchSrc("src/mcp/tool-registry.ts")
   const validationSrc = searchSrc("src/mcp/tool-validation.ts")
 
