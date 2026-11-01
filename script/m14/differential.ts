@@ -26562,7 +26562,13 @@ async function main() {
     // `unmeasured` block can name it. Measured 2026-11-01: without this the opt-in recorded bash and
     // nim in the CHILD's memory only, and the parent aborted with "3 lane(s) unmeasured after batching".
     for (const [k, v] of Object.entries(zeroTruthUnmeasured)) {
-      ;(laneJournal as any)[k] = { unmeasured: true, repo: v.repo, language: v.language, reason: v.reason }
+      const row = { unmeasured: true, repo: v.repo, language: v.language, reason: v.reason }
+      // the completeness guard keys a PRIMARY lane by `lang` and a SECOND-corpus lane by
+      // `repo:lang` (jKeyOf), while this map is always `repo:lang` — journal BOTH spellings so
+      // neither side of the hand-off can read the lane as unhandled (measured 2026-11-01: the
+      // primary keys `bash` and `nim` were still reported missing after batching for this reason).
+      ;(laneJournal as any)[k] = row
+      ;(laneJournal as any)[v.language] = (laneJournal as any)[v.language] ?? row
     }
     if (Object.keys(zeroTruthUnmeasured).length > 0 && useJournal) saveJournal(laneJournal)
     process.exit(0)
