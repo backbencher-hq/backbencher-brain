@@ -23402,6 +23402,11 @@ async function main() {
   const frozenTrees = new Map<string, string>()
   const laneDirCache = new Map<string, string>()
   const pinDrift: Record<string, string> = {}
+  // Repos whose live checkout is dirty and whose pinned tree could NOT be materialized (the corpus
+  // mirror may sit on a read-only filesystem, so `git worktree add` cannot write .git/worktrees).
+  // With BB_F5_ALLOW_DIRTY_CORPUS the sweep measures the live tree so the other lanes can be pinned,
+  // and the lane is REFUSED a pin (its content is not its pin) with the reason recorded.
+  const dirtyCorpusFallback = new Set<string>()
   const laneRepoDir = (repo: string): string => {
     const cached = laneDirCache.get(repo)
     if (cached) return cached
@@ -23428,6 +23433,14 @@ async function main() {
         } catch (e: any) {
           // A sibling batch may have won the race for this repo's tree.
           if (!fs.existsSync(path.join(dest, ".git"))) {
+            // Mid-repair escape hatch (opt-in, and it never produces a pass): measure the LIVE tree so
+            // the rest of the sweep can be pinned, and refuse this lane its pin below.
+            if (process.env.BB_F5_ALLOW_DIRTY_CORPUS) {
+              dirtyCorpusFallback.add(repo)
+              console.log(`[frozen] ${repo} — pinned tree could NOT be materialized (${(e?.message ?? e).toString().slice(0, 120)}); measuring the LIVE tree under BB_F5_ALLOW_DIRTY_CORPUS and REFUSING to pin this lane`)
+              laneDirCache.set(repo, live)
+              return live
+            }
             throw new Error(`differential: ${repo} is not at its pin (${reason}) and its pinned tree could not be materialized: ${e?.message ?? e}`)
           }
         }
@@ -26603,6 +26616,11 @@ async function main() {
       // counts do NOT block pinning: they are declared low-confidence edges,
       // and heuristic drift on an UNPINNED lane is exactly the false-positive
       // this pin removes.
+      const rowRepo = k.includes(":") ? k.split(":")[0] : ""
+      if (dirtyCorpusFallback.has(rowRepo)) {
+        pinSkipped.push(`${k} (dirty corpus measured in place — pinned tree could not be materialized)`)
+        continue
+      }
       if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
         pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
         continue
@@ -26626,6 +26644,7 @@ async function main() {
           heuristic: v.heuristic ?? 0,
           sampleSetHash: v.sampleHash ?? null,
           pinned: !pinSkipped.some((p) => p.startsWith(`${k} (`)),
+          dirtyCorpus: k.includes(":") ? dirtyCorpusFallback.has(k.split(":")[0]) : false,
         }
       }
       for (const [k, v] of Object.entries<any>(zeroTruthUnmeasured)) {
