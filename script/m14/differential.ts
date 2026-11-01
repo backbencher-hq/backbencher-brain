@@ -189,6 +189,16 @@ import { derivePythonTruth } from "./oracles/python-truth"
 // the lane fixed. Wired here; the labels are admitted below in the same commit.
 import { deriveTypeScriptImportTruth, deriveTypeScriptExportTruth } from "./oracles/typescript-imports-truth"
 import { deriveMakeTruth } from "./oracles/make"
+// NIM oracle (script/m14/nim-truth-oracle.ts): the lane-owned independent derivation, written against the
+// tree-sitter-nim grammar. It was present in the tree and never registered here, so `--lang nim` measured
+// ZERO truth and the lane sat in the "unmeasured" column — the registry-is-not-an-oracle shape this file
+// records for r/matlab/vba. Imported and wired below, with the allowlist that matches its labels exactly.
+import { deriveNimEdges } from "./nim-truth-oracle"
+// VB oracle (script/m14/vb-truth-oracle.ts): the lane-owned derivation written because the original vb
+// oracle block was LOST from this file during the 2026-10-01 reflog-archive recovery (the module header
+// carries the git evidence). `VB_ORACLE_LABELS` is the set it derives; the allowlist below names the
+// subset the analyzer emits, so neither side is filtered against a set the other cannot produce.
+import { deriveVbTruth as deriveVbOracleTruth, VB_ORACLE_LABELS } from "./vb-truth-oracle"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
 // SQL-G14: the sql lane had NO branch at all, so a scoped run ended "derived ZERO truth edges" and
@@ -590,6 +600,12 @@ export const LANG_REPOS_SECOND: Record<string, string> = {
   lua: "luarocks",
 }
 export const LANG_REPOS: Record<string, string> = {
+  // M14.0.F5 (round 7): make's PRIMARY corpus re-declared. `SECOND_CORPUS` carried `make: "consul"` but the
+  // primary map had no entry, so `--lang make` printed "no corpus repo mapped in LANG_REPOS ... declared
+  // unrun" while a `tf-aws-components` checkout sat in CORPUS_ROOT — the registry-is-not-a-corpus shape the
+  // corpus-restore note records for hcl/make/nim/vb/xml. The corpus is the one the restore doc names for
+  // this lane, and the second corpus stays consul (both have real Makefiles: 11454 tracked files there).
+  make: "redis",
   sql: "duckdb",
   r: "dplyr",
   // THESE THREE WERE MISSING FROM THE PRIMARY MAP, so `repoForSweep` returned null and the differential reported
@@ -23560,7 +23576,17 @@ async function main() {
         const p = path.join(d, e.name)
         if (e.isDirectory()) { if (!/^(\.|node_modules|build|target)/.test(e.name)) scan(p) }
         else {
-          if (!cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) continue
+          // M14.0.F5 (round 7): a lane whose files are routed BY NAME, not by extension, needs its own
+          // admission or its corpus scan finds zero files. `make` is the measured case: the router hands
+          // `Makefile`/`GNUmakefile`/`makefile` to the lane by FILENAME, while the registry's `ext` list
+          // ("mk,mak,makefile,gnumakefile,.makefile,.gnumakefile") matches none of them. The consequence was
+          // a scoped run dying with "corpus repo consul contains no make files" while five real Makefiles
+          // sat in that checkout — the vacuous-zero shape this harness refuses elsewhere. The regex is the
+          // router's own three spellings and nothing else, so a future name-routed lane adds its own arm
+          // rather than widening this one.
+          const byExt = cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))
+          const byMakeFileName = lang === "make" && /^(GNU)?[Mm]akefile$/.test(e.name)
+          if (!byExt && !byMakeFileName) continue
           // A content-routed extension cannot be admitted by name. `h` is C, C++
           // and Objective-C at once: language-detection.ts sniffs
           // @interface/@protocol and hands the file to objective-c. Admitting
@@ -25187,6 +25213,16 @@ async function main() {
         }
       }
       if (lang === "bash") {
+        // M14 #277 F5: the bash oracle derives contains/calls/uses/exports/imports/references/overrides
+        // from the tree, from bash's own semantics (see deriveBashEdges' header for why it shares nothing
+        // with the analyzer). The script's module name is the file's basename WITH its extension — the
+        // identity BD2 settled on. The branch below used to be `if (false)`: the lane was mid-flight when a
+        // neighbouring commit landed, so the oracle was switched off and the lane measured "unmeasured".
+        // The lane is DONE (50/50), so the oracle runs again; the allowlist admits exactly its seven labels.
+        const bashModule = relPath.split("/").pop() ?? "script.sh"
+        for (const e of deriveBashEdges(root, bashModule)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "make") {
         // make's oracle is lane-owned (script/m14/oracles/make.ts) and derives seven kinds from the tree:
@@ -25200,18 +25236,6 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
-      if (false) {
-        // M14 #277 F5: the bash oracle derives contains/calls/uses/exports/
-        // imports/references from the tree, from bash's own semantics (see
-        // deriveBashEdges' header for why it shares nothing with the analyzer).
-        // The script's module name is the file's basename WITH its extension —
-        // the identity BD2 settled on, and the only name that is both
-        // deterministic and free of the sentinel the pre-wave lane used.
-        const bashModule = relPath.split("/").pop() ?? "script.sh"
-        for (const e of deriveBashEdges(root, bashModule)) {
-          ;(truth as any[]).push(e)
-        }
-      }
       if (lang === "powershell") {
         // M60 #278 F5: the powershell oracle. `derivePowershellEdges` is written
         // from PowerShell's semantics and shares no rule table, helper or
@@ -25222,6 +25246,26 @@ async function main() {
         const psModule = relPath.split("/").pop() ?? "script.ps1"
         for (const e of derivePowershellEdges(root, psModule)) {
           ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "nim") {
+        // NIM: the lane-owned oracle, independent walk of the tree-sitter-nim grammar. It takes the
+        // analyzer's symbol inventory ONLY for the owner-name half of `contains` (the derivation of the
+        // owner assignment is not what the differential is for) and derives every other label from the
+        // tree. The allowlist below admits exactly the labels it derives minus the head (extends /
+        // implements / instantiates / overrides are always compared).
+        for (const e of deriveNimEdges(root, (result as any)?.symbols ?? [])) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "vb") {
+        // VB: the lane-owned oracle. It returns rows + the declarations it saw + the gaps it declined; the
+        // declined counts are an oracle-side disclosure (it refuses to guess a target it cannot name) and
+        // are not pushed as truth. Labels admitted below are exactly the subset of VB_ORACLE_LABELS the
+        // analyzer emits, so the comparison is two-sided.
+        const vbTruth = deriveVbOracleTruth(root)
+        for (const r of vbTruth.rows) {
+          ;(truth as any[]).push({ label: r.label, from: r.from, target: r.target })
         }
       }
       if (lang === "sql") {
@@ -26016,7 +26060,21 @@ async function main() {
         // make: the allowlist is part of the WIRING. Without it the harness filters the analyzer side to almost
         // nothing and the lane reads a 0% coverage row indistinguishable from a catastrophic regression -- a
         // failure the file records four times. These six are exactly what the oracle derives.
-        ...(lang === "make" ? ["calls", "uses", "references", "imports", "exports", "contains"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+        ...(lang === "make" ? ["calls", "uses", "references", "imports", "exports", "contains"] : []),
+        // bash: the oracle derives seven labels; exports and uses/contains are already admitted above and
+        // extends/implements/instantiates/renders/overrides are in the head. These three are the remainder
+        // — omitting any of them would filter the analyzer side while truth is pushed unfiltered, reading
+        // as MISSING the moment the oracle is switched on (the #910/G7 shape this file records).
+        ...(lang === "bash" ? ["calls", "imports", "references"] : []),
+        // nim: exactly the labels `deriveNimEdges` derives, minus the head's extends/implements/
+        // instantiates/overrides. Contains is included because the oracle derives it (ownerName half +
+        // lexical nesting half); exports/imports/uses/references/calls are the rest.
+        ...(lang === "nim" ? ["calls", "contains", "exports", "imports", "references", "uses"] : []),
+        // vb: exactly the labels `deriveVbTruth` derives that the analyzer emits (VB_ORACLE_LABELS is the
+        // oracle's own declared set; the head already admits extends/implements/instantiates/overrides).
+        // (intersected with the oracle's own declared set, so a label the module stops deriving cannot be
+        // silently compared against nothing)
+        ...(lang === "vb" ? ["calls", "contains", "imports", "references", "uses"].filter((l) => VB_ORACLE_LABELS.includes(l)) : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
