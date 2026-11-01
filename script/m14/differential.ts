@@ -23219,6 +23219,10 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
   }
 }
 
+/** Lanes whose oracle derived ZERO truth during an opt-in mid-repair sweep (BB_F5_ALLOW_ZERO_TRUTH).
+ *  These are recorded into the baseline's `unmeasured` block, never into `counts`. */
+const zeroTruthUnmeasured: Record<string, { repo: string; language: string; reason: string; corpusOnBox: boolean }> = {}
+
 async function main() {
   // DEPTH CAMPAIGN (2026-10-19): the local-binding claim audit depends on `auditTarget`
   // stripping the BINDING_SEP prefix. The self-test proves the helper exists and works, so a
@@ -26367,6 +26371,20 @@ async function main() {
       // fabrication survives the crash that caused it. A non-empty sample that
       // derives zero truth edges is a dead parser or a dead oracle, never a
       // clean lane: either re-route the lane or fix the oracle.
+      // A zero-truth lane is a DEAD PARSER OR A DEAD ORACLE and the canonical claim must refuse it —
+      // unless a lane is mid-repair and the sweep is being used to pin the lanes that ARE measured.
+      // `BB_F5_ALLOW_ZERO_TRUTH=1` records the lane as UNMEASURED (with the reason) and continues; it
+      // never turns the row into a pass, and the default (no env) still fails closed.
+      if (process.env.BB_F5_ALLOW_ZERO_TRUTH) {
+        zeroTruthUnmeasured[`${langRepo}:${lang}`] = {
+          repo: langRepo,
+          language: lang,
+          reason: `oracle derives ZERO truth edges on ${sample.length} parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.`,
+          corpusOnBox: true,
+        }
+        console.log(`[lane] UNMEASURED ${lang}: oracle derived zero truth on ${sample.length} parsed file(s) — recorded, not passed`)
+        continue
+      }
       throw new Error(`differential: ${langRepo}:${lang} parsed ${sample.length} file(s) and derived ZERO truth edges — the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`)
     }
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
@@ -26580,6 +26598,10 @@ async function main() {
     const carried: Record<string, unknown> = {}
     for (const k of ["floorMoves", "unmeasured", "recovered"] as const) {
       if (previous[k] !== undefined && previous[k] !== null) carried[k] = previous[k]
+    }
+    // lanes an opt-in mid-repair sweep found carrying no oracle are recorded, never counted
+    if (Object.keys(zeroTruthUnmeasured).length > 0) {
+      carried.unmeasured = { ...((carried.unmeasured as object) ?? {}), ...zeroTruthUnmeasured }
     }
     const merged = {
       samplePerLang: SAMPLE_PER_LANG,
