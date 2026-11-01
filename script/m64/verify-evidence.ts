@@ -1,23 +1,23 @@
-// script/m64/verify-evidence.ts — M64 evidence census (the counterpart of
+// script/m64/verify-evidence.ts — evidence census (the counterpart of
 // script/m13/verify-evidence.ts, for the bb_health battery).
 //
 // WHY THIS EXISTS. script/m64's eight verifiers emit through the shared
-// `Harness` in script/m13/harness.ts. That harness stamped `milestone: "M13"`
-// on every document and wrote it into `validation/m13/results/`, so M64's
-// evidence landed in M13's corpus with an identity that contradicted itself
-// (`milestone: "M13"`, `issue: "M64"`): M13's census read eight foreign
+// `Harness` in script/m13/harness.ts. That harness stamped `milestone: ""`
+// on every document and wrote it into `validation/m13/results/`, so 's
+// evidence landed in 's corpus with an identity that contradicted itself
+// (`milestone: ""`, `issue: ""`): 's census read eight foreign
 // documents and rejected all eight, for a reason that appeared in no message,
-// while M64's own documents were checked by nobody.
+// while 's own documents were checked by nobody.
 //
 // The two halves of the fix are one idea: a document belongs to ONE milestone,
 // in that milestone's results directory, validated against that milestone's
-// identity. `Harness` now takes a `milestone`, and this census is the M64 side:
+// identity. `Harness` now takes a `milestone`, and this census is the side:
 //
-//   1. every validation/m64/results/*.json declares M64 and is schema-valid;
-//   2. no M64 document is left behind in M13's corpus (the exact regression);
-//   3. the validator refuses the shapes it says it refuses — a forged
-//      `verified` with failures, a `verified` with no negative case, another
-//      milestone's identity, and a TAMPERED copy of a real document.
+//  1. every validation/m64/results/*.json declares and is schema-valid;
+//  2. no document is left behind in 's corpus (the exact regression);
+//  3. the validator refuses the shapes it says it refuses — a forged
+//  `verified` with failures, a `verified` with no negative case, another
+//  milestone's identity, and a TAMPERED copy of a real document.
 //
 // Run: npx tsx script/m64/verify-evidence.ts
 // Evidence: validation/m64/results/h64x.json
@@ -29,7 +29,7 @@ import { validateEvidence } from "../m13/verify-evidence"
 
 const RESULTS_DIR = resultsDirFor("M64")
 const M13_DIR = resultsDirFor("M13")
-/** M64 numbers a LANE (`M64`), not an issue-per-file: `code` carries that. */
+/** numbers a LANE (``), not an issue-per-file: `code` carries that. */
 const ISSUE_PATTERN = /^M64(\.\w+)*$/
 
 const harness = new Harness({
@@ -81,9 +81,9 @@ harness.check(
   firstInvalid.slice(0, 4).join(" | "),
 )
 
-// 2. The regression itself: an M64 document must not be sitting in M13's corpus.
-//    M13's census asserts the same thing from its side; this asserts the fix
-//    from M64's, so removing either half fails the other lane's gate too.
+// 2. The regression itself: an document must not be sitting in 's corpus.
+//  's census asserts the same thing from its side; this asserts the fix
+//  from 's, so removing either half fails the other lane's gate too.
 const inM13 = loadDocs(M13_DIR).filter(({ doc }) => doc?.milestone === "M64" || (typeof doc?.issue === "string" && /^M64/.test(doc.issue)))
 harness.check(
   "no M64 document is left in validation/m13/results",
@@ -106,7 +106,7 @@ rejects("an undeclared layer is refused", { ...template, layers: ["vibes"] }, "l
 rejects("a summary that disagrees with its checks is refused", { ...template, summary: { total: 99, passed: 0, failed: 99 } }, "summary.total")
 
 // The grip is proved on a REAL document too: a tampered copy of the largest
-// committed M64 document (its last check is flipped to failing without its
+// committed document (its last check is flipped to failing without its
 // summary being touched) must be refused. This is the check that would have
 // caught the misfiled family, and it fails on real bytes rather than on a
 // document this gate built to be refused.

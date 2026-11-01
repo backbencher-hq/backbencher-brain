@@ -467,5 +467,5 @@
     5018,
     4837
   ],
-  "declaredBudget": "NONE RECORDED for this lane — docs/analyzers/real-go-analyzer.md states the budget is not declared, which is a pre-existing gap and not a figure re-baselined here"
+  "declaredBudget": "NONE RECORDED for this lane — docs/analyzers/go.md states the budget is not declared, which is a pre-existing gap and not a figure re-baselined here"
 }

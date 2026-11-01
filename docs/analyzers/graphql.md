@@ -1637,7 +1637,7 @@ are printed as permitted: `content.split("\n")` for the line count,
 `inner.split("\n")` for the dedent, and `replaceAll('\\"""', '"""')` for the
 block-string escape.
 
-> A dated handoff, `docs/M12.08-HANDOFF.md`, still records graphql as one of "the
+> A dated handoff, `archive/docs-pre-consolidation/M12.08-HANDOFF.md`, still records graphql as one of "the
 > 2 remaining *replaceable* entries". That was already untrue at `HEAD` and is
 > left as written, because rewriting a dated milestone record to match today's
 > counts falsifies it. The current truth is the census plus this section.

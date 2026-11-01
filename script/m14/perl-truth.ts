@@ -54,7 +54,7 @@
  *             rules (PERL_BUILTINS, the written-name allowlist) by its own
  *             character scan. The rules are shared because they are facts about
  *             the language rather than inferences about it — the same reasoning
- *             docs/analyzers/real-perl-analyzer.md gives for sharing the word
+ *             docs/analyzers/perl.md gives for sharing the word
  *     harvester between the analyzer and the harness oracle: "a method name that
  *     is not written cannot be named" is a fact about the file, so both sides
  *     testing it is corroboration.

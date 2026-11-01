@@ -37,7 +37,7 @@
  * ## Falsification
  *
  * Both zeros are assertable, so both must be shown to FAIL when the behaviour they describe
- * is removed — see the LANE RECORD in `docs/analyzers/real-javascript-analyzer.md` §Outgoing
+ * is removed — see the LANE RECORD in `docs/analyzers/javascript.md` §Outgoing
  * for the arm (the insert-time lookup neutralised, reading N of M with A2 and A7 failing, and
  * the file restored byte-identically by sha256).
  *

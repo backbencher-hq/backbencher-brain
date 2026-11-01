@@ -628,7 +628,7 @@
   },
   "related": {
     "completenessInventory": "script/m14/spec/c-completeness.json (130 grammar types classified; handled_verified 25 / internal_silent 103 / gaps 0 / decisions; `coverage` block carries the matrix cells)",
-    "docs": "docs/analyzers/real-c-analyzer.md",
+    "docs": "docs/analyzers/c.md",
     "evidencePage": "validation/m14/verification/C-APPLICABLE-SET.md",
     "fixtures": "validation/m14/fixtures/c/**",
     "wholePopulation": "validation/m14/verification/C-WHOLE-POPULATION-EMISSION.md (D2) \u00b7 validation/m14/verification/C-AUDIT-D4.md (D4) \u00b7 validation/m14/verification/C-DONE-CHECKLIST.md (the lane claim)"

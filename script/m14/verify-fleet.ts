@@ -27,7 +27,7 @@ import * as path from "path"
 import { LANGS } from "./run-fixtures"
 import { MUTANTS } from "./mutate-analyzer"
 
-const ROOT = path.resolve(import.meta.dir, "..", "..")
+const ROOT = path.resolve(import.meta.dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
 const V = (p: string) => path.join(ROOT, p)
 const JSON_OUT = process.argv.includes("--json")
 

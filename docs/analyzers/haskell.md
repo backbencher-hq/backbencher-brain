@@ -1,4 +1,4 @@
-# real-haskell-analyzer.md
+# haskell.md
 
 > **VERIFY_HS9 (2026-10-04) — independent re-derivation of the 10-type verdict.**
 > This lane re-derived every type from scratch (no HASKELL lane summary read).

@@ -183,7 +183,7 @@ const isPlaceholderEndpoint = (raw: string, role: EndpointRole): boolean =>
  * correct edge `calls activate -> get` is emitted alongside it.
  *
  * Declared per type and per end, from each type's own documented resolution rule
- * (docs/analyzers/real-typescript-analyzer.md, the Relationship ontology table):
+ * (docs/analyzers/typescript.md, the Relationship ontology table):
  *
  *   calls       source, target  bare  — "call_expression -> callee leaf name"
  *   uses        source, target  bare  — "type-reference usage -> referenced type leaf"

@@ -5,7 +5,7 @@
 // references, exports and overrides. `instantiates` is NEVER emitted — bash has
 // no construction form; fixtures/bash/no-instantiation pins the absence.
 // Grammar: wasm/tree-sitter-bash.wasm (sha256 f55f3f6c780e79fa…).
-// Docs / spec / fixtures / validations: docs/analyzers/real-bash-analyzer.md ·
+// Docs / spec / fixtures / validations: docs/analyzers/bash.md ·
 // script/m14/spec/bash-completeness.json · validation/m14/fixtures/bash/** ·
 // validation/m14/verification/BASH-STATE.md.
 // CO-EDIT LIST — when this file changes, review these in the SAME pass: the docs
@@ -3129,7 +3129,7 @@ private extractAssignment(
        * a consumer whether a call leaves the file, and this site was the one place
        * that asserted a call without classifying it — 223 corpus edges, of which
        * 123 name a function the same file declares. See
-       * `docs/analyzers/real-bash-analyzer.md`, "Round 7".
+       * `docs/analyzers/bash.md`, "Round 7".
        */
       localFunctions: Set<string>
     },

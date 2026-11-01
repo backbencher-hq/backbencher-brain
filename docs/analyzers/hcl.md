@@ -757,7 +757,7 @@ edited here.
    while no hcl truth derivation produces it. That is a 68-edge harness gap, not
    68 analyzer defects, and it is cheaper to pay now than to misread later.
 4. **`script/m14/run-fixtures.ts` has no `UNIVERSAL_FORBIDDEN_RELATIONSHIPS`
-   entry for `hcl`.** `docs/analyzers/real-hcl-analyzer.md` claimed before this
+   entry for `hcl`.** `docs/analyzers/hcl.md` claimed before this
    wave that it did — "run-fixtures.ts's `UNIVERSAL_FORBIDDEN_RELATIONSHIPS` for
    hcl refuses extends/implements into the reference roots var/local/module/data".
    The map (line 438) holds `java`, `groovy`, `kotlin`, `scala` only. The claim

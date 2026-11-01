@@ -256,7 +256,7 @@ async function worker(): Promise<void> {
           oracle.push({
             // N3 line anchor: the DECLARATION's start row, not the name's. The
             // lane's convention is node-start (M11; docs/analyzers/
-            // real-java-analyzer.md's range row records it, and M59/#825 pins the
+            // java.md's range row records it, and M59/#825 pins the
             // exports edge to "the exported DECLARATION's own line"). Anchoring on
             // the name instead is off by the annotation/modifier lines, and was
             // this oracle's second bug: it reported 197 TP with line agreement

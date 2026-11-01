@@ -47,7 +47,7 @@
  * struct/enum/union/opaque/error declaration, classified — **1,797 across 443
  * files, and 0 UNCLASSIFIED**, which is the only bucket a supertype reference could
  * occupy. Read `describe` below as incomplete without it; the full numbers are in
- * the spec and in `docs/analyzers/real-zig-analyzer.md`.
+ * the spec and in `docs/analyzers/zig.md`.
  */
 export type Ruled = {
   type: Type

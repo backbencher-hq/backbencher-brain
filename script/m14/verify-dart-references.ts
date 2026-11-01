@@ -28,7 +28,7 @@
  * `$HOME/fixtures/repositories`) with a deterministic stride sample of
  * tracked `.dart` files and prints agreement per repo. That number is a
  * comparison between two implementations of one measured rule, and it is quoted in
- * `docs/analyzers/real-dart-analyzer.md` as exactly that.
+ * `docs/analyzers/dart.md` as exactly that.
  */
 
 import { execFileSync } from "node:child_process"

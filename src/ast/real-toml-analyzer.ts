@@ -11,7 +11,7 @@
  * rather than erased. `exports` is the lane's zero-sites type — implemented (candidates by convention,
  * decision by data) and corpus-silent because a guard declines every candidate; a mutant prices it.
  *
- * WHERE THE RECORD LIVES: docs/analyzers/toml.md + docs/analyzers/real-toml-analyzer.md;
+ * WHERE THE RECORD LIVES: docs/analyzers/history/toml-lane-notes.md + docs/analyzers/toml.md;
  * spec script/m14/spec/toml-completeness.json; fixtures + census probe validation/m14/fixtures/toml
  * (tools/residual-whole-population.mts); lane records validation/m14/verification/FOUR-CLAUSE-toml.md,
  * GAP-CLOSURE-toml.md and toml-COVERAGE-BLOCK-AUDIT.md.

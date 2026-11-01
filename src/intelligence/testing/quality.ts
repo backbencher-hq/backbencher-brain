@@ -18,8 +18,6 @@ import type {
 import { makeProvenance } from "../evidence"
 import { codeTestClause, nonCodeUnknown, noEvidenceUnknown } from "./test-intel"
 
-const MOCK_LIBS = /^(jest|vitest|mocha|chai|sinon|@sinonjs|testdouble|nock|msw|@testing-library|ava|tap|node:test)/
-
 export interface QualityOptions {
   /** max test files to deeply analyze (content read). default 50 */
   maxFiles?: number
@@ -76,6 +74,50 @@ function testFileScope(filePath: string | undefined): { sql: string; params: str
   return { sql: " AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')", params: [clean, escapeLikeValue(clean) + "/%"] }
 }
 
+/**
+ * The content classifiers, exported as one named table.
+ *
+ * WHY A REGEX IS UNAVOIDABLE HERE. The dimension asks "does this test exercise
+ * assertions / error paths / parameterization" across ANY test framework, and
+ * the evidence is statement-level source text. A framework-agnostic superset
+ * (`assert`, `assert.equal`, `expect(...)`, `should.`, `toBe`, `it.each`,
+ * `try {`, `catch (`) cannot be recognised by `includes`/`startsWith` without
+ * missing the forms the model exists to count, and the tree-sitter AST does not
+ * expose framework assertion calls as a node type. The sets are enumerated,
+ * frozen here, and behaviourally tested by
+ * `validation/tools/bb_analyze/regex-edge-cases.ts` (empty input, no-match,
+ * boundary, Unicode, multiline, long-input timing). Their output only feeds a
+ * confidence-weighted score (0.75-0.85 confidence); no resolved-symbol claim is
+ * made from them.
+ */
+export const CONTENT_CLASSIFIERS = {
+  // assertions — real API evidence, framework-agnostic superset. `assertCall`
+  // covers both `assert(...)` and node-assert's `assert.equal(` / `assert.deepEqual(`
+  // family; `chainedMatcher` matches the MATCHER METHOD rather than the
+  // receiver, because `expect(a).toBe(1)` has `(a)` between the two (measured
+  // by the edge-case suite: the receiver-anchored form matched neither).
+  assertCall: /\bassert(?:\.[A-Za-z]+)?\s*\(/g,
+  expectCall: /\bexpect\s*\(/g,
+  shouldMember: /\bshould\./g,
+  chainedMatcher: /\.(?:toBe|toEqual|toStrictEqual|toThrow|toBeTruthy|toBeFalsy|toMatch|toContain|rejects|resolves)\s*\(/g,
+  // error handling — rejects/resolves/try-catch/throws
+  rejectsResolves: /\b(rejects|resolves)\b/g,
+  tryBlock: /\btry\s*\{/g,
+  throwMatcher: /\btoThrow|throws\b/g,
+  catchClause: /\bcatch\s*\(/g,
+  // parameterization — data-driven tests
+  parameterized: /\b(?:it|test)\.each\b|\b(?:describe|it|test)\s*\(\s*`|%s|\$[a-zA-Z]/g,
+  // docs — comments and long descriptive test names
+  commentLine: /(^|\n)\s*(\/\/|\/\*|#)/g,
+  longTestName: /\b(?:it|test|describe)\s*\(\s*['"`][^'"`]{24,}['"`]/g,
+  // mocking — spy/mock call sites (graph import evidence is separate)
+  spyMockCall: /\b(jest|sinon)\.(fn|spyOn|mock)\b|vi\.(fn|spyOn|mock)|\.mockImplementation|nock\(/g,
+} as const
+
+/** Mock-library import prefixes: a framework import is graph evidence that the
+ *  file builds stubs. `startsWith` on a list, not a regex. */
+const MOCK_LIB_PREFIXES = ["jest", "vitest", "mocha", "chai", "sinon", "@sinonjs", "testdouble", "nock", "msw", "@testing-library", "ava", "tap", "node:test"]
+
 export async function testQuality(projectId: ProjectID, options: QualityOptions = {}): Promise<TestQualityReport> {
   const maxFiles = options.maxFiles ?? 50
   const maxBytes = options.maxBytes ?? 64 * 1024
@@ -124,7 +166,7 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
     const arr = fileImports.get(r.fileId) ?? []
     arr.push(r.target)
     fileImports.set(r.fileId, arr)
-    if (MOCK_LIBS.test(r.target)) fileMockImport.add(r.fileId)
+    if (MOCK_LIB_PREFIXES.some((prefix) => r.target.startsWith(prefix))) fileMockImport.add(r.fileId)
   }
 
   const report: TestQualityFile[] = []
@@ -171,26 +213,11 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
     if (content !== null) {
       const c = content
       const count = (re: RegExp) => (c.match(re) || []).length
+      const P = CONTENT_CLASSIFIERS
 
-      // justification (M15.N2 census): test-quality scoring is a content heuristic,
-      // not an AST analysis. The counters below probe for assertion,
-      // error-handling, and parameterization patterns across ANY framework
-      // (assert/expect/should/toBe/toThrow/it.each/describe), where assertion
-      // shape is intentionally framework-agnostic and statement-level.
-      // Outcomes feed only evidenceStrength/penaltyPotential models with
-      // confidence 0.75-0.85; no claim is made that these are resolved symbols.
-      // AST replacement is deliberately not attempted: the dimension is "does
-      // the test exercise assertions/errors/params", and the regex sets are
-      // enumerate-able, reviewed here, and stable. Census-mandated: the exact
-      // classifier set is mechanically verified by script/m15/verify-analyze-deep.ts
-      // (N: expected equal to quality.ts .count( regex literals).
-
-      // Assertions — real API evidence, framework-agnostic superset.
-      const asserts =
-        count(/\bassert(That|Equal|DeepEqual|Strict)?\s*\(/g) +
-        count(/\bexpect\s*\(/g) +
-        count(/\bshould\./g) +
-        count(/\b(?:expect|assert)\w*\.(?:toBe|toEqual|toThrow|rejects|resolves)/g)
+      // The classifier table above documents why these are regexes; every
+      // literal is behaviourally tested by validation/tools/bb_analyze/regex-edge-cases.ts.
+      const asserts = count(P.assertCall) + count(P.expectCall) + count(P.shouldMember) + count(P.chainedMatcher)
       dims.assertions = dim({
         supported: true,
         evidenceStrength: clamp01(asserts / 6),
@@ -202,11 +229,7 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
       else strengths.push(`${asserts} assertion site(s)`)
 
       // Error handling — rejects/resolves/try-catch/throws.
-      const err =
-        count(/\b(rejects|resolves)\b/g) +
-        count(/\btry\s*\{/g) +
-        count(/\btoThrow|throws\b/g) +
-        count(/\bcatch\s*\(/g)
+      const err = count(P.rejectsResolves) + count(P.tryBlock) + count(P.throwMatcher) + count(P.catchClause)
       dims.error_handling = dim({
         supported: true,
         evidenceStrength: clamp01(err / 3),
@@ -217,7 +240,7 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
       if (err === 0) issues.push({ category: "no_error_path_evidence", description: "no error-path assertion observed" })
 
       // Parameterization — data-driven tests.
-      const param = count(/\b(?:it|test)\.each\b|\b(?:describe|it|test)\s*\(\s*`|%s|\$[a-zA-Z]/g)
+      const param = count(P.parameterized)
       dims.parameterization = dim({
         supported: true,
         evidenceStrength: clamp01(param / 3),
@@ -228,8 +251,8 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
       if (param > 0) strengths.push("parameterized cases detected")
 
       // Docs — comments/docblocks + descriptive test names.
-      const comments = count(/(^|\n)\s*(\/\/|\/\*|#)/g)
-      const longNames = count(/\b(?:it|test|describe)\s*\(\s*['"`][^'"`]{24,}['"`]/g)
+      const comments = count(P.commentLine)
+      const longNames = count(P.longTestName)
       dims.docs = dim({
         supported: true,
         evidenceStrength: clamp01((comments + longNames) / 6),
@@ -243,7 +266,7 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
     }
 
     // Mocking — measurable via graph (mock lib import) OR content-spy evidence.
-    const spyHits = content !== null ? (content.match(/\b(jest|sinon)\.(fn|spyOn|mock)\b|vi\.(fn|spyOn|mock)|\.mockImplementation|nock\(/g) || []).length : 0
+    const spyHits = content !== null ? (content.match(CONTENT_CLASSIFIERS.spyMockCall) || []).length : 0
     const mockGraph = fileMockImport.has(f.id)
     if (mockGraph || spyHits > 0) {
       dims.mocking = dim({
@@ -290,25 +313,36 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
     })
   }
 
-  // Aggregate: mean of per-file overall where present; per-dimension means.
-  const overalls = report.map((r) => r.overall).filter((x): x is number => x !== null)
+  // The page, not the corpus: `maxFiles` bounds how many files are analysed AND
+  // how many are returned. The rows used to be unfiltered, so `limit: 1`
+  // answered three files — a `limit` that did not bound the answer, which is the
+  // one thing a page-size parameter must never do.
+  const page = report.slice(0, maxFiles)
+  // Aggregate over the PAGE: content is only read for the page's rows, so an
+  // aggregate over the rest would describe measurements that were never taken.
+  const overalls = page.map((r) => r.overall).filter((x): x is number => x !== null)
   const perDim: Record<string, number | null> = {}
   for (const id of ["assertions", "mocking", "error_handling", "parameterization", "docs", "fixtures"] as const) {
-    const vals = report.flatMap((r) => r.dimensions.filter((d) => d.id === id && d.evidenceStrength !== null).map((d) => d.evidenceStrength as number))
+    const vals = page.flatMap((r) => r.dimensions.filter((d) => d.id === id && d.evidenceStrength !== null).map((d) => d.evidenceStrength as number))
     perDim[id] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
   }
 
-  const unsupportedCount = report.reduce((n, r) => n + r.unsupported.length, 0)
+  const unsupportedCount = page.reduce((n, r) => n + r.unsupported.length, 0)
   return {
-    files: report,
+    files: page,
     aggregate: { mean: overalls.length > 0 ? overalls.reduce((a, b) => a + b, 0) / overalls.length : null, perDimension: perDim },
-    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: [...report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index), ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : []), // M57.T2: a zero-code-test corpus must disclose WHY it is zero — the
-        // same honesty rule testGaps/testMapping already follow (M50).
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: [...page.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index), ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : []), // A zero-code-test corpus must disclose WHY it is zero — the
+        // same honesty rule testGaps/testMapping already follow.
         ...(files.length === 0 ? [noEvidenceUnknown()] : [])] }),
     summary: {
-      filesWithContent: report.filter((r) => r.dimensions.some((d) => d.supported)).length,
-      filesUnknown: report.filter((r) => r.overall === null).length,
+      filesWithContent: page.filter((r) => r.dimensions.some((d) => d.supported)).length,
+      filesUnknown: page.filter((r) => r.overall === null).length,
       unsupportedDimensionCount: unsupportedCount,
+      // Rows returned against the population they were drawn from, so a page is
+      // never read as the whole corpus.
+      returned: page.length,
+      totalFiles: files.length,
+      truncated: files.length > page.length,
     },
   }
 }

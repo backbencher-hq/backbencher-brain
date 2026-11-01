@@ -9,56 +9,20 @@
 //   read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { ToolHandler, ToolContext, ToolResult, ToolArguments } from "../shared"
-import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
-import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
-import path from "node:path"
+import type { ToolHandler } from "../shared"
+import { textResult, resolveSafeReadPath, readIndexedFile, describeUnknownFilters } from "../shared"
 import { BrainDatabase } from "../../../brain/database"
-import { annotationId, annotationReachability, canonicalFilePath } from "../../../brain/annotation-store"
-import { BrainTools, PatternBrainTools } from "../../../ast/tools"
-import { quickAnswer } from "../../../intelligence/search/quick-answer"
-import { detectOrphans } from "../../../intelligence/patterns/orphans"
+import { BrainTools } from "../../../ast/tools"
 import { ASTEngine } from "../../../ast/engine"
-import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION, FRESHNESS_REMEDIATION_MANUAL_ONLY, type FreshnessSummary } from "../../../brain/freshness"
-import { CrossLanguageSecurityAnalysis } from "../../../security/cross-language-security"
-import { DependencyGraphVisualizer } from "../../../ast/dependency-graph-visualizer"
-import { CrossLanguageIntelligence } from "../../../ast/cross-language-intelligence"
-import { CrossLanguageMigrationAssistant } from "../../../ast/cross-language-migration-assistant"
-import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../../../ast/parallel-indexer"
+import { resolveRowsFreshnessDetailed, buildStalenessEnvelope } from "../../../brain/freshness"
 import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../../../ast/auto-refresh"
-import { TOOL_DESCRIPTORS } from "../../tool-registry"
-import { testQuality } from "../../../intelligence/testing/quality"
-import { executeEdit, type EditRequest } from "../../../intelligence/edit/edit-engine"
-import { getUnifiedHealth, formatUnifiedHealth } from "../../../intelligence/health/health-provider"
-import { getAnalysisHistory, executeAnalysis } from "../../../intelligence/analysis/run-history"
-import { generateDocumentation, formatDocumentation, type DocRequest } from "../../../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../../../intelligence/visualization/visualization-engine"
-import { generateMigrationPlans, formatMigrationPlans } from "../../../intelligence/migration/migration-engine"
-import { graphTraversal } from "../../../intelligence/graph/graph-engine"
-// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
-// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
-// (computeImpact + its declared budget) so the two doors cannot disagree.
-import { computeImpact, IMPACT_BUDGET } from "../../../lsp/impact"
-// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
-// The agent door CALLS it. It used to carry a drifted copy of the rule — see the
-// `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
-// defect a copy-projection is.
-import { classifyTier } from "../../../lsp/evidence_tier"
-import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../../../lsp/cross_language_hover"
-import { getProjectStats } from "../../../intelligence/analysis/project-stats"
-import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../../../intelligence/analysis/dependencies"
-import { analyzeComplexity } from "../../../intelligence/analysis/complexity"
-import { testMapping, testGaps, testImpact } from "../../../intelligence/testing/test-intel"
-import { makeProvenance } from "../../../intelligence/evidence"
-import type { AnalysisFindingInput } from "../../../intelligence/contracts"
 
 export const handler: ToolHandler = async (args, { projectId, projectPath }) => {
     const mode = args.mode === "content" ? "content" : args.mode === "symbol" || args.mode === "file" ? args.mode : "symbols"
-    // M40.A7 negative-case fix: invalid input must return an MCP error
+    // Invalid input must return an MCP error
     // envelope, not throw out of the handler — a thrown error crashes the
     // whole tool call on hosts that do not wrap handlers in try/catch.
-    // M48.C1 (#699) corpus catch: the registry advertises mode enum
+    // The registry advertises mode enum
     // [symbols, content, symbol, file] (and the docs example calls
     // mode:"symbols"), the validation layer accepts it — but this guard
     // rejected it. Surface truth: the advertised enum value must work.
@@ -93,6 +57,13 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       if (unknown) return textResult(unknown, true)
     }
     if (mode === "file") {
+      // The door refuses mode-irrelevant options; the handler keeps its own
+      // guard for direct/library callers. `refresh` is the one option a caller
+      // is most likely to pass here by mistake, because the schema describes it
+      // without a mode scope — this mode never auto-refreshes.
+      if (args.refresh !== undefined) {
+        return textResult("bb_search file mode does not accept: refresh — accepted for file: mode, filePath (file mode never auto-refreshes; its stale remediation names the manual reindex command)", true)
+      }
       let target: { absolute: string; relative: string }
       try {
         target = resolveSafeReadPath(projectPath, String(args.filePath))
@@ -113,7 +84,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       const row = byRelative ?? (raw
         .prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?")
         .get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined)
-      // An error envelope, not a throw: this handler's own contract (M40.A7,
+      // An error envelope, not a throw: this handler's own contract,
       // stated above) is that invalid input returns isError, and the sibling
       // branches here already do.
       if (!row) return textResult(`bb_search mode=file: file is not indexed: ${target.relative}`, true)
@@ -122,7 +93,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       const content = read.content
       const maxChars = 100_000
       const truncated = content.length > maxChars
-      // M35.E1: freshness from the shared resolver — per-item flag + envelope
+      // Freshness from the shared resolver — per-item flag + envelope
       // block (file-scope remediation names this exact file).
       const detail = resolveRowsFreshnessDetailed(raw, projectId as any, [{ fileId: row.id }])
       const fileStatus = detail.statuses.get(row.id) ?? "missing"
@@ -152,7 +123,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       // wrap the results in an explicit envelope — otherwise the mode and freshness
       // metadata silently vanish for every MCP/CLI consumer.
       const raw = await BrainDatabase.getRawInstance(projectId as any)
-      // M43.A1 (#657): the pass is rerunnable — when the first pass finds stale
+      // The pass is rerunnable — when the first pass finds stale
       // files within budget we repair them inline and run AGAIN so the answer
       // reflects the repair, with the decision declared on the answer.
       const runPass = async () => {
@@ -165,7 +136,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
           languages: args.language ? [String(args.language)] : undefined,
           symbolKind: args.symbolKind ? String(args.symbolKind) : undefined,
         })
-        // M35.E1: freshness block from the shared resolver (rows carry fileId;
+        // Freshness block from the shared resolver (rows carry fileId;
         // per-row stale flags are set by searchContent itself).
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, results.map((r: any) => ({ fileId: r.fileId })))
         return {
@@ -227,7 +198,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     }
     if (mode === "symbol") {
       const raw = await BrainDatabase.getRawInstance(projectId as any)
-      // M43.A1 (#657): rerunnable pass — repair stale files inline within
+      // Rerunnable pass — repair stale files inline within
       // budget, then answer from the SECOND pass so the answer reflects the
       // repair (declared).
       // Both branches produce either an answer or an error envelope, so the
@@ -243,25 +214,42 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
           // or loader message reach the caller as a "successful" answer.
           return { envelope: `bb_search mode=symbol: ${error?.message ?? String(error)}` }
         }
-        // M35.E1: per-match stale flag + envelope block. findSymbol rows alias
+        // Per-match stale flag + envelope block. findSymbol rows alias
         // fileId to the file PATH, so the resolver gets filePath rows.
+        //
+        // Paging (D12): a symbol name can legitimately be declared in many files
+        // (a common method name), and the complete set can be enormous. With no
+        // `limit` the mode keeps its original contract — the COMPLETE match set —
+        // and a declared `truncated:false`. With `limit` it is a page over the
+        // same complete set: `totalMatches` is the set size, `returned` the page,
+        // `truncated` says whether the page is the whole set, and `offset` walks
+        // it. 0 rows past the end and a declared total, never an empty answer that
+        // reads as "no such symbol".
         const matches = (found as { matches: any[] }).matches ?? []
-        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, matches.map((m: any) => ({ filePath: m.fileId })))
-        for (const m of matches) m.stale = detail.statuses.get(m.fileId) !== "fresh"
+        const totalMatches = matches.length
+        const pageLimit = args.limit === undefined ? null : Number(args.limit)
+        const pageOffset = Number(args.offset ?? 0)
+        const page = pageLimit === null ? matches : matches.slice(pageOffset, pageOffset + pageLimit)
+        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, page.map((m: any) => ({ filePath: m.fileId })))
+        for (const m of page) m.stale = detail.statuses.get(m.fileId) !== "fresh"
         return {
           answer: {
             ...found,
-            // A symbol name can legitimately be declared in many files (a common
-            // method name) and the whole set is returned. The envelope says so,
-            // instead of leaving the caller to guess whether a long list is
-            // complete. `found` spells out absence, because an empty `matches`
-            // array is otherwise the same shape as a symbol with no output.
-            found: matches.length > 0,
-            totalMatches: matches.length,
-            truncated: false,
+            matches: page,
+            // `found` spells out absence, because an empty `matches` array is
+            // otherwise the same shape as a symbol with no output.
+            found: totalMatches > 0,
+            totalMatches,
+            returned: page.length,
+            // A page that is not the whole set says so; the default (no limit)
+            // answer is the whole set and says that instead.
+            truncated: pageLimit === null ? false : pageOffset + page.length < totalMatches,
+            ...(pageLimit !== null && pageOffset + page.length < totalMatches
+              ? { truncationReason: "page-limit", nextOffset: pageOffset + page.length }
+              : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
           },
-          rows: matches.map((m: any) => ({ filePath: m.fileId })),
+          rows: page.map((m: any) => ({ filePath: m.fileId })),
           statuses: detail.statuses,
         }
       }
@@ -285,7 +273,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     // value that was actually searched.
     const query = String(args.query ?? "").trim()
     if (!query) return textResult("bb_search: query must not be empty", true)
-    // M43.A1 (#657): rerunnable pass — the pass answers from the SECOND run
+    // Rerunnable pass — the pass answers from the SECOND run
     // after an inline repair, with the decision declared on a trailing line.
     // No staleness (searchCode's own resolution found none) ⇒ one pass, zero
     // added cost, byte-identical output with the pre-A1 behavior.

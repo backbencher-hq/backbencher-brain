@@ -1,3 +1,31 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — content retrieval for bb_search `mode=content`: the one
+//   recall rule (name, qualified name, docstring, stored symbol body), the
+//   phrase/terms routes, determinism in the candidate set, and a declared bound
+//   on every scan.
+// WHICH TOOL IT SERVES — bb_search (read; modes symbols/content/symbol/file —
+//   this engine owns `content`).
+// WHY IT IS SHAPED THIS WAY — two paths exist for one answer (a full-corpus pass
+//   for normal projects and bounded candidate phases for giant corpora), so every
+//   field the answer promises (`matchMode`, `termMatch`, `bodyCoverage`,
+//   `totalMatches`, `truncated`, freshness) is produced by BOTH. Readiness
+//   checks are driver-agnostic (`!= null`): bun:sqlite returns null where
+//   better-sqlite3 returns undefined, and an `!== undefined` check silently made
+//   the two runtimes answer differently. A read never persists schema in the
+//   index database; the ranking table lives in the connection's temp schema.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_search.md, docs/BB_SEARCH.md,
+//   validation/tools/bb_search/**; gates: script/verify-search-modes.ts,
+//   script/m13/verify-search-honesty.ts, script/m13/verify-search-e2e.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_search/handler.ts,
+//   script/tool-docs/curation/bb_search.ts, validation/tools/bb_search/work/engine-probe.ts.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence
+//   (`bodyCoverage` is never a claim of completeness), per-row `stale` flags, the
+//   read/write boundary (no index-DB DDL on a read), and the regex policy
+//   (this file uses no regular expressions; text splitting is explicit).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { checkResultsFreshness } from "../../brain/freshness"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
@@ -188,7 +216,7 @@ function firstLine(text: string): string {
 
 // Giant-corpus guard: projects with more corpus rows than this use the bounded
 // SQL-phase path instead of the full-corpus + ephemeral-FTS5 build (measured
-// to take minutes on a 1M-symbol index, M19.Q1).
+// to take minutes on a 1M-symbol index).
 const GIANT_CORPUS_OFFSET = 25000
 
 // Per-phase cap for the bounded path. Keeps every unindexable scan (substring
@@ -235,7 +263,7 @@ function normalizeOffset(value: unknown): number {
 // The brain does not store raw file source, so "content" means the indexed
 // symbol + documentation corpus, not full-text file contents.
 //
-// Scale behavior (M19.Q1): for projects up to GIANT_CORPUS_OFFSET rows the
+// Scale behavior: for projects up to GIANT_CORPUS_OFFSET rows the
 // pre-existing full-corpus + ephemeral-FTS5 path is used unchanged. Beyond
 // that threshold the corpus fetch + 1M-row FTS5 build measured minutes, so a
 // bounded SQL-phase path is used instead: exact/prefix name phases hit the
@@ -718,11 +746,21 @@ function rankWithFts5(
     ).all(terms) as Array<{ id: string; score: number }>
     if (ranked.length === 0) return candidates
     const byId = new Map(candidates.map((row) => [row.id, row]))
-    const ordered: CorpusRow[] = []
-    for (const match of ranked) {
-      const row = byId.get(match.id)
-      if (row) ordered.push(row)
-    }
+    const lowerNeedle = query.toLowerCase()
+    const bm25Position = new Map<string, number>()
+    ranked.forEach((match, index) => bm25Position.set(match.id, index))
+    const ordered: CorpusRow[] = ranked
+      .map((match) => byId.get(match.id))
+      .filter((row): row is CorpusRow => !!row)
+      .sort(
+        (a, b) =>
+          // The documented weights beat the ranker: a name hit outranks a
+          // docstring hit outranks a body hit. bm25 orders within a class.
+          phraseFieldWeight(b, lowerNeedle) - phraseFieldWeight(a, lowerNeedle) ||
+          (bm25Position.get(a.id) ?? 0) - (bm25Position.get(b.id) ?? 0) ||
+          b.complexity - a.complexity ||
+          compareCodeUnits(a.relativePath, b.relativePath),
+      )
     // FTS5 matched only part of the candidate set (its tokenizer is stricter
     // than the substring rule). Returning that subset would be the same defect
     // in a new place, so the unmatched candidates are appended in field-weight
@@ -817,6 +855,23 @@ export function splitOnWhitespace(text: string): string[] {
   }
   if (start !== -1) parts.push(text.slice(start))
   return parts
+}
+
+/**
+ * The strongest field a phrase matches, by the documented weights:
+ * name 3 / qualified name 2 / docstring or body 1.
+ *
+ * Ordering must respect these weights even when FTS5 supplies the order: bm25 is
+ * IDF-aware but field-blind, so once body matches participate a document-heavy
+ * body could outrank an exact name hit. The contract is explicit that a name hit
+ * outranks a docstring hit outranks a body hit; bm25 decides inside a class.
+ */
+function phraseFieldWeight(row: CorpusRow, lowerNeedle: string): number {
+  if (row.name.toLowerCase().includes(lowerNeedle)) return 3
+  if ((row.qualifiedName ?? "").toLowerCase().includes(lowerNeedle)) return 2
+  if ((row.docstring ?? "").toLowerCase().includes(lowerNeedle)) return 1
+  if (row.sourceText && row.sourceText.toLowerCase().includes(lowerNeedle)) return 1
+  return 0
 }
 
 /**

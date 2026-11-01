@@ -28862,7 +28862,7 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
  * M14 F5 — the YAML truth, `deriveYamlEdges`.
  *
  * Written from YAML's own semantics and from the ecosystem conventions the LANE'S CONTRACT already
- * states in `docs/analyzers/real-yaml-analyzer.md`, and sharing no rule table, key set, path helper
+ * states in `docs/analyzers/yaml.md`, and sharing no rule table, key set, path helper
  * or resolver with `RealYamlAnalyzer`. That independence is the only property that makes a MATCH mean
  * something: an oracle derived from the analyzer cannot disagree with it, and a truth that cannot
  * disagree certifies nothing.

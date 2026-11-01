@@ -1,4 +1,4 @@
-# real-javascript-analyzer.md
+# javascript.md
 
 ## Language
 
@@ -611,7 +611,7 @@ one row and a table with nine parse the same.
 
 For this lane the lost row is `calls`, the largest type by volume (30,758 edges
 on svelte), and it is now visible as `UNDOCUMENTED [javascript] calls
-(relationship) — docs/analyzers/real-javascript-analyzer.md:36` on a line that
+(relationship) — docs/analyzers/javascript.md:36` on a line that
 plainly reads `| calls | **EMITTED** | … |`. The fix is to `push` that row
 instead of `continue`-ing it. The gate is the master's file; reported, not taken.
 

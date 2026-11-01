@@ -29,7 +29,7 @@
 // unexercised, `part_of` expressible but pending a grammar remedy. Both stay in n.
 // The applicable-set evidence for every construct and every type is
 // validation/m14/verification/TYPESCRIPT-APPLICABLE-SET.md.
-// WHERE ITS EVIDENCE LIVES — docs/analyzers/real-typescript-analyzer.md (+ -ontology.md);
+// WHERE ITS EVIDENCE LIVES — docs/analyzers/typescript.md (+ -ontology.md);
 // fixtures validation/m14/fixtures/typescript/** (run `bun run script/m14/run-fixtures.ts
 // --lang typescript`); gate `bun run script/m14/incoming-gate.ts typescript ts 400`; spec
 // script/m14/spec/typescript-completeness.json; state validation/m14/verification/
@@ -2857,7 +2857,7 @@ class TypeScriptAnalysisRunner {
     // The `uses` label therefore means, from here: a value or member READ in an
     // expression position — a field access, a template interpolation, a JSX tag.
     // `references` means: a mention of a TYPE. docs/analyzers/
-    // real-typescript-analyzer.md said the opposite for `uses` and was wrong.
+    // typescript.md said the opposite for `uses` and was wrong.
     // THE ONE-LABEL RULING, NARROWED TO THE POSITIONS WHOSE FIXTURES PIN IT (2026-10-17, iteration 2).
     // Removing it entirely fixed `type-predicate-and-constraint-refs` and BROKE `usage-references`,
     // whose forbid rows are exactly `uses greet -> User` and `uses main -> User`: a type ANNOTATION

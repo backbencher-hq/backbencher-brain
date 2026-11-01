@@ -12,9 +12,9 @@
 import type { ToolDescriptor } from "../types"
 
 export const descriptor: ToolDescriptor = {
-    // M28.T1 (issue #624): the agent door to bounded impact. Reuses
-    // src/lsp/impact.ts (the component the editor graph panel's impact mode
-    // uses) so agent and developer see identical totals and truncation.
+    // The agent door to bounded impact. Reuses src/lsp/impact.ts (the
+    // component the editor graph panel's impact mode uses) so agent and
+    // developer see identical totals and truncation.
     name: "bb_impact",
     description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and a declared total that is the size of the set the answer is a prefix of — measured, not inferred, so an answer that is short of the whole set says so even when no bound fired. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows. The relationship kinds that count are named in every answer's `rule.relationshipTypes` and can be overridden; a dependent carries its evidence tier, cross-language flag, bridge and position.",
     inputSchema: {

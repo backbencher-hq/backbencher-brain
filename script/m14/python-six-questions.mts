@@ -509,7 +509,7 @@ else {
   for (const [k, n] of rows.slice(0, 30)) console.log(`  ${pad(k, 34)} ${n} edges`)
   console.log(`  non-empty cells: ${rows.length}. A non-zero cell is a (source,target) the analyzer`)
   console.log(`  published under two type labels; whether that is a genuine dual reading or a`)
-  console.log(`  mislabel is decided per type in docs/analyzers/real-python-analyzer.md, not here.`)
+  console.log(`  mislabel is decided per type in docs/analyzers/python.md, not here.`)
 }
 
 console.log(`\n--- Q5 RESOLVED detail + standing rule R7 ---`)

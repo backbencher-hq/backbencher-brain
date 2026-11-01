@@ -435,7 +435,7 @@ async function main() {
     if (attributed.length) {
       const amb = attributed.filter((r) => r.ambiguous).length
       console.log(`  target residue attribution: ${attributed.length} rows; the re-index's target name is ambiguous in the project on ${amb} of them`)
-      console.log(`    (the insert path binds by proximity; the resolution pass refuses a non-unique name — the next item, see docs/analyzers/real-javascript-analyzer.md §12)`)
+      console.log(`    (the insert path binds by proximity; the resolution pass refuses a non-unique name — the next item, see docs/analyzers/javascript.md §12)`)
     }
     console.log(`  first examples:`)
     for (const d of divergent.slice(0, 8)) {

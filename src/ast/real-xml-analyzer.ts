@@ -12,7 +12,7 @@
  * mis-attributed kind that no XML construct can carry. A future reader will otherwise "find" the
  * missing instantiation edges; they do not exist.
  *
- * WHERE THE RECORD LIVES: docs/analyzers/xml.md + docs/analyzers/real-xml-analyzer.md; spec
+ * WHERE THE RECORD LIVES: docs/analyzers/history/xml-lane-notes.md + docs/analyzers/xml.md; spec
  * script/m14/spec/xml-completeness.json; fixtures validation/m14/fixtures/xml; grammar
  * grammars/tree-sitter-xml/ (vendored); lane records under validation/m14/verification/.
  *
@@ -2102,7 +2102,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // rather than a gap: the template is declared in an INCLUDED or IMPORTED
     // stylesheet, which a per-file analyzer cannot read. `xsl:import`/`xsl:include`
     // sites are counted and reported as declared debt (see
-    // `docs/analyzers/real-xml-analyzer.md`, limitations), so the missing half of
+    // `docs/analyzers/xml.md`, limitations), so the missing half of
     // the call graph is a number in this repository and not a silence.
     for (const cand of callCandidates) {
       if (!declaredTemplateNames.has(cand.templateName)) continue
@@ -3021,7 +3021,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // content model, so the source is `PurchaseOrderType`; the analyzer published
       // `xs:element`, which is the schema vocabulary's word for a type CONSTRUCTOR and a
       // symbol no document declares. Measured at 1,066 of 10,411 `references` edges on the
-      // gate's own sample — see `docs/analyzers/real-xml-analyzer.md`.
+      // gate's own sample — see `docs/analyzers/xml.md`.
       //
       // The rule, and it is deliberately two lines rather than one:
       //

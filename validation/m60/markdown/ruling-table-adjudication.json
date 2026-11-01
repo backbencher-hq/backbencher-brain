@@ -422,7 +422,7 @@
       "resumed": false,
       "resumeNote": "reusedShards were parsed by an EARLIER invocation of this same script over the same populationSha256 with the same shard count; the payload is the file on disk, not a re-parse. Empty means one uninterrupted invocation parsed every shard.",
       "lostShardFiles": 0,
-      "why": "src/ast/engine.ts:1411 kills the whole process after 120s on one file, so an unsharded census of this corpus reports nothing. Two arbiter runs died there. See docs/analyzers/real-markdown-analyzer.md."
+      "why": "src/ast/engine.ts:1411 kills the whole process after 120s on one file, so an unsharded census of this corpus reports nothing. Two arbiter runs died there. See docs/analyzers/markdown.md."
     },
     "parsed": 17456,
     "parseFailures": 0,

@@ -3,7 +3,7 @@
  *
  * ## Why this file exists
  *
- * `implements` is the only type this lane rules (docs/analyzers/real-lua-analyzer.md
+ * `implements` is the only type this lane rules (docs/analyzers/lua.md
  * §3.2). Its instrument-A leg is sound — Lua has no `class` keyword, no `interface`
  * keyword and no declaration form for a type, so no corpus can produce a supertype
  * clause. But the document named a falsification condition that NO instrument

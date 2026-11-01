@@ -987,7 +987,7 @@ async function main(): Promise<void> {
           // Four repos agreeing on an impossible ratio is what made it read as a
           // property of the language instead of a property of this counter.
           //
-          // It reached the document: docs/analyzers/real-lua-analyzer.md §6 published
+          // It reached the document: docs/analyzers/lua.md §6 published
           // `exports | 590 | 1,184` as observed. The true observed count is 590.
           perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
         }

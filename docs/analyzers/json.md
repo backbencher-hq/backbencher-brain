@@ -1,4 +1,4 @@
-# real-json-analyzer
+# json analyzer — analyzer documentation
 
 Tree-sitter extraction for `*.json`, `*.jsonc` and `*.json5`, verified under the
 **M14/M60** json lane wave (record: `reviews/json/m60-closure.md`).

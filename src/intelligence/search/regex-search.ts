@@ -1,3 +1,29 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — regex name retrieval for bb_search `mode=symbols` with
+//   `regex:true`: compiles the caller's pattern (validated, named errors),
+//   scans a bounded candidate set of indexed symbol names in an isolated worker
+//   under a hard time budget, then projects and ranks the matches.
+// WHICH TOOL IT SERVES — bb_search (read; the user-pattern regex option is the
+//   documented regex exception of charter §7 — the pattern is DATA, never source
+//   parsing).
+// WHY IT IS SHAPED THIS WAY — `RegExp.prototype.test` has no timeout and one
+//   pathological pattern on one name can freeze the stdio server, so matching is
+//   isolated in a worker that the parent terminates on a deadline; the database
+//   read stays on the caller's connection because it is bounded. The candidate
+//   cap, projection cap and time budget are all declared (`truncated` +
+//   `truncationReason`), so a cut scan is never presented as a complete answer.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_search.md, docs/BB_SEARCH.md,
+//   validation/tools/bb_search/**; gates: script/verify-search-modes.ts,
+//   validation/tools/bb_search/work/regex-edge-tests.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/search/regex-scan-worker.ts,
+//   src/mcp/tools/bb_search/handler.ts, validation/tools/regex-allowlist.json.
+// CONTRACTS IT MUST NOT BREAK — a bounded answer is declared bounded; invalid
+//   patterns are named errors; the allowlist row for the user-pattern RegExp
+//   construction stays paired with its edge-case tests.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { checkResultsFreshness } from "../../brain/freshness"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
@@ -68,6 +94,15 @@ function compileRegex(pattern: string, caseSensitive: boolean): RegExp {
   }
 }
 
+/**
+ * The compiler, exposed for the edge-case suite that accompanies the allowlisted
+ * user-pattern construction (charter §7): empty, anchored, Unicode, multiline
+ * and invalid patterns are pinned there.
+ */
+export function compilePatternForTests(pattern: string, caseSensitive: boolean): RegExp {
+  return compileRegex(pattern, caseSensitive)
+}
+
 function normalizePageSize(value: unknown): number {
   if (value === undefined || value === null) return 100
   const n = Math.trunc(Number(value))
@@ -86,16 +121,15 @@ function compareCodeUnits(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
-// Regex search over indexed symbol names. Returns results tagged with the
-// regex retrieval mode plus truncation flags when the scan cap or the time
-// budget stopped the scan.
+// Regex search over indexed symbol names. Returns results tagged with the regex
+// retrieval mode plus truncation flags when the scan cap, the projection cap or
+// the matching time budget stopped the scan.
 export async function searchRegex(projectId: ProjectID, rawPattern: string, options: SearchOptions = {}): Promise<SearchResults> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
-  const maxResults = normalizePageSize(options.maxResults)
-  const offset = normalizeOffset(options.offset)
   // Trimmed like every other mode: a pattern is a pattern, not a sentence with
   // accidental surrounding whitespace.
   const pattern = String(rawPattern ?? "").trim()
+  const maxResults = normalizePageSize(options.maxResults)
+  const offset = normalizeOffset(options.offset)
   if (!pattern) {
     const empty = [] as unknown as SearchResults
     empty.searchMode = "regex"
@@ -104,7 +138,10 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
     empty.totalMatches = 0
     return empty
   }
+  // Validate the caller's pattern BEFORE opening the index: an invalid regex is
+  // a named error about the request, not something a database failure can mask.
   const expression = compileRegex(pattern, options.caseSensitive === true)
+  const raw = await BrainDatabase.getRawInstance(projectId)
 
   const params: unknown[] = [projectId]
   let filters = ""

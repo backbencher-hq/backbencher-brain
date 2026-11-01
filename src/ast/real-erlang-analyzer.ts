@@ -12,7 +12,7 @@
 // M14 section D: every relationship states metadata.evidenceClass — structural (contains/exports/implements/
 // instantiates) · import_based (imports, and `part_of` per ER-D46 — both are directives) · reference_qualified
 // (references + `mod:fn` calls) · usage_contextual (bare calls + uses).  Where docs, spec, fixtures and
-// validations live: docs/analyzers/real-erlang-analyzer.md ·
+// validations live: docs/analyzers/erlang.md ·
 // script/m14/spec/erlang-completeness.json · validation/m14/fixtures/erlang/** ·
 // `bun run script/m14/run-fixtures.ts --lang erlang` · ERLANG-STATE.md under validation/m14/verification/.
 // CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the docs

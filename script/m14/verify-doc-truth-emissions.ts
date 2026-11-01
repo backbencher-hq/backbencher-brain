@@ -12,14 +12,14 @@
  * greps for `RelationshipType` then concludes "not emitted", and that sentence
  * is wrong.
  *
- * TWO instances were commissioned, in real-cpp-analyzer.md and
- * real-java-analyzer.md. Building the gate found SIX MORE of the same class,
+ * TWO instances were commissioned, in cpp.md and
+ * java.md. Building the gate found SIX MORE of the same class,
  * each verified by hand against the analyzer source before this file was
- * written: the `exports` row in real-cpp-analyzer.md and real-go-analyzer.md
+ * written: the `exports` row in cpp.md and go.md
  * (both deny a populated `ExportInfo[]` payload), `uses` in
- * real-csharp-analyzer.md, real-scala-analyzer.md and real-yaml-analyzer.md
+ * csharp.md, scala.md and yaml.md
  * (each denies an edge its own measured tables count), and `exports` in
- * real-yaml-analyzer.md. Eight FALSE_NEGATIVEs, all of them one cell wide.
+ * yaml.md. Eight FALSE_NEGATIVEs, all of them one cell wide.
  *
  * Per docs/M14-HONESTY-CONTRACT.md, a newly found bug class becomes a
  * PERMANENT GATE before its fix counts as landed. This is that gate. It does
@@ -56,12 +56,12 @@
  * THE CLAIM VOCABULARY IS EXACT, NOT APPROXIMATED
  * A doc row whose first cell does not resolve to a `RelationshipType` alias is
  * NOT compared. `depends` and `field_access` are not members of
- * `RelationshipType` in src/ast/types.ts — real-java-analyzer.md says so and is
+ * `RelationshipType` in src/ast/types.ts — java.md says so and is
  * right — so a row claiming they are "not emitted" makes no emission claim and
  * this gate reports it as `NON_ENGINE_KIND` instead of inventing a verdict.
  * A row that MIXES engine kinds with non-kinds (`| extends / overrides | — |`
- * in real-css-analyzer.md, and the eight-name `❌ n/a` row in
- * real-go-analyzer.md) is likewise reported as `MIXED_ROW` and excluded: its
+ * in css.md, and the eight-name `❌ n/a` row in
+ * go.md) is likewise reported as `MIXED_ROW` and excluded: its
  * single claim cell cannot honestly be attributed to each of its names, and
  * guessing which name it meant is exactly the kind of inference that produced
  * this bug class. A row naming SEVERAL engine kinds and nothing else IS
@@ -115,7 +115,7 @@
  *     one ignored; the count is reported so that is visible rather than
  *     silent. Measured: `c` and `erlang` each hold two.
  *   - A claim cell that carries no marker at all (a prose "Emitted for" column,
- *     as in real-scss-analyzer.md) yields NO_MARKER: no verdict, no finding.
+ *     as in scss.md) yields NO_MARKER: no verdict, no finding.
  *
  * USAGE
  *   bun run script/m14/verify-doc-truth-emissions.ts             # writes the register, exits 1 on a lie
@@ -140,6 +140,11 @@ const SELF_PATH = fileURLToPath(import.meta.url)
 const HERE = path.dirname(SELF_PATH)
 const REPO_ROOT = path.resolve(HERE, "..", "..")
 const REGISTER_REL = path.join("docs", "DOC-TRUTH-EMISSIONS.md")
+
+/** Analyzer source id -> documentation lane, where the two differ (`real-makefile-analyzer.ts`
+ *  documents as `docs/analyzers/make.md`). */
+const DOC_LANE_ALIAS: Record<string, string> = { makefile: "make" }
+const docRelFor = (lang: string): string => `docs/analyzers/${DOC_LANE_ALIAS[lang] ?? lang}.md`
 const REGISTER_CMD = "bun run script/m14/verify-doc-truth-emissions.ts"
 
 /**
@@ -422,12 +427,12 @@ function isRuleRow(cellsOfLine: string[]): boolean {
  * A claim table's header names WHAT the rows are and WHAT the second column
  * answers.
  *
- * The first-cell test accepts a bare `type` because real-c-analyzer.md heads
+ * The first-cell test accepts a bare `type` because c.md heads
  * its two emission tables `| type | emitted | count | metadata.relationshipType |`
  * — a complete and correct claim table that a stricter test would have skipped,
  * losing the one doc in the tree with per-kind measured import AND export
  * counts. It is deliberately narrower than "any table with a Supported? column":
- * real-c-analyzer.md's symbol table is headed `| Field | Supported? | … |`, and
+ * c.md's symbol table is headed `| Field | Supported? | … |`, and
  * grading `field_access` rows as emission claims would be a new invention.
  */
 function looksLikeClaimHeader(cs: string[]): boolean {
@@ -510,7 +515,7 @@ export function parseClaimTable(text: string): ClaimTable | null {
  *
  * The order matters and is the whole design. A leading glyph decides on its
  * own; only a cell that opens with prose falls through to the keyword scan,
- * which is why a prose "Emitted for" column (real-scss-analyzer.md) lands on
+ * which is why a prose "Emitted for" column (scss.md) lands on
  * NO_MARKER instead of being graded from whatever words it happens to contain.
  * Negation is read before affirmation so "not emitted" cannot be scored YES by
  * its own "emitted".
@@ -536,7 +541,7 @@ export function classifyClaim(cell: string): Claim {
 /**
  * Does this cell itself state that the import-SITE channel is live?
  *
- * This is the rule the two live lies turn on. real-cpp-analyzer.md's imports
+ * This is the rule the two live lies turn on. cpp.md's imports
  * cell reads "❌ never as a relationship" and its PROSE below the table explains
  * that imports ride along as `ImportInfo[]`. That prose is true and it is also
  * exactly the sentence that produced the wrong conclusion, because the cell is
@@ -550,7 +555,7 @@ function cellStatesPayload(cell: string): boolean {
 /** The population one analyzer/doc pair contributes. */
 function evaluateOne(lang: string, surface: Surface, table: ClaimTable | null): Verdict[] {
   const out: Verdict[] = []
-  const doc = `docs/analyzers/real-${lang}-analyzer.md`
+  const doc = docRelFor(lang)
   if (!table) {
     out.push({
       lang,
@@ -630,7 +635,7 @@ function evaluateOne(lang: string, surface: Surface, table: ClaimTable | null): 
    * This is the whole point of the gate. A doc row is about the FACT, not about
    * one channel that happens to carry it, so a verdict must be taken over every
    * channel. Grading `exports | ✅` against `RelationshipType.Exports` alone
-   * calls real-objective-c-analyzer.md a liar for an analyzer that returns a
+   * calls objective-c.md a liar for an analyzer that returns a
    * populated `ExportInfo[]`; the first run of this gate made that accusation 13
    * times before the export-site channel was measured, which is the same defect
    * in the gate that the gate exists to catch.
@@ -742,7 +747,7 @@ export function evaluate(root: string): Report {
     langs.push(lang)
     const surface = readSurface(path.join(srcDir, file))
     surfaces.set(lang, surface)
-    const docPath = path.join(docDir, `real-${lang}-analyzer.md`)
+    const docPath = path.join(docDir, path.basename(docRelFor(lang)))
     if (!fs.existsSync(docPath)) {
       missingDocs.push(lang)
       tables.set(lang, null)
@@ -750,7 +755,7 @@ export function evaluate(root: string): Report {
         lang,
         kind: "MISSING_DOC",
         subject: lang,
-        detail: `src/ast/${file} has no canonical docs/analyzers/real-${lang}-analyzer.md; doc-presence is owned by script/m14/verify-analyzer-docs.ts, so this gate reports it without failing on it`,
+        detail: `src/ast/${file} has no canonical ${docRelFor(lang)}; doc-presence is owned by script/m14/verify-analyzer-docs.ts, so this gate reports it without failing on it`,
         docLine: 0,
         cell: "",
       })
@@ -799,7 +804,7 @@ export function renderRegister(report: Report): string {
   lines.push("## What is measured")
   lines.push("")
   lines.push(
-    "For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/real-<lang>-analyzer.md`: the analyzer's emitted surface over BOTH channels — the `ASTEngine.RelationshipType.*` references in code, and the import-site channel (`ImportInfo[]` returned as `imports`) — against the \"Emitted?\" cells of the doc's relationship-ontology table. Comments and string literals are stripped first, so only code is accused.",
+    "For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/<lang>.md`: the analyzer's emitted surface over BOTH channels — the `ASTEngine.RelationshipType.*` references in code, and the import-site channel (`ImportInfo[]` returned as `imports`) — against the \"Emitted?\" cells of the doc's relationship-ontology table. Comments and string literals are stripped first, so only code is accused.",
   )
   lines.push("")
   lines.push("| Measure | Count | Fails the gate |")
@@ -873,7 +878,7 @@ export function renderRegister(report: Report): string {
     for (const lang of report.missingDocs) {
       const alt = path.join("docs", "analyzers", `${lang}.md`)
       const note = fs.existsSync(path.join(REPO_ROOT, alt)) ? ` — content may live at \`${alt}\`` : ""
-      lines.push(`| real-${lang}-analyzer.ts | no \`docs/analyzers/real-${lang}-analyzer.md\`${note} |`)
+      lines.push(`| real-${lang}-analyzer.ts | no \`${docRelFor(lang)}\`${note} |`)
     }
   }
   lines.push("")
@@ -921,7 +926,7 @@ function printFindings(verdicts: Verdict[]): void {
     const group = verdicts.filter((x) => x.kind === kind)
     if (group.length === 0) continue
     for (const f of group) {
-      const where = f.docLine > 0 ? `docs/analyzers/real-${f.lang}-analyzer.md:${f.docLine}` : `real-${f.lang}-analyzer`
+      const where = f.docLine > 0 ? `${docRelFor(f.lang)}:${f.docLine}` : `real-${f.lang}-analyzer`
       const cell = f.cell ? ` cell="${f.cell}"` : ""
       console.error(`${kind} [${f.lang}] ${f.subject}${cell}\n  ${where}\n  ${f.detail}`)
     }
@@ -1132,7 +1137,7 @@ export function selftest(): number {
       fs.mkdirSync(srcDir, { recursive: true })
       fs.mkdirSync(docDir, { recursive: true })
       fs.writeFileSync(path.join(srcDir, "real-selftest-analyzer.ts"), c.src + "\n")
-      if (c.doc !== null) fs.writeFileSync(path.join(docDir, "real-selftest-analyzer.md"), c.doc)
+      if (c.doc !== null) fs.writeFileSync(path.join(docDir, "selftest.md"), c.doc)
 
       const report = evaluate(tempRoot)
       const got = new Set(report.verdicts.map((v) => v.kind))

@@ -1,4 +1,4 @@
-# real-svelte-analyzer.md
+# svelte.md
 
 ## Language
 
@@ -147,7 +147,7 @@ from it. `imports` carries 4 more at 0.6. Everything else is ≥ 0.8.
 ### Payload and latency
 
 `script/m14/svelte-payload-latency.mts` (new; the lane had no such check and
-`docs/analyzers/svelte.md` records that gap as X5). Production path, median of 3
+`docs/analyzers/history/svelte-lane-notes.md` records that gap as X5). Production path, median of 3
 per file, warm-up discarded, population derived by readdir:
 
 | corpus | sampled | timed | ms/file | ms/KiB | symbols | edges |

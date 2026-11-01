@@ -3,12 +3,12 @@
 // src/ast/language-detection.ts); it produces the symbols and relationships the graph engine stores.
 // Relationship types covered: extends, implements, overrides, calls, uses, contains, imports, exports,
 // references, instantiates — per-type rulings and emission sites in
-// script/m14/spec/scala-completeness.json; lane docs docs/analyzers/scala.md and
-// docs/analyzers/real-scala-analyzer.md.
+// script/m14/spec/scala-completeness.json; lane docs docs/analyzers/history/scala-lane-notes.md and
+// docs/analyzers/scala.md.
 // Where its scripts and validations live: script/m14/spec/scala-completeness.json · fixtures
 // validation/m14/fixtures/scala/** (`bun run script/m14/run-fixtures.ts --lang scala`).
-// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-scala-analyzer.md and
-// docs/analyzers/scala.md, the spec JSON's emission sites, and the fixtures/expectations pinning an
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/scala.md and
+// docs/analyzers/history/scala-lane-notes.md, the spec JSON's emission sites, and the fixtures/expectations pinning an
 // edge whose type or target moved; inherited-member resolution here also reads
 // src/ast/override-context.ts, so a change to that helper changes this lane too.
 // Grammar: tree-sitter-scala (wasm/tree-sitter-scala.wasm).

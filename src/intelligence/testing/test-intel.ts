@@ -426,10 +426,14 @@ export async function testGaps(projectId: ProjectID, options: TestIntelOptions =
       // two modes answered 169 and 163 for what reads as one question, and
       // nothing in either payload said the arithmetic.
       //
-      // The population is now stated here under its own name, and the identity
-      // closes in public:
-      //   productionSymbols = gaps + directlyTested + excludedAsNoise
-      // which on that corpus is 169 = 163 + 6 + 0.
+      // The identity closes in public, and it is stated in the CONTRACTS
+      // vocabulary rather than invented here:
+      //   productionSymbols = total + directlyTested      (gaps + directly tested)
+      //   productionSymbols + excludedAsNoise = the store's population under
+      //                                        this mode's own filter
+      // `excludedAsNoise` is NOT part of `productionSymbols` — the population is
+      // already post-noise. Measured on the behaviour fixture: 17 = 17 + 0, and
+      // productionSymbols + 0 = the 17 filtered production symbols.
       productionSymbols: filtered.length,
       total: candidates.length,
       directlyTested: filtered.length - candidates.length,
@@ -445,7 +449,14 @@ export async function testGaps(projectId: ProjectID, options: TestIntelOptions =
 // MODE: impact — which tests exercise a changed symbol (direct + indirect via
 // the shared graph engine's caller traversal). Runtime coverage is a separate,
 // unpopulated field unless a real artifact is supplied.
-export async function testImpact(projectId: ProjectID, target: string, options: TestIntelOptions = {}): Promise<TestImpactReport> {
+export async function testImpact(
+  projectId: ProjectID,
+  target: string,
+  /** `timeBudgetMs` is this mode's own wall-clock bound. The graph engine defaults
+   *  to NO clock bound and this mode refuses `limit`, so without it the one
+   *  walking mode with no page size also had no ceiling. */
+  options: TestIntelOptions & { timeBudgetMs?: number } = {},
+): Promise<TestImpactReport> {
   const { graphTraversal } = await import("../graph/graph-engine")
   const raw = await BrainDatabase.getRawInstance(projectId)
 
@@ -461,18 +472,32 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     fileRel.set(r.id, r.rel)
   }
 
+  const timeBudgetMs = Math.max(0, Math.floor(options.timeBudgetMs ?? 2_000))
+  const depthCap = options.maxDepth ?? 4
   let graph
   try {
     graph = await graphTraversal(projectId, target, {
       direction: "callers",
-      maxDepth: options.maxDepth ?? 4,
+      maxDepth: depthCap,
+      timeBudgetMs,
       // The declared rule (see TEST_IMPACT_KINDS): the walk sees only kinds this
       // engine can classify, so `contains` membership is never read as a test
       // dependency and every entry below can name its own tier.
       relationshipTypes: [...TEST_IMPACT_KINDS],
     })
   } catch {
-    return { target, found: false, directTests: [], indirectTests: [], affectedTestFiles: [], truncated: false, provenance: makeProvenance({ evidenceClass: "unknown", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "graph-resolution", limitations: ["The target could not be resolved in the indexed graph."], unknowns: ["target-not-found"] }), runtimeCoverage: { available: false } }
+    return {
+      target,
+      found: false,
+      directTests: [],
+      indirectTests: [],
+      affectedTestFiles: [],
+      truncated: false,
+      truncationReason: null,
+      summary: { returned: 0, total: 0, truncated: false, truncationReason: null, timeBudgetMs, timeBudgetExhausted: false, depthCap },
+      provenance: makeProvenance({ evidenceClass: "unknown", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "graph-resolution", limitations: ["The target could not be resolved in the indexed graph."], unknowns: ["target-not-found"] }),
+      runtimeCoverage: { available: false },
+    }
   }
 
   const direct: TestImpactReport["directTests"] = []
@@ -513,6 +538,8 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
   ).c
   const unknowns = ["runtime-coverage-unavailable"]
   if (testSymbols === 0) unknowns.unshift(NO_EVIDENCE_UNKNOWN)
+  const walk: any = graph.summary
+  const truncationReason: string | null = walk.truncationReason ?? (Array.isArray(walk.truncationReasons) && walk.truncationReasons.length ? walk.truncationReasons.join("+") : null)
   return {
     target,
     found: true,
@@ -520,6 +547,20 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     indirectTests: indirect,
     affectedTestFiles: Array.from(affected).sort(),
     truncated: graph.summary.truncated,
+    truncationReason,
+    // What this engine returned and which bound fired. `total` is the set the
+    // walk produced (the engine's own derivation, not the caller's site count):
+    // when the walk was cut, `truncationReason`/`timeBudgetExhausted` say so
+    // instead of leaving `truncated: true` unexplained.
+    summary: {
+      returned: direct.length + indirect.length,
+      total: direct.length + indirect.length,
+      truncated: graph.summary.truncated,
+      truncationReason,
+      timeBudgetMs,
+      timeBudgetExhausted: walk.timeBudgetExhausted === true,
+      depthCap: graph.summary.maxDepth,
+    },
     provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns }),
     runtimeCoverage: { available: false },
   }

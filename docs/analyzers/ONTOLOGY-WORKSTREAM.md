@@ -92,7 +92,7 @@ thoroughly reviewed, should work, expected to pass, green**, and unscoped
 | owned by the language agent | owned by MASTER only |
 |---|---|
 | `src/ast/real-<lang>-analyzer.ts` | `script/m14/differential.ts`, `mutate-analyzer.ts`, shared `script/m14/**` machinery |
-| `docs/analyzers/real-<lang>-analyzer.md` | `validation/m14/differential-baseline.json`, `validation/m14/results/*.json` |
+| `docs/analyzers/<lang>.md` | `validation/m14/differential-baseline.json`, `validation/m14/results/*.json` |
 | that lane's fixtures | `validation/m60/ledger.json`, `rel-type-coverage*.json` |
 | | `ontology-coverage-gate.ts`, `rel-type-coverage-gate.ts` |
 | | `src/ast/types.ts`, `src/ast/engine.ts` |
@@ -122,7 +122,7 @@ starting a language that is weeks old — it carries harness repairs.
 - Fixtures assert the new behaviour (a mutant must die).
 - The lane's mutation, differential and payload/latency checks re-run, with
   results.
-- `docs/analyzers/real-<lang>-analyzer.md` updated: what each type means here,
+- `docs/analyzers/<lang>.md` updated: what each type means here,
   what was ruled and the measurement that rules it.
 - Committed on its own language branch, reported to master with numbers.
 
@@ -292,7 +292,7 @@ Nothing merges to `main` from this workstream. The owner does that.
 ## Ownership
 
 Per-language agents own `src/ast/real-<lang>-analyzer.ts`,
-`docs/analyzers/real-<lang>-analyzer.md`, and that lane's fixtures under
+`docs/analyzers/<lang>.md`, and that lane's fixtures under
 `test/` and `validation/m14/fixtures/<lang>/`.
 
 The supervisor owns everything shared: `script/m14/differential.ts`,

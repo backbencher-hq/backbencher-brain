@@ -108,7 +108,7 @@ export function validateToolArguments(descriptor: ToolDescriptor, args: unknown)
 const SEARCH_OPTIONS_BY_MODE: Record<string, readonly string[]> = {
   symbols: ["mode", "query", "limit", "offset", "language", "symbolKind", "includeContent", "exact", "caseSensitive", "regex", "refresh"],
   content: ["mode", "query", "limit", "offset", "language", "symbolKind", "refresh"],
-  symbol: ["mode", "query", "symbolName", "filePath", "refresh"],
+  symbol: ["mode", "query", "symbolName", "filePath", "limit", "offset", "refresh"],
   file: ["mode", "filePath"],
 }
 
@@ -160,6 +160,13 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
         throw new Error(`bb_search ${mode} mode does not accept: ${irrelevant.join(", ")} — accepted for ${mode}: ${accepted.join(", ")}`)
       }
     }
+    // A page-size ceiling stated in the descriptor must be refused at the DOOR,
+    // with the handler's own words, rather than admitted here and refused later:
+    // the same request would be valid through one door and refused through the
+    // other, and a caller has no way to know which one it will meet.
+    if (args.limit !== undefined && Number(args.limit) > 2000) {
+      throw new Error("bb_search: limit must be between 0 and 2000 — refused rather than clamped, so a returned page always means the page asked for")
+    }
     if (mode === "file") {
       if (typeof args.filePath !== "string" || args.filePath.trim().length === 0) {
         throw new Error("bb_search file mode requires filePath")
@@ -196,6 +203,17 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
   }
   if (tool === "bb_ask" && (typeof args.query !== "string" || args.query.trim().length === 0)) {
     throw new Error("bb_ask requires a non-empty query")
+  }
+  // The advertised page size is 1..100. Refused at the door with the handler's
+  // own words so one request cannot be valid through one door and refused by
+  // the other: 0 used to become the engine default and print results beside a
+  // "0 requested" footer, and an unbounded page turns a question into a snippet
+  // dump. Refused rather than clamped, always.
+  if (tool === "bb_ask" && args.limit !== undefined) {
+    const limit = Number(args.limit)
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      throw new Error("bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refused rather than clamped.")
+    }
   }
   // M31.T1: scoped graphs require a target — the handler previously fell back
   // to a project graph for missing/blank targets, contradicting the documented

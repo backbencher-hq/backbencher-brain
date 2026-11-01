@@ -156,7 +156,7 @@
  * true: the smallest observed value of every one of the ten is non-zero, which is what the gate
  * tests. The delta is reported because a reader planning a re-measure needs to know that two runs
  * will not agree to the digit, and the DENOMINATOR of every rate printed in
- * `docs/analyzers/real-r-analyzer.md` inherits the same band.
+ * `docs/analyzers/r.md` inherits the same band.
  *
  * ## Why the table is registered rather than omitted
  *

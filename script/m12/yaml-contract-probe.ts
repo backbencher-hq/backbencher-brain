@@ -1,6 +1,6 @@
 // M12.36 — the yaml per-analyzer CONTRACT probe.
 //
-// WHY THIS FILE EXISTS. `docs/analyzers/real-yaml-analyzer.md` has cited
+// WHY THIS FILE EXISTS. `docs/analyzers/yaml.md` has cited
 // `validation/m12/results/yaml-contract.json` — "19/19 checks" — since the lane
 // shipped, and NO SCRIPT PRODUCED IT. `script/m12/` contained no `yaml-*` file at
 // all, so the claim was unreproducible: a reader could not re-derive the number, and

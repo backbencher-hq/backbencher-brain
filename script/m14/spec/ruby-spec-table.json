@@ -5,7 +5,7 @@
   "grammar": {
     "wasm": "wasm/tree-sitter-ruby.wasm",
     "sha256": "93a5022855314cdb",
-    "sha256Note": "full sha256 in the instrument artifact; the doc records that the shipped bytes are a REDISTRIBUTOR BUILD (tree-sitter-wasms@0.1.11 out/, no source published) \u2014 see docs/analyzers/real-ruby-analyzer.md 'Grammar surface'",
+    "sha256Note": "full sha256 in the instrument artifact; the doc records that the shipped bytes are a REDISTRIBUTOR BUILD (tree-sitter-wasms@0.1.11 out/, no source published) \u2014 see docs/analyzers/ruby.md 'Grammar surface'",
     "enumeration": "353 node-type slots = 108 NAMED types + 176 anonymous tokens (284 distinct node-type names, matching the doc's measured count). The grammar has exactly ONE call node type (`call`): `command`/`command_call` are not producible. `ERROR`/`MISSING` are universal parser outputs, not productions.",
     "fields": "32 fields (the doc's measured count; the Language API exposed by web-tree-sitter here cannot enumerate field names portably, so the count is CITED from the doc's instrument rather than re-derived)",
     "instrument": "script/m14/ruby-applicable-set.ts",
@@ -690,7 +690,7 @@
     "d5": {
       "status": "HOLDS with two pinned items",
       "fixtures": "12 .rb fixtures / 11 expectation files / 11 pass 1 fail; the failure is ruby/ontology-factory-and-names (NO expectation file) \u2014 PINNED with reason (constructs covered by ontology-imports-exports, payload-and-complexity, mixes-in-modules; gate says no regressions)",
-      "docs": "docs/analyzers/real-ruby-analyzer.md corrected in-wave (stale imports/exports claims + mixes_in row + CORRECTION block)",
+      "docs": "docs/analyzers/ruby.md corrected in-wave (stale imports/exports claims + mixes_in row + CORRECTION block)",
       "headComment": "updated: emitted set names mixes_in (not implements) with the RUBY-D1 ruling and delta",
       "specTable": "script/m14/spec/ruby-spec-table.json (this file) + ruby-completeness.json",
       "noRegex": "M49.R2 preserved: this wave added no regex literal to the analyzer; all predicate tests are indexOf/char scans",
@@ -744,7 +744,7 @@
     "RUBY-D1": "include/prepend/extend are MODULE MIXIN COMPOSITION -> canonical mixes_in (source = composing class/module, target = mixin, metadata.mixinType = keyword). The family's previous adaptation (include/prepend -> implements, extend -> extends) was WRONG on both axes: implements is conformance (Ruby has none) and extend is not superclass inheritance (it composes into the singleton class). Relabel at unchanged sites, delta closure-measured: implements 17 -> 0, extends 48 -> 44, mixes_in 0 -> 21 (17 + 4), TABLE 1 totals byte-identical. Dart's \u00a79.8 relabel is the precedent."
   },
   "related": {
-    "docs": "docs/analyzers/real-ruby-analyzer.md (updated in the same pass: the ontology table's stale imports/exports/adaptation claims corrected)",
+    "docs": "docs/analyzers/ruby.md (updated in the same pass: the ontology table's stale imports/exports/adaptation claims corrected)",
     "completeness": "script/m14/spec/ruby-completeness.json (136 grammar types classified; 120 handled / 12 silent / 0 gaps; 25 RULED decisions)",
     "fixtures": "validation/m14/fixtures/ruby/** (12 fixtures; the new mixes-in-modules pins RUBY-D1)",
     "wholePopulation": "validation/m14/verification/RUBY-WHOLE-POPULATION-EMISSION.md (D2) \u00b7 validation/m14/verification/RUBY-RESOLUTION-CLASSIFICATION.md (D3)",

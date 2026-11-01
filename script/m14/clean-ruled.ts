@@ -82,7 +82,7 @@
  *
  * Evidence, both instruments: `validation/m14/fixtures/clean/extends-construct-probe.json`,
  * regenerable with `npx tsx validation/m14/fixtures/clean/extends-construct-probe.mts`.
- * Written reasons: `docs/analyzers/real-clean-analyzer.md` §"`extends` — RULED, with both
+ * Written reasons: `docs/analyzers/clean.md` §"`extends` — RULED, with both
  * instruments".
  */
 export type Ruled = {

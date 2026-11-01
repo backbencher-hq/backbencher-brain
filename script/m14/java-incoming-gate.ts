@@ -240,7 +240,7 @@ function notesFor(lang: string, m: Measurement): string[] {
         "java-lang-shaped 2,110/36 (unimported JDK names — NOT markable: a same-package class may " +
         "legally shadow the spelling), other 1,969/425 (project types declared outside the " +
         "sample), constant-shaped 197/95, keyword-spelled 50/2 (super/this, oracle-mirrored by " +
-        "ruling — see docs/analyzers/java.md). Ambiguity concentrates: 5+ declarations = 2,871 " +
+        "ruling — see docs/analyzers/history/java-lane-notes.md). Ambiguity concentrates: 5+ declarations = 2,871 " +
         "occurrences over just 83 names (worst 139 for one contains target).",
     )
     notes.push(
@@ -292,7 +292,7 @@ function notesFor(lang: string, m: Measurement): string[] {
         "channel rows only (`imports`/`brain_import`). C# carries its import SITES on the " +
         "analyzer's separate `imports[]` channel (`ImportInfo[]` → the brain_import table, " +
         "mirrored as `references` edges marked isImport:true), so for that lane the zero is a " +
-        "CHANNEL fact, not an absence — see real-csharp-analyzer.md's channel table. Where a " +
+        "CHANNEL fact, not an absence — see csharp.md's channel table. Where a " +
         "lane carries no import channel at all, the zero is a lane truth instead; either way " +
         "the ratchet locks it.",
     )

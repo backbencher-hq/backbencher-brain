@@ -342,7 +342,7 @@ for (const abs of files) {
   const syms = res?.symbols ?? []
   const rels = res?.relationships ?? []
   // The file stem, by SUFFIX CHECK rather than a pattern. The analyzer names the component
-  // from the stem (docs/analyzers/real-svelte-analyzer.md: "Svelte SFCs are not
+  // from the stem (docs/analyzers/svelte.md: "Svelte SFCs are not
   // type-analyzed"), so the two must derive it identically or every L1/L5 rule below would
   // compare against a name that can never match.
   const base = abs.slice(abs.lastIndexOf("/") + 1)

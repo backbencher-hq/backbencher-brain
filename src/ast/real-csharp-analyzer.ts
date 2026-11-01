@@ -31,7 +31,7 @@
 // base = extends, remaining = implements; unknown externals follow the C# rule) -
 // the same harness pre-pass that builds the override companion.
 // Grammar: wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32...).
-// Docs / spec / fixtures / validations: docs/analyzers/real-csharp-analyzer.md ·
+// Docs / spec / fixtures / validations: docs/analyzers/csharp.md ·
 // script/m14/spec/csharp-completeness.json · validation/m14/fixtures/csharp/** ·
 // validation/m14/verification/CSHARP-FIX.md · validation/m14/verification/CSHARP-D7.md ·
 // validation/m14/verification/CSHARP-VERDICT-2026-10-21.md.

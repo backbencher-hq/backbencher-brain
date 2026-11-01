@@ -4,7 +4,7 @@
 //   subscription/fragment); symbols and relationships only, never a regex over source text.
 // RELATIONSHIP SURFACE: contains, exports, implements, imports, overrides, references, uses.
 //   No calls/extends/instantiates — GraphQL has no calls and its heritage is interface impl.
-// DOCS: docs/analyzers/real-graphql-analyzer.md (the lane's measured record).
+// DOCS: docs/analyzers/graphql.md (the lane's measured record).
 // SPEC + FIXTURES: script/m14/spec/graphql-completeness.json · validation/m14/fixtures/graphql/.
 // CO-EDIT LIST — edit these when this file changes: the doc above; the completeness spec's
 //   handled/silent/gap/design_decision buckets AND its coverage block; every affected

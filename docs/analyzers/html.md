@@ -1,4 +1,4 @@
-# real-html-analyzer.md
+# html.md
 
 > **Canonical contract doc for the html lane.** The *rulings* — why each decision was
 > taken, with the history and the defect each one closed — live in

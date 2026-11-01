@@ -1,4 +1,4 @@
-// script/m64/verify-health-deep.ts — M64 bb_health deep review, part 2.
+// script/m64/verify-health-deep.ts — bb_health deep review, part 2.
 //
 // Pins the findings that are about HONESTY OF REPORTING rather than about the
 // freshness sample (pinned separately in verify-sample-coverage.ts) or about
@@ -223,7 +223,7 @@ const drop = (root: string, pid: string) => {
 // ══ 5. The option surface matches the description ═════════════════════════
 // Before: the description said "complete=true for full (not sampled) freshness".
 // No such property exists, so an agent following it got:
-//   bb_health: unknown or irrelevant options: complete — accepted options: ...
+//  bb_health: unknown or irrelevant options: complete — accepted options: ...
 {
   const h = createToolHandlers().bb_health
   const { root, pid } = await fixture(6)
@@ -319,7 +319,7 @@ const drop = (root: string, pid: string) => {
     harness.check("verbose names which kinds are unattempted, and says so", !!uk && /NOT semantically searchable \(never attempted/.test(uk), uk?.slice(0, 130) ?? "missing")
     harness.check("the unembedded census agrees with the symbol total", withGap.embeddings.embeddedByEntityType.reduce((a, k) => a + k.count, 0) + withGap.embeddings.unembeddedKinds.reduce((a, k) => a + k.count, 0) === withGap.counts.symbols, `embedded ${withGap.embeddings.embeddedByEntityType.reduce((a, k) => a + k.count, 0)} + unembedded ${withGap.embeddings.unembeddedKinds.reduce((a, k) => a + k.count, 0)} = symbols ${withGap.counts.symbols}`)
     harness.check("the report carries both as data, not only as text", Array.isArray(withGap.embeddings.embeddedByEntityType) && Array.isArray(withGap.embeddings.unembeddedKinds), `embedded=${withGap.embeddings.embeddedByEntityType.length} unembedded=${withGap.embeddings.unembeddedKinds.length}`)
-    // M64.I4: the integrity check and the main report used to count DIFFERENT
+    // the integrity check and the main report used to count DIFFERENT
     // things on one index — COUNT(DISTINCT entity_id) here, COUNT(*) there — so
     // two surfaces could report two coverages. They must now agree.
     const integrityCoverage = await checkEmbeddingCoverage(raw as any, pid)

@@ -188,7 +188,7 @@ const out = {
   at: new Date().toISOString().slice(0, 10),
   claim: "the `dedupe` option read in addRelationship could not change any output: both arms of its test ran the same check and the key was recorded either way. Removing it is therefore behaviour-preserving.",
   method: "each version's SOURCE is placed at src/ast/real-lua-analyzer.ts and driven through the production `parseFile` in a FRESH process, because ASTEngine's getAnalyzer resolves lua with `await import(\"./real-lua-analyzer\")` — the real path, with no injection point — and `await import` caches per process. Every relationship AND symbol is emitted as one line carrying type, source, target, line_number, confidence, evidenceClass, relationshipType, redefinition, member, overridesLine, receiver, memberPath and qualifiedName; the two line multisets are then compared exactly. The real file is restored in a finally and its sha256 verified.",
-  whySerial: "parseFile returns extractFallback's output for a file whose grammar load lost a race — 12 of 3,252 files vary between two passes of a provably identical draw (docs/analyzers/real-lua-analyzer.md §5). Under concurrency that noise would make the diff meaningless.",
+  whySerial: "parseFile returns extractFallback's output for a file whose grammar load lost a race — 12 of 3,252 files vary between two passes of a provably identical draw (docs/analyzers/lua.md §5). Under concurrency that noise would make the diff meaningless.",
   preFixRevision: REV,
   capPerRepo: CAP,
   preFixRelationships: preC.rel,

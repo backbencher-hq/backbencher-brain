@@ -1886,7 +1886,7 @@
     "artifact": "measurements/solidity-tsc-evidence.txt",
     "note": "the shared tree carries other lanes' pre-existing errors; none of them is this lane's file, reported not patched."
    },
-   "docs": "docs/analyzers/real-solidity-analyzer.md gained the phase-2 D1 section and is current for the D2/D3/D4/D5 clauses.",
+   "docs": "docs/analyzers/solidity.md gained the phase-2 D1 section and is current for the D2/D3/D4/D5 clauses.",
    "specTable": "script/m14/spec/solidity-spec-table.json — generated (`solidity-spec-table.ts --check` passes) with the D1/D2/D3/D4/D5 blocks and this file as an input."
   },
   "claim": {

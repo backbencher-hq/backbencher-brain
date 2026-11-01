@@ -358,7 +358,7 @@ export const REMOTE_REF_CLAIM_KEY = "remoteRef"
  * all): of the `isExternalBase` claims the arbiter examined, 16,894 were REFUTED and 10,731
  * verified. The refutations are not analyzer bugs — they are the analyzer being asked a
  * question only an index can answer, which is what the two-population split in
- * `docs/analyzers/real-dart-analyzer.md` records.
+ * `docs/analyzers/dart.md` records.
  *
  * WHAT KEEPS IT FROM BEING A LAUNDERING HOLE. Three properties, each one checkable by the
  * arbiter rather than by the analyzer that wrote it, and none of them a matter of trust:
@@ -382,7 +382,7 @@ export const CAUSE_CLAIM_KEY = "baseBeyondRunScope"
 
 /**
  * THE NAMESPACE CLAIM — the capability four lanes measured as missing, built from the authorized
- * design (`docs/analyzers/HANDOFF.md:654-668`, "THE DESIGN FOR THE MISSING CLAIM KIND"):
+ * design (`archive/docs-pre-consolidation/analyzers-HANDOFF.md:654-668`, "THE DESIGN FOR THE MISSING CLAIM KIND"):
  *
  *   *"A namespace claim — 'this target's ROOT is a language namespace, not a declaration' —
  *    carrying the analyzer's root list as its evidence, so the verifier checks the root against
@@ -1272,7 +1272,7 @@ export function targetOwner(tgt: string): string | null {
  *              REACHABLE, it can never turn a resolved edge into anything else, and it cannot
  *              manufacture a REFUTED. The path/URI case is untouched and still unverifiable.
  *
- * Calibrated on this programme's own record: `docs/analyzers/INCOMING-WORKLIST.md` says an
+ * Calibrated on this programme's own record: `archive/docs-pre-consolidation/analyzers-INCOMING-WORKLIST.md` says an
  * unmarked external "counts against a lane, because a genuinely-external target and a
  * broken edge are otherwise indistinguishable". This keeps that standard and adds the
  * missing half — a marked one must still survive a lookup.

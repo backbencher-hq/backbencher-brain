@@ -27,7 +27,7 @@
  * ## The rules, written from the pinned grammar's shapes
  *
  * The noise-elimination contract that makes the two sides agree (each rule is
- * mirrored in `docs/analyzers/real-elixir-analyzer.md`):
+ * mirrored in `docs/analyzers/elixir.md`):
  *   - quoted code (`quote do ... end`) is DATA: no symbols, no edges.
  *   - a def signature head is not a call; a bodiless `def` is a declaration.
  *   - Kernel builtins and special forms are never calls.

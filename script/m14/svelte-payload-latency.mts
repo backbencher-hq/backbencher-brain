@@ -3,7 +3,7 @@
 // WHY THIS FILE EXISTS. The workstream requires every lane to re-run its payload/latency
 // check after adding edges, because "more edges means bigger graphs, and the graph surface
 // is budgeted": bb_graph's un-narrowed relationshipTypes default is measured at 2.5-4.8x a
-// kind-filtered one. This lane had NO such check — docs/analyzers/svelte.md records the
+// kind-filtered one. This lane had NO such check — docs/analyzers/history/svelte-lane-notes.md records the
 // cost row as gap X5, taken on the production path and 2.5x-4.7x above a pinned baseline
 // whose own method was unrecorded.
 //
@@ -15,7 +15,7 @@
 //
 //   2. LATENCY on the PRODUCTION path (ASTEngine.parseFile, so the SFC seam and the JS/TS
 //      sub-parse are both inside the number), per corpus, split by file size, with the
-//      method recorded. docs/analyzers/svelte.md is right that a figure without a method
+//      method recorded. docs/analyzers/history/svelte-lane-notes.md is right that a figure without a method
 //      is unreadable: the html lane once published 1.4 ms/KiB measured by calling the
 //      analyzer directly and omitting the seam, and the real figure was 4.7-5.3x that.
 //
@@ -117,7 +117,7 @@ type Row = {
 const results: Row[] = []
 
 for (const r of repos) {
-  // A deterministic STRIDE, not the first N. docs/analyzers/svelte.md's own caution is
+  // A deterministic STRIDE, not the first N. docs/analyzers/history/svelte-lane-notes.md's own caution is
   // that one population's shape decides the figure; a stride samples the whole shape
   // instead of one corner of it.
   const stride = Math.max(1, Math.floor(r.files.length / MAXFILES))

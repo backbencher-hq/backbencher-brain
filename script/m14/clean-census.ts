@@ -2,7 +2,7 @@
 // M14.0 — the Clean census.
 //
 // Recomputes, from the pinned grammar and the corpus, every figure quoted in
-// `docs/analyzers/real-clean-analyzer.md` and
+// `docs/analyzers/clean.md` and
 // `reviews/clean/m14-0-clean-completeness.md`. A number in a document that no
 // command reproduces is a number that will be wrong, so this instrument exists
 // to keep the prose checkable: run it, and the figures either still hold or the

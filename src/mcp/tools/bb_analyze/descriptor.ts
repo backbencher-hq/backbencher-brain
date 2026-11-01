@@ -26,7 +26,14 @@ export const descriptor: ToolDescriptor = {
     documentation: {
       category: "analysis",
       summary: "One typed analysis surface over the graph, the file graph, project counts, complexity, impact and test evidence. Every mode is bounded, declares its own bounds, and reports what it returned against what exists.",
-      defaults: { limit: 20 },
+      // The REAL defaults, per mode. A single number was wrong in every mode:
+      // 25 edges per direction for the graph modes, 20 files for dependencies,
+      // 50 entries for test_mapping/test_gaps, 50 files for test_quality.
+      defaults: {
+        limit: "25 edges per direction (callers/callees/trace); 20 files (dependencies); 50 entries (test_mapping/test_gaps); 50 files (test_quality)",
+        target: "required for callers, callees, trace, impact, test_impact; optional file path or directory prefix for complexity",
+        filePath: "optional path prefix (or an exact file) for dependencies, test_mapping, test_gaps, test_quality",
+      },
       examples: [{ mode: "callers", target: "handleRequest" }, { mode: "complexity", target: "src/api" }, { mode: "test_quality" }, { mode: "dependencies", filePath: "src/core" }, { mode: "impact", target: "handleRequest", limit: 50 }],
     },
 }

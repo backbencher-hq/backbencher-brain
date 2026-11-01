@@ -1,4 +1,4 @@
-# real-go-analyzer.md
+# go.md
 
 ## Language
 

@@ -179,7 +179,7 @@
  *      right-hand side is resolved against concepts declared in the SAME file,
  *      because the gate hands the walk one root at a time. A refinement of a
  *      concept from another module is invisible here. The analyzer has the same
- *      limit by the same reasoning (docs/analyzers/real-nim-analyzer.md
+ *      limit by the same reasoning (docs/analyzers/nim.md
  *      limitation 5), so the two agree by construction rather than by luck — and
  *      `census.ts`'s corpus-wide probe is what carries the cross-file question.
  *      This matters more now than it did: of the 47 emitted edges, 4 point at a

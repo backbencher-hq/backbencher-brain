@@ -32,7 +32,7 @@
 // THE POPULATION THIS IS MEASURED ON: docs in validation/m14/verification/ — DART-APPLICABLE-SET.md,
 // DART-RESOLUTION-CLASSIFICATION.md, DART-WHOLE-POPULATION.md (cap-0 arm: 3,748,617 edges over 33,738
 // files, every non-resolved edge in a named counted class).
-// Where docs, spec, fixtures and validations live: docs/analyzers/real-dart-analyzer.md ·
+// Where docs, spec, fixtures and validations live: docs/analyzers/dart.md ·
 // script/m14/spec/dart-completeness.json · validation/m14/fixtures/dart/** · `bun run script/m14/run-fixtures.ts --lang dart`.
 // CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the
 // docs · script/m14/differential.ts (`deriveDartEdges` — the TRUTH side; an emission the oracle does not

@@ -67,7 +67,7 @@
     },
     {
       "description": "go analyzer docs present and committed",
-      "detail": "docs/analyzers/go.md, docs/analyzers/real-go-analyzer.md",
+      "detail": "docs/analyzers/history/go-lane-notes.md, docs/analyzers/go.md",
       "id": "section-g-docs",
       "language": "go",
       "status": "pass"
@@ -141,7 +141,7 @@
     },
     {
       "description": "objc analyzer docs present and committed",
-      "detail": "docs/analyzers/real-objective-c-analyzer.md",
+      "detail": "docs/analyzers/objective-c.md",
       "id": "section-g-docs",
       "language": "objc",
       "status": "pass"
@@ -215,7 +215,7 @@
     },
     {
       "description": "ruby analyzer docs present and committed",
-      "detail": "docs/analyzers/real-ruby-analyzer.md",
+      "detail": "docs/analyzers/ruby.md",
       "id": "section-g-docs",
       "language": "ruby",
       "status": "pass"
@@ -289,7 +289,7 @@
     },
     {
       "description": "python analyzer docs present and committed",
-      "detail": "docs/analyzers/real-python-analyzer.md",
+      "detail": "docs/analyzers/python.md",
       "id": "section-g-docs",
       "language": "python",
       "status": "pass"
@@ -363,7 +363,7 @@
     },
     {
       "description": "typescript analyzer docs present and committed",
-      "detail": "docs/analyzers/typescript.md, docs/analyzers/real-typescript-analyzer.md",
+      "detail": "docs/analyzers/history/typescript-lane-notes.md, docs/analyzers/typescript.md",
       "id": "section-g-docs",
       "language": "typescript",
       "status": "pass"
@@ -437,7 +437,7 @@
     },
     {
       "description": "vue analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/vue.md, docs/analyzers/real-vue-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/vue-lane-notes.md, docs/analyzers/vue.md + head comment present",
       "id": "section-g-docs",
       "language": "vue",
       "status": "pass"
@@ -511,7 +511,7 @@
     },
     {
       "description": "java analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/java.md, docs/analyzers/real-java-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/java-lane-notes.md, docs/analyzers/java.md + head comment present",
       "id": "section-g-docs",
       "language": "java",
       "status": "pass"
@@ -585,7 +585,7 @@
     },
     {
       "description": "c analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-c-analyzer.md + head comment present",
+      "detail": "docs/analyzers/c.md + head comment present",
       "id": "section-g-docs",
       "language": "c",
       "status": "pass"
@@ -659,7 +659,7 @@
     },
     {
       "description": "php analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-php-analyzer.md + head comment present",
+      "detail": "docs/analyzers/php.md + head comment present",
       "id": "section-g-docs",
       "language": "php",
       "status": "pass"
@@ -733,7 +733,7 @@
     },
     {
       "description": "zig analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-zig-analyzer.md + head comment present",
+      "detail": "docs/analyzers/zig.md + head comment present",
       "id": "section-g-docs",
       "language": "zig",
       "status": "pass"
@@ -807,7 +807,7 @@
     },
     {
       "description": "rust analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-rust-analyzer.md + head comment present",
+      "detail": "docs/analyzers/rust.md + head comment present",
       "id": "section-g-docs",
       "language": "rust",
       "status": "pass"
@@ -881,7 +881,7 @@
     },
     {
       "description": "clojure analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-clojure-analyzer.md + head comment present",
+      "detail": "docs/analyzers/clojure.md + head comment present",
       "id": "section-g-docs",
       "language": "clojure",
       "status": "pass"
@@ -955,7 +955,7 @@
     },
     {
       "description": "csharp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-csharp-analyzer.md + head comment present",
+      "detail": "docs/analyzers/csharp.md + head comment present",
       "id": "section-g-docs",
       "language": "csharp",
       "status": "pass"
@@ -1029,7 +1029,7 @@
     },
     {
       "description": "svelte analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/svelte.md, docs/analyzers/real-svelte-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/svelte-lane-notes.md, docs/analyzers/svelte.md + head comment present",
       "id": "section-g-docs",
       "language": "svelte",
       "status": "pass"
@@ -1103,7 +1103,7 @@
     },
     {
       "description": "dart analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-dart-analyzer.md + head comment present",
+      "detail": "docs/analyzers/dart.md + head comment present",
       "id": "section-g-docs",
       "language": "dart",
       "status": "pass"
@@ -1177,7 +1177,7 @@
     },
     {
       "description": "fsharp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-fsharp-analyzer.md + head comment present",
+      "detail": "docs/analyzers/fsharp.md + head comment present",
       "id": "section-g-docs",
       "language": "fsharp",
       "status": "pass"
@@ -1251,7 +1251,7 @@
     },
     {
       "description": "groovy analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/groovy.md, docs/analyzers/real-groovy-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/groovy-lane-notes.md, docs/analyzers/groovy.md + head comment present",
       "id": "section-g-docs",
       "language": "groovy",
       "status": "pass"
@@ -1325,7 +1325,7 @@
     },
     {
       "description": "html analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/html.md, docs/analyzers/real-html-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/html-lane-notes.md, docs/analyzers/html.md + head comment present",
       "id": "section-g-docs",
       "language": "html",
       "status": "pass"
@@ -1399,7 +1399,7 @@
     },
     {
       "description": "julia analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-julia-analyzer.md + head comment present",
+      "detail": "docs/analyzers/julia.md + head comment present",
       "id": "section-g-docs",
       "language": "julia",
       "status": "pass"
@@ -1473,7 +1473,7 @@
     },
     {
       "description": "markdown analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/markdown.md, docs/analyzers/real-markdown-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/markdown-lane-notes.md, docs/analyzers/markdown.md + head comment present",
       "id": "section-g-docs",
       "language": "markdown",
       "status": "pass"
@@ -1547,7 +1547,7 @@
     },
     {
       "description": "kotlin analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/kotlin.md, docs/analyzers/real-kotlin-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/kotlin-lane-notes.md, docs/analyzers/kotlin.md + head comment present",
       "id": "section-g-docs",
       "language": "kotlin",
       "status": "pass"
@@ -1621,7 +1621,7 @@
     },
     {
       "description": "elixir analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-elixir-analyzer.md + head comment present",
+      "detail": "docs/analyzers/elixir.md + head comment present",
       "id": "section-g-docs",
       "language": "elixir",
       "status": "pass"
@@ -1695,7 +1695,7 @@
     },
     {
       "description": "xml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-xml-analyzer.md + head comment present",
+      "detail": "docs/analyzers/xml.md + head comment present",
       "id": "section-g-docs",
       "language": "xml",
       "status": "pass"
@@ -1769,7 +1769,7 @@
     },
     {
       "description": "yaml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-yaml-analyzer.md + head comment present",
+      "detail": "docs/analyzers/yaml.md + head comment present",
       "id": "section-g-docs",
       "language": "yaml",
       "status": "pass"
@@ -1843,7 +1843,7 @@
     },
     {
       "description": "scss analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-scss-analyzer.md + head comment present",
+      "detail": "docs/analyzers/scss.md + head comment present",
       "id": "section-g-docs",
       "language": "scss",
       "status": "pass"
@@ -1917,7 +1917,7 @@
     },
     {
       "description": "hcl analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-hcl-analyzer.md + head comment present",
+      "detail": "docs/analyzers/hcl.md + head comment present",
       "id": "section-g-docs",
       "language": "hcl",
       "status": "pass"
@@ -1991,7 +1991,7 @@
     },
     {
       "description": "erlang analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-erlang-analyzer.md + head comment present",
+      "detail": "docs/analyzers/erlang.md + head comment present",
       "id": "section-g-docs",
       "language": "erlang",
       "status": "pass"
@@ -2065,7 +2065,7 @@
     },
     {
       "description": "css analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-css-analyzer.md + head comment present",
+      "detail": "docs/analyzers/css.md + head comment present",
       "id": "section-g-docs",
       "language": "css",
       "status": "pass"
@@ -2139,7 +2139,7 @@
     },
     {
       "description": "swift analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-swift-analyzer.md + head comment present",
+      "detail": "docs/analyzers/swift.md + head comment present",
       "id": "section-g-docs",
       "language": "swift",
       "status": "pass"
@@ -2213,7 +2213,7 @@
     },
     {
       "description": "haskell analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-haskell-analyzer.md + head comment present",
+      "detail": "docs/analyzers/haskell.md + head comment present",
       "id": "section-g-docs",
       "language": "haskell",
       "status": "pass"
@@ -2287,7 +2287,7 @@
     },
     {
       "description": "cpp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-cpp-analyzer.md + head comment present",
+      "detail": "docs/analyzers/cpp.md + head comment present",
       "id": "section-g-docs",
       "language": "cpp",
       "status": "pass"
@@ -2361,7 +2361,7 @@
     },
     {
       "description": "toml analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-toml-analyzer.md + head comment present",
+      "detail": "docs/analyzers/toml.md + head comment present",
       "id": "section-g-docs",
       "language": "toml",
       "status": "pass"
@@ -2435,7 +2435,7 @@
     },
     {
       "description": "javascript analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/javascript-lane-notes.md, docs/analyzers/javascript.md + head comment present",
       "id": "section-g-docs",
       "language": "javascript",
       "status": "pass"
@@ -2509,7 +2509,7 @@
     },
     {
       "description": "scala analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md + head comment present",
+      "detail": "docs/analyzers/history/scala-lane-notes.md, docs/analyzers/scala.md + head comment present",
       "id": "section-g-docs",
       "language": "scala",
       "status": "pass"
@@ -2583,7 +2583,7 @@
     },
     {
       "description": "solidity analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/real-solidity-analyzer.md + head comment present",
+      "detail": "docs/analyzers/solidity.md + head comment present",
       "id": "section-g-docs",
       "language": "solidity",
       "status": "pass"
@@ -2658,7 +2658,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-c-analyzer.md + head comment present",
+            "detail": "docs/analyzers/c.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -2731,7 +2731,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-clojure-analyzer.md + head comment present",
+            "detail": "docs/analyzers/clojure.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -2799,7 +2799,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-cpp-analyzer.md + head comment present",
+            "detail": "docs/analyzers/cpp.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -2855,7 +2855,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-csharp-analyzer.md + head comment present",
+            "detail": "docs/analyzers/csharp.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -2915,7 +2915,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-css-analyzer.md + head comment present",
+            "detail": "docs/analyzers/css.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3001,7 +3001,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-dart-analyzer.md + head comment present",
+            "detail": "docs/analyzers/dart.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3069,7 +3069,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-elixir-analyzer.md + head comment present",
+            "detail": "docs/analyzers/elixir.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3152,7 +3152,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-erlang-analyzer.md + head comment present",
+            "detail": "docs/analyzers/erlang.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3219,7 +3219,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-fsharp-analyzer.md + head comment present",
+            "detail": "docs/analyzers/fsharp.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3284,7 +3284,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/go.md, docs/analyzers/real-go-analyzer.md",
+            "detail": "docs/analyzers/history/go-lane-notes.md, docs/analyzers/go.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3353,7 +3353,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/groovy.md, docs/analyzers/real-groovy-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/groovy-lane-notes.md, docs/analyzers/groovy.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3416,7 +3416,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-haskell-analyzer.md + head comment present",
+            "detail": "docs/analyzers/haskell.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3472,7 +3472,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-hcl-analyzer.md + head comment present",
+            "detail": "docs/analyzers/hcl.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3514,7 +3514,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/html.md, docs/analyzers/real-html-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/html-lane-notes.md, docs/analyzers/html.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3590,7 +3590,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/java.md, docs/analyzers/real-java-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/java-lane-notes.md, docs/analyzers/java.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3704,7 +3704,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/javascript.md, docs/analyzers/real-javascript-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/javascript-lane-notes.md, docs/analyzers/javascript.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3765,7 +3765,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-julia-analyzer.md + head comment present",
+            "detail": "docs/analyzers/julia.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3839,7 +3839,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/kotlin.md, docs/analyzers/real-kotlin-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/kotlin-lane-notes.md, docs/analyzers/kotlin.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3894,7 +3894,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/markdown.md, docs/analyzers/real-markdown-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/markdown-lane-notes.md, docs/analyzers/markdown.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -3957,7 +3957,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-objective-c-analyzer.md",
+            "detail": "docs/analyzers/objective-c.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4047,7 +4047,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-php-analyzer.md + head comment present",
+            "detail": "docs/analyzers/php.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4096,7 +4096,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-python-analyzer.md",
+            "detail": "docs/analyzers/python.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4162,7 +4162,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-ruby-analyzer.md",
+            "detail": "docs/analyzers/ruby.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4247,7 +4247,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-rust-analyzer.md + head comment present",
+            "detail": "docs/analyzers/rust.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4350,7 +4350,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/scala.md, docs/analyzers/real-scala-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/scala-lane-notes.md, docs/analyzers/scala.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4390,7 +4390,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-scss-analyzer.md + head comment present",
+            "detail": "docs/analyzers/scss.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4438,7 +4438,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-solidity-analyzer.md + head comment present",
+            "detail": "docs/analyzers/solidity.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4518,7 +4518,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/svelte.md, docs/analyzers/real-svelte-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/svelte-lane-notes.md, docs/analyzers/svelte.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4594,7 +4594,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-swift-analyzer.md + head comment present",
+            "detail": "docs/analyzers/swift.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4639,7 +4639,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-toml-analyzer.md + head comment present",
+            "detail": "docs/analyzers/toml.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4702,7 +4702,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/typescript.md, docs/analyzers/real-typescript-analyzer.md",
+            "detail": "docs/analyzers/history/typescript-lane-notes.md, docs/analyzers/typescript.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4795,7 +4795,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/vue.md, docs/analyzers/real-vue-analyzer.md + head comment present",
+            "detail": "docs/analyzers/history/vue-lane-notes.md, docs/analyzers/vue.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4856,7 +4856,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-xml-analyzer.md + head comment present",
+            "detail": "docs/analyzers/xml.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -4919,7 +4919,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-yaml-analyzer.md + head comment present",
+            "detail": "docs/analyzers/yaml.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -5037,7 +5037,7 @@
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-zig-analyzer.md + head comment present",
+            "detail": "docs/analyzers/zig.md + head comment present",
             "status": "pass"
           },
           "section-h-cross-language": {

@@ -1,4 +1,4 @@
-# real-<lang>-analyzer.md
+# <lang>.md
 
 <!--
 Template for M12 per-analyzer documentation. Every analyzer issue (M12.02–42)

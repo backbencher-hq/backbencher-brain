@@ -40,8 +40,8 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "currentCommit": "ba9455decfe49609feb69380c3444124531a8c2c",
-  "sourceFingerprint": "53fffa8e93c99a67f813f9b726b846d2a155541e8d8787dc6401958db6d1130a",
+  "currentCommit": "d8a0f80523c294459f17323ed5f21686af2e6767",
+  "sourceFingerprint": "45ea6b8dfcba2791b3ae9f296d27f2d19a43e7c0ccfba3ba58370d513daa69ff",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-surface-parity.ts",
@@ -54,7 +54,7 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-11-01T19:40:50.924Z",
+  "generatedAt": "2026-11-01T20:35:03.433Z",
   "counts": {
     "seededRelationshipShapes": 2450,
     "seededShapesReturnedByBbGraph": 2450,
@@ -103,11 +103,11 @@
     "fixture relationship kinds: calls,contains,exports,imports,references",
     "seeded 2450 relationship shapes across 82 probe symbols (2450 kind x confidence x stored-class combinations)",
     "seed reachability: 2450 rows returned for 2450 seeded; 82 of 82 pages declared the requested filter (filterNarrowed), 0 declared a bound (truncated)",
-    "seeded a member-through-owner shape: u2SeedMember (field) owned by Warehouse (class)"
+    "seeded a member-through-owner shape: u2SeedMember (field) owned by Barcode (class)"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T19:40:50.925Z",
-    "contentSha256": "334ede84a8bee516a04f1065d9bd8710ec3234154be5ee4fced241220fd62ef1"
+    "sealedAt": "2026-11-01T20:35:03.433Z",
+    "contentSha256": "80586935ee4327cd77ed04682f3f659bea5c0ffb1091e8c3030735f42d1c6279"
   }
 }

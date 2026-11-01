@@ -5,7 +5,7 @@
 // RELATIONSHIP SURFACE: contains, references, calls, imports, exports, extends, overrides, uses,
 //   part_of, instantiates (the lane rules the OO-only kinds out; see the completeness spec's RULED
 //   entries. `instantiates` is implemented and CORPUS-UNEXERCISED — HCL-D13).
-// DOCS: docs/analyzers/real-hcl-analyzer.md (lane record) and docs/analyzers/hcl.md.
+// DOCS: docs/analyzers/hcl.md (lane record) and docs/analyzers/history/hcl-lane-notes.md.
 // SPEC + FIXTURES: script/m14/spec/hcl-completeness.json · validation/m14/fixtures/hcl/.
 // CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
 //   handled/silent/gap/design_decision buckets AND its coverage block; every affected
@@ -640,7 +640,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // anything else is a project address and is a `references` edge.
                 //
                 // THE NAMESPACE CLAIM — the first lane to adopt the kind the design authorized
-                // (`docs/analyzers/HANDOFF.md:654-668`; the rule side is `NAMESPACE_CLAIM_KEY` in
+                // (`archive/docs-pre-consolidation/analyzers-HANDOFF.md:654-668`; the rule side is `NAMESPACE_CLAIM_KEY` in
                 // `script/m14/incoming-rule.ts`). This is what the LANE was missing rather than what
                 // the arbiter was: `hclBuiltin: true` is a marker the arbiter has never read — it is
                 // not one of `EXTERNAL_KEYS` — so the arbiter saw a plain `uses`, found no

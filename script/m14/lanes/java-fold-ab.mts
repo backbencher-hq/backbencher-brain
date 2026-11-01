@@ -2,7 +2,7 @@
  * JAVA FOLD A/B — pre-fold analyzer (HEAD blob) vs post-fold (working tree),
  * over the WHOLE java-lib corpus, same engine, same files, same run.
  *
- * WHY. The M60 java fold (docs/analyzers/real-java-analyzer.md) moved several
+ * WHY. The M60 java fold (docs/analyzers/java.md) moved several
  * corpus-level counts, and a claim that a number moved needs BOTH numbers from
  * the same instrument — quoting the pre-fold tables (different instruments,
  * different samples, different dates) beside a fresh census would attribute

@@ -48,7 +48,7 @@
  * holding three identifiers and `:: Type (Var, Func, Type, Uniq, Strict)` is a
  * `constructor_subset` holding five constructors. Reading one name out of either drops the rest
  * silently; this oracle enumerates EVERY name child of both shapes, and the whole-population arm
- * is what prices that (see `docs/analyzers/real-clean-analyzer.md`).
+ * is what prices that (see `docs/analyzers/clean.md`).
  *
  * ## What this oracle deliberately does NOT claim
  *

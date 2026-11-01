@@ -23,7 +23,7 @@
  * Nine of the ten types are EMITTED by production `parseFile` on the corpus, and the
  * gate's verdict loop checks EMITTED FIRST — a row for an emitted type would be a
  * claim the type is not emitted, which is false. The full census is in
- * `docs/analyzers/real-lua-analyzer.md` §3.1 and every row of it was re-measured in
+ * `docs/analyzers/lua.md` §3.1 and every row of it was re-measured in
  * this pass.
  *
  *   calls 57,057 | uses 54,562 | contains 55,028 | imports 6,547 | references 39,886

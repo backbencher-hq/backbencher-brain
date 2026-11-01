@@ -13,7 +13,7 @@
  * validation/m14/fixtures/swift/m14-swift-extended-census-output.txt).
  * Grammar: `wasm/tree-sitter-swift.wasm` (pinned; grammar probes under validation/m14/fixtures/swift/).
  *
- * Where the rest of the lane lives: docs/analyzers/real-swift-analyzer.md · spec
+ * Where the rest of the lane lives: docs/analyzers/swift.md · spec
  * script/m14/spec/swift-completeness.json · fixtures validation/m14/fixtures/swift/ · validation
  * validation/m14/results/ and validation/m14/verification/SWIFT-FIX.md.
  *
@@ -23,7 +23,7 @@
  * `script/m14/spec/swift-completeness.json` (a new or removed node type changes a bucket) ·
  * `validation/m14/fixtures/swift/*.expectation.json` (the pins sections B and D read) ·
  * `script/m14/completeness-inventory.ts` (Lead-owned: this lane's requiredKinds/docs rows) ·
- * `docs/analyzers/real-swift-analyzer.md`.
+ * `docs/analyzers/swift.md`.
  */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"

@@ -43,7 +43,7 @@
  *              split), and a declaration with no declarator name is refused.
  *
  *   overrides  C has no inheritance; the relationship is REDEFINITION. Two shapes, both from the
- *              AST and both with their refusals measured in docs/analyzers/real-c-analyzer.md:
+ *              AST and both with their refusals measured in docs/analyzers/c.md:
  *              (1) two function definitions of one name in DIFFERENT arms of one shared
  *              `#if`/`#ifdef` (C 6.9p5) — a pair with no shared conditional is REFUSED (parse
  *              damage or logically-exclusive conditions, C-D2); (2) a macro defined, `#undef`ed and

@@ -17,7 +17,7 @@
 // instruments found and mutation-pinned three FALSE-EDGE fixes: #992 marker-call
 // argument must be a bare identifier, #993 an ERROR node is not a declarator, #994
 // preprocessor-ARM enumerators are members. No regex literals (M49.R2).
-// Docs: docs/analyzers/real-c-analyzer.md · spec/c-*.json · fixtures/c/** · C-APPLICABLE-SET.md, C-AUDIT-D4.md, C-DONE-CHECKLIST.md; CO-EDIT those + the router.
+// Docs: docs/analyzers/c.md · spec/c-*.json · fixtures/c/** · C-APPLICABLE-SET.md, C-AUDIT-D4.md, C-DONE-CHECKLIST.md; CO-EDIT those + the router.
 
 function inArray(arr: any[], val: any): boolean {
   for (let i = 0; i < arr.length; i++) {

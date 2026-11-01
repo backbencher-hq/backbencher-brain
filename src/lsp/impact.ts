@@ -1,109 +1,112 @@
-// src/lsp/impact.ts — M26.W5: bounded reverse-dependency impact (issue #513).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Impact is the highest-stakes read surface (refactoring decisions); silent
-// truncation here is dangerous. This component is the SINGLE owner of the
-// impact surface:
+// WHAT THIS FILE IS — the canonical bounded reverse-dependency impact
+//   calculator: one declared-budget caller walk, an independent completeness
+//   measurement, and the attributed `ImpactResult` every impact surface reads.
+// WHICH TOOL IT SERVES — bb_impact (mutability read, requiresIndex true,
+//   modes: impact), its editor twin `bb/impact` (src/lsp/impact_request.ts),
+//   and bb_analyze mode=impact through the shared aggregation; all three call
+//   this one function so their numbers cannot disagree.
+// WHY IT IS SHAPED THIS WAY — impact is the highest-stakes read surface
+//   (refactoring decisions), so every number on the wire is measured and every
+//   bound is declared:
 //
-//   bounded:     the set comes from the graph engine's caller traversal under
-//                the declared budget/depth (never an unbounded walk).
-//   declared:    truncation is a first-class field with a reason and REAL
-//                counts — `shownCount` plus `totalCountIfKnown`, the size of
-//                the set this answer is a prefix of, measured by an
-//                independent bounded walk over the traversal's OWN rule (same
-//                relationship kinds, same owner cascade, same noise policy,
-//                same depth) with no node budget. When that walk cannot finish
-//                inside its declared ceilings the total is null and the UI says
-//                so — null is a declared number-shaped absence, never a guess.
-//   proved:      `truncated` is not taken on the engine's word. When the walk
-//                could have lost a node at the depth boundary, the component
-//                measures the set against the unbounded walk and declares the
-//                answer a PREFIX if the two disagree, even when no bound
-//                fired (M63.T2). An untruncated answer is one the component
-//                checked, not one it assumed.
-//   one rule:    the set, its total, and the `rule` field on the result are
-//                measurements of ONE declared kind list, handed to both walks
-//                (M63.T2). Before it, the walk and the count each read a list
-//                of their own and nothing checked they agreed.
-//   attributed:  every dependent says HOW it is a dependent — `exact`, `member`
-//                (naming the member), or `range-folded`, meaning it is here only
-//                because the owner-cascade RANGE widened, which is a strict
-//                superset of the owner relation and so a conservative
-//                over-count — measured on this lane's corpora at 21 914 owner ids
-//                inside a range without being the member, and 7 of ripgrep
-//                `RegexMatcher`'s 21 dependents. And because `depth` is the
-//                MEASURED shortest path while the engine that produced the set
-//                stamps the first depth-first trace, every evidence field is
-//                re-read from the stored row AT THE REPORTED DEPTH and
-//                `evidenceAtDepth` says which path it is on; measured, 340 of
-//                4 258 rows (7.98%) had been publishing one row's depth with
-//                another row's evidence. Where nothing can be attributed the
-//                evidence fields are null: a refusal is not a measurement.
-//   bounded cost: the counting walk is ONE STATEMENT PER LEVEL, not one per
-//                symbol, and its statement is a flat list plus one term per
-//                DISTINCT cascade range — measured equal to the per-member form
-//                on every row of six hubs, 1.4-1.7x the speed, and free of the
-//                expression-tree ceiling that stops a disjunction term per
-//                member at ~400 (M63.T2).
-//   consistent:  the differential gate (script/m26/verify-impact-mode.ts)
-//                proves impact counts agree with the L3 references surface
-//                (src/lsp/navigation.ts) for sampled symbols on the same
-//                fixture, with the declared containment difference (the
-//                traversal descends into nested symbols via the owner
-//                cascade; flat references count direct edges only).
-//   rendered:    budget exhaustion renders a visible in-UI marker with the
-//                declared counts (W1 renderer law: truncation never silent).
-//                Since M42.H4 the renderer lives in the ONE core
-//                (script/m26/graph-core.ts renderImpact) — this component
-//                owns the DATA; the core owns the DOM. Same law, one home.
-//   answered:    a root the engine resolved by EXACT name is answered even when
-//                its kind is outside the graph whitelist — an enum variant, a
-//                constant, a plain field. The whitelist exists so a request is
-//                never silently answered about a DIFFERENT symbol, and an
-//                exact-name root is not that. Measured: the engine rooted at the
-//                exact requested name and completed the walk in all seven cases
-//                the D5 ledger named (136–313 caller edges), and the door threw
-//                the answer away. `rootMatch.via` says `exact-exempt-kind` and
-//                `nameMatches` says how many stored symbols share the name, so
-//                the one substitution this DOES need disclosing — an ambiguous
-//                name — is disclosed by the same field D4 introduced.
-//   resolved:    member-name targets (the hover's server-resolved identity
-//                for a constructor or member symbol) resolve through their
-//                OWNING declaration when the member itself has no stored
-//                reverse edges (M44.U5, issue #692). The resolution is a
-//                first-class field on the result — the UI says what it
-//                rooted at, never silently relabels. A symbol that is
-//                genuinely absent still throws the declared error.
+//   bounded     the set comes from the graph engine's caller traversal under the
+//               declared node budget and depth cap, never an unbounded walk.
+//   declared    `shownCount` plus `totalCountIfKnown`, the size of the set this
+//               answer is a prefix of, measured by an independent bounded walk
+//               over the traversal's OWN rule (same relationship kinds, same
+//               owner cascade, same noise policy, same depth) with no node
+//               budget. When that walk cannot finish inside its declared
+//               ceilings the total is null — a declared absence, never a guess.
+//   proved      `truncated` is not taken on the engine's word. Whenever the walk
+//               reached the last expandable depth or a bound declared itself,
+//               the set is measured against an unbounded walk of the same rule:
+//               a larger truth means a prefix is declared, and an agreement
+//               means the set is complete even when a ROW cap fired on the way.
+//               A depth cap is the one bound the measurement shares, so it stays
+//               a declared truncation.
+//   one rule    the set, its declared total and the `rule` field are
+//               measurements of ONE kind list, handed to both walks; an empty
+//               list is refused rather than silently re-read as the engine's
+//               default, because the two walks would then measure different
+//               rules.
+//   attributed  every dependent says HOW it is a dependent — `exact`, `member`
+//               (naming the member), or `range-folded`, meaning it is here only
+//               because the owner-cascade RANGE widened (a strict superset of
+//               the owner relation, so a conservative over-count). `depth` is
+//               the MEASURED shortest path while the engine stamps its first
+//               depth-first trace, so every evidence field is re-read from the
+//               stored row AT THE REPORTED DEPTH; where nothing can be
+//               attributed the evidence fields are null, because a refusal is
+//               not a measurement.
+//   bounded cost  the counting walk is ONE STATEMENT PER LEVEL, not one per
+//               symbol: a flat id list plus one term per DISTINCT cascade range,
+//               which avoids SQLite's expression-tree ceiling and keeps the
+//               statement inside its parameter bound.
+//   consistent  the differential gates prove impact counts agree with the
+//               references surface for sampled symbols on the same fixture, with
+//               the declared containment difference (the traversal descends into
+//               nested symbols via the owner cascade; flat reference counts
+//               count direct edges only).
+//   rendered    budget exhaustion renders a visible in-UI marker with the
+//               declared counts (truncation is never silent). The renderer lives
+//               in the ONE core (script/m26/graph-core.ts renderImpact); this
+//               component owns the DATA, the core owns the DOM.
+//   answered    a root the engine resolved by EXACT name is answered even when
+//               its kind is outside the graph whitelist — an enum variant, a
+//               constant, a plain field. The whitelist exists so a request is
+//               never silently answered about a DIFFERENT symbol, and an
+//               exact-name root is not that. `rootMatch.via` says
+//               `exact-exempt-kind`, and `nameMatches` says how many stored
+//               symbols share the name, so an ambiguous name is disclosed.
+//   resolved    member-name targets (the hover's server-resolved identity for a
+//               constructor or member symbol) resolve through their OWNING
+//               declaration when the member itself has no stored reverse edges.
+//               The resolution is a first-class field on the result — the UI says
+//               what it rooted at, never silently relabels — and a symbol that is
+//               genuinely absent still throws the declared error.
+//   addressed   every position published about a USAGE is the address owner's
+//               `CallSiteAddress` for the row this entry quotes. The dependent's
+//               own declaration is a separate, separately-named field, so a
+//               stored `0`, a NULL or a declaration can never reach the wire
+//               wearing the name of a call site.
 //
-// Declared guarantees (gated by script/m26/verify-impact-mode.ts and
-// script/m44/verify-impact-resolution.ts):
-//   G1 bounded:    result size <= declared budget; depth <= declared max
-//   G2 declared:   truncated == true ⟺ a declared reason exists; counts real
-//   G3 consistent: impact count agrees with L3 references on flat fixtures
-//                  (differential, sampling stated in the verifier)
-//   G4 rendered:   the ONE core's renderImpact() emits a visible marker with
-//                  counts when truncated, nothing when complete
-//   G5 resolved:   an indexed member target roots at its owning declaration
-//                  with a declared note; a genuinely unknown symbol still
-//                  errors (never an empty set that would read as "no impact")
-//   G6 attributed: a dependent at the shortest path carries the evidence of the
-//                  row AT that path, and a row that is only in the set because
-//                  the cascade range widened is marked as such on the payload
-//                  and in the panel (M63.T2)
-//   G7 addressed:   every position this surface publishes about a USAGE is the
-//                  address owner's `CallSiteAddress` for the row this entry
-//                  quotes (M62, §15.3). The dependent's own declaration is a
-//                  separate, separately-named field. There is no path by which a
-//                  stored `0`, a NULL or a declaration reaches the wire wearing
-//                  the name of a call site — and the two absences that look alike
-//                  (the store carries no line; no row could be attributed) carry
-//                  different notes, because they are different investigations.
-//                  Gated by script/m62/verify-consumers.ts (A2, R6).
-
+// Declared guarantees (gated by script/m26/verify-impact-mode.ts,
+// script/m44/verify-impact-resolution.ts and script/m48/verify-p1-impact-unity.ts):
+//   G1 bounded:     result size <= declared budget; depth <= declared max
+//   G2 declared:    truncated == true iff a declared reason exists; counts real
+//   G3 consistent:  impact count agrees with references on flat fixtures
+//   G4 rendered:    the ONE core's renderImpact() emits a visible marker with
+//                   counts when truncated, nothing when complete
+//   G5 resolved:    an indexed member target roots at its owning declaration
+//                   with a declared note; a genuinely unknown symbol still
+//                   errors (never an empty set that would read as "no impact")
+//   G6 attributed:  a dependent at the shortest path carries the evidence of the
+//                   row AT that path, and a row present only because the cascade
+//                   range widened is marked as such on the payload and in the
+//                   panel
+//   G7 addressed:   every published usage position is the address owner's answer
+//                   for the quoted row, and the two like-looking absences (the
+//                   store carries no line; no row could be attributed) carry
+//                   different notes because they are different investigations
+//
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_impact/AUDIT.md and
+//   LATENCY.json, validation/m26/**, validation/m44/**; gates: the three scripts
+//   named above plus script/m62/verify-consumers.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_impact/{descriptor,handler}.ts,
+//   src/lsp/impact_request.ts, src/intelligence/analysis/impact.ts (imports the
+//   dependency rule), script/tool-docs/curation/bb_impact.ts, docs/tools/bb_impact.md.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, the
+//   dependency rule (IMPACT_REL_TYPES), owner-cascade attribution, read-only
+//   operation, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
 import { graphTraversal } from "../intelligence/graph/graph-engine"
-// M62 (§15.3): the address owner. This surface derives NO position of its own —
+// The address owner. This surface derives NO position of its own —
 // it reads the ENGINE's address for the row it quotes, and for the depth-
 // corrected path it re-reads the stored column through the owner's declared
-// select/adapter pair (line-address.ts § L6), never as a raw value.
+// select/adapter pair (line-address.ts), never as a raw value.
 import {
   STORED_LINE_SELECT,
   deriveCallSiteAddress,
@@ -123,14 +126,14 @@ export const IMPACT_BUDGET = {
 
 /** Root symbol types the engine's graph traversal can root (the engine's
  *  STRUCTURAL whitelist, src/intelligence/graph/graph-engine.ts
- *  resolveGraphRoot). M53: a DIRECT root outside this set means the engine's
- *  M48.C1 any-type exact resolve picked a member (constructor, plain field…)
+ *  resolveGraphRoot). A DIRECT root outside this set means the engine's
+ *  the engine's any-type exact resolve picked a member (constructor, plain field…)
  *  — those re-root through their OWNING declaration with the U5 rules, never
  *  silently ride a gravity pick. Exported so the bb/graph door shares the
  *  ONE list; drift-gated by the U5 gate's mutant suite. */
 export const IMPACT_TRAVERSABLE_ROOT_TYPES: readonly string[] = IDENTITY_TRAVERSABLE_TYPES
 
-// M55.T1 (issue #770): the whitelist above and the member-resolution rules
+// The whitelist above and the member-resolution rules
 // below now live in the ONE resolver, `src/lsp/identity.ts`. This module
 // re-exports them under its historical names so every existing caller, gate
 // and mutant anchor keeps working — the DECISION is not duplicated, only its
@@ -149,20 +152,20 @@ export {
 
 export interface ImpactResult {
   /** The symbol the walk rooted at, with the identity a reader needs to check
-   *  it: M63.T1 the engine's node already carries the type, the line and the
+   *  it: the engine's node already carries the type, the line and the
    *  language, and an impact answer about a symbol with no line and no type is
    *  hard to argue with (the same shape the bb_graph door adopted when it
    *  declared name ambiguity). */
   root: { id: string; name: string; file: string; filePath: string; line: number; symbolType: string; language: string }
   /** Reverse dependencies, bounded, deepest last.
    *
-   *  M63.T1: each dependent carries the same evidence the stored row already
+   *  Each dependent carries the same evidence the stored row already
    *  had and this component used to drop — the TIER (from the ONE server-side
    *  classifier, `classifyTier`, never a second derivation), whether the edge
    *  CROSSES LANGUAGES, the bridge mechanism when it does, and the dependent's
    *  own position. Two of those were documented claims with no payload behind
    *  them: docs/tools/bb_impact.md has promised "per-edge evidence tiers"
-   *  since M28, and a cross-language dependent was indistinguishable from a
+   *  in this page's history, and a cross-language dependent was indistinguishable from a
    *  same-language one — which is precisely the fact an agent needs before
    *  renaming or deprecating a symbol. */
   impact: ImpactDependent[]
@@ -171,14 +174,14 @@ export interface ImpactResult {
    *  when the counting walk hit its declared scan ceiling (a declared
    *  unknown, never a fabricated total and never a partial count wearing a
    *  total's name). It is a total OF THIS SET: same relationship kinds, same
-   *  owner cascade, same noise policy, same depth (M63.T1). */
+   *  owner cascade, same noise policy, same depth. */
   totalCountIfKnown: number | null
   /** Distinct dependents at depth 0 — exact whenever the counting walk stayed
    *  inside its declared scan ceiling, and null (declared unknown) when it did
    *  not. Trustworthy on its own even when `totalCountIfKnown` is null. */
   directCount: number | null
   /** Declared limits actually in force, so a reader never has to guess
-   *  whether a bound is in play (M63.T1). */
+   *  whether a bound is in play. */
   budget: {
     maxNodes: number
     maxDepth: number
@@ -206,17 +209,17 @@ export interface ImpactResult {
   }
   truncated: boolean
   truncationReason: string | null
-  /** M44.U5: how the root was resolved. "direct" = the name resolved to a
+  /** How the root was resolved. "direct" = the name resolved to a
    *  traversable root (the engine's whitelist); "owning-declaration" = the
    *  name is an indexed member the whitelist excludes (constructor, plain
    *  members), rooted through its owner with the member named. First-class
    *  so the UI states what it rooted at — never a silent relabel. */
   resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string; memberFile?: string }
-  /** M63.T1: HOW the requested name became this root, stated on the answer.
+  /** HOW the requested name became this root, stated on the answer.
    *
    *  The engine resolves a name in three steps (exact among traversable kinds,
    *  exact among any kind, then a documented containment match). A reader of an
-   *  impact answer cannot tell which step ran: measured on the lane's corpora,
+   *  impact answer cannot tell which step ran: measured on real corpora,
    *  `bb_impact {symbol:"push"}` on graphql-js answers "0 reverse dependencies"
    *  for a `push` that 141 stored relationships point at, and ripgrep `filter`
    *  answers "0" for a symbol 8 depend on — a confident empty set about
@@ -233,16 +236,16 @@ export interface ImpactResult {
    *  It is deliberately NOT the resolver's `candidates`: that number is counted
    *  with the winning step's predicate, and for a containment match that means
    *  re-running a `LIKE '%x%'` scan, which measured 30–420 ms per call on the
-   *  lane's corpora — a real cost on the highest-stakes read surface, paid for
+   *  corpora — a real cost on the highest-stakes read surface, paid for
    *  a flag the `via` field already carries. This count is one indexed
    *  equality. */
   rootMatch: { requested: string; via: "exact" | "exact-exempt-kind" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
-  /** M63.T2: the rule this answer was MEASURED under, stated on the answer.
+  /** The rule this answer was MEASURED under, stated on the answer.
    *  A reader who wants to know why a `uses` or `references` relationship did
    *  not appear can read it here instead of inferring it, and the set and its
    *  declared total are guaranteed to be measurements of this same list. */
   rule: { relationshipTypes: string[]; cascade: string; noisePolicy: string; maxDepth: number }
-  /** M63.T2: the RETURNED set's composition by HOW each dependent is a
+  /** The RETURNED set's composition by HOW each dependent is a
    *  dependent. `rangeFolded` is the number of rows in `impact` that are in the
    *  answer only because the cascade range widened — a conservative
    *  over-count, declared rather than hidden. `null` when the composition could
@@ -296,7 +299,7 @@ export interface ImpactDependent {
   name: string
   file: string
   filePath: string
-  /** §15.3 (Truth Rule 3) — the address owner's answer for the ONE stored row
+  /** The address owner's answer for the ONE stored row
    *  this entry quotes (the row at `evidenceAtDepth`, not the engine's
    *  first-trace row). This is the surface's ONLY position claim about WHERE
    *  THE USAGE IS, and it is derived by the single owner
@@ -306,7 +309,7 @@ export interface ImpactDependent {
    *  dependent symbol's own DECLARATION line under the bare name `line` — a
    *  range labelled as a position that pointed at a declaration, plus (on the
    *  depth-corrected path) the raw stored column passed straight through, so a
-   *  stored `0` reached the wire as `line: 0`. Both are the defect §15.3 names.
+   *  stored `0` reached the wire as `line: 0`. Both are the defect that contract names.
    *  Now: `kind: "call-site"` is the exact stored site; `kind: "declaration"` is
    *  the labeled substitute; `kind: "unknown"` has NO position and its note says
    *  which of the three absences it is. A reader narrows on `isExactAddress`,
@@ -315,7 +318,7 @@ export interface ImpactDependent {
   /** The `brain_relationship` row this entry's evidence is quoted from — the
    *  row at `evidenceAtDepth`, which is the engine's first-trace row only when
    *  the two depths agree. Published so the position claim is CHECKABLE against
-   *  the store by anything downstream (the M62.A2 differential gate does
+   *  the store by anything downstream (the address differential gate does
    *  exactly that): an address nobody can trace to a row is an address nobody
    *  can audit. */
   rowId?: string
@@ -336,7 +339,7 @@ export interface ImpactDependent {
   isCrossLanguage: boolean
   /** The bridge mechanism, when the row names one (null otherwise). */
   bridgeMechanism: string | null
-  /** M63.T2: HOW this row makes the dependent a dependent, under the walk's
+  /** HOW this row makes the dependent a dependent, under the walk's
    *  own rule.
    *
    *  `exact` — the stored row names the traced symbol itself.
@@ -349,7 +352,7 @@ export interface ImpactDependent {
    *  `P:container;`) — the whole container — and every sibling of `29` is
    *  folded in with it. Measured: ripgrep `RegexMatcher` answers 14 dependents
    *  of which all 14 are `range-folded` and none is a real member, and across
-   *  the lane's corpora 21 914 owner ids sit inside some level member's range
+   *  real corpora 21 914 owner ids sit inside some level member's range
    *  without being that member. The range is a SUPERSET — it never loses a
    *  dependent the owner relation has — so a reader is being told "this might
    *  break", but it is told so about a symbol nobody asked about, and that is
@@ -382,7 +385,7 @@ export interface ImpactDependent {
    *  not attribute" is not "the row says this", and only one of them is a
    *  measurement. */
   evidenceAtDepth: number | null
-  /** M63.T1: whether this dependent's FILE changed since it was indexed.
+  /** Whether this dependent's FILE changed since it was indexed.
    *  Set by the surface that can answer it (the MCP door, over the component's
    *  file rows); absent from a component-level answer, which never touches
    *  the filesystem. Declared optional precisely so "not checked" cannot be
@@ -398,8 +401,8 @@ export interface ImpactDeps {
 // above from src/lsp/identity.ts — the ONE resolver. Nothing is defined
 // twice: the rules have a single owner, the impact door keeps its names.)
 
-// M55.T1 (issue #770): the member-resolution rules (M44.U5, disambiguated at
-// the M53 X1 closure) now live in src/lsp/identity.ts — the ONE resolver —
+// The member-resolution rules (disambiguated by the caller's file hint) now
+// live in src/lsp/identity.ts — the ONE resolver —
 // and are re-exported above as `resolveImpactMemberOwner`. The rules are not
 // duplicated here: this door reads them from that owner, and the identity
 // owner's header carries the full rule list.
@@ -439,9 +442,9 @@ export const IMPACT_TOTAL_SCAN_CEILING = 50_000
 /** Declared ceiling on the counting walk's EXPANSIONS (symbols it opens).
  *  The cost of an honest total is one bounded query per symbol in the
  *  closure, so the ceiling that actually bounds latency is this one, not the
- *  row count. Measured on the lane's corpora: ~1.2 ms per expansion
+ *  row count. Measured on real corpora: ~1.2 ms per expansion
  *  (graphql-js, 43 496 relationships), so 2 000 expansions is a ~2.5 s worst
- *  case; the biggest hub in any lane corpus closes over 719. Past the ceiling
+ *  case; the biggest hub measured closes over 719. Past the ceiling
  *  both counts are null — the declared unknown. */
 export const IMPACT_TOTAL_EXPANSION_CEILING = 2_000
 
@@ -478,7 +481,7 @@ export interface ImpactTotalCount {
   /** The SHORTEST path to each dependent, as this walk measured it. A
    *  breadth-first walk reaches a node by the fewest edges there is, so these
    *  are the depths the answer should report — the engine's caller walk is
-   *  depth-first and stamps the first trace instead (M63.T2). */
+   *  depth-first and stamps the first trace instead. */
   depths: Map<string, number>
   /** Distinct dependents at depth 0 — always exact, always cheap, and the
    *  number a reader can always trust even when `total` is null. */
@@ -521,7 +524,7 @@ function cascadePrefix(symbolId: string): string {
 /** Independent bounded count of the reverse-dependency symbols the traversal
  *  would return if nothing were capped.
  *
- *  M63.T1: this replaced a single flat COUNT over relationships whose target
+ *  This replaced a single flat COUNT over relationships whose target
  *  is the root (or one of its members), which is not a total of the set the
  *  walk returns:
  *    * the set is TRANSITIVE to the declared depth, the old count was depth 0
@@ -678,7 +681,7 @@ export function countImpactDependents(
           if (!row.name || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
           if (row.file && AnalysisExclusions.isHardNoisePath(row.file)) continue
           // A cycle makes the root a dependent of itself; the set is about
-          // OTHER symbols (see the M63.T1 note where the walk is built).
+          // OTHER symbols (see the note where the walk is built).
           if (row.id === rootSymbolId) continue
           if (found.has(row.id)) continue
           found.add(row.id)
@@ -725,7 +728,7 @@ export function countImpactDependents(
   }
 }
 
-/** M63.T2: split a dependent set by HOW each member is a dependent.
+/** Split a dependent set by HOW each member is a dependent.
  *
  *  The walk asked about every symbol it opened. So a found target is:
  *  `exact`      — the walk asked about the target itself;
@@ -849,8 +852,8 @@ export async function computeImpact(
     }
     resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
   }
-  // M53: the hover's server-resolved identity beats the engine's gravity
-  // pick. M48.C1 made the engine resolve exact member names DIRECTLY
+  // The hover's server-resolved identity beats the engine's gravity
+  // pick. The engine resolves exact member names DIRECTLY
   // (gravity-ordered, any type), which silently bypassed the U5 fallback and
   // could root a same-name member in the WRONG file (found live: two
   // `constructor` rows; the hinted greeter.ts request rooted the
@@ -862,9 +865,9 @@ export async function computeImpact(
   // that decision for BOTH doors). Failures here are never silent: a
   // mismatched or unresolvable hint keeps the declared error.
   const rootType = (result.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
-  // M63.T2: the engine resolves exact names of ANY stored kind (M48.C1), so it
+  // The engine resolves exact names of ANY stored kind, so it
   // roots at a `constant` or an `enum_member` and COMPLETES the walk whenever the
-  // name is an exact hit. Measured on the seven cases the D5 ledger named, the
+  // name is an exact hit. Measured on the seven cases named in the review
   // engine rooted at the exact requested name in all seven and produced 136–313
   // caller edges — and the door below discarded every one of them, because
   // `resolveMemberIdentity` rule 3 had correctly declined the owner fallback
@@ -878,7 +881,7 @@ export async function computeImpact(
   // containment match, a re-root through an owner — because THAT is a relabel.
   //
   // `resolveMemberIdentity` is not touched: its four rules still decide the
-  // fallback, and the M55 identity gate still holds. What changes is that the
+  // fallback, and the identity gate still holds. What changes is that the
   // fallback being unnecessary no longer means there is no answer.
   const rootedAtRequestedName = result.root?.name === symbolName
   const kindOutsideWhitelist = rootType.length > 0 && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)
@@ -895,16 +898,16 @@ export async function computeImpact(
   // Ambiguity is judged on the TRUE count, never on the bounded list: a name with
   // 36 stored symbols is ambiguous even when the message shows eight of them.
   const nameIsUnambiguous = nameTotal === 1 || ((nameTotal === null || nameTotal > 1) && hintMatchesRoot)
-  // The exemption is scoped to the two kinds the D5 ledger MEASURED as
+  // The exemption is scoped to the two kinds MEASURED as
   // unanswerable, and both are value-like: an enum VARIANT and a module-level
   // `constant` are things a refactoring question is asked ABOUT, and their own
   // dependents are the answer.
   //
   // It is deliberately NOT scoped to every non-traversable kind. `constructor`,
-  // `property`, `field` and the rest are the U5 law's subject (M44/M55): a hover
+  // `property`, `field` and the rest are the member-resolution law's subject: a hover
   // that resolved a member's identity means the OWNING declaration is the
   // question, and routing them through the owner is that law, not a workaround.
-  // Widening the scope is what broke M55's R5 the first time this was written —
+  // Widening the scope is what broke the resolution gate the first time this was written —
   // the m55 fixture's hinted `constructor` picks up a declared-kind row from the
   // real indexer, so "has its own reverse edges" was true and the exemption
   // answered about the constructor instead of `Store`. A measured allowlist of
@@ -957,10 +960,10 @@ export async function computeImpact(
   // Distinct caller nodes (a caller with three call sites is ONE dependency),
   // in traversal order (depth, then edge order — deterministic).
   //
-  // M63.T1: the root is never a member of its own impact set. A cycle (A calls
+  // The root is never a member of its own impact set. A cycle (A calls
   // B, B calls A) makes the engine emit an edge from the root back to itself,
   // and a reader asking "what breaks if I change this" would be told the
-  // symbol breaks itself. Measured on the lane's corpora: 8 of 24 hub answers
+  // symbol breaks itself. Measured on real corpora: 8 of 24 hub answers
   // listed the root among its own dependents (cobra `MarkFlagRequired`, rake
   // `join`, lodash `baseConvert`, graphql-js `join`, vue-core
   // `addEventListener`, …). The set is about OTHER symbols; the count moves
@@ -987,7 +990,7 @@ export async function computeImpact(
       name: node?.name ?? nodeId,
       file: node?.file ?? "",
       filePath: node?.filePath ?? "",
-      // §15.3: the ENGINE's address for this edge, served whole. The engine
+      // The ENGINE's address for this edge, served whole. The engine
       // derived it from the same stored row this entry quotes (provisional
       // evidence at the engine's first-trace depth; the re-read below replaces
       // it whenever the depth moves). A dependent's DECLARATION is not a
@@ -1004,7 +1007,7 @@ export async function computeImpact(
       evidenceAtDepth: edge.depth,
       relationshipType: edge.relationshipType,
       confidence: edge.confidence,
-      // The ONE server-side classifier (M55.T5's owner). A second derivation
+      // The ONE server-side classifier. A second derivation
       // here would be the exact defect that module was written to close.
       tier: classifyTier({
         relationshipType: edge.relationshipType,
@@ -1016,7 +1019,7 @@ export async function computeImpact(
       // The engine already classifies every caller row as `exact` or
       // `owner-cascade` and names the member it matched (bb_graph publishes
       // both). Reading them here is the point: a second derivation would be the
-      // defect M55.T5 exists to prevent, and a dropped field is the defect D10
+      // defect that module exists to prevent, and a dropped field is the defect
       // was filed for.
       via: edge.targetMatch === "owner-cascade" ? "member" : "exact",
       ...(edge.matchedMember ? { viaMember: edge.matchedMember } : {}),
@@ -1027,7 +1030,7 @@ export async function computeImpact(
       tracedId: edge.to,
     })
   }
-  // M63.T2: `owner-cascade` is not the same thing as a real member. The named
+  // `owner-cascade` is not the same thing as a real member. The named
   // member is looked up once (name + file, both indexed) and its OWNER decides:
   // an owner equal to the symbol the walk was at is the cascade working as
   // declared, and anything else is here only because the range widened. The
@@ -1053,7 +1056,7 @@ export async function computeImpact(
     }
     if (memberOwner.get(key) === "range-folded") entry.via = "range-folded"
   }
-  // M63.T2: an engine reason that describes a KIND FILTER is not a bound. The
+  // An engine reason that describes a KIND FILTER is not a bound. The
   // engine's default is now every stored kind, so a caller that passes one
   // (this component passes the declared dependency kinds) has the filter
   // recorded in its reason set — and folding that into `truncationReason`
@@ -1061,7 +1064,7 @@ export async function computeImpact(
   // The filter is declared where it belongs, in `rule.relationshipTypes`;
   // `truncated` keeps its one meaning: this set is a PREFIX of the declared
   // rule's whole truth.
-  // M63.T2: the reason SET is kept, not just its first clause, because the
+  // The reason SET is kept, not just its first clause, because the
   // clauses are not equal in kind. `caller-site-limit` and
   // `walk-time-budget-exhausted` can both fire on the same call, and a
   // time-bounded answer is not reproducible — so a reader comparing two answers
@@ -1081,13 +1084,13 @@ export async function computeImpact(
     truncationReason = truncationReason === null ? "walk: time-budget-exhausted" : `${truncationReason} (walk: time-budget-exhausted — this answer is not reproducible)`
   }
 
-  // M63.T1: the declared total is measured under the SAME rule the walk used
+  // The declared total is measured under the SAME rule the walk used
   // (kinds, cascade, noise, depth) with no node budget, so it is the size of
   // the set this answer is a prefix of.
   const directFromSet = impact.reduce((n, entry) => (entry.depth === 0 ? n + 1 : n), 0)
   const depthReached = impact.reduce((n, entry) => (entry.depth > n ? entry.depth : n), 0)
 
-  // M63.T2 — the tool now PROVES its own completeness instead of inferring it
+  // The tool now PROVES its own completeness instead of inferring it
   // from the engine's `truncated` flag.
   //
   // That flag is the engine's honest account of ITS bounds: the node budget,
@@ -1096,7 +1099,7 @@ export async function computeImpact(
   // gives a node the depth of the first trace that reached it, so a symbol ONE
   // hop from the root can be first reached four hops in; when the depth cap
   // then forbids expanding it, its own dependents are dropped and no bound has
-  // fired. Measured on this lane's corpora: cobra `HasAvailableFlags` answered
+  // fired. Measured on real corpora: cobra `HasAvailableFlags` answered
   // 27 of 28 dependents with `truncated: false`, and across nine repositories
   // 21 of 47 hub answers carried dependents at a deeper depth than their real
   // one.
@@ -1116,13 +1119,13 @@ export async function computeImpact(
   // have fired has declared itself, and the set is complete by construction.
   // So the count runs exactly on the answers that could be wrong.
   const boundaryReached = depthReached >= IMPACT_BUDGET.maxDepth - 1
-  // M63.T2: the cheap form of the question. A node can be lost at the boundary
+  // The cheap form of the question. A node can be lost at the boundary
   // only if it sits at the last expandable depth, so one query over THAT
   // LEVEL's nodes decides whether anything was lost; the unbounded counting
   // walk — the only thing that can say what the true total is, and the only way
   // to correct a mis-stamped depth — runs only when this says maybe, or when
   // truncation was already declared. Measured: it moved the warm median from
-  // ~740 ms to ~180 ms over the lane's corpora with no answer changed.
+  // ~740 ms to ~180 ms over real corpora with no answer changed.
   const boundarySuspect = boundaryReached && boundaryHasDependents(db, projectId, impact, relationshipTypes)
   const verify = truncated || boundarySuspect
   const counts = verify
@@ -1148,7 +1151,7 @@ export async function computeImpact(
       if (measured !== undefined && measured !== entry.depth) entry.depth = measured
     }
     impact.sort((a, b) => a.depth - b.depth || a.id.localeCompare(b.id))
-    // M63.T2: `depth` is now the measured shortest path, and the evidence on
+    // `depth` is now the measured shortest path, and the evidence on
     // each entry is the ENGINE's row, which sits on its first trace — a
     // different path whenever that trace was not the shortest one. Measured: 340
     // of 4 258 rows across nine repositories (7.98%), and the suite's
@@ -1171,7 +1174,7 @@ export async function computeImpact(
         entry.bridgeMechanism = null
         entry.confidence = null as never
         entry.evidenceAtDepth = null
-        // §15.3: the engine's address is then a claim about a row this entry no
+        // The engine's address is then a claim about a row this entry no
         // longer quotes, so it goes with the rest of the evidence — as the
         // declared `unattributed` absence, NOT left standing as the engine's
         // first-trace position.
@@ -1202,7 +1205,7 @@ export async function computeImpact(
       // as `entry.line` verbatim — so a stored `0` reached the wire as the
       // number 0, wearing a field name that said "position".
       entry.callSite = row.callSite
-      // The ONE server-side classifier, on the row being quoted (M55.T5's law: a
+      // The ONE server-side classifier, on the row being quoted (a
       // second derivation here would be the defect that module exists to prevent).
       entry.tier = classifyTier({
         relationshipType: row.relationshipType,
@@ -1254,7 +1257,7 @@ export async function computeImpact(
     truncated = false
     truncationReason = null
   }
-  // M63.T2: a time bound on EITHER side makes the answer unreproducible, and the
+  // A time bound on EITHER side makes the answer unreproducible, and the
   // reason has to say so. The engine's walk-time clause is handled where the
   // engine's reasons are read; this is the counting walk's own breaker, and it
   // fires LATER than that, so it could not be folded in there. Caught by the
@@ -1344,7 +1347,7 @@ export async function computeImpact(
   }
 }
 
-/** M63.T2: the stored row that makes `dependent` a dependent of `parent`, and
+/** The stored row that makes `dependent` a dependent of `parent`, and
  *  the evidence it carries. One indexed equality on a unique pair, memoised per
  *  `(dependent, parent)` by the caller.
  *
@@ -1353,7 +1356,7 @@ export async function computeImpact(
  *  the wrong path. `evidenceClass` is lifted out of the row's metadata so the
  *  ONE classifier decides the tier, from the row being quoted.
  *
- *  M62 §15.3: the row's stored call-site line is NOT returned as a number. It is
+ *  The row's stored call-site line is NOT returned as a number. It is
  *  read through the address owner's declared select/adapter pair and handed
  *  straight to the owner, which returns a `CallSiteAddress` — so a legacy `0`, a
  *  NULL and a store-contract violation can only leave here as DECLARED states.
@@ -1425,7 +1428,7 @@ function storedRowEvidence(
   }
 }
 
-/** M63.T2: the owner of the member a cascade row named, resolved from its name
+/** The owner of the member a cascade row named, resolved from its name
  *  and file, or `"range-folded"` when that owner is inside the walked symbol's
  *  cascade range without being it.
  *

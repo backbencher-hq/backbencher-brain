@@ -147,7 +147,7 @@ console.log(`r-differential.json  expected=${totalExpected} tp=${metrics.truePos
 //
 // This is what caught the two errors a fixture suite structurally could not: a
 // wrong belief about `->` that the fixtures had been written to match, and an
-// identifier the grammar split in half. See docs/analyzers/real-r-analyzer.md.
+// identifier the grammar split in half. See docs/analyzers/r.md.
 const ORACLE_SCRIPT = path.join(ROOT, "validation/m12/oracle/r-globals-oracle.R")
 const ORACLE_SHA = (() => {
   try { return createHash("sha256").update(fs.readFileSync(ORACLE_SCRIPT)).digest("hex") }

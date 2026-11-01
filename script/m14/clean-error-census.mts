@@ -4,7 +4,7 @@
  *
  *   npx tsx script/m14/clean-error-census.mts [--limit N] [--shard K --shards M] [--out FILE]
  *
- * WHY THIS EXISTS. Limitation 0 of `docs/analyzers/real-clean-analyzer.md` counts FILES:
+ * WHY THIS EXISTS. Limitation 0 of `docs/analyzers/clean.md` counts FILES:
  * "655 of 2,179 wide-corpus files contain at least one ERROR node". That is the right
  * population for a grammar limitation and the wrong one for a graph limitation, because a
  * file is not damaged evenly. `clean-ide/Ide/edoptions.icl` carries ONE ERROR node

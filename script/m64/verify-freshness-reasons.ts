@@ -1,4 +1,4 @@
-// script/m64/verify-freshness-reasons.ts — M64.R.
+// script/m64/verify-freshness-reasons.ts — .R.
 //
 // "215 stale" is not actionable. It is three conditions with three different
 // fixes, and the resolver has always computed which is which — bb_health read
@@ -8,9 +8,9 @@
 // The map before this change, on a 6-file fixture with one edit, one delete and
 // one permission loss:
 //
-//   hash-differs         src/f0.ts, src/f2.ts   (edited  -> reindex those two)
-//   file-gone            src/f1.ts              (deleted -> a pruning refresh)
-//   metadata-fast-path   src/f3..f5.ts          (unchanged, never read)
+//  hash-differs src/f0.ts, src/f2.ts (edited -> reindex those two)
+//  file-gone src/f1.ts (deleted -> a pruning refresh)
+//  metadata-fast-path src/f3..f5.ts (unchanged, never read)
 //
 // The gate is adversarial by construction. A breakdown that renders correctly on
 // a clean index proves nothing; the categories that matter are the ones a clean

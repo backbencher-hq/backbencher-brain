@@ -80,11 +80,13 @@ const REQUIRED_SECTIONS = [
   "## Corpus validation",
 ]
 
-/** Documentation of the analyzer's file, however this repo happens to name it. */
-const DOC_CANDIDATES = (lang: string): string[] => [
-  path.join(ROOT, "docs/analyzers", `real-${lang}-analyzer.md`),
-  path.join(ROOT, "docs/analyzers", `${lang}.md`),
-]
+/** Analyzer file id -> documentation lane name where the two differ. The analyzer source is
+ *  `real-makefile-analyzer.ts`, but the lane and its page are `make`. */
+const DOC_LANE_ALIAS: Record<string, string> = { makefile: "make" }
+
+/** The analyzer documentation. One canonical file per language: `docs/analyzers/<lang>.md`.
+ *  (The old `real-<lang>-analyzer.md` prefix was retired on 2026-11-01; see docs/analyzers/README.md.) */
+const DOC_CANDIDATES = (lang: string): string[] => [path.join(ROOT, "docs/analyzers", `${DOC_LANE_ALIAS[lang] ?? lang}.md`)]
 
 /**
  * A relationship-ontology table row that answers nothing.

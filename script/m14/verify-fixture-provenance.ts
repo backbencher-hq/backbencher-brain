@@ -14,7 +14,7 @@
  * `src/ast/real-cpp-analyzer.ts`. At that commit cpp read `41 pass / 6 fail` —
  * `contains-name-line-921`, `exports-marker-910`, `pure-virtual-abstract-919`,
  * `pure-virtual-signature-910`, `specifier-qualified-name-962`,
- * `unnamed-scope-919` — while `docs/analyzers/real-cpp-analyzer.md` (landed by
+ * `unnamed-scope-919` — while `docs/analyzers/cpp.md` (landed by
  * the single-parent squash `4cf800a17`, which carried 25 lane documents and 23
  * analyzers and no cpp fixture at all) described the behavior those six fixtures
  * pin. `--update-baseline` recorded `cpp: 6` as the accepted state. Nothing

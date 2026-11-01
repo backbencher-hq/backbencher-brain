@@ -150,7 +150,7 @@ function main() {
   }
 
   if (violations.length > 0 || dead.length > 0) {
-    console.error(`${violations.length} violation(s), ${dead.length} dead read(s). See docs/vb.md.`)
+    console.error(`${violations.length} violation(s), ${dead.length} dead read(s). See docs/analyzers/history/vb-lane-notes.md.`)
     process.exit(2)
   }
   console.log(

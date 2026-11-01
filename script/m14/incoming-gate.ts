@@ -26,7 +26,7 @@
  *
  *    Two lanes say this in their own words: `validation/m14/fixtures/nim/ambiguity-classify.ts:38`
  *    and `validation/m14/fixtures/zig/ambiguity-split.ts:30` ("ambiguous does NOT mean 'N
- *    declarations share this name'"), and `docs/analyzers/real-scss-analyzer.md:1741`
+ *    declarations share this name'"), and `docs/analyzers/scss.md:1741`
  *    reports both numbers side by side — 3 by kind, 284 by declaration.
  *
  *    A count that reads zero on a graph where a name denotes 53 declarations does not
@@ -3221,7 +3221,7 @@ function selfTest(): { ok: boolean; failures: string[] } {
 
 // ─────────────────────────────── THE BAR'S CLAUSES, ONE RESULT EACH ───────────────────────────────
 /**
- * THE BAR (`docs/analyzers/HANDOFF.md` §5b; restated by the owner as four clauses, 2026-10-16):
+ * THE BAR (`archive/docs-pre-consolidation/analyzers-HANDOFF.md` §5b; restated by the owner as four clauses, 2026-10-16):
  *
  *   1  every edge resolves, or carries a claim the project verifies
  *   2  every ambiguous/unresolved edge classified by a NAMED cause, with a measured count
@@ -3482,7 +3482,7 @@ function verdict(rep: Report): { pass: boolean; edges: number; totals: Outcomes;
       reason: `every one ${scope} resolves to exactly one declaration, or carries a claim the project confirms (${ext}; ${bind})`,
       // NOT REACHABLE TODAY FOR DART, and left in place because it is the shape a PASS takes: the
       // per-file column carries declared causes, which do not score, so this branch is entered only
-      // where the residue is empty — see the contract in `docs/analyzers/real-dart-analyzer.md`.
+      // where the residue is empty — see the contract in `docs/analyzers/dart.md`.
     }
   }
   if (bad === 0) {

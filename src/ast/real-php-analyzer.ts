@@ -8,7 +8,7 @@
  * engine.ts.
  * Relationship types covered: calls, uses, contains, imports, references, exports, extends,
  * implements, overrides, instantiates.
- * Where its scripts/validations live: docs/analyzers/real-php-analyzer.md,
+ * Where its scripts/validations live: docs/analyzers/php.md,
  * script/m14/spec/php-completeness.json, validation/m14/fixtures/php/**, and the LANG_CONFIG
  * row in script/m14/completeness-inventory.ts.
  * EDIT THESE TOO when this file changes: src/ast/file-claim.ts (the include/require claim
@@ -1638,7 +1638,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts:256) sees one
    * owner convention for all three. The honest cost is that `global` is not a published
    * symbol, so the SOURCE end of these edges resolves to no declaration — measured and
-   * reported per type in docs/analyzers/real-php-analyzer.md rather than papered over.
+   * reported per type in docs/analyzers/php.md rather than papered over.
    * `metadata.file` carries the file identity for any consumer that needs to attribute
    * the edge: 3 of the 45 distinct names in the corpus are published by more than one
    * file, and without it those edges are indistinguishable.

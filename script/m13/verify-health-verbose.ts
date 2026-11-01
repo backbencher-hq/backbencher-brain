@@ -1,4 +1,4 @@
-// script/m13/verify-health-verbose.ts — M13.30 (H2).
+// script/m13/verify-health-verbose.ts — (H2).
 //
 // The advertised verbose flag must actually change output: verbose=true adds
 // the per-language breakdown and stale/missing file names; verbose=false must
@@ -33,13 +33,13 @@ const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((t) => t.name === "bb_health")!
 harness.check("schema: verbose is a declared boolean input", (descriptor.inputSchema as any).properties?.verbose?.type === "boolean", "not declared")
 harness.check("schema: verbose is documented with its effect", ((descriptor.inputSchema as any).properties?.verbose?.description ?? "").includes("stale/missing file names"), "undocumented")
 
-const handlers = readFileSync(path.resolve("src/mcp/tool-handlers.ts"), "utf8")
+const handlers = readFileSync(path.resolve("src/mcp/tools/bb_health/handler.ts"), "utf8")
 harness.check("handler: passes args.verbose to the provider", handlers.includes("verbose: args.verbose === true"), "not passed")
 
 const provider = readFileSync(path.resolve("src/intelligence/health/health-provider.ts"), "utf8")
 harness.check("provider: UnifiedHealthOptions declares verbose", provider.includes("verbose?: boolean"), "not in options")
 harness.check("provider: report carries verbose and languages", provider.includes("verbose: options.verbose === true") && provider.includes("languages:"), "not in report")
-// M64: this asserted on the literal template strings `languages: ${` and
+// this asserted on the literal template strings `languages: ${` and
 // `stale files: ${`, so it broke on a refactor that capped the stale list into
 // a bounded renderer — a change that made the section BETTER, not worse. The
 // wiring it means to check (the verbose sections exist and are gated on
@@ -82,8 +82,7 @@ writeFileSync(bPath, readFileSync(bPath, "utf8") + "\n// verbose-probe\n")
 
 // Handler-level: the MCP surface must honor verbose too (real handler).
 {
-  const { createToolHandlers } = await import("../../src/mcp/tool-handlers")
-  const health = createToolHandlers().bb_health
+  const { handler: health } = await import("../../src/mcp/tools/bb_health/handler")
   const verboseOut = await health({ verbose: true }, { projectId, projectPath: root } as any)
   const verboseText = (verboseOut.content ?? []).map((c: any) => c.text ?? "").join("\n")
   harness.check("handler: verbose=true output includes the breakdown", verboseText.includes("languages:"), verboseText.slice(0, 160))

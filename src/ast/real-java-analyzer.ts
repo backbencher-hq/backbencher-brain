@@ -19,7 +19,7 @@
  * script/m14/java-extended-types-census.ts; measurements in validation/m14/measurements/
  * java-extended-types-census.json, java-grammar-nodes.json, java-r1-grammar.json.
  *
- * WHERE THE REST LIVES. Docs: `docs/analyzers/real-java-analyzer.md` (grammar provenance +
+ * WHERE THE REST LIVES. Docs: `docs/analyzers/java.md` (grammar provenance +
  * per-type emission sites). Declaration spec: `script/m14/spec/java-completeness.json`.
  * Fixtures + expectations: `validation/m14/fixtures/java/**`. Gate: `script/m14/
  * incoming-gate.ts`, arbiter `script/m14/incoming-rule.ts` — BOTH SHARED/Lead-owned: propose
@@ -43,7 +43,7 @@
  * family binding spelling `${caller}${BINDING_SEP}${binding}` with `metadata.localBinding`.
  * `script/m14/**` is the Lead's; this file only consumes those rules.
  *
- * 2026-10-18 COMPLETE-SURFACE WAVE (all of it measured; see docs/analyzers/real-java-analyzer.md):
+ * 2026-10-18 COMPLETE-SURFACE WAVE (all of it measured; see docs/analyzers/java.md):
  *   - ANNOTATION type mentions emit `references` (+ isAnnotation/annotatedKind) in every position,
  *     including package annotations; TYPE-PARAMETER BOUNDS emit `relationshipType:
  *     type_parameter_bound` (+ boundFor); an ENUM CONSTANT BODY is an anonymous subclass

@@ -5,7 +5,7 @@
 // RELATIONSHIP SURFACE: calls, uses, contains, imports, references, exports, implements,
 //   overrides, instantiates. `extends` is a RULED grammar absence (no supertype slot; two
 //   instruments in script/m14/clean-ruled.ts) and is NOT emitted.
-// DOCS: docs/analyzers/clean.md and docs/analyzers/real-clean-analyzer.md.
+// DOCS: docs/analyzers/history/clean-lane-notes.md and docs/analyzers/clean.md.
 // SPEC + FIXTURES: script/m14/spec/clean-completeness.json (102 handled, 32 silent, 1 gap
 //   CL-G1, 6 decisions over 143 grammar slots incl. the universal ERROR/MISSING pair) ·
 //   validation/m14/fixtures/clean/ (14 expectation-paired .icl/.dcl sources).
@@ -259,7 +259,7 @@ interface CleanContext {
    * derives it: a `class_declaration` declares an ABSTRACT member and an
    * `instance_declaration` supplies it, so an instance member whose name is in its
    * class's member set is that class member's implementation — the pairing
-   * `docs/analyzers/real-haskell-analyzer.md:57` records as `overrides T.m -> C.m`
+   * `docs/analyzers/haskell.md:57` records as `overrides T.m -> C.m`
    * for the same construct in the language Clean descends from.
    *
    * Read from the class's OWN `class_member` children rather than from `owner`, so
@@ -2411,7 +2411,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // every other lane publishes as `overrides` — the F# lane reads the `override`
     // keyword (`Dog.Speak -> Animal.Speak`, real-fsharp-analyzer.ts:656-669) and
     // the Haskell lane's own doc records the same construct as `overrides T.m ->
-    // C.m` (real-haskell-analyzer.md:57). Clean has no `override` KEYWORD, so the
+    // C.m` (haskell.md:57). Clean has no `override` KEYWORD, so the
     // keyword probe that settles it elsewhere is unavailable and the pairing is
     // read off two `name` fields instead.
     //

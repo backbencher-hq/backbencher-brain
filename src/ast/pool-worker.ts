@@ -764,7 +764,7 @@ for (const n of [
  * a name the file only READS or BINDS".
  *
  * This does NOT widen the hatch to property reads (see the OPEN half recorded in
- * `docs/analyzers/real-javascript-analyzer.md` §1): a name the file neither
+ * `docs/analyzers/javascript.md` §1): a name the file neither
  * declares nor binds is still treated as noise, and `type`/`parent` read off an
  * external object keep being deleted until a policy decision is taken for them.
  *

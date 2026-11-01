@@ -13,7 +13,7 @@
  * admitted extension list below is READ FROM the arbiter's own detection map rather than assumed,
  * because a file claim against an extension the population cannot hold could never verify.
  *
- * WHERE THE RECORD LIVES: docs/analyzers/real-zig-analyzer.md; spec
+ * WHERE THE RECORD LIVES: docs/analyzers/zig.md; spec
  * script/m14/spec/zig-completeness.json; fixtures validation/m14/fixtures/zig; lane records under
  * validation/m14/verification/.
  *

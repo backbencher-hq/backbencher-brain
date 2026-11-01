@@ -1,3 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the isolated regex scan for bb_search's user-pattern
+//   option: a worker body, the inline fallback that runs the SAME matching loop,
+//   and a deadline that starts when the thread is online.
+// WHICH TOOL IT SERVES — bb_search (read; `regex:true`, the documented regex
+//   exception — a caller-supplied pattern is data, matched against indexed
+//   symbol names only).
+// WHY IT IS SHAPED THIS WAY — a single `test()` call on one name can take longer
+//   than any cooperative check would catch, so the match runs in a worker the
+//   parent can terminate. The clock starts on `online` because worker startup is
+//   engine cost, not pattern cost: charging startup to the pattern made trivial
+//   scans report a time-budget cut on a loaded machine. If isolation is
+//   unavailable the answer runs inline and says so (`inline: true`), and a worker
+//   that never comes online is treated as an isolation failure, not a timeout.
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_search/work/regex-edge-tests.ts,
+//   docs/BB_SEARCH.md; gates: script/verify-search-modes.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/search/regex-search.ts,
+//   validation/tools/regex-allowlist.json, docs/BB_SEARCH.md.
+// CONTRACTS IT MUST NOT BREAK — one matching implementation (worker body and
+//   inline fallback are the same function), a hard kill on the matching budget,
+//   and a truthful `timedOut` / `inline` outcome.
+// ─────────────────────────────────────────────────────────────────────────────
+
 // A regex scan that cannot be made to hang.
 //
 // `RegExp.prototype.test` has no timeout, and a nested-quantifier pattern on a
@@ -18,15 +43,11 @@
 // stays on the caller's connection because it is bounded and measured (~1s for
 // 20k rows).
 //
-// An earlier version of this comment claimed a second connection "cannot see
-// this project's write-ahead log and would silently match nothing". That was
-// wrong, and it was wrong in the worst way: the symptom was real — zero matches
-// — but the cause was that the index being queried genuinely held zero symbols,
-// because an earlier run had been interrupted. Measured later, a readonly handle
-// and a read-write handle both read 13,610 rows from the same WAL database. The
-// worker design stands on the measurement above and needs nothing from that
-// claim; the claim itself is retracted so the next reader is not sent looking
-// for a bug in SQLite.
+// The database read stays on the caller's connection deliberately: a separate
+// connection is not required for WAL visibility (a readonly handle and a
+// read-write one read the same rows), and keeping it on the caller's handle keeps
+// the candidate read inside the same transaction discipline as the rest of the
+// answer. Isolation is needed for the MATCHING, which is the only unbounded part.
 
 import { Worker, parentPort, workerData } from "node:worker_threads"
 

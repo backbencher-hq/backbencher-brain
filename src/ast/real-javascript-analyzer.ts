@@ -19,7 +19,7 @@
 // The receiver-type channel is `metadata.owner` (the store's existing member-owner resolution) +
 // `metadata.ownerEvidence` in {new, assignment, this, jsdoc, class-static, this-alias}; a wrong owner
 // is worse than none.
-// The emission table, confidence tiers and every count live in docs/analyzers/real-javascript-analyzer.md.
+// The emission table, confidence tiers and every count live in docs/analyzers/javascript.md.
 // Where its scripts and validations live: script/m14/spec/javascript-completeness.json
 // (ontology ledger), validation/m14/fixtures/javascript/** (83 fixtures + expectations,
 // run by script/m14/run-fixtures.ts --lang javascript), validation/m14/verification/

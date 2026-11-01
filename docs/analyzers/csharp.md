@@ -1,4 +1,4 @@
-# real-csharp-analyzer.md
+# csharp.md
 
 ## Language
 
@@ -1154,7 +1154,7 @@ before any tally:
 ## 0. The corpus, and the handover was wrong about it
 
 The handover said *"NO C# CORPUS on this disk"*, and
-`docs/analyzers/REVIEW-2026-10-04.md` Defect B records the same claim
+`archive/docs-pre-consolidation/analyzers-REVIEW-2026-10-04.md` Defect B records the same claim
 (`csharp-sample` absent). Measured on this disk:
 
 | repo | `.cs` files | what it is |

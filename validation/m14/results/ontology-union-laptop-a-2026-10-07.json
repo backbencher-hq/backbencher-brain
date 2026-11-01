@@ -282,7 +282,7 @@
   "grammars/tree-sitter-vbnet/*": "analyzer/GRAMMAR_FIX_VB"
  },
  "not_landed": {
-  "lane_instruments_and_fixtures": "SUPERSEDED 2026-10-07: the lane instruments, fixtures and small records were landed on main in the same pass that chose the analyzer revisions by measurement (see fixture_landing_2026_10_07 and docs/analyzers/BRANCH-INVENTORY-2026-10-07.md). What stays on the branches is named there: 190 bulk generated censuses (113 MB), 367 git-ignored paths, 88 root-level scratch files and one 1.16 MB census.",
+  "lane_instruments_and_fixtures": "SUPERSEDED 2026-10-07: the lane instruments, fixtures and small records were landed on main in the same pass that chose the analyzer revisions by measurement (see fixture_landing_2026_10_07 and archive/docs-pre-consolidation/analyzers-BRANCH-INVENTORY-2026-10-07.md). What stays on the branches is named there: 190 bulk generated censuses (113 MB), 367 git-ignored paths, 88 root-level scratch files and one 1.16 MB census.",
   "generated_results": "lane result JSONs stay on their branches (generated data rule)",
   "other_laptop_orchestration": "scripts/agent-orchestration/{launch-agent,status,watchdog}.sh from origin/supervisor/loop",
   "vb_branch_engine_and_package": "analyzer/GRAMMAR_FIX_VB carries an OLDER src/ast/engine.ts (-244 lines, re-adds @ts-nocheck) and package.json (drops prepack, docs/indexing/, verify:m27..m55) \u2014 not landed because it would revert Laptop B's fixes"
@@ -321,7 +321,7 @@
   },
   "no_dominant_alternative": {
    "verdict": "for the other 22 lanes with failing pins, every tested alternative revision broke at least one pin main satisfies",
-   "detail": "per-lane table with the best alternative and what it would break: docs/analyzers/BRANCH-INVENTORY-2026-10-07.md section 2"
+   "detail": "per-lane table with the best alternative and what it would break: archive/docs-pre-consolidation/analyzers-BRANCH-INVENTORY-2026-10-07.md section 2"
   },
   "fold_recheck": {
    "method": "each of the nine analyzers the 2026-10-07 fold changed was run against its lane's pins, pre-fold blob vs folded blob",

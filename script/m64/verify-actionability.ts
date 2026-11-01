@@ -1,19 +1,19 @@
-// script/m64/verify-actionability.ts — M64.A1 + M64.A2 + M64.A3.
+// script/m64/verify-actionability.ts — + + .
 //
 // Three disclosures, each of which is data the code already had and the report
 // did not show. They are grouped because all three fail the same way: a number
 // the caller cannot act on, sitting where an actionable one should be.
 //
-//   A1  integrity reported "92% (0 warnings, 1 errors)" — not WHICH check. The
-//       names were in the JSON only, and the documented answer was "run
-//       bb_health(integrity=true) for details", a second battery to learn one
-//       fact. The check's own remediation was stored and never printed.
-//   A2  per-language counts and per-kind embedding counts were both reported and
-//       never JOINED, so "22% covered" could not be turned into "will bb_ask
-//       find the Rust in this repo".
-//   A3  the only cost on the surface was the last INDEX RUN's phases, labelled
-//       `perf:` next to a runtime line with nothing saying which was which.
-//       Nothing measured the call the caller was waiting for.
+//  A1 integrity reported "92% (0 warnings, 1 errors)" — not WHICH check. The
+//  names were in the JSON only, and the documented answer was "run
+//  bb_health(integrity=true) for details", a second battery to learn one
+//  fact. The check's own remediation was stored and never printed.
+//  A2 per-language counts and per-kind embedding counts were both reported and
+//  never JOINED, so "22% covered" could not be turned into "will bb_ask
+//  find the Rust in this repo".
+//  A3 the only cost on the surface was the last INDEX RUN's phases, labelled
+//  `perf:` next to a runtime line with nothing saying which was which.
+//  Nothing measured the call the caller was waiting for.
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -30,8 +30,8 @@ const harness = new Harness({
   tool: "bb_health",
   title: "bb_health actionability: which integrity check failed, which language is searchable, and what this call cost",
   layers: ["integration"],
-  // M64 is the milestone this document belongs to; without it the shared harness
-  // stamps M13 and stores the file in M13's corpus (see script/m64/verify-evidence.ts).
+  // is the milestone this document belongs to; without it the shared harness
+  // stamps and stores the file in 's corpus (see script/m64/verify-evidence.ts).
   milestone: "M64",
   decisions: {
     A1: "the integrity one-liner names the non-ok checks and carries each check's own first sentence of remediation",
@@ -185,7 +185,7 @@ async function mixed() {
     harness.check("running integrity makes its phase non-zero and visible", withIntegrity.timing.integrityMs > 0, `integrityMs=${withIntegrity.timing.integrityMs}`)
     harness.check("and the line shows it", /integrity=\d+ms/.test(formatUnifiedHealth(withIntegrity).split("\n").find((l) => l.startsWith("this call:")) ?? ""), formatUnifiedHealth(withIntegrity).split("\n").find((l) => l.startsWith("this call:"))?.slice(0, 120) ?? "")
 
-    // M64.A4: with a complete freshness scan the battery must NOT read the disk
+    // with a complete freshness scan the battery must NOT read the disk
     // again. Before this, `integrity: true` + `freshness: "complete"` content-
     // hashed the whole corpus TWICE in one call.
     //

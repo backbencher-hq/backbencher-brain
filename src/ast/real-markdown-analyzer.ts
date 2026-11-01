@@ -11,8 +11,8 @@
  * classification: check which grammar produces a type (engine's companionWasm, not the spec)
  * before touching the row.
  * Relationship types covered: contains, uses, imports, references (links and inline constructs).
- * Where its scripts/validations live: docs/analyzers/markdown.md and
- * docs/analyzers/real-markdown-analyzer.md, script/m14/spec/markdown-completeness.json,
+ * Where its scripts/validations live: docs/analyzers/history/markdown-lane-notes.md and
+ * docs/analyzers/markdown.md, script/m14/spec/markdown-completeness.json,
  * validation/m14/fixtures/markdown/**, and the LANG_CONFIG row in
  * script/m14/completeness-inventory.ts (which MUST keep companionWasm listed).
  * EDIT THESE TOO when this file changes: the spec, the fixtures, BOTH docs above, and the

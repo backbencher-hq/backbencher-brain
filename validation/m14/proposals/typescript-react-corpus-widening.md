@@ -77,7 +77,7 @@ If the Lead prefers not to widen, the honest alternative is to **record the boun
 "React coverage = 3,377 tracked .tsx, measured by a separate tsx gate; the headline lane number is
 .ts-only." I have already written that boundary into
 `validation/m14/verification/TYPESCRIPT-STATE.md` §6 and
-`docs/analyzers/real-typescript-analyzer.md`.
+`docs/analyzers/typescript.md`.
 
 ## 4 · What this proposal does NOT claim
 

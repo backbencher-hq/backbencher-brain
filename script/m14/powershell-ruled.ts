@@ -17,7 +17,7 @@
  * admitted set — no sampling cut — admitted byte-identically to the arbiter: git work tree,
  * `git ls-files`, <=512 KiB, `detectLanguageFromPath(abs, text) === "powershell"`. The
  * committed artifact is `validation/m14/measurements/powershell-census-*.json` and its ten
- * edge counts are restated in `docs/analyzers/real-powershell-analyzer.md` under "The ten
+ * edge counts are restated in `docs/analyzers/powershell.md` under "The ten
  * ontology types", where the population each count is about is named beside it.
  *
  * Two of the ten are narrow enough that a small sample says they do not fire at all, and both

@@ -4,7 +4,7 @@
 //   "HTML Intelligence Engine" M60.LCM rewrite: single-pass, regex-free).
 // RELATIONSHIP SURFACE: contains, references (the IDREF class is html's own), calls, uses,
 //   imports, exports, instantiates, extends, overrides — `exports` is NOT html's own (see below).
-// DOCS: docs/analyzers/html.md and docs/analyzers/real-html-analyzer.md.
+// DOCS: docs/analyzers/history/html-lane-notes.md and docs/analyzers/html.md.
 // SPEC + FIXTURES: script/m14/spec/html-completeness.json · validation/m14/fixtures/html/.
 // CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
 //   handled/silent/gap/design_decision buckets AND its coverage block; every affected

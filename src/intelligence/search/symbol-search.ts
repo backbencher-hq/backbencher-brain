@@ -1,3 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — symbol-name retrieval for bb_search `mode=symbols`: SQL
+//   phases (exact, prefix, substring) with Unicode-aware case folding, language
+//   and symbolKind filters, noise exclusion, deterministic ranking and freshness.
+// WHICH TOOL IT SERVES — bb_search (mutability read, requiresIndex true,
+//   modes: symbols, content, symbol, file — this engine owns `symbols` and routes
+//   `content`/`regex` to their own engines).
+// WHY IT IS SHAPED THIS WAY — a search must never silently under-answer: page
+//   size and offset are normalised once, LIKE metacharacters are escaped so a
+//   query stays a query, candidate caps scale with the page and reaching one is
+//   reported (`truncated` + `truncationReason`), and the same toLowerCase() fold
+//   decides eligibility and rank so "case-insensitive" cannot mean two things.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_search.md, docs/BB_SEARCH.md,
+//   validation/tools/bb_search/**; gates: script/verify-search-modes.ts,
+//   script/m13/verify-search-e2e.ts, script/m13/verify-search-honesty.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/search/regex-search.ts,
+//   src/intelligence/search/content-search.ts, src/mcp/tools/bb_search/handler.ts,
+//   validation/tools/bb_search/work/engine-probe.ts.
+// CONTRACTS IT MUST NOT BREAK — declared bounds (`totalMatches`, `truncated`,
+//   `truncationReason`), per-row `stale` flags, the LIKE-escape rule, and the
+//   no-regex-for-parsing rule (search reads indexed AST facts only).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { checkResultsFreshness } from "../../brain/freshness"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
@@ -328,8 +353,8 @@ async function runPhase(
     return { rows, truncated: rows.length >= ctx.fetchCap }
   }
   // Substring predicates cannot use the name index, so the id set is fetched
-  // first and only those ids are joined — M19.Q1 measured the join-inside-the-
-  // scan form at ~1.3s per query on 1M symbols. The clause is un-aliased here
+  // first and only those ids are joined — the join-inside-the-scan form measured
+  // ~1.3s per query on 1M symbols. The clause is un-aliased here
   // because this query has no `s` alias: keeping the alias produced a raw
   // `no such column: s.name` out of every substring and prefix search.
   //
@@ -362,11 +387,6 @@ async function runPhase(
     rows.push(...page)
   }
   return { rows, truncated: idRows.length >= ctx.idCap }
-}
-
-/** Strip the `s.` alias so a clause written for the joined form fits the id query. */
-function unaliased(clause: string): string {
-  return clause.replace(/\bs\./g, "")
 }
 
 const SELECT_COLUMNS = `SELECT s.id, s.file_id AS fileId, s.name, s.symbol_type AS symbolType,

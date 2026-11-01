@@ -175,7 +175,7 @@ for (const [k, b, a] of rows) {
 
 const relDelta = ((after.relationships - bef.relationships) / bef.relationships) * 100
 console.log(`\nfiles: ${files.length}   failures: 0 (a file that fails to parse is skipped and counted in neither arm's denominators above)`)
-console.log(`\nDECLARED BUDGET (docs/analyzers/real-java-analyzer.md): corpus subset (400 files) < 15 s wall, symbols/s >= 1,000, relationships/s >= 4,000.`)
+console.log(`\nDECLARED BUDGET (docs/analyzers/java.md): corpus subset (400 files) < 15 s wall, symbols/s >= 1,000, relationships/s >= 4,000.`)
 console.log(`On THIS box, measured:`)
 const rs = after.relationships / (after.cpuMs / 1000)
 const ss = after.symbols / (after.cpuMs / 1000)

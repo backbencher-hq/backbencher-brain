@@ -4,36 +4,31 @@ GENERATED FILE — do not hand-edit. Regenerate with `bun run script/m14/verify-
 
 ## What is measured
 
-For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/real-<lang>-analyzer.md`: the analyzer's emitted surface over BOTH channels — the `ASTEngine.RelationshipType.*` references in code, and the import-site channel (`ImportInfo[]` returned as `imports`) — against the "Emitted?" cells of the doc's relationship-ontology table. Comments and string literals are stripped first, so only code is accused.
+For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/<lang>.md`: the analyzer's emitted surface over BOTH channels — the `ASTEngine.RelationshipType.*` references in code, and the import-site channel (`ImportInfo[]` returned as `imports`) — against the "Emitted?" cells of the doc's relationship-ontology table. Comments and string literals are stripped first, so only code is accused.
 
 | Measure | Count | Fails the gate |
 | --- | --- | --- |
-| analyzers examined | 48 | — |
-| analyzers with a canonical doc | 47 | — |
-| FALSE_NEGATIVE — doc says "not emitted", analyzer emits it | 2 | **yes** |
-| FALSE_POSITIVE — doc says "emitted", nothing emits it | 1 | **yes** |
+| analyzers examined | 50 | — |
+| analyzers with a canonical doc | 50 | — |
+| FALSE_NEGATIVE — doc says "not emitted", analyzer emits it | 0 | **yes** |
+| FALSE_POSITIVE — doc says "emitted", nothing emits it | 0 | **yes** |
 | UNDOCUMENTED — live channel, no checkable claim | 10 | no (measured here) |
-| MISSING_DOC — no canonical doc | 1 | no (owned by verify-analyzer-docs.ts) |
-| NO_CLAIM_TABLE — no ontology table to compare | 18 | no |
+| MISSING_DOC — no canonical doc | 0 | no (owned by verify-analyzer-docs.ts) |
+| NO_CLAIM_TABLE — no ontology table to compare | 21 | no |
 | NON_ENGINE_KIND — row is not a RelationshipType alias | 20 | no |
 | MIXED_ROW — engine and non-kind names share one cell | 1 | no |
 | COMPOUND_ROW — verdict from a multi-name row | 0 | no |
 
-The import-site: ImportInfo[] channel is live in **47 of 48** analyzers.
-The export-site: ExportInfo[] channel is live in **41 of 48** analyzers.
+The import-site: ImportInfo[] channel is live in **48 of 50** analyzers.
+The export-site: ExportInfo[] channel is live in **41 of 50** analyzers.
 
 ## FALSE_NEGATIVE — the lies that block
 
-| Analyzer | Doc row | Source | Doc line | Claim cell |
-| --- | --- | --- | --- | --- |
-| css | `calls (relationship)` | `src/ast/real-css-analyzer.ts` | 779 | no — RULED |
-| protobuf | `references (relationship)` | `src/ast/real-protobuf-analyzer.ts` | 362 | no |
+None. Every "not emitted" cell in every table agrees with the analyzer source.
 
 ## FALSE_POSITIVE — claims of a channel that is empty
 
-| Analyzer | Doc row | Source | Doc line | Claim cell |
-| --- | --- | --- | --- | --- |
-| protobuf | `uses (relationship)` | `src/ast/real-protobuf-analyzer.ts` | 364 | yes |
+None.
 
 ## UNDOCUMENTED — a live channel the table never claims anything about
 
@@ -54,13 +49,11 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 
 ## MISSING_DOC
 
-| Analyzer | Doc |
-| --- | --- |
-| real-makefile-analyzer.ts | no `docs/analyzers/real-makefile-analyzer.md` |
+None.
 
 ## Docs with no ontology claim table (nothing was comparable)
 
-`cpp`, `graphql`, `hcl`, `html`, `json`, `markdown`, `perl`, `php`, `r`, `ruby`, `scss`, `solidity`, `sql`, `svelte`, `toml`, `vb`, `vue`, `yaml`
+`cpp`, `graphql`, `hcl`, `html`, `json`, `makefile`, `markdown`, `matlab`, `perl`, `php`, `r`, `ruby`, `scss`, `solidity`, `sql`, `svelte`, `toml`, `vb`, `vba`, `vue`, `yaml`
 
 ## Docs with more than one ontology-shaped table (only the first is compared)
 
@@ -98,7 +91,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | --- | --- | --- | --- |
 | bash | `calls contains exports overrides references uses imports` | import-site: ImportInfo[] | line 142, 10 rows |
 | c | `calls contains exports instantiates overrides references uses imports` | import-site: ImportInfo[] | line 467, 6 rows |
-| clean | `calls contains exports implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 526, 10 rows |
+| clean | `calls contains exports implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 639, 10 rows |
 | clojure | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 96, 11 rows |
 | cpp | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | csharp | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 51, 12 rows |
@@ -111,7 +104,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | graphql | `contains exports extends implements overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | groovy | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 134, 10 rows |
 | haskell | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 12 rows |
-| hcl | `calls contains exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| hcl | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | html | `contains extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | java | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 12 rows |
 | javascript | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 12 rows |
@@ -121,8 +114,9 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | lua | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 100, 10 rows |
 | makefile | `calls contains exports overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | markdown | `contains references uses imports` | import-site: ImportInfo[] | absent |
+| matlab | `calls contains exports extends implements instantiates overrides references uses imports` | — | absent |
 | nim | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 694, 11 rows |
-| objective-c | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 91, 10 rows |
+| objective-c | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 91, 11 rows |
 | perl | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | php | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | powershell | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 225, 12 rows |
@@ -140,6 +134,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | toml | `contains exports references imports` | — | absent |
 | typescript | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 81, 15 rows |
 | vb | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[] | absent |
+| vba | `calls contains exports implements instantiates references uses imports` | import-site: ImportInfo[] | absent |
 | vue | `contains exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | xml | `calls contains extends overrides references uses imports` | import-site: ImportInfo[] | line 381, 11 rows |
 | yaml | `calls contains exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |

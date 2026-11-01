@@ -34,8 +34,8 @@ import { join } from "node:path"
 import { execFileSync } from "node:child_process"
 
 const ANALYZER = "src/ast/real-vb-analyzer.ts"
-const DOC = "docs/vb.md"
-const ANALYZER_DOC = "docs/analyzers/real-vb-analyzer.md"
+const DOC = "docs/analyzers/history/vb-lane-notes.md"
+const ANALYZER_DOC = "docs/analyzers/vb.md"
 const REVIEW = "reviews/vb/master-review.md"
 const PIN = "validation/m14/grammar-pins.json"
 const PROBE = "$HOME/fixtures/probes/vb-linecheck.ts"
@@ -189,12 +189,12 @@ for (const [n, name, script] of [
 {
   const rels = /relationships \| \*\*([\d,]+)\*\*/.exec(doc)?.[1] ?? "?"
   const facts = [
-    ["docs/vb.md", existsSync(DOC) && /node-type census/.test(doc)],
-    ["docs/analyzers/real-vb-analyzer.md", existsSync(ANALYZER_DOC) && /M14\.0\.F8/.test(readFileSync(ANALYZER_DOC, "utf8"))],
+    ["docs/analyzers/history/vb-lane-notes.md", existsSync(DOC) && /node-type census/.test(doc)],
+    ["docs/analyzers/vb.md", existsSync(ANALYZER_DOC) && /M14\.0\.F8/.test(readFileSync(ANALYZER_DOC, "utf8"))],
     ["reviews/vb/master-review.md", existsSync(REVIEW)],
   ].filter(([, ok]) => !ok).map(([n]) => `missing: ${n}`)
   add(13, "documentation present and current", facts.length === 0,
-    facts.length ? facts.join("; ") : `all three present; docs/vb.md quotes ${rels} relationships`)
+    facts.length ? facts.join("; ") : `all three present; docs/analyzers/history/vb-lane-notes.md quotes ${rels} relationships`)
 }
 
 // 14 — the grammar pin

@@ -81,7 +81,7 @@ Identical to M31's proven contract (including its post-closure audit lessons):
 
 ## Post-merge role
 
-`script/m35/staleness-corpus.ts --check` is a designated acceptance probe in `MERGE_NOTES.md` merge-day procedure: after laptops merge, the corpus proves staleness behavior survived the merge, per tool, per language family. Until C1 delivers it, the two live M35 gates (governance + mutation self-test) already run inside `npm run verify` and are part of the merge-day procedure.
+`script/m35/staleness-corpus.ts --check` is a designated acceptance probe in `archive/docs-pre-consolidation/MERGE_NOTES.md` merge-day procedure: after laptops merge, the corpus proves staleness behavior survived the merge, per tool, per language family. Until C1 delivers it, the two live M35 gates (governance + mutation self-test) already run inside `npm run verify` and are part of the merge-day procedure.
 
 ## Delivery log
 

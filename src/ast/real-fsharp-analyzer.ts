@@ -9,8 +9,8 @@
 // imports 11, overrides 10, implements 8, extends 7, instantiates 1. CORRECTION RECORDED, NOT APPENDED: this
 // header said "NO uses (C# family emits none)" and listed SEVEN kinds until the exports/uses wave — true when
 // the lane mirrored the C# family, false from the moment the wave landed; the counts above are re-measured.
-// Where docs, spec, fixtures and validations live: docs/analyzers/real-fsharp-analyzer.md and
-// docs/analyzers/fsharp.md (surface table) · script/m14/spec/fsharp-completeness.json ·
+// Where docs, spec, fixtures and validations live: docs/analyzers/fsharp.md and
+// docs/analyzers/history/fsharp-lane-notes.md (surface table) · script/m14/spec/fsharp-completeness.json ·
 // validation/m14/fixtures/fsharp/** · `bun run script/m14/run-fixtures.ts --lang fsharp`.
 // CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · both
 // docs · script/m14/differential.ts (`deriveFsharpEdges` — the TRUTH side; an emission the oracle does not
@@ -3386,7 +3386,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // child and nothing else", which is about the tree rather than about a string.
     //
     // This was the last of the six regex literals the M12 census found in this file. All six
-    // are gone, and `docs/analyzers/real-fsharp-analyzer.md` had claimed the count was 0.
+    // are gone, and `docs/analyzers/fsharp.md` had claimed the count was 0.
     if (pat) {
       const names = this.filterChildren(pat, (n) => n.type === "long_identifier" || n.type === "long_identifier_or_op")
       const isBareName =

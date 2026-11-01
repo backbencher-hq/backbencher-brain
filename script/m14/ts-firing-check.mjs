@@ -16,7 +16,7 @@
 //
 // WHAT IS REPRODUCED VERBATIM, because each of these is a correction that was
 // measured and reverting any of them would make the number mean something else
-// (docs/analyzers/REVIEW-2026-10-04.md):
+// (archive/docs-pre-consolidation/analyzers-REVIEW-2026-10-04.md):
 //   * the production path: getParser -> parse -> analyze;
 //   * the code-bearing SIGNAL filter per extension (blind walk-order sampling is
 //     what scored Ruby 1/10 at NFILES=25 and 8/10 at NFILES=200 on one corpus);

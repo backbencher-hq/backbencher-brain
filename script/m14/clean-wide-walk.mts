@@ -5,7 +5,7 @@
  * `src/ast/engine.ts:1441` arms a 120 s `setTimeout` per parse and calls
  * `process.exit(1)` when it fires, so ONE file that runs long under CPU contention
  * deletes every other file's work in the same process. Two attempts at the 2,181-file
- * walk both aborted, which is why `docs/analyzers/real-clean-analyzer.md` marks the
+ * walk both aborted, which is why `docs/analyzers/clean.md` marks the
  * WIDE `references` cell unquotable. That is an instrument limit, not a corpus fact,
  * and it is removable without touching `engine.ts` (§8, supervisor-owned).
  *

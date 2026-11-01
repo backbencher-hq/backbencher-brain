@@ -4,7 +4,7 @@
 //   and relationships only, never a regex over source text (M12 per-analyzer contract).
 // RELATIONSHIP SURFACE: all ten the ontology declares — contains, calls, uses, references,
 //   imports, exports, extends, implements, overrides, instantiates.
-// DOCS: docs/analyzers/groovy.md and docs/analyzers/real-groovy-analyzer.md.
+// DOCS: docs/analyzers/history/groovy-lane-notes.md and docs/analyzers/groovy.md.
 // SPEC + FIXTURES: script/m14/spec/groovy-completeness.json (plus groovy-spec-table.json) ·
 //   validation/m14/fixtures/groovy/.
 // CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's

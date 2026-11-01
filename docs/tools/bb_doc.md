@@ -7,7 +7,7 @@ EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_doc/descriptor.ts, src/mcp/
 -->
 # `bb_doc`
 
-Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Every mode emits its declared section set, an empty result is never reported as passing, and the token budget is enforced against the whole payload. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When the cited files are stale, the handler auto-refreshes exactly those files within budget and regenerates the document; refresh=false opts out and answers from existing data with the freshness block.
+Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Every mode emits its declared section set, an empty result is never reported as passing, and the output budget is enforced on the payload the caller receives: `quality.budget.estimatedTokens` is measured on the decorated answer, and `estimatedTokens * 4` is never smaller than what was sent. When the required sections cannot fit, the result says so rather than dropping one. `quality.references` counts the citations the answer EMITS (plus the `collected*` totals of everything gathered), so the stale/missing numbers match the Sources list. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When the cited files are stale, the handler auto-refreshes exactly those files within the shared budget and regenerates the document; refresh=false opts out and answers from existing data with the freshness block. A module target that matches no indexed file is refused by name rather than answered with project-wide facts, and `limit`/`maxTokens` outside their ranges are refused rather than clamped.
 
 ## Contract
 
@@ -39,7 +39,7 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
     },
     "target": {
       "type": "string",
-      "description": "symbol, file, module, feature, or API target (`symbol`/`symbolName`/`query` are accepted as aliases); optional for project and coverage"
+      "description": "symbol, file, module, feature, or API target (`symbol`/`symbolName`/`query` are accepted as aliases); optional for project and coverage. `symbol` matches an indexed name, qualified name or its last dotted/`::` segment. `file` accepts an exact repository-relative path, an absolute path, a directory prefix, or a bare file name with or without its extension. `module` needs a repository-relative directory the index holds; a target that matches nothing is REFUSED with the forms tried. `project` accepts a target but uses it as document metadata only — it does not scope the selection."
     },
     "format": {
       "type": "string",
@@ -57,7 +57,7 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
         "user",
         "website"
       ],
-      "description": "documentation audience"
+      "description": "documentation audience: selects OPTIONAL sections only; a required section is never dropped for a smaller audience"
     },
     "detail": {
       "type": "string",
@@ -66,31 +66,35 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
         "standard",
         "deep"
       ],
-      "description": "detail level"
+      "description": "detail level: `brief` caps each section at 5 facts and drops optional sections, `standard` caps at `limit`, `deep` caps at 3x`limit` and adds the optional all-edges section; for `feature` it also enables semantic candidate expansion, which is much slower"
     },
     "includeExamples": {
       "type": "boolean",
-      "description": "include only source-backed examples"
+      "description": "include source-backed examples. No example is emitted when no cited snippet or verified contract supplies one; an honest not-observed unknown is recorded instead"
     },
     "includeDiagrams": {
       "type": "boolean",
-      "description": "include cited diagrams when available"
+      "description": "include cited diagrams when available. This implementation does not emit diagrams; `reference.diagrams` stays empty and an honest not-observed unknown is recorded"
     },
     "includeTests": {
       "type": "boolean",
-      "description": "include indexed test evidence"
+      "description": "include indexed test evidence. Accepted for `symbol` and `feature` modes only (their documents render a test section); the other modes REFUSE it because it would do nothing. Absent means the mode default (on); explicit false suppresses the test facts"
     },
     "limit": {
       "type": "number",
-      "description": "maximum evidence items"
+      "minimum": 1,
+      "maximum": 100,
+      "description": "maximum evidence items per section (whole number 1-100, default 20). Out-of-range values are REFUSED, not clamped, so the page returned is the page requested"
     },
     "maxTokens": {
       "type": "number",
-      "description": "output token budget"
+      "minimum": 1,
+      "maximum": 16000,
+      "description": "output token budget measured on the emitted payload (whole number 1-16000, default 4000). `estimatedTokens` reports that measurement; when the required sections cannot fit, `budget.passed` is false and a shortfall unknown names the smallest honest rendering. Out-of-range values are REFUSED"
     },
     "refresh": {
       "type": "boolean",
-      "description": "false opts out of the inline auto-refresh of the files this document cites (default: auto-refresh those files within budget, then regenerate)"
+      "description": "false opts out of the inline auto-refresh of the files this document cites (default: auto-refresh those files within the shared budget, then regenerate); the decision is always declared in `autoRefresh` or the answer text"
     }
   },
   "required": [
@@ -101,44 +105,56 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
 
 ## Returns
 
-- Markdown or structured JSON documentation
-- Resolvable citations and evidence classifications
-- Quality and website reference metadata
+- Markdown or structured JSON documentation: title, summary, the mode's declared sections, citation objects with stable IDs and per-citation freshness, and declared unknowns
+- `quality`: the four-term verdict, emitted-citation reference counts (`broken`/`stale`/`missing` plus the `collectedStale`/`collectedMissing` totals of everything gathered), completeness against the declared section set, the index snapshot, and the payload-measured budget
+- `quality.bounds`: per-section numbers — `available`, `capped`, `droppedForBudget`, `emitted` — with `emitted + droppedForBudget === capped` enforced before the result is returned
+- A declared selection bound when a scope has more indexed symbols than the evidence limit selected, naming both numbers
+- `reference`: stable website keys (`projectId`, `snapshotId`, `generatedAt`, `indexVersion`, `schemaVersion`, `sourceLanguage`, `canonicalPath`, `slugs`, `tags`) and an empty `diagrams` array
+- An `autoRefresh` line whenever stale cited files were repaired or a repair was declined, with the reason
 
 ## Examples
 
 `{"mode":"symbol","target":"handleRequest"}`
 
-`{"mode":"feature","target":"request handling","format":"json"}`
+`{"mode":"feature","target":"request handling","format":"json","detail":"deep"}`
 
-`{"mode":"coverage","target":"src"}`
+`{"mode":"coverage","target":"src","audience":"maintainer"}`
 
 ## Errors
 
-- Missing target for target-based mode
-- Unsupported format or mode
+- Missing mode, or a mode outside symbol|file|module|feature|api|project|coverage
+- Missing target for `symbol`, `file`, `module` or `feature`
+- `limit` outside 1-100, or `maxTokens` outside 1-16000 — refused with the accepted range rather than clamped
+- `includeTests` on a mode that renders no test evidence (everything except `symbol` and `feature`)
+- A `module` target that matches no indexed file — refused by name, with the two directory forms it tried
+- An invalid `format`, `audience` or `detail` value (rejected by the registry validator with the accepted enum)
 - Unavailable indexed evidence
 
 ## Limitations
 
-- Unknown facts remain explicit rather than inferred without support
-- Stale evidence is qualified and cannot silently become current
+- Unknown facts are explicit, and a required section that renders empty says why in its own words; a document with no cited claim never reports `passed`
+- Stale evidence is qualified per citation and counted as `freshness.passed: false`; it cannot silently become current
+- `includeTests` is a real option only where a test section is rendered: `symbol` and `feature`. The other modes refuse it instead of accepting a no-op
+- `project` mode accepts a target but uses it as document metadata; it does not scope the selection
+- `feature` mode's semantic candidate expansion is opt-in via `detail: "deep"`; every other call is lexically discovered and says so, because semantic expansion measured 19-52 s on a 310k-symbol index
+- A scope with more indexed symbols than `2 x limit` reports the selection bound (`selected` of `available`) rather than implying it mapped the whole set
+- When the required sections cannot fit `maxTokens`, the result is returned with `budget.passed: false` and the smallest honest rendering named; it is never met by dropping a required section
 
 ## Performance
 
-Evidence count and maxTokens impose explicit response budgets.
+Measured warm on the reference index (6,452 files, 310,423 symbols, 820,040 relationships): default calls take symbol 0.42 s, file 0.32 s, project 1.4 s, module 1.0 s, api 1.6 s, coverage 0.17 s (p50; five runs). `feature` with `detail: "deep"` adds a semantic candidate pass and is the only shape that can approach the client timeout; the default feature call is lexical. Work is bounded by the request: the evidence limit bounds the facts, the per-section cap bounds each section, and `maxTokens` bounds the emitted payload.
 
 ## Safety
 
-Read-only. It never refreshes implicitly, writes source, or invokes bb_edit.
+Read-only with one bounded, declared exception: when the files a document cites are stale, the handler reindexes exactly those cited files (at most 25 files / 2 MiB per call) and regenerates. `refresh:false` or `BB_NO_AUTO_REFRESH=1` opts out and the answer declares the decline. It never writes source, never creates a file, never calls bb_edit, and never touches a file the document does not cite.
 
 ## Evidence Semantics
 
-Claims are classified as extracted, inferred, generated, or unknown and carry resolvable citations where applicable.
+Claims are classified as extracted, inferred, generated or unknown and carry resolvable citations; relationship facts name the symbol on the other end of the edge, with inbound edges naming the documented symbol. `quality.references` counts the citations the answer emits so the stale/missing numbers can be checked against the Sources list.
 
 ## Relationship to other tools
 
-For raw symbol metadata use `bb_search` mode `symbol`; this tool composes documented, cited explanations.
+For raw symbol metadata use `bb_search` mode `symbol`; this tool composes documented, cited explanations. For cross-language reference facts on one symbol use `bb_cross_language`; for graph traversal use `bb_graph`.
 
 ## Staleness
 

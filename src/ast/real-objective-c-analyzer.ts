@@ -11,7 +11,7 @@
  * with whole-population counts and falsifiers in the spec (`decorates`/`renders` ontological,
  * `mixes_in` informational); `part_of` is emitted from the `preproc_include` branch, because an
  * `#import`/`#include` is textual inclusion into THIS compilation unit, not a name import.
- * Where its scripts/validations live: docs/analyzers/real-objective-c-analyzer.md,
+ * Where its scripts/validations live: docs/analyzers/objective-c.md,
  * script/m14/spec/objc-completeness.json, validation/m14/fixtures/objc/**, and the LANG_CONFIG
  * row in script/m14/completeness-inventory.ts (id "objc").
  * EDIT THESE TOO when this file changes: src/ast/types.ts (the family binding separator), the

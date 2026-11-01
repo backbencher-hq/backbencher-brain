@@ -1,4 +1,4 @@
-# real-clean-analyzer.md
+# clean.md
 
 > **Status (M60 pass 6 — the four EXTENDED values).** `decorates`, `part_of`, `renders` and
 > `mixes_in` published zero rows and carried no ruling: they were absent from the table, which
@@ -963,7 +963,7 @@ probe is unavailable — which is exactly why the absence survived. It has **typ
 `instance Show Thing where show t = …` supplies it. At type `Thing` the compiler selects
 the instance's `show` in place of the class's. The project already records this
 equivalence for the language Clean descends from:
-`docs/analyzers/real-haskell-analyzer.md:57` states
+`docs/analyzers/haskell.md:57` states
 `` `instance C T where m ...` → `overrides T.m -> C.m` ``, and the F# lane reads the
 keyword (`real-fsharp-analyzer.ts:656-669`, `Dog.Speak -> Animal.Speak`).
 

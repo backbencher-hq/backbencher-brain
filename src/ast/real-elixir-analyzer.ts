@@ -9,7 +9,7 @@
 // its qualifier and is `reference_qualified`, while a bare `f(...)` is `usage_contextual`.
 // M14 section D: every relationship states metadata.evidenceClass — structural / import_based /
 // reference_qualified / usage_contextual (and `inferred` for a low-confidence fall-through).
-// Where docs, spec, fixtures and validations live: docs/analyzers/real-elixir-analyzer.md ·
+// Where docs, spec, fixtures and validations live: docs/analyzers/elixir.md ·
 // script/m14/spec/elixir-completeness.json · validation/m14/fixtures/elixir/** ·  `bun run script/m14/run-fixtures.ts --lang elixir`.
 // CO-EDIT WHEN THIS FILE CHANGES: the spec's node-type buckets · the fixtures pinning a changed edge · the docs
 // · script/m14/differential.ts (`deriveElixirEdges` — the TRUTH side; an emission the oracle does not derive
@@ -3047,7 +3047,7 @@ private recordInstantiates(structName: string, ctx: ElixirContext, currentScope:
             // `elx4-uses-mixin` records the pushRel DEFAULT (`usage_contextual`)
             // for the same construct, so the two pins disagree about this one
             // field and the disagreement is recorded rather than smoothed over —
-            // see §13 of docs/analyzers/real-elixir-analyzer.md.
+            // see §13 of docs/analyzers/elixir.md.
             if (target === "use" && dep.name !== currentScope?.name) {
               this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.MixesIn, 0.9,
                 { elixirSpecific: true, isMixin: true, via: "use", evidenceClass: "structural", reasonCode: "elixir_use_mixin_application" }, dep.line)

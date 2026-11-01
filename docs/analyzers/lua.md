@@ -1,4 +1,4 @@
-# real-lua-analyzer.md
+# lua.md
 
 M14 ontology workstream, lua. **Wave 3 — the INCOMING pass.** Waves 1 and 2
 established the ten verdicts and audited the outgoing edges. This pass measures the

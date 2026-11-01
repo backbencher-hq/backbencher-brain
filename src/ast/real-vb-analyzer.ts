@@ -13,7 +13,7 @@
  * script/m14/spec/vb-completeness.json), so the lane reads 11 implemented + 3 excluded = 11
  * applicable and passes all six conditions of script/m14/completion-gate.ts.
  *
- * WHERE THE RECORD LIVES: docs/analyzers/real-vb-analyzer.md; spec
+ * WHERE THE RECORD LIVES: docs/analyzers/vb.md; spec
  * script/m14/spec/vb-completeness.json; fixtures validation/m14/fixtures/vb; grammar side
  * grammars/tree-sitter-vbnet/PIN.md; lane review reviews/vb/master-review.md.
  *

@@ -35,12 +35,12 @@ import { generateDocumentation, formatDocumentation, type DocRequest } from "../
 import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../../../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../../intelligence/migration/migration-engine"
 import { graphTraversal } from "../../../intelligence/graph/graph-engine"
-// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
-// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
+// The agent door reuses the EXACT components the editor door uses — one
+// truth, two doors. No reimplementation.
+// bb_analyze's impact mode aggregates the SAME canonical calculator
 // (computeImpact + its declared budget) so the two doors cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../../../lsp/impact"
-// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
+// The ONE owner of the evidence-tier vocabulary and derivation.
 // The agent door CALLS it. It used to carry a drifted copy of the rule — see the
 // `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
 // defect a copy-projection is.
@@ -65,10 +65,11 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     const memberFile = typeof args.file === "string" && args.file.trim().length > 0 ? args.file : undefined
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     try {
-      // M63.T2: ONE list, handed to the component, which hands it to BOTH its
-      // walks. The engine's default is every stored kind, so a filter is a real
-      // choice rather than an accident of a default — and the answer states
-      // which rule it applied.
+      // ONE list, handed to the component, which hands it to BOTH its walks.
+      // The engine's default is every stored kind, so a filter is a real choice
+      // rather than an accident of a default — and the answer states which rule
+      // it applied. An empty list is refused by the component, never silently
+      // re-read as the default.
       // Freshness is resolved over the files the answer is actually ABOUT — the
       // dependents' files plus the root's own. An answer about a symbol
       // describes a set of files, and those are the files that can be stale.
@@ -112,7 +113,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       }
       const impact = pass.impact
       const detail = pass.detail
-      // M63.T1: the payload IS the component's result, plus the freshness of
+      // The payload IS the component's result, plus the freshness of
       // the files it is about. Four things were missing, and all four are
       // load-bearing for a refactoring decision:
       //
@@ -133,7 +134,7 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       //   identity `rootMatch` (requested / via / nameMatches) and the
       //            component's `resolution` ride the wire. The member→owner
       //            substitution that the editor panel renders has been
-      //            invisible to every agent since M44.U5, and a containment
+      //            invisible to every agent since the member resolution landed, and a containment
       //            match was invisible to everyone.
       //   stale    this surface reported NO freshness at all, on the one tool
       //            whose answer is acted on. "4 reverse dependencies" derived

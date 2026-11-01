@@ -1,12 +1,15 @@
-// script/m13/verify-health-refresh.ts — M13.32 (H4).
+// script/m13/verify-health-refresh.ts — (H4).
 //
 // Refresh/force must never report success on failure:
-//   1. an injected refresh failure (project DB directory deleted) surfaces as
-//      REFRESH_FAILED with completed=false — never as a passing report,
-//   2. force=true verifiably reindexes BEFORE reporting (a file created after
-//      the initial index is present in the force-refreshed report),
-//   3. wait=false returns the pre-refresh snapshot marked started (pending) —
-//      never presented as complete.
+//  1. an injected refresh failure surfaces as REFRESH_FAILED with
+//  completed=false — never as a passing report. The injection makes the DB
+//  path unopenable (a directory where the file must be), which fails
+//  deterministically; deleting the DB dir does NOT, because the writable
+//  open recreates it and the rebuild then legitimately succeeds,
+//  2. force=true verifiably reindexes BEFORE reporting (a file created after
+//  the initial index is present in the force-refreshed report),
+//  3. wait=false returns the pre-refresh snapshot marked started (pending) —
+//  never presented as complete.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -73,7 +76,14 @@ await indexProjectParallel(projectId, root, {})
   writeFileSync(path.join(failRoot, "src", "a.ts"), "export function alpha(): number { return 1 }\n")
   await indexProjectParallel(failProjectId, failRoot, {})
   const dbDir = path.dirname(BrainDatabase.getDbPath(failProjectId))
+  // A directory where brain.db must be: the writable open cannot create or open
+  // a database at that path, so this failure cannot silently heal itself. Drop
+  // the cached writable handle first — it points at the now-unlinked inode and
+  // would make writes "succeed" where the reopen must fail.
+  BrainDatabase.close(failProjectId)
   rmSync(dbDir, { recursive: true, force: true })
+  mkdirSync(path.dirname(BrainDatabase.getDbPath(failProjectId)), { recursive: true })
+  mkdirSync(BrainDatabase.getDbPath(failProjectId), { recursive: true })
   const report = await getUnifiedHealth(failProjectId, failRoot, { refresh: true, wait: true })
   const failed = report.warnings.find((w) => w.code === "REFRESH_FAILED")
   harness.negative("failure: injected refresh failure surfaces as REFRESH_FAILED", !!failed && failed.severity === "error", failed?.message?.slice(0, 120) ?? "no warning")
@@ -81,6 +91,7 @@ await indexProjectParallel(projectId, root, {})
   const out = formatUnifiedHealth(report)
   harness.negative("failure: formatted report never claims completed", !out.includes("refresh: completed"), out.slice(0, 140))
   harness.check("failure: formatted report labels the refresh failed", out.includes("refresh: failed"), out.slice(0, 140))
+  rmSync(path.dirname(BrainDatabase.getDbPath(failProjectId)), { recursive: true, force: true })
   rmSync(failRoot, { recursive: true, force: true })
 }
 

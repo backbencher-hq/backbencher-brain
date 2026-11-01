@@ -17,7 +17,7 @@
  * INTERFACE half stays `extends`. Targets follow the family LEAF
  * contract (Rust M12.18): a selector call publishes its leaf (`strings.ToUpper` -> `ToUpper`) with
  * the qualified spelling in metadata (`callExpression`/`qualifiedType`/`selectorExpression`).
- * WHERE ITS EVIDENCE LIVES. Doc `docs/analyzers/real-go-analyzer.md`; spec
+ * WHERE ITS EVIDENCE LIVES. Doc `docs/analyzers/go.md`; spec
  * `script/m14/spec/go-completeness.json`; fixtures `validation/m14/fixtures/go/**`; lane state
  * `validation/m14/verification/GO-STATE.md`; gate + arbiter `script/m14/incoming-gate.ts` and
  * `script/m14/incoming-rule.ts`.
@@ -723,7 +723,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the JVM-closure F3 invariant requires unique top-level names. Go DOES
     // export a capitalized package-level `var` (`http.ErrServerClosed`), so that
     // part of the surface is deliberately not carried here; the count is
-    // measured in docs/analyzers/real-go-analyzer.md rather than estimated.
+    // measured in docs/analyzers/go.md rather than estimated.
     //
     // PACKAGE SCOPE IS RE-READ FROM THE GRAMMAR, and that is a second predicate
     // by design, because it answers a DIFFERENT question from the one above. The
@@ -2564,7 +2564,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the exact shape `overrides` was omitted for in bash.
    *
    * MEASURED, not ruled — `script/m14/go-ontology-census.ts` probe B2/B3 on
-   * go-stdlib + cobra. See docs/analyzers/real-go-analyzer.md for the counts.
+   * go-stdlib + cobra. See docs/analyzers/go.md for the counts.
    *
    * ENDPOINT SPELLING follows the family: a method has no package-scope name of
    * its own, so both ends are `Receiver.Method` (perl, objc, python, kotlin,

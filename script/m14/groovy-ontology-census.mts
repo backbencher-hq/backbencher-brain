@@ -606,7 +606,7 @@ async function worker(): Promise<void> {
 
     // imports[] — the SEPARATE channel. Counted here because a type being
     // absent from the relationship tally while imports[] is non-zero is NOT a
-    // defect (docs/analyzers/REVIEW-2026-10-04.md §1).
+    // defect (archive/docs-pre-consolidation/analyzers-REVIEW-2026-10-04.md §1).
     const imps = r?.imports ?? []
     if (imps.length) out.importsChannel.files++
     out.importsChannel.entries += imps.length

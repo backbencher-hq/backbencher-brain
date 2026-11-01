@@ -98,7 +98,7 @@ export const ANALYZER_FILE_ALIAS: Record<string, string> = {
   // belongs in ONE exported table, which is why this one exists at all.
   //
   // Note this is the ANALYZER module name. The Make DOC is named for the language
-  // (`docs/analyzers/real-make-analyzer.md`) and is NOT aliased: the doc filename
+  // (`docs/analyzers/make.md`) and is NOT aliased: the doc filename
   // is the lane name, so a doc named after the module would invent a lane called
   // `makefile` in `grammar-lanes-source.ts`.
   make: "real-makefile-analyzer.ts",

@@ -270,7 +270,7 @@
   ],
   "artifacts": {
     "review": "reviews/make/master-review.md",
-    "docs": "docs/analyzers/real-makefile-analyzer.md",
+    "docs": "docs/analyzers/makefile.md",
     "spec": "script/m14/spec/make-completeness.json",
     "pin": "grammars/tree-sitter-make/PIN.md",
     "probes": "script/m14/tmp/make/ (tracked, re-runnable)",

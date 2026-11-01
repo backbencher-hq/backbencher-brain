@@ -11,7 +11,7 @@
 // .proto population, incoming gate): 2,923 claims verified, 997 of them against the project's own file
 // list, with ext? = 0 and extFAIL = 0 — every path-shaped target is verified, none unreachable.
 // Grammar: tree-sitter-proto, pinned as wasm/tree-sitter-protobuf.wasm.
-// Docs / spec / fixtures / validations: docs/analyzers/real-protobuf-analyzer.md ·
+// Docs / spec / fixtures / validations: docs/analyzers/protobuf.md ·
 // script/m14/spec/protobuf-completeness.json · validation/m14/fixtures/protobuf/** ·
 // validation/m14/verification/PROTOBUF-STATE.md.
 // CO-EDIT LIST — when this file changes, review in the SAME pass: the docs above, the spec's node-type

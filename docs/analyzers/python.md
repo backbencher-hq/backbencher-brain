@@ -1,4 +1,4 @@
-# real-python-analyzer.md
+# python.md
 
 ## Language
 
@@ -177,7 +177,7 @@ The four types added last (`uses`, `references`, `imports`, `exports`) agreed wi
 first full run — 66,621 edges that had been verified by nothing until then.
 
 The run started at 90 disagreements and ended at 1. Nine were real analyzer defects and are
-listed in `docs/analyzers/python.md`; the rest were oracle bugs, which is the ordinary order of
+listed in `docs/analyzers/history/python-lane-notes.md`; the rest were oracle bugs, which is the ordinary order of
 things — an oracle written alongside the code it checks inherits the same assumptions, and each
 one it got wrong produced a round of *false* rows pointing at code that was fine. Fixing those
 made the number fall, and every drop was checked against CPython rather than against the count.
@@ -240,7 +240,7 @@ comparison can see. That is the whole argument for having built the instrument: 
 | node-type classification, 0 unclassified | `script/m14/spec/python-completeness.json` |
 | independent truth + comparator | `script/m14/oracles/python-truth.ts`, `python-truth-diff.ts` |
 | the measurements and the defects | `reviews/python/master-review.md` |
-| lane contract | `docs/analyzers/python.md` |
+| lane contract | `docs/analyzers/history/python-lane-notes.md` |
 
 ## Relationship ontology — verdicts with numbers (branch `analyzer/PY_INSTRUMENTS`, 2026-10-05)
 

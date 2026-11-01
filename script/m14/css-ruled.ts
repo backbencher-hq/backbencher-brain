@@ -28,7 +28,7 @@
  * shape, and `validation/m14/fixtures/css/ruled-gate.ts` proved it by applying the two
  * lines to a COPY of the gate in /tmp and running that.
  *
- * `ROUND-BRIEF.md` item 3 then asked for the registration, and it is now in the gate:
+ * `archive/docs-pre-consolidation/ROUND-BRIEF.md` item 3 then asked for the registration, and it is now in the gate:
  *
  *   import { CSS_RULED } from "./css-ruled"
  *   const RULED_BY_LANG: Record<string, Ruled[]> = { …, css: CSS_RULED }

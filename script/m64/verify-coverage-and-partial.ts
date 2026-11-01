@@ -1,16 +1,16 @@
-// script/m64/verify-coverage-and-partial.ts — M64 round 2.
+// script/m64/verify-coverage-and-partial.ts — round 2.
 //
 // Three of the round-1 fixes were made to code whose own gate had no coverage
 // of the new claim, plus the two adversarial cases round 1 reasoned about and
 // never probed. Each check below names the failure it rules out.
 //
-//   1. Embedding coverage: the numerator was COUNT(*) of embedding ROWS
-//      reported as "N of M SYMBOLS", and the verdict was derived from a ratio
-//      whose ceiling was set by which analyzers emit a snippet.
-//   2. A half-built index: EMPTY_INDEX and the detached-refresh record both only
-//      see an index that reached ZERO files, or a failure in THIS process.
-//   3. Refresh concurrency: reasoned about in a comment, never probed.
-//   4. Selection cost at scale: a known unbounded cost change, never sized.
+//  1. Embedding coverage: the numerator was COUNT(*) of embedding ROWS
+//  reported as "N of M SYMBOLS", and the verdict was derived from a ratio
+//  whose ceiling was set by which analyzers emit a snippet.
+//  2. A half-built index: EMPTY_INDEX and the detached-refresh record both only
+//  see an index that reached ZERO files, or a failure in THIS process.
+//  3. Refresh concurrency: reasoned about in a comment, never probed.
+//  4. Selection cost at scale: a known unbounded cost change, never sized.
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -235,7 +235,7 @@ const drop = (root: string, pid: string) => {
   // a full sort truncated to k, for every size and every k.
   //
   // The contract is about the SET, not the order: the reference is in hash
-  // order (that is what it is modelling) and the shipped function deliberately
+  // order (that is what it is modelling) and the published function deliberately
   // returns path order so the rendered report is stable. An earlier version of
   // this check compared the two sequences and reported 22 "mismatches" that
   // were all the same k files in a different order.
@@ -332,7 +332,7 @@ const drop = (root: string, pid: string) => {
     harness.check("and it is still not an error result", !warnOnly.isError, "")
     harness.check("and the warning is still visible in the text", /^warning: \[SYNTAX_ERRORS\]/m.test(text(warnOnly)), text(warnOnly).split("\n").find((l) => l.startsWith("warning:"))?.slice(0, 80) ?? "absent")
 
-    // M64.P3: `history: true` answers in raw JSON and is the mode a consumer is
+    // `history: true` answers in raw JSON and is the mode a consumer is
     // MOST likely to branch on — so it is the one that must not be the one
     // missing the machine-readable field. Round 2 added `healthy` and left it
     // off this branch.

@@ -69,7 +69,7 @@ function chainLanded(a: string, b: string): boolean {
 
 
 const ANALYZER = "src/ast/real-haskell-analyzer.ts"
-const ANALYZER_DOC = "docs/analyzers/real-haskell-analyzer.md"
+const ANALYZER_DOC = "docs/analyzers/haskell.md"
 const REVIEW = "reviews/haskell/master-review.md"
 const SPEC = "script/m14/spec/haskell-completeness.json"
 const PIN = "validation/m14/grammar-pins.json"

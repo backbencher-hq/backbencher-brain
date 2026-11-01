@@ -1,5 +1,5 @@
-# real-css-analyzer.md
-# real-css-analyzer.md
+# css.md
+# css.md
 
 ## PASS 13 — the residual pass 12 left open is 80% a SHARED-MACHINERY deletion and 20% a real
 ## identity collision, and the instrument that should have shown it collected the evidence and never printed it
@@ -776,7 +776,7 @@ analyzer wrote.
 | overrides | yes | 48 / 7 | 48 / 48 (100.0%) | `isKeyframesRedefinition` 4; `isCustomPropertyRedefinition` 44. Both audited by a second walker since this round — see "DERIVATION findings" |
 | extends | no — RULED | 0 | — | instrument A: 0 of 103 node types is a type declaration. instrument B: **0** `@extend` at-rules on the tree |
 | implements | no — RULED | 0 | — | instrument A: 0 of 103 node types is a supertype/implementation clause |
-| calls | no — RULED | 0 | — | instrument A: 0 function-definition node types. instrument B: **0** CSS-Functions-L1 `@function` declarations on the tree |
+| calls | yes — **landed 2026-11-01** | emitted for a user-defined CSS function declaration invoked in the same file | declaration → `@function` declaration | `@function --add(a,b){…}` declares it, `--add(1,2)` invokes it; the edge is emitted only when THIS file declares the target, so built-ins (`var`, `rgba`, `calc`, `url`) are reads at best and never call targets. The RULED-SOUND row below describes the pre-landing state. |
 | exports | yes — but only as an `ExportInfo[]` payload, never as a graph edge | 0 graph edges | — | the graph side is what instrument A/B ruled on and still measures **0**: 0 export node types, **0** `composes: … from …` and **0** `:export` blocks on the tree. The OTHER channel is live: every top-level symbol (`!s.scope`) is pushed onto `ctx.exports` as an `ExportInfo` (`name`, `kind`, `range`, `visibility`), which is what the import/export consumers read. This row read "no — RULED", so a reader could not tell a channel that is empty from one that is not |
 | instantiates | no — RULED | 0 | — | instrument A: 0 object-creation node types. instrument B as well, and this is the part that matters: **162,470** `var(--x)` calls in 392 files, every one a READ already emitted as `references` |
 
@@ -1004,7 +1004,7 @@ Three things moved, and only the first was asked for.
 `RULED_BY_LANG` in `script/m14/ontology-coverage-gate.ts` is a literal with no extension
 point and that file is §8-owned, so the five RULED verdicts had no arbiter checking them —
 which is the blind spot the gate's own header says it exists to close, reproduced inside
-the lane whose table it was. `ROUND-BRIEF.md` item 3 asked for the registration. It is
+the lane whose table it was. `archive/docs-pre-consolidation/ROUND-BRIEF.md` item 3 asked for the registration. It is
 two additive lines and nothing else in the shared file was touched:
 
 ```
@@ -2583,7 +2583,7 @@ that is out of memory and out of disk at the same time.
 **(a) APPLIED IN PASS 4 — `script/m14/ontology-coverage-gate.ts`, `RULED_BY_LANG`.**
 This item was open for a whole round and was the lane's critical path: the gate exited 2
 and reported nothing for css, so the five RULED verdicts had no arbiter checking them.
-`ROUND-BRIEF.md` item 3 authorised the change and it is now in the file — two additive
+`archive/docs-pre-consolidation/ROUND-BRIEF.md` item 3 authorised the change and it is now in the file — two additive
 lines, nothing else in the shared file touched. What follows is the record of what was
 applied and what it produced. `script/m14/css-ruled.ts` is the table, in the gate's own
 `Ruled` shape, with five entries (one per un-emitted type) and each `describe` carrying
@@ -3030,7 +3030,7 @@ grammar patches            2, both strictly additive (76 fixed, 0 regressed)
 
 `src/ast/language-detection.ts` maps `scss: "scss"`, `engine.ts` dispatches it to
 `RealScssAnalyzer`, and the fixture lane claims `.scss` separately. See
-`docs/analyzers/real-scss-analyzer.md`.
+`docs/analyzers/scss.md`.
 
 `.sass` and `.less` **still** route here. The corpus now holds **54 `.less` files and 3
 `.sass` files** (pass 3: 1,180 admitted files = 1,123 `.css` + 54 `.less` + 3 `.sass`),
@@ -3578,10 +3578,10 @@ those two from inside one file.
 
 **Marking: refused, on the fleet's own two precedents.** php documents that 2,478 of its 2,483
 unresolved targets have no dot at all and that even a perfectly marked php lane lands in
-`externalUnverified` and FAILS (`docs/analyzers/real-php-analyzer.md:3279-3296`); fsharp rules
+`externalUnverified` and FAILS (`docs/analyzers/php.md:3279-3296`); fsharp rules
 that its 18,028 bare targets stay unclaimed and cannot be claimed, because a bare name has no
 owner and marking one reads `externalUnverified`, which blocks a pass anyway
-(`docs/analyzers/real-fsharp-analyzer.md:2422-2426`). bash marks only the narrow subset its
+(`docs/analyzers/fsharp.md:2422-2426`). bash marks only the narrow subset its
 language PROVES cannot be a project declaration — a command word containing `/` cannot be a shell
 function name, ten edges, zero refuted, pinned in both directions
 (`docs/analyzers/bash.md:140-150`). CSS has no such per-file fact for a custom property: any

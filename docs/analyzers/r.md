@@ -1,4 +1,4 @@
-# real-r-analyzer.md
+# r.md
 
 ## Language and wiring
 
@@ -1754,7 +1754,7 @@ is a real cost and is recorded rather than explained away.
 
 ## Incoming resolution — causes A, B and C, adjudicated
 
-`ROUND-BRIEF.md` splits an unresolved/ambiguous target column into three causes and says to
+`archive/docs-pre-consolidation/ROUND-BRIEF.md` splits an unresolved/ambiguous target column into three causes and says to
 optimise resolution rather than counts. All three are adjudicated below for R, measured
 before any analyzer edit, so that an edit which does not pay can be declined with numbers
 instead of attempted on the strength of a remedy that reads well.

@@ -61,7 +61,7 @@ const scenarios: Scenario[] = [
     id: "prose-version-drift",
     why:
       "The owner's requirement by name: one version in the docs, another in the file that owns the lane. A doc edited to a version no record carries must be red, not merely inconsistent.",
-    file: "docs/analyzers/real-python-analyzer.md",
+    file: "docs/analyzers/python.md",
     mutate: (b) => Buffer.from(b.toString("utf8").replace("`tree-sitter-python` **0.25.0**", "`tree-sitter-python` **0.26.0**")),
     expectCheck: "C4",
     expectMessage: /C4 python: docs\/analyzers\/real-python-analyzer\.md says 0\.26\.0 but the survey says 0\.25\.0/,

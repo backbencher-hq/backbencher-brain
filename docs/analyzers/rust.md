@@ -1,4 +1,4 @@
-# real-rust-analyzer.md
+# rust.md
 
 ## Language
 

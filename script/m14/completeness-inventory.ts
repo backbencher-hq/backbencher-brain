@@ -32,8 +32,8 @@
  *   E. Corpus differential      — <lang> check in M14.0.F5.json at its floor
  *   F. Perf budget              — avgMsPerFile recorded in
  *      differential-baseline.json (F9 gate enforces it, this records it)
- *   G. Docs truthful            — docs/analyzers/<lang>.md +
- *      real-<lang>-analyzer.md exist
+ *   G. Docs truthful            — the canonical docs/analyzers/<lang>.md exists
+ *      (one file per analyzer; the old real-<lang>-analyzer.md name was retired 2026-11-01)
  *   H. Cross-language           — M14.CC1.json evidence exists, all checks pass
  *
  * CLI:
@@ -103,7 +103,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-bash.wasm",
     classification: "bash-completeness.json",
     fixturesDir: "validation/m14/fixtures/bash",
-    docs: ["docs/analyzers/real-bash-analyzer.md"],
+    docs: ["docs/analyzers/bash.md"],
     differentialCheck: "differential-bash",
     perfKey: "otp:bash",
     // The six types bash's semantics allow. `extends`/`implements`/`overrides`
@@ -126,7 +126,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-cpp.wasm",
     classification: "cpp-completeness.json",
     fixturesDir: "validation/m14/fixtures/cpp",
-    docs: ["docs/analyzers/real-cpp-analyzer.md"],
+    docs: ["docs/analyzers/cpp.md"],
     differentialCheck: "differential-cpp",
     perfKey: "fmt:cpp",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -146,7 +146,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-c.wasm",
     classification: "c-completeness.json",
     fixturesDir: "validation/m14/fixtures/c",
-    docs: ["docs/analyzers/real-c-analyzer.md"],
+    docs: ["docs/analyzers/c.md"],
     differentialCheck: "differential-c",
     perfKey: "jq:c",
     // C-D4 (Holy C wave, 2026-09-05, pinned @60/lang) recorded the residual its
@@ -182,7 +182,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-rust.wasm",
     classification: "rust-completeness.json",
     fixturesDir: "validation/m14/fixtures/rust",
-    docs: ["docs/analyzers/real-rust-analyzer.md"],
+    docs: ["docs/analyzers/rust.md"],
     differentialCheck: "differential-rust",
     perfKey: "ripgrep:rust",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -202,7 +202,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-go.wasm",
     classification: "go-completeness.json",
     fixturesDir: "validation/m14/fixtures/go",
-    docs: ["docs/analyzers/go.md", "docs/analyzers/real-go-analyzer.md"],
+    docs: ["docs/analyzers/history/go-lane-notes.md", "docs/analyzers/go.md"],
     differentialCheck: "differential-go",
     perfKey: "go-tools:go",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -222,7 +222,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-zig.wasm",
     classification: "zig-completeness.json",
     fixturesDir: "validation/m14/fixtures/zig",
-    docs: ["docs/analyzers/real-zig-analyzer.md"],
+    docs: ["docs/analyzers/zig.md"],
     differentialCheck: "differential-zig",
     perfKey: "zig:zig",
     // Zig emits these relationship kinds by design — no inheritance /
@@ -253,7 +253,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-c_sharp.wasm",
     classification: "csharp-completeness.json",
     fixturesDir: "validation/m14/fixtures/csharp",
-    docs: ["docs/analyzers/real-csharp-analyzer.md"],
+    docs: ["docs/analyzers/csharp.md"],
     differentialCheck: "differential-csharp",
     perfKey: "powershell:csharp",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -274,7 +274,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-dart.wasm",
     classification: "dart-completeness.json",
     fixturesDir: "validation/m14/fixtures/dart",
-    docs: ["docs/analyzers/real-dart-analyzer.md"],
+    docs: ["docs/analyzers/dart.md"],
     differentialCheck: "differential-dart",
     perfKey: "proxicall:dart",
     // `references` and `exports` are ADDED 2026-10-12, and the omission was a contract-row defect
@@ -314,7 +314,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-json.wasm",
     classification: "json-completeness.json",
     fixturesDir: "validation/m14/fixtures/json",
-    docs: ["docs/analyzers/json.md", "docs/analyzers/real-json-analyzer.md"],
+    docs: ["docs/analyzers/history/json-lane-notes.md", "docs/analyzers/json.md"],
     perfKey: "terraform:json",
     requiredKinds: ["calls", "contains", "exports", "extends", "implements", "imports", "overrides", "references", "uses"],
     payloads: {},
@@ -325,7 +325,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-sql.wasm",
     classification: "sql-completeness.json",
     fixturesDir: "validation/m14/fixtures/sql",
-    docs: ["docs/analyzers/sql.md", "docs/analyzers/real-sql-analyzer.md"],
+    docs: ["docs/analyzers/history/sql-lane-notes.md", "docs/analyzers/sql.md"],
     perfKey: "duckdb:sql",
     requiredKinds: ["contains", "uses", "references", "calls", "imports", "overrides", "instantiates"],
     payloads: {},
@@ -350,7 +350,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-lua.wasm",
     classification: "lua-completeness.json",
     fixturesDir: "validation/m14/fixtures/lua",
-    docs: ["docs/analyzers/real-lua-analyzer.md"],
+    docs: ["docs/analyzers/lua.md"],
     perfKey: "lua",
     requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "overrides", "instantiates"],
     payloads: {
@@ -363,7 +363,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-clojure.wasm",
     classification: "clojure-completeness.json",
     fixturesDir: "validation/m14/fixtures/clojure",
-    docs: ["docs/analyzers/real-clojure-analyzer.md"],
+    docs: ["docs/analyzers/clojure.md"],
     differentialCheck: "differential-clojure",
     perfKey: "clj-kondo:clojure",
     requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
@@ -385,7 +385,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-erlang.wasm",
     classification: "erlang-completeness.json",
     fixturesDir: "validation/m14/fixtures/erlang",
-    docs: ["docs/analyzers/real-erlang-analyzer.md"],
+    docs: ["docs/analyzers/erlang.md"],
     differentialCheck: "differential-erlang",
     perfKey: "rebar3:erlang",
     requiredKinds: ["calls", "contains", "exports", "implements", "imports", "instantiates", "references", "uses"],
@@ -403,7 +403,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-fsharp.wasm",
     classification: "fsharp-completeness.json",
     fixturesDir: "validation/m14/fixtures/fsharp",
-    docs: ["docs/analyzers/real-fsharp-analyzer.md"],
+    docs: ["docs/analyzers/fsharp.md"],
     differentialCheck: "differential-fsharp",
     perfKey: "fsharp:csharp",
     requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
@@ -424,7 +424,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-graphql.wasm",
     classification: "graphql-completeness.json",
     fixturesDir: "validation/m14/fixtures/graphql",
-    docs: ["docs/analyzers/real-graphql-analyzer.md"],
+    docs: ["docs/analyzers/graphql.md"],
     perfKey: "gql-graphql-platform:graphql",
     requiredKinds: ["contains", "references", "uses", "implements", "exports", "imports", "extends", "overrides"],
     payloads: {
@@ -445,7 +445,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-elixir.wasm",
     classification: "elixir-completeness.json",
     fixturesDir: "validation/m14/fixtures/elixir",
-    docs: ["docs/analyzers/real-elixir-analyzer.md"],
+    docs: ["docs/analyzers/elixir.md"],
     differentialCheck: "differential-elixir",
     perfKey: "elixir:elixir",
     requiredKinds: ["calls","contains","exports","implements","imports","instantiates","overrides","references","uses"],
@@ -467,7 +467,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-protobuf.wasm",
     classification: "protobuf-completeness.json",
     fixturesDir: "validation/m14/fixtures/protobuf",
-    docs: ["docs/analyzers/real-protobuf-analyzer.md"],
+    docs: ["docs/analyzers/protobuf.md"],
     perfKey: "pb-googleapis:protobuf",
     requiredKinds: ["contains", "exports", "imports", "overrides", "uses"],
     payloads: {
@@ -490,7 +490,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-clean.wasm",
     classification: "clean-completeness.json",
     fixturesDir: "validation/m14/fixtures/clean",
-    docs: ["docs/analyzers/clean.md", "docs/analyzers/real-clean-analyzer.md"],
+    docs: ["docs/analyzers/history/clean-lane-notes.md", "docs/analyzers/clean.md"],
     differentialCheck: "differential-clean",
     perfKey: "Clyde:clean",
     // `extends` IS ABSENT AND `implements` IS PRESENT, because that is what the lane publishes: the
@@ -514,7 +514,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-swift.wasm",
     classification: "swift-completeness.json",
     fixturesDir: "validation/m14/fixtures/swift",
-    docs: ["docs/analyzers/real-swift-analyzer.md"],
+    docs: ["docs/analyzers/swift.md"],
     differentialCheck: "differential-swift",
     perfKey: "swift-nio:swift",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -534,7 +534,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-ruby.wasm",
     classification: "ruby-completeness.json",
     fixturesDir: "validation/m14/fixtures/ruby",
-    docs: ["docs/analyzers/real-ruby-analyzer.md"],
+    docs: ["docs/analyzers/ruby.md"],
     differentialCheck: "differential-ruby",
     perfKey: "rake:ruby",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -560,7 +560,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-python.wasm",
     classification: "python-completeness.json",
     fixturesDir: "validation/m14/fixtures/python",
-    docs: ["docs/analyzers/real-python-analyzer.md"],
+    docs: ["docs/analyzers/python.md"],
     differentialCheck: "differential-python",
     perfKey: "cython:python",
     // PY-12. `overrides` and `exports` were MISSING from this list while the analyzer
@@ -592,7 +592,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-haskell.wasm",
     classification: "haskell-completeness.json",
     fixturesDir: "validation/m14/fixtures/haskell",
-    docs: ["docs/analyzers/real-haskell-analyzer.md"],
+    docs: ["docs/analyzers/haskell.md"],
     differentialCheck: "differential-haskell",
     perfKey: "cabal:haskell",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -611,7 +611,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-perl.wasm",
     classification: "perl-completeness.json",
     fixturesDir: "validation/m14/fixtures/perl",
-    docs: ["docs/analyzers/real-perl-analyzer.md"],
+    docs: ["docs/analyzers/perl.md"],
     differentialCheck: "differential-perl",
     // mojo IS the M12 pinned perl corpus (corpus-manifest perl.corpusTarget),
     // so the canonical sweep's perf row for this lane is mojo:perl. plack is
@@ -677,7 +677,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-xml.wasm",
     classification: "xml-completeness.json",
     fixturesDir: "validation/m14/fixtures/xml",
-    docs: ["docs/analyzers/real-xml-analyzer.md"],
+    docs: ["docs/analyzers/xml.md"],
     differentialCheck: "differential-xml",
     perfKey: "grails-core:xml",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -696,7 +696,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-nim.wasm",
     classification: "nim-completeness.json",
     fixturesDir: "validation/m14/fixtures/nim",
-    docs: ["docs/analyzers/real-nim-analyzer.md"],
+    docs: ["docs/analyzers/nim.md"],
     differentialCheck: "differential-nim",
     perfKey: "nim:nim",
     // Exactly the eight kinds the nim analyzer emits, and all eight are pinned
@@ -724,7 +724,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-php.wasm",
     classification: "php-completeness.json",
     fixturesDir: "validation/m14/fixtures/php",
-    docs: ["docs/analyzers/real-php-analyzer.md"],
+    docs: ["docs/analyzers/php.md"],
     differentialCheck: "differential-php",
     perfKey: "phpunit:php",
     // M60 php F2 (2026-09-30): `imports` was MISSING here, and the row is the thing
@@ -767,7 +767,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-objc.wasm",
     classification: "objc-completeness.json",
     fixturesDir: "validation/m14/fixtures/objc",
-    docs: ["docs/analyzers/real-objective-c-analyzer.md"],
+    docs: ["docs/analyzers/objective-c.md"],
     differentialCheck: "differential-objc",
     perfKey: "sdwebimage:objc",
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "exports", "imports", "overrides"],
@@ -781,7 +781,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-java.wasm",
     classification: "java-completeness.json",
     fixturesDir: "validation/m14/fixtures/java",
-    docs: ["docs/analyzers/java.md", "docs/analyzers/real-java-analyzer.md"],
+    docs: ["docs/analyzers/history/java-lane-notes.md", "docs/analyzers/java.md"],
     differentialCheck: "differential-java",
     perfKey: "grails-core:java",
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "permits"],
@@ -801,7 +801,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-groovy.wasm",
     classification: "groovy-completeness.json",
     fixturesDir: "validation/m14/fixtures/groovy",
-    docs: ["docs/analyzers/groovy.md", "docs/analyzers/real-groovy-analyzer.md"],
+    docs: ["docs/analyzers/history/groovy-lane-notes.md", "docs/analyzers/groovy.md"],
     differentialCheck: "differential-groovy",
     perfKey: "grails-core:groovy",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -825,7 +825,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-kotlin.wasm",
     classification: "kotlin-completeness.json",
     fixturesDir: "validation/m14/fixtures/kotlin",
-    docs: ["docs/analyzers/kotlin.md", "docs/analyzers/real-kotlin-analyzer.md"],
+    docs: ["docs/analyzers/history/kotlin-lane-notes.md", "docs/analyzers/kotlin.md"],
     differentialCheck: "differential-kotlin",
     perfKey: "Exposed:kotlin",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -850,7 +850,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-scala.wasm",
     classification: "scala-completeness.json",
     fixturesDir: "validation/m14/fixtures/scala",
-    docs: ["docs/analyzers/scala.md", "docs/analyzers/real-scala-analyzer.md"],
+    docs: ["docs/analyzers/history/scala-lane-notes.md", "docs/analyzers/scala.md"],
     differentialCheck: "differential-scala",
     perfKey: "scala3:scala",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -888,7 +888,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-typescript.wasm",
     classification: "typescript-completeness.json",
     fixturesDir: "validation/m14/fixtures/typescript",
-    docs: ["docs/analyzers/typescript.md", "docs/analyzers/real-typescript-analyzer.md"],
+    docs: ["docs/analyzers/history/typescript-lane-notes.md", "docs/analyzers/typescript.md"],
     differentialCheck: "differential-typescript",
     perfKey: "vue-core:typescript",
     requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates"],
@@ -908,7 +908,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-javascript.wasm",
     classification: "javascript-completeness.json",
     fixturesDir: "validation/m14/fixtures/javascript",
-    docs: ["docs/analyzers/javascript.md", "docs/analyzers/real-javascript-analyzer.md"],
+    docs: ["docs/analyzers/history/javascript-lane-notes.md", "docs/analyzers/javascript.md"],
     differentialCheck: "differential-javascript",
     perfKey: "lodash:javascript",
     // CANONICAL VOCABULARY 2026-10-18: the analyzer publishes `renders` (JSX component elements)
@@ -941,7 +941,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-vue.wasm",
     classification: "vue-completeness.json",
     fixturesDir: "validation/m14/fixtures/vue",
-    docs: ["docs/analyzers/vue.md", "docs/analyzers/real-vue-analyzer.md"],
+    docs: ["docs/analyzers/history/vue-lane-notes.md", "docs/analyzers/vue.md"],
     differentialCheck: "differential-vue",
     perfKey: "vue-core:vue",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -964,7 +964,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // complete (19/19 named node types classified in script/m14/spec/
   // html-completeness.json, with one OPEN GAP), B and D are carried by the eight
   // fixtures, and E/F/G/H are not yet satisfiable: the differential floors are
-  // measured but unpinned, `docs/analyzers/html.md` does not exist, and CC1 has no
+  // measured but unpinned, `docs/analyzers/history/html-lane-notes.md` does not exist, and CC1 has no
   // html block. Adding html to GATED_LANGS now would turn `npm run verify` red
   // for three gates that have not been built yet, which is a different statement
   // from "html is not ready" — the ladder exists precisely so the difference is
@@ -980,7 +980,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-html.wasm",
     classification: "html-completeness.json",
     fixturesDir: "validation/m14/fixtures/html",
-    docs: ["docs/analyzers/html.md", "docs/analyzers/real-html-analyzer.md"],
+    docs: ["docs/analyzers/history/html-lane-notes.md", "docs/analyzers/html.md"],
     differentialCheck: "differential-html",
     perfKey: "otp:html",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
@@ -1050,7 +1050,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-css.wasm",
     classification: "css-completeness.json",
     fixturesDir: "validation/m14/fixtures/css",
-    docs: ["docs/analyzers/real-css-analyzer.md"],
+    docs: ["docs/analyzers/css.md"],
     differentialCheck: "differential-css",
     perfKey: "svelte:css",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
@@ -1068,7 +1068,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-svelte.wasm",
     classification: "svelte-completeness.json",
     fixturesDir: "validation/m14/fixtures/svelte",
-    docs: ["docs/analyzers/svelte.md", "docs/analyzers/real-svelte-analyzer.md"],
+    docs: ["docs/analyzers/history/svelte-lane-notes.md", "docs/analyzers/svelte.md"],
     differentialCheck: "differential-svelte",
     perfKey: "svelte:svelte",
     // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check.
@@ -1104,7 +1104,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
       // lane names from doc filenames, so that second file fabricated a lane called
       // `makefile` beside the real `make` — and the two documents then drifted, with
       // the stale one carrying pre-rebuild numbers that no gate read.
-      docs: ["docs/analyzers/real-make-analyzer.md"],
+      docs: ["docs/analyzers/make.md"],
     differentialCheck: "differential-make",
     perfKey: "tf-aws-components:make",
     requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls"],
@@ -1122,7 +1122,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // returns nothing while the lane's spec, fixtures and 8/8 result all shipped.
   // The values are reconstructed from that lane's own committed artifacts
   // (script/m14/spec/hcl-completeness.json, validation/m14/fixtures/hcl/,
-  // docs/analyzers/real-hcl-analyzer.md, and the `terraform:hcl` /
+  // docs/analyzers/hcl.md, and the `terraform:hcl` /
   // `tf-aws-components:hcl` rows this file's section E reads), and the hcl lane
   // should confirm them.
   julia: {
@@ -1130,7 +1130,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-julia.wasm",
     classification: "julia-completeness.json",
     fixturesDir: "validation/m14/fixtures/julia",
-    docs: ["docs/analyzers/real-julia-analyzer.md"],
+    docs: ["docs/analyzers/julia.md"],
     differentialCheck: "differential-julia",
     perfKey: "julia:julia",
     // The six kinds the analyzer actually emits, measured: calls 85,174 · references 34,898 ·
@@ -1164,7 +1164,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-hcl.wasm",
     classification: "hcl-completeness.json",
     fixturesDir: "validation/m14/fixtures/hcl",
-    docs: ["docs/analyzers/real-hcl-analyzer.md"],
+    docs: ["docs/analyzers/hcl.md"],
     differentialCheck: "differential-hcl",
     // THE ROW EXISTS UNDER THE REPO THAT MEASURED IT. The oracle run produced `tf-aws-components:hcl`
     // `{missing: 0, unexplained: 0, perf.avgMsPerFile: 5}` -- and `terraform:hcl` names a row no artifact
@@ -1194,7 +1194,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   companionWasm: ["tree-sitter-markdown_inline.wasm"],
   classification: "markdown-completeness.json",
   fixturesDir: "validation/m14/fixtures/markdown",
-  docs: ["docs/analyzers/markdown.md", "docs/analyzers/real-markdown-analyzer.md"],
+  docs: ["docs/analyzers/history/markdown-lane-notes.md", "docs/analyzers/markdown.md"],
   differentialCheck: "differential-markdown",
   perfKey: "scala3:markdown",
   // THE ROW NOW NAMES WHAT THE ANALYZER PUBLISHES, closing section B's reverse check,
@@ -1222,7 +1222,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   wasm: "tree-sitter-powershell.wasm",
   classification: "powershell-completeness.json",
   fixturesDir: "validation/m14/fixtures/powershell",
-  docs: ["docs/analyzers/real-powershell-analyzer.md"],
+  docs: ["docs/analyzers/powershell.md"],
   differentialCheck: "differential-powershell",
   perfKey: "powershell:powershell",
   // The ten the universal ontology declares. All ten are implemented and gated;
@@ -1265,7 +1265,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   wasm: "tree-sitter-solidity.wasm",
   classification: "solidity-completeness.json",
   fixturesDir: "validation/m14/fixtures/solidity",
-  docs: ["docs/analyzers/real-solidity-analyzer.md"],
+  docs: ["docs/analyzers/solidity.md"],
   differentialCheck: "differential-solidity",
   perfKey: "solidity:solidity",
   floorResidual: {
@@ -1300,7 +1300,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   wasm: "tree-sitter-scss.wasm",
   classification: "scss-completeness.json",
   fixturesDir: "validation/m14/fixtures/scss",
-  docs: ["docs/analyzers/real-scss-analyzer.md"],
+  docs: ["docs/analyzers/scss.md"],
   differentialCheck: "differential-scss",
   perfKey: "element-plus:scss",
   // 2026-09-29: 58/4 -> 56/3, re-pinned with grammar patches 4 and 5 (map literals
@@ -1325,7 +1325,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   wasm: "tree-sitter-toml.wasm",
   classification: "toml-completeness.json",
   fixturesDir: "validation/m14/fixtures/toml",
-  docs: ["docs/analyzers/real-toml-analyzer.md"],
+  docs: ["docs/analyzers/toml.md"],
   // Measured in validation/m14/results/M14.0.F5.json: `differential-toml`
   // (pass, 60 files, coverage 100%, unexplained 0%). The entry was missing the
   // name it is gated by; the name is read off the artifact, not guessed.
@@ -1346,7 +1346,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   wasm: "tree-sitter-yaml.wasm",
   classification: "yaml-completeness.json",
   fixturesDir: "validation/m14/fixtures/yaml",
-  docs: ["docs/analyzers/real-yaml-analyzer.md"],
+  docs: ["docs/analyzers/yaml.md"],
   // NO `differentialCheck`, and that absence is the measured state, not an
   // omission: the committed M14.0.F5.json carries no `differential-yaml` row and
   // no `differential-kubernetes:yaml` row either (its 61 differential ids were

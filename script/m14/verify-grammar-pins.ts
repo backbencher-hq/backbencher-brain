@@ -826,7 +826,7 @@ export const LANES: Record<string, LaneDecision> = {
       "script/cpp-review/grammar-provenance.ts",
       "script/m12/cpp-node-types-compare.ts",
       "script/m12/cpp-wasm-compare.ts",
-      "docs/analyzers/real-cpp-analyzer.md",
+      "docs/analyzers/cpp.md",
     ],
     copies: [
       { label: "mirror", path: path.join(MIRROR, "tree-sitter-cpp.wasm") },
@@ -1001,7 +1001,7 @@ export const LANES: Record<string, LaneDecision> = {
       "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs — so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in fixtures/graphql/REVIEW.md §E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling — the one thing an upgrade must not do to this repository.",
     alternatives: [
       {
-        option: "pin the previous wasm as-is and document the two gaps as boundaries (what docs/analyzers/real-graphql-analyzer.md did)",
+        option: "pin the previous wasm as-is and document the two gaps as boundaries (what docs/analyzers/graphql.md did)",
         measured:
           "REJECTED on evidence: 12 of 47 corpus files carry a grammar error under it, and the losses are not silent — on neo4j-graphql/.../apollo-federation-subgraph-compatibility/schema.graphql a described `extend type User` became ERROR and the analyzer published `anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires` (four invented references) while losing five real field symbols. A documented boundary is the right answer for a gap nobody can fix; a 12/47 error rate with phantom edges is not that.",
         artifact: "fixtures/graphql/out/extraction-ab.json",
@@ -1036,7 +1036,7 @@ export const LANES: Record<string, LaneDecision> = {
       "fixtures/graphql/out/grammar-gaps.json",
       "fixtures/graphql/out/grammar-ab.json",
       "fixtures/graphql/out/extraction-ab.json",
-      "docs/analyzers/real-graphql-analyzer.md",
+      "docs/analyzers/graphql.md",
       "validation/m12/results/graphql-corpus-errors.json",
     ],
     copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-graphql.wasm") }],
@@ -1098,7 +1098,7 @@ export const LANES: Record<string, LaneDecision> = {
     ],
     evidence: [
       "grammars/tree-sitter-nim/PIN.md",
-      "docs/analyzers/real-nim-analyzer.md",
+      "docs/analyzers/nim.md",
       "fixtures/nim/grammar/ab-run.sh",
       "fixtures/nim/matrix/check-matrix.sh",
       "validation/m12/results/nim-corpus-errors.json",
@@ -1274,7 +1274,7 @@ export const LANES: Record<string, LaneDecision> = {
       "Pin the local rebuild of the PATCHED vendored source, and record that the pre-repair bytes needed no provenance work at all. (1) The pre-repair wired wasm is an UNMODIFIED upstream build: its enumerable surface is byte-for-byte the surface of a build of upstream HEAD 0.7.0 (140 node types, 2 fields, zero set difference in either direction) and its behaviour matches that build on all 29 constructs of the A/B battery. So unlike Groovy this was not a stale blob; it was current upstream, and the two defects are UPSTREAM defects that upstream's own test corpus never exercises — `grep -rn 'PITarget' test/corpus/` returns nothing, and the only `PI`-adjacent tests are `StyleSheetPI`/`XmlModelPI`. (2) Because the defects are upstream's, no upgrade fixes them: v0.5.0, v0.6.4 and v0.7.0 all fail both, which is the measurement that makes the repair necessary rather than optional. (3) Upgrading past 0.7.0 would DELETE capability, not add it: 0.7.0 already split DTD into a separate `dtd` grammar, and adopting a split would strand `elementdecl`, `AttlistDecl`, `AttDef`, `GEDecl`, `PEDecl` and `NotationDecl` — the analyzer's entire DTD surface — in a grammar this engine does not wire. (4) The repair is admissible on the corpus A/B above: 31 files repaired against 2 adjudicated out-of-surface/negative-control movements, and corpus MISSING nodes down 32 -> 10. (5) The offline source<->wasm proof runs and is measured on every gate run.",
     alternatives: [
       {
-        option: "pin the pre-repair bytes as-is and document the two defects as boundaries (what docs/analyzers/real-xml-analyzer.md does today)",
+        option: "pin the pre-repair bytes as-is and document the two defects as boundaries (what docs/analyzers/xml.md does today)",
         measured:
           "REJECTED on capability, and the cost is the whole declaration vocabulary of a DTD. A content-bearing processing instruction is one of the most common constructs in XML, and it does not merely lose a symbol: with no XMLDecl present the enclosing `prolog` node is destroyed, so `<!DOCTYPE …>` in the same prolog is lost with it, and in a conditional section the parser picks a later `Name` as the DTD name and the analyzer publishes a Type symbol called `INCLUDE`. A documented boundary is right for a gap nobody can fix; this one is fixable in two lines and the fix is measured.",
         artifact: "fixtures/xml/out/pi-rootcause.json",
@@ -1416,7 +1416,7 @@ export const LANES: Record<string, LaneDecision> = {
       kind: "unnamed-build-sha-only",
       chain:
         "NOT provenanced to a published version from inside this tree, and the lane says so rather than " +
-        "guessing. `docs/analyzers/real-markdown-analyzer.md` records that " +
+        "guessing. `docs/analyzers/markdown.md` records that " +
         "`script/m60/find-grammar-provenance.ts` matched the BLOCK wasm by exact sha256 against a published " +
         "artifact of `@tree-sitter-grammars/tree-sitter-markdown@0.5.1` (3e13182f21373634…, 421,534 B), and that " +
         "the match came from a GITHUB RELEASE ASSET rather than an npm tarball because the package's repository " +
@@ -1490,7 +1490,7 @@ export const LANES: Record<string, LaneDecision> = {
       "the enumerable surface (ids/named/anon/fieldCount + three digests) for both grammars, in this record",
       "validation/m14/grammar-audit-baseline.json — markdown 2 -> 0, with the repayment that the F1 oracle was missing the companion",
       "validation/m60/results/G-PROVENANCE.json — has NO markdown row, which is why the provenance class is unnamed-build",
-      "docs/analyzers/real-markdown-analyzer.md — the two-grammar design and the inherited 0.5.1 claim",
+      "docs/analyzers/markdown.md — the two-grammar design and the inherited 0.5.1 claim",
     ],
     copies: [
       { label: "wasm registry copy of the block grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown.wasm") },
@@ -1677,7 +1677,7 @@ export const LANES: Record<string, LaneDecision> = {
         "grammar.js + tree-sitter.json + package.json + README.md + LICENSE + src/ (scanner.c, the three schema backends schema.core.c/schema.json.c/schema.legacy.c, the generated grammar.json and node-types.json, and the tree_sitter/ runtime headers), byte-for-byte from `npm pack @tree-sitter-grammars/tree-sitter-yaml@0.7.1`. The GENERATED src/parser.c (1.29 MB) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source<->wasm check below runs on node-types.json/grammar.json, not on parser.c. Unlike haskell and elixir, the generated JSONs ARE tracked here -- see the .gitignore entry, which explains that a clone carrying grammar.js but not node-types.json can rebuild a working parser and cannot run the proof.",
     },
     decision:
-      "Pin as-is, and vendor the source, with NO wire change. Three independent measurements agree that the wired bytes are the right bytes: (1) `npm pack` of 0.7.1 + sha256 of the extracted tree-sitter-yaml.wasm is e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91 / 189,255 B, an EXACT match for wasm/tree-sitter-yaml.wasm with no inference from size or date; (2) 0.7.1 is the newest published release (2025-05-22) of the only maintained fork, and its parent ikatyang/tree-sitter-yaml has been dormant since 0.5.0 (2021-04-18) and publishes no wasm at all, so it is not a wire candidate; (3) the source<->wasm check below is green with an EMPTY allowance, i.e. all 36 named types the source declares exist in the wired wasm and every wasm-named type is declared by the source. The pin therefore upgrades an existing DOC-ONLY claim (docs/analyzers/real-yaml-analyzer.md) into a gated contract, and changes nothing the product loads.",
+      "Pin as-is, and vendor the source, with NO wire change. Three independent measurements agree that the wired bytes are the right bytes: (1) `npm pack` of 0.7.1 + sha256 of the extracted tree-sitter-yaml.wasm is e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91 / 189,255 B, an EXACT match for wasm/tree-sitter-yaml.wasm with no inference from size or date; (2) 0.7.1 is the newest published release (2025-05-22) of the only maintained fork, and its parent ikatyang/tree-sitter-yaml has been dormant since 0.5.0 (2021-04-18) and publishes no wasm at all, so it is not a wire candidate; (3) the source<->wasm check below is green with an EMPTY allowance, i.e. all 36 named types the source declares exist in the wired wasm and every wasm-named type is declared by the source. The pin therefore upgrades an existing DOC-ONLY claim (docs/analyzers/yaml.md) into a gated contract, and changes nothing the product loads.",
     alternatives: [
       {
         option: "ikatyang tree-sitter-yaml@0.5.0 (the fork parent)",

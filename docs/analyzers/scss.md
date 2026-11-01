@@ -342,7 +342,7 @@ strength of the CSS delegate's dispatch and cost this lane a wave; four lines of
 `@include`, `f(x)` and `@extend` all carried `uses`. That is one label for three claims a
 consumer most needs apart: a rule that **invokes** a mixin, a rule that **consumes** a
 keyframes animation, and a rule that **inherits** a selector's declarations. The project's
-own rule for the first two is the lua lane's, at `docs/analyzers/real-lua-analyzer.md:647`
+own rule for the first two is the lua lane's, at `docs/analyzers/lua.md:647`
 — "a member that is called is not merely read" — and both call sites resolve to names
 **this file declares**, so nothing reaches either emitter that is not a resolved
 invocation. `@extend` is inheritance, and the ontology has a type for inheritance.

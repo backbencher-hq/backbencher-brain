@@ -3,16 +3,16 @@
 // Three implementations were tried, and the gate exists because the first two
 // each failed a different way:
 //
-//   `ORDER BY relative_path LIMIT n`  a PREFIX. On this repo's 1,654-file index
-//       the first 200 were 189 docs/ files and ZERO of 166 src/ files — the
-//       first src/ file is at rank 1452. The default freshness answer was
-//       structurally an answer about Markdown. Deterministic, biased, useless.
-//   `ORDER BY RANDOM() LIMIT n`       unbiased but not reproducible: five
-//       integrity calls on one index gave 21,17,22,19,16 for a true 40 of 400,
-//       and the 10% warn/error threshold fell between them.
-//   `ROW_NUMBER() ... % k = 0`        deterministic and spread, but ALIASES
-//       with a period in the file ordering: against a corpus with every 10th
-//       file edited it reported a 20.0% drift rate for a true 10.0%.
+//  `ORDER BY relative_path LIMIT n` a PREFIX. On this repo's 1,654-file index
+//  the first 200 were 189 docs/ files and ZERO of 166 src/ files — the
+//  first src/ file is at rank 1452. The default freshness answer was
+//  structurally an answer about Markdown. Deterministic, biased, useless.
+//  `ORDER BY RANDOM() LIMIT n` unbiased but not reproducible: five
+//  integrity calls on one index gave 21,17,22,19,16 for a true 40 of 400,
+//  and the 10% warn/error threshold fell between them.
+//  `ROW_NUMBER() ... % k = 0` deterministic and spread, but ALIASES
+//  with a period in the file ordering: against a corpus with every 10th
+//  file edited it reported a 20.0% drift rate for a true 10.0%.
 //
 // What ships is a deterministic pseudo-random sample (selectSampleFiles in
 // src/brain/freshness.ts). The properties below are the ones that actually

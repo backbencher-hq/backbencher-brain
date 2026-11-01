@@ -123,10 +123,9 @@ function artifactPath(lang: string): string | null {
   return null
 }
 
-/** The lane's doc, under either spelling (docs follow the LANE key; the analyzer file
- *  name is the fallback, because `make`'s doc is `real-make-analyzer.md`). */
+/** The lane's doc. One canonical file per language: `docs/analyzers/<lang>.md`. */
 export function docFor(lang: string): string | null {
-  const candidates = [`real-${lang}-analyzer.md`, LANE_ANALYZER_ALIAS[lang]?.replace(/\.ts$/, ".md") ?? ""].filter(Boolean)
+  const candidates = [`${lang}.md`, LANE_ANALYZER_ALIAS[lang]?.replace(/-analyzer\.ts$/, ".md") ?? ""].filter(Boolean)
   for (const c of candidates) {
     const p = path.join(DOC_DIR, c)
     if (existsSync(p)) return p

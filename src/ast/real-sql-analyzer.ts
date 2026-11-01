@@ -140,7 +140,7 @@
  * lane read cleaner than the oracle can support. The lane's residual therefore stays UNFLOORED
  * until the canonical UNSCOPED sweep runs with a truth side for all eight emitted labels.
  *
- * Where the rest of the lane lives: docs/analyzers/sql.md · docs/analyzers/real-sql-analyzer.md · spec
+ * Where the rest of the lane lives: docs/analyzers/history/sql-lane-notes.md · docs/analyzers/sql.md · spec
  * script/m14/spec/sql-completeness.json (buckets + SQL-D1..D29 + SQL-G1..G19) · fixtures
  * validation/m14/fixtures/sql/ (18 .sql, expectation pins, and the lane's census instruments) ·
  * measurements validation/m14/measurements/sql-{population,grammar-nodes,part-of-sites,construct-sites,gap-sites}.json ·
@@ -151,7 +151,7 @@
  * row) · `validation/m14/fixtures/sql/*.expectation.json` (the pins sections B and D read) ·
  * `validation/m14/fixtures/sql/lane-census.ts` and `contains-shape-probe.ts` (the lane's own
  * instruments) · `script/m14/completeness-inventory.ts` (Lead-owned: this lane's requiredKinds/docs
- * rows) · `docs/analyzers/real-sql-analyzer.md` and `validation/m14/verification/SQL-STATE.md`.
+ * rows) · `docs/analyzers/sql.md` and `validation/m14/verification/SQL-STATE.md`.
  */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"

@@ -1,17 +1,17 @@
-// script/m40/verify-a6-health-refresh.ts — M40.A6 (#636)
+// script/m40/verify-a6-health-refresh.ts —
 // Behavioral gate for health-refresh honesty.
 //
-//   1. Fixture with stale derived data → bb health --refresh (non-force) →
-//      the refresh runs the bounded derived pass and reports derived=bounded.
-//   2. A user who asked to refresh NEVER sees health computed from
-//      never-rebuilt derived data presented as current.
-//   3. Force path unchanged: --force still wipes and does the full run
-//      (derived=full).
-//   4. CLI output surfaces the derived signal with remediation when deferred.
+//  1. Fixture with stale derived data → bb health --refresh (non-force) →
+//  the refresh runs the bounded derived pass and reports derived=bounded.
+//  2. A user who asked to refresh NEVER sees health computed from
+//  never-rebuilt derived data presented as current.
+//  3. Force path unchanged: --force still wipes and does the full run
+//  (derived=full).
+//  4. CLI output surfaces the derived signal with remediation when deferred.
 //
 // Negative case (the issue's verification contract): the report must FAIL
 // the gate when the post-pass is stubbed off while derived data is claimed
-// current — proven via mutation run + the pre-M40 behavior assertion.
+// current — proven via mutation run + the pre-behavior assertion.
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"

@@ -1,5 +1,5 @@
 // CLJ3 CHANNEL CENSUS — the per-type measurement behind every verdict in
-// docs/analyzers/real-clojure-analyzer.md's ontology section.
+// docs/analyzers/clojure.md's ontology section.
 //
 // WHY A NEW INSTRUMENT. script/m14/firing-check-v2.mjs reports TWO channels:
 // res.relationships and res.imports. ParseResult (src/ast/types.ts:221-231)

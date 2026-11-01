@@ -247,7 +247,7 @@ export const ENGINE_FUNCTION_NAMES: ReadonlySet<string> = new Set([
  * `yul_evm_builtin`. DECLARED, and re-derivable: every alphabetic anonymous
  * token of `grammars/tree-sitter-solidity/src/grammar.json` that is not a
  * primitive type and not a Solidity keyword. The derivation command is named in
- * `docs/analyzers/real-solidity-analyzer.md` §Evidence, so this list can be
+ * `docs/analyzers/solidity.md` §Evidence, so this list can be
  * checked against the grammar rather than trusted.
  *
  * WHY IT LIVES HERE RATHER THAN IN THE ANALYZER. A `yul_path` segment that spells

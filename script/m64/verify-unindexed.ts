@@ -1,4 +1,4 @@
-// script/m64/verify-unindexed.ts — M64.C.
+// script/m64/verify-unindexed.ts — .C.
 //
 // The other direction of the index/disk difference. `freshness.missingFiles` is
 // "in the index, gone from disk". Nothing reported "on disk, absent from the

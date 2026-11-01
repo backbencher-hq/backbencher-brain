@@ -98,7 +98,9 @@ function resolveInternalSpecifier(
   // Directory-anchored, and only on a whole segment boundary, so `format`
   // cannot match `src/util/format.ts` and `util/format` cannot match
   // `src/util/formatting.ts`.
-  const needle = specifier.replace(/\/+$/, "")
+  let needleEnd = specifier.length
+  while (needleEnd > 0 && specifier[needleEnd - 1] === "/") needleEnd--
+  const needle = specifier.slice(0, needleEnd)
   if (needle && !needle.startsWith(".")) {
     for (const [rel, id] of filesByPath) {
       if (rel !== needle && !rel.endsWith("/" + needle)) continue
@@ -110,9 +112,13 @@ function resolveInternalSpecifier(
   return { resolution: "unresolved" }
 }
 
-/** Escape %, _ and backslash: a file path is a path, never a LIKE pattern. */
+/** Escape %, _ and backslash: a file path is a path, never a LIKE pattern.
+ *  Character-wise, because the input is data — a character loop is the one
+ *  formulation with no metacharacter to miss. */
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (c) => "\\" + c)
+  let out = ""
+  for (const ch of value) out += ch === "\\" || ch === "%" || ch === "_" ? "\\" + ch : ch
+  return out
 }
 
 // File dependency analysis.
@@ -163,7 +169,9 @@ export function dependencyProvenance(projectId: string): EvidenceProvenance {
  * caller cannot apply a different one.
  */
 export function normalizeScopePath(filePath: string): string {
-  return filePath.replace(/\/+$/, "")
+  let end = filePath.length
+  while (end > 0 && filePath[end - 1] === "/") end--
+  return filePath.slice(0, end)
 }
 
 /** How many indexed files the scope covers — the denominator the page is

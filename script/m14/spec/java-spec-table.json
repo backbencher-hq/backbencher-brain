@@ -184,7 +184,7 @@
    "artifactNote": "the regenerated validation/m12/results/regex-census.json was left UNCOMMITTED (Lead-owned artifact); the Lead must commit it or regenerate at the final HEAD",
    "positiveResult": true
   },
-  "docs": "docs/analyzers/real-java-analyzer.md (grammar provenance + per-type emission sites + the 2026-10-18 complete-surface section incl. limitations); validation/m14/verification/JAVA-RESOLUTION-CLASSIFICATION.md (cap-50 cause table); validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md (stale fixtures, read-only)",
+  "docs": "docs/analyzers/java.md (grammar provenance + per-type emission sites + the 2026-10-18 complete-surface section incl. limitations); validation/m14/verification/JAVA-RESOLUTION-CLASSIFICATION.md (cap-50 cause table); validation/m14/verification/JAVA-FIXTURE-RECONCILIATION.md (stale fixtures, read-only)",
   "wholePopulation": {
    "edges": null,
    "resolved": null,
@@ -237,7 +237,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 356345,
      "resolved": 99057,
@@ -284,7 +284,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 99337,
      "resolved": 44715,
@@ -333,7 +333,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 160852,
      "resolved": 160852,
@@ -377,7 +377,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 209106,
      "resolved": 90769,
@@ -433,7 +433,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 554579,
      "resolved": 107650,
@@ -478,7 +478,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 10777,
      "resolved": 4735,
@@ -523,7 +523,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 6863,
      "resolved": 2076,
@@ -564,7 +564,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 5260,
      "resolved": 3865,
@@ -610,7 +610,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 33720,
      "resolved": 1532,
@@ -653,7 +653,7 @@
      "result": "CLEAN",
      "command": "bash script/m14/no-regex-gate.sh"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md 2026-10-18 section",
+    "docs": "docs/analyzers/java.md 2026-10-18 section",
     "wholePopulation": {
      "edges": 41812,
      "resolved": 2539,
@@ -689,7 +689,7 @@
     "noRegex": {
      "result": "CLEAN"
     },
-    "docs": "docs/analyzers/real-java-analyzer.md"
+    "docs": "docs/analyzers/java.md"
    },
    "renders": {
     "applicable": false,

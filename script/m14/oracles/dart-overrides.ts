@@ -408,7 +408,7 @@ function methodNames(node: any, bodyType: string): string[] {
  * it is not this lane's call. What is this lane's call is that a reader auditing
  * this oracle must not read a guarantee the code does not enforce, so the dead
  * computation is gone and the contradiction is recorded in
- * `docs/analyzers/real-dart-analyzer.md`.
+ * `docs/analyzers/dart.md`.
  *
  * Deleting this changed no truth row: the differential reports the same 100 MISSING
  * on proxicall and 14 on dart-http, 0 unexplained, before and after.

@@ -70,7 +70,7 @@
       "reasons": [
         "corpus row 6515 ms <= declared 120000 ms on 400 files"
       ],
-      "budgetSource": "docs/analyzers/real-c-analyzer.md:116",
+      "budgetSource": "docs/analyzers/c.md:116",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": true,
@@ -94,7 +94,7 @@
       "reasons": [
         "corpus row 4483 ms <= declared 60000 ms on 309 files"
       ],
-      "budgetSource": "docs/analyzers/real-clean-analyzer.md:80",
+      "budgetSource": "docs/analyzers/clean.md:80",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": true,
@@ -121,7 +121,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-clojure-analyzer.md:91",
+      "budgetSource": "docs/analyzers/clojure.md:91",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -145,7 +145,7 @@
       "reasons": [
         "corpus row \"corpus_subset\" was measured on a busy box (loadQuiet=false)"
       ],
-      "budgetSource": "docs/analyzers/real-cpp-analyzer.md:126",
+      "budgetSource": "docs/analyzers/cpp.md:126",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": true,
@@ -172,7 +172,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-csharp-analyzer.md:101",
+      "budgetSource": "docs/analyzers/csharp.md:101",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -199,7 +199,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-css-analyzer.md:117",
+      "budgetSource": "docs/analyzers/css.md:117",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -226,7 +226,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-dart-analyzer.md:100",
+      "budgetSource": "docs/analyzers/dart.md:100",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -307,7 +307,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-fsharp-analyzer.md:103",
+      "budgetSource": "docs/analyzers/fsharp.md:103",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -386,7 +386,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-groovy-analyzer.md:163",
+      "budgetSource": "docs/analyzers/groovy.md:163",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -465,7 +465,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-html-analyzer.md:95",
+      "budgetSource": "docs/analyzers/html.md:95",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -492,7 +492,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-java-analyzer.md:86",
+      "budgetSource": "docs/analyzers/java.md:86",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -519,7 +519,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-javascript-analyzer.md:83",
+      "budgetSource": "docs/analyzers/javascript.md:83",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -571,7 +571,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-kotlin-analyzer.md:83",
+      "budgetSource": "docs/analyzers/kotlin.md:83",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -850,7 +850,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-rust-analyzer.md:103",
+      "budgetSource": "docs/analyzers/rust.md:103",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -877,7 +877,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-scala-analyzer.md:103",
+      "budgetSource": "docs/analyzers/scala.md:103",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -929,7 +929,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-svelte-analyzer.md:110",
+      "budgetSource": "docs/analyzers/svelte.md:110",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -983,7 +983,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-typescript-analyzer.md:99",
+      "budgetSource": "docs/analyzers/typescript.md:99",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,
@@ -1010,7 +1010,7 @@
         "corpus row \"corpus_subset\" carries no loadAvg1",
         "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
       ],
-      "budgetSource": "docs/analyzers/real-vue-analyzer.md:102",
+      "budgetSource": "docs/analyzers/vue.md:102",
       "frame": {
         "shape": "per_analyzer",
         "loadRule": false,

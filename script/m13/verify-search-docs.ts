@@ -1,17 +1,25 @@
-// script/m13/verify-search-docs.ts — M13.22 (S5).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Docs + evidence + release gate for bb_search.
-//
-// 1. DOCS ACCURACY: docs/tools/bb_search.md must be byte-identical to a fresh
-//    render from the executable registry (proven by running the real generator
-//    in verify mode), and its Contract section must match the registry entry
-//    field-by-field (category, mutability, requiresIndex, modes, defaults).
-// 2. EVIDENCE COMMITTED: s1..s4.json must all exist, validate against the
-//    shared schema, and claim verified.
-// 3. RELEASE GATE: the gate must block a non-passing suite from claiming
-//    verified — proven adversarially by tampering with a real evidence doc
-//    (failed>0, zero negatives) and asserting the REAL validateEvidence
-//    (imported from verify-evidence.ts) rejects it.
+// WHAT THIS FILE IS — the docs/evidence/release gate for bb_search: the generated
+//   page must be byte-fresh from the executable registry, its Contract section must
+//   match that registry field-by-field, the four producer evidence documents must
+//   exist and claim verified with negatives, and the release gate must be proven to
+//   reject a tampered evidence document.
+// WHICH TOOL IT SERVES — bb_search (read).
+// WHY IT IS SHAPED THIS WAY — the page is a generated artifact, so freshness is
+//   proven by running the real generator in verify mode rather than by a second
+//   renderer; and "verified" is only meaningful if the tamper case fails, so the
+//   gate mutates a copy in memory and asserts the shared validator rejects it.
+// WHERE ITS EVIDENCE LIVES — the gate's own output is recorded by the caller;
+//   producer documents live in validation/m13/results/s1..s4.json.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_search/descriptor.ts,
+//   script/tool-docs/curation/bb_search.ts, script/verify-tool-docs.ts, the
+//   producer gates (verify-search-modes, verify-search-e2e, verify-search-corpus,
+//   verify-search-honesty).
+// CONTRACTS IT MUST NOT BREAK — byte-freshness is the generator's own answer; the
+//   tamper assertion must use the real validateEvidence, never a local imitation.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { readFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"

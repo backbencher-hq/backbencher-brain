@@ -1,6 +1,6 @@
 // CLOJURE OVERRIDES PROBE — does the LANGUAGE have the construct?
 //
-// THE RULING UNDER TEST. docs/analyzers/real-clojure-analyzer.md ruled `overrides`
+// THE RULING UNDER TEST. docs/analyzers/clojure.md ruled `overrides`
 // N/A with this reason: "`defmethod` shares the multimethod's var identity, so
 // source and target would be identical". That is a PROSE ruling, and the
 // ontology workstream exists precisely because a prose justification for

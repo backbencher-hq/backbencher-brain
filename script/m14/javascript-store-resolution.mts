@@ -42,7 +42,7 @@
  *      lane's open work. It reads 0 on both draws measured; the two corrections that got
  *      it there (the draw-boundary test, and BINDING vs DECLARATION for a namespace or
  *      default binding whose module declares no symbol of that name) are recorded in
- *      `docs/analyzers/real-javascript-analyzer.md` and JSD47 in the lane's spec.
+ *      `docs/analyzers/javascript.md` and JSD47 in the lane's spec.
  *   8  the module is INSIDE the draw but declares NO symbol of that name (the binding case)
  *
  * Class 4 (no binding for the leaf) is sub-split four ways — stdlib name · a name the draw

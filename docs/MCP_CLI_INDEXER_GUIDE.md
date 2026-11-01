@@ -2,7 +2,7 @@
 
 This document is the end-to-end operational reference for Backbencher Brain `0.3.0`.
 It explains the shared index, how CLI and MCP use it, what happens during indexing,
-how hosts launch the server, and the complete ten-tool surface. Analyzer, WASM,
+how hosts launch the server, and the complete sixteen-tool surface. Analyzer, WASM,
 Tree-sitter, and AST implementation internals are intentionally deferred to a later
 document. This guide describes their boundary and outputs, not their algorithms.
 
@@ -220,7 +220,7 @@ Starting MCP does the following:
 1. Resolves the requested project directory.
 2. Builds a `ToolContext` containing `projectPath` and `projectId`.
 3. Creates an MCP `Server` with the package version.
-4. Registers `tools/list` to expose the exact ten public descriptors.
+4. Registers `tools/list` to expose the exact sixteen public descriptors.
 5. Registers `tools/call` to resolve descriptors and handlers.
 6. Rejects unknown/undeclared option names.
 7. Blocks index-required tools when the requested project has no indexed files.
@@ -312,7 +312,7 @@ Do not import the MCP server runtime into website or host documentation generati
 
 ## 8. Public Tool Reference
 
-All ten tools are read or explicitly bounded mutation surfaces. Generated per-tool pages
+All sixteen tools are read or explicitly bounded mutation surfaces. Generated per-tool pages
 under `docs/tools/` and `docs/data/public-tools.json` are the contract source for schemas,
 defaults, examples, returns, errors, limitations, performance, safety, and evidence.
 

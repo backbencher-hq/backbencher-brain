@@ -1,18 +1,25 @@
-// script/m13/verify-search-corpus.ts — M13.20 (S3).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Runs bb_search against a representative sample of the pinned corpus repos
-// (one per major language family). For each entry:
-//   1. indexes a small sub-directory,
-//   2. resolves a real indexed symbol and proves symbols-mode search finds it
-//      with the correct file and language,
-//   3. proves content-mode search finds it too,
-//   4. proves pagination (offset) is honored on real files,
-//   5. proves freshness truthfulness: after modifying a real file, results
-//      from that file are flagged stale — a stale result is never presented
-//      as fresh.
-// Failures are recorded in the evidence, never excluded.
+// WHAT THIS FILE IS — the real-repository gate for bb_search: samples one small
+//   sub-directory per language family from the pinned corpus, indexes a WRITABLE
+//   COPY of it, and proves symbol search, content search, pagination and
+//   stale-flag truthfulness on real code.
+// WHICH TOOL IT SERVES — bb_search (read; modes symbols/content/symbol/file).
+// WHY IT IS SHAPED THIS WAY — the freshness probe edits an indexed file, and the
+//   corpus is a shared read-only reference tree, so each sample is copied under
+//   validation/tools/bb_search/work/corpus-copy and the copy is what gets indexed
+//   and modified. When the corpus is absent every leg is a declared failure
+//   naming the searched paths, never a silent pass.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/s3.json (through the shared
+//   harness).
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/search/*, the other
+//   script/m13/verify-search-*.ts gates, script/lib/corpus-root.ts.
+// CONTRACTS IT MUST NOT BREAK — never write into the corpus; a missing corpus is
+//   a declared block, never green; the stale probe must be a real negative case.
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
@@ -42,6 +49,11 @@ const harness = new Harness({
 // Was: the literal foreign corpus root "$HOME/fixtures/repositories" — see
 // script/lib/corpus-root.ts, which is where the corpus actually lives on THIS machine.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
+// The freshness probe must MODIFY an indexed file. The corpus is a shared,
+// read-only reference tree, so each sampled sub-directory is copied into this
+// owner's writable work area first and the copy is indexed — the gate then owns
+// every byte it writes and cannot mutate the corpus.
+const COPY_ROOT = path.resolve(import.meta.dir, "..", "..", "validation", "tools", "bb_search", "work", "corpus-copy")
 // (repo, subPath, symbolHint, family)
 const SAMPLE: Array<[string, string, string, string]> = [
   ["rake", "lib/rake", "Application", "Ruby"],
@@ -51,11 +63,15 @@ const SAMPLE: Array<[string, string, string, string]> = [
 ]
 
 for (const [repo, subPath, hint, family] of SAMPLE) {
-  const indexRoot = path.join(REPO_ROOT, repo, subPath)
-  if (!existsSync(indexRoot)) {
-    harness.check(`corpus ${repo}/${subPath} (${family}): present`, false, `${indexRoot} missing`)
+  const corpusRoot = path.join(REPO_ROOT, repo, subPath)
+  if (!existsSync(corpusRoot)) {
+    harness.check(`corpus ${repo}/${subPath} (${family}): present`, false, `${corpusRoot} missing`)
     continue
   }
+  const indexRoot = path.join(COPY_ROOT, repo, subPath)
+  mkdirSync(path.dirname(indexRoot), { recursive: true })
+  cpSync(corpusRoot, indexRoot, { recursive: true })
+  harness.check(`corpus ${repo}/${subPath} (${family}): sampled into a writable copy`, existsSync(indexRoot), indexRoot)
   const projectId = getProjectId(indexRoot)
   try {
     await indexProjectParallel(projectId, indexRoot, {})
@@ -120,6 +136,7 @@ for (const [repo, subPath, hint, family] of SAMPLE) {
     harness.check(`corpus ${repo}/${subPath} (${family}): corpus session`, false, e instanceof Error ? e.message : String(e))
   } finally {
     try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch {}
+    try { rmSync(indexRoot, { recursive: true, force: true }) } catch {}
   }
 }
 

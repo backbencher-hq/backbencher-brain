@@ -12,7 +12,7 @@
  * .vue file are minted by the TypeScript analyzer — a `vue` header that lists only this file's own
  * literals would be wrong, and a change in the delegate can change vue's edges.
  *
- * WHERE THE RECORD LIVES: docs/analyzers/vue.md + docs/analyzers/real-vue-analyzer.md; spec
+ * WHERE THE RECORD LIVES: docs/analyzers/history/vue-lane-notes.md + docs/analyzers/vue.md; spec
  * script/m14/spec/vue-completeness.json; fixtures validation/m14/fixtures/vue.
  *
  * WHEN THIS FILE CHANGES, CO-EDIT: the completeness spec, the expectation files under

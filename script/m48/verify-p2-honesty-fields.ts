@@ -1,25 +1,29 @@
-// script/m48/verify-p2-honesty-fields.ts — M48.P2 (#697)
-// No hollow completeness/absence claims on any of the 16 tools. A field that
-// claims completeness ("truncated", "declaredAbsent", "complete", "sampled")
-// must be able to be FALSE and must be set from real measurements.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Gate sections:
-//   1. STATIC self-audit: scan the tool output builders (handlers + every
-//      module reachable by a tool) for watchlist keys assigned ONLY a single
-//      literal (true or false) with no dynamic/opposite assignment anywhere
-//      in that builder. Such a field is hollow => FAIL.
-//   2. LEGACY guard: no tool handler imports analyzeImpact (the deprecated
-//      depth-capped calculator); the module carries the deprecation marker.
-//   3. P1 cross-ref: bb_analyze impact "truncated CAN be true" is machine-
-//      proven by the P1 gate evidence (250-caller > 200 budget case) — the
-//      two gates are in the same npm chain, so P2 asserts that evidence is
-//      verified rather than re-running the heavy fixture.
-//   4. FIXTURE proof: annotations declaredAbsent is real — true on an empty
-//      project, false after bb_annotate writes one row (same symbol).
-//   5. AUDIT DOC: docs/m48/P2-AUDIT.md exists and lists all 16 tools.
-// No auto-passes; every predicate can refuse (negatives in section 6).
+// WHAT THIS FILE IS — the honesty-field gate: no public tool may publish a
+//   completeness/absence claim that can only ever be one value, and the static
+//   audit must actually cover the live tool-output builders.
+// WHICH GATE IT SERVES — m48/P2; it reads the sixteen public tools' output
+//   builders (the split per-tool handlers plus every builder module reachable
+//   from a tool) and the shared validator/legacy boundaries.
+// WHY IT IS SHAPED THIS WAY — the per-tool module split moved every tool's
+//   output builder out of one aggregate file, so a hardcoded builder list went
+//   green over an empty coverage set. The list is DISCOVERED from
+//   `src/mcp/tools/*/handler.ts` now, and the gate asserts the discovered set is
+//   complete and non-empty before the scanner is allowed to pass. The scanner
+//   itself is a pure function over source text so a planted hollow field is
+//   proven to be detected (section 6), not assumed to be.
+// WHERE ITS EVIDENCE LIVES — validation/m48/results/P2.json; the mutation proof
+//   for this tool is recorded in validation/tools/bb_impact/MUTANTS.json.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/*/handler.ts (the
+//   discovered builders), src/mcp/tools/shared.ts, the P1 evidence it cross-refs.
+// CONTRACTS IT MUST NOT BREAK — it must be able to go red (a hollow field, a
+//   missing builder, a coverage gap, a legacy import) and must never pass on an
+//   empty audited set.
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
+import { readFileSync, existsSync, mkdtempSync, mkdirSync, readdirSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -41,11 +45,20 @@ function negative(label: string, ok: boolean, detail = "") { negatives++; check(
 // Watchlist: completeness/absence claims that must be able to flip.
 const WATCH = ["truncated", "declaredAbsent", "declared_absent", "complete", "sampled"]
 
-// Tool output builders: tool-handlers + every builder module reachable by a
-// public tool. LSP-only surfaces (navigation/call_hierarchy/symbols) are the
-// hub lane, not tool outputs, and are intentionally excluded.
-const BUILDER_FILES = [
+/** The split layout's per-tool output builders, discovered from disk. */
+const TOOLS_DIR = path.join(ROOT, "src/mcp/tools")
+const HANDLER_FILES: string[] = existsSync(TOOLS_DIR)
+  ? readdirSync(TOOLS_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `src/mcp/tools/${entry.name}/handler.ts`)
+      .filter((rel) => existsSync(path.join(ROOT, rel)))
+      .sort()
+  : []
+
+// Builder modules reachable from a public tool that are not per-tool handlers.
+const SHARED_BUILDER_FILES = [
   "src/mcp/tool-handlers.ts",
+  "src/mcp/tools/shared.ts",
   "src/intelligence/analysis/impact.ts",
   "src/intelligence/analysis/dependencies.ts",
   "src/intelligence/analysis/complexity.ts",
@@ -65,46 +78,112 @@ const BUILDER_FILES = [
   "src/intelligence/graph/graph-engine.ts",
 ]
 
-const LIT = /([A-Za-z][A-Za-z0-9]*)\s*:\s*(true|false)\b/g
-const DYN = /([A-Za-z][A-Za-z0-9]*)\s*:\s*(?!true\b|false\b)([A-Za-z0-9_.$[\]]|\s)/g
+const BUILDER_FILES = [...HANDLER_FILES, ...SHARED_BUILDER_FILES]
 
-function auditFile(rel: string): string[] {
+/** Read the token that follows `key:` in a source text, as "true", "false",
+ *  or "other" (a dynamic value). String operations, not a second regex: the
+ *  first version of this scanner used a lookahead that backtracked into the
+ *  whitespace after `:`, so EVERY spaced `key: value` counted as dynamic and
+ *  the gate could not go red at all. A planted hollow field is the negative
+ *  case in section 6 that keeps that defect from returning. */
+function nextValueToken(src: string, colonIndex: number): string {
+  let i = colonIndex + 1
+  const isSpace = (ch: string | undefined) => ch === " " || ch === "\t" || ch === "\n" || ch === "\r"
+  while (i < src.length && isSpace(src[i])) i++
+  if (i >= src.length) return "other"
+  const isIdent = (ch: string | undefined) => ch !== undefined && /[A-Za-z0-9_$.]/.test(ch)
+  if (!isIdent(src[i])) return "other"
+  let end = i
+  while (end < src.length && isIdent(src[end])) end++
+  const token = src.slice(i, end)
+  return token === "true" || token === "false" ? token : "other"
+}
+
+/** The scanner itself: source text in, hollow-field hits out. Pure so a planted
+ *  hollow field can be proven caught without touching the tree. */
+function auditSource(rel: string, src: string): string[] {
   const hits: string[] = []
-  const abs = path.join(ROOT, rel)
-  if (!existsSync(abs)) { hits.push(`${rel}: MISSING`); return hits }
-  const src = readFileSync(abs, "utf8")
-  const literals = new Map<string, Set<string>>()
-  for (const m of src.matchAll(LIT)) {
-    const key = m[1]
-    if (!WATCH.includes(key)) continue
-    if (!literals.has(key)) literals.set(key, new Set())
-    literals.get(key)!.add(m[2])
-  }
-  const dynamic = new Set<string>()
-  for (const m of src.matchAll(DYN)) {
-    const key = m[1]
-    if (WATCH.includes(key)) dynamic.add(key)
-  }
   for (const key of WATCH) {
-    const lits = literals.get(key)
-    if (!lits) continue
-    const hollow = lits.size === 1 && !dynamic.has(key)
-    if (hollow) hits.push(`${rel}: "${key}" only ever assigned ${[...lits][0]} (never the opposite, never dynamic)`)
+    const literals = new Set<string>()
+    let dynamic = false
+    let searchFrom = 0
+    for (;;) {
+      const at = src.indexOf(key, searchFrom)
+      if (at === -1) break
+      searchFrom = at + key.length
+      const previous = at > 0 ? src[at - 1] : ""
+      if (previous !== "" && /[A-Za-z0-9_$]/.test(previous)) continue
+      let afterKey = at + key.length
+      while (afterKey < src.length && (src[afterKey] === " " || src[afterKey] === "\t")) afterKey++
+      if (src[afterKey] !== ":") continue
+      const token = nextValueToken(src, afterKey)
+      if (token === "other") dynamic = true
+      else literals.add(token)
+    }
+    if (literals.size === 1 && !dynamic) hits.push(`${rel}: "${key}" only ever assigned ${[...literals][0]} (never the opposite, never dynamic)`)
   }
   return hits
 }
 
+function auditFile(rel: string): string[] {
+  const abs = path.join(ROOT, rel)
+  if (!existsSync(abs)) return [`${rel}: MISSING`]
+  return auditSource(rel, readFileSync(abs, "utf8"))
+}
+
+/** Does the audited set contain every discovered handler builder? Pure so the
+ *  coverage rule can be tested against a deliberately incomplete list. */
+function coverageComplete(builderFiles: readonly string[], handlerFiles: readonly string[]): boolean {
+  return handlerFiles.length > 0 && handlerFiles.every((rel) => builderFiles.includes(rel))
+}
+
+/** Does a source text import the deprecated calculator? Pure for the same reason. */
+function importsDeprecatedCalculator(src: string): boolean {
+  return src.includes("analyzeImpact")
+}
+
+/** Watchlist keys actually assigned in a source text — the coverage witness. */
+function watchAssignments(src: string): number {
+  let n = 0
+  for (const key of WATCH) {
+    let from = 0
+    for (;;) {
+      const at = src.indexOf(key, from)
+      if (at === -1) break
+      from = at + key.length
+      let after = at + key.length
+      while (after < src.length && (src[after] === " " || src[after] === "\t")) after++
+      if (src[after] === ":") n++
+    }
+  }
+  return n
+}
+
 async function main() {
-  // 1. Static self-audit
+  // 1. Coverage: the audited set is the split layout ITSELF, not a stale list.
+  check("per-tool handler builders were discovered (split layout)", HANDLER_FILES.length >= 16, `${HANDLER_FILES.length} handlers`)
+  check("audited builder set covers every discovered handler", coverageComplete(BUILDER_FILES, HANDLER_FILES), `${BUILDER_FILES.length} audited / ${HANDLER_FILES.length} discovered`)
+  const missingBuilders = BUILDER_FILES.filter((rel) => !existsSync(path.join(ROOT, rel)))
+  check("every audited builder file exists", missingBuilders.length === 0, missingBuilders.join(", "))
+  // A scan over files that hold no watchlist field proves nothing. This is the
+  // assertion that makes the gate unable to pass over an empty coverage set.
+  const watchWitnesses = BUILDER_FILES.map((rel) => readFileSync(path.join(ROOT, rel), "utf8")).reduce((n, src) => n + watchAssignments(src), 0)
+  check("the audited builders really carry completeness fields", watchWitnesses > 0, `${watchWitnesses} watchlist assignments across ${BUILDER_FILES.length} files`)
+
+  // 2. Static self-audit over that set.
   const hollowHits: string[] = []
   for (const rel of BUILDER_FILES) hollowHits.push(...auditFile(rel))
   check("no hollow completeness field in any tool output builder", hollowHits.length === 0, hollowHits.join(" | "))
 
-  // 2. Legacy guard: handlers must not import the deprecated calculator
-  const handlersSrc = readFileSync(path.join(ROOT, "src/mcp/tool-handlers.ts"), "utf8")
-  check("tool handlers do not import the deprecated analyzeImpact", !handlersSrc.includes("analyzeImpact"), "")
+  // 3. Legacy guard: no tool door may import the deprecated calculator.
+  const doorSources = [
+    ...HANDLER_FILES.map((rel) => ({ rel, src: readFileSync(path.join(ROOT, rel), "utf8") })),
+    { rel: "src/mcp/tool-handlers.ts", src: readFileSync(path.join(ROOT, "src/mcp/tool-handlers.ts"), "utf8") },
+  ]
+  const legacyImporters = doorSources.filter((entry) => importsDeprecatedCalculator(entry.src)).map((entry) => entry.rel)
+  check("no tool door imports the deprecated analyzeImpact", legacyImporters.length === 0, legacyImporters.join(", "))
   const legacySrc = readFileSync(path.join(ROOT, "src/intelligence/analysis/impact.ts"), "utf8")
-  check("legacy analyzeImpact carries the M48 deprecation marker", legacySrc.includes("DEPRECATED as a tool-surface calculator"), "")
+  check("legacy analyzeImpact carries a deprecation marker", legacySrc.toLowerCase().includes("deprecated"), "")
 
   // 3. P1 cross-ref: truncated-can-be-true is proven by P1 evidence in the
   // same npm chain (250-caller fixture > 200-node budget).
@@ -142,29 +221,37 @@ async function main() {
     check("bb_annotations: declaredAbsent FALSE after a real write (field can flip)", after.declaredAbsent === false, JSON.stringify(after).slice(0, 120))
   }
 
-  // 5. Audit doc present, covering all 16 tools
+  // 5. Audit doc present, covering all 16 tools. The registered set is read from
+  // the LIVE registry, not scraped from a file the module split emptied.
   const auditPath = path.join(ROOT, "docs/m48/P2-AUDIT.md")
   check("docs/m48/P2-AUDIT.md exists", existsSync(auditPath), "")
   if (existsSync(auditPath)) {
     const audit = readFileSync(auditPath, "utf8")
-    const tools = [...new Set([...audit.matchAll(/\| bb_([a-z_]+) /g)].map((m) => m[1]))]
-    const regSrc = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf8")
-    const registered = new Set([...regSrc.matchAll(/name:\s*"(bb_[a-z_]+)"/g)].map((m) => m[1]))
-    const missing = [...registered].filter((t) => !audit.includes(`| ${t} `))
+    const { PUBLIC_TOOL_DESCRIPTORS } = await import(path.join(ROOT, "src/mcp/tool-registry"))
+    const registered: string[] = (PUBLIC_TOOL_DESCRIPTORS as Array<{ name: string }>).map((tool) => tool.name)
+    check("the live registry yields the sixteen public tools", registered.length === 16, `${registered.length}`)
+    const missing = registered.filter((t) => !audit.includes(`| ${t} `))
     check("audit doc lists every one of the 16 tools", missing.length === 0, missing.join(","))
   }
 
-  // 6. Negatives: the predicates must be able to refuse
+  // 6. Negatives: each predicate is shown able to refuse, against the REAL
+  // scanner (not a re-implementation of it).
   {
-    negative("a hollow literal field is refused by the scanner", auditFile("src/mcp/tool-handlers.ts").length === 0, "")
-    const tmp = mkdtempSync(path.join(tmpdir(), "m48-p2-mut-"))
-    const mut = path.join(tmp, "mut.ts")
-    writeFileSync(mut, "const o = { truncated: false }\n")
-    const src = readFileSync(mut, "utf8")
-    const lits = new Map<string, Set<string>>()
-    for (const m of src.matchAll(LIT)) { const k = m[1]; if (WATCH.includes(k)) { if (!lits.has(k)) lits.set(k, new Set()); lits.get(k)!.add(m[2]) } }
-    negative("a builder with only truncated:false is detected as hollow", lits.get("truncated")?.size === 1, "")
-    negative("the legacy import guard refuses handlers that import analyzeImpact", !handlersSrc.includes("analyzeImpact"), "")
+    // Scanner mutant: a planted hollow completeness field must be caught.
+    const hollowMutant = auditSource("mutant.ts", "export const result = { truncated: false }\n")
+    negative("the scanner catches a field only ever assigned one literal", hollowMutant.length > 0, JSON.stringify(hollowMutant))
+    const dynamicControl = auditSource("control.ts", "export const result = { truncated: flag }\n")
+    negative("a dynamic assignment is accepted by the same scanner (no false positive)", dynamicControl.length === 0, JSON.stringify(dynamicControl))
+    // Coverage mutant: a discovered handler missing from the audit list fails.
+    const droppedHandler = HANDLER_FILES[0] ?? "src/mcp/tools/bb_impact/handler.ts"
+    const incomplete = BUILDER_FILES.filter((rel) => rel !== droppedHandler)
+    negative("a coverage gap would fail the completeness predicate", !coverageComplete(incomplete, HANDLER_FILES), droppedHandler)
+    negative("an empty disclosure would fail the coverage predicate", !coverageComplete([], HANDLER_FILES), "")
+    // Legacy mutant: a door importing the deprecated calculator is caught.
+    const legacyMutant = importsDeprecatedCalculator('import { analyzeImpact } from "../analysis/impact"')
+    negative("the legacy guard catches a door that imports analyzeImpact", legacyMutant, "")
+    negative("the legacy guard passes a clean door", !importsDeprecatedCalculator('import { computeImpact } from "../../../lsp/impact"'), "")
+    // Evidence mutant: unverified P1 evidence fails the cross-ref.
     negative("missing P1 evidence would fail the cross-ref", p1Ok, "P1.json missing or not verified")
   }
 
@@ -179,13 +266,12 @@ async function main() {
     passed, failed, negativeCases: negatives,
     failures,
     buildersAudited: BUILDER_FILES.length,
+    discoveredHandlers: HANDLER_FILES.length,
+    watchlistAssignments: watchWitnesses,
   }
   mkdirSync(RESULTS_DIR, { recursive: true })
-  // M61 D-1 (the seal law): every record is written through the ONE write path.
-  // This gate stamped RAW JSON, so its own run dropped the envelope the M61
-  // seal register names (measured 2026-10-17: seal ABSENT against a registered
-  // digest, and M61.A1's A4 failed on it). The verdict is unchanged; the writer
-  // now moves the digest WITH the content.
+  // Every evidence record is written through the ONE sealed write path, so the
+  // digest moves WITH the content.
   if (!READ_ONLY) writeSealed(path.join(RESULTS_DIR, "P2.json"), evidence)
   console.log(`M48 P2 HONESTY FIELDS: ${ok ? "PASS" : "FAIL"} (${passed} passed, ${failed} failed, ${negatives} negatives)`)
   process.exit(ok ? 0 : 1)

@@ -76,7 +76,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 const ARGS = process.argv.slice(2)
 const MODE = ARGS[0] ?? "--usage"
 const CORPUS_ROOT = process.env.GO_CORPUS ?? "$HOME/fixtures/repositories/go-stdlib"
-// The lane's recorded admission rule (docs/analyzers/real-go-analyzer.md,
+// The lane's recorded admission rule (docs/analyzers/go.md,
 // "Draws, stated once"): git-tracked, <=512 KB, detected as go, testdata out.
 // The cap is NOT the engine's own 16 MiB truncation limit; it is this lane's
 // historical draw rule and it is printed so a reader can compare.

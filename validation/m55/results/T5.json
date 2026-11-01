@@ -12,8 +12,8 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
-  "sourceFingerprint": "ed88b3392969389796f9aa7e598dafc4347ec74aa4de7c278276b226741247bf",
+  "currentCommit": "17cb859269cddbcab4d2c43fd25303caa1517e12",
+  "sourceFingerprint": "8222706d208bf4992a9aaf48cbcf25fc78182d54a675c5e8819c186b5c922181",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-tiers.ts",
@@ -24,13 +24,16 @@
     "script/m55/lsp-wire.ts",
     "script/m55/t5-fixture.ts"
   ],
-  "workingTreeRelevantChanges": [],
+  "workingTreeRelevantChanges": [
+    "src/lsp/cross_language_hover.ts",
+    "src/lsp/impact.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
   "evidenceFile": "T5.json",
-  "generatedAt": "2026-11-01T18:42:31.859Z",
+  "generatedAt": "2026-11-01T20:30:43.497Z",
   "fixture": {
-    "workspace": "/tmp/m55-t5-ws-QcdInV",
-    "projectId": "542da91a3a4eee8921df3033dccfccb58713332d",
+    "workspace": "/tmp/m55-t5-ws-y7DIDa",
+    "projectId": "bedb81dec49cb8e968159f7e02ca48843f33aedd",
     "symbols": 7,
     "rows": 9
   },
@@ -78,7 +81,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T18:42:31.860Z",
-    "contentSha256": "6e1c47a5655df02df161f217ef90bc9e745ff5b62d08a53ad882d5bdd50c9d0e"
+    "sealedAt": "2026-11-01T20:30:43.498Z",
+    "contentSha256": "4d9b4327da0113189f4ddad76cd03e9f0241408a430f8fd21d0069b6e86d430a"
   }
 }

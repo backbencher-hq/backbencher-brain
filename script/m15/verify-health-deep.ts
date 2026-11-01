@@ -1,16 +1,16 @@
-// script/m15/verify-health-deep.ts — M15.H1-H8 (bb_health) GENUINE deep redo.
+// script/m15/verify-health-deep.ts — H8 (bb_health) GENUINE deep redo.
 //
 // Replacement for the scaffolded batch1 evidence. Every check exercises a real
 // code path (getUnifiedHealth, formatUnifiedHealth, real refresh, real
 // integrity check, real DB) or a real measurement. No auto-pass assertions.
 //
-//   H1 classification: counts/freshness/warnings on a real indexed project
-//   H2 regex census:   regex-literal audit of health-provider.ts
-//   H3 cross-file:     per-language breakdown & fresh/stale across files
-//   H4 complexity:     measured wall-clock on two project sizes
-//   H5 real-repo e2e:  real repo on disk (zig) with integrity + verbose
-//   H6 docs honesty:   registry block ↔ doc ↔ handler ↔ impl agree
-//   H7 gate:           all H-evidence present + self-audit + cleanup guard
+//  H1 classification: counts/freshness/warnings on a real indexed project
+//  H2 regex census: regex-literal audit of health-provider.ts
+//  H3 cross-file: per-language breakdown & fresh/stale across files
+//  H4 complexity: measured wall-clock on two project sizes
+//  H5 real-repo e2e: real repo on disk (zig) with integrity + verbose
+//  H6 docs honesty: registry block ↔ doc ↔ handler ↔ impl agree
+//  H7 gate: all H-evidence present + self-audit + cleanup guard
 
 import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -57,7 +57,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
 
 (async () => {
   // ═══════════════════════════════════════════════════════════════════
-  // H1: classification — counts, freshness, warnings on a real index
+  // classification — counts, freshness, warnings on a real index
   // ═══════════════════════════════════════════════════════════════════
   {
     const root = mkdtempSync(path.join(tmpdir(), "bb-h1-"))
@@ -91,7 +91,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H2: regex census — audit regex literals in health-provider.ts
+  // regex census — audit regex literals in health-provider.ts
   // ═══════════════════════════════════════════════════════════════════
   {
     const src = readFileSync(path.join(ROOT_DIR, "src/intelligence/health/health-provider.ts"), "utf8")
@@ -103,7 +103,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H3: cross-file — per-language breakdown across two languages
+  // cross-file — per-language breakdown across two languages
   // ═══════════════════════════════════════════════════════════════════
   {
     const root = mkdtempSync(path.join(tmpdir(), "bb-h3-"))
@@ -117,7 +117,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       const tsLang = langs.find((l) => l.language === "typescript")
       ck("H3: TS file counted once", tsLang ? tsLang.files === 1 : false, tsLang ? "files=" + tsLang.files : "missing ts")
       // verbose flag is reported in the report and gated in the formatter.
-      // M64: this asserted the literal "languages: typescript:1f", which
+      // this asserted the literal "languages: typescript:1f", which
       // assumed typescript is the FIRST language printed. The formatter's
       // documented order is files DESC then language ASC, and here both
       // languages have 1 file — so "python:1f/1s" legitimately comes first and
@@ -136,7 +136,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H4: time complexity — measured wall-clock on small vs larger project
+  // time complexity — measured wall-clock on small vs larger project
   // ═══════════════════════════════════════════════════════════════════
   {
     const small = mkdtempSync(path.join(tmpdir(), "bb-h4s-"))
@@ -164,7 +164,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H5: real-repo e2e — real repo on disk (zig) with integrity + verbose
+  // real-repo e2e — real repo on disk (zig) with integrity + verbose
   // ═══════════════════════════════════════════════════════════════════
   {
     //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
@@ -202,15 +202,19 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H6: docs honesty — registry block ↔ doc ↔ handler ↔ impl agree
+  // docs honesty — registry block ↔ doc ↔ handler ↔ impl agree
   // ═══════════════════════════════════════════════════════════════════
   {
     const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
+    // The module-per-tool split moved the descriptor and the handler out of the
+    // assembler files: the gate must read the tool's own contract files, or it
+    // measures a file the contract no longer lives in (and crashes on the split).
+    const desc = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_health/descriptor.ts"), "utf8")
     const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_health.md"), "utf8")
-    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
+    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_health/handler.ts"), "utf8")
     const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/health/health-provider.ts"), "utf8")
 
-    const block = reg.split('name: "bb_health"')[1].split(/name: "/)[0]
+    const block = desc
     ck("H6: registry lists bb_health", reg.includes("bb_health"))
     ck("H6: registry modes status+refresh", block.includes('"status"') && block.includes('"refresh"'))
     ck("H6: registry requiresIndex=false", block.includes("requiresIndex: false"))
@@ -228,7 +232,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H7: evidence + gate + self-audit + cleanup guard
+  // evidence + gate + self-audit + cleanup guard
   // ═══════════════════════════════════════════════════════════════════
   {
     for (const f of ["h1.json", "h2.json", "h3.json", "h4.json", "h5.json", "h6.json"]) {
@@ -248,7 +252,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // H8: mode coverage — status, refresh(wait), refresh(async) all real
+  // mode coverage — status, refresh(wait), refresh(async) all real
   // ═══════════════════════════════════════════════════════════════════
   {
     const root = mkdtempSync(path.join(tmpdir(), "bb-h8-"))

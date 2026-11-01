@@ -124,7 +124,7 @@ async function main(): Promise<void> {
     relationshipsPerSecond: Math.round(allRels.length / Math.max(0.001, parseWallMs / 1000)),
     byType: shapes,
     perFileBytes: perFile.map((p) => p.bytes),
-    declaredBudget: "NONE RECORDED for this lane — docs/analyzers/real-go-analyzer.md states the budget is not declared, which is a pre-existing gap and not a figure re-baselined here",
+    declaredBudget: "NONE RECORDED for this lane — docs/analyzers/go.md states the budget is not declared, which is a pre-existing gap and not a figure re-baselined here",
   }
   const path = process.env.GO_PAYLOAD_ARTIFACT || "validation/m14/go/go-payload-latency.json"
   writeFileSync(path, JSON.stringify(out, null, 2))

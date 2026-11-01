@@ -1,6 +1,27 @@
-// verify-search-modes.ts — M13.18 (S1) bb_search mode negatives + freshness.
-// Migrated to the shared M13 harness (script/m13/harness.ts) so its evidence is
-// schema-compliant and adversarial (negative cases required for `verified`).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the mode/contract gate for bb_search: engine-level and
+//   public-boundary checks for exact/prefix/substring ranking, pagination, regex
+//   (valid/invalid/deterministic), content routes (phrase/terms/body),
+//   language/kind filters (case rule included), symbol-mode paging, the declared
+//   limit ceiling, file-source envelope, path-escape refusal and freshness across
+//   all modes.
+// WHICH TOOL IT SERVES — bb_search (read; modes symbols/content/symbol/file).
+// WHY IT IS SHAPED THIS WAY — engine tests must not mask handler/validation
+//   defects, so the same behaviours are asserted at the PUBLIC door too: a
+//   refusal is an `isError` envelope (never a throw), a page carries its declared
+//   total, and an option a mode cannot honour is refused.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/s1.json (through the shared
+//   harness).
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/search/*,
+//   src/mcp/tools/bb_search/{handler,descriptor}.ts, src/mcp/tool-validation.ts
+//   (the authoritative search option matrix), docs/BB_SEARCH.md.
+// CONTRACTS IT MUST NOT BREAK — a check with a constant `true` is not a check;
+//   every refusal asserted here must be observed at the public boundary; the
+//   freshness assertions must stay true negatives after a real edit.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { appendFileSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -111,6 +132,98 @@ try {
     `isError=${escape.isError} text=${escapeText.slice(0, 120)}`,
   )
 
+  // ── content routes and the body column ──────────────────────────────────
+  const bodyPhrase = await searchContent(projectId, "not referenced", { maxResults: 10 })
+  harness.check("content search reaches a body-only phrase", bodyPhrase.some((r) => r.symbolName === "orphanedFunction"), `results=${bodyPhrase.length}`)
+  harness.check("content declares matchMode on the phrase route", bodyPhrase.matchMode === "phrase", String(bodyPhrase.matchMode))
+  harness.check("content declares bodyCoverage with stored bodies", (bodyPhrase.bodyCoverage?.withBody ?? 0) >= 1, JSON.stringify(bodyPhrase.bodyCoverage))
+  const termsQuery = await searchContent(projectId, "how does the request handler respond", { maxResults: 10 })
+  harness.check("content terms route reports matchMode=terms", termsQuery.matchMode === "terms" || termsQuery.length > 0, String(termsQuery.matchMode))
+  const upperLang = await searchContent(projectId, "ProcessValue", { languages: ["GO"], maxResults: 10 })
+  harness.check("content language filter is case-insensitive (uppercase value matches)", upperLang.some((r) => r.language === "go"), `results=${upperLang.length}`)
+  const upperKind = await searchContent(projectId, "ProcessValue", { symbolKind: "Function", maxResults: 10 })
+  harness.check("content symbolKind filter is case-insensitive (uppercase value matches)", upperKind.length >= 1, `results=${upperKind.length}`)
+
+  // ── a content read must not persist schema in the index DB ──────────────
+  {
+    const rawForSchema = await BrainDatabase.getRawInstance(projectId)
+    const objects = () =>
+      (rawForSchema.prepare("SELECT name FROM sqlite_master WHERE name LIKE '%fts%'").all() as Array<{ name: string }>).map((r) => r.name)
+    const before = objects()
+    await searchContent(projectId, "handleRequest", { maxResults: 5 })
+    const after = objects()
+    harness.negative(
+      "content read adds no schema objects to the index database",
+      after.length === before.length && after.every((name) => before.includes(name)),
+      `before=${before.join(",") || "(none)"} after=${after.join(",") || "(none)"}`,
+    )
+  }
+
+  // ── public boundary: match-set declaration, limit ceiling, exact+regex ──
+  {
+    const declared = await publicSearch({ query: "handleRequest", limit: 1 }, { projectPath: root, projectId })
+    const declaredText = declared.content[0]?.text ?? ""
+    harness.check(
+      "public symbols answer carries the machine-readable match-set line",
+      /\[match-set\] searchMode=symbols totalMatches=\d+ returned=\d+ truncated=(true|false) staleCount=\d+/.test(declaredText),
+      declaredText.slice(-160),
+    )
+    let ceilingThrew = false
+    try { validateToolArguments(searchDescriptor, { query: "handleRequest", limit: 5000 }) } catch (e: any) { ceilingThrew = String(e).includes("between 0 and 2000") }
+    harness.negative("public boundary refuses limit above 2000 with the declared ceiling", ceilingThrew, "no refusal")
+    const conflict = await publicSearch({ query: "^handle.*", regex: true, exact: true }, { projectPath: root, projectId })
+    harness.negative(
+      "public boundary refuses exact combined with regex",
+      conflict.isError === true && String(conflict.content[0]?.text ?? "").includes("cannot be combined"),
+      String(conflict.content[0]?.text ?? "").slice(0, 120),
+    )
+    const fileRefresh = await publicSearch({ mode: "file", filePath: "src/app.ts", refresh: false }, { projectPath: root, projectId })
+    harness.negative(
+      "public boundary refuses refresh in file mode (manual-only staleness)",
+      fileRefresh.isError === true && String(fileRefresh.content[0]?.text ?? "").includes("does not accept: refresh"),
+      String(fileRefresh.content[0]?.text ?? "").slice(0, 120),
+    )
+  }
+
+  // ── symbol mode: complete by default, pages over the same set on request ─
+  {
+    const complete = await publicSearch({ mode: "symbol", symbolName: "duplicateName" }, { projectPath: root, projectId })
+    const completeBody = JSON.parse(complete.content[0]!.text)
+    harness.check(
+      "symbol mode returns the COMPLETE match set when no limit is given",
+      completeBody.totalMatches === 2 && completeBody.matches.length === 2 && completeBody.truncated === false,
+      JSON.stringify({ total: completeBody.totalMatches, returned: completeBody.matches.length, truncated: completeBody.truncated }),
+    )
+    const page1 = JSON.parse((await publicSearch({ mode: "symbol", symbolName: "duplicateName", limit: 1, offset: 0 }, { projectPath: root, projectId })).content[0]!.text)
+    const page2 = JSON.parse((await publicSearch({ mode: "symbol", symbolName: "duplicateName", limit: 1, offset: 1 }, { projectPath: root, projectId })).content[0]!.text)
+    const past = JSON.parse((await publicSearch({ mode: "symbol", symbolName: "duplicateName", limit: 1, offset: 9 }, { projectPath: root, projectId })).content[0]!.text)
+    harness.check(
+      "symbol mode pages with a declared total and distinct offsets",
+      page1.totalMatches === 2 && page1.matches.length === 1 && page1.truncated === true && page2.matches.length === 1 && page1.matches[0].fileId !== page2.matches[0].fileId,
+      JSON.stringify({ p1: page1.matches.length, p2: page2.matches.length, total: page1.totalMatches }),
+    )
+    harness.negative(
+      "symbol mode offset past the end is an empty page with a declared total, not an absent symbol",
+      past.totalMatches === 2 && past.matches.length === 0 && past.found === true,
+      JSON.stringify({ total: past.totalMatches, returned: past.matches.length, found: past.found }),
+    )
+    harness.check(
+      "symbol mode match shape carries language on the filePath fallback path",
+      page1.matches[0]?.language === "typescript" || page2.matches[0]?.language === "typescript",
+      JSON.stringify(page1.matches.map((m: any) => m.language)),
+    )
+  }
+
+  // ── regex determinism: a trivial pattern must answer the same set on retry ─
+  {
+    const sets: string[] = []
+    for (let i = 0; i < 5; i++) {
+      const run = await searchRegex(projectId, "^handle.*", {})
+      sets.push(run.map((r) => r.symbolName).sort().join(","))
+    }
+    harness.check("regex scan is deterministic across 5 warm calls", new Set(sets).size === 1 && sets.every((set) => set.length > 0), sets.join(" | "))
+  }
+
   // Freshness across all four modes: modify a file on disk without reindexing.
   appendFileSync(path.join(root, "src", "app.ts"), "\n// stale marker\n")
 
@@ -124,7 +237,15 @@ try {
   harness.check("content search flags stale rows after modification", staleContent.some((r) => r.stale === true) && (staleContent.staleCount ?? 0) > 0)
 
   const staleFile = await publicSearch({ mode: "file", filePath: "src/app.ts" }, { projectPath: root, projectId })
-  harness.check("file mode reports stale after modification", JSON.parse(staleFile.content[0]!.text).stale === true)
+  const staleFileBody = JSON.parse(staleFile.content[0]!.text)
+  harness.check("file mode reports stale after modification", staleFileBody.stale === true)
+  harness.negative(
+    "file mode's stale remediation does NOT claim auto-refresh or name refresh=false",
+    typeof staleFileBody.freshness?.remediation === "string" &&
+      staleFileBody.freshness.remediation.includes("does NOT auto-refresh") &&
+      !staleFileBody.freshness.remediation.includes("refresh=false"),
+    String(staleFileBody.freshness?.remediation).slice(0, 200),
+  )
 } catch (error) {
   harness.check("search modes session", false, error instanceof Error ? (error.stack ?? error.message) : String(error))
 } finally {

@@ -20,11 +20,21 @@ const ENGINE_VERSION = "m10.04"
 
 const metric = (value: number | null): ComplexityMetric => ({ value, available: value !== null })
 
-/** Escape %, _ and backslash so a caller-supplied path is a PATH. The graph
- *  engine's `likeContains()` and testing/test-intel's `likePrefix()` are the
- *  same rule in two other places; this is the third. */
+/** Escape %, _ and backslash so a caller-supplied path is a PATH, never a LIKE
+ *  pattern. Character-wise on purpose: the input is data, not a pattern, and a
+ *  character loop is the one formulation with no metacharacter to miss. The
+ *  same rule appears in `dependencies` and `testing/test-intel`. */
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (c) => "\\" + c)
+  let out = ""
+  for (const ch of value) out += ch === "\\" || ch === "%" || ch === "_" ? "\\" + ch : ch
+  return out
+}
+
+/** Remove trailing slashes: "while the last character is '/', drop it". */
+function stripTrailingSlashes(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === "/") end--
+  return value.slice(0, end)
 }
 
 /** The relationship types that are actually coupling. `exports` and `contains`
@@ -125,11 +135,16 @@ export async function analyzeComplexity(
       },
       breakdown: topRows.map((s) => ({ name: s.name, type: s.symbolType, complexity: s.complexity, file: s.file, line: s.line })),
       symbolCount,
+      // The breakdown is a page: at most the 20 highest-complexity symbols. Both
+      // numbers are published so a 20-row list for a 206-symbol scope is never
+      // read as the whole set.
+      breakdownReturned: topRows.length,
+      breakdownTruncated: symbolCount > topRows.length,
       filesInScope,
       // Project-wide: the two counts are the same question here.
       filesMatchingScope: filesInScope,
       couplingRelationshipTypes: [...COUPLING_RELATIONSHIP_TYPES],
-      provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch."] }),
+      provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch.", "breakdown carries at most the 20 highest-complexity symbols; breakdownReturned/breakdownTruncated state what was cut."] }),
     }
   }
 
@@ -145,7 +160,7 @@ export async function analyzeComplexity(
     symbols = raw.prepare(base + " AND s.name = ? AND s.symbol_type = 'class' LIMIT 50").all(projectId, options.target) as SymRow[]
   } else if (scope === "file") {
     if (!options.target) throw new Error("File path required for file scope")
-    const wanted = options.target.replace(/\/+$/, "")
+    const wanted = stripTrailingSlashes(options.target)
     // 1. an exact relative path — what a caller means, and unambiguous even
     //    when the path contains % or _.
     symbols = raw.prepare(base + " AND f.relative_path = ?").all(projectId, wanted) as SymRow[]
@@ -289,10 +304,14 @@ export async function analyzeComplexity(
     },
     breakdown: breakdown.slice(0, 20),
     symbolCount,
+    // The breakdown is a page: at most the 20 highest-complexity symbols. Both
+    // numbers are published so a short list is never read as the whole set.
+    breakdownReturned: Math.min(breakdown.length, 20),
+    breakdownTruncated: breakdown.length > 20,
     filesInScope,
     filesMatchingScope,
     scopeMatch,
     couplingRelationshipTypes: [...COUPLING_RELATIONSHIP_TYPES],
-    provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch."] }),
+    provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch.", "breakdown carries at most 20 symbols; breakdownReturned/breakdownTruncated state what was cut."] }),
   }
 }

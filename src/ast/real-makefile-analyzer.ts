@@ -4,7 +4,7 @@
 // WHAT THIS FILE IS. tree-sitter-make in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
 // no regex fallback. It covers six relationship types by name: contains, references, uses, imports, exports
 // and calls.
-// WHERE ITS CONTRACT LIVES: docs/analyzers/real-make-analyzer.md (the doc is named for the LANGUAGE, not for
+// WHERE ITS CONTRACT LIVES: docs/analyzers/make.md (the doc is named for the LANGUAGE, not for
 // this module — see the lane-name note below); machine-readable classification in
 // script/m14/spec/make-completeness.json; fixtures in validation/m14/fixtures/make/; measured records under
 // validation/m14/verification/.
@@ -18,7 +18,7 @@
 // reports "analyzer file absent" for this lane — a filename-mapping defect in the gate, not a missing header.
 // CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/make-completeness.json (new node types/kinds must be
 // classified), validation/m14/fixtures/make/ (expectation files pin the target spellings), and
-// docs/analyzers/real-make-analyzer.md. The router's lane map in script/m14/incoming-gate.ts is Lead-owned:
+// docs/analyzers/make.md. The router's lane map in script/m14/incoming-gate.ts is Lead-owned:
 // propose, never edit it from a lane.
 
 import type { Node } from "web-tree-sitter"

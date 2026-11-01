@@ -182,14 +182,21 @@ export function manifestLanes(): string[] {
   return j.analyzers.map((a: { analyzer: string }) => a.analyzer as string)
 }
 
+/** Analyzer file name -> documentation lane name, where they differ. The analyzer source is
+ *  `real-makefile-analyzer.ts` but the lane and its document are `make`. */
+const DOC_LANE_ALIAS: Record<string, string> = { makefile: "make" }
+
+/** The analyzer lanes, derived from the analyzer SOURCES (one doc per analyzer:
+ *  `docs/analyzers/<lane>.md`). Deriving from the docs would make a missing doc invisible. */
 export function docLanes(): string[] {
-  return readdirSync(DOCS_DIR)
-    .filter((f) => /^real-.*-analyzer\.md$/.test(f))
-    .map((f) => f.replace(/^real-/, "").replace(/-analyzer\.md$/, ""))
+  return readdirSync(path.join(ROOT, "src", "ast"))
+    .filter((f) => /^real-.*-analyzer\.ts$/.test(f) && !f.endsWith(".d.ts"))
+    .map((f) => f.replace(/^real-/, "").replace(/-analyzer\.ts$/, ""))
+    .map((f) => DOC_LANE_ALIAS[f] ?? f)
 }
 
 export function docFileFor(lane: string): string {
-  return path.join(DOCS_DIR, `real-${lane}-analyzer.md`)
+  return path.join(DOCS_DIR, `${DOC_LANE_ALIAS[lane] ?? lane}.md`)
 }
 
 /**

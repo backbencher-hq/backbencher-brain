@@ -4,7 +4,7 @@
 // WHAT THIS FILE IS. tree-sitter-julia in, UniversalSymbols + UniversalRelationships out, pure AST extraction,
 // no regex fallback. It covers ten relationship types by name: calls, uses, contains, imports, references,
 // exports, extends, overrides, instantiates and part_of (`include("…")`, R3).
-// WHERE ITS CONTRACT LIVES: docs/analyzers/real-julia-analyzer.md (long form); machine-readable classification
+// WHERE ITS CONTRACT LIVES: docs/analyzers/julia.md (long form); machine-readable classification
 // in script/m14/spec/julia-completeness.json; fixtures in validation/m14/fixtures/julia/; measured
 // clause/ambiguity records under validation/m14/verification/ (FOUR-CLAUSE-julia.md and the calls-ambiguity
 // split).
@@ -14,7 +14,7 @@
 // no julia companion wasm exists in wasm/. Section A's union rule (`cfg.wasm` + every `companionWasm`) is a
 // single grammar here — if a companion is ever added, declare it in the config and classify its node types.
 // CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/julia-completeness.json (new node types and emitted kinds),
-// validation/m14/fixtures/julia/ (expectation files pin the endpoints), docs/analyzers/real-julia-analyzer.md,
+// validation/m14/fixtures/julia/ (expectation files pin the endpoints), docs/analyzers/julia.md,
 // and the lane's records in validation/m14/verification/. The shared arbiter script/m14/incoming-rule.ts is
 // Lead-owned: propose, never edit it from a lane.
 
@@ -136,7 +136,7 @@ function juliaPackageName(projectRoot: string | undefined): string {
  * is emitted, behind four guards, and the guards were each put there by a measurement that removed
  * edges: 417 redefinition pairs in the corpus, 237 unconditional, 200 not a local binding, 163 in a
  * genuinely different scope, 44 inside a DECLARED module — and 3 edges. The refusals are counted,
- * not hidden; `overridesEmit` below and `docs/analyzers/real-julia-analyzer.md` carry the numbers.
+ * not hidden; `overridesEmit` below and `docs/analyzers/julia.md` carry the numbers.
  *
  * `extends` is emitted ONLY for `<: Supertype` on an `abstract type` or a `struct`. That is the
  * real subtype edge and nothing else is.
@@ -457,7 +457,7 @@ export class RealJuliaAnalyzer {
    * (`script/m14/ontology-coverage-gate.ts` header, BD8b).
    *
    * MEASURED: filled in from `validation/m14/fixtures/julia/census.ts` over the admitted corpus —
-   * see `docs/analyzers/real-julia-analyzer.md` for the counts and the probe that produces them.
+   * see `docs/analyzers/julia.md` for the counts and the probe that produces them.
    */
   private redefinedAt = new Map<number, { name: string; replacesLine: number; signature: string; scope: string }>()
 

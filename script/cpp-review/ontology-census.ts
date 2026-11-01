@@ -38,7 +38,7 @@ const REPOS = (process.env.CPP_REPOS || "cpp-example,cpp-sample,kotlin,objc,okio
 const LIMIT = Number(process.env.CPP_LIMIT || 0)
 const SECTION = process.env.CPP_SECTION || ""
 
-// The lane's own extension universe (docs/analyzers/real-cpp-analyzer.md
+// The lane's own extension universe (docs/analyzers/cpp.md
 // "Language detection" + parallel-indexer's accepted set).
 const EXTS = [".cpp", ".cc", ".cxx", ".hpp", ".hxx", ".hh", ".h++", ".h"]
 

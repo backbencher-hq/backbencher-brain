@@ -20,12 +20,23 @@ import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
-function ck(l: string, c: boolean, d?: string) { checks++; if (c) passed++; else { failed++; console.log("  FAIL: " + l + (d ? " — " + d : "")) } }
-function nk(l: string, c: boolean, d?: string) { negatives++; if (c) negativePassed++; else { failed++; console.log("  FAIL: " + l + " (negative)" + (d ? " — " + d : "")) } }
+/** Failures across ALL sections. The per-section `failed` is reset by each
+ *  `emit()`, so the process exit code is decided from this cumulative count —
+ *  without it the gate wrote `known-gap` evidence and still exited 0, and
+ *  `npm run verify` reported success over a failed gate. */
+let totalFailed = 0
+let totalChecks = 0
+function ck(l: string, c: boolean, d?: string) { checks++; totalChecks++; if (c) passed++; else { failed++; totalFailed++; console.log("  FAIL: " + l + (d ? " — " + d : "")) } }
+function nk(l: string, c: boolean, d?: string) { negatives++; totalChecks++; if (c) negativePassed++; else { failed++; totalFailed++; console.log("  FAIL: " + l + " (negative)" + (d ? " — " + d : "")) } }
+
+// Planted-mutant control: a gate nobody has seen fail is not evidence. With
+// BB_M15_PLANT_FAILURE=1 this injects one failing check so the exit-code path is
+// exercised, and the run must end non-zero with `known-gap` evidence.
+const PLANT_FAILURE = process.env.BB_M15_PLANT_FAILURE === "1"
 
 async function emit(code: string, issue: string, file: string) {
-  const total = passed + negativePassed
-  const e = { issue, code, tool: "bb_search", verified: failed === 0, checks, passed: total, failed, negatives, generatedAt: new Date().toISOString() }
+  const totalPassed = passed + negativePassed
+  const e = { issue, code, tool: "bb_search", verified: failed === 0, checks: checks + negatives, passed: totalPassed, failed, negatives, generatedAt: new Date().toISOString() }
   writeFileSync(path.resolve("validation/m15/results/" + file), JSON.stringify(e, null, 2) + "\n")
   console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
 }
@@ -68,6 +79,9 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   ck("S1: regex-search.ts exports searchRegex", searchSrc("src/intelligence/search/regex-search.ts").includes("export async function searchRegex"))
   ck("S1: semantic-search.ts exports semanticVectorSearch", searchSrc("src/intelligence/search/semantic-search.ts").includes("semanticVectorSearch"))
 
+  if (PLANT_FAILURE) ck("PLANTED MUTANT: injected failure (control — this run must exit non-zero)", false, "BB_M15_PLANT_FAILURE=1")
+  else nk("PLANTED-MUTANT CONTROL: injected failures are observable (run with BB_M15_PLANT_FAILURE=1 to exercise)", true, "control available")
+
   await emit("S1", "M15.S1", "s1.json")
   await reset()
 
@@ -83,13 +97,11 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   const opPattern = /\.(replace|split|test|exec|search|match)\(\s*\/[^\/\n]*\/[gimsuy]*/g
   const contentOps = (contentSrc.match(opPattern) || []).filter((r) => !r.startsWith("import"))
   const symbolOps = (symbolSrc.match(opPattern) || []).filter((r) => !r.startsWith("import"))
-  ck("S2: regex op sites enumerated (content+symbol)", contentOps.length + symbolOps.length >= 2,
-     "content=" + contentOps.length + " symbol=" + symbolOps.length)
-  ck("S2: content-search regexes are replacements (ftsQuote) + tokenize (split)",
-     contentOps.length >= 2, contentOps.join(" | "))
-  // symbol-search contains NO op-hosted regexes at all — pure indexed SQL
-  // (the strongest form: no regex in the loop, only LIKE/INSTR on the index)
-  nk("S2: symbol-search uses zero regex ops (pure SQL)", symbolOps.length === 0, "symbolOps=" + symbolOps.length)
+  // The search layer's own rule: recall/ranking text handling uses explicit
+  // string operations, and a caller-supplied pattern is the one documented
+  // regex exception (it is DATA, matched against names, never source parsing).
+  ck("S2: content-search hosts zero regex op sites (explicit text splitting only)", contentOps.length === 0, contentOps.join(" | "))
+  nk("S2: symbol-search hosts zero regex op sites (pure indexed SQL)", symbolOps.length === 0, "symbolOps=" + symbolOps.length)
   // No code-classification regex may exist in ANY search module — i.e. no
   // regex that matches language keywords/constructs to decide what a token is.
   const CODE_CLASSIFIER_SIGNS = [
@@ -279,4 +291,8 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     }
   }
   await emit("S8", "M15.S8", "s8.json")
+  console.log("TOTAL: " + (totalChecks - totalFailed) + "/" + totalChecks + " checks passed, " + totalFailed + " failed")
+  // A gate that exits 0 on failure is worse than no gate: `npm run verify` chains
+  // this script with &&, so the exit code is the only thing the build can see.
+  process.exit(totalFailed === 0 ? 0 : 1)
 })().catch((e: any) => { console.error("FATAL", e); process.exit(2) })

@@ -159,8 +159,13 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     const summary = generated.derived.summary
     const staleish = summary.stale + summary.missing
     if (staleish === 0) return ""
+    const files = citedFiles(generated.result)
     const declinedDisabled = (generated.autoRefreshLine ?? "").startsWith("auto-refresh disabled")
-    const remediation = declinedDisabled ? FRESHNESS_REMEDIATION_MANUAL_ONLY.dir : FRESHNESS_REMEDIATION.dir
+    // The footer's scope must agree with the envelope's: one cited file names that
+    // file's own reindex command, several name the project command.
+    const remediation = files.length === 1
+      ? (declinedDisabled ? FRESHNESS_REMEDIATION_MANUAL_ONLY.file : FRESHNESS_REMEDIATION.file).replace("<file>", files[0])
+      : (declinedDisabled ? FRESHNESS_REMEDIATION_MANUAL_ONLY.dir : FRESHNESS_REMEDIATION.dir)
     return `${summary.stale} stale, ${summary.missing} missing of ${summary.fresh + staleish} cited file(s) — ${remediation}`
   }
   const render = (generated: Generated, budget: { passed: boolean; estimatedTokens: number; maxTokens: number }): string => {
@@ -193,22 +198,34 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     if (error instanceof DocRequestError) return textResult(error.message, true)
     throw error
   }
+  const compactTokens = (value: unknown): number => Math.ceil(JSON.stringify(value).length / 4)
+  let engineBudget = requestedMaxTokens
+  let objectTokens = compactTokens(generated.result)
   let text = render(generated, { passed: true, estimatedTokens: PLACEHOLDER_TOKENS, maxTokens: requestedMaxTokens })
   let measuredLast = Math.ceil(text.length / 4)
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const measured = Math.ceil(text.length / 4)
-    measuredLast = measured
-    if (measured <= requestedMaxTokens) break
-    const nextBudget = Math.max(1, requestedMaxTokens - (measured - requestedMaxTokens))
-    if (nextBudget >= requestedMaxTokens) break
+  for (let attempt = 0; attempt < 6; attempt++) {
+    measuredLast = Math.ceil(text.length / 4)
+    if (measuredLast <= requestedMaxTokens) break
+    // The engine measures its compact object; the caller receives the decorated,
+    // indented payload. Subtracting the measured DECORATION overhead from the
+    // caller's budget turns the engine's own trim into a trim of the payload.
+    const overhead = Math.max(0, measuredLast - objectTokens)
+    let nextBudget = Math.max(1, requestedMaxTokens - overhead)
+    if (nextBudget >= engineBudget) nextBudget = Math.max(1, engineBudget - Math.max(50, measuredLast - requestedMaxTokens))
+    if (nextBudget === engineBudget) break
+    engineBudget = nextBudget
     try {
-      generated = await generate(nextBudget, false)
+      generated = await generate(engineBudget, false)
     } catch (error: any) {
       if (error instanceof DocRequestError) return textResult(error.message, true)
       throw error
     }
+    objectTokens = compactTokens(generated.result)
     text = render(generated, { passed: true, estimatedTokens: PLACEHOLDER_TOKENS, maxTokens: requestedMaxTokens })
-    measuredLast = Math.ceil(text.length / 4)
+    // The engine has already reached its smallest honest rendering: trimming
+    // further would drop a required section or its explanation. Declare the
+    // shortfall instead of spending more generations on a floor.
+    if (generated.result.quality.budget.passed === false) break
   }
   // Keep the reported figure an over-count: a rewrite can move the payload by a
   // character, and `estimatedTokens * 4` must never be smaller than the payload.

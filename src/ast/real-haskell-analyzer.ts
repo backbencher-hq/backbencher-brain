@@ -10,7 +10,7 @@
 //   validation/m14/fixtures/haskell/ruled-extended-types.hs pins that in both directions.
 //   See script/m14/spec/haskell-completeness.json (coverage.excluded) and the doc's
 //   "renders and mixes_in — the two rulings (2026-10-27)" section.
-// DOCS: docs/analyzers/real-haskell-analyzer.md (the lane's measured record).
+// DOCS: docs/analyzers/haskell.md (the lane's measured record).
 // SPEC + FIXTURES: script/m14/spec/haskell-completeness.json · validation/m14/fixtures/haskell/.
 // CO-EDIT LIST — edit these when this file changes: the doc above; the completeness spec's
 //   handled/silent/gap/design_decision buckets AND its coverage block; every affected
@@ -571,7 +571,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (HSD6/HSD19, unchanged — this publishes no symbol), but it IS a declared
     // callable, so its call sites attribute to the local and its edge identity is
     // the lexical owner chain (`owner.local`, nested `owner.inner.local`; see
-    // `collectLocalScopes` and docs/analyzers/real-haskell-analyzer.md). What was
+    // `collectLocalScopes` and docs/analyzers/haskell.md). What was
     // missing is not the identity — the analyzer computes it and publishes it AS
     // THE TARGET — but the DISPOSITION: a target spelled `helper.go` reads, to
     // every key space, exactly like a target that names a declaration which is

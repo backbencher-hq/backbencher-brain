@@ -3,7 +3,7 @@
  *
  * ## Why one process and why interleaved
  *
- * `docs/analyzers/real-typescript-analyzer.md` records that wall-clock numbers
+ * `docs/analyzers/typescript.md` records that wall-clock numbers
  * on this box are unstable: "the M12 harness header records the same analyzer
  * measuring 25.8 ms/file and 172.6 ms/file minutes apart". The F# lane withdrew
  * a +16% latency claim for exactly this reason (ONTOLOGY-WORKSTREAM-STATE

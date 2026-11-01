@@ -32,9 +32,9 @@
 // validation/m14/verification/RUBY-D7-LEDGER.md.
 // Where its scripts and validations live: script/m14/spec/ruby-completeness.json · fixtures
 // validation/m14/fixtures/ruby/** (`bun run script/m14/run-fixtures.ts --lang ruby`) · lane doc
-// docs/analyzers/real-ruby-analyzer.md · cell validation/m14/verification/RUBY-CELL-2026-10-21.md ·
+// docs/analyzers/ruby.md · cell validation/m14/verification/RUBY-CELL-2026-10-21.md ·
 // wall ledger validation/m14/verification/RUBY-D7-LEDGER.md.
-// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-ruby-analyzer.md, the
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/ruby.md, the
 // spec JSON's emission sites and requiredKinds row, and the fixtures/expectations pinning a changed edge.
 // Grammar: tree-sitter-ruby (wasm/tree-sitter-ruby.wasm, sha256
 // 93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39) — the source it is a build of is

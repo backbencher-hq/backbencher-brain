@@ -148,14 +148,14 @@ const TABLE_PROBE_NODES: Record<string, string[]> = Object.fromEntries(
 
 /**
  * The sibling IDL lane's `calls` list, TRANSCRIBED from its own doc and checked against
- * that doc here rather than trusted: `docs/analyzers/real-graphql-analyzer.md` names
+ * that doc here rather than trusted: `docs/analyzers/graphql.md` names
  * seven CamelCase node types for its `A:call_node` probe. It is in this file because the
  * lane this probe belongs to was FALSIFIED for a name that the sibling lane spells the
  * other way round, and the difference is case rather than evidence — which is the whole
  * argument for moving every ruling here to instrument B.
  */
 const SIBLING_IDL_CALL_NODES = ["CallExpression", "FunctionDefinition", "FunctionDeclaration", "MethodDefinition", "Invocation", "MacroInvocation", "Call"]
-const SIBLING_DOC = path.join(ROOT, "docs", "analyzers", "real-graphql-analyzer.md")
+const SIBLING_DOC = path.join(ROOT, "docs", "analyzers", "graphql.md")
 let siblingListVerified: string | null = null
 try {
   const doc = readFileSync(SIBLING_DOC, "utf8")
@@ -363,7 +363,7 @@ const report = {
       aVerdictUnderCorrectGrammar: nodes.some((n) => (pb.inventory.get(n) ?? 0) > 0) ? "FALSIFIED" : "clean",
     })),
     siblingIdlCallList: {
-      source: "docs/analyzers/real-graphql-analyzer.md, probe A:call_node",
+      source: "docs/analyzers/graphql.md, probe A:call_node",
       transcriptionCheck: siblingListVerified,
       nodes: SIBLING_IDL_CALL_NODES.length,
       collidingUnderBash: SIBLING_IDL_CALL_NODES.filter((n) => (sh.inventory.get(n) ?? 0) > 0),

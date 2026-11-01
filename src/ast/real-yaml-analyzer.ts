@@ -9,7 +9,7 @@
  * never inherit — the fixtures forbid both wrong directions, so a future change that widens `uses`
  * or lets an alias inherit fails a pin rather than quietly passing. Do not relax either guard.
  *
- * WHERE THE RECORD LIVES: docs/analyzers/yaml.md + docs/analyzers/real-yaml-analyzer.md; spec
+ * WHERE THE RECORD LIVES: docs/analyzers/history/yaml-lane-notes.md + docs/analyzers/yaml.md; spec
  * script/m14/spec/yaml-completeness.json; fixtures validation/m14/fixtures/yaml (incl. the
  * `uses` forbid controls); lane records under validation/m14/verification/.
  *
@@ -244,7 +244,7 @@ const isBareRefName = (s: string): boolean => {
  * The lane's declared limitations live in `script/m14/spec/yaml-completeness.json` — the ruled
  * types in `coverage.zeroEmissionFacts[]` (each with both halves: the grammar's own node-type
  * inventory AND the behaviour count), the measured ones in `coverage._implemented_measured` — and
- * are restated in `docs/analyzers/real-yaml-analyzer.md`.
+ * are restated in `docs/analyzers/yaml.md`.
  */
 
 interface YamlContext {

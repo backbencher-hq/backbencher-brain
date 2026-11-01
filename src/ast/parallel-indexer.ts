@@ -1697,7 +1697,7 @@ export async function processWithWorkerPool(
     // session editing this file, and the symptom was invisible — the run simply produced the
     // pre-index classes (0 `in-project-*` rows in the store) with no warning anywhere, because a
     // missing index is a SUPPORTED state. The store-side check that catches it is written down in
-    // `docs/analyzers/real-fsharp-analyzer.md` pass 16: index a small F# project and count
+    // `docs/analyzers/fsharp.md` pass 16: index a small F# project and count
     // `in-project-*` in `brain_relationship.metadata`; 0 means the registration is gone.
     // `.proto` ADDED 2026-10-11 (protobuf lane). The entry is INERT WITHOUT A SPEC: measured over the
     // whole corpus (847 .proto files), the Solidity default yields 0 names and 0 types — an entry that

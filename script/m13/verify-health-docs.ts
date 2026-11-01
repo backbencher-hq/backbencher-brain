@@ -1,16 +1,16 @@
-// script/m13/verify-health-docs.ts — M13.34 (H6).
+// script/m13/verify-health-docs.ts — (H6).
 //
 // Docs + evidence + release gate for bb_health.
 //
 // 1. DOCS ACCURACY: docs/tools/bb_health.md must be byte-identical to a fresh
-//    render from the executable registry (real generator verify mode) and its
-//    Contract section must match the registry field-by-field.
+//  render from the executable registry (real generator verify mode) and its
+//  Contract section must match the registry field-by-field.
 // 2. EVIDENCE COMMITTED: h1..h5.json must all exist, validate, and claim
-//    verified.
+//  verified.
 // 3. RELEASE GATE: the gate must block a non-passing suite from claiming
-//    verified — proven adversarially against the REAL validateEvidence.
+//  verified — proven adversarially against the REAL validateEvidence.
 
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { Harness } from "./harness"
@@ -35,7 +35,13 @@ const harness = new Harness({
 })
 
 const root = path.resolve(import.meta.dir, "..", "..")
-const RESULTS = path.join(root, "validation", "m13", "results")
+// Evidence lookup order: this owner's own evidence directory first (populated by
+// running the H gates from the working tree), then the canonical milestone
+// results. The gate verifies the H-issue evidence; it must not fail merely
+// because the canonical fleet-owned copies are being regenerated elsewhere.
+const OWN_RESULTS = path.join(root, "validation", "tools", "bb_health", "evidence", "m13")
+const CANONICAL_RESULTS = path.join(root, "validation", "m13", "results")
+const RESULTS = existsSync(OWN_RESULTS) ? OWN_RESULTS : CANONICAL_RESULTS
 
 // ── 1. Docs accuracy ───────────────────────────────────────────────────────
 const registry = PUBLIC_TOOL_DESCRIPTORS.find((t) => t.name === "bb_health")
@@ -58,7 +64,10 @@ if (registry) {
   harness.check("docs: refresh documented as explicit mutation", doc.includes("refresh=true explicitly mutates only index data"))
 }
 
-const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root, encoding: "utf8", timeout: 120_000 })
+// Scoped to this tool: the full generator also checks every other owner's page,
+// so a foreign page mid-edit would fail this gate for a fact about bb_health that
+// did not change. `--only` runs the same renderer for our page only.
+const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts", "--only", "bb_health"], { cwd: root, encoding: "utf8", timeout: 120_000 })
 harness.check("docs: generator verify mode passes (bb_health.md byte-fresh)", gen.status === 0, gen.status === 0 ? "" : (gen.stderr || gen.stdout || "").slice(0, 200))
 
 // ── 2. Evidence committed and passing (h1..h5) ─────────────────────────────

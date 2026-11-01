@@ -1,4 +1,4 @@
-# real-c-analyzer.md
+# c.md
 
 > **2026-09-28 wave (M14/M37/M60).** Every claim below was re-measured. Six
 > claims in the previous version of this page were **false or stale** and each is
@@ -498,7 +498,7 @@ measurement.)
 > section disagrees with the section above it says so.
 >
 > **One provenance finding first, because it bears on every table above.**
-> `docs/analyzers/real-c-analyzer.md:245` attributed the C six-questions table to
+> `docs/analyzers/c.md:245` attributed the C six-questions table to
 > `script/m14/tmp/c-audit/c-six-questions.ts`. That path exists in **no branch of this
 > repository** — `git log --all --diff-filter=D` for it is empty and
 > `git ls-tree -r <branch> | grep six-questions` is 0 across 7,972 commits. The table
@@ -1578,7 +1578,7 @@ attribution only and the oracle's `(expr)` could never have matched the analyzer
 function name or not. Nothing is gained by moving the payload toward the less precise
 form. The one thing the measurement settles FOR the future is that if a lane ever
 publishes a local or parameter symbol, `uses` must resolve against THAT symbol, and
-Clean's `qualifiedName` shape (`real-clean-analyzer.md:184-190`) is the family
+Clean's `qualifiedName` shape (`clean.md:184-190`) is the family
 precedent for making such an edge resolvable.
 
 **Two probes were wrong first, in the same direction, and both inflated the

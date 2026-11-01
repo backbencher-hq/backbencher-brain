@@ -15,7 +15,7 @@
 // its falsifiers in validation/m14/verification/CLOJURE-VERDICT-2026-10-20.md §2.2.
 // Grammar: wasm/tree-sitter-clojure.wasm
 // (sha256 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27).
-// Docs / spec / fixtures / validations: docs/analyzers/real-clojure-analyzer.md ·
+// Docs / spec / fixtures / validations: docs/analyzers/clojure.md ·
 // script/m14/spec/clojure-completeness.json · validation/m14/fixtures/clojure/** ·
 // validation/m14/verification/CLOJURE-STATE.md.
 // CO-EDIT LIST — when this file changes, review in the SAME pass: the docs above,

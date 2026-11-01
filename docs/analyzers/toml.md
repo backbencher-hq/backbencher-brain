@@ -1,4 +1,4 @@
-# real-toml-analyzer.md
+# toml.md
 
 > **Canonical contract doc for the toml lane.** The rulings and why each was taken
 > live in the analyzer's own header comment and in the completeness spec; this file

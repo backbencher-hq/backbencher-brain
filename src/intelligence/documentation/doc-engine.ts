@@ -1260,7 +1260,7 @@ function addRelationshipFacts(raw: any, resolver: FreshnessResolver, symbols: Ro
       const statement = `${subject} ${type} ${other}.`
       if (seen.has(statement)) continue
       seen.add(statement)
-      if (!neighbourName && SYMBOL_DIRECTED.has(type)) unresolved++
+      if (!neighbourName && !neighbourExternal && SYMBOL_DIRECTED.has(type)) unresolved++
       // The call site is in the SOURCE symbol's file for either direction, so the
       // citation names that file and that line — never the neighbour's file with
       // a line number from somewhere else.
@@ -1286,7 +1286,7 @@ function addRelationshipFacts(raw: any, resolver: FreshnessResolver, symbols: Ro
         fileId: edgeFileId || undefined,
       }, resolver)
       const neighbourFile = outbound ? relationship.target_file : relationship.source_path
-      const classification: DocFact["classification"] = neighbourName || neighbourFile ? "extracted" : "inferred"
+      const classification: DocFact["classification"] = neighbourName || neighbourExternal || neighbourFile ? "extracted" : "inferred"
       facts.push(fact(classification, statement, [id], citations))
     }
   }
@@ -1299,6 +1299,7 @@ function projectId_(symbols: Row[]): string {
 
 function addImportFacts(raw: any, resolver: FreshnessResolver, files: Row[], citations: DocCitation[], local: { paths: Set<string>; stems: Set<string> }): DocFact[] {
   const facts: DocFact[] = []
+  const byStatement = new Map<string, DocFact>()
   for (const file of files) {
     const rel = String(file.relative_path ?? "")
     const dir = dirOf(rel)
@@ -1321,9 +1322,20 @@ function addImportFacts(raw: any, resolver: FreshnessResolver, files: Row[], cit
         evidence: `Import ${spec}`,
         fileId: String(file.id),
       }, resolver)
-      facts.push(localHit
-        ? fact("extracted", `${rel} imports ${spec}, which is a file this project indexes.`, [id], citations)
-        : fact("extracted", `${rel} imports ${spec}${item.is_external ? " as an external dependency" : ""}.`, [id], citations))
+      // One spec can be indexed once per imported name (`import {a, b} from "./x"`
+      // yields two rows with the same spec). The claim is about the import, so it
+      // is stated once with every citation that supports it.
+      const statement = localHit
+        ? `${rel} imports ${spec}, which is a file this project indexes.`
+        : `${rel} imports ${spec}${item.is_external ? " as an external dependency" : ""}.`
+      const existing = byStatement.get(statement)
+      if (existing) {
+        existing.citationIds.push(id)
+        continue
+      }
+      const built = fact("extracted", statement, [id], citations)
+      byStatement.set(statement, built)
+      facts.push(built)
     }
   }
   return facts
@@ -2264,7 +2276,11 @@ function makeResult(args: MakeResultArgs): DocResult {
     const covered = REQUIRED_SECTION_IDS[mode].filter((id) => result.sections.some((section) => section.id === id)).length
     const factualityPassed = uncitedClaims === 0 && hasEvidence
     const referencesPassed = missing === 0 && broken === 0
-    const warnings: string[] = [...result.unknowns.map((unknown) => unknown.statement)]
+    // Unknowns are the gap inventory which the document already prints in full;
+    // copying every statement into `warnings` doubled that text and spent the
+    // caller's token budget on a second copy of the same sentences. Warnings
+    // carry the measurement notes (stale/missing/trim/dropped) only.
+    const warnings: string[] = []
     if (stale) warnings.push(`${stale} of the listed source(s) are stale: the file changed after indexing`)
     if (missing) warnings.push(`${missing} of the listed source(s) point at a file that no longer exists`)
     if (broken) warnings.push(`${broken} listed source(s) could not be resolved on disk`)

@@ -18,7 +18,7 @@
 // script/m14/python-type-census.ts, and the negative direction is pinned by the fixture
 // validation/m14/fixtures/python/ruled-out-extended-values.py. The whole classification, with the
 // cell and the wall ledger, is validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md.
-// WHERE ITS CONTRACT LIVES. docs/analyzers/real-python-analyzer.md (long form), validation/m14/
+// WHERE ITS CONTRACT LIVES. docs/analyzers/python.md (long form), validation/m14/
 // verification/PYTHON-FIX.md + PYTHON-STATE.md (measured rounds) + PYTHON-RESOLUTION-
 // CLASSIFICATION.md + PYTHON-APPLICABLE-SET.md + PYTHON-CLASSIFICATION-2026-10-21.md (the
 // all-out-of-all classification, the cell and the D7 wall ledger), the instruments under script/m14/
@@ -5360,7 +5360,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the php lane's owner pass reads the ancestor column), so a store-level reader sees NULL — measured
    * at 0% survival by `.tmp-py/seam-metadata-probe.mts` over the priced files. The SYMBOL crosses
    * (which is what the mechanism is for); the provenance FIELD does not. That gap is PY-D26 in
-   * `docs/analyzers/real-python-analyzer.md`, declared with its numbers rather than fixed here, because the
+   * `docs/analyzers/python.md`, declared with its numbers rather than fixed here, because the
    * allowlist's own rule is that a key belongs there once a READER consumes it and no store-level
    * reader consumes this one yet.
    *

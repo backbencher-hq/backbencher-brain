@@ -1,4 +1,4 @@
-# real-powershell-analyzer
+# powershell analyzer — analyzer documentation
 
 Pure Tree-sitter PowerShell extraction for `*.ps1`, `*.psm1`, and `*.psd1`
 sources, verified under milestone **M12.40** (issue #179).
@@ -1368,7 +1368,7 @@ and pass 3 adds one of its own (finding 7). `script/m14/differential.ts`,
    analyzer (0 FALSE_POSITIVE, 0 FALSE_NEGATIVE for powershell). The tenth is the gate's
    bug. **Still present at HEAD and re-measured in pass 3**: the gate's single powershell
    row is `UNDOCUMENTED [powershell] calls`, and `calls` is at
-   `docs/analyzers/real-powershell-analyzer.md:214` — the first body row of the table.
+   `docs/analyzers/powershell.md:214` — the first body row of the table.
    Repo-wide the gate reads `48 analyzers, FALSE_NEGATIVE=7 FALSE_POSITIVE=0
    UNDOCUMENTED=41 MISSING_DOC=1 NO_CLAIM_TABLE=19 -> FAIL`; the other lanes'
    `UNDOCUMENTED` rows are bash, c and clojure's `calls`, which is the same defect seen

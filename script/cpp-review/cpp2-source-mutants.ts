@@ -36,7 +36,7 @@
  * rule whose blast radius is larger than expected is visible rather than hidden.
  *
  * EVERY mutant is stated in BOTH directions where the direction is meaningful. D8's
- * lesson — recorded in `docs/analyzers/real-cpp-analyzer.md` — is that "a gate that
+ * lesson — recorded in `docs/analyzers/cpp.md` — is that "a gate that
  * only ever runs in the under-firing direction proves nothing about the direction that
  * costs symbols", so `d9-overfires` exists alongside `d9-shape2-and-symref-lost`.
  *

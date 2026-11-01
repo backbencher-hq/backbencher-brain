@@ -1,4 +1,4 @@
-# real-perl-analyzer.md
+# perl.md
 
 ## Language and wiring
 
@@ -432,7 +432,7 @@ unhelpful version of this sentence:
    `script/m14/differential.ts`, where perl's oracle no longer lives.**
    `derivePerlEdges` is absent from the shared file and present only in
    `script/m14/tmp/oracle-mirror/differential.ts`, while
-   `docs/analyzers/real-perl-analyzer.md` states it is in
+   `docs/analyzers/perl.md` states it is in
    `script/m14/differential.ts`. So the DERIVATION verdict for perl was computed
    from a filter that no lane's oracle backs. `readOwnOracleLabels` is the
    documented escape hatch and this lane now uses it; the master may want to move

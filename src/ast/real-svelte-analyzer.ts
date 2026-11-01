@@ -18,7 +18,7 @@
  * Grammar: `wasm/tree-sitter-svelte.wasm` for the SFC skeleton; tree-sitter-javascript/typescript for
  * the script bodies (engine pre-parse, `context.sfcScriptTrees`).
  *
- * Where the rest of the lane lives: docs/analyzers/svelte.md · docs/analyzers/real-svelte-analyzer.md ·
+ * Where the rest of the lane lives: docs/analyzers/history/svelte-lane-notes.md · docs/analyzers/svelte.md ·
  * spec script/m14/spec/svelte-completeness.json · fixtures validation/m14/fixtures/svelte/ ·
  * validation validation/m14/results/ and validation/m14/verification/SVELTE-FIX-admitted.txt.
  *
@@ -27,7 +27,7 @@
  * there moves this lane's symbols) · `src/ast/engine.ts` (the SFC script-tree pre-parse and the range
  * offsets back to SFC lines) · `script/m14/spec/svelte-completeness.json` ·
  * `validation/m14/fixtures/svelte/*.expectation.json` · `script/m14/completeness-inventory.ts`
- * (Lead-owned: this lane's requiredKinds/docs rows) · `docs/analyzers/real-svelte-analyzer.md`.
+ * (Lead-owned: this lane's requiredKinds/docs rows) · `docs/analyzers/svelte.md`.
  */
 // Svelte Intelligence Engine
 // M12.13 rewrite: C#-family contract, pure-AST, fully regex-free.
@@ -2863,7 +2863,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `line_number` means on each: on a template-read row `line_number` IS a site, so a
    * one-element list adds nothing; here `line_number` is the SCRIPT's line, so for a
    * single dropped site the list is the only place that site exists. The divergence
-   * is recorded in `docs/analyzers/BRANCH-INVENTORY-2026-10-07.md` rather than smoothed
+   * is recorded in `archive/docs-pre-consolidation/analyzers-BRANCH-INVENTORY-2026-10-07.md` rather than smoothed
    * over. Returns whether anything was recorded, so a caller could assert the empty
    * case.
    */

@@ -6,7 +6,7 @@
  *
  * `script/m14/no-regex-gate.sh` (master-owned, added on analyzer/DERIV_TS) reports
  * **11 regex uses in `real-typescript-analyzer.ts`**. Every one is a false positive,
- * and `docs/analyzers/real-typescript-analyzer.md` claims **0**. Both numbers cannot
+ * and `docs/analyzers/typescript.md` claims **0**. Both numbers cannot
  * stand, so this checks the claim mechanically instead of by eye.
  *
  * The gate's pattern is

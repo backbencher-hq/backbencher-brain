@@ -1,6 +1,6 @@
 # Julia Analyzer
 
-> Canonical path `docs/analyzers/real-julia-analyzer.md` (renamed from `julia.md`, 2026-10-03;
+> Canonical path `docs/analyzers/julia.md` (renamed from `julia.md`, 2026-10-03;
 > `script/m14/verify-doc-truth-emissions.ts` resolves an analyzer's doc by that name and reported
 > `MISSING_DOC real-julia-analyzer.ts` while `julia.md` sat beside it). One reference to the old path
 > belongs to a shared file — `script/m14/completeness-inventory.ts:733` — and is reported, not edited.
@@ -773,7 +773,7 @@ first body row present? false
 The consequence is a cross-lane false negative: for any lane whose claim table leads with a
 relationship type, a doc claiming that type is emitted while the analyzer emits nothing reads as a
 **pass** — the `FALSE_POSITIVE` class the gate exists to catch, silently disabled for one row per
-language. The same shape is reported against `real-kotlin-analyzer.md`, whose first row is also
+language. The same shape is reported against `kotlin.md`, whose first row is also
 `calls`. The fix is one line (drop the `continue`) in a shared file, so it is reported rather than
 applied. The row is left FIRST here rather than reordered to make the finding disappear: making this
 lane read clean by exploiting a gate bug would hide it for the lanes that still have it.
@@ -783,7 +783,7 @@ lane read clean by exploiting a gate bug would hide it for the lanes that still 
 ```
 $ bun script/m14/verify-doc-truth-emissions.ts | grep julia
 UNDOCUMENTED [julia] calls (relationship)
-  docs/analyzers/real-julia-analyzer.md:450
+  docs/analyzers/julia.md:450
 ```
 
 `calls` **is** documented — it is the first body row of the verdict table (`| \`calls\` | **EMITTED** |
@@ -2723,12 +2723,12 @@ census passes. The 11 fixtures pass. All 32 mutants die. The arbiter agrees to t
 wrong, and every one of those gates is silent about it, because none of them reads the doc.
 
 `validation/m14/fixtures/julia/doc-tables-check.ts` closes that gap. It reads
-`docs/analyzers/real-julia-analyzer.md`, finds each table by its header cells, and compares every
+`docs/analyzers/julia.md`, finds each table by its header cells, and compares every
 figure against `census.json`:
 
 ```
 $ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
-doc tables check — docs/analyzers/real-julia-analyzer.md
+doc tables check — docs/analyzers/julia.md
   (mutant-count scan: 4 current-state figure(s) checked, 5 historical citation(s) exempted by an explicit past-tense marker)
 cells checked: 308
 PASS — every table cell equals the instrument's value
@@ -3423,7 +3423,7 @@ which is why none of them is in this lane's commits.
 | 1 | `src/ast/engine.ts` | `:1441-1447` | wrap `parser.parse(content)` in `try`/`finally` so `clearTimeout(parseBomb)` runs on the throwing path too | a throwing parse orphans a 120 s `process.exit(1)` bomb. Measured: 10,797 armed / 10,794 cleared / **3 never cleared**, one per parse error, 2 observed fires. Any language's census can lose its last 2 minutes of work, and any lane scored by a gate loses the gate's verdict table |
 | 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | ~~drop the 8-wide `Promise.all` to width 4~~ **PREMISE FALSIFIED — do not apply as written.** The ask rested on "width 1 and 4 degraded 0 times in 4,800 parses", and width 4 is not clean. Replace the ask with: **drive the gate's walk sequentially (width 1), or disarm the engine's 120 s `parseBomb` before the wasm catch — there is no width between 1 and 4 that has been measured clean.** | Measured on the full admitted population, 2 interleaved rounds per arm, twice: **width 1 → 0 degraded in 7,940 parses; width 4 → 4 in 7,940; width 8 → 8 in 7,940.** Width 1 is the only configuration with no degraded file in 9,940 parses across three full runs. Dropping to width 4 would leave a configuration measured to fail, and with #1 unfixed one degraded file still costs the gate its exit code. The trap is PROBABILISTIC, so no rate is quoted for it; what is quoted is the per-arm degraded count, and the earlier "width 4 is clean" reading is withdrawn — it came from stride samples that contained 1 of the 6 known width-4 failures (see § width 4 is not clean) |
 | 3 | `script/m14/differential.ts` | after `:44`, after `:22863`, beside `:23212-23223` | the three lines that import `deriveJuliaOverridesTruth`, push its rows for `lang === "julia"`, and add `"overrides"` to the F5 label allowlist for julia — **and the same three for `deriveJuliaImportsTruth` / `deriveJuliaExportsTruth`** | clears the last DERIVATION findings this lane cannot clear itself. All three oracles exist (`julia-overrides.ts`, `julia-imports.ts`, `julia-exports.ts`), agree 3/3, 99.8% and 99.9% when run, and are in no gate. This is the WHOLE remaining §8 ask for julia's DERIVATION debt: three oracles, no wiring |
-| 4 | `script/m14/differential.ts` | `:457-469` in `script/m14/verify-doc-truth-emissions.ts` | drop the `continue` that skips the first body row of a claim table | `parseClaimTable` never compares the first row, so a lane whose table leads with a relationship type cannot fail that gate for it. julia reads `UNDOCUMENTED [julia] calls` while `calls` is its largest emitted type. Same shape reported against `real-kotlin-analyzer.md` |
+| 4 | `script/m14/differential.ts` | `:457-469` in `script/m14/verify-doc-truth-emissions.ts` | drop the `continue` that skips the first body row of a claim table | `parseClaimTable` never compares the first row, so a lane whose table leads with a relationship type cannot fail that gate for it. julia reads `UNDOCUMENTED [julia] calls` while `calls` is its largest emitted type. Same shape reported against `kotlin.md` |
 | 5 | ~~`script/m14/oracles/` + `differential.ts`~~ **DONE 2026-10-04, lane-owned** | new `julia-imports.ts`, `julia-exports.ts` | independent derivations of "this file imports that module" and "this module exports that binding", sharing no rule with `importTargets()` / `exportableName()` | **the lane wrote both files** — `script/m14/oracles/` turned out not to be off-limits, and the previous version of this row asserted it was. They agree 99.8% and 99.9% with the analyzer, and writing them found a 38%-missing-edge defect and 4 fabricated edges. **What is still needed is only the `differential.ts` half of row 3**, applied to both |
 | 6 | `src/ast/language-detection.ts` / arbiter repo config | `LANG_REPOS_SECOND`-style list at `:370-377` | allow a third and subsequent corpus project per language | 3 clone attempts fail from this network (`timholyford/Revise.jl`, `stevehie/StructTypes.jl`, `JuliaMath/Distributions.jl` all return "Repository not found"), so the corpus cannot be widened past 14 projects from inside the lane. No `Revise.jl` means no `eval`-heavy project; no `Distributions.jl`/`StatsBase` means the parametric numeric tower is under-sampled — and the `implements` ruling is measured on 14 projects, not the ecosystem |
 | 7 | `src/ast/engine.ts` | `:1442` | report a hang and continue, or at minimum name the file it is about to abandon, instead of `process.exit(1)` | a single slow file ends any run that touches it. Distinct from #1: #1 is a bomb that should never have been armed, this is the policy for one that legitimately is |

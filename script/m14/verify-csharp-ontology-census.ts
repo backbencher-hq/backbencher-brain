@@ -6,7 +6,7 @@
  * No private reimplementation of engine internals, no separate parse. That matters: three
  * separate mistakes in this programme came from probing harness internals through a private
  * reimplementation and getting a confident number that was not the gate's number
- * (real-csharp-analyzer.md, CS-D11 section "How the breakdown was obtained").
+ * (csharp.md, CS-D11 section "How the breakdown was obtained").
  *
  * NO REGEX (rule 1). Every filter here is a string equality, a Set lookup, or `startsWith`
  * on a path segment. No RegExp literal and no RegExp construction appears in this file.

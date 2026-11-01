@@ -236,7 +236,7 @@ const shardNames = new Set<string>()
 const shardQNames = new Set<string>()
 const edgePairs: [number, string, string][] = []
 
-// The store's own three resolution strategies, per docs/analyzers/real-clean-analyzer.md
+// The store's own three resolution strategies, per docs/analyzers/clean.md
 // and parallel-indexer.ts:2734-2736: bare name, `Owner.member` qualified, or the leaf
 // after the first `.` for a dotted target.
 function resolves(target: string, names: Set<string>, qnames: Set<string>, corpus: boolean): boolean {

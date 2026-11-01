@@ -1,11 +1,11 @@
-// script/m13/verify-health-integrity.ts — M13.31 (H3).
+// script/m13/verify-health-integrity.ts — (H3).
 //
 // bb_health integrity + schema + embedding coverage truthfulness:
-//   1. the 12-point integrity check reports every point with a status that
-//      matches reality (adversarially corrupted rows flip the right check),
-//   2. the reported schema version equals the actual brain_schema_version row,
-//   3. embedding coverage is computed purely from stored rows and labeled as
-//      coverage of stored state — never as a semantic quality claim.
+//  1. the 12-point integrity check reports every point with a status that
+//  matches reality (adversarially corrupted rows flip the right check),
+//  2. the reported schema version equals the actual brain_schema_version row,
+//  3. embedding coverage is computed purely from stored rows and labeled as
+//  coverage of stored state — never as a semantic quality claim.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -49,9 +49,12 @@ const raw = await BrainDatabase.getRawInstance(projectId)
 
 // ── 1. Integrity: 12 points, each truthful ────────────────────────────────
 const clean = await runIndexHealthCheck(projectId as any)
-harness.check("integrity: exactly 13 checks reported (12 + M51.A2 synthetic-container split)", clean.checks.length === 13, `got ${clean.checks.length}`)
+// The count is DERIVED, never asserted as a literal: the battery grows when a
+// check is added (the synthetic-container split and the completeness check both
+// did), and a number kept in the gate is a number that will be wrong again.
+harness.check("integrity: the reported checks are the battery's own count", clean.checks.length === clean.summary.total && clean.checks.length >= 13, `checks=${clean.checks.length} summary.total=${clean.summary.total}`)
 harness.check("integrity: every check carries a valid status", clean.checks.every((c) => ["ok", "warn", "error"].includes(c.status)), clean.checks.map((c) => c.code).join(","))
-// M64: the summary is now split, because the "Synthetic Container References"
+// the summary is now split, because the "Synthetic Container References"
 // check is informational — its status does not depend on the data, so counting
 // it added a constant +7.7 points to every project's overallHealth and put a
 // floor under the score that no real failure could cross. The invariant is
@@ -90,10 +93,10 @@ harness.check("integrity: hash-drift check ok before modification", byName("Hash
 }
 
 // Honest recording: the relationship-graph checks are computed truthfully from
-// stored data. Pre-M51, the indexer wrote same-file edges with dangling source
+// stored data. Pre-, the indexer wrote same-file edges with dangling source
 // ids (anonymous symbols skipped by insert-time filters), so a fresh fixture
 // showed dangling-sources >= 1 and this gate recorded that as observed truth,
-// noting the defect lived in the indexer. M51.A3 (#718) fixed the generator
+// noting the defect lived in the indexer. fixed the generator
 // (same-file endpoints are validated against the storeable-row replica and
 // degrade to external edges), so the expectation flips to 0 — a nonzero value
 // now means the indexer regressed.
@@ -129,7 +132,11 @@ harness.check("integrity: hash-drift check ok before modification", byName("Hash
 // Curated doc label: coverage reports stored state, not semantic quality.
 {
   const doc = readFileSync(path.resolve("docs/tools/bb_health.md"), "utf8")
-  harness.check("docs: embedding coverage labeled as stored state, not quality", doc.includes("Embedding coverage reports stored state, not semantic quality"), "missing label")
+  harness.check(
+    "docs: embedding coverage labeled as stored state, not quality",
+    doc.includes("Embedding coverage reports stored") && doc.includes("not semantic quality"),
+    "missing label",
+  )
 }
 
 rmSync(root, { recursive: true, force: true })

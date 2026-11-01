@@ -6,7 +6,7 @@
  * Grammar: tree-sitter-perl.wasm (WASM loaded by engine.ts).
  * Relationship types covered: calls, uses, contains, imports, references, extends, implements,
  * overrides, instantiates.
- * Where its scripts/validations live: docs/analyzers/real-perl-analyzer.md,
+ * Where its scripts/validations live: docs/analyzers/perl.md,
  * script/m14/spec/perl-completeness.json, validation/m14/fixtures/perl/**, and the LANG_CONFIG
  * row in script/m14/completeness-inventory.ts.
  * THE LANE'S KNOWN OPEN CLASS, so the next contributor knows where the residual lives: the

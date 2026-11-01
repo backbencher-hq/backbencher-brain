@@ -3,7 +3,7 @@
  * the last two JVM-family lanes (kotlin, scala) at CORPUS scale.
  *
  * WHY. "kotlin and scala share the java ctor-identity and line-anchoring
- * rulings" was asserted in docs/analyzers/BRANCH-INVENTORY-2026-10-07.md §14/§15
+ * rulings" was asserted in archive/docs-pre-consolidation/analyzers-BRANCH-INVENTORY-2026-10-07.md §14/§15
  * from the shape of their declared failures, never measured. A claim that a lane
  * is COMPLIANT is worth exactly as much as the instrument behind it, and a claim
  * that a count moved needs both numbers from the same instrument — quoting the

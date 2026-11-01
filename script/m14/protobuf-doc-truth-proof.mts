@@ -4,7 +4,7 @@
  *
  * ## Why this exists
  *
- * Pass 14 of `docs/analyzers/real-protobuf-analyzer.md` ended with this sentence:
+ * Pass 14 of `docs/analyzers/protobuf.md` ended with this sentence:
  *
  *   "Until it runs, the 'Emitted?' column in §Verdict per type above is
  *    hand-verified and not machine-checked"
@@ -58,7 +58,7 @@ import * as path from "node:path"
 const ROOT = process.cwd()
 const GATE = "script/m14/verify-doc-truth-emissions.ts"
 const ANALYZER = "src/ast/real-protobuf-analyzer.ts"
-const DOC = "docs/analyzers/real-protobuf-analyzer.md"
+const DOC = "docs/analyzers/protobuf.md"
 const SCOPED = path.join(ROOT, "script/m14/tmp/protobuf/doctruth-root")
 const KEEP = process.argv.includes("--keep")
 

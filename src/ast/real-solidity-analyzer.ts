@@ -12,7 +12,7 @@
  * Grammar: `wasm/tree-sitter-solidity.wasm` (pinned; grammar probes under
  * validation/m14/fixtures/solidity/).
  *
- * Where the rest of the lane lives: docs/analyzers/real-solidity-analyzer.md · spec
+ * Where the rest of the lane lives: docs/analyzers/solidity.md · spec
  * script/m14/spec/solidity-completeness.json · fixtures validation/m14/fixtures/solidity/ · validation
  * validation/m14/results/ and validation/m14/verification/SOLIDITY-FIX.md.
  *
@@ -23,7 +23,7 @@
  * lane's `implements` and reserved-token reading (a clause change must be mirrored or the family
  * diverges) · `script/m14/spec/solidity-completeness.json` ·
  * `validation/m14/fixtures/solidity/*.expectation.json` · `script/m14/completeness-inventory.ts`
- * (Lead-owned: this lane's requiredKinds/docs rows) · `docs/analyzers/real-solidity-analyzer.md`.
+ * (Lead-owned: this lane's requiredKinds/docs rows) · `docs/analyzers/solidity.md`.
  */
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
@@ -76,7 +76,7 @@ import { BINDING_SEP } from "./types"
  *    stable. NAMED LIMITATION: two files sharing a basename in different
  *    directories produce the same module name — inherited from bash and
  *    PowerShell, measured and declared in
- *    `docs/analyzers/real-solidity-analyzer.md` §Verified limitations, not
+ *    `docs/analyzers/solidity.md` §Verified limitations, not
  *    hidden.
  *
  *  - SOL-2  DECLARATION / REFERENCE / CALL / READ. A DECLARATION is a symbol; a

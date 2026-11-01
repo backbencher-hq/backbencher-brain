@@ -8,7 +8,7 @@
  * implements, overrides, instantiates — and this file is the only code that decides what each one
  * means for Rust.
  *
- * WHERE THE REST OF THE LANE LIVES. `docs/analyzers/real-rust-analyzer.md` (the prose contract) ·
+ * WHERE THE REST OF THE LANE LIVES. `docs/analyzers/rust.md` (the prose contract) ·
  * `script/m14/spec/rust-completeness.json` (per-type expectation inventory) · `validation/m14/
  * fixtures/rust/**` (fixtures + the probes `call-qualifier-census.mts`, `import-claim-census.mts`,
  * `repointed-call-edges.mts`) · `validation/m14/verification/RUST-STATE.md` (owner ledger) and

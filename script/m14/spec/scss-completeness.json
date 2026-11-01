@@ -618,7 +618,7 @@
       "id": "SCSS-L3",
       "construct": "`#{$x}px` — interpolation followed by a unit",
       "measured": "0 occurrences. The 33 interpolations followed by anything are inside names and strings (`#{$prefix}body-bg`). A fixture that pinned this form was written and then CORRECTED, because a fixture is supposed to pin constructs that exist.",
-      "artifact": "docs/analyzers/real-scss-analyzer.md"
+      "artifact": "docs/analyzers/scss.md"
     },
     {
       "id": "SCSS-L4",
@@ -630,7 +630,7 @@
       "id": "SCSS-L5",
       "construct": "`@extend` of an id, a placeholder, a comma list, or a pseudo-class",
       "measured": "5 `@extend` in 40,521 lines: 1 targets an `#id` and ERRORS, 4 target a `%placeholder` and ERROR. 0 use a comma list, 0 use a pseudo-class. The placeholder case is the more interesting half: `%ph { … }` PARSES and publishes `class:%ph`, so the declaration is understood and the `@extend` of it is not — a rule that is addressable but not extendable. Declared rather than patched on 5 occurrences.",
-      "artifact": "docs/analyzers/real-scss-analyzer.md"
+      "artifact": "docs/analyzers/scss.md"
     },
     {
       "id": "SCSS-L6",

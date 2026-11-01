@@ -248,7 +248,7 @@
       "instrument": "script/m14/firing-check.mjs JSON_B",
       "row": "JSON_B 1 types fired   120/120 parsed of 2369 admitted (even stride)  [corpus=shadcn-svelte]  \u2014 re-run on the instrument after c0b9bcdd5, which made every row name its corpus and its admitted count. validation/m14/results/firing-laptop-b.current.log:133 still carries the pre-c0b9bcdd5 line 'JSON_B 1 types fired   120/120 parsed (sample of the corpus, even stride)'; it is the same sample and the same count, and the row above is what the instrument prints now.",
       "population": "ONE repo (shadcn-svelte, 2,369 admitted .json files) strided to 120 files; the same corpus measured WHOLE fires 4 types: contains:54575 exports:14 references:8 uses:339",
-      "verdict": "a true statement about 120 files, not a statement about json \u2014 see docs/analyzers/json.md \u00a71"
+      "verdict": "a true statement about 120 files, not a statement about json \u2014 see docs/analyzers/history/json-lane-notes.md \u00a71"
     }
   },
   "_unionConflicts": {

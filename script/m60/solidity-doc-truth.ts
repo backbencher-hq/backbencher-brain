@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * script/m60/solidity-doc-truth.ts — check `docs/analyzers/real-solidity-analyzer.md`
+ * script/m60/solidity-doc-truth.ts — check `docs/analyzers/solidity.md`
  * against the artifacts it cites.
  *
  * WHY THIS EXISTS. The PowerShell doc's failure that this repo still cites is
@@ -47,7 +47,7 @@ function countSolidityFixtures(dir: string): number {
 }
 const FIXTURE_COUNT = countSolidityFixtures(path.join(ROOT, "validation/m14/fixtures/solidity"))
 const MUTANT_COUNT = SOLIDITY_MUTANTS.length
-const DOC = path.join(ROOT, "docs/analyzers/real-solidity-analyzer.md")
+const DOC = path.join(ROOT, "docs/analyzers/solidity.md")
 const read = (p: string) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"))
 
 const doc = fs.readFileSync(DOC, "utf8")
@@ -228,7 +228,7 @@ for (const c of checks) {
   }
 }
 
-console.log("M60 — solidity doc truth: docs/analyzers/real-solidity-analyzer.md vs the artifacts it cites")
+console.log("M60 — solidity doc truth: docs/analyzers/solidity.md vs the artifacts it cites")
 console.log("")
 console.log(`  claims cross-checked : ${checks.length}`)
 console.log(`  agreeing             : ${checks.length - failures.length}`)

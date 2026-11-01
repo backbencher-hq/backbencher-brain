@@ -23,7 +23,7 @@
  * edited, which is how a mutant survives a suite that would otherwise catch it.
  *
  * THE TEN DEFECT CLASSES, and which the two shipped fixtures caught when this
- * battery first ran (see docs/analyzers/real-protobuf-analyzer.md for the counts):
+ * battery first ran (see docs/analyzers/protobuf.md for the counts):
  * the reference-resolution rules, the scalar rule, the rpc request/response pair,
  * the oneof ownership ruling, and the map-key rule are all pinned. The construct
  * rules this lane had NOT been exercising — `extend`, the proto2 `group`, import

@@ -74,7 +74,7 @@
  *
  * The probe below counts exactly that, so `npx tsx script/m14/ontology-coverage-gate.ts toml`
  * prints `FALSIFIED` on this row, and it should. The lane's answer to that row is
- * in `docs/analyzers/real-toml-analyzer.md`, with the three measurements that
+ * in `docs/analyzers/toml.md`, with the three measurements that
  * decide it: the construct is Gradle's and Cargo's rather than TOML's; the
  * sibling Cargo construct resolves in the same file on 81 of 1,269 occurrences
  * (6.4%) and is repo-ambiguous on the other 992, where 75.5% of this lane's edge
@@ -280,7 +280,7 @@ export const TOML_RULED: Ruled[] = [
       }
     },
     describe:
-      "a value that names another key the same document declares. MEASURED: 167 occurrences in 5 files (Gradle `version.ref` in libs.versions.toml), 167 resolving. This entry is expected to read FALSIFIED and the row is reported rather than re-tuned; the adjudication, the resolution rate of the sibling Cargo construct (81 of 1,269 in the same file, 992 in another file of the repo where 75.5% of this lane's target names are repo-ambiguous), and the exact rule that would emit them are in docs/analyzers/real-toml-analyzer.md.",
+      "a value that names another key the same document declares. MEASURED: 167 occurrences in 5 files (Gradle `version.ref` in libs.versions.toml), 167 resolving. This entry is expected to read FALSIFIED and the row is reported rather than re-tuned; the adjudication, the resolution rate of the sibling Cargo construct (81 of 1,269 in the same file, 992 in another file of the repo where 75.5% of this lane's target names are repo-ambiguous), and the exact rule that would emit them are in docs/analyzers/toml.md.",
   },
   {
     type: "exports",

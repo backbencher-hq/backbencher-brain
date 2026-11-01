@@ -83,7 +83,7 @@ was complete and its issue-specific verifier passed.
 | Corpus error surveys | `validation/m12/results/<lang>-corpus-errors.json` | 10 languages |
 | Corpus manifest | `validation/m12/corpus-manifest.json` | pinned revisions + policies |
 | Regex census | `validation/m12/results/regex-census.json` | 41 analyzers |
-| Analyzer docs | `docs/analyzers/real-<lang>-analyzer.md` | 41 analyzers |
+| Analyzer docs | `docs/analyzers/<lang>.md` | 41 analyzers |
 | MCP/CLI surface | `validation/m12/results/mcp-cli-surface.json` | 41 languages × 9 capabilities |
 
 The machine-readable artifact (`docs/data/m12-final-audit.json`) contains the

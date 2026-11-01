@@ -3,7 +3,7 @@
  *
  * Pass 1 established the ten verdicts. Wave 2 is the other half of the job: run
  * pass 1's own claims against the two findings that outrank any single lane
- * (docs/analyzers/ONTOLOGY-WORKSTREAM-STATE.md §"the two findings that outrank
+ * (archive/docs-pre-consolidation/analyzers-ONTOLOGY-WORKSTREAM-STATE.md §"the two findings that outrank
  * any single lane"), plus the adversarial reading pass 1 did not do.
  *
  *   F1  `parseFile` is NOT deterministic. It carries cumulative WASM state, so a

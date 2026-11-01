@@ -1,4 +1,4 @@
-# real-bash-analyzer
+# bash analyzer — analyzer documentation
 
 Pure Tree-sitter Bash extraction, verified by milestone **M14 / M60** under issue
 **#277**. Routing: `*.sh`, `*.bash`, `.bashrc`, `.bash_profile`, and — since the
@@ -271,7 +271,7 @@ if (!started) { started = true; continue }
 so the `---` rule is consumed by the first `continue` and the **first data row is
 then consumed by the second one**. The `calls` row is first here, so it is the row
 that vanishes, and the gate reports `UNDOCUMENTED [bash] calls (relationship)`.
-Verified on a second doc: in `docs/analyzers/real-yaml-analyzer.md` the row at
+Verified on a second doc: in `docs/analyzers/yaml.md` the row at
 line 34 (`| calls | no | ... |`) is dropped the same way, and `extends` at line 35
 becomes the first parsed row. **The fix is to set `started` on the rule row rather
 than on the first data row**, i.e. drop the `!started` guard entirely, since the
@@ -523,7 +523,7 @@ perfectly ordinary member of the count.
 
 ### Two further defects round 3 found in the lane's own text
 
-**The Regex inventory was false.** `docs/analyzers/real-bash-analyzer.md` claimed,
+**The Regex inventory was false.** `docs/analyzers/bash.md` claimed,
 in two places, that the analyzer contains **zero** regex literals. Round 2 added
 three, in `isArithmeticOperandCommand`: `/^\(\(/`, `/\)\)$/` and `/^\$\(\(/`.
 `script/m12/verify-regex-census.ts` reported all three as `MISSING` against the
@@ -4406,7 +4406,7 @@ This round's own measurements, each reproducible from a named file in
 | Lane regex census | `npx tsx validation/m14/fixtures/bash/probe-bash-no-regex.mts` | **0 regex literals across 0 of 37 lane files** (analyzer + 31 probes/fixtures/mutants, round 10 — the 32nd is `probe-bash-one-file-rels.mts`). Round 5 fixed the probe's own coverage gap: it had been checking **16** of the lane's 25 files and the 9 it missed now read 0 as well |
 | DERIVATION debt | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` — **read the warning in Q6 first** | CHECK 1 DERIVATION **clean**; `baseline: 104 recorded, 0 NEW, 104 repaid`; and the committed `validation/m60/results/rel-type-coverage.json` carries **0 findings and 0 baseline rows naming bash** |
 | Regex census (project gate) | `npx tsx script/m12/verify-regex-census.ts` | **Re-run round 9: `regex census gate PASSED`** — 5 entries, HEAD and working-tree scans agree at 5, `missing 0, stale 0, unclassified 0, mislocated 0`. The previous revision of this row said "still `FAILED`, with ZERO rows naming bash" and attributed the 30 MISSING/STALE rows to css, julia, clean, fsharp, javascript, python, svelte and typescript; those are gone from the census and `real-bash-analyzer.ts` is still not among its 5. **This lane's own direct measurement is unchanged and is the one to quote: 0 regex literals across 0 of 31 lane files.** The gate passing is not this lane's work — the lane did not touch the shared census baseline |
-| Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | **ROUND 12: `UNDOCUMENTED [bash] calls (relationship)`, reported at `docs/analyzers/real-bash-analyzer.md:142`** — the `parseClaimTable` off-by-one documented below, unchanged and still costing this lane exactly one row. Repository totals `FALSE_NEGATIVE=7 FALSE_POSITIVE=0 UNDOCUMENTED=43 MISSING_DOC=1 NO_CLAIM_TABLE=15 -> FAIL`; **not one of the 7 FALSE_NEGATIVEs is bash**, and the defect cannot produce a wrong verdict, only an under-count |
+| Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | **ROUND 12: `UNDOCUMENTED [bash] calls (relationship)`, reported at `docs/analyzers/bash.md:142`** — the `parseClaimTable` off-by-one documented below, unchanged and still costing this lane exactly one row. Repository totals `FALSE_NEGATIVE=7 FALSE_POSITIVE=0 UNDOCUMENTED=43 MISSING_DOC=1 NO_CLAIM_TABLE=15 -> FAIL`; **not one of the 7 FALSE_NEGATIVEs is bash**, and the defect cannot produce a wrong verdict, only an under-count |
 
 Supporting artifacts:
 

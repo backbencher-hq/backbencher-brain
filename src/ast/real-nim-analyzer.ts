@@ -11,7 +11,7 @@
  * header, and note that the ruling that would have excluded it was WITHDRAWN BY ITS OWN FALSIFIER.
  * `renders` and `mixes_in` are RULED and this analyzer does not emit them, see
  * script/m14/spec/nim-completeness.json.)
- * Where its scripts/validations live: docs/analyzers/real-nim-analyzer.md,
+ * Where its scripts/validations live: docs/analyzers/nim.md,
  * script/m14/spec/nim-completeness.json, validation/m14/fixtures/nim/**, and the LANG_CONFIG
  * row in script/m14/completeness-inventory.ts.
  * EDIT THESE TOO when this file changes: src/ast/override-context.ts — this analyzer imports

@@ -20,7 +20,7 @@
  *      with `edges = 0` would be a GAP, and the ruling/implementation decision reads off that.
  *
  * WHY IT EXISTS. The PHP lane had never published a whole-population denominator in the shape the
- * completion gate reads: the numbers in `docs/analyzers/php.md` and
+ * completion gate reads: the numbers in `docs/analyzers/history/php-lane-notes.md` and
  * `script/m14/spec/php-completeness.json` were measured over 5,094 `.php` files — BEFORE the
  * extension map admitted `.phpt`, which the router maps to php and the engine parses with this
  * analyzer. MEASURED at HEAD (2026-10-23): the admitted set is 6,424 (5,114 `.php` + 1,310

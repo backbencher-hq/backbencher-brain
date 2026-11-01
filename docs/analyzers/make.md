@@ -173,7 +173,7 @@ the measurements behind each number above are in
 `script/m14/tmp/make/`.
 
 **There is exactly one Make analyzer document and it is this one.** An earlier
-revision of the lane also wrote `docs/analyzers/real-makefile-analyzer.md`, named
+revision of the lane also wrote `docs/analyzers/makefile.md`, named
 after the analyzer *file* rather than the language. That was not cosmetic:
 `script/m60/grammar-lanes-source.ts` derives lane names from doc **filenames**, so
 the second file fabricated a lane called `makefile` alongside the real `make`, and

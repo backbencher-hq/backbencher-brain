@@ -315,9 +315,9 @@
         "node_type": "regex inventory (the census is a published claim)",
         "status": "RULED",
         "question": "The docs said the analyzer holds 0 regex usages and its own file header said \"fully regex-free\", while the census registers 6. Which is true?",
-        "decision": "The CENSUS was right and both prose claims were false. Corrected in docs/analyzers/real-vue-analyzer.md (with each literal's class and justification, and its line number) and in the file header, which now says NOT regex-free and points at the register. A 7th literal was considered and REJECTED during F9: the dotted tag name is recovered with indexOf/charCodeAt rather than a new pattern, because the grammar already hands the spelling over in two pieces.",
+        "decision": "The CENSUS was right and both prose claims were false. Corrected in docs/analyzers/vue.md (with each literal's class and justification, and its line number) and in the file header, which now says NOT regex-free and points at the register. A 7th literal was considered and REJECTED during F9: the dotted tag name is recovered with indexOf/charCodeAt rather than a new pattern, because the grammar already hands the spelling over in two pieces.",
         "measurement": "Live scan of the file: 6 literals, unchanged in count by this wave, at lines 50 / 437 / 2099 / 2111 / 2125 / 2127 (previously published as 45 / 314 / 1091 / 1103 / 1117 / 1119 — the numbers drifted because the fixes added code, which is exactly why the census is the authority and the doc records them as locators, not keys). `/src/m` is a URL in a source-map comment, not a pattern.",
-        "evidence": "validation/m49/regex-debt-register.json; docs/analyzers/real-vue-analyzer.md regex section; vue/decorator-metadata-868"
+        "evidence": "validation/m49/regex-debt-register.json; docs/analyzers/vue.md regex section; vue/decorator-metadata-868"
       },
       {
         "id": "VSD34",

@@ -67,7 +67,7 @@ for (const lang of languages) {
   }
   const truthPath = resolve(truthDir, `${lang}.json`)
   check(`ground truth exists: ${lang}`, existsSync(truthPath))
-  const docPath = resolve(docsDir, `real-${lang}-analyzer.md`)
+  const docPath = resolve(docsDir, `${lang}.md`)
   check(`analyzer doc exists: ${lang}`, existsSync(docPath))
   const complexity = existsSync(resolve(resultsDir, `${lang}-complexity.json`))
   const corpusComplexity = existsSync(resolve(resultsDir, `${lang}-corpus-complexity.json`))

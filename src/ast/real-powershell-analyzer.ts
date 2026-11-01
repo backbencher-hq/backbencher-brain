@@ -4,7 +4,7 @@
 // and string logic runs only on AST-extracted values, never as a regex on source.
 // Relationship types covered (eleven): calls, uses, contains, imports, references, exports, extends,
 // implements, overrides, instantiates, part_of — per-type rulings and emission sites in
-// script/m14/spec/powershell-completeness.json; lane doc docs/analyzers/real-powershell-analyzer.md.
+// script/m14/spec/powershell-completeness.json; lane doc docs/analyzers/powershell.md.
 // `renders` and `mixes_in` are RULED with whole-population counts (PS-B20, 2026-10-27) and this
 // analyzer does not emit them: a serializer/UI-reader is a `calls` site (never a component render),
 // and the class base list is conformance (extends/implements) while runtime member attachment carries
@@ -12,7 +12,7 @@
 // powershell/ruled-extended-types.
 // Where its scripts and validations live: script/m14/spec/powershell-completeness.json · fixtures
 // validation/m14/fixtures/powershell/** (`bun run script/m14/run-fixtures.ts --lang powershell`).
-// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/real-powershell-analyzer.md,
+// WHEN THIS FILE CHANGES, EDIT THESE TOO (the co-edit list): docs/analyzers/powershell.md,
 // the spec JSON's emission sites, and every fixture/expectation pinning an edge whose type or target
 // moved. A kind this file emits must be named in the contract row, or the reverse check fails.
 // Grammar: tree-sitter-powershell (wasm/tree-sitter-powershell.wasm).

@@ -1,4 +1,4 @@
-# real-dart-analyzer.md
+# dart.md
 
 ## Language
 
@@ -1862,7 +1862,7 @@ nothing — parse the whole corpus.
     ```
 
     **Measured effect on this lane:** the gate reports `UNDOCUMENTED [dart] calls
-    (relationship)` at `docs/analyzers/real-dart-analyzer.md:58`, and that finding
+    (relationship)` at `docs/analyzers/dart.md:58`, and that finding
     is FALSE. This lane's table is at line 58 and its first body row is `calls`;
     `parseClaimTable` returns 9 rows where the table has 10, and the 9 it returns
     are `uses, contains, imports, references, exports, extends, implements,
@@ -2938,7 +2938,7 @@ foreground, sequentially, no polling:
 | `verify-regex-census.ts` | `census entries: 5 \| HEAD scan: 5 \| working-tree scan: 5`, `missing 0`, `stale 0`, `unclassified 0`, `mislocated 0`, `PASSED` | yes |
 | `verify-analyzer-docs.ts` | dart row `present: true`, `missingSections: []`, `ontologyGaps: []` | yes |
 | `verify-honesty.ts` | `21 failure(s)`, and the only `dart` substring in the whole output is `dart-http` inside the PASSING `corpus pins present` line | yes — no dart file is named |
-| `verify-doc-truth-emissions.ts` | still `ReferenceError: __dirname is not defined in ES module scope` under `npx tsx`; under `bun run` still `UNDOCUMENTED [dart] calls` pointing at `docs/analyzers/real-dart-analyzer.md:58` | yes, item 12 unchanged |
+| `verify-doc-truth-emissions.ts` | still `ReferenceError: __dirname is not defined in ES module scope` under `npx tsx`; under `bun run` still `UNDOCUMENTED [dart] calls` pointing at `docs/analyzers/dart.md:58` | yes, item 12 unchanged |
 
 The three supervisor-owned artifacts those gates wrote to disk
 (`docs/DOC-TRUTH-EMISSIONS.md`, `validation/m14/results/analyzer-docs.json`,
@@ -7198,7 +7198,7 @@ and it is NEVER supplied for `.dart`           `PROJECT_INDEX_EXTENSIONS` (paral
                                                differential.ts, project-index-effect.ts).
 ```
 
-THE LAST OF THOSE IS NOT A FINDING, IT IS A CITED FACT: `docs/analyzers/HANDOFF.md` §5hh already
+THE LAST OF THOSE IS NOT A FINDING, IT IS A CITED FACT: `archive/docs-pre-consolidation/analyzers-HANDOFF.md` §5hh already
 adjudicated it fleet-wide — *"PRODUCTION INDEXES `.sol` AND `.fs`, AND DART'S SPEC IS UNREACHABLE …
 Dart's spec exists but is UNREACHABLE, there is no `.dart` entry that reaches it"* — correcting the claim
 ("`INDEX_SPECS` carries dart alone") that every summary had repeated. Two things are worth saying about it

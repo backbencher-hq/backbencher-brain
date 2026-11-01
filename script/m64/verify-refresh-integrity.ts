@@ -1,4 +1,4 @@
-// script/m64/verify-refresh-integrity.ts — M64.N3.
+// script/m64/verify-refresh-integrity.ts — .
 //
 // The defect: `force: true` wipes the index BEFORE rebuilding it, so a refresh
 // that does not complete leaves nothing. Combined with `wait: false` detaching
@@ -7,15 +7,15 @@
 // health.
 //
 // The probe this pins, before the fix:
-//   bb_health({refresh:true, force:true, wait:false}) -> isError=false
-//   background job wipes 20 files, then completes having indexed 0
-//   next call -> files=0 symbols=0 warnings: []
+//  bb_health({refresh:true, force:true, wait:false}) -> isError=false
+//  background job wipes 20 files, then completes having indexed 0
+//  next call -> files=0 symbols=0 warnings: []
 //
 // Two guards, both asserted here:
-//   1. the detached outcome is RECORDED and reported by the next call, whether
-//      the job threw or resolved having produced nothing;
-//   2. an index with zero files is an error, not a clean report — which is also
-//      what catches a wipe whose process died mid-rebuild.
+//  1. the detached outcome is RECORDED and reported by the next call, whether
+//  the job threw or resolved having produced nothing;
+//  2. an index with zero files is an error, not a clean report — which is also
+//  what catches a wipe whose process died mid-rebuild.
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"

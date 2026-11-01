@@ -15,7 +15,7 @@
  *
  * The one thing it does not decide on its own is whether a construct without an edge
  * is a GAP or a RULED verdict; that is a judgement, and it is written down in
- * `docs/analyzers/real-python-analyzer.md` next to the number that supports it. What
+ * `docs/analyzers/python.md` next to the number that supports it. What
  * this script guarantees is that the judgement has a number behind it.
  *
  * WRITES NOTHING. Every count here is recomputed from the corpus on each run.

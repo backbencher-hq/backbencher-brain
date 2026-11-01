@@ -5,13 +5,13 @@
 // no regex fallback. It covers ten relationship types by name: calls, uses, contains, imports, references,
 // exports, extends, overrides, instantiates and decorates. The other four extended values are ruled in
 // script/m14/spec/lua-completeness.json (part_of, renders and mixes_in by their measurements there).
-// WHERE ITS CONTRACT LIVES: docs/analyzers/real-lua-analyzer.md (long form); machine-readable classification
+// WHERE ITS CONTRACT LIVES: docs/analyzers/lua.md (long form); machine-readable classification
 // in script/m14/spec/lua-completeness.json; fixtures in validation/m14/fixtures/lua/; measured clause and
 // ambiguity records under validation/m14/verification/ (FOUR-CLAUSE-lua.md and the calls split).
 // GRAMMAR: tree-sitter-lua (wasm/tree-sitter-lua.wasm).
 // CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/lua-completeness.json (new node types and emitted kinds must
 // be classified — silence is guilt), validation/m14/fixtures/lua/ (expectation files pin the endpoints and the
-// module/import surfaces), and docs/analyzers/real-lua-analyzer.md. The shared arbiter
+// module/import surfaces), and docs/analyzers/lua.md. The shared arbiter
 // script/m14/incoming-rule.ts and the gate script/m14/completeness-inventory.ts are Lead-owned: propose for
 // them, never edit them from a lane.
 
@@ -2431,7 +2431,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `addImport` writes it. The split above is unchanged and is still why an `isExternal`
    * MARK is wrong here (1,560 of 5,485 REFUTED) — but the file claim is a different
    * statement about the same edge, and it is checkable rather than asserted. See
-   * LUA-55 in docs/analyzers/real-lua-analyzer.md.
+   * LUA-55 in docs/analyzers/lua.md.
    */
   private markStdlibExternal(ctx: LuaContext): void {
     if (ctx.stdlibCandidates.length === 0 && ctx.stdlibGlobalCandidates.length === 0) return

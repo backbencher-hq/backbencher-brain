@@ -1,23 +1,23 @@
-// script/m51/verify-a2-health-split.ts — M51.A2 (#717)
+// script/m51/verify-a2-health-split.ts —
 //
 // Proves the health checks separate signal from by-design noise, through the
 // REAL runIndexHealthCheck pipeline:
-//   CLEAN WORLD (real indexer, real fixture):
-//     C1. "Orphan Owner References" reports 0 / ok on a fresh M51 index.
-//     C2. "Synthetic Container References" exists and is informational (ok).
-//     C3. "Dangling Source Relationships" reports 0 / ok.
-//     C4. Remediation strings never recommend the disproven "--force rebuild"
-//         cure as guaranteed.
-//   CORRUPTED WORLD (real DB copy, injected defects via registerPath seam):
-//     N1. 12 injected GENUINE orphans (non-':0' ghost owners) → the genuine
-//         check counts exactly 12 and fires (warn), synthetic stays clean.
-//     N2. 1 injected ':0' synthetic owner → counted ONLY by the synthetic
-//         check, never by the genuine one.
-//     N3. 1 injected dangling edge with a REAL source id → dangling counts
-//         exactly 1.
-//     N4. 2 injected NULL-source edges (with and without source_external) →
-//         counted by NEITHER dangling nor orphan checks.
-//   A gate that cannot fail is not a gate: N1–N4 are the failure proofs.
+//  CLEAN WORLD (real indexer, real fixture):
+//  C1. "Orphan Owner References" reports 0 / ok on a fresh index.
+//  C2. "Synthetic Container References" exists and is informational (ok).
+//  C3. "Dangling Source Relationships" reports 0 / ok.
+//  C4. Remediation strings never recommend the disproven "--force rebuild"
+//  cure as guaranteed.
+//  CORRUPTED WORLD (real DB copy, injected defects via registerPath seam):
+//  N1. 12 injected GENUINE orphans (non-':0' ghost owners) → the genuine
+//  check counts exactly 12 and fires (warn), synthetic stays clean.
+//  N2. 1 injected ':0' synthetic owner → counted ONLY by the synthetic
+//  check, never by the genuine one.
+//  N3. 1 injected dangling edge with a REAL source id → dangling counts
+//  exactly 1.
+//  N4. 2 injected NULL-source edges (with and without source_external) →
+//  counted by NEITHER dangling nor orphan checks.
+//  A gate that cannot fail is not a gate: N1–N4 are the failure proofs.
 
 process.env.BB_DATA_DIR = mkdtempSync(join(tmpdir(), "bb-m51-a2-"))
 process.env.BB_LOG_LEVEL = "3"
@@ -64,7 +64,7 @@ async function main() {
     "  }",
     "}",
   ].join("\n") + "\n")
-  // Top-level symbols carry NULL owners post-M51 — this file guarantees the
+  // Top-level symbols carry NULL owners post-this file guarantees the
   // 13 NULL-owner rows the corrupted-world injections require.
   writeFileSync(join(fixture, "src", "util.ts"), Array.from({ length: 12 }, (_, i) =>
     `export const utilConst${i} = ${i}`
@@ -109,7 +109,7 @@ async function main() {
     check("corrupted copy carries the full symbol table (WAL-aware copy)", copyRows >= 15, `${copyRows} rows in copy`)
     // The schema declares FKs on owner/source ids but enforcement is
     // runtime-dependent (better-sqlite3 ON by default, bun:sqlite OFF — the
-    // production indexer runs under Bun, which is how the pre-M51 orphans
+    // production indexer runs under Bun, which is how the pre-orphans
     // were ever writable). Disable for the injection block so the corrupted
     // world mirrors what Bun wrote historically.
     raw2.exec("PRAGMA foreign_keys = OFF")
@@ -128,15 +128,15 @@ async function main() {
       raw2.prepare("UPDATE brain_symbol SET owner_symbol_id = ? WHERE id = ?")
         .run(`${P}:src/user.ts:Ghost${i++}:42`, r.id)
     }
-    // N2: one synthetic ':0' owner on the 13th row.
+    // one synthetic ':0' owner on the 13th row.
     raw2.prepare("UPDATE brain_symbol SET owner_symbol_id = ? WHERE id = ?")
       .run(`${P}:src/user.ts:PhantomModule:0`, leafRows[12].id)
-    // N3: one REAL dangling edge (non-NULL source id, no such symbol).
+    // one REAL dangling edge (non-NULL source id, no such symbol).
     raw2.prepare(`INSERT INTO brain_relationship
       (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
       VALUES (?, ?, ?, NULL, NULL, 'm51Target', 'calls', 1.0, NULL, 0, 0, 0, NULL, NULL, strftime('%Y-%m-%d %H:%M:%f','now'), strftime('%Y-%m-%d %H:%M:%f','now'))`)
       .run("m51-a2-dangling-1", P, `${P}:src/user.ts:NoSuchSymbol:99`)
-    // N4: two NULL-source edges — must be invisible to the dangling count.
+    // two NULL-source edges — must be invisible to the dangling count.
     const nullEdge = (id: string, ext: string | null) => raw2.prepare(`INSERT INTO brain_relationship
       (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
       VALUES (?, ?, NULL, NULL, ?, 'm51Target2', 'calls', 1.0, NULL, 0, 0, 0, NULL, NULL, strftime('%Y-%m-%d %H:%M:%f','now'), strftime('%Y-%m-%d %H:%M:%f','now'))`)
@@ -174,10 +174,10 @@ async function main() {
 
   const { execFileSync } = await import("node:child_process")
   const { mkdirSync: ms } = await import("node:fs")
-  // SEALED WRITE (M61), same repair as A1's below: this gate stamped raw JSON, so
+  // SEALED WRITE (), same repair as A1's below: this gate stamped raw JSON, so
   // a re-record dropped the envelope the register names. Measured 2026-10-12: the
   // committed record had no seal at all while the register carried a digest for it
-  // — the one row the repo-wide seal audit M61.A1 was still failing on.
+  // — the one row the repo-wide seal audit was still failing on.
   const { writeSealed } = await import("../lib/evidence")
   const evidence = {
     gate: "M51.A2", issue: 717, at: new Date().toISOString(),

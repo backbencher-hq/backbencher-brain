@@ -1,4 +1,4 @@
-# real-sql-analyzer.md
+# sql.md
 
 ## Language and wiring
 

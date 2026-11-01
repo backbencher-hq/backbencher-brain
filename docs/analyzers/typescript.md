@@ -1,4 +1,4 @@
-# real-typescript-analyzer.md
+# typescript.md
 
 ## Language
 

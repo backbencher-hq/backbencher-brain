@@ -1,4 +1,4 @@
-# real-erlang-analyzer.md
+# erlang.md
 
 > **2026-10-23, M14 CAMPAIGN ADDENDUM — READ THIS BEFORE READING A NUMBER.**
 > The ER3 wave measured a corpus that no longer exists. On this checkout `.corpus` carries otp at a

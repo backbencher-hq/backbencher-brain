@@ -6,7 +6,7 @@
 // This file is the LANE's own instrument and does two things v2 does not:
 //
 //   1. It walks the WHOLE corpus, not the first NFILES in directory order. The
-//      whole point of the sample-size caveat in docs/analyzers/REVIEW-2026-10-04.md
+//      whole point of the sample-size caveat in archive/docs-pre-consolidation/analyzers-REVIEW-2026-10-04.md
 //      is that a verdict can move on a file-count knob; a census that reports the
 //      corpus TOTAL and what fraction it sampled removes the knob from the verdict.
 //   2. It separates the two channels (relationships vs imports[]) the way v2 does,

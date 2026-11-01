@@ -5,7 +5,7 @@
  *
  * The arbiter reports raw counts: toml prints `emitted 2/10 ruled-sound 8`. Read
  * as a score that says a fifth of the work is done, which is the opposite of what
- * the measurements mean. `docs/analyzers/ONTOLOGY-WORKSTREAM-STATE.md:604` already
+ * the measurements mean. `archive/docs-pre-consolidation/analyzers-ONTOLOGY-WORKSTREAM-STATE.md:604` already
  * caught this shape once and called it — "Reporting `1/10` misrepresents finished
  * work as broken work" — and then the same instrument kept printing the raw count,
  * so the correction did not survive contact with the gate.

@@ -381,7 +381,7 @@
         "id": "PERLD14",
         "status": "RULED",
         "question": "Is the 168-vs-140 node-type count a stale row?",
-        "resolution": "NO. tree-sitter-perl.wasm 1.2.1 declares 168 NAMED NODE-TYPE IDs that resolve to 140 UNIQUE names (a supertype/hidden-alias family shares ids). The gate's message prints the ID count; the spec classifies all 140 NAMES, each exactly once. Both numbers are correct and mean different things — do not 'fix' the 140 in docs/analyzers/real-perl-analyzer.md to match the gate's 168.",
+        "resolution": "NO. tree-sitter-perl.wasm 1.2.1 declares 168 NAMED NODE-TYPE IDs that resolve to 140 UNIQUE names (a supertype/hidden-alias family shares ids). The gate's message prints the ID count; the spec classifies all 140 NAMES, each exactly once. Both numbers are correct and mean different things — do not 'fix' the 140 in docs/analyzers/perl.md to match the gate's 168.",
         "decided_at": "2026-09-27",
         "decided_by": "owner-delegated (M14 wave authorization)"
       }

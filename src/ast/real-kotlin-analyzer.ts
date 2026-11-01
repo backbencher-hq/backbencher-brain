@@ -4,14 +4,14 @@
 // WHAT THIS FILE IS. tree-sitter-kotlin in, UniversalSymbols + UniversalRelationships out, pure AST
 // extraction, no regex fallback. It covers all ten relationship types by name: calls, uses, contains,
 // imports, references, exports, extends, implements, overrides and instantiates.
-// WHERE ITS CONTRACT LIVES: docs/analyzers/kotlin.md and docs/analyzers/real-kotlin-analyzer.md; the
+// WHERE ITS CONTRACT LIVES: docs/analyzers/history/kotlin-lane-notes.md and docs/analyzers/kotlin.md; the
 // machine-readable classification is script/m14/spec/kotlin-completeness.json; fixtures are
 // validation/m14/fixtures/kotlin/; measured clause and residual records are under
 // validation/m14/verification/.
 // GRAMMAR: tree-sitter-kotlin (wasm/tree-sitter-kotlin.wasm).
 // CO-EDIT WHEN THIS FILE CHANGES: script/m14/spec/kotlin-completeness.json (a new emitted kind or node type
 // must be classified; section A fails on silence), validation/m14/fixtures/kotlin/ (the expectation files pin
-// the endpoint spellings and the inheritance/implements surfaces), and docs/analyzers/real-kotlin-analyzer.md.
+// the endpoint spellings and the inheritance/implements surfaces), and docs/analyzers/kotlin.md.
 // The shared arbiter script/m14/incoming-rule.ts and the gate script/m14/completeness-inventory.ts are
 // Lead-owned: propose, never edit them from a lane.
 
@@ -1081,7 +1081,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `label + normTarget(target)` and never on the source half
       // (differential.ts:23477), so this changes no coverage figure and no
       // unexplained row. Measured claim, not an assumption — see 5 in
-      // docs/analyzers/real-kotlin-analyzer.md.
+      // docs/analyzers/kotlin.md.
       for (const rel of relationships) {
         if (rel.type === ASTEngine.RelationshipType.References && rel.source === "root") {
           rel.source = compilationUnit

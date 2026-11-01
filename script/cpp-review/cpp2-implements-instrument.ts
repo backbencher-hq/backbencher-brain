@@ -2,7 +2,7 @@
  * CPP2 — THE `implements` INSTRUMENT. The falsifiable measurement behind the tenth
  * relationship type's verdict, and the instrument that OVERTURNS batch 1's.
  *
- * WHY THIS FILE EXISTS. `docs/analyzers/real-cpp-analyzer.md` carried
+ * WHY THIS FILE EXISTS. `docs/analyzers/cpp.md` carried
  * `implements | ❌ never emitted | C++ has no separate interface construct`, and two
  * of the three numbers offered as evidence for it were produced by probes that
  * cannot fire:

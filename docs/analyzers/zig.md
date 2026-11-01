@@ -1621,7 +1621,7 @@ reproduces.
 | **M60 rel-type coverage** | `rel-type-coverage-gate.ts --langs=zig` | CHECK 1 DERIVATION **clean** (= 0 findings, the number the handover asks for), CHECK 2 REACHABILITY clean, CHECK 3 AGREEMENT clean, CHECK 4 ENUM clean, baseline "104 recorded, 0 NEW, 104 repaid" — **re-run at pass 3, all four checks clean, same baseline, so the lane's DERIVATION count is still 0 as a NUMBER.** **CHECK 1 counts TYPES with an audited label, not independent oracles** — the pass-2 section is what bounds what that is worth. **Not run unscoped, and the run was REVERTED, twice**: `--langs=zig` rewrites `validation/m60/results/rel-type-coverage.json` with only the selected lane, which shrinks a 34-lane evidence file to one — so the file was restored with `git checkout` and the run is reported here rather than committed. §8 |
 | **ontology coverage gate (the arbiter)** | `ontology-coverage-gate.ts zig` | **DOES NOT REACH A VERDICT, and pass 3 pins down why it is exit 1 and not a hang.** Pass 2 reported two runs ending `[BB-HANG] parser stuck 120s on zig/lib/std/testing.zig — exiting`. Pass 3 ran it twice: **both runs ran the corpus scan to the end in ~5 minutes and printed `ontology coverage gate — no RULING TABLE for zig.` followed by `Refusing to report: a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane`, exit code 1.** `RULED_BY_LANG` in that shared file holds only `bash` and `json`, so zig's three RULED verdicts can never be graded by it; the corpus scan happens first, which is why a degradation in that scan can look like a hang. Both pass-3 runs also logged one `[BB-PARSE-ERR] … memory access out of bounds`, the third signature of the fallback class — see the pass-3 section. The three RULED verdicts were measured with `construct-probe.ts` and re-probed unchanged |
 | **doc-truth emissions** | `verify-doc-truth-emissions.ts --no-write` | **zig contributes 0 findings of any kind.** Its verdict table is now parseable (the header is `Relationship type | Emitted?`), so the lane's emission claims are machine-checked: 9 of the 10 rows grade clean — 7 `yes` against 7 emitted kinds and 2 `no` against 2 un-emitted ones, with **0 FALSE_POSITIVE and 0 FALSE_NEGATIVE**. The 10th row (`extends`) is the one `parseClaimTable` cannot read (it skips the first body row of every table — see the caption above). The gate's own summary still reads `-> FAIL` on **7 FALSE_NEGATIVE in other lanes' docs**; zig is not among them |
-| **honesty gate** | `bun run script/m14/verify-honesty.ts` | **22 failures at pass 3, none of them this lane's** — the published row said 20, and the two extra are shared-evidence movement on the aggregate branch, not this lane. The `banned-vocabulary lint over validation/m14 + M14 docs` line still reports **ok**; the 11 banned-term failures are in OTHER lanes' artifacts (`fixtures/html`, `fixtures/c`, `fixtures/clean`, `fixtures/csharp`, `fixtures/sql`, `grammar-pins.json`, 4 `results/*.json`) and none names this doc or any file under `validation/m14/fixtures/zig/`. The rest: `M14.0.F7` non-passing `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, F1–F9 evidence-freshness (declared inputs moved on the aggregate branch), and `freshness rule flags every artifact — it cannot distinguish current from stale`. Note the lint's own scope: it walks `.md`/`.json` under `validation/m14/` and `docs/**M14**`, and `docs/analyzers/real-zig-analyzer.md` matches neither, so this lane's prose is not machine-linted for banned vocabulary. §8 |
+| **honesty gate** | `bun run script/m14/verify-honesty.ts` | **22 failures at pass 3, none of them this lane's** — the published row said 20, and the two extra are shared-evidence movement on the aggregate branch, not this lane. The `banned-vocabulary lint over validation/m14 + M14 docs` line still reports **ok**; the 11 banned-term failures are in OTHER lanes' artifacts (`fixtures/html`, `fixtures/c`, `fixtures/clean`, `fixtures/csharp`, `fixtures/sql`, `grammar-pins.json`, 4 `results/*.json`) and none names this doc or any file under `validation/m14/fixtures/zig/`. The rest: `M14.0.F7` non-passing `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, F1–F9 evidence-freshness (declared inputs moved on the aggregate branch), and `freshness rule flags every artifact — it cannot distinguish current from stale`. Note the lint's own scope: it walks `.md`/`.json` under `validation/m14/` and `docs/**M14**`, and `docs/analyzers/zig.md` matches neither, so this lane's prose is not machine-linted for banned vocabulary. §8 |
 | **incoming-check paired (pass 6)** | `fixtures/zig/incoming-check-paired.ts` | **PASS.** SHARED instrument vs a `/tmp` copy carrying one token (`"brain_import"` → `"imports"`), diffed field by field: **0 differing fields outside the two rows that spell the import class.** Shared reports `fired: false`, 0 edges; patched reports `fired: true`, **253 edges**, 13 distinct targets, 1 ambiguous, 159 unresolved, 0 self-loops; production `parseFile` over the same 134 arguments emits **253**. Three negative controls exit 2: a delta outside the import rows, a patched count disagreeing with production, and a shared run that already reports a non-zero import row. The shared file on disk is unmodified |
 | **zero-regex, pass 6** | `script/m12/verify-regex-census.ts` | the shared gate still prints `regex census gate FAILED` and **zig is in none of its 39 MISSING/STALE rows**; `real-zig-analyzer.ts` carries no regex literal and no `new RegExp` / `.match(` / `.replace(` / `RegExp(` |
 | **reproduction at HEAD (pass 6)** | fixtures + mutations + firing-check + ruled-gate | **9/9 fixtures pass, 50/50 mutants caught, `firing-check` 7/10 fired and 8,445 edges, `ruled-gate` 7 EMITTED + 3 RULED-SOUND / FALSIFIED 0 / exit 0 with 0 `BB-PARSE-ERR` and 0 `BB-HANG`, and `incoming-check`'s seven-row per-type table identical field for field.** Every published number in this document was re-read at this commit |
@@ -3663,7 +3663,7 @@ emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
 **`FALSIFIED 0` and `ruled-without-justification 0` is the number this lane has never been able to
 produce for itself.** All three rulings were re-probed by the arbiter's own instruments A and B, not
 by this lane's copy of them, and none was overturned. That is the first third-party reading of
-`script/m14/zig-ruled.ts`, and it agrees with `docs/analyzers/real-zig-analyzer.md`.
+`script/m14/zig-ruled.ts`, and it agrees with `docs/analyzers/zig.md`.
 
 **The population is 1,200 of 3,834 and the table is over that, not the whole corpus.** The full-root
 run has aborted 3 times in 3 (§G), so the widest arbiter measurement available on this lane is 31%
@@ -5633,7 +5633,7 @@ leaves `this` and `super` in the unconditional set. Reported, not fixed — §J.
 
 Two things this pass settles. One is a defect in shared machinery that makes the supervisor's own
 arbiter report the opposite of the truth, and it is reproducible in one minute on two files. The
-other is the A/B/C split `ROUND-BRIEF.md` asks every lane for, measured on one draw through
+other is the A/B/C split `archive/docs-pre-consolidation/ROUND-BRIEF.md` asks every lane for, measured on one draw through
 production `parseFile` — where the headline "56 recoverable edges" turns out to be 0.
 
 ### A. §8 item 37 — `ontology-coverage-gate.ts` publishes `emitted 0/10` on its second run
@@ -5994,7 +5994,7 @@ Claim level for this section: **L4** for the three findings (mutation-hardened a
 
 ### A. The three causes, priced, at 3,848 files
 
-`ROUND-BRIEF.md` splits unresolved edges into three causes — **B** the edge target and the
+`archive/docs-pre-consolidation/ROUND-BRIEF.md` splits unresolved edges into three causes — **B** the edge target and the
 published name are spelled differently, **A** the name is not an identifier, **C** the target
 is external and emitted unmarked. `validation/m14/fixtures/zig/absent-class.ts` classifies
 every edge into seven disjoint classes that sum to the edge total, so the split is checkable
@@ -6018,7 +6018,7 @@ is the population the recipe would have destroyed.
 
 ### B. Cause B: the recipe does not apply to Zig, and its own predicate would fabricate
 
-`ROUND-BRIEF.md` ships a verified recipe: retarget every edge whose target is dotted and
+`archive/docs-pre-consolidation/ROUND-BRIEF.md` ships a verified recipe: retarget every edge whose target is dotted and
 whose final segment is a published name. graphql went from 6,451 unresolved to 1,016 with
 it. Zig publishes members under BARE names and qualified paths under
 `scope + "." + name` (`pool-worker.ts:930`), so the recipe's predicate — dotted target, leaf
@@ -6213,7 +6213,7 @@ in use are 1.0, 0.9, 0.85 and 0.75, all at or above the 0.7 threshold.
   §H.1 — 2 of 2 fresh runs, the hang file was among that run's own parse-error files, and the
   `process.exit(1)` cost the run its entire verdict. *Not mine:* shared machinery.
 - **Item 41 — the cause-B recipe needs a `qualifiedName` guard before another lane applies it.**
-  *File:* `ROUND-BRIEF.md`'s "PROVEN RECIPE" section, and whatever rule each lane implements
+  *File:* `archive/docs-pre-consolidation/ROUND-BRIEF.md`'s "PROVEN RECIPE" section, and whatever rule each lane implements
   from it. *What it must do:* state the precondition the recipe actually depends on — that the
   edge's target is dotted AND the leaf's published `qualifiedName` EQUALS the dotted target.
   A lane that checks only "dotted and the leaf is published" will bind to a same-named

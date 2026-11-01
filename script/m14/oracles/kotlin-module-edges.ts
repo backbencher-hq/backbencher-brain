@@ -19,7 +19,7 @@
  * So: the language HAS both constructs and the analyzer was not reading them as
  * relationships. That is GAP by the workstream's own definition, and the corpus
  * measurement that forbids RULED is in
- * `docs/analyzers/real-kotlin-analyzer.md` §3: 3,631 `import_header` nodes across
+ * `docs/analyzers/kotlin.md` §3: 3,631 `import_header` nodes across
  * 197 of 200 files, and 37 top-level declarations carrying neither `private` nor
  * `internal` across 17 files.
  *

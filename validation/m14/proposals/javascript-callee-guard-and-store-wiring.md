@@ -11,7 +11,7 @@ file and function, the measurement that makes it necessary, and the analyzer evi
 
 **Why it is a proposal and not an edit:** `script/m14/differential.ts` is master-owned and the lane's brief
 forbids edits there. The oracle and the analyzer must move in ONE merge, which is also what
-`docs/analyzers/real-javascript-analyzer.md` Open finding §5 has said since the re-export question was opened.
+`docs/analyzers/javascript.md` Open finding §5 has said since the re-export question was opened.
 
 **What the analyzer emits now (shipped this iteration, fixtures green):**
 

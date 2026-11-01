@@ -31,7 +31,7 @@
       "rows": 2
     },
     {
-      "file": "docs/analyzers/real-clean-analyzer.md",
+      "file": "docs/analyzers/clean.md",
       "rows": 2
     },
     {
@@ -67,19 +67,19 @@
       "rows": 1
     },
     {
-      "file": "docs/analyzers/real-kotlin-analyzer.md",
+      "file": "docs/analyzers/kotlin.md",
       "rows": 1
     },
     {
-      "file": "docs/analyzers/real-elixir-analyzer.md",
+      "file": "docs/analyzers/elixir.md",
       "rows": 1
     },
     {
-      "file": "docs/analyzers/review-appendix.md",
+      "file": "archive/docs-pre-consolidation/analyzers-review-appendix.md",
       "rows": 1
     },
     {
-      "file": "docs/analyzers/real-c-analyzer.md",
+      "file": "docs/analyzers/c.md",
       "rows": 1
     },
     {
@@ -396,7 +396,7 @@
       ]
     },
     {
-      "file": "docs/analyzers/real-kotlin-analyzer.md",
+      "file": "docs/analyzers/kotlin.md",
       "line": 22,
       "cells": 5,
       "expected": 3,
@@ -409,7 +409,7 @@
       ]
     },
     {
-      "file": "docs/analyzers/real-elixir-analyzer.md",
+      "file": "docs/analyzers/elixir.md",
       "line": 40,
       "cells": 5,
       "expected": 4,
@@ -422,7 +422,7 @@
       ]
     },
     {
-      "file": "docs/analyzers/review-appendix.md",
+      "file": "archive/docs-pre-consolidation/analyzers-review-appendix.md",
       "line": 882,
       "cells": 4,
       "expected": 3,
@@ -434,7 +434,7 @@
       ]
     },
     {
-      "file": "docs/analyzers/real-clean-analyzer.md",
+      "file": "docs/analyzers/clean.md",
       "line": 59,
       "cells": 5,
       "expected": 3,
@@ -447,7 +447,7 @@
       ]
     },
     {
-      "file": "docs/analyzers/real-clean-analyzer.md",
+      "file": "docs/analyzers/clean.md",
       "line": 64,
       "cells": 5,
       "expected": 3,
@@ -460,7 +460,7 @@
       ]
     },
     {
-      "file": "docs/analyzers/real-c-analyzer.md",
+      "file": "docs/analyzers/c.md",
       "line": 30,
       "cells": 5,
       "expected": 3,

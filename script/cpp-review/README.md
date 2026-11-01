@@ -1,6 +1,6 @@
 # `script/cpp-review` — the C++ lane's measurement instruments
 
-Every number in `docs/analyzers/real-cpp-analyzer.md` and in issues #957–#961 comes from
+Every number in `docs/analyzers/cpp.md` and in issues #957–#961 comes from
 one of these. They are probes, not gates: they are how a claim was measured, kept so the
 claim can be re-measured rather than taken on trust. A finding nobody can re-run is a
 claim.

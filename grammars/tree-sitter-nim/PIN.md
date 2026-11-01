@@ -157,6 +157,6 @@ analyzer's doc records them as explicit unknowns rather than defects:
    `expression_list`, so the analyzer reads it structurally.
 
 One more was found by this lane and is recorded in
-`docs/analyzers/real-nim-analyzer.md`: the grammar has no node for a `sink`
+`docs/analyzers/nim.md`: the grammar has no node for a `sink`
 parameter modifier, so `proc f(a: sink seq[int])` parses as a one-argument
 `call`. The analyzer unwraps it as a type modifier.

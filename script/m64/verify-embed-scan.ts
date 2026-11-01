@@ -1,11 +1,11 @@
-// script/m64/verify-embed-scan.ts — M64.F.
+// script/m64/verify-embed-scan.ts — .F.
 //
 // A default bb_health call on a real 6,507-file index did not finish in fifteen
 // minutes. The cause was two per-symbol EXISTS probes written in this lane, and
 // the comment above them asserted the exact opposite of what SQLite does:
 //
-//   "The EXISTS probes brain_embed_entity_idx, so this is one index lookup per
-//    symbol rather than a scan."
+//  "The EXISTS probes brain_embed_entity_idx, so this is one index lookup per
+//  symbol rather than a scan."
 //
 // brain_semantic_embedding has brain_embed_entity_idx on (entity_id) AND
 // brain_embed_health_idx on (project_id, embedding_model, entity_id,
@@ -13,9 +13,9 @@
 // the covering health index and filter entity_id, so the subquery walks every
 // embedding of the project once PER SYMBOL:
 //
-//   plan   SEARCH e USING COVERING INDEX brain_embed_health_idx (project_id=?)
-//   cost   10.2ms per symbol, measured over slices of 200 / 1,000 / 5,000
-//          -> ~2,770 SECONDS at 304,926 symbols
+//  plan SEARCH e USING COVERING INDEX brain_embed_health_idx (project_id=?)
+//  cost 10.2ms per symbol, measured over slices of 200 / 1,000 / 5,000
+//  -> ~2,770 SECONDS at 304,926 symbols
 //
 // Nothing caught it. Every fixture in this lane has a handful of symbols and a
 // handful of embeddings, where a 60,388-row scan is indistinguishable from an
@@ -27,12 +27,12 @@
 // honestly makes the gate slow. It asserts the three things that are decidable
 // without a clock:
 //
-//   1. SHAPE     the EXISTS probes by entity_id and does not re-filter
-//                project_id, which is the property that selects the index
-//   2. SCOPE     dropping that predicate did not break project scoping: an
-//                embedding belonging to ANOTHER project must not be counted
-//   3. COST      on a fixture scaled to make the two plans distinguishable, the
-//                plan probes entity_id — and the same work is ~500x cheaper
+//  1. SHAPE the EXISTS probes by entity_id and does not re-filter
+//  project_id, which is the property that selects the index
+//  2. SCOPE dropping that predicate did not break project scoping: an
+//  embedding belonging to ANOTHER project must not be counted
+//  3. COST on a fixture scaled to make the two plans distinguishable, the
+//  plan probes entity_id — and the same work is ~500x cheaper
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -71,7 +71,7 @@ const clean = (root: string, pid: string) => {
 {
   const src = readFileSync(path.resolve("src/intelligence/health/health-provider.ts"), "utf8")
   // Strip comments before scanning. The first run of this gate matched the
-  // M64.F banner's own quotation of the old bad SQL and reported a third live
+  // .F banner's own quotation of the old bad SQL and reported a third live
   // site that does not exist — a gate that documentation can turn red is a
   // fragile gate, and one that can be made green by editing a comment is worse.
   // The comment assertions below test the prose deliberately and separately.

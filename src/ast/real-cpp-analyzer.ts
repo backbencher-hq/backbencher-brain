@@ -3,11 +3,11 @@
 // and string logic runs only on AST-extracted values, never as a regex on source.
 // Relationship types covered (ten, no exclusions): calls, uses, contains, imports, references, exports,
 // extends, implements, overrides, instantiates — per-type rulings and emission sites in
-// script/m14/spec/cpp-completeness.json (`coverage._emissionSites`) and docs/analyzers/real-cpp-analyzer.md.
+// script/m14/spec/cpp-completeness.json (`coverage._emissionSites`) and docs/analyzers/cpp.md.
 // Where its scripts and validations live: script/m14/spec/cpp-completeness.json · fixtures
 // validation/m14/fixtures/cpp/** (`bun run script/m14/run-fixtures.ts --lang cpp`) · CPP-STATE.md +
 // CPP-RESIDUAL.md under validation/m14/verification/ · proposals validation/m14/proposals/cpp-*.md.
-// CO-EDIT WHEN THIS FILE CHANGES (the list everybody skips): docs/analyzers/real-cpp-analyzer.md · the spec
+// CO-EDIT WHEN THIS FILE CHANGES (the list everybody skips): docs/analyzers/cpp.md · the spec
 // JSON · validation/m14/fixtures/cpp/** · script/m14/differential.ts (`deriveCppEdges` — the TRUTH side; an
 // emission the oracle does not derive lands as MISSING/UNEXPLAINED) · script/m14/completeness-inventory.ts
 // (`cpp` LANG_CONFIG) · src/ast/language-detection.ts · src/ast/engine.ts.
@@ -374,7 +374,7 @@ function stripAccessSpecifier(text: string): string {
  *
  * This replaces the lane's last two regexes, `/::|\s+/`, which the M12 regex
  * census has been recording as `needs_review` while
- * `docs/analyzers/real-cpp-analyzer.md` claimed the analyzer had **zero** regex
+ * `docs/analyzers/cpp.md` claimed the analyzer had **zero** regex
  * usages. The census was right and the doc was wrong; a doc that under-reports
  * its own analyzer's text rules is worse than the rules, because it is the
  * artifact a reviewer trusts instead of re-measuring.
@@ -6328,7 +6328,7 @@ private functionDeclaratorOf(node: Node | null): Node | null {
 
   /**
    * The EXPORT attribute a declaration carries, or null. Which spelling exists is
-   * a measurement, not a preference — see `docs/analyzers/real-cpp-analyzer.md`
+   * a measurement, not a preference — see `docs/analyzers/cpp.md`
    * "the exports construct, measured three ways".
    *
    * Two are readable on the pinned grammar and one of them is not:

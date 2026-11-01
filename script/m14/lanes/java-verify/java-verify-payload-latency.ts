@@ -189,7 +189,7 @@ const relDelta = ((B.relBytes - A.relBytes) / A.relBytes) * 100
 const cpuDelta = ((B.cpuMs - A.cpuMs) / A.cpuMs) * 100
 console.log(`relationship payload ${relDelta >= 0 ? "+" : ""}${relDelta.toFixed(2)}%   cpu ${cpuDelta >= 0 ? "+" : ""}${cpuDelta.toFixed(2)}%`)
 console.log(`This is a REAL cost to bb_graph's un-narrowed default: ${relDelta >= 0 ? "+" : ""}${(Math.abs(B.relBytes - A.relBytes) / n).toFixed(0)} bytes per file of relationship payload, and the ${Math.abs(B.rel - A.rel)} new edges are ${relDelta.toFixed(1)}% of the ${A.rel} the lane already carried.`)
-console.log(`Declared budget (docs/analyzers/real-java-analyzer.md): corpus subset < 15 s, symbols/s >= 1,000, relationships/s >= 4,000.`)
+console.log(`Declared budget (docs/analyzers/java.md): corpus subset < 15 s, symbols/s >= 1,000, relationships/s >= 4,000.`)
 const greenSymbols = A.symbols / (A.wallMs / 1000) >= 1000
 const greenRels = A.rel / (A.wallMs / 1000) >= 4000
 const greenWall = A.wallMs < 15000

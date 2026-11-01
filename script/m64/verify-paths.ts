@@ -1,4 +1,4 @@
-// script/m64/verify-paths.ts — M64.D.
+// script/m64/verify-paths.ts — .D.
 //
 // `paths` answers the question an agent actually has after an edit: "are MY
 // files fresh?" The only current answer was a scan of the whole project.
@@ -8,11 +8,11 @@
 // `files=1654` and merge them into one belief. So the gate below is mostly about
 // the ways this feature can lie:
 //
-//   * report `fresh` for a file the index has never seen   (the fabrication)
-//   * let a project-wide number be read as a scoped one     (mixed scope)
-//   * answer a path outside the project                     (escape)
-//   * normalise two spellings of one file differently       (quiet miss)
-//   * drop an entry the caller asked about                   (silent omission)
+//  * report `fresh` for a file the index has never seen (the fabrication)
+//  * let a project-wide number be read as a scoped one (mixed scope)
+//  * answer a path outside the project (escape)
+//  * normalise two spellings of one file differently (quiet miss)
+//  * drop an entry the caller asked about (silent omission)
 import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, rmSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -64,7 +64,7 @@ const rel = (root: string, relPath: string) => path.join(root, relPath)
     appendFileSync(path.join(root, "src", "f0.ts"), "\n// edited\n")            // stale
     rmSync(path.join(root, "src", "doomed.ts"))                                  // gone
     writeFileSync(path.join(root, "src", "fresh-new.ts"), "export function freshNew(): number { return 7 }\n") // not-indexed
-    // "src/never-existed.ts" is left alone                                    // absent
+    // "src/never-existed.ts" is left alone // absent
 
     const asked = ["src/f1.ts", "src/f0.ts", "src/doomed.ts", "src/fresh-new.ts", "src/never-existed.ts"]
     const r = await getUnifiedHealth(pid, root, { paths: asked })

@@ -8,7 +8,7 @@ Lead-owned and landing one half alone manufactures 556 unexplained rows.
 
 The lane's docs and spec both say `@use`/`@forward` emit an `imports` edge. They do not:
 
-* `docs/analyzers/real-scss-analyzer.md`'s imports row said **EMITTED — 3,621 in 824 files**. That number is the
+* `docs/analyzers/scss.md`'s imports row said **EMITTED — 3,621 in 824 files**. That number is the
   CSS `@import` form, which reaches the analyzer through the CSS **delegate** and does emit. **`@use`/`@forward`
   emit nothing.**
 * The spec's `use_statement` evidence said *"an `imports` edge plus an ImportInfo"* — the ImportInfo and the

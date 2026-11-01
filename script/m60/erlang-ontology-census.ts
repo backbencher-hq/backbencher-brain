@@ -58,7 +58,7 @@
  *   exactly once by a shared cursor, no RNG, no sampling unless `--sample` is passed, and
  *   no clock read inside any count. Re-running reproduces every count to the digit, and
  *   two runs over DIFFERENT analyzer revisions differing only in `exports` is how the stale
- *   evidence described in docs/analyzers/real-erlang-analyzer.md was caught.
+ *   evidence described in docs/analyzers/erlang.md was caught.
  *
  *   EVERY EXAMPLE LIST IS NOW ALSO DETERMINISTIC. Examples are collected unordered and
  *   sorted by (corpus file, line, text) before they are printed, so they name the same

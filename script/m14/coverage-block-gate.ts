@@ -716,7 +716,7 @@ for (const lane of allLanes) {
     // The arithmetic is left as-is here because the BOARD is the authority on the column and this
     // gate must not disagree with the row it audits — but the wording is corrected, and the
     // consequence is reported as a finding rather than buried. See
-    // docs/analyzers/HANDOFF.md §5.9: whether `unclassified` may shrink the denominator is an OPEN
+    // archive/docs-pre-consolidation/analyzers-HANDOFF.md §5.9: whether `unclassified` may shrink the denominator is an OPEN
     // decision, because a denominator may shrink only via a RULED verdict carrying a corpus
     // measurement, and `unclassified` is by definition unmeasured. (This cited §3.1 of
     // docs/analyzers/PROMPT-LAPTOP-B.md, deleted 2026-10-28 as stale; the RULE is enforced by this

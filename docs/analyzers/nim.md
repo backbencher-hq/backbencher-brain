@@ -1,4 +1,4 @@
-# real-nim-analyzer.md
+# nim.md
 
 ## Language and wiring
 

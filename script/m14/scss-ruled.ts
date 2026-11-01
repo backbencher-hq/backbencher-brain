@@ -55,7 +55,7 @@
  * code over the same file set move `contains` 12,370-12,375, `imports` 3,618-3,636,
  * `references` 9,336-9,353, `exports` 4,019-4,048 and `extends` 423-427, while `calls` 304,
  * `uses` 91 and `overrides` 32 are identical in all five. The spread is measured rather than
- * described in `docs/analyzers/real-scss-analyzer.md` and in the census harness header; the
+ * described in `docs/analyzers/scss.md` and in the census harness header; the
  * cause is WHICH files take the degraded extractor, and that set differs per run.
  *
  * That cause is INCOMPLETE, and the incompleteness is measured in the same document:
@@ -87,7 +87,7 @@
  *
  * The table was written here first, in a file this lane owns, in the gate's own `Ruled`
  * shape. Registration is one import and one map entry, and it is recorded in
- * `docs/analyzers/real-scss-analyzer.md` as the supervisor-side step.
+ * `docs/analyzers/scss.md` as the supervisor-side step.
  *
  * ## THE SHAPE IS IMPORTED, NOT RESTATED — because restating it hid a change
  *

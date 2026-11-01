@@ -215,7 +215,7 @@ const artifact = {
   caveats: [
     "The gate reports \"the grammar produced 128 distinct node types\" for implements. That is TREE-SITTER-BASH's count, not lua's: script/m14/ontology-coverage-gate.ts:240 resolves the wasm from differential.ts LANGS, which has no lua entry, and falls back to tree-sitter-bash.wasm. The RULED-SOUND verdict is unaffected (the six declaration node types are absent from bash's vocabulary too) but the detail string is another language's number. Lua's true count over the same draw is 100 — see validation/m60/lua/grammar-inventory.json. Shared machinery: reported, not fixed (R1).",
     "The gate admits 3,250 files where the census admits 3,252: the gate filters on detectLanguageFromPath per file, the census on `git ls-files '*.lua'`. Two files are in one draw and not the other. Neither total is wrong; they are not interchangeable.",
-    "The four moving labels (calls, uses, contains, references) sit inside the parseFile nondeterminism floor of docs/analyzers/real-lua-analyzer.md §5. The five stable ones (imports 6,601, exports 5,167, extends 171, overrides 67, instantiates 122) are the ones a count may be quoted from.",
+    "The four moving labels (calls, uses, contains, references) sit inside the parseFile nondeterminism floor of docs/analyzers/lua.md §5. The five stable ones (imports 6,601, exports 5,167, extends 171, overrides 67, instantiates 122) are the ones a count may be quoted from.",
   ],
 }
 writeFileSync(path.join(ROOT, "validation", "m60", "lua", "coverage-gate-wired.json"), JSON.stringify(artifact, null, 2) + "\n")

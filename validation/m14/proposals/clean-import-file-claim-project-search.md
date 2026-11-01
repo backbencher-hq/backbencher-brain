@@ -82,5 +82,5 @@ assignment is wrong. A lane that published the claim WITHOUT the confirmed candi
    more than one directory** (the 4 `Linter` edges stay unclaimed).
 3. Re-run the arm and require: `imports` extFAIL **0**, unresolved **802**, `extOK 1,130`; then re-run
    `residual-cause-census.mts` and retire the ruling with its new count.
-4. Record the walk in the analyzer's header doctrine and in `docs/analyzers/real-clean-analyzer.md`, and
+4. Record the walk in the analyzer's header doctrine and in `docs/analyzers/clean.md`, and
    price it against `Clyde:clean` once the F row exists.

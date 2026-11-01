@@ -31,7 +31,7 @@
  * `overrides`) are EMITTED and the gate counts them from production `parseFile`, so they
  * take no row here. `imports` joined them when the `#import` convention was implemented.
  * Per-type verdicts, the six questions and the declared limitations are in
- * `docs/analyzers/real-graphql-analyzer.md`.
+ * `docs/analyzers/graphql.md`.
  *
  * ## THE MEASUREMENT DEFECT THAT USED TO AFFECT EVERY `A` AND `B` ROW IN THIS FILE — FIXED
  *

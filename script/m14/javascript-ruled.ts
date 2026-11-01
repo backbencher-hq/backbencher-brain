@@ -4,7 +4,7 @@
  *
  * ONE entry, and the lane's only un-emitted ontology member: `implements`. The other nine
  * fire on real JavaScript (measured 9/10 through the firing check; see
- * `docs/analyzers/real-javascript-analyzer.md`), so there is nothing else to adjudicate.
+ * `docs/analyzers/javascript.md`), so there is nothing else to adjudicate.
  *
  * ## What the construct would need, and what this parser makes of it
  *

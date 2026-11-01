@@ -32,7 +32,7 @@
  * instrument defects were found and fixed (one-sided normalisation, body scope
  * read as type scope, invisible file-scope properties, generic/sugar extension
  * targets bound to the wrong name, a hard-coded operator token list). Those
- * defects and their measurements are recorded in `docs/analyzers/real-swift-analyzer.md`.
+ * defects and their measurements are recorded in `docs/analyzers/swift.md`.
  *
  * The oracle and the differential now consume THIS walker rather than two
  * copies of it, which is a deliberate trade: the oracle keeps its job (auditing

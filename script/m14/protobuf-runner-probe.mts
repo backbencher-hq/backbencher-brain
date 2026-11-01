@@ -3,7 +3,7 @@
  *
  * ## What this corrects
  *
- * Pass 14 of `docs/analyzers/real-protobuf-analyzer.md` reported, under the heading
+ * Pass 14 of `docs/analyzers/protobuf.md` reported, under the heading
  * "Nine shared gates cannot start at all", that nine files under `script/m14/` fail
  * to start because they use a top-level `__dirname` and the package is
  * `"type": "module"`. It verified that claim under `npx tsx` and under

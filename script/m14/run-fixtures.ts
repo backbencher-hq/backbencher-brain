@@ -384,7 +384,7 @@ function canonicalJson(value: unknown): string {
  * Measured upstream over all 48 lanes: groovy recorded 20 and measured 0, elixir 15 -> 0,
  * java 11 -> 0, cpp 6 -> 0, kotlin 6 -> 0, scala 5 -> 0, swift 4 -> 0 — **67 failures'
  * worth of allowance those lanes no longer needed**, every one of them masking a
- * regression the count gate could not see (docs/analyzers/BRANCH-INVENTORY-2026-10-07.md §18).
+ * regression the count gate could not see (archive/docs-pre-consolidation/analyzers-BRANCH-INVENTORY-2026-10-07.md §18).
  *
  * THIS BRANCH MEASURED 0 RETIRABLE when this landed, and that is expected rather than a
  * reason to skip it: the baseline had just been REGENERATED from measurement (65af72193),

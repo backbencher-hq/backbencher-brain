@@ -118,7 +118,7 @@ const { RealPerlAnalyzer } = await import(path.join(ROOT, "src/ast/real-perl-ana
  * A POSITIVE allowlist, copied in spirit from the analyzer's
  * `isWrittenCalleeName`: a negative test can only enumerate the dynamic cases
  * somebody already hit, and this pair has been got wrong that way three times
- * (documented in docs/analyzers/real-perl-analyzer.md). Character-by-character,
+ * (documented in docs/analyzers/perl.md). Character-by-character,
  * no regex.
  */
 function isWrittenName(text: string): boolean {

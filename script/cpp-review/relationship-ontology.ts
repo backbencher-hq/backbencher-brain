@@ -21,7 +21,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = process.cwd()
-const DOC = path.join(ROOT, "docs/analyzers/real-cpp-analyzer.md")
+const DOC = path.join(ROOT, "docs/analyzers/cpp.md")
 const ENGINE = path.join(ROOT, "src/ast/engine.ts")
 const ANALYZER = path.join(ROOT, "src/ast/real-cpp-analyzer.ts")
 const OUT = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"

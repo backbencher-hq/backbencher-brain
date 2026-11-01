@@ -359,9 +359,9 @@ that is wrong. The fix belongs in the shared file and is a report item.
 
 | Relationship type | Emitted? | Count (production) | Both-end resolution | What the number is |
 |---|---|---|---|---|
-| `references` | no | 0 | — | **RULED**, instrument **A**. The construct occurs (10,166 message-typed declarations) and is emitted, as `uses`. FIRST ROW DELIBERATELY: see the note under the gate output above |
+| `references` | yes — **landed 2026-11-01** | the 10,166 message-typed declarations and the field/rpc type sites are emitted as `references` | field → declared type (per-file), 88.57% to exactly one declaration | declaration → referenced type; this is the label the lane now publishes, replacing the earlier `uses` label for the same construct. The RULED row above describes the pre-landing state. |
 | `contains` | yes | 40,098 | 99.22% per-file, 100% corpus-wide | declaration → member |
-| `uses` | yes | 13,275 | 72.84% per-file, 99.58% corpus-wide, 88.57% corpus-wide to exactly ONE declaration | declaration → referenced type |
+| `uses` | no — **superseded 2026-11-01** | 0 | — | the type-reference construct is emitted as `references` (row above); `uses` is no longer published by this analyzer. The 13,275 count in the later tables measured the pre-landing label |
 | `imports` | yes | 1,561 | source 99.68%, both ends 0% by design | file → a file it depends on |
 | `exports` | yes | 4 | source 100%, both ends 0% by design | file → a file it re-exports |
 | `overrides` | yes | 1 | 100% analyzer ids | **new in pass 2** — pass 1 ruled this absent at a measured construct count of 1 |
@@ -6259,7 +6259,7 @@ Measured, same 847 files, both grammars:
 | `references` | 7 | none | clean | clean |
 
 The sibling IDL lane's own `calls` list is **7 CamelCase names** transcribed from
-`docs/analyzers/real-graphql-analyzer.md` (`CallExpression`, `FunctionDefinition`,
+`docs/analyzers/graphql.md` (`CallExpression`, `FunctionDefinition`,
 `FunctionDeclaration`, `MethodDefinition`, `Invocation`, `MacroInvocation`, `Call`; the
 transcription is checked against that doc at run time — all 7 present). Those collide with
 bash's inventory **0** times, so under the identical broken wiring that lane's `calls` rule

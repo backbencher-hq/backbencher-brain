@@ -1,6 +1,6 @@
 /**
  * VUE ONTOLOGY CENSUS — the instrument behind every "EMITTED … with a count and
- * the files it came from" verdict in docs/analyzers/real-vue-analyzer.md.
+ * the files it came from" verdict in docs/analyzers/vue.md.
  *
  * It measures the TEN relationship types through the PRODUCTION entry point
  * (`parseFile` from src/ast/pool-worker, not `analyze()`), because the worker

@@ -592,7 +592,7 @@ for (const repo of REPOS) {
     // D3 — contains + references only, per file. `calls` excluded by contract.
     //
     // THE KEY IS (source, TYPE, target), and that is the lane's OWN documented
-    // correction, not a preference. `real-cpp-analyzer.md` records: "The first cut
+    // correction, not a preference. `cpp.md` records: "The first cut
     // of the defect register conflated the two and reported 29,708 duplicates;
     // the corrected measurement is 928, and the distinction is pinned by
     // `cpp/one-edge-per-pair-959`". A pair is one fact only WITHIN a label —

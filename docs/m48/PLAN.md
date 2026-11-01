@@ -118,7 +118,7 @@ Gaps found and closed (issue bodies updated):
    so bb_cross_language/bb_migrate/bb_security produce REAL rows. CLI `bb tool`
    gateway parity for all 16 tools. Sequencing: C1 corpus runs AFTER P1–P3 so
    evidence reflects the final fixed behavior (no double corpus runs).
-3. **H1 widened** (#703): phantom-name scan covers SESSION-HANDOFF.md and
+3. **H1 widened** (#703): phantom-name scan covers archive/docs-pre-consolidation/SESSION-HANDOFF.md and
    docs/tools/*.md; historical tables allowed only when labeled history.
 4. **W1 planned-modes honesty** (#702): planned (non-executable) modes are
    visibly marked via the registry plannedModes field.

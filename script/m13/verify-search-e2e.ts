@@ -1,10 +1,23 @@
-// script/m13/verify-search-e2e.ts — M13.19 (S2).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Exercises all four bb_search modes (symbols / content / symbol / file) and
-// their error paths through BOTH real transports: the compiled Node CLI
-// (`node bin/bb tool bb_search --dir … --args …`) and the real MCP stdio
-// server (StdioClientTransport → src/mcp/server.ts). Proves every mode and
-// every error path surfaces correctly in both transports.
+// WHAT THIS FILE IS — the two-transport end-to-end gate for bb_search: every mode
+//   and every refusal runs through the compiled Node CLI (`node bin/bb tool`) and
+//   through a real MCP stdio session.
+// WHICH TOOL IT SERVES — bb_search (read; modes symbols/content/symbol/file).
+// WHY IT IS SHAPED THIS WAY — a handler proven only by direct calls can still be
+//   broken at the door, so both real transports are exercised and every negative
+//   asserts the `isError` envelope a host actually receives. The MCP transport
+//   forwards the parent environment: the SDK would otherwise drop BB_DATA_DIR and
+//   the server would read the real default data dir instead of the fixture.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/s2.json (through the shared
+//   harness); the compiled CLI subject requires `npm run build` first.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_search/{handler,descriptor}.ts,
+//   src/mcp/tool-validation.ts, docs/BB_SEARCH.md.
+// CONTRACTS IT MUST NOT BREAK — the CLI subject is the built artifact under Node
+//   and the MCP subject is the real server process; neither asserted path may be
+//   substituted by an in-process handler call.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { execFileSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
@@ -110,7 +123,10 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
   const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
   const serverArgs = isBun ? ["--dir", root] : ["mcp", "--dir", root]
-  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+  // The MCP SDK sanitises the child environment to HOME/PATH/SHELL/TERM/USER, so
+  // BB_DATA_DIR and BB_NO_AUTO_REFRESH would be dropped and the server would read
+  // the real default data dir instead of the fixture. Pass the parent env through.
+  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe", env: { ...process.env } as Record<string, string> })
   const client = new Client({ name: "verify-search-e2e", version: "1.0.0" })
   const call = async (args: Record<string, unknown>) => {
     const res: any = await client.callTool({ name: "bb_search", arguments: args })
@@ -148,6 +164,20 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
     harness.negative("MCP rejects path escape", e4.isError && e4.text.includes("escapes"), e4.text.slice(0, 140))
     const e5 = await call({ query: 42 })
     harness.negative("MCP rejects non-string query", e5.isError && e5.text.includes("query must be string"), e5.text.slice(0, 140))
+    // Contract cases that used to be silent (exact+regex) or absent (match-set
+    // declaration, content route disclosure, limit ceiling).
+    const e6 = await call({ query: "^handle.*", regex: true, exact: true })
+    harness.negative("MCP refuses exact combined with regex", e6.isError && e6.text.includes("cannot be combined"), e6.text.slice(0, 140))
+    const e7 = await call({ query: "handleRequest", limit: 5000 })
+    harness.negative("MCP refuses limit above 2000", e7.isError && e7.text.includes("between 0 and 2000"), e7.text.slice(0, 140))
+    const declared = await call({ query: "handleRequest", limit: 1 })
+    harness.check("MCP symbols answer declares its match set", /\[match-set\] searchMode=symbols totalMatches=\d+ returned=\d+ truncated=(true|false) staleCount=\d+/.test(declared.text), declared.text.slice(0, 160))
+    const contentDeclared = await call({ mode: "content", query: "handleRequest" })
+    let cd: any = null
+    try { cd = JSON.parse(contentDeclared.text) } catch {}
+    harness.check("MCP content answer declares matchMode and bodyCoverage", !!cd && typeof cd.matchMode === "string" && !!cd.bodyCoverage && typeof cd.bodyCoverage.withBody === "number", contentDeclared.text.slice(0, 160))
+    const fileRefresh = await call({ mode: "file", filePath: "src/app.ts", refresh: false })
+    harness.negative("MCP file mode refuses refresh (manual-only staleness)", fileRefresh.isError && fileRefresh.text.includes("does not accept: refresh"), fileRefresh.text.slice(0, 140))
   } catch (e) {
     harness.check("MCP bb_search e2e session", false, e instanceof Error ? e.message : String(e))
   } finally {

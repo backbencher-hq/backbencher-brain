@@ -14851,7 +14851,7 @@ export const MUTANTS: Mutant[] = [
   // NIM wave (2026-09-27)
   //
   // Every mutant below is a revert of a fix this lane actually made, or of a
-  // rule docs/analyzers/real-nim-analyzer.md claims in "What is ruled, and why".
+  // rule docs/analyzers/nim.md claims in "What is ruled, and why".
   // The gate requires each one to push nim's fixture failure count above
   // validation/m14/fixture-baseline.json, so a survivor is not a weak mutant —
   // it is a hole in the suite, and the first run of this block found eight.

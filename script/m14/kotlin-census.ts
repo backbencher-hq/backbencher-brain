@@ -13,7 +13,7 @@
  *    corpus-population test is a PARSE-TREE test (`hasDeclarationNode`) rather
  *    than a substring search, so a comment or a string literal cannot make a
  *    data table look like code. The measured reason is in
- *    docs/analyzers/REVIEW-2026-10-04.md §2 Defect A: substring sampling drew
+ *    archive/docs-pre-consolidation/analyzers-REVIEW-2026-10-04.md §2 Defect A: substring sampling drew
  *    Ruby's encoding tables and moved that lane's score by eight points.
  *
  * 2. **THE POPULATION IS DERIVED, NEVER HAND-WRITTEN.** The file list comes from

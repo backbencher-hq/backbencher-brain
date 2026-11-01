@@ -140,7 +140,7 @@ async function main() {
   }
 
   // 6. SESSION-HANDOFF describes the aliases as REMOVED (history framing).
-  const handoffPath = path.join(ROOT, "SESSION-HANDOFF.md")
+  const handoffPath = path.join(ROOT, "archive/docs-pre-consolidation/SESSION-HANDOFF.md")
   if (existsSync(handoffPath)) {
     const ho = readFileSync(handoffPath, "utf8")
     const idx = ho.indexOf("bb_relationships")

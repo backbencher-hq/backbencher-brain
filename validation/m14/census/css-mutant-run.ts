@@ -39,7 +39,7 @@ import { runLang } from "../../../script/m14/run-fixtures"
  * BOTH css mutant sets run, not just this round's.
  *
  * `script/m60/css-mutants.ts` holds 13 mutants the lane wrote earlier, and
- * `docs/analyzers/real-css-analyzer.md` claims "all 13 are caught". Nothing imports
+ * `docs/analyzers/css.md` claims "all 13 are caught". Nothing imports
  * that file: `script/m14/mutate-analyzer.ts` wires only `FSHARP_MUTANTS` from it, so
  * the claim has been describing a set no gate executes. Rather than restate the claim
  * with a different adjective, this runner runs them too and the doc records the

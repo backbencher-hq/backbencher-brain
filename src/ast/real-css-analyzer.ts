@@ -9,7 +9,7 @@
 // HAS `call_expression`: validation/m14/verification/EXCLUSION-AUDIT-S0.md).
 // Grammar: tree-sitter-css@0.25.0, pinned as wasm/tree-sitter-css.wasm
 // (sha256 e3ef97f902f804b7…).
-// Docs / spec / fixtures / validations: docs/analyzers/real-css-analyzer.md ·
+// Docs / spec / fixtures / validations: docs/analyzers/css.md ·
 // script/m14/spec/css-completeness.json · validation/m14/fixtures/css/** ·
 // validation/m14/verification/CSS-STATE.md.
 // CO-EDIT LIST — when this file changes, review in the SAME pass: the docs above,
@@ -1545,7 +1545,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * never the enclosing symbol's line: `absent` is the honest value and 0 is a
    * lie a reader cannot detect. There are no such cases in this lane — every
    * relationship CSS emits is between two names that are written in the file —
-   * and the exceptions list in docs/analyzers/real-css-analyzer.md records that
+   * and the exceptions list in docs/analyzers/css.md records that
    * as a measured fact rather than an assumption.
    */
   private lineOf(node: Node | null | undefined): number | undefined {

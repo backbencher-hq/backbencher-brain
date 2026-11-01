@@ -35,10 +35,10 @@ import { generateDocumentation, formatDocumentation, type DocRequest } from "../
 import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../../../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../../intelligence/migration/migration-engine"
 import { graphTraversal } from "../../../intelligence/graph/graph-engine"
-// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
-// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
-// (computeImpact + its declared budget) so the two doors cannot disagree.
+// The MCP surface reuses the EXACT components the editor surface uses — one
+// truth, two doors, no reimplementation. `bb_analyze` impact aggregates the same
+// canonical calculator (computeImpact + its declared budget) as `bb_impact`, so
+// the two doors cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../../../lsp/impact"
 // M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
 // The agent door CALLS it. It used to carry a drifted copy of the rule — see the
@@ -135,11 +135,11 @@ export const handler: ToolHandler = async (args, { projectId }) => {
     if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target.trim())
       return textResult(`bb_analyze ${mode} requires a non-empty target`, true)
 
-    // M35.S1: staleness on every read mode — additive truth, rows flagged
-    // never dropped, nothing silently re-indexed. Helper builds the shared
-    // envelope from the F1 batch resolver.
+    // Staleness on every read mode — additive truth, rows flagged never
+    // dropped, nothing silently re-indexed. Helper builds the shared envelope
+    // from the batch freshness resolver.
     //
-    // Latency budget (issue #582): freshness resolution must stay under 5% of
+    // Latency budget: freshness resolution must stay under 5% of
     // handler latency. Project-wide modes (stats/complexity/test_mapping/
     // test_gaps/test_quality) would otherwise resolve O(all files) per call,
     // so they resolve a deterministic stride sample (cap below) and the
@@ -159,8 +159,8 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       // Measurement seam for the S1 latency-budget gate (BB_M35_SKIP_FRESHNESS=1
       // runs the handler WITHOUT freshness work). Not part of the public
       // contract; the gate measures with/without and asserts the delta < 5%.
-      // M40.A9: quarantined behind BB_TEST_HOOKS=1 — like the worker fixtures,
-      // a stray env var must not silently degrade a production read path.
+      // Quarantined behind BB_TEST_HOOKS=1 — like the worker fixtures, a stray
+      // env var must not silently degrade a production read path.
       if (process.env.BB_TEST_HOOKS === "1" && process.env.BB_M35_SKIP_FRESHNESS === "1") return textResult(JSON.stringify(data, null, 2))
       let resolved = rows
       let mode: "sampled" | "complete" = "complete"
@@ -215,10 +215,10 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       // for all five, and the key set does not change with the result.
       let result
       try {
-        // M48/D7: this walk keeps a wall-clock ceiling EXPLICITLY, because the
-        // engine's default no longer applies one (graph-engine's
-        // DEFAULT_WALK_TIME_BUDGET_MS is 0 since the bb_graph review's D7: the
-        // bound sampled the default answer without bounding its latency).
+        // This walk keeps a wall-clock ceiling EXPLICITLY, because the engine's
+        // default applies none (graph-engine's DEFAULT_WALK_TIME_BUDGET_MS is 0:
+        // a bound there sampled the default answer without bounding its
+        // latency).
         // `mode=trace` on a hub is the walk that motivated a clock bound at
         // all — measured at 613 s before one existed — so the ceiling stays
         // here, at this mode's own declared value, instead of being inherited by
@@ -366,7 +366,7 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       // returned 20 of 68 files with `totalFiles: 0` and `truncated: false` —
       // a false statement of completeness, 48 files hidden. There is no second
       // copy of the rule to disagree with.
-      const rawScope = args.filePath ? String(args.filePath) : target || undefined
+      const rawScope = args.filePath ? String(args.filePath) : undefined
       const scopePath = rawScope ? normalizeScopePath(rawScope) : null
       const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
@@ -416,7 +416,18 @@ export const handler: ToolHandler = async (args, { projectId }) => {
         },
         rows,
         {
-          scope: first ? { kind: "file", path: first.file } : undefined,
+          // A page over a path PREFIX is a directory scope even though `scope` on
+          // the wire says "file" for both shapes: naming one file here told a
+          // caller to reindex `src/wide/w0.ts` when the stale files were
+          // `w4.ts`/`w5.ts` (measured). One returned file that IS the scope keeps
+          // the file scope, because that is what the caller asked about.
+          scope: scopePath
+            ? deps.length === 1 && deps[0].file === scopePath
+              ? { kind: "file", path: deps[0].file }
+              : { kind: "dir", path: scopePath }
+            : first
+              ? { kind: "dir" }
+              : undefined,
           onRows: (statuses) => {
             for (const d of deps as any[]) {
               d.stale = statuses.get(d.fileId) !== "fresh"
@@ -446,7 +457,7 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       )
     }
     if (mode === "impact") {
-      // M48.P1 (#696): ONE impact calculator. The report aggregates the SAME
+      // ONE impact calculator. The report aggregates the SAME
       // canonical walk bb_impact and the editor use (computeImpact: callers
       // direction, declared budget 200 nodes / depth 5, truncation + declared
       // total) — the file-level risk aggregation is layered on top, never a
@@ -471,7 +482,7 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.entries.map((e) => ({ fileId: relToFileId().get(e.file) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const e of report.entries as any[]) e.stale = statusFor(statuses, e.file) === "stale" } },
+        { sample: 64, onRows: (statuses) => { for (const e of report.entries as any[]) e.stale = statusFor(statuses, e.file) !== "fresh" } },
       )
     }
     if (mode === "test_gaps") {
@@ -482,11 +493,15 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.gaps.map((g) => ({ fileId: relToFileId().get(g.file) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const g of report.gaps as any[]) g.stale = statusFor(statuses, g.file) === "stale" } },
+        { sample: 64, onRows: (statuses) => { for (const g of report.gaps as any[]) g.stale = statusFor(statuses, g.file) !== "fresh" } },
       )
     }
     if (mode === "test_impact") {
-      const report = await testImpact(projectId as any, target)
+      // This mode refuses `limit`, so the tool's walk ceiling IS its bound. The
+      // graph engine applies no clock bound unless a caller asks for one, and
+      // without this the one walking mode with no page size also declared no
+      // reason for `truncated`.
+      const report = await testImpact(projectId as any, target, { timeBudgetMs: ANALYZE_GRAPH_WALK_CEILING_MS })
       if (report.found) {
         const tests = [...report.directTests, ...report.indirectTests]
         return withFreshness(
@@ -499,13 +514,14 @@ export const handler: ToolHandler = async (args, { projectId }) => {
     }
     if (mode === "test_quality") {
       const report = await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50), filePath: args.filePath ? String(args.filePath) : undefined })
-      // Rows = the files in the report (<= maxFiles, default 50): complete
-      // over visible rows; the sample cap still guards pathological limits.
+      // The engine returns at most `maxFiles` rows and states returned/totalFiles/
+      // truncated in `summary`; freshness resolves exactly the rows the answer
+      // carries, and the sample cap still guards pathological limits.
       const relIds = relIdsFor(report.files.map((f) => f.relativePath))
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.files.map((f) => ({ fileId: relIds.get(f.relativePath) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const f of report.files as any[]) f.stale = statuses.get(relIds.get(f.relativePath) ?? "") === "stale" } },
+        { sample: 64, onRows: (statuses) => { for (const f of report.files as any[]) f.stale = statuses.get(relIds.get(f.relativePath) ?? "") !== "fresh" } },
       )
     }
     return textResult("bb_analyze requires mode: callers|callees|trace|dependencies|stats|complexity|impact|test_mapping|test_gaps|test_impact|test_quality", true)

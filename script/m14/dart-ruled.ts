@@ -85,7 +85,7 @@
  *
  * Everything the table needs is measured above and in the committed artifacts, so the empty
  * table stands on its own measurements. The arbiter defect is reported in section 8 of
- * `docs/analyzers/real-dart-analyzer.md`; `script/m14/ontology-coverage-gate.ts` is shared
+ * `docs/analyzers/dart.md`; `script/m14/ontology-coverage-gate.ts` is shared
  * machinery and is not edited here.
  *
  * ## Two open items that are NOT rulings, recorded so nobody adds them here

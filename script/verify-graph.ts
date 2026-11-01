@@ -5,6 +5,9 @@ import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { graphTraversal } from "../src/intelligence/graph/graph-engine"
+import { createToolHandlers } from "../src/mcp/tool-handlers"
+import { TOOL_DESCRIPTORS } from "../src/mcp/tool-registry"
+import { validateToolArguments } from "../src/mcp/tool-validation"
 
 let failures = 0
 function check(label: string, condition: boolean, detail = ""): void {
@@ -336,6 +339,46 @@ try {
     "D7: a sampled answer is a SUBSET, never larger than the unbounded one",
     capped.callers.length + capped.callees.length <= unbounded.callers.length + unbounded.callees.length,
     `capped=${capped.callers.length + capped.callees.length} unbounded=${unbounded.callers.length + unbounded.callees.length}`,
+  )
+
+  // ── The DOOR, not only the engine (the per-tool gate used to call the engine
+  // directly, so the handler's defaults, refusals and payload shape were outside
+  // it). These run the same three layers the MCP server runs.
+  const handlers = createToolHandlers() as unknown as Record<string, (args: Record<string, unknown>, ctx: unknown) => Promise<any>>
+  const graphDescriptor = TOOL_DESCRIPTORS.find((d) => d.name === "bb_graph")!
+  const door = async (args: Record<string, unknown>) => {
+    try {
+      const validated = validateToolArguments(graphDescriptor, args)
+      const result = await handlers["bb_graph"]!(validated, { projectId, projectPath: root })
+      const text = String(result?.content?.[0]?.text ?? "")
+      if (result?.isError) return { ok: false as const, error: text }
+      return { ok: true as const, json: JSON.parse(text) }
+    } catch (error) {
+      return { ok: false as const, error: error instanceof Error ? error.message : String(error) }
+    }
+  }
+  const doorBlank = await door({ symbol: "   " })
+  check(
+    "door: a blank symbol is REFUSED instead of echoed back as a not-found scan",
+    !doorBlank.ok && doorBlank.error.includes("requires symbol"),
+    `door answered ${doorBlank.ok ? "a graph" : JSON.stringify(doorBlank.error)}`,
+  )
+  const doorFractionalDepth = await door({ symbol: "beta", maxDepth: 2.5 })
+  check("door: a fractional maxDepth is refused, never floored", !doorFractionalDepth.ok && /whole number/.test(doorFractionalDepth.error), String(doorFractionalDepth.ok ? "accepted" : doorFractionalDepth.error))
+  const doorFractionalEdges = await door({ symbol: "beta", maxEdges: 2.5 })
+  check("door: a fractional maxEdges is refused, never floored", !doorFractionalEdges.ok && /whole number/.test(doorFractionalEdges.error), String(doorFractionalEdges.ok ? "accepted" : doorFractionalEdges.error))
+  const doorDefault = await door({ symbol: "beta" })
+  const engineDefault = await graphTraversal(projectId, "beta", {})
+  check(
+    "door: an omitted maxDepth applies the DECLARED default (5) — the same default the engine uses",
+    doorDefault.ok && doorDefault.json.summary.maxDepth === 5 && engineDefault.summary.maxDepth === 5,
+    `door maxDepth=${(doorDefault as any).json?.summary?.maxDepth}, engine maxDepth=${engineDefault.summary.maxDepth}`,
+  )
+  const doorEdges = doorDefault.ok ? [...doorDefault.json.callers, ...doorDefault.json.callees] : []
+  check(
+    "door: every edge publishes the stored tier claim and resolution basis beside the derived tier",
+    doorEdges.length > 0 && doorEdges.every((e: any) => "evidenceClass" in e && "targetBasis" in e && "rowId" in e),
+    `${doorEdges.length} edge(s); fields=${JSON.stringify(Object.keys(doorEdges[0] ?? {}))}`,
   )
 
   // Not-found throws

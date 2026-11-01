@@ -1,13 +1,13 @@
-// script/m13/verify-health-mutability.ts — M13.29 (H1).
+// script/m13/verify-health-mutability.ts — (H1).
 //
 // bb_health mutability contract: one truth across registry, generated docs,
 // and behavior.
 //
-//   1. Registry + contract artifact + generated docs all say mutability=read.
-//   2. refresh/force are documented as EXPLICIT index mutation, never implicit.
-//   3. Runtime proof: a plain health call mutates nothing (DB fingerprint
-//      identical), refresh=true and force=true mutate explicitly (fingerprint
-//      changes), and the handler only refreshes when explicitly asked.
+//  1. Registry + contract artifact + generated docs all say mutability=read.
+//  2. refresh/force are documented as EXPLICIT index mutation, never implicit.
+//  3. Runtime proof: a plain health call mutates nothing (DB fingerprint
+//  identical), refresh=true and force=true mutate explicitly (fingerprint
+//  changes), and the handler only refreshes when explicitly asked.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { createHash } from "node:crypto"
@@ -50,8 +50,13 @@ harness.check("docs: mutability line is read", doc.includes("- Mutability: `read
 harness.check("docs: refresh/force documented as explicit index mutation", doc.includes("refresh=true explicitly mutates only index data") && doc.includes("force=true performs a full in-place reindex"), "missing explicit mutation docs")
 
 // Static: handler only refreshes when explicitly requested.
-const handlers = readFileSync(path.resolve("src/mcp/tool-handlers.ts"), "utf8")
+const handlers = readFileSync(path.resolve("src/mcp/tools/bb_health/handler.ts"), "utf8")
 harness.check("handler: refresh gated on explicit refresh/force flags", handlers.includes("args.refresh === true || args.force === true"), "implicit refresh possible")
+// The only mutation this tool performs is the one the caller asked for, and the
+// status path must not even open the index writable: the provider opens the
+// driver read-only unless refresh/force was requested.
+const provider = readFileSync(path.resolve("src/intelligence/health/health-provider.ts"), "utf8")
+harness.check("provider: read calls open the index read-only", provider.includes("readonly: !writeRequested"), "writable open on a read path")
 
 // ── 2. Runtime: plain read never mutates; explicit refresh does ────────────
 const root = mkdtempSync(path.join(tmpdir(), "bb-health-mutability-"))
@@ -85,7 +90,10 @@ async function fingerprint(pid: string): Promise<string> {
   // dropping the count, because the count is the part that survives a mutation which keeps
   // every file's size and mtime identical — rare, but exactly the case a fingerprint exists
   // to catch.
-  const raw = await BrainDatabase.getRawInstance(pid)
+  // READ-ONLY: a writable open runs the additive migrations/healers and would
+  // move the WAL — the fingerprint would then be measuring its own write, which
+  // is exactly the defect this negative exists to catch.
+  const raw = await BrainDatabase.getRawInstance(pid, { readonly: true })
   const count = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as { c?: number } | undefined)?.c ?? -1
   return createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 16) + `:sym${count}`
 }

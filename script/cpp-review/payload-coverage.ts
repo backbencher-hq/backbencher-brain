@@ -1,7 +1,7 @@
 /**
  * M60.P1 — C++ payload coverage over the REAL corpus.
  *
- * Why this exists: the symbol contract in `docs/analyzers/real-cpp-analyzer.md`
+ * Why this exists: the symbol contract in `docs/analyzers/cpp.md`
  * marked `parameters`, `returnType` and `decorators` as supported while the
  * analyzer emitted none of them, and `script/m60/payload-matrix.ts` recorded all
  * three as dead emit cells. Two contradictory artifacts, and the one a reader

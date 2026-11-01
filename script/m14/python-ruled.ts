@@ -24,7 +24,7 @@
  * verdict: the type IS observed, and the gate's own decision order finds `EMITTED` from
  * observation before it ever reaches a ruling. A reader must not take "RULED-SOUND" from the
  * numbers below. The reversal and its full evidence are in
- * `docs/analyzers/real-python-analyzer.md` §`implements`.
+ * `docs/analyzers/python.md` §`implements`.
  *
  * ## Why this file exists, and why it is not an edit to the gate
  *

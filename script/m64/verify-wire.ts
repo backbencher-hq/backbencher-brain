@@ -1,4 +1,4 @@
-// script/m64/verify-wire.ts — M64.E.
+// script/m64/verify-wire.ts — .E.
 //
 // THE GAP THIS CLOSES.
 //
@@ -64,6 +64,10 @@ if (typeof Bun === "undefined") {
   process.exit(0)
 }
 
+// The spawned server inherits the gate's isolated data dir; if the caller set
+// none, the gate owns one so the wire session can never read or write ~/.bb.
+process.env.BB_DATA_DIR = process.env.BB_DATA_DIR ?? mkdtempSync(path.join(tmpdir(), "bb-h64e-data-"))
+
 // ── fixture: build all five path states plus an escape and a bad argument ─────
 const root = mkdtempSync(path.join(tmpdir(), "bb-h64e-"))
 mkdirSync(path.join(root, "src"), { recursive: true })
@@ -95,6 +99,7 @@ try {
     args: [path.resolve("src/mcp/server.ts"), "--dir", root],
     cwd: process.cwd(),
     stderr: "pipe",
+    env: { ...process.env, BB_DATA_DIR: process.env.BB_DATA_DIR ?? "" } as Record<string, string>,
   })
   client = new Client({ name: "verify-wire", version: "1.0.0" })
   await client.connect(transport)
