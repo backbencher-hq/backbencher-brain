@@ -1,0 +1,28 @@
+{
+  "language": "matlab",
+  "grammar": "acristoffers/tree-sitter-matlab",
+  "release": "1.3.1",
+  "license": "MIT",
+  "wasm": "wasm/tree-sitter-matlab.wasm",
+  "sha256": "0f2f381f010d81af18a9f132e77606dceb02ae705c5b2e3cb0eabff3f42083c3",
+  "abi": 15,
+  "relationshipContract": [
+    "contains",
+    "uses",
+    "calls",
+    "extends"
+  ],
+  "ruledGaps": [
+    "imports",
+    "overrides",
+    "instantiates",
+    "renders",
+    "mixes_in",
+    "part_of"
+  ],
+  "notes": [
+    "The grammar represents calls and matrix indexing with the same function_call node.",
+    "Only .m files with an unambiguous function or classdef declaration are routed as MATLAB; other .m files retain Objective-C routing.",
+    ".mlx is not admitted because it is a binary package format."
+  ]
+}

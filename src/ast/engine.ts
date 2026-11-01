@@ -705,6 +705,16 @@ export namespace ASTEngine {
     // `_recipeprefix` is the hardcoded tab — so the fixture's `>` recipes parsed as ERROR nodes and the
     // rule after them (`clean:`) was never published. Measured: `tree-sitter` CLI build, 192,211 bytes.
     "tree-sitter-make.wasm": "af93a7597fd11dda62f5c4496fff828956c0a78656323785975ab96e3ae900ab",
+    // The two dedicated-root lanes (matlab, vba). Both are WIRED FROM THE REPO'S OWN wasm/ DIRECTORY — no
+    // npm package publishes a wasm for either grammar (matlab is an in-tree patch of acristoffers/
+    // tree-sitter-matlab 1.3.1; vba is the vendored tree-sitter-vba 0.14.5 under grammars/tree-sitter-vba/) —
+    // and both files were left UNTRACKED by the one-branch consolidation, so a fresh clone silently had no
+    // grammar for two of the 50 lanes. Pinning the bytes here is what makes the resolver serve them AT ALL
+    // (resolveWasm serves repo wasm only through this digest table), so the pin and the tracking are the
+    // same fix. The digests are the ones the lanes' own pin records verified: validation/m14/
+    // {matlab,vba}-grammar-pin.json.
+    "tree-sitter-matlab.wasm": "0f2f381f010d81af18a9f132e77606dceb02ae705c5b2e3cb0eabff3f42083c3",
+    "tree-sitter-vba.wasm": "9e0615ad1a4fdf3abff07265fe84d95ba1f392df6f4bbecd0f3ddea92aee00de",
   }
 
   function resolveWasm(relativePath: string): string {

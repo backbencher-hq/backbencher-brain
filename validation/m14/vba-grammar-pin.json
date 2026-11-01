@@ -1,0 +1,28 @@
+{
+  "language": "vba",
+  "grammar": "tree-sitter-vba",
+  "version": "0.14.5",
+  "license": "MIT",
+  "source": "grammars/tree-sitter-vba/vba/grammar.js",
+  "wasm": "wasm/tree-sitter-vba.wasm",
+  "wasmSha256": "9e0615ad1a4fdf3abff07265fe84d95ba1f392df6f4bbecd0f3ddea92aee00de",
+  "abi": 15,
+  "relationshipContract": [
+    "contains",
+    "imports",
+    "references",
+    "calls",
+    "uses",
+    "implements",
+    "instantiates",
+    "exports",
+    "decorates"
+  ],
+  "ruledGaps": [
+    "extends",
+    "overrides",
+    "renders",
+    "mixes_in",
+    "part_of"
+  ]
+}
