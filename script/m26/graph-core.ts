@@ -544,7 +544,7 @@ export interface ImpactResultLike {
   /** M63.T1: how the requested name became the root this walk started at.
    *  Optional so hand-built fixtures keep type-checking; a surface that
    *  receives it says so out loud (see renderImpact). */
-  // M63.T2 added "exact-exempt-kind" to the engine's union (src/lsp/impact.ts:239) and this
+  // "exact-exempt-kind" was added to the engine's union (src/lsp/impact.ts:239) and this
   // renderer was never told. Found by anchoring a hand-written type copy instead of keeping a
   // snapshot: with the snapshot, `renderImpact: (r: any, dom: any) => any` meant nothing
   // complained when the gate passed a real `ImpactResult` in.
@@ -614,24 +614,26 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
   const match = result.rootMatch
   // "exact-exempt-kind" IS AN EXACT HIT, so it must not reach this branch.
   //
-  // M63.T2 added it to the engine to say: the requested name matched a stored symbol exactly
-  // and unambiguously, and that symbol's KIND is exempt from this question. src/lsp/impact.ts
-  // describes it in its own words — "the engine rooted at the exact requested name and
-  // completed the walk" — so nothing was substituted.
+  // The engine emits it (src/lsp/impact.ts:1262) only when
+  // `result.root.name === symbolName` — the requested name IS the stored
+  // symbol's name, unambiguously — and the symbol's KIND is exempt from this
+  // question. src/lsp/impact.ts says so in its own words: the engine rooted at
+  // the exact requested name and completed the walk. Nothing was substituted.
   //
-  // The condition below only excluded "exact" and "owning-declaration", so
-  // "exact-exempt-kind" satisfied both negations and fell through to a note reading
+  // The condition below excluded only "exact" and "owning-declaration", so
+  // "exact-exempt-kind" satisfied both negations and fell through to a note
+  // reading
   //
   //     "<requested>" is not a stored symbol on its own — showing the impact of <other>
   //
   // which is FALSE: the symbol WAS stored, and it WAS the one requested. A user asking about
-  // an exempt-by-kind constant was told the panel had silently answered a different question
-  // — precisely the defect M63.T1 introduced this disclosure to prevent, reintroduced by the
-  // value M63.T2 added.
+  // an exempt-by-kind constant was told the panel had silently answered a different question —
+  // precisely the defect M63.T1 introduced this disclosure to prevent, reintroduced by the
+  // value M63.T2 added to the union.
   //
   // Kept as an explicit exclusion rather than switching to an allow-list, so that a FUTURE
   // value added to the engine shows up as a compile error here instead of silently deciding
-  // whether it is a substitution.
+  // for itself whether it is a substitution.
   if (match && match.via !== "exact" && match.via !== "exact-exempt-kind" && match.via !== "owning-declaration") {
     layer.setAttribute("data-root-match", match.via)
     layer.setAttribute("data-root-requested", match.requested)

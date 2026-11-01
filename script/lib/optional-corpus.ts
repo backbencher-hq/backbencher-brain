@@ -30,7 +30,13 @@ export function optionalCorpusCandidates(name: string, envVar?: string): string[
     // Where the owner's clone lives on the machine that has it.
     `$HOME/${name}`,
     path.join(home, name),
-    // Sibling of the repo — the layout this workspace uses for fixtures.
+    // Sibling of the repo, inside the fixtures group directory. The comment on this list
+    // already claimed "the layout this workspace uses for fixtures", but the candidate built
+    // was `../<name>` — so on this machine, where the corpus really is `../fixtures/repositories`
+    // (48 checkouts), the resolver reported the corpus absent. A declared block that is
+    // declared because the helper looked in the wrong place is worse than no helper: it turns
+    // "this machine cannot run this gate" into a claim, and the gate reports it as fact.
+    path.resolve(process.cwd(), `../fixtures/${name}`),
     path.resolve(process.cwd(), `../${name}`),
     path.resolve(process.cwd(), name),
   ].filter((c): c is string => typeof c === "string" && c.length > 0)

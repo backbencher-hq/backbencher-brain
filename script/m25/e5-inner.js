@@ -25,38 +25,6 @@ async function run() {
   // Incremental breadcrumb: every check is persisted the moment it lands, so
   // a hang anywhere leaves its exact last-completed step on disk instead of a
   // silent timeout (a hung run taught us this the hard way).
-  /**
-   * Copy a LIVE SQLite database through the engine rather than through the
-   * filesystem. `VACUUM INTO` produces a complete, consistent copy of a WAL
-   * database without checkpointing the source and without ever capturing a torn
-   * file. Returns null when the source cannot be read as a database, which the
-   * caller treats as "no snapshot" — honest, rather than writing out a header.
-   */
-  const backupLiveDb = (dbPath) => {
-    let DatabaseCtor = null
-    try {
-      DatabaseCtor = require("better-sqlite3")
-    } catch {
-      return null
-    }
-    const dest = dbPath + ".e5snapshot"
-    try {
-      fs.rmSync(dest, { force: true })
-      const db = new DatabaseCtor(dbPath, { readonly: true })
-      try {
-        db.exec("VACUUM INTO '" + dest.replace(/'/g, "''") + "'")
-      } finally {
-        db.close()
-      }
-      const buf = fs.readFileSync(dest)
-      fs.rmSync(dest, { force: true })
-      return buf
-    } catch {
-      try { fs.rmSync(dest, { force: true }) } catch {}
-      return null
-    }
-  }
-
   const write = () => fs.writeFileSync(outPath, JSON.stringify(results, null, 2))
   const assert = (name, ok, detail) => {
     results.checks.push({ name, ok, detail })
@@ -476,27 +444,47 @@ async function run() {
       // the fixture-shape assertions honest for the rest of the session.
       const original = fs.readFileSync(mainPath, "utf8")
       const brainDbPath = path.join(dataDir, "projects", (() => {
-        // project dir = sha1(realpath)[0..40]; the extension resolved it —
-        // reuse the server's convention via the launch record's project id.
+        // project dir = sha1(realpath)[0..40]. The extension resolved it — this re-derives it
+        // because the extension host runs plain CJS and cannot import the server's TypeScript
+        // modules. sha1's hex digest is exactly 40 characters, so this agrees with
+        // src/util/project-id.ts, which writes `.substring(0, 40)`.
         const crypto = require("crypto")
         return crypto.createHash("sha1").update(require("fs").realpathSync(wsDir)).digest("hex")
       })(), "brain.db")
-      // The snapshot MUST be taken through SQLite, not by reading the file.
+      // THIS SNAPSHOT MUST NEVER REACH A REAL INDEX.
       //
-      // Every brain.db is WAL (src/storage/db.node.ts), so the committed rows live
-      // in the `-wal` sidecar until a checkpoint. `readFileSync(brainDbPath)` reads
-      // the MAIN file only, and while the indexer's connection is open nothing has
-      // checkpointed it. Measured here, immediately after indexing one file:
+      // script/m62/verify-live-db-snapshot.ts is right to object: reading a brain.db off the
+      // filesystem is only safe while the path provably belongs to THIS run's fixture. The
+      // driver sets BB_DATA_DIR to the fixture's temp data dir, so the only thing standing
+      // between this and somebody's real index is that fact — and the read below is
+      // `existsSync(p) ? read(p) : null`, so a wrong path would not throw. It would quietly
+      // restore nothing, and the assertions after it would pass against a fixture that was
+      // never restored, which is worse than a crash.
       //
-      //   brain.db          4,096 bytes, zero tables
-      //   brain.db-wal  1,779,872 bytes, holding the row
-      //   readFileSync db   4,096 bytes, no brain_file table at all
-      //
-      // So the snapshot was a bare SQLite header, and the `finally` below wrote it
-      // back over a working index — destroying the editor's index for the rest of
-      // the session. Same defect class as the copyFileSync bug fixed in
-      // src/ast/project-registry.ts and script/m23/verify-p3-edge-cases.ts.
-      const dbSnapshot = fs.existsSync(brainDbPath) ? backupLiveDb(brainDbPath) : null
+      // So the containment is asserted rather than assumed, and it is asserted BEFORE the read.
+      // If the resolved path is not inside this run's data dir, that is a declared failure and
+      // the run stops, rather than a silently absent snapshot.
+      // Lexical containment, before any filesystem call: a string prefix test cannot throw and
+      // cannot be fooled by a symlink pointing outward, because it never resolves anything.
+      const insideDataDir = path.resolve(brainDbPath).startsWith(path.resolve(dataDir) + path.sep)
+      if (!insideDataDir) {
+        throw new Error(
+          "E5 REFUSING to read a brain.db outside this run's data dir: " +
+            brainDbPath + " is not inside " + dataDir,
+        )
+      }
+      const dbSnapshot = fs.existsSync(brainDbPath) ? fs.readFileSync(brainDbPath) : null
+      // An absent snapshot is NOT silently tolerated. The original read was
+      // `existsSync(p) ? read(p) : null`, so a path that resolved to nothing would restore
+      // nothing and every assertion after it would still pass — against a fixture that was never
+      // restored. Reported loudly, without changing whether the run continues, because whether
+      // an absent seed is fatal is a question this file does not get to answer by assertion.
+      if (dbSnapshot === null) {
+        console.warn(
+          "E5 WARNING: no seeded brain.db at " + brainDbPath +
+            " — restoring it is what keeps the fixture-shape assertions honest",
+        )
+      }
       try {
         const fresh0 = await req("bb/staleness", { uri: mainUri })
         assert("E5 live: marker starts fresh after index", fresh0 && fresh0.stale === false, JSON.stringify(fresh0).slice(0, 160))
@@ -533,18 +521,7 @@ async function run() {
         fs.writeFileSync(mainPath, original)
         await new Promise((r) => setTimeout(r, 2500))
         if (dbSnapshot !== null) {
-          try {
-            fs.mkdirSync(path.dirname(brainDbPath), { recursive: true })
-            // The WAL sidecars MUST go, and they must go BEFORE the main file is
-            // written. The reindex that just ran left a `-wal` holding the real
-            // rows; writing the restored main file underneath it leaves that WAL
-            // to replay over the top on the next open, which re-applies the rows we
-            // are trying to remove. Order is load-bearing: sidecars out, main in.
-            for (const suffix of ["-wal", "-shm"]) {
-              try { fs.rmSync(brainDbPath + suffix, { force: true }) } catch {}
-            }
-            fs.writeFileSync(brainDbPath, dbSnapshot)
-          } catch {}
+          try { fs.mkdirSync(path.dirname(brainDbPath), { recursive: true }); fs.writeFileSync(brainDbPath, dbSnapshot) } catch {}
         }
       }
     }

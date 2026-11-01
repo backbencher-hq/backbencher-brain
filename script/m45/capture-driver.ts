@@ -32,18 +32,18 @@ import {
   toolVersions,
   type CaptureManifestInput,
 } from "./capture-harness.ts"
+// Resolved, never hardcoded: on a stock macOS install the `code` CLI lives inside the app
+// bundle and /usr/bin/code exists only if someone made a symlink. Spawning the literal path
+// made a real editor look absent, which is a dishonest failure — it reads like an
+// environment gap. One resolver, one declared order (override, PATH, bundle, /usr/bin last).
+const CODE_CLI = resolveEditorCli("code").path
+if (CODE_CLI === null) {
+  console.error("FATAL: no editor CLI found — this driver drives a real editor and cannot run")
+  process.exit(2)
+}
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const VSIX_PATH = path.join(ROOT, "ide/vscode/bb-lsp-vscode-0.1.0.vsix")
-
-// The VS Code CLI, resolved rather than assumed. This used to be the literal
-// `/usr/bin/code` in four places, which is wrong on a stock macOS install:
-// the CLI ships inside the app bundle and /usr/bin only exists if someone
-// made a symlink. Measured here — /usr/bin/code absent, the app-bundle copy
-// present at 1.140.0 — so these drivers could not launch an editor at all on
-// a machine that has VS Code installed.
-const codeRes = resolveEditorCli("code")
-const CODE_BIN = codeRes.path ?? "/usr/bin/code"
 const CORPUS_ABS = path.join(ROOT, M45_CORPUS_REL)
 
 const outArg = process.argv.indexOf("--out")
@@ -110,7 +110,7 @@ async function main(): Promise<void> {
   const extDir = path.join(tmpdir(), "m45-ext")
   rmSync(extDir, { recursive: true, force: true })
   mkdirSync(extDir, { recursive: true })
-  sh(`DISPLAY=${display} ${CODE_BIN} --user-data-dir ${path.join(tmpdir(), "m45-vscode-user")} --no-sandbox --disable-gpu --extensions-dir ${extDir} --install-extension ${VSIX_PATH} >/tmp/m45-ext-install.log 2>&1; echo done`)
+  sh(`DISPLAY=${display} ${CODE_CLI} --user-data-dir ${path.join(tmpdir(), "m45-vscode-user")} --no-sandbox --disable-gpu --extensions-dir ${extDir} --install-extension ${VSIX_PATH} >/tmp/m45-ext-install.log 2>&1; echo done`)
   console.log("  VSIX installed into temp extension dir")
 
   // 5. Fresh user-data dir + launch VS Code with the CORPUS FOLDER as workspace.
@@ -139,7 +139,7 @@ async function main(): Promise<void> {
     ...(FILM ? ["--force-device-scale-factor", FILM_PROFILE.scaleFactor, "--window-size", "2560,1600"] : []),
     CORPUS_ABS,
   ]
-  const code = spawn(CODE_BIN, codeArgs, { env, stdio: ["ignore", "ignore", "ignore"], detached: true })
+  const code = spawn(CODE_CLI, codeArgs, { env, stdio: ["ignore", "ignore", "ignore"], detached: true })
   code.unref()
   console.log(`  VS Code launched on corpus workspace${FILM ? ` (film grade: ${FILM_PROFILE.scaleFactor}× scale, clean layout)` : ""}`)
 
@@ -168,7 +168,7 @@ async function main(): Promise<void> {
   sh(`DISPLAY=${display} xdotool windowactivate --sync ${windowId} 2>/dev/null; true`)
   await sleep(800)
   // open the file explicitly
-  sh(`DISPLAY=${display} ${CODE_BIN} --user-data-dir ${userDir} --no-sandbox --reuse-window ${path.join(CORPUS_ABS, "greeter.ts")} >/dev/null 2>&1; true`)
+  sh(`DISPLAY=${display} ${CODE_CLI} --user-data-dir ${userDir} --no-sandbox --reuse-window ${path.join(CORPUS_ABS, "greeter.ts")} >/dev/null 2>&1; true`)
   await sleep(6000)
   // cursor to line 5, Home, then hover command
   sh(`DISPLAY=${display} xdotool key --window ${windowId} ctrl+g; sleep 1; DISPLAY=${display} xdotool type --window ${windowId} --delay 40 "5"; sleep 1; DISPLAY=${display} xdotool key --window ${windowId} Return; sleep 1; DISPLAY=${display} xdotool key --window ${windowId} Home; sleep 1`)
@@ -204,7 +204,7 @@ async function main(): Promise<void> {
   const manifestInput: CaptureManifestInput = {
     bbVersion,
     editor: "vscode",
-    editorVersion: sh("${CODE_BIN} --version | head -1").trim(),
+    editorVersion: sh(`${CODE_CLI} --version | head -1`).trim(),
     vsixSha256,
     corpusCommit: commit,
     corpusPath: M45_CORPUS_REL,

@@ -27,18 +27,18 @@ import {
   gitHead,
   toolVersions,
 } from "./capture-harness.ts"
+// Resolved, never hardcoded: on a stock macOS install the `code` CLI lives inside the app
+// bundle and /usr/bin/code exists only if someone made a symlink. Spawning the literal path
+// made a real editor look absent, which is a dishonest failure — it reads like an
+// environment gap. One resolver, one declared order (override, PATH, bundle, /usr/bin last).
+const CODE_CLI = resolveEditorCli("code").path
+if (CODE_CLI === null) {
+  console.error("FATAL: no editor CLI found — this driver drives a real editor and cannot run")
+  process.exit(2)
+}
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const VSIX_PATH = path.join(ROOT, "ide/vscode/bb-lsp-vscode-0.1.0.vsix")
-
-// The VS Code CLI, resolved rather than assumed. This used to be the literal
-// `/usr/bin/code` in four places, which is wrong on a stock macOS install:
-// the CLI ships inside the app bundle and /usr/bin only exists if someone
-// made a symlink. Measured here — /usr/bin/code absent, the app-bundle copy
-// present at 1.140.0 — so these drivers could not launch an editor at all on
-// a machine that has VS Code installed.
-const codeRes = resolveEditorCli("code")
-const CODE_BIN = codeRes.path ?? "/usr/bin/code"
 const STUDIO_REL = "test/fixtures/m45-studio"
 const STUDIO_ABS = path.join(ROOT, STUDIO_REL)
 
@@ -230,7 +230,7 @@ async function main(): Promise<void> {
   const extDir = path.join(tmpdir(), "m45-session-ext")
   rmSync(extDir, { recursive: true, force: true })
   mkdirSync(extDir, { recursive: true })
-  sh(`DISPLAY=${display} ${CODE_BIN} --user-data-dir ${path.join(tmpdir(), "m45-session-user")} --no-sandbox --disable-gpu --extensions-dir ${extDir} --install-extension ${VSIX_PATH} >/tmp/m45-session-ext-install.log 2>&1; true`)
+  sh(`DISPLAY=${display} ${CODE_CLI} --user-data-dir ${path.join(tmpdir(), "m45-session-user")} --no-sandbox --disable-gpu --extensions-dir ${extDir} --install-extension ${VSIX_PATH} >/tmp/m45-session-ext-install.log 2>&1; true`)
 
   // 5. Fresh user-data dir, film-grade settings, launch on the studio workspace.
   const userDir = path.join(tmpdir(), "m45-session-user")
@@ -250,7 +250,7 @@ async function main(): Promise<void> {
   }, null, 2) + "\n")
 
   const env = { ...process.env, DISPLAY: display, BB_DATA_DIR: dataDir }
-  const code = spawn(CODE_BIN, [
+  const code = spawn(CODE_CLI, [
     "--user-data-dir", userDir, "--no-sandbox", "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes",
     "--enable-unsafe-swiftshader", "--use-gl=angle", "--use-angle=swiftshader", "--extensions-dir", extDir,
     "--force-device-scale-factor", SCALE, "--window-size", "2560,1600",
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
   await sleep(4000)
   sh(`DISPLAY=${display} xdotool windowactivate --sync ${windowId} 2>/dev/null; true`)
   await sleep(800)
-  sh(`DISPLAY=${display} ${CODE_BIN} --user-data-dir ${userDir} --no-sandbox --reuse-window ${path.join(STUDIO_ABS, SCENARIO.openRel)} >/dev/null 2>&1; true`)
+  sh(`DISPLAY=${display} ${CODE_CLI} --user-data-dir ${userDir} --no-sandbox --reuse-window ${path.join(STUDIO_ABS, SCENARIO.openRel)} >/dev/null 2>&1; true`)
   await sleep(8000)
 
   const key = (keys: string) => sh(`DISPLAY=${display} xdotool key --window ${windowId} ${keys}`, 30_000)
@@ -333,7 +333,7 @@ async function main(): Promise<void> {
   // 13. Manifest + evidence.
   const manifestPath = writeCaptureManifest(OUT_DIR, {
     bbVersion, editor: "vscode",
-    editorVersion: sh("${CODE_BIN} --version | head -1").trim(),
+    editorVersion: sh(`${CODE_CLI} --version | head -1`).trim(),
     vsixSha256, corpusCommit: commit, corpusPath: STUDIO_REL,
     indexHash: idx.indexHash, captureDate: new Date().toISOString(), tools,
   }, SCENARIO.id === "hero" ? "capture-manifest.json" : `capture-manifest-${SCENARIO.id}.json`)

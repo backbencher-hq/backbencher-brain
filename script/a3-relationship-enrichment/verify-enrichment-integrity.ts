@@ -543,21 +543,15 @@ try {
       afterPass1 === afterPass2,
       pass2.enriched === 0 ? "0 rows rewritten; not one byte differs" : `pass2 rewrote ${pass2.enriched} rows`,
     )
-    // WAS: `(async () => { … })()` passed DIRECTLY as the condition of this check, with no
-    // `await`. An async IIFE returns a Promise, a Promise object is always truthy, and
-    // `check(name, ok: boolean, detail)` does `if (ok)` — so this check took its PASS
-    // branch unconditionally. "idempotence holds for a THIRD pass too" could not fail.
+    // The condition below was an UNAWAITED async IIFE:
+    //     (async () => { ... })()
+    // A Promise is an object, so it is always truthy — the check passed whatever the
+    // third pass actually did, and could not fail. TypeScript could not see it either:
+    // the call takes three arguments and arity matched, so TS2554 stayed silent, and the
+    // line survived in a ratchet that moves one way.
     //
-    // It is the same defect as the nine inverted calls in m26/verify-impact-mode.ts, and it
-    // is WORSE in one respect: there the label and the condition were swapped, so the
-    // compiler saw four arguments against a three-parameter signature and said so. Here the
-    // argument COUNT is right, the label is in the right slot, and tsc's only complaint is
-    // TS2345 "Argument of type 'Promise<boolean>' is not assignable to parameter of type
-    // 'boolean'" — a line in a 5-file ratchet that moves one way. Nobody reads the ratchet
-    // for a specific line, so this survived.
-    //
-    // Fixed by hoisting the awaited work instead of awaiting the IIFE: same work, and the
-    // condition is now a boolean the check can actually evaluate.
+    // Fixed by hoisting the awaited work instead of awaiting the IIFE: the same work is
+    // done, in the same order, and the condition is now a boolean the check can evaluate.
     const p3 = await enrichRelationships(pid as any)
     check(
       "L2b: idempotence holds for a THIRD pass too (no drift, no accumulating keys)",

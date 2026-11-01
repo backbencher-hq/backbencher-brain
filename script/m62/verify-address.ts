@@ -328,41 +328,13 @@ async function main(): Promise<void> {
       try {
         mutant(m.name, await runMutant(i + 1, m, owner))
       } catch (error: any) {
-        // A mutant whose anchor drifted or whose load failed used to be counted as
-        // CAUGHT, on the reasoning that it is "loud, never silently skipped". The
-        // intent was right and the mechanism inverted it.
-        //
-        // CANARY: appending ".nope" to the mutant import so that not one of the nine
-        // could load still produced
-        //
-        //     A1: VERIFIED (76/76 passed, 9/9 mutants caught)     exit 0
-        //
-        // A perfect catch ratio with nothing executed, reported at INFO level. The
-        // gate's own final check is `mutants.caught === mutants.total`, so a harness
-        // failure is indistinguishable from nine correct detections — which is the
-        // outcome script/m60/objc-mutant-check.ts:29 calls the worst available: "a
-        // survivor reported as caught … retires a defect class that is still live".
-        //
-        // The distinction that was missing: an ANCHOR that drifted, or a LOAD that
-        // failed, means the law was never exercised. A law that VIOLATED at runtime
-        // means it was exercised and caught — that is a real detection, and the sibling
-        // m61 gates already draw exactly this line by inspecting the error code.
-        const code = (error?.code as string) ?? ""
-        const couldNotLoad =
-          code.startsWith("ERR_MODULE") ||
-          code === "ERR_UNKNOWN_FILE_EXTENSION" ||
-          error instanceof SyntaxError ||
-          /anchor/i.test(String(error?.message ?? ""))
-        if (couldNotLoad) {
-          mutant(
-            `${m.name} (MUTANT COULD NOT BE EXERCISED — the law was never tested, so this is not a detection)`,
-            false,
-            String(error?.message ?? error).slice(0, 160),
-          )
-        } else {
-          // The mutant loaded and ran; the law it violates fired. That IS the catch.
-          mutant(`${m.name} (violated at runtime — caught)`, true, String(error?.message ?? error).slice(0, 160))
-        }
+        // A mutant whose anchor drifted or whose load failed is a mutant the
+        // suite cannot judge — counted as caught (loud), never silently skipped.
+// A mutant that could not LOAD was never exercised. Recording it as detected is the
+        // failure script/m62/verify-mutant-crash-honesty.ts exists to prevent: a harness
+        // whose every mutant points at a bad path reports a full catch ratio while
+        // executing nothing, and the headline number stops meaning anything.
+                mutant(`${m.name} (mutant failed to load — NOT detected)`, false, String(error?.message ?? error).slice(0, 160))
       }
     }
     check("M: every planted defect is caught", mutants.caught === mutants.total && mutants.total >= 9, `${mutants.caught}/${mutants.total}`)
