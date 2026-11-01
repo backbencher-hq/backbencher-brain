@@ -413,3 +413,11 @@ validation/tools/**/work/**/backup/
 validation/tools/**/artifacts/
 # Rendered visualization previews are regenerable output.
 validation/tools/**/preview-*.html
+# Isolated HOMEs and package caches used by gates: regenerable, never content.
+validation/tools/**/work/home/
+validation/tools/**/.bun/
+validation/tools/**/.cache/
+validation/tools/**/.npm/
+
+# V8 isolate crash dumps from tool runs are junk.
+isolate-*.log
