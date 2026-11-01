@@ -2,8 +2,9 @@
   "schemaVersion": 1,
   "tool": "bb_cross_language",
   "status": "verified",
-  "currentCommit": "17cb859269cddbcab4d2c43fd25303caa1517e12",
+  "currentCommit": "0a24d4afdd4fd601b56a7ee0b2a421d225405605",
   "verifierCommand": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/verify-cross-language.ts",
+  "checks": 43,
   "passed": 43,
   "failed": 0,
   "negativeCases": 8,
@@ -59,7 +60,7 @@
       "note": ""
     }
   ],
-  "generatedAt": "2026-11-01T20:27:07.036Z",
+  "generatedAt": "2026-11-01T22:49:22.807Z",
   "fixtures": {
     "projects": [
       "clgatea0000000000000000000000000000000",
