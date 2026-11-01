@@ -545,6 +545,7 @@ export function readCodeInputs(root: string): CodeInputs {
 // whole of this file's JSON footprint beyond the two registrations below.
 import { deriveJsonEdges } from "./oracles/json"
 import { deriveGraphqlTruth } from "./oracles/graphql-truth"
+import { deriveProtobufTruth } from "./oracles/protobuf-truth"
 import { deriveXmlTruth } from "./oracles/xml"
 // THE YAML-EXTENDS ORACLE IS LANE-OWNED: `script/m14/oracles/yaml-extends.ts`, written by the yaml
 // lane from YAML's own semantics, sharing no rule table, key set and path helper with
@@ -25082,6 +25083,15 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "protobuf") {
+        // M14 F5 (2026-11-01): protobuf had a full analyzer and NO oracle, so the sweep threw
+        // "derived ZERO truth edges" and the lane could never be measured here. The rule is the
+        // .proto language's own: package contains definitions, messages contain nested definitions and
+        // fields, enums contain values, fields reference the message/enum types they write (never the
+        // fifteen scalars), `import` publishes the path exactly as written, and `import public`
+        // re-exports it. See oracles/protobuf-truth.ts for the derived/refused split.
+        for (const e of deriveProtobufTruth(root)) (truth as any[]).push(e)
+      }
       if (lang === "graphql") {
         // M14 F5 (2026-11-01): graphql had a full analyzer and NO oracle, so `--lang graphql` threw
         // "derived ZERO truth edges" and the lane could never be measured by this harness. The rule is
@@ -25536,6 +25546,9 @@ async function main() {
           // oracle with no entry compares nothing, and an entry with no oracle turns every analyzer row
           // into a fabrication.
           ...(lang === "graphql" ? ["contains", "exports", "implements", "extends", "imports", "overrides", "uses", "references"] : []),
+          // PROTOBUF (2026-11-01): the oracle derives contains, references, imports and exports and
+          // the lane publishes exactly those four (measured on google/iam/admin/v1/iam.proto).
+          ...(lang === "protobuf" ? ["contains", "references", "imports", "exports"] : []),
           // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
           // in the same change or the oracle compares nothing — the two-sided rule this file records.
           ...(lang === "c" ? ["contains", "exports"] : []),
