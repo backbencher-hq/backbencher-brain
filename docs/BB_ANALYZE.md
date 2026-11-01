@@ -1,3 +1,15 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the prose reference for bb_analyze: what each of the eleven modes
+actually computes, where its numbers come from, and every declared bound.
+WHO IT IS FOR — callers who need the behaviour behind the generated
+docs/tools/bb_analyze.md contract page.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_analyze/{descriptor,handler}.ts,
+script/tool-docs/curation/bb_analyze.ts, docs/tools/bb_analyze.md (generated), and the gate
+scripts named in the Verification section.
+-->
+
 # bb_analyze reference
 
 `bb_analyze` is one typed surface over five engines in `src/intelligence/`. It
@@ -10,7 +22,7 @@ it is produced from the executable registry plus a curated block in
 behind those fields: what each mode actually computes, and where its numbers
 come from.
 
-Every claim here is pinned by a corpus test in `fixtures/analyze/` (308 claims)
+Every claim here is pinned by a gate in this checkout (see Verification)
 and every magnitude is measured on real code — `backbencher-brain/src` at
 8,565 symbols and 52,597 relationships, and `node_modules/commander` — not on a
 fixture.
@@ -74,7 +86,12 @@ symbol the answer never named.
 | `callers` / `callees` / `trace` | **edges per direction** | 25 |
 | `dependencies` | files | 20 |
 | `test_mapping` / `test_gaps` | entries / rows | 50 |
-| `test_quality` | files | 50 |
+| `test_quality` | files analysed **and returned** (`summary.returned` / `totalFiles` / `truncated`) | 50 |
+
+`test_impact` is the one mode that refuses `limit`: it has no page size, so its
+bound is declared instead — `summary.timeBudgetMs` (2,000 ms), `depthCap`,
+`timeBudgetExhausted`, `truncationReason`, and `returned` against the set the
+walk produced. A `truncated: true` with no reason is a defect, not a bound.
 
 It is **refused**, not ignored, on the modes it does not apply to. It has **two
 refused ends**:
@@ -148,14 +165,14 @@ Emitting the same nine `NULL`s as literals took the statement to **828 ms**.
 | all nine gate cases | four did not answer | **all ≤ 2,328 ms** |
 
 The query belongs to the graph engine, so `bb_graph` and `bb_impact` were on the
-same 29-second floor. `fixtures/analyze/latency-gate.sh` gates it.
+same 29-second floor. The behaviour gates in the Verification section cover it.
 
 ## Not-found is four answers, not one
 
 | situation | response |
 | --- | --- |
 | target resolved | `found: true` |
-| target is in the index but the graph cannot root at it (a `namespace`, `constant`, type alias or `enum_member`) | `found: false`, `notFoundReason: "not-traversable"`, and the calculator's own message naming the type |
+| target is in the index but the graph cannot root at it — measured on a fixture: a **type alias** and a **namespace** refuse; a **constant** and an **enum** DO root (`found: true`, `rootMatch: "exact-any-kind"`) | `found: false`, `notFoundReason: "not-traversable"`, and the calculator's own message naming the type |
 | target is not in the index | `found: false`, `notFoundReason: "absent"` |
 | the calculation itself failed | `found: false`, `notFoundReason: "error"`, with the failure verbatim |
 
@@ -254,10 +271,11 @@ Provenance is on the **report**, not repeated on every row. It is one engine and
 one set of limitations; at 20 rows the repetition was about a third of the
 payload.
 
-This is the largest answer the tool produces — **75,911 bytes (~21k tokens)** for
-a default 20-file page of a 183-file project, which is 506 internal edges that
-genuinely exist between those files. `limit` is honoured and declared; a caller
-who wants less says so rather than paying for a page they will not read.
+This is one of the two largest answers the tool produces — measured on the
+reference index (6,452 files): **203,790 bytes** for a default page, 82,830 at
+`limit: 5`, because those files really do carry hundreds of internal edges each.
+`limit` is honoured and declared; a caller who wants less says so rather than
+paying for a page they will not read.
 
 ## `complexity` (`analyzeComplexity`)
 
@@ -349,9 +367,10 @@ are indexed and flagged `is_test_file`, and `test/…` is absent from the index
 entirely. Before that was fixed, all four modes reported **every** production
 symbol untested on such a project.
 
-Each mode also states its page (`summary.returned` / `truncated`), and a mapping
+Each collection mode states its page (`summary.returned` / `truncated`); a mapping
 entry carries at most 20 links with `linksTruncated` saying when more exist —
-the ranking and the summary counts still use the complete set.
+the ranking and the summary counts still use the complete set — and `test_impact`
+states its walk bound instead because it refuses `limit`.
 
 **The two modes now state the same population under the same name, and their
 arithmetic closes in public.** They used not to, and nothing said how they
@@ -388,20 +407,27 @@ trust. That is the whole point of publishing the denominators.
 
 ## Verification
 
-- `fixtures/analyze/analyze.test.ts` — 101 claims, the first review: honest
-  bounds, targets as values, right answers, one not-found contract, `limit`,
-  the regressions.
-- `fixtures/analyze/round2.test.ts` — 114 claims, the second review: the answer
-  fits in a context window, the answer contains nothing unasked for, metrics out
-  of domain, `stats`, hostile parameters, provenance, the wall-clock bound, the
-  unresolved-target arm, and the per-entry identity.
-- `fixtures/analyze/round3.test.ts` — 92 claims, the third review: does a claim
-  *tell the truth*, tested by making it lie. `found: true` for a symbol nobody
-  named; a `truncated: false` over a cut set; a `stale` flag driven by editing
-  the file on disk and requiring it to rise and then fall; two modes disagreeing
-  about one population; byte-identical answers across repeated calls.
-- `fixtures/analyze/latency-gate.sh` — the wall-clock half of the latency
-  finding, on the real corpus.
-- `script/verify-analyze.ts` — the in-repo engine gate (coupling, dependencies,
-  complexity, impact), which exercises the engines directly rather than through
-  the tool.
+Every gate below runs from this checkout and was executed for this revision:
+
+- `npx tsx script/m13/verify-analyze-modes.ts` — all eleven modes, called through
+  the validation → handler path, each asserted on a field only that mode produces;
+  the declared refusals asserted as `isError` with the rule named.
+- `npx tsx script/m13/verify-analyze-handler.ts` — descriptor, validation layer
+  and handler registry agree about modes, parameters, defaults and aliases.
+- `npx tsx script/m13/verify-analyze-e2e-corpus.ts` — the same eleven modes over
+  a real MCP stdio session and the CLI source entry, plus the rake/graphql-js
+  corpus legs.
+- `npx tsx script/m13/verify-analyze-docs.ts` — this page, the generated page and
+  the descriptor carry the same contract (and no unrunnable verification claim).
+- `npx tsx script/m15/verify-analyze-deep.ts` — engine-level classification,
+  cross-file behaviour, measured time complexity and mode coverage.
+- `npx tsx script/verify-analyze.ts` — handler-level honesty: impact unity with
+  `bb_impact`, declared bounds, declared absence, and the stale/missing flag rule.
+- `validation/tools/bb_analyze/regex-edge-cases.ts` — the content classifiers
+  behind `test_quality`, edge-case by edge-case.
+- `validation/tools/bb_analyze/LATENCY.json` — the latency table (five warm runs,
+  p50/p95) on the three campaign tiers, with commands and the measured index
+  population.
+
+The analysis of what these gates used to miss — and what changed — is
+`validation/tools/bb_analyze/AUDIT.md`.

@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — class fan-in/fan-out computation. NOT exposed by any public tool mode; kept because downstream analysis imports it.
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   (no public mode — engine only)).
+// WHY IT IS SHAPED THIS WAY — the tool has no coupling mode by decision; a gate that tests only this file would say nothing about the shipped surface.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_ANALYZE.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import type { CouplingEntry } from "../contracts"

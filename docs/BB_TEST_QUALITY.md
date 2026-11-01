@@ -1,8 +1,22 @@
-# Test Quality & Suggestions (M9.11)
+<!--
+Author: Muhammad Ishaq Khan
 
-Engines: `src/intelligence/testing/quality.ts` (measurement) and
-`src/intelligence/testing/suggestions.ts` (recommendations).
-Tools: **`bb_test_quality`** and **`bb_test_suggestions`** (sidecar, read-only).
+WHAT THIS DOCUMENT IS — the test-quality reference for bb_analyze mode test_quality: the
+dimensions, how each is measured, and the states it refuses to fabricate.
+WHO IT IS FOR — callers reading test-quality evidence and its declared unknowns.
+EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/testing/quality.ts,
+src/mcp/tools/bb_analyze/{descriptor,handler}.ts, docs/tools/bb_analyze.md,
+validation/tools/bb_analyze/regex-edge-cases.ts.
+-->
+
+# Test quality reference
+
+Engine: `src/intelligence/testing/quality.ts`, reached through the public tool as
+**`bb_analyze mode=test_quality`**. The recommendations engine
+(`src/intelligence/testing/suggestions.ts`) is NOT exposed as a public tool —
+there is no `bb_test_suggestions` tool; historical per-mode tool names
+(`bb_test_quality`, `bb_test_suggestions`) were retired into `bb_analyze` and are
+not registered.
 
 ## Framework/metric independence
 
@@ -56,6 +70,10 @@ and is surfaced as a `no_assertion_evidence` issue rather than fabricated.
 
 ## Verification
 
-`script/verify-test-quality.ts` (26 checks): independent measurement,
-unknown-state honesty, evidence-first modified/added/untested/deleted suggestion
-scenarios, and existing-test-first recommendations.
+`npx tsx script/verify-test-quality.ts` (inline checks, exit non-zero on failure):
+independent measurement and unknown-state honesty. The shipped mode's bounds
+(`limit` bounds the rows returned, `summary.returned`/`totalFiles`/`truncated`),
+its `filePath` rule (exact file or segment-bounded prefix) and the missing-file
+`stale` flag are gated by `script/m13/verify-analyze-modes.ts` and
+`script/verify-analyze.ts`; the content classifiers are tested edge-case by
+edge-case in `validation/tools/bb_analyze/regex-edge-cases.ts`.

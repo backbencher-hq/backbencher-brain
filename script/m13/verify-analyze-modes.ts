@@ -38,7 +38,7 @@ const harness = new Harness({
   code: "An1",
   tool: "bb_analyze",
   title: "bb_analyze: all 11 modes answer with their own fields, and every declared refusal refuses",
-  layers: ["unit", "behaviour"],
+  layers: ["unit"],
   decisions: {
     perMode: "each mode is asked for an argument IT accepts and must return a field only that mode produces",
     refusals: "refusals are asserted as isError:true plus a message that names the rule",

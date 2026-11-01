@@ -16,7 +16,7 @@ import { graphTraversal } from "../../src/intelligence/graph/graph-engine"
 import { getFileDependencies } from "../../src/intelligence/analysis/dependencies"
 import { getProjectStats } from "../../src/intelligence/analysis/project-stats"
 import { analyzeComplexity } from "../../src/intelligence/analysis/complexity"
-import { analyzeImpact } from "../../src/intelligence/analysis/impact"
+import { computeImpact } from "../../src/lsp/impact"
 import { testMapping, testGaps, testImpact } from "../../src/intelligence/testing/test-intel"
 import { testQuality } from "../../src/intelligence/testing/quality"
 import { fileURLToPath } from "node:url"
@@ -101,35 +101,22 @@ async function makeFixture() {
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // N2: regex census — regex literals in analysis engines
-  // ═══════════════════════════════════════════════════════════════════
+  // N2: the content classifiers are a FROZEN NAMED TABLE and are behaviourally
+  // tested. The old census counted regex literals by scanning source text, which
+  // blessed the §7 problem instead of testing it: a literal could be added,
+  // changed or broken and the census still "passed" as long as the count matched.
+  // The gate now asks the two questions that can fail: does the table exist with
+  // every classifier global, and does the edge-case suite (empty input, no-match,
+  // boundary, Unicode, multiline, megabyte input, metacharacters) pass?
   {
-    const files = [
-      "src/intelligence/analysis/project-stats.ts",
-      "src/intelligence/analysis/complexity.ts",
-      "src/intelligence/analysis/dependencies.ts",
-      "src/intelligence/analysis/impact.ts",
-      "src/intelligence/graph/graph-engine.ts",
-      "src/intelligence/testing/test-intel.ts",
-      "src/intelligence/testing/quality.ts",
-    ]
-    const all = files.map((f) => readFileSync(path.join(ROOT_DIR, f), "utf8")).join("\n")
-    const relits = all.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
-    const clean = relits.filter((r: string) => !r.startsWith("import"))
-    ck("N2: regex-literal calls enumerated across analysis engines", clean.length >= 8, clean.join(" | "))
-    // Classifier regexes are the .count(...) probes in quality.ts (test-quality
-    // scoring heuristics). Everything else must be text normalization.
-    const classifiers = clean.filter((r: string) => r.includes("count("))
-    const classifierPaths = classifiers.join(" | ")
-    ck("N2: test-quality classifier counters enumerated (quality.ts)", classifiers.length >= 8, String(classifiers.length))
-    // Every classifier must live in quality.ts and be covered by the census
-    // justification block added there (M15.N2). Mechanical proof: quality.ts
-    // contains the justification marker AND every classifier call string is a
-    // .count( call (which is what the justification block documents).
-    const qSrc = readFileSync(path.join(ROOT_DIR, "src/intelligence/testing/quality.ts"), "utf8")
-    nk("N2: classifier regexes are documented as content heuristics (quality.ts justification)", qSrc.includes("justification (M15.N2 census)") && qSrc.includes("content heuristic"), "quality.ts census marker missing")
-    const nonClassifiers = clean.filter((r: string) => !r.includes("count(") && !/split|replace|match|test|exec/.test(r))
-    nk("N2: remaining regex literals are text normalization (no other classifiers)", nonClassifiers.length === 0, nonClassifiers.join(" | "))
+    const { CONTENT_CLASSIFIERS } = await import("../../src/intelligence/testing/quality")
+    const names = Object.keys(CONTENT_CLASSIFIERS)
+    ck("N2: content classifier table exists with every probe named", names.length >= 12, names.join(","))
+    ck("N2: every classifier is a global RegExp", Object.values(CONTENT_CLASSIFIERS).every((re: any) => re instanceof RegExp && re.flags.includes("g")), String(names.length))
+    const { spawnSync } = await import("node:child_process")
+    const suite = spawnSync("npx", ["tsx", "validation/tools/bb_analyze/regex-edge-cases.ts"], { cwd: ROOT_DIR, encoding: "utf8", timeout: 180_000 })
+    ck("N2: regex edge-case suite passes", suite.status === 0, ((suite.stdout ?? "") + (suite.stderr ?? "")).slice(-200))
+    nk("N2: the edge-case suite is a real test file, not a placeholder", readFileSync(path.join(ROOT_DIR, "validation/tools/bb_analyze/regex-edge-cases.ts"), "utf8").length > 2000, "regex-edge-cases.ts")
   }
   await emit("N2", "M15.N2", "bb_analyze", "regex census", "n2.json")
   await reset()
@@ -142,8 +129,13 @@ async function makeFixture() {
     try {
       const depText = JSON.stringify(await getFileDependencies(projectId, { filePath: "b.ts" })).toLowerCase()
       ck("N3: file b.ts dependencies expose a.ts", depText.includes("a.ts"), depText.slice(0, 160))
-      const impactText = JSON.stringify(await analyzeImpact(projectId as any, "leaf")).toLowerCase()
-      ck("N3: impact(leaf) reaches b.ts and c.ts", impactText.includes("b.ts") && impactText.includes("c.ts"), impactText.slice(0, 180))
+      // The SHIPPED mode=impact calculator (canonical computeImpact), not the
+      // deprecated analysis/impact.ts engine the tool no longer calls.
+      const rawDb = await BrainDatabase.getRawInstance(projectId as any)
+      const impact = await computeImpact(rawDb, projectId as any, "leaf")
+      const impactText = JSON.stringify(impact).toLowerCase()
+      ck("N3: canonical impact(leaf) roots and returns an impact set", !!impact.root && Array.isArray(impact.impact), impactText.slice(0, 160))
+      ck("N3: canonical impact(leaf) reaches b.ts and c.ts", impactText.includes("b.ts") && impactText.includes("c.ts"), impactText.slice(0, 180))
     } catch (e: any) {
       ck("N3: setup", false, (e?.message || String(e)).slice(0, 160))
     } finally {
@@ -222,18 +214,30 @@ async function makeFixture() {
   // N6: docs honesty — registry block ↔ doc ↔ handler agree
   // ═══════════════════════════════════════════════════════════════════
   {
+    // The per-tool split moved the descriptor out of tool-registry.ts; read the
+    // module that owns it rather than a block that no longer exists there.
+    const descriptorSrc = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_analyze/descriptor.ts"), "utf8")
     const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
     const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_analyze.md"), "utf8")
-    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
-    const block = reg.split('name: "bb_analyze"')[1].split(/name: "/)[0]
-    ck("N6: registry lists bb_analyze", reg.includes("bb_analyze"))
-    ck("N6: registry mutability=read", block.includes('mutability: "read"'))
-    ck("N6: registry requiresIndex=true", block.includes("requiresIndex: true"))
+    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_analyze/handler.ts"), "utf8")
+    ck("N6: registry is assembled from the per-tool descriptors", reg.includes("tools/bb_analyze/descriptor") || reg.includes("PUBLIC_TOOL_DESCRIPTORS") || reg.includes("bb_analyze"), "")
+    ck("N6: descriptor lists bb_analyze", descriptorSrc.includes('name: "bb_analyze"'), "")
+    ck("N6: descriptor mutability=read", descriptorSrc.includes('mutability: "read"'), "")
+    ck("N6: descriptor requiresIndex=true", descriptorSrc.includes("requiresIndex: true"), "")
     ck("N6: doc exists", doc.length > 100, "len=" + doc.length)
     const docModes = ["callers", "callees", "complexity", "impact", "dependencies", "stats", "trace"]
     const docCovered = docModes.filter((m) => doc.includes(m)).length
     ck("N6: doc covers " + docCovered + "/" + docModes.length + " core modes", docCovered >= 5, "missing: " + docModes.filter((m) => !doc.includes(m)).join(","))
-    ck("N6: handler routes all 11 modes", ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"].every((m) => hnd.includes(m)), "")
+    // The previous check searched the WHOLE handler file for mode names, and the
+    // handler's own "requires mode: callers|..." error line contains all eleven,
+    // so it could never fail. Contract parity between the descriptor and the
+    // generated page is a property that can: a missing registration or an
+    // undocumented mode turns this red.
+    const { PUBLIC_TOOL_DESCRIPTORS } = await import("../../src/mcp/tool-registry")
+    const analyzeDescriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool: any) => tool.name === "bb_analyze")!
+    ck("N6: descriptor registers exactly the 11 modes", analyzeDescriptor.modes.length === 11, "modes=" + analyzeDescriptor.modes.length)
+    ck("N6: every registered mode is documented on the generated page", analyzeDescriptor.modes.every((m: string) => doc.includes("`" + m + "`")), "missing=" + analyzeDescriptor.modes.filter((m: string) => !doc.includes("`" + m + "`")).join(","))
+    ck("N6: handler module owns the dispatch", hnd.includes("export const handler") && hnd.includes("bb_analyze"))
   }
   await emit("N6", "M15.N6", "bb_analyze", "docs honesty", "n6.json")
   await reset()
@@ -271,7 +275,7 @@ async function makeFixture() {
         ["dependencies", () => getFileDependencies(projectId, { filePath: "b.ts" })],
         ["stats", () => getProjectStats(projectId)],
         ["complexity", () => analyzeComplexity(projectId, { scope: "project" })],
-        ["impact", () => analyzeImpact(projectId as any, "leaf")],
+        ["impact", async () => { const rawDb = await BrainDatabase.getRawInstance(projectId as any); return await computeImpact(rawDb, projectId as any, "leaf") }],
         ["test_mapping", () => testMapping(projectId)],
         ["test_gaps", () => testGaps(projectId)],
         ["test_impact", () => testImpact(projectId, "mid")],

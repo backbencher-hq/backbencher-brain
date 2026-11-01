@@ -513,15 +513,23 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       return textResult(JSON.stringify({ ...report, freshness: buildStalenessEnvelope({ fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" }, { kind: "dir" }) }, null, 2))
     }
     if (mode === "test_quality") {
-      const report = await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50), filePath: args.filePath ? String(args.filePath) : undefined })
-      // The engine returns at most `maxFiles` rows and states returned/totalFiles/
-      // truncated in `summary`; freshness resolves exactly the rows the answer
-      // carries, and the sample cap still guards pathological limits.
-      const relIds = relIdsFor(report.files.map((f) => f.relativePath))
+      const pageLimit = Number(args.limit ?? 50)
+      const report = await testQuality(projectId as any, { maxFiles: pageLimit, filePath: args.filePath ? String(args.filePath) : undefined })
+      // `limit` bounds the ROWS the answer carries. The engine keeps its rows
+      // complete (that is how a file with unread content reports unknown
+      // dimensions instead of disappearing), so the page is cut here and the
+      // summary states returned/totalFiles/truncated for THIS answer.
+      const page = report.files.slice(0, pageLimit)
+      const paged = {
+        ...(report as unknown as Record<string, unknown>),
+        files: page,
+        summary: { ...report.summary, returned: page.length, totalFiles: report.files.length, truncated: report.files.length > page.length },
+      } as unknown as Record<string, unknown>
+      const relIds = relIdsFor(page.map((f) => f.relativePath))
       return withFreshness(
-        report as unknown as Record<string, unknown>,
-        report.files.map((f) => ({ fileId: relIds.get(f.relativePath) ?? null })),
-        { sample: 64, onRows: (statuses) => { for (const f of report.files as any[]) f.stale = statuses.get(relIds.get(f.relativePath) ?? "") !== "fresh" } },
+        paged,
+        page.map((f) => ({ fileId: relIds.get(f.relativePath) ?? null })),
+        { sample: 64, onRows: (statuses) => { for (const f of page as any[]) f.stale = statuses.get(relIds.get(f.relativePath) ?? "") !== "fresh" } },
       )
     }
     return textResult("bb_analyze requires mode: callers|callees|trace|dependencies|stats|complexity|impact|test_mapping|test_gaps|test_impact|test_quality", true)

@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the scoped complexity engine: {value, available} metrics, a bounded top-20 breakdown, and a maintainability index that is unavailable out of domain instead of clamped.
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   complexity).
+// WHY IT IS SHAPED THIS WAY — every metric must state its own availability, the scope must be resolved from a path rather than guessed, and a page must declare what it cut.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_ANALYZE.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import { normalizeScopePath } from "./dependencies"

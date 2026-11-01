@@ -1,4 +1,16 @@
-# Analysis Runs & Finding History (M9.12)
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the analysis-run and finding-history persistence contract
+(brain_analysis_run / brain_analysis_finding / brain_analysis_occurrence).
+WHO IT IS FOR — callers of bb_health history, bb_security recordRun/history and bb_patterns
+recordRun/history, and maintainers of the run-history service.
+EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/analysis/run-history.ts,
+src/mcp/tools/bb_health/handler.ts, src/mcp/tools/bb_security/handler.ts,
+src/mcp/tools/bb_patterns/handler.ts, script/verify-analysis-history.ts.
+-->
+
+# Analysis runs and finding history
 
 The reusable persistence service is `src/intelligence/analysis/run-history.ts`.
 It stores generic runs, findings, and occurrences in:
@@ -7,8 +19,16 @@ It stores generic runs, findings, and occurrences in:
 - `brain_analysis_finding`
 - `brain_analysis_occurrence`
 
-No `bb_sentinel` tool is exposed. Public tools remain `bb_security`,
-`bb_patterns`, `bb_analyze`/`bb_health`, and related existing surfaces.
+No `bb_sentinel` tool is exposed. The persistence service is reached through
+three public surfaces and only those:
+
+- `bb_health` with `history: true` returns all finding kinds and run history;
+- `bb_security` with `recordRun: true` / `history: true` persists and reads security scans;
+- `bb_patterns` with `recordRun: true` / `history: true` persists and reads pattern scans.
+
+`bb_analyze` does NOT read or write analysis history: none of its eleven modes
+touches the run table, and it imports no history function. This page documents
+the shared service those three tools call.
 
 ## Lifecycle
 

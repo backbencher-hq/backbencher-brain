@@ -674,3 +674,48 @@ even on an idle machine and should be bounded/documented (R-3).
 - Docs: 4 guide pages + the generated page + the curation carry claims that the measured
   behaviour contradicts; D-12 (nonexistent verification) and D-13 (nonexistent tools) are the
   material ones.
+
+---
+
+## Phase B status (this revision)
+
+Closed, with a falsifiable gate where the defect could be gated:
+
+| defect | fix | gate that now covers it |
+|---|---|---|
+| D-01 test_quality limit | engine keeps rows (maxFiles=content reads); handler pages rows and publishes `summary.returned/totalFiles/truncated` | `script/m13/verify-analyze-modes.ts` (test_quality predicate), `script/verify-test-quality.ts` (engine unknown-state) |
+| D-02 test_impact unbounded | passes `timeBudgetMs: ANALYZE_GRAPH_WALK_CEILING_MS`; emits `summary` + `truncationReason` | `verify-analyze-modes.ts` (test_impact predicate) |
+| D-03 missing-file stale | three test modes use `!== "fresh"` like the graph modes | probe evidence `probe-bounds-freshness.json`; handler-level rule documented |
+| D-04 filePath exact file | test-intel + quality use exact-OR-segment-prefix, same rule as dependencies | `verify-analyze-modes.ts` (dependencies scope), audit probe |
+| D-05 complexity breakdown bound | `breakdownReturned` + `breakdownTruncated` + provenance limitation | `verify-analyze-modes.ts` (complexity predicate) |
+| D-08 wrong identity comment | corrected to `productionSymbols = total + directlyTested` | review |
+| D-09 dependencies remediation | dir scope when the page spans a prefix | audit probe `probe-bounds-freshness.json` |
+| D-10 dead fallback | removed | — |
+| D-11 not-traversable kinds | docs corrected to measured kinds (type alias/namespace refuse; constant/enum root) | `verify-analyze-docs.ts` (page/curation cite no wrong list via limitations) |
+| D-12 nonexistent verification | page/curation now cite only runnable gates; gate fails on any `fixtures/` citation | `verify-analyze-docs.ts` (red-proof: planted citation → exit 1) |
+| D-13 phantom tools | `BB_TEST_QUALITY.md` names `bb_analyze mode=test_quality`, states the retired names | `verify-analyze-docs.ts` (phantom-tool negative) |
+| D-14/D-15 guide pages | corrected + population arithmetic added; `BB_ANALYSIS_HISTORY` states who exposes history | review |
+| D-16 descriptor defaults | real per-mode default statement; docs gate pins the real values | `verify-analyze-handler.ts`, `verify-analyze-docs.ts` |
+| §8 headers | added to 8 engine files, 4 guide pages, generated page, 6 gate scripts | `verify-analyze-docs.ts` header check |
+| §9 banned comments | milestone/issue narrative removed from handler and gate scripts | review |
+| §7 regex | 9 escape/normalize regexes converted to string ops; 12 content classifiers are a frozen exported table with a 61-check edge-case suite; 12 allowlist rows added (file+source+reason+testFile) | `script/tools/verify-regex-policy.ts` PASS (14 allowlisted, 73 frozen debt, 0 new) + `validation/tools/bb_analyze/regex-edge-cases.ts` 61/61 |
+
+Gate results (final, from the working tree; logs in `validation/tools/bb_analyze/gates/`):
+
+| gate | command | exit |
+|---|---|---|
+| modes | `npx tsx script/m13/verify-analyze-modes.ts` | 0 — An1 VERIFIED 84/84, 27 negatives |
+| handler contract | `npx tsx script/m13/verify-analyze-handler.ts` | 0 — An2 VERIFIED 18/18 |
+| e2e + corpus | `npx tsx script/m13/verify-analyze-e2e-corpus.ts` | 0 — An3 VERIFIED 42/42, 3 negatives |
+| docs truth | `npx tsx script/m13/verify-analyze-docs.ts` | 0 — An4 VERIFIED 17/17, 4 negatives |
+| deep engines | `npx tsx script/m15/verify-analyze-deep.ts` | 0 — N1–N8 all VERIFIED |
+| engine gate | `npx tsx script/verify-analyze.ts` | 0 — ANALYZE: PASS |
+| test intel | `npx tsx script/verify-test-intel.ts` | 0 — PASS |
+| test quality | `npx tsx script/verify-test-quality.ts` | 0 — PASS |
+| regex policy | `npx tsx script/tools/verify-regex-policy.ts` | 0 — PASS (14 allowlisted, 73 debt, 0 new) |
+| regex edge cases | `npx tsx validation/tools/bb_analyze/regex-edge-cases.ts` | 0 — 61/61 |
+| impact unity | `npx tsx script/m48/verify-p1-impact-unity.ts` | 1 — 67 passed, 1 failed: `truncated=true reason=traversal: caller-site-limit+caller-budget-exhausted`; this is the shared graph engine/impact lane's semantics (the tool did not change), reported as a cross-lane red |
+
+Red-then-green evidence kept in `gates/`: `RED2-docs-citation.log` (planted `fixtures/` citation → exit 1, then An4 VERIFIED), `RED2-modes-page.log` (pageEdgeLimit 24 mutant → callers predicate FAIL, then An1 VERIFIED), `RED-handler-mutant.log` (descriptor missing a mode → registry consistency refusal at import, then An2 VERIFIED), and the regex suite's two real classifier failures (`assertCall` did not match `assert.equal(`, `chainedMatcher` matched no real chained matcher) before their fix.
+
+Open / blocked: D-06 (T2 graph query plans) remains external — profiled evidence in this audit and handed to the Lead for the graph-engine owner; T2 latency must be re-measured after that fix (the fleet load also invalidated a clean T2 baseline). m48 P1's single failure is the same shared-engine lane.

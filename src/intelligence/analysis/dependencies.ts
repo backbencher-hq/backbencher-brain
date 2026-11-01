@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the file-dependency engine: file→file edges resolved from relative specifiers, each labelled resolved/suffix-match/unresolved, with per-row caps and one exported scope rule.
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   dependencies).
+// WHY IT IS SHAPED THIS WAY — imports relationships are mostly unresolvable in the store, so a real specifier resolution is the primary path; the scope normalisation exists once so the denominator cannot disagree with the rows.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_ANALYZE.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import type { FileDependency } from "../contracts"

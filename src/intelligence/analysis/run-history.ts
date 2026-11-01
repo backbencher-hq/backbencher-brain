@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the analysis-run and finding-history persistence service (runs, findings, occurrences, lifecycle).
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   (no bb_analyze mode — used by bb_health/bb_security/bb_patterns)).
+// WHY IT IS SHAPED THIS WAY — one persistence service for every analysis tool, so a run always means the same thing; bb_analyze reads no history.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_ANALYSIS_HISTORY.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { createHash, randomUUID } from "node:crypto"
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"

@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the static test-evidence engine: mapping of production symbols to test evidence, risk-ranked gaps, and direct/indirect test impact for one symbol.
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   test_mapping, test_gaps, test_impact).
+// WHY IT IS SHAPED THIS WAY — only relationship kinds the classifier can name count as evidence; populations and page bounds are published so the arithmetic closes in public; zero evidence is a declared unknown, never a confident zero.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_TEST_INTEL.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"

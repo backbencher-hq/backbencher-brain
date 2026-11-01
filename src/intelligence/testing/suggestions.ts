@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — evidence-first test recommendations for changed symbols. NOT exposed as a public tool; the data it needs is produced by test-intel.
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   (no public mode — engine only)).
+// WHY IT IS SHAPED THIS WAY — recommendations must cite the evidence that produced them rather than invent generated test code.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_TEST_QUALITY.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Test suggestion engine (M9.11).
 //
 // Given changed production symbols (added / modified / deleted), recommend test

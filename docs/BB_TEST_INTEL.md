@@ -1,4 +1,14 @@
-# Test Intelligence Reference (M9.10)
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the static test-evidence reference for bb_analyze modes test_mapping,
+test_gaps and test_impact: what counts as evidence, how it is ranked, and what it cannot mean.
+WHO IT IS FOR — callers reading test evidence and the arithmetic behind its counts.
+EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/testing/test-intel.ts,
+src/mcp/tools/bb_analyze/handler.ts, docs/tools/bb_analyze.md, validation/tools/bb_analyze/AUDIT.md.
+-->
+
+# Test intelligence reference
 
 Static, evidence-based test intelligence over the current `brain_*` tables.
 Engine: `src/intelligence/testing/test-intel.ts`. Three modes: **mapping**,
@@ -42,7 +52,9 @@ counts.
 `testGaps(projectId)` → risk-ranked gaps. Categories:
 - `no_evidence` — no test references the symbol.
 - `weak_evidence` — only reference/import evidence, no direct call.
-- `indirect_only` — reachable only transitively (reserved for graph-based fill).
+- `indirect_only` — a declared category NO code path emits yet: `testGaps`
+  classifies only `no_evidence` / `weak_evidence` from direct edges. Named here
+  because the contract reserves it, not because an answer can contain it.
 
 Ranking: `riskScore = complexity*2 + gravity*10`, so high-complexity /
 high-gravity untested symbols rank above trivial ones (verified).
@@ -63,14 +75,29 @@ excluded via the canonical `AnalysisExclusions`.
 
 ## Examples
 
-- Mapping: `add` called by `testAdd` in `calc.test.ts` → `direct_call`, quality
-  `good`. `untested` with no incoming test edge → `strongestEvidence: none`.
+- Mapping: `add` called by `testAdd` in `calc.test.ts` → `direct_call`, and the
+  entry's `strongestEvidence` is `direct_call`. `untested` with no incoming test
+  edge → `strongestEvidence: "none"`. There is no `quality` field.
 - Gaps: `untested` (complex) ranks above a trivial untested `helper`.
 - Impact: changing `add` lists `testAdd` as a direct test and `calc.test.ts` as
   an affected test file.
 
 ## Verification
 
-`script/verify-test-intel.ts` (17 checks) covers mapping direct-call evidence,
+`npx tsx script/verify-test-intel.ts` covers mapping direct-call evidence,
 same-name isolation, gap inclusion/exclusion and ranking, impact direct/indirect
-tests, the separate runtime-coverage field, and not-found handling.
+tests, the separate runtime-coverage field, and not-found handling. The
+handler-level contract (filePath scoping, the stale/missing flag rule, the
+`test_impact` declared bound) is gated by `script/m13/verify-analyze-modes.ts`.
+
+## The population arithmetic
+
+Both report modes publish the denominators, so the counts can be checked against
+the store instead of trusted:
+
+- `productionSymbols` — production symbols scanned, under the mode's own filter.
+- `excludedAsNoise` — symbols that filter dropped, so
+  `productionSymbols + excludedAsNoise` is the store's population under the filter.
+- `test_mapping`: `testedSymbols + untestedSymbols = productionSymbols`.
+- `test_gaps`: `total + directlyTested = productionSymbols` (`total` counts gaps).
+- `returned` / `truncated` — the page, against those populations.

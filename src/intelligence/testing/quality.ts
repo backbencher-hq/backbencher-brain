@@ -1,3 +1,18 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the test-quality engine: independent content/graph dimensions per test file, with unsupported dimensions declared instead of fabricated.
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+//   test_quality).
+// WHY IT IS SHAPED THIS WAY — a metric is only reported when it was measured; the content classifiers are a frozen, named table because no framework-agnostic AST equivalence exists, and they are tested edge-case by edge-case.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_TEST_QUALITY.md, validation/tools/bb_analyze/**;
+//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
+//   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   the read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Test quality engine (M9.11) — evidence-based, capability-flagged, honest unknowns.
 //
 // Philosophy:
@@ -313,36 +328,35 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
     })
   }
 
-  // The page, not the corpus: `maxFiles` bounds how many files are analysed AND
-  // how many are returned. The rows used to be unfiltered, so `limit: 1`
-  // answered three files — a `limit` that did not bound the answer, which is the
-  // one thing a page-size parameter must never do.
-  const page = report.slice(0, maxFiles)
-  // Aggregate over the PAGE: content is only read for the page's rows, so an
-  // aggregate over the rest would describe measurements that were never taken.
-  const overalls = page.map((r) => r.overall).filter((x): x is number => x !== null)
+  // `maxFiles` bounds how many files get their CONTENT read; the handler bounds
+  // how many rows the answer carries (and states returned/totalFiles/truncated).
+  // Keeping the engine's rows complete is what lets `maxFiles: 0` report files
+  // whose content dimensions are unknown instead of reporting no files at all.
+  // Aggregate: mean of per-file overall where present; per-dimension means.
+  const overalls = report.map((r) => r.overall).filter((x): x is number => x !== null)
   const perDim: Record<string, number | null> = {}
   for (const id of ["assertions", "mocking", "error_handling", "parameterization", "docs", "fixtures"] as const) {
-    const vals = page.flatMap((r) => r.dimensions.filter((d) => d.id === id && d.evidenceStrength !== null).map((d) => d.evidenceStrength as number))
+    const vals = report.flatMap((r) => r.dimensions.filter((d) => d.id === id && d.evidenceStrength !== null).map((d) => d.evidenceStrength as number))
     perDim[id] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
   }
 
-  const unsupportedCount = page.reduce((n, r) => n + r.unsupported.length, 0)
+  const unsupportedCount = report.reduce((n, r) => n + r.unsupported.length, 0)
   return {
-    files: page,
+    files: report,
     aggregate: { mean: overalls.length > 0 ? overalls.reduce((a, b) => a + b, 0) / overalls.length : null, perDimension: perDim },
-    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: [...page.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index), ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : []), // A zero-code-test corpus must disclose WHY it is zero — the
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: [...report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index), ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : []), // A zero-code-test corpus must disclose WHY it is zero — the
         // same honesty rule testGaps/testMapping already follow.
         ...(files.length === 0 ? [noEvidenceUnknown()] : [])] }),
     summary: {
-      filesWithContent: page.filter((r) => r.dimensions.some((d) => d.supported)).length,
-      filesUnknown: page.filter((r) => r.overall === null).length,
+      filesWithContent: report.filter((r) => r.dimensions.some((d) => d.supported)).length,
+      filesUnknown: report.filter((r) => r.overall === null).length,
       unsupportedDimensionCount: unsupportedCount,
-      // Rows returned against the population they were drawn from, so a page is
-      // never read as the whole corpus.
-      returned: page.length,
+      // Rows this report carries and whether content work was cut. The HANDLER
+      // additionally bounds the rows it ships and overrides returned/truncated
+      // for the answer's page.
+      returned: report.length,
       totalFiles: files.length,
-      truncated: files.length > page.length,
+      truncated: files.length > maxFiles,
     },
   }
 }
