@@ -206,9 +206,36 @@ export namespace BrainDatabase {
 
   export const initialize = getInstance
 
-  /** Raw driver handle (CoreDatabase: prepare/exec/transaction). */
-  export async function getRawInstance(projectId: string): Promise<CoreDatabase> {
+  /** Raw driver handle (CoreDatabase: prepare/exec/transaction).
+   *
+   * READ-ONLY OPEN (`{ readonly: true }`) — a read tool must not mutate the index
+   * just by asking. The default open runs the additive migrations/healers (schema
+   * columns, planner stats, FK cleanup) on every fresh process, which moves the
+   * WAL and makes a plain read a write in the filesystem sense (measured: WAL
+   * 2,092,992 → 2,125,952 bytes after one bb_health call; T2 measurements also
+   * recorded dbUnchanged:false). The read-only path opens the file through the
+   * driver's read-only mode, skips every migration/healer, and validates that the
+   * file really holds an index before returning it — a missing or uninitialised
+   * index is a loud error here, never an empty answer. */
+  export async function getRawInstance(projectId: string, options: { readonly?: boolean } = {}): Promise<CoreDatabase> {
     const dbPath = resolveDbPath(projectId)
+    if (options.readonly) {
+      const roKey = `ro:${dbPath}`
+      if (!existsSync(dbPath)) evictStaleRawHandle(roKey)
+      const cachedRo = rawInstances.get(roKey)
+      if (cachedRo) return cachedRo
+      if (!existsSync(dbPath)) {
+        throw new Error(`no index found for project ${projectId}: ${dbPath} — run: bb index <project>`)
+      }
+      const ro = openDatabase(dbPath, { readonly: true })
+      const hasFile = ro.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_file'").get()
+      if (!hasFile) {
+        try { ro.close() } catch {}
+        throw new Error(`index not initialised for project ${projectId}: ${dbPath} — run: bb index <project>`)
+      }
+      rawInstances.set(roKey, ro)
+      return ro
+    }
     if (!existsSync(path.dirname(dbPath))) mkdirSync(path.dirname(dbPath), { recursive: true })
     if (!existsSync(dbPath)) evictStaleRawHandle(dbPath)
     const raw = rawInstances.get(dbPath) ?? openDatabase(dbPath)
@@ -323,7 +350,11 @@ export namespace BrainDatabase {
       // while the UPDATE arm uses COALESCE so a run that did not measure it
       // leaves the previously stored value alone.
       relationshipsIndexed?: number
-      /** M23.P1: files actually parsed this run; persisted as indexed_files. */
+      /**
+       * Files COVERED by the index after this run (rows present in brain_file), persisted as
+       * indexed_files. The health completeness check compares it with total_files, so it must not be
+       * "parsed this run" — a no-op --changed run parsed 0 and recorded 0/218 coverage on 2026-11-01.
+       */
       filesParsed?: number
       lastIndexed?: number
       error?: string

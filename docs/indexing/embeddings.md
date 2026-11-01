@@ -16,10 +16,28 @@ The brain stores one dense vector per indexed symbol in
 questions. They do **not** power `bb_search`, which has no semantic mode
 (`docs/EMBEDDINGS.md` §6).
 
-Embeddings are generated **in the background after indexing**, in batches. So a
-run's summary line showing `0 embeddings` is normal — the vectors land
-afterwards. Coverage is a per-run measurement, never a fixed product number
+Embeddings are generated **in the background after indexing**, in batches. `bb index`
+waits for that whole pipeline (active job + queued jobs + queued items), announces the
+wait, and only then reads the counts it prints — so the summary's embedding count,
+`bb stats` and `bb health` agree with the database. Before 2026-11-01 the run read the
+count first: a demo run printed `0 embeddings` over 12 stored rows and a real run
+printed 568 over 1,117, with the same run printing an error-level "holds no vectors"
+health claim. Coverage is still a per-run measurement, never a fixed product number
 (`docs/EMBEDDINGS.md` §3).
+
+## How a vector is stored
+
+Dense vectors are stored **once**, as a little-endian float32 blob
+(`embedding_blob`: `vector_dimension * 4` bytes). The `embedding_vector` text column
+holds an empty string for those rows. Storing both forms was measured on a real
+343-file repository: 28.9 MB of JSON digits beside 9.15 MB of float32 on an 84.5 MB
+index — 34% of the whole database duplicated, plus a `JSON.stringify`/`parse` pair on
+every write and read. Sparse token lists (`tfidf-v1`) keep their JSON form, and rows
+written before 2026-11-01 keep JSON with a NULL blob until a background promotion
+fills the blob; every read goes through one blob-first reader with that JSON fallback,
+so an existing index keeps answering without being rebuilt. A rebuild
+(`bb index --force`) reclaims the old JSON bytes (SQLite returns them to the file on
+the next vacuum/rebuild, not in place).
 
 ## The free/local fallback: you do not need a key
 

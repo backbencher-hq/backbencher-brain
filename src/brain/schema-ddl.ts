@@ -223,6 +223,10 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
       CREATE INDEX IF NOT EXISTS brain_import_path_idx ON brain_import(import_path);
       
       CREATE INDEX IF NOT EXISTS brain_symbol_owner_idx ON brain_symbol(owner_symbol_id);
+      -- Owner-cascade seeks carry the project filter, so the single-column owner index
+      -- cannot serve the range: (project_id, owner_symbol_id) lets the walk seek the
+      -- owner's members instead of scanning every symbol in the project per node.
+      CREATE INDEX IF NOT EXISTS brain_symbol_project_owner_idx ON brain_symbol(project_id, owner_symbol_id);
 
       
       -- Initialize project brain status
@@ -348,11 +352,14 @@ CREATE TABLE IF NOT EXISTS brain_semantic_embedding (
               entity_id TEXT NOT NULL,
               entity_type TEXT NOT NULL,
               embedding_model TEXT NOT NULL,
+              -- DENSE vectors live in embedding_blob (little-endian float32); this
+              -- column holds an EMPTY STRING for those rows. It still carries the
+              -- JSON form for SPARSE token lists (tfidf-v1) and for LEGACY dense
+              -- rows written before the 2026-11-01 contract, whose blob is NULL.
+              -- Why: storing both duplicated 34% of an 84.5 MB index as JSON digits
+              -- (measured on apollo-server: 28.9 MB JSON beside 9.15 MB float32).
+              -- Read through readRowVector() (src/brain/semantic/vector-binary.ts).
               embedding_vector TEXT NOT NULL,
-              -- M50.A2 (#764): little-endian float32 accelerator for DENSE
-              -- vectors. embedding_vector (JSON) remains the source of truth;
-              -- this column exists so semantic reads do not re-parse 260MB of
-              -- JSON digits per bb_ask. NULL = no accelerator.
               embedding_blob BLOB,
               vector_dimension INTEGER NOT NULL,
               content_hash TEXT NOT NULL,
@@ -775,6 +782,7 @@ export function ensureHealthIndexes(raw: any): { recreated: number } {
   // sqlite_master lookup per name at open; steady state is free.
   const coreIdx: Array<[string, string]> = [
     ["brain_symbol_owner_idx", "brain_symbol(owner_symbol_id)"],
+    ["brain_symbol_project_owner_idx", "brain_symbol(project_id, owner_symbol_id)"],
     ["brain_symbol_project_idx", "brain_symbol(project_id)"],
     ["brain_symbol_name_idx", "brain_symbol(name)"],
     ["brain_rel_proj_type_target_idx", "brain_relationship(project_id, relationship_type, target_symbol_id)"],

@@ -78,6 +78,9 @@ The database is **3,177.4 MB** for 5,086 files / 190,213 symbols / 496,886 relat
 
 ```
 embedding_vector (text)  662.1 MB = 25,450 B/row      <- 2048 floats as JSON text
+# NOTE (2026-11-01): this duplication is FIXED — dense vectors are stored once, as float32; the
+# JSON column is empty for dense rows. Measured after the change on apollo-server: DB 84.5 -> 53.3 MiB
+# with SUM(LENGTH(embedding_vector)) = 0. See validation/m14/verification/INDEXER-P1-STORAGE.md.
 embedding_blob  (blob)   209.5 MB =  8,053 B/row      <- the same 2048 floats as float32
 needed for float32 2048-d:                          8,192 B
 rows with BOTH populated: 27,280 of 27,280

@@ -397,10 +397,9 @@ export const BrainSemanticEmbeddingTable = sqliteTable(
     entity_id: text().notNull(), // Can be symbol_id, file_id, or pattern_id
     entity_type: text().notNull(), // "symbol", "file", "pattern", "comment", "documentation"
     embedding_model: text().notNull(), // "openai-ada-002", "sentence-transformers", etc.
-    embedding_vector: text().notNull(), // JSON array of floats (source of truth)
-    // M50.A2 (#764): little-endian float32 accelerator for dense vectors; NULL
-    // on legacy rows (readers then use embedding_vector). Additive migration:
-    // ensureEmbeddingBlobColumn() in schema-ddl.ts.
+    embedding_vector: text().notNull(), // "" for dense rows (blob is authoritative); JSON for sparse/legacy rows
+    // Dense vectors are stored ONCE here as little-endian float32 (2026-11-01 contract);
+    // NULL on legacy rows (readers then scan embedding_vector). See vector-binary.ts.
     embedding_blob: blob("embedding_blob", { mode: "buffer" }),
     vector_dimension: integer().notNull(),
     content_hash: text().notNull(), // Hash of content that generated embedding

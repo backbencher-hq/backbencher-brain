@@ -18,13 +18,16 @@
 //                           (max abs delta 2.9e-8, cosine sums identical to 6dp)
 //   * cosineFloat32       — cosine over Float32Array, no per-row JS arrays
 //
-// HONESTY RULES
-//  - `brain_semantic_embedding.embedding_vector` (JSON) stays the source of
-//    truth. The blob column is an accelerator; its absence is a supported state
-//    (legacy rows, other writers, gates that INSERT explicit column lists), and
-//    every read path falls back to JSON in that case.
-//  - Only DENSE numeric vectors get blobs. Sparse token lists (`tfidf-v1`) stay
-//    JSON-only by design — a blob would misrepresent them as dense vectors.
+// STORAGE CONTRACT (changed 2026-11-01 — the blob is now authoritative for dense vectors)
+//  - DENSE numeric vectors are stored ONCE, as the float32 blob. The JSON column holds an empty
+//    string for those rows; writing both was measured at 28.9 MB of JSON text beside 9.15 MB of
+//    float32 on an 84.5 MB index (34% of the whole database duplicated) and it cost a
+//    JSON.stringify/parse pair on every write/read. Measured on apollo-server.
+//  - Sparse token lists (`tfidf-v1`) stay JSON-only by design — a blob would misrepresent them as
+//    dense vectors — and LEGACY dense rows (written before this contract) still carry JSON with a
+//    NULL blob until promoted; every read path falls back to JSON in exactly those two cases.
+//  - `readRowVector` is that single read path: blob first, JSON fallback, null when the row holds
+//    no usable dense vector.
 //  - Encoding is explicitly little-endian, so a DB moved between machines (M23
 //    portability) decodes identically. Big-endian hosts decode via DataView.
 

@@ -607,9 +607,16 @@ export namespace GraphIntelligence {
 
     // Calculate cosine similarity between embeddings to find semantically similar symbols/files
     // This helps find relationships that aren't explicitly in the code (e.g., similar logic, related concepts)
+    // Dense vectors are read through readRowVector (blob first; legacy JSON fallback): since the
+    // 2026-11-01 storage contract dense rows carry float32 in embedding_blob and an EMPTY
+    // embedding_vector, so JSON.parse here would throw for every freshly indexed row.
+    const { cosineFloat32, readRowVector } = await import("../brain/semantic/vector-binary")
     for (let i = 0; i < embeddings.length; i++) {
       const embeddingA = embeddings[i]
-      const vectorA = JSON.parse(embeddingA.embedding_vector) as number[]
+      const dimA = Number(embeddingA.vector_dimension)
+      if (!Number.isInteger(dimA) || dimA <= 0) continue
+      const vectorA = readRowVector(embeddingA.embedding_blob, embeddingA.embedding_vector, dimA, new Float32Array(dimA))
+      if (!vectorA) continue
 
       // Compare with other embeddings (only check forward to avoid duplicates)
       for (let j = i + 1; j < Math.min(i + 100, embeddings.length); j++) {
@@ -622,11 +629,13 @@ export namespace GraphIntelligence {
         ) {
           continue
         }
-
-        const vectorB = JSON.parse(embeddingB.embedding_vector) as number[]
+        const dimB = Number(embeddingB.vector_dimension)
+        if (dimB !== dimA) continue
+        const vectorB = readRowVector(embeddingB.embedding_blob, embeddingB.embedding_vector, dimB, new Float32Array(dimB))
+        if (!vectorB) continue
 
         // Calculate cosine similarity
-        const similarity = cosineSimilarity(vectorA, vectorB)
+        const similarity = cosineFloat32(vectorA, vectorB, dimA)
 
         // Use the threshold from the embedding or default to 0.7
         const threshold = embeddingA.similarity_threshold || 0.7
@@ -660,32 +669,6 @@ export namespace GraphIntelligence {
     }
 
     return relationships
-  }
-
-  // Cosine similarity calculation for vector embeddings
-  function cosineSimilarity(vectorA: number[], vectorB: number[]): number {
-    if (vectorA.length !== vectorB.length) {
-      return 0
-    }
-
-    let dotProduct = 0
-    let magnitudeA = 0
-    let magnitudeB = 0
-
-    for (let i = 0; i < vectorA.length; i++) {
-      dotProduct += vectorA[i] * vectorB[i]
-      magnitudeA += vectorA[i] * vectorA[i]
-      magnitudeB += vectorB[i] * vectorB[i]
-    }
-
-    magnitudeA = Math.sqrt(magnitudeA)
-    magnitudeB = Math.sqrt(magnitudeB)
-
-    if (magnitudeA === 0 || magnitudeB === 0) {
-      return 0
-    }
-
-    return dotProduct / (magnitudeA * magnitudeB)
   }
 
   // Pattern-based relationship inference

@@ -2429,6 +2429,21 @@ export async function processWithWorkerPool(
   })
 }
 
+/**
+ * Files the index actually covers right now (rows present in `brain_file`).
+ *
+ * `brain_index_status.indexed_files` used to be written with THIS RUN's parse count (0 on a no-op
+ * --changed run), while `total_files` held the discovered corpus. The health completeness check
+ * compares the two, so a no-op incremental run on a complete 218-file index recorded 0/218 and the
+ * index verdict became `broken` ("218 discovered files were never written") — measured on
+ * apollo-server, 2026-11-01, one second after a clean full index. Coverage is a property of the
+ * INDEX, not of the run that happened to touch it; read it from the index.
+ */
+async function countCoveredFiles(projectId: ProjectID): Promise<number> {
+  const raw = await BrainDatabase.getRawInstance(projectId)
+  return Number((raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as any)?.c ?? 0)
+}
+
 // ============================================================================
 // DATABASE STORAGE
 // ============================================================================
@@ -2552,10 +2567,11 @@ export async function surveyEmbeddingModels(
  * downstream cosine NaN, and the read path filters NaN — so such a row is
  * counted in `total` and in coverage while being unreachable by search.
  *
- * Bounded on purpose. A project with 500k vectors cannot afford to JSON.parse
- * all of them on every run, so above `MAX_INTEGRITY_SCAN_VECTORS` this reports
- * what it measured and sets `scanned`/`truncated` so a caller can say the census
- * is partial rather than implying full coverage.
+ * Bounded on purpose. A project with 500k vectors cannot afford to decode every
+ * vector on every run, so above `MAX_INTEGRITY_SCAN_VECTORS` this reports what it
+ * measured and sets `scanned`/`truncated` so a caller can say the census is partial
+ * rather than implying full coverage. Dense rows are decoded from their float32
+ * blob (cheap, no JSON parse); only legacy rows fall back to the JSON scanner.
  */
 const MAX_INTEGRITY_SCAN_VECTORS = 50_000
 
@@ -2603,40 +2619,65 @@ export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
       models.set(r.model, cur)
     }
 
-    // Now actually look at the vectors, within a bounded scan.
+    // Now actually look at the vectors, within a bounded scan. Blob first: dense vectors are stored
+    // ONCE as float32 since 2026-11-01 (the JSON column is empty for those rows). Legacy dense rows
+    // still carry JSON with a NULL blob, so the JSON scanner remains the fallback — but a dense row is
+    // never parsed as JSON when its blob is present and valid.
     const limit = Math.min(total, MAX_INTEGRITY_SCAN_VECTORS)
     const rows = raw
       .prepare(
-        `SELECT embedding_model AS model, embedding_vector AS vec, vector_dimension AS declared
+        `SELECT embedding_model AS model, embedding_vector AS vec, embedding_blob AS blob, vector_dimension AS declared
          FROM brain_semantic_embedding WHERE project_id = ? LIMIT ?`,
       )
-      .all(projectId, limit) as Array<{ model: string; vec: string | null; declared: number | null }>
+      .all(projectId, limit) as Array<{ model: string; vec: string | null; blob: unknown; declared: number | null }>
 
+    const { decodeVectorBlob, scanJsonVectorInto } = await import("../brain/semantic/vector-binary")
+    const scratchByDim = new Map<number, Float32Array>()
     let dimensionMismatches = 0
     let malformedVectors = 0
+    let usableRows = 0
 
     for (const r of rows) {
+      const declared = typeof r.declared === "number" ? r.declared : Number(r.declared)
+      const dimUsable = Number.isInteger(declared) && declared > 0 && declared <= 8192
       let observed: number | null = null
-      let ok = true
-      if (r.vec) {
-        try {
-          const parsed = JSON.parse(r.vec)
-          if (Array.isArray(parsed)) {
-            observed = parsed.length
-            for (const v of parsed) {
-              if (typeof v !== "number" || !Number.isFinite(v)) {
-                ok = false
-                break
+      let ok = false
+      if (dimUsable) {
+        const fromBlob = decodeVectorBlob(r.blob, declared)
+        if (fromBlob) {
+          ok = true
+          for (let i = 0; i < fromBlob.length; i++) {
+            if (!Number.isFinite(fromBlob[i])) {
+              ok = false
+              break
+            }
+          }
+          if (ok) observed = declared
+        }
+        if (!ok && typeof r.vec === "string" && r.vec.length > 0) {
+          let scratch = scratchByDim.get(declared)
+          if (!scratch) {
+            scratch = new Float32Array(declared)
+            scratchByDim.set(declared, scratch)
+          }
+          const n = scanJsonVectorInto(r.vec, scratch)
+          if (n > 0) {
+            // Record the OBSERVED length even when it disagrees with the declared dimension: the
+            // dimension-mismatch census exists exactly for that disagreement (old code did this by
+            // taking parsed.length; a corrupt 4-element row declared 1536 must be reported as a
+            // mismatch, not silently folded into "malformed").
+            observed = n
+            ok = n === declared
+            if (ok) {
+              for (let i = 0; i < n; i++) {
+                if (!Number.isFinite(scratch[i])) {
+                  ok = false
+                  break
+                }
               }
             }
-          } else {
-            ok = false
           }
-        } catch {
-          ok = false
         }
-      } else {
-        ok = false
       }
 
       const entry = models.get(r.model)
@@ -2644,9 +2685,8 @@ export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
         entry.dimensions.push(observed)
       }
       if (!ok) malformedVectors++
-      if (observed !== null && r.declared !== null && observed !== r.declared) {
-        dimensionMismatches++
-      }
+      if (observed !== null && dimUsable && observed !== declared) dimensionMismatches++
+      if (ok) usableRows++
     }
 
     const modelList = [...models.values()]
@@ -2660,17 +2700,8 @@ export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
       dimensionMismatches,
       malformedVectors,
       // A row can be both (wrong length AND non-finite), so count the union:
-      // "unusable" is a count of rows, not of findings.
-      unusableEmbeddings: rows.length - rows.filter((r) => {
-        try {
-          const p = JSON.parse(r.vec as string)
-          if (!Array.isArray(p)) return false
-          if (r.declared !== null && p.length !== r.declared) return false
-          return p.every((v) => typeof v === "number" && Number.isFinite(v))
-        } catch {
-          return false
-        }
-      }).length,
+      // "unusable" is a count of rows, not of findings. Same verdict the loop used above.
+      unusableEmbeddings: rows.length - usableRows,
       scanned: rows.length,
       truncated: total > limit,
     }
@@ -2991,9 +3022,11 @@ async function drainBackgroundEmbeddings() {
                 item.symbolId,
                 item.kind || "symbol",
                 modelLabel,
-                JSON.stringify(vec),
-                // Dense numeric vectors only; encodeVectorBlob is a byte copy of
-                // the same numbers, so JSON stays the source of truth.
+                // Dense vectors are stored ONCE, as float32 in embedding_blob; the JSON column is
+                // empty for these rows. Writing both was measured at 28.9 MB of JSON digits beside
+                // 9.15 MB of float32 on an 84.5 MB index (34% of the whole database duplicated).
+                // Sparse token lists (tfidf) still use the JSON column — see vector-binary.ts.
+                "",
                 encodeVectorBlob(vec),
                 vec.length,
                 contentHash,
@@ -6579,10 +6612,13 @@ export async function indexProjectParallel(
         })
       }
 
+      const coveredNoop = await countCoveredFiles(projectId)
       await BrainDatabase.updateIndexStatus(projectId, {
         lastIndexed: Date.now(),
-        filesIndexed: stats.totalFiles,
-        filesParsed: 0, // noop: nothing parsed this run
+        // Both counters answer "does the index cover the corpus", never "what did this run touch":
+        // a no-op run covers every file the index already holds.
+        filesIndexed: Math.max(stats.totalFiles, coveredNoop),
+        filesParsed: coveredNoop,
         symbolsIndexed: stats.symbolsExtracted,
         relationshipsIndexed: stats.relationshipsFound,
         status: "complete",
@@ -7342,10 +7378,14 @@ export async function indexProjectParallel(
       ],
     }
 
+    // Coverage, not this run's parse count: an incremental run that parses 0 files still covers every
+    // row already in the index (measured lie: no-op --changed recorded 0/218 and health called the
+    // index broken; --file runs recorded 1 total and hid the corpus).
+    const coveredFiles = await countCoveredFiles(projectId)
     await BrainDatabase.updateIndexStatus(projectId, {
       lastIndexed: Date.now(),
-      filesIndexed: stats.successFiles + stats.skippedFiles,
-      filesParsed: stats.successFiles,
+      filesIndexed: Math.max(stats.totalFiles, coveredFiles),
+      filesParsed: coveredFiles,
       symbolsIndexed: stats.symbolsExtracted,
       relationshipsIndexed: stats.relationshipsFound,
       // "complete" is a claim about the INDEX, so it is decided by the index: parse

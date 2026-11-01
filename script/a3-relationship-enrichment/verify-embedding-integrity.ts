@@ -79,7 +79,7 @@ writeFileSync(
 
 const { indexProjectParallel } = await import(path.join(ROOT, "src/ast/parallel-indexer.ts"))
 const { BrainDatabase } = await import(path.join(ROOT, "src/brain/database.ts"))
-const { readRowVector } = await import(path.join(ROOT, "src/brain/semantic/vector-binary.ts"))
+const { readRowVector, decodeVectorBlob, scanJsonVectorInto } = await import(path.join(ROOT, "src/brain/semantic/vector-binary.ts"))
 
 /** Insert an embedding row directly, bypassing the product's writers. */
 function putEmbedding(
@@ -126,33 +126,65 @@ function auditDimensionIntegrity(db: any): {
     .all(pid) as any[]
   const out = { total: rows.length, dimensionMismatches: 0, malformedVectors: 0, mismatched: [] as any[] }
   for (const r of rows) {
-    let actual = -1
-    try { actual = JSON.parse(r.vector).length } catch { actual = -1 }
-    const dense = typeof r.vector === "string" && r.vector.length > 0
-    if (!dense || !Number.isFinite(Number(r.declared)) || Number(r.declared) <= 0) {
+    const declared = Number(r.declared)
+    const observed = observedVectorLength(r.blob, r.vector, declared)
+    const dense = observed !== null
+    if (!dense || !Number.isFinite(declared) || declared <= 0) {
       out.malformedVectors++
       continue
     }
-    if (actual !== Number(r.declared)) {
+    if (observed !== declared) {
       out.dimensionMismatches++
-      out.mismatched.push({ model: r.model, declared: Number(r.declared), actual })
+      out.mismatched.push({ model: r.model, declared, actual: observed })
     }
   }
   return out
 }
 
+/**
+ * OBSERVED length of a stored row, blob-first.
+ *
+ * Dense rows are stored once as float32 since 2026-11-01 (the JSON column is EMPTY), so a JSON-only
+ * reader flags every freshly indexed conforming row as malformed. This is the same read contract the
+ * product uses (`readRowVector`): decode the blob at its declared length, else scan the legacy JSON.
+ * Returns null when the row holds no usable dense vector.
+ */
+function observedVectorLength(blob: unknown, jsonText: unknown, declared: number): number | null {
+  if (declared > 0 && Number.isInteger(declared) && declared <= 8192) {
+    const decoded = decodeVectorBlob(blob, declared)
+    if (decoded) {
+      let finite = true
+      for (let i = 0; i < decoded.length; i++) if (!Number.isFinite(decoded[i])) { finite = false; break }
+      return finite ? decoded.length : null
+    }
+    const scratch = new Float32Array(declared)
+    if (typeof jsonText === "string" && jsonText.length > 0) {
+      const n = scanJsonVectorInto(jsonText, scratch)
+      if (n > 0) {
+        let finite = true
+        for (let i = 0; i < n; i++) if (!Number.isFinite(scratch[i])) { finite = false; break }
+        return finite ? n : null
+      }
+    }
+  }
+  return null
+}
+
 /** Per-model census with OBSERVED lengths (what master's `models[]` must use). */
 function census(rawDb: any) {
   const rows = rawDb
-    .prepare(`SELECT embedding_model AS model, embedding_vector AS vector FROM brain_semantic_embedding WHERE project_id = ?`)
+    .prepare(
+      `SELECT embedding_model AS model, embedding_vector AS vector, embedding_blob AS blob, vector_dimension AS declared
+         FROM brain_semantic_embedding WHERE project_id = ?`,
+    )
     .all(pid) as any[]
   const by = new Map<string, { model: string; rows: number; dimensions: Set<number>; declared: Set<number> }>()
   for (const r of rows) {
-    let len = -1
-    try { len = JSON.parse(r.vector).length } catch { len = -1 }
+    const len = observedVectorLength(r.blob, r.vector, Number(r.declared)) ?? -1
     const e = by.get(r.model) ?? { model: r.model, rows: 0, dimensions: new Set<number>(), declared: new Set<number>() }
     e.rows++
     e.dimensions.add(len)
+    e.declared.add(Number(r.declared))
     by.set(r.model, e)
   }
   return [...by.values()]

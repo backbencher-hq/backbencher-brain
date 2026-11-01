@@ -15,7 +15,8 @@ The brain stores one dense vector per indexed symbol in
 | `entity_id` | The symbol this embedding belongs to |
 | `embedding_model` | Canonical model label **that actually produced the vector** |
 | `vector_dimension` | Dimension of that model's vectors |
-| `embedding_vector` | JSON numeric array |
+| `embedding_blob` | little-endian float32, authoritative for dense vectors (`vector_dimension * 4` bytes) |
+| `embedding_vector` | empty string for dense rows; JSON numeric array for legacy rows and sparse token lists (`tfidf-v1`) |
 | `content_hash` | Hash of the snippet that produced the embedding (insert-time dedupe; **not** consulted at query time) |
 | `similarity_threshold` | Per-row threshold hint (insert-time) |
 

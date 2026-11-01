@@ -103,8 +103,11 @@ console.log(`  indexed: totalFiles=${result.totalFiles}`)
 await flushBackgroundEmbeddings()
 
 const raw = await BrainDatabase.getRawInstance(pid)
+const { readRowVector } = await import("../src/brain/semantic/vector-binary")
 const embRows = raw
-  .prepare("SELECT entity_id, entity_type, embedding_model, vector_dimension, embedding_vector FROM brain_semantic_embedding")
+  .prepare(
+    "SELECT entity_id, entity_type, embedding_model, vector_dimension, embedding_vector AS vector, embedding_blob AS blob FROM brain_semantic_embedding",
+  )
   .all() as any[]
 console.log(`  embedding rows: ${embRows.length}`)
 check("embeddings stored", embRows.length > 0, "zero rows")
@@ -112,7 +115,13 @@ const models = new Set(embRows.map((r) => r.embedding_model))
 check("stored under API model", models.has("bb/mock-embed-8d") || models.has("mock-embed-8d"), `models=${[...models].join(",")}`)
 const dims = new Set(embRows.map((r) => r.vector_dimension))
 check("stored with API dimension 8", dims.size === 1 && dims.has(8), `dims=${[...dims].join(",")}`)
-const vecs = embRows.map((r) => JSON.parse(r.embedding_vector))
+// Dense vectors are stored once, as float32 (2026-11-01 contract): read through the shared
+// blob-first reader instead of JSON.parse, which is empty for freshly indexed rows.
+const vecs = embRows.map((r) => {
+  const dim = Number(r.vector_dimension)
+  const v = readRowVector(r.blob, r.vector, dim, new Float32Array(dim))
+  return v ? Array.from(v) : null
+})
 check("vectors are real (non-empty, numeric)", vecs.every((v) => Array.isArray(v) && v.length === 8 && v.every((x) => typeof x === "number")))
 
 // ── 3. semantic query: nearest vector by cosine ──────────────────────────

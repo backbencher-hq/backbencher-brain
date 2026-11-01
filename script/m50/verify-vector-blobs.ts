@@ -155,9 +155,12 @@ async function main() {
   check("P2 dense rows exist in fixture", denseRows.length > 0, `rows=${denseRows.length}`)
 
   // ── P2: every dense row got a correct-length, decodable blob ────────────
+  // 2026-11-01 contract: dense vectors are stored ONCE as float32 — the JSON column is EMPTY for
+  // these rows, so the old "compare blob to JSON numbers" check cannot run. It validates the blob
+  // itself instead, and keeps a decoded map to materialise legacy JSON for the P4/P8 checks below.
   let badLen = 0
   let mismatched = 0
-  let maxDelta = 0
+  const decodedByRowid = new Map<number, Float32Array>()
   for (const r of denseRows) {
     if (!r.blob) {
       badLen++
@@ -166,15 +169,26 @@ async function main() {
     const bytes = r.blob instanceof Uint8Array ? r.blob.byteLength : -1
     if (bytes !== r.dim * 4) badLen++
     const decoded = vb.decodeVectorBlob(r.blob, r.dim)
-    const jsonVals = JSON.parse(r.vector) as number[]
     if (!decoded) {
       mismatched++
       continue
     }
-    for (let i = 0; i < r.dim; i++) maxDelta = Math.max(maxDelta, Math.abs(decoded[i] - jsonVals[i]))
+    let finite = true
+    let nonZero = false
+    for (let i = 0; i < r.dim; i++) {
+      if (!Number.isFinite(decoded[i])) finite = false
+      if (decoded[i] !== 0) nonZero = true
+    }
+    if (!finite || !nonZero) mismatched++
+    decodedByRowid.set(r.rowid, decoded)
   }
   check("P2 every dense row has dimension x 4 bytes", badLen === 0, `bad=${badLen}/${denseRows.length}`)
-  check("P2 blob decodes to the stored numbers", mismatched === 0 && maxDelta < 1e-6, `mismatch=${mismatched} maxDelta=${maxDelta}`)
+  check("P2 blob decodes to finite, non-zero values", mismatched === 0 && decodedByRowid.size === denseRows.length, `mismatch=${mismatched} decoded=${decodedByRowid.size}/${denseRows.length}`)
+  check(
+    "P2 dense rows keep the JSON column empty (one storage copy)",
+    denseRows.every((r) => r.vector === ""),
+    `nonEmpty=${denseRows.filter((r) => r.vector !== "").length}/${denseRows.length}`,
+  )
 
   // ── P3: sparse rows never get a blob ───────────────────────────────────
   raw
@@ -213,6 +227,13 @@ async function main() {
   }
 
   // ── P4: legacy rows (blob stripped) answer through the JSON path ────────
+  // Materialise the JSON form from each decoded blob: that is what a pre-2026-11-01 row looks like
+  // (JSON present, blob NULL). Fresh rows no longer carry JSON, so this is the only way to exercise
+  // the legacy fallback without a time machine.
+  {
+    const materialize = raw.prepare("UPDATE brain_semantic_embedding SET embedding_vector = ? WHERE rowid = ?")
+    for (const [rowid, decoded] of decodedByRowid) materialize.run(JSON.stringify(Array.from(decoded)), rowid)
+  }
   const baseline = await semanticVectorSearch(pid as string, "ledger flow", { maxResults: 5 })
   check("P4 baseline uses vectors", baseline.metadata.method === "vector" && baseline.results.length > 0, JSON.stringify(baseline.metadata))
   const sig = (r: any) => ({ results: baseline.results.map((x) => `${x.symbolName}@${x.file}#${x.line}`), sims: baseline.results.map((x) => Number(x.similarity.toFixed(6))) })
@@ -274,10 +295,15 @@ async function main() {
     fromBlob.metadata.method === "vector" && fromBlob.results.length > 0 && JSON.stringify({ results: fromBlob.results.map((x) => `${x.symbolName}@${x.file}#${x.line}`), sims: fromBlob.results.map((x) => Number(x.similarity.toFixed(6))) }) === JSON.stringify(promotedSig),
     `${fromBlob.metadata.method} fallback=${fromBlob.metadata.fallbackReason}`,
   )
-  // restore the JSON column to each row's real vector
+  // Restore the JSON column to each row's real vector. Dense rows no longer carry JSON (2026-11-01
+  // contract), so "the real vector" comes from the decoded blob validated in P2.
   {
     const restore = raw.prepare("UPDATE brain_semantic_embedding SET embedding_vector = ? WHERE project_id = ? AND entity_id = ? AND embedding_model = ?")
-    for (const r of denseRows) restore.run(r.vector, pid, r.id, TEST_MODEL)
+    for (const r of denseRows) {
+      const decoded = decodedByRowid.get(r.rowid)
+      if (!decoded) continue
+      restore.run(JSON.stringify(Array.from(decoded)), pid, r.id, TEST_MODEL)
+    }
   }
 
   // ── M1: truncated blob must be rejected, JSON must answer ──────────────
@@ -285,7 +311,11 @@ async function main() {
   // M1 relies on the JSON column being VALID (the fallback must answer from it)
   {
     const restore = raw.prepare("UPDATE brain_semantic_embedding SET embedding_vector = ? WHERE project_id = ? AND entity_id = ? AND embedding_model = ?")
-    for (const r of denseRows) restore.run(r.vector, pid, r.id, TEST_MODEL)
+    for (const r of denseRows) {
+      const decoded = decodedByRowid.get(r.rowid)
+      if (!decoded) continue
+      restore.run(JSON.stringify(Array.from(decoded)), pid, r.id, TEST_MODEL)
+    }
   }
   let mutFail = ""
   let m1: any = null
