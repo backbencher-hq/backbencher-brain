@@ -547,6 +547,7 @@ import { deriveJsonEdges } from "./oracles/json"
 import { deriveGraphqlTruth } from "./oracles/graphql-truth"
 import { deriveProtobufTruth } from "./oracles/protobuf-truth"
 import { deriveRTruth } from "./oracles/r-truth"
+import { deriveMatlabTruth } from "./oracles/matlab-truth"
 import { deriveXmlTruth } from "./oracles/xml"
 // THE YAML-EXTENDS ORACLE IS LANE-OWNED: `script/m14/oracles/yaml-extends.ts`, written by the yaml
 // lane from YAML's own semantics, sharing no rule table, key set and path helper with
@@ -25097,6 +25098,17 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "matlab") {
+        // M14 F5 (2026-11-01): matlab had a full analyzer and NO oracle, so `--lang matlab` threw
+        // "derived ZERO truth edges" and the lane could never be measured here. The rule is MATLAB's
+        // own: the file exports its primary function/class; `classdef X < A & B` inherits the FIRST
+        // base and conforms to the rest; a class contains its properties/events/enumerations/methods
+        // and a function its nested functions; calls name their callee; uses counts identifiers read
+        // or written (callee excluded, member READ names the receiver and member WRITE names both);
+        // `@name`/`?Name` are references; `import pkg.name` publishes the name and its package.
+        // See oracles/matlab-truth.ts for the derived/refused split.
+        for (const e of deriveMatlabTruth(root, relPath)) (truth as any[]).push(e)
+      }
       if (lang === "r") {
         // M14 F5 (2026-11-01): r had a full analyzer and NO oracle, so `--lang r` threw "derived ZERO
         // truth edges". The rule is R's own: file scope contains its assignments and class names; an
@@ -25576,6 +25588,10 @@ async function main() {
           // the lane publishes those plus overrides/instantiates/mixes_in — the oracle's set is what is
           // admitted, and every admitted label has a derivation in the same change (two-sided rule).
           ...(lang === "r" ? ["contains", "extends", "calls", "references", "imports", "uses", "implements"] : []),
+          // MATLAB (2026-11-01): the oracle derives exports, extends, implements, contains, calls, uses,
+          // references and imports — the lane's full published set apart from part_of, which the oracle
+          // does not derive and therefore does not admit (two-sided rule).
+          ...(lang === "matlab" ? ["exports", "extends", "implements", "contains", "calls", "uses", "references", "imports"] : []),
           // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
           // in the same change or the oracle compares nothing — the two-sided rule this file records.
           ...(lang === "c" ? ["contains", "exports"] : []),
