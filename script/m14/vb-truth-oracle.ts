@@ -111,6 +111,47 @@ function lastNameLeaf(n: any, depth = 0): any {
   return null
 }
 
+/**
+ * THE CONSTRUCTED TYPE OF A QUALIFIED `New`. The grammar fragments `New System.Windows.Forms.Panel()`
+ * into an `object_creation_expression` holding only `New System`, nested inside one
+ * `member_access_expression` per dot and finally an `invocation_expression` (measured tree, DISMTools
+ * `Panels/Get_Ops/Pkgs/GetPkgInfo.Designer.vb:25`). Reading the object_creation's own `type` field therefore
+ * named the NAMESPACE (`instantiates InitializeComponent -> System`, 524 truth rows on one generated file)
+ * while the analyzer publishes the full constructed type. Walk the enclosing chain to its outermost node and
+ * take the LAST name leaf: that is the type the `New` actually constructs.
+ */
+function constructionTypeLeaf(n: any): any {
+  const start = n
+  let cur = n
+  for (let i = 0; i < 64; i++) {
+    const p = cur?.parent
+    if (!p) break
+    if ((p.type === "member_access_expression" || p.type === "with_member_access_expression") && p.namedChild(0)?.id === cur.id) { cur = p; continue }
+    if (p.type === "invocation_expression" && p.childForFieldName?.("function")?.id === cur.id) { cur = p; continue }
+    break
+  }
+  // NO CLIMB: the node's own `type` FIELD is the constructed type. `New Element(Element.Types.Psychic)`'s
+  // object_creation node carries its ARGUMENT LIST, so a last-leaf scan of the node names the last identifier
+  // in the ARGUMENT (`instantiates -> Psychic`) instead of the type — measured on P3D-Legacy's Confusion.vb.
+  if (cur === start) {
+    const ty = n.childForFieldName?.("type")
+    if (ty) return lastNameLeaf(ty)
+  }
+  return lastNameLeaf(cur)
+}
+
+/** True when an invocation's function chain bottoms out in an `object_creation_expression` (a qualified `New`). */
+function invocationConstructs(n: any): boolean {
+  let cur = n
+  for (let i = 0; i < 64; i++) {
+    if (!cur) return false
+    if (cur.type === "object_creation_expression") return true
+    if (cur.type === "member_access_expression" || cur.type === "with_member_access_expression" || cur.type === "parenthesized_expression") { cur = cur.namedChild(0); continue }
+    return false
+  }
+  return false
+}
+
 /** Node types that hold a NAME rather than an expression, so a member access in
  *  one of them is a qualified name and not a member READ.
  *
@@ -475,8 +516,42 @@ export function deriveVbTruth(root: any): FileTruth {
     for (let i = 0; a !== null && a !== undefined && i < 12; i++) {
       const p = a.parent
       if (!p) return false
-      if (p.type === "member_access_expression" || p.type === "with_member_access_expression" ||
-          p.type === "array_access_expression" || p.type === "parenthesized_expression") { a = p; continue }
+      // A VB CALL WITH PARENTHESES CAN PARSE AS AN ARRAY ACCESS. Measured shape (P3D-Legacy,
+      // `P3D/Pokemon/Attacks/Psychic/Confusion.vb:70`,
+      // `BattleScreen.Battle.InflictConfusion(Not own, own, ...)`):
+      //   expression_statement -> array_access_expression
+      //                             member_access_expression(BattleScreen.Battle.InflictConfusion)
+      //                             unary_expression(Not own) ...
+      // The callee branch below already treats the call-shaped array access as a call (declared callable OR
+      // the whole statement), but THIS guard only recognised `invocation_expression`, so the member access
+      // leaf ALSO produced a `uses` row for the same site. The analyzer publishes one `calls` row; the
+      // oracle published `calls` + `uses`, and the extra row read as MISSING on every draw. Same predicate as
+      // the callee branch, applied here so the two branches cannot disagree about what a callee is.
+      if (p.type === "array_access_expression") {
+        const callee = p.namedChild(0)
+        if (callee && callee.id === a.id) {
+          const leaf = lastNameLeaf(a)
+          const t = text(leaf)
+          const viaStatement = !!p.parent && p.parent.type === "expression_statement" && p.parent.namedChildCount === 1
+          if (viaStatement || (t.length > 0 && callables.has(t))) return true
+        }
+        a = p
+        continue
+      }
+      if (p.type === "member_access_expression" || p.type === "with_member_access_expression") {
+        // THE RECEIVER OF A CHAIN IS A READ, NOT A CALLEE. For `BattleScreen.Battle.InflictConfusion(...)` the
+        // analyzer publishes `uses -> Battle` for the receiver `BattleScreen.Battle` (the property is READ to
+        // obtain the object whose Sub is then invoked) and one `calls -> InflictConfusion` for the final
+        // segment. This guard used to climb the whole chain and mark EVERY member a callee, so the oracle
+        // derived no `uses -> Battle` row and the analyzer's row read as unexplained (measured: `uses->Battle`
+        // in Confusion.vb, `uses->SpriteBatch` in TextQueryObject.vb). A member access is the callee only when
+        // it is the LAST segment of the chain (the field, not the receiver).
+        const receiver = p.namedChild(0)
+        if (receiver && receiver.id === a.id) return false
+        a = p
+        continue
+      }
+      if (p.type === "parenthesized_expression") { a = p; continue }
       if (p.type === "invocation_expression") {
         const fn = p.childForFieldName?.("function")
         return !!fn && fn.id === a.id
@@ -534,8 +609,15 @@ export function deriveVbTruth(root: any): FileTruth {
       const leaf = lastNameLeaf(fn)
       const t = text(leaf)
       if (fn && t.length > 0) {
-        if (src) rows.push({ label: "calls", from: src, target: t, line: (leaf ?? fn).startPosition.row + 1 })
-        else bump("call-without-enclosing-member")
+        // `New X(...)` is a construction, not a call: the lane's contract gives it exactly one label,
+        // `instantiates` (below). The invocation branch used to publish `calls` for the same site as well,
+        // which the fixtures forbid and the differential charged as MISSING.
+        // A qualified `New` arrives as an invocation whose function is a member-access chain over an
+        // object_creation (see constructionTypeLeaf). It is a construction, so it gets exactly one label,
+        // `instantiates` — published by the object_creation branch below, with the FULL constructed type.
+        const isConstruction = fn.type === "object_creation_expression" || invocationConstructs(fn)
+        if (src && !isConstruction) rows.push({ label: "calls", from: src, target: t, line: (leaf ?? fn).startPosition.row + 1 })
+        else if (!src) bump("call-without-enclosing-member")
         if (fn.type === "object_creation_expression") {
           const tyLeaf = lastNameLeaf(fn.childForFieldName?.("type") ?? fn)
           const it = text(tyLeaf)
@@ -545,13 +627,19 @@ export function deriveVbTruth(root: any): FileTruth {
         }
       }
     } else if (n.type === "object_creation_expression" || n.type === "array_creation_expression") {
-      const ty = n.childForFieldName?.("type")
-      const leaf = lastNameLeaf(ty)
+      // The FULL constructed type, walked through the enclosing dotted chain (measured grammar shape).
+      const leaf = constructionTypeLeaf(n)
       const t = text(leaf)
       if (t.length > 0) {
         if (src) {
-          rows.push({ label: "calls", from: src, target: t, line: (leaf ?? ty ?? n).startPosition.row + 1 })
-          rows.push({ label: "instantiates", from: src, target: t, line: (leaf ?? ty ?? n).startPosition.row + 1 })
+          // ONE LABEL, NOT TWO. A construction is `instantiates` and NOTHING ELSE — the lane's own fixture
+          // contract states it (`vb/declaration-shapes`: expected `instantiates Build -> Box` at line 55
+          // AND forbidden `calls Build -> Box`, "ONE LABEL, NOT TWO ... a construction is `instantiates` and
+          // nothing else"). This oracle also derived `calls`, which read as MISSING on every draw (measured
+          // on the restored P3D-Legacy corpus: `calls->Element`, `calls->Rectangle`, `calls->TextQueryObject`,
+          // `calls->Color`, `calls->Vector2`, `calls->MySettings` — all `New X(...)` sites). The truth side
+          // must obey the same declared contract the fixtures enforce, not a private second reading.
+          rows.push({ label: "instantiates", from: src, target: t, line: (leaf ?? n).startPosition.row + 1 })
         } else bump("construction-without-enclosing-member")
       }
     } else if (n.type === "array_access_expression") {

@@ -2929,7 +2929,12 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         // two labels, which is exactly the calls/uses drift the lane's own
         // mutation log names. The test is span-based, so the right-hand side
         // of the same statement keeps its read.
-        if (!this.isCalleeOrIndexSlot(n) && !this.isAssignmentLhs(n)) {
+        // ... and the ATTRIBUTE-position ruling applies to THIS walk too. Measured on the restored
+        // DISMTools corpus (`Settings.Designer.vb:31`): the guard existed only on the other member-access
+        // emission site, so a five-link qualified attribute argument still published
+        // `uses -> Advanced/EditorBrowsableState/ComponentModel` here — the exact rows the lane's fixtures
+        // forbid and the oracle refuses. One ruling, both walks.
+        if (!this.isCalleeOrIndexSlot(n) && !this.isAssignmentLhs(n) && !this.inAttributePosition(n)) {
           const token = this.calleeLeaf(n)
           const target = this.nameText(token)
           if (target.length > 0) this.pushUse(source, target, n, token)
@@ -3246,11 +3251,21 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private inAttributePosition(n: Node): boolean {
     let a: Node | null = n.parent
-    for (let i = 0; a !== null && i < 6; i++) {
+    // THE CLIMB MUST CROSS MEMBER-ACCESS CHAINS AND THE ARGUMENT WRAPPER, not only name nodes.
+    // Measured on the restored DISMTools corpus (`Tools/BDELib/My Project/Settings.Designer.vb:31`):
+    //   <Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)>
+    // The read `Advanced` is a `member_access_expression`; its parents are four more member accesses, then the
+    // argument, then `attribute_argument_list`. The old climb returned false at the FIRST member access, so
+    // the read was published as `uses` although the lane's contract says an attribute argument is not a read
+    // (`vb/attributes-as-decorations` and `vb/member-read-and-construction` forbid exactly that shape). The
+    // oracle refused the rows and the differential charged 3 unexplained `uses` on every DISMTools draw.
+    for (let i = 0; a !== null && i < 12; i++) {
       if (a.type === "attribute_list" || a.type === "attribute" ||
           a.type === "attribute_argument_list" || a.type === "global_attribute_section") return true
       if (a.type === "identifier" || a.type === "simple_name" || a.type === "qualified_name" ||
-          a.type === "global_qualified_name" || a.type === "generic_name") { a = a.parent; continue }
+          a.type === "global_qualified_name" || a.type === "generic_name" ||
+          a.type === "member_access_expression" || a.type === "with_member_access_expression" ||
+          a.type === "attribute_argument" || a.type === "argument") { a = a.parent; continue }
       return false
     }
     return false
