@@ -31,6 +31,18 @@ import ts from "typescript"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const SCAN_DIRS = ["src/mcp", "src/intelligence", "src/lsp", "src/brain", "src/security"]
+// bb_edit's delete path lives under src/ast, outside the roots above: its
+// import pruner (44 regexes) and surgical patcher (2) were therefore invisible
+// to this gate. The rest of src/ast is NOT scanned wholesale — it holds the 50
+// per-language analyzers whose zero-regex contract is m14's census, plus the
+// parse engine, and freezing all of it here would both duplicate that contract
+// and bury the tool debt under a thousand unrelated rows. The tool files are
+// named explicitly instead, so each one is visible and payable.
+const SCAN_FILES = [
+  "src/ast/import-pruner.ts",
+  "src/ast/brain-surgical-patcher.ts",
+  "src/ast/safety-primitives.ts",
+]
 const BASELINE_PATH = "validation/tools/regex-baseline.json"
 const ALLOWLIST_PATH = "validation/tools/regex-allowlist.json"
 const EVIDENCE_PATH = "validation/tools/regex-policy.json"
@@ -107,6 +119,7 @@ function writeJson(rel: string, value: unknown): void {
 
 const files: string[] = []
 for (const dir of SCAN_DIRS) walk(dir, files)
+for (const file of SCAN_FILES) if (!files.includes(file)) files.push(file)
 const uses: RegexUse[] = []
 for (const file of files) scanFile(file, uses)
 console.log(`scanned ${files.length} tool source files; found ${uses.length} regex uses`)

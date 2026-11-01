@@ -36,6 +36,11 @@ export function optionalCorpusCandidates(name: string, envVar?: string): string[
     // (48 checkouts), the resolver reported the corpus absent. A declared block that is
     // declared because the helper looked in the wrong place is worse than no helper: it turns
     // "this machine cannot run this gate" into a claim, and the gate reports it as fact.
+    // The workspace layout that actually exists on this machine: the repo is
+    // `<home>/mcp/backbencher-brain` and the corpus group is `<home>/fixtures`, so
+    // the sibling-of-repo candidate is TWO levels up, not one. The one-level form
+    // stayed as a fallback for a checkout that sits directly beside fixtures.
+    path.resolve(process.cwd(), `../../fixtures/${name}`),
     path.resolve(process.cwd(), `../fixtures/${name}`),
     path.resolve(process.cwd(), `../${name}`),
     path.resolve(process.cwd(), name),
