@@ -1,3 +1,35 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the formatter layer of bb_edit: resolve the formatter a
+//   file's extension maps to, run it with an argv array under a time budget, and
+//   report what actually happened in a measured FormatOutcome.
+// WHICH TOOL IT SERVES — bb_edit, on the `format` option of every mode (write,
+//   update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — `formatted` is a measurement of the FILE, never
+//   `request.format !== false` (the request restated as an outcome); every
+//   outcome here is measured:
+//   whether a formatter was mapped, whether it ran, whether it exited 0, and why
+//   not when it did not. The binary is resolved from the nearest
+//   node_modules/.bin walking up from the edited file and then from PATH, and it
+//   is invoked with execFile — an argv array, no shell — so a FILE NAME can never
+//   be interpreted as a command. The 1.5 s budget is a hard kill: a hung
+//   formatter must not turn an edit into an unbounded wait. Line endings are the
+//   file's, not the formatter's; the engine repairs a CRLF file a formatter
+//   rewrote and declares it, which is why the ending helpers live next door.
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_edit/artifacts/formatting.json;
+//   gates: script/m13/verify-edit-unit.ts (the formatter contract: no mapping,
+//   success, non-zero exit, timeout kill, PATH-scrubbed, format:false, dry run,
+//   multi-file aggregate, a file NAME that must not execute).
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts
+//   (the caller that declares lineEndingRestored), docs/BB_EDIT.md,
+//   script/tool-docs/curation/bb_edit.ts, and the unit gate.
+// CONTRACTS IT MUST NOT BREAK — no shell; a missing formatter is reported, never
+//   installed or improvised; the timeout kills the child; a formatter that ran and
+//   exited 0 is the ONLY success; arguments never include the file's content or a
+//   command string.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import * as fs from "fs"
 import { execFile } from "child_process"
 import * as path from "path"
@@ -5,9 +37,10 @@ import * as path from "path"
 /**
  * D5: what the formatter step actually DID, as opposed to what was asked for.
  *
- * `formatted` in an EditResult used to be `request.format !== false` — a claim
- * about the request, not the file. Measured before this type existed
- * (script/m71/probe-format-truth.ts): it was `true` for a `.rb` file, which has no
+ * `formatted` in an EditResult is a measurement, never `request.format !== false`
+ * — a claim about the request, not the file. Measured shapes (recorded in
+ * script/m71/probe-format-truth.ts): it is `true` for a `.rb` file only if a
+ * formatter actually ran, which cannot happen because that extension has no
  * mapping at all; `true` on a machine with no prettier, where the step spent
  * 1573ms on an npx that could not install one; and `true` for a formatter that
  * exited 3, with `warnings: []`. Every caller who trusted the field was told a
@@ -139,7 +172,7 @@ export class BrainSurgicalPatcher {
   /**
    * D5: the extension → formatter mapping, as data rather than a built shell string.
    *
-   * It used to be an if-chain that interpolated the path into a command line:
+   * The invocation is argv, never a command line that interpolates the path:
    * `exec(\`npx prettier --write "${absolutePath}"\`)`. Two consequences, both
    * measured before the rewrite (script/m71/probe-format-truth.ts):
    *
@@ -200,7 +233,7 @@ export class BrainSurgicalPatcher {
     if (!mapping) return { formatter: null, ran: false, ok: false, reason: `no formatter mapped for ${ext}` }
     const names = mapping.candidates.map((candidate) => candidate.name)
 
-    // M66: keep the file's OWN line ending. These formatters are invoked with
+    // keep the file's OWN line ending. These formatters are invoked with
     // their defaults, and the defaults are LF: prettier's `endOfLine` defaults
     // to "lf", so `prettier --write` on a CRLF file rewrote EVERY line ending
     // to LF. bb_edit's splice was already fixed to emit the file's line ending,

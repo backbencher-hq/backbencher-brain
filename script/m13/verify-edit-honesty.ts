@@ -1,4 +1,28 @@
-// script/m13/verify-edit-honesty.ts — M13.16 (E11).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E11): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-honesty.ts — (E11).
 //
 // Honesty audit for the bb_edit path. Enumerates every regex/text operation in
 // edit-engine.ts with a justification, and proves the rename (refactor) path
@@ -65,13 +89,13 @@ const lines = EDIT.split("\n")
 for (let i = 0; i < lines.length; i++) {
   const ln = i + 1
   const l = lines[i]
-  // identifier validation
+ // identifier validation
   if (l.includes("/^[A-Za-z_$][A-Za-z0-9_$]*$/")) ops.push({ line: ln, pattern: "^[A-Za-z_$]...", op: "test(newName)", justification: "validate the new identifier is a legal name before renaming (no AST for identifier validity)" })
-  // whitespace-only indent check
+ // whitespace-only indent check
   else if (l.includes("/^[\\t ]*$/")) ops.push({ line: ln, pattern: "^[\\t ]*$", op: "test(indent)", justification: "detect non-line-aligned bodies (e.g. Elixir do/end) to fail loud" })
-  // leading-whitespace detection
+ // leading-whitespace detection
   else if (l.includes("/^[\\t ]+/")) ops.push({ line: ln, pattern: "^[\\t ]+", op: "exec(line)", justification: "detect the file's indentation unit (tab vs 2/4-space) for brace-body inserts" })
-  // syntax-error filter
+ // syntax-error filter
   else if (l.includes("/syntax error/i")) ops.push({ line: ln, pattern: "syntax error/i", op: "test(error.message)", justification: "filter parse errors to syntax errors for validateFile" })
 }
 

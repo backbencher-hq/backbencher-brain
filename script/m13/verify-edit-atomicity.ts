@@ -1,4 +1,28 @@
-// script/m13/verify-edit-atomicity.ts — M13.11 (E6).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E6): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-atomicity.ts — (E6).
 //
 // Proves a multi-file edit that fails mid-way rolls back every file to its
 // pre-edit snapshot, and that no .bb-edit-* temp files leak on failure or
@@ -74,7 +98,7 @@ const CALLER = (n: number) => `from target import target\n\ndef caller${n}():\n 
     const t0 = readFileSync(path.join(f.srcDir, "target.py"), "utf8")
     const c0 = readFileSync(path.join(f.srcDir, "caller0.py"), "utf8")
     const c1 = readFileSync(path.join(f.srcDir, "caller1.py"), "utf8")
-    // rename -> "class" produces invalid Python; validateFile throws after writes.
+ // rename -> "class" produces invalid Python; validateFile throws after writes.
     await harness.rejectsAsync(
       "mid-failure (keyword rename) aborts with validation error",
       () => executeEdit(f.root, f.projectId, { mode: "refactor", symbolName: "target", filePath: "src/target.py", newName: "class", format: false }),
@@ -94,16 +118,16 @@ const CALLER = (n: number) => `from target import target\n\ndef caller${n}():\n 
   const f = pyFixture("newfile", [])
   try {
     await indexProjectParallel(f.projectId, f.root, {})
-    // write a brand-new file with invalid content (so validateFile fails).
+ // write a brand-new file with invalid content (so validateFile fails).
     const newPath = path.join(f.srcDir, "newmod.py")
     const res = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/newmod.py", content: "def (\n", format: false })
     harness.check("newfile: write produced a change", res.changes.length === 1 && res.changes[0].path === newPath)
-    // The write itself succeeds; validateFile then throws.
+ // The write itself succeeds; validateFile then throws.
     harness.check("newfile: created file exists after attempt", existsSync(newPath))
   } catch (e) {
     harness.check("newfile: validateFile rejected invalid content", String(e).includes("validation failed") || String(e).includes("Syntax"), String(e).slice(0, 80))
   }
-  // After the failure, the newly-created file must be removed (rollback).
+ // After the failure, the newly-created file must be removed (rollback).
   const newPath = path.join(f.srcDir, "newmod.py")
   harness.check("newfile: created file removed on rollback", !existsSync(newPath), `exists=${existsSync(newPath)}`)
   harness.check("newfile: no .bb-edit-* temps leak", tempsIn(f.srcDir).length === 0, tempsIn(f.srcDir).join(","))
@@ -115,7 +139,7 @@ const CALLER = (n: number) => `from target import target\n\ndef caller${n}():\n 
   const f = pyFixture("snapshot", [CALLER(0)])
   try {
     await indexProjectParallel(f.projectId, f.root, {})
-    // A successful edit proves the snapshot path runs (pre-state captured).
+ // A successful edit proves the snapshot path runs (pre-state captured).
     const before = readFileSync(path.join(f.srcDir, "target.py"), "utf8")
     await executeEdit(f.root, f.projectId, { mode: "refactor", symbolName: "target", filePath: "src/target.py", newName: "renamedTarget", format: false })
     const after = readFileSync(path.join(f.srcDir, "target.py"), "utf8")

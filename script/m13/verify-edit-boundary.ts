@@ -1,13 +1,37 @@
-// script/m13/verify-edit-boundary.ts — M13.06 (E1).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E1): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-boundary.ts — (E1).
 //
 // Proves bb_edit enforces mode-specific required fields and rejects
 // mode-irrelevant fields at the single validateToolArguments boundary, and that
 // this one path is wired into BOTH the compiled CLI and the real MCP server
 // (so neither transport can silently drop or ignore an invalid request).
 //
-//   - unit: per-mode required-field enforcement + irrelevant-field rejection
-//   - transport: compiled `bb tool bb_edit` and real MCP stdio both reject the
-//     same invalid request and accept the same valid dry-run.
+// - unit: per-mode required-field enforcement + irrelevant-field rejection
+// - transport: compiled `bb tool bb_edit` and real MCP stdio both reject the
+// same invalid request and accept the same valid dry-run.
 
 import { execFileSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs"
@@ -102,11 +126,11 @@ harness.rejects("refactor rejects mode-irrelevant position", () => validateToolA
 harness.rejects("bb_edit rejects unknown fields", () => validateToolArguments(editDescriptor, { mode: "write", filePath: "a", content: "x", bogus: true }), "unknown or irrelevant options")
 harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(editDescriptor, { mode: "explode" }), "mode must be one of")
 
-// ── M71.D10: the WHOLE mode × option matrix, in both directions ───────────
+// ── the WHOLE mode × option matrix, in both directions ───────────
 // The block above pins one refusal per mode. This pins every CELL: for each mode,
 // each schema option it accepts must pass the boundary, and each option it does
 // not accept must be refused BY NAME with the accepted set spelled out — the
-// message that used to state only what was wrong (`bb_edit update mode does not
+// message states both what was wrong and what the mode does accept (`bb_edit update mode does not
 // accept: position`) and left the mode contract in the documentation.
 //
 // Both directions matter, and they fail differently: a table that wrongly
@@ -121,11 +145,11 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     insert: { mode: "insert", targetSymbolName: "boundaryTarget", newContent: "const inserted = true" },
     delete: { mode: "delete", symbolName: "boundaryTarget" },
     refactor: { mode: "refactor", symbolName: "boundaryTarget", newName: "matrixRenamed" },
-    // M71.D13: `batch` is a mode in the same matrix, so both directions are
-    // pinned for it too — every option it accepts must pass, and every option it
-    // does not accept must be refused BY NAME with its own accepted set stated.
-    // Its base carries one entry and no `files`, so the fan-out form can be added
-    // on top (`files` supplies filePath, so the base entry deliberately omits it).
+ // `batch` is a mode in the same matrix, so both directions are
+ // pinned for it too — every option it accepts must pass, and every option it
+ // does not accept must be refused BY NAME with its own accepted set stated.
+ // Its base carries one entry and no `files`, so the fan-out form can be added
+ // on top (`files` supplies filePath, so the base entry deliberately omits it).
     batch: { mode: "batch", edits: [{ mode: "update", symbolName: "boundaryTarget", newContent: "export function boundaryTarget() { return 'x' }\n" }] },
   }
   const sample: Record<string, unknown> = {
@@ -156,8 +180,8 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
       )
     }
   }
-  // `mode` is the discriminator: it is in every accepted set, and it is the one
-  // option the accepted-side loop skips (adding it to itself proves nothing).
+ // `mode` is the discriminator: it is in every accepted set, and it is the one
+ // option the accepted-side loop skips (adding it to itself proves nothing).
   const modes = Object.keys(EDIT_OPTIONS_BY_MODE)
   const declaredCells = Object.values(EDIT_OPTIONS_BY_MODE).reduce((n, options) => n + options.length, 0)
   const expectedAccepted = declaredCells - modes.length
@@ -167,23 +191,23 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     acceptedCells === expectedAccepted && refusedCells === expectedRefused,
     `accepted=${acceptedCells}/${expectedAccepted} refused=${refusedCells}/${expectedRefused}`,
   )
-  // An "accepted" option that is not in the schema is unreachable — it would be
-  // refused earlier by the unknown-option check, so the set would advertise an
-  // option no caller can use in that mode.
+ // An "accepted" option that is not in the schema is unreachable — it would be
+ // refused earlier by the unknown-option check, so the set would advertise an
+ // option no caller can use in that mode.
   const phantom = Object.values(EDIT_OPTIONS_BY_MODE).flat().filter((option) => !schemaOptions.includes(option))
   harness.check("matrix: the accepted sets name only real schema options", phantom.length === 0, phantom.join(","))
-  // The hint: a misplaced option that exactly one other mode accepts says which
-  // (this is the round-trip the message exists to save)…
+ // The hint: a misplaced option that exactly one other mode accepts says which
+ // (this is the round-trip the message exists to save)…
   const misplaced = errOf({ ...base.update, position: "after" })
   harness.check("matrix: a misplaced option names the mode that accepts it (update + position)",
     misplaced.includes("(position is accepted for insert)"), misplaced.slice(0, 220))
-  // …and is WITHHELD when several modes accept it, rather than implying one home.
+ // …and is WITHHELD when several modes accept it, rather than implying one home.
   const ambiguousHome = errOf({ ...base.write, lineStart: 1 })
   harness.negative("matrix: no hint is invented when several modes accept the option (write + lineStart)",
     !ambiguousHome.includes("lineStart is accepted for"), ambiguousHome.slice(0, 220))
 }
 
-// ── M71.D7: `overwrite` is a write-only option, and a typed one ───────────
+// ── `overwrite` is a write-only option, and a typed one ───────────
 // The guard itself is engine behavior (E7 measures it against real files); this
 // block pins the boundary half: the option belongs to exactly one mode, it is
 // refused by name elsewhere WITH the mode that takes it, and a non-boolean value
@@ -207,7 +231,7 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     misplacedOverwrite.slice(0, 220))
 }
 
-// ── M71.D13: `batch` — the mode contract for entries and for the batch itself
+// ── `batch` — the mode contract for entries and for the batch itself
 // A batch is validated by the SAME per-mode rule as the single call it mirrors
 // (`validateBatchArguments` calls this function on each entry), so the checks
 // here and the checks above cannot disagree: an entry's accepted set IS its
@@ -242,8 +266,8 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y" }], symbolName: "x" }), "does not accept: symbolName")
   harness.rejects("batch: rejects a top-level content",
     () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y" }], content: "x" }), "does not accept: content")
-  // An entry is refused by the SAME per-mode rule, and the refusal carries the
-  // entry index — otherwise a caller with six entries has to bisect their own list.
+ // An entry is refused by the SAME per-mode rule, and the refusal carries the
+ // entry index — otherwise a caller with six entries has to bisect their own list.
   const entryIrrelevant = errOf({ mode: "batch", edits: [{ mode: "update", symbolName: "x", newContent: "y", position: "after" }] })
   harness.check("batch: an entry's irrelevant option is refused BY NAME, with the entry index",
     entryIrrelevant.includes("batch entry 0") && entryIrrelevant.includes("does not accept: position"), entryIrrelevant.slice(0, 220))
@@ -251,16 +275,16 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "write", filePath: "a.ts" }] }), "requires content or newContent")
   harness.negative("batch: the entry-index refusal does not read as a top-level mode error",
     !/^bb_edit batch mode requires/.test(entryIrrelevant), entryIrrelevant.slice(0, 160))
-  // And the fan-out satisfies the entry's own filePath requirement: `files` IS
-  // the filePath, so a `write` entry with no filePath is valid while fanned out —
-  // and refused when it is not.
+ // And the fan-out satisfies the entry's own filePath requirement: `files` IS
+ // the filePath, so a `write` entry with no filePath is valid while fanned out —
+ // and refused when it is not.
   harness.check("batch: a write entry with no filePath is valid under files",
     ok({ mode: "batch", edits: [{ mode: "write", content: "export const n = 1\n" }], files: ["src/n.ts"] }), "")
   harness.rejects("batch: the same write entry without files is refused (its mode requires filePath)",
     () => validateToolArguments(editDescriptor, { mode: "batch", edits: [{ mode: "write", content: "x" }] }), "requires filePath")
 }
 
-// ── M71.D6: the sentence a CLIENT is shown, not only the ones in the docs ──
+// ── the sentence a CLIENT is shown, not only the ones in the docs ──
 // The registry description is the only part of this contract an MCP client sees
 // before it has a schema or a documentation page — `toMcpToolList` publishes
 // exactly {name, description, inputSchema}. A mode-aware gate whose rule appears
@@ -278,9 +302,9 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     /`update`, `insert`, `delete` and `refactor` resolve their target through the index/.test(description),
     description.slice(-200),
   )
-  // M71.D7: the guard is part of the contract a caller must know BEFORE it is
-  // refused — the same argument as the index rule above. A client that cannot see
-  // it in the published description discovers the guard by losing a write to it.
+ // the guard is part of the contract a caller must know BEFORE it is
+ // refused — the same argument as the index rule above. A client that cannot see
+ // it in the published description discovers the guard by losing a write to it.
   harness.check(
     "wire description: the published description states the overwrite guard",
     /a replacement that removes at least half of a file's lines \(and at least 5 lines\) is refused as a probable mistake unless `overwrite: true` is passed/.test(description),
@@ -291,18 +315,18 @@ harness.rejects("bb_edit rejects invalid mode", () => validateToolArguments(edit
     /`overwrite: false` makes the write create-only/.test(description),
     description.slice(-200),
   )
-  // M71.D9: the plan-to-commit re-check, which is the difference between refusing
-  // a moved file and silently overwriting content the plan never read.
+ // the plan-to-commit re-check, which is the difference between refusing
+ // a moved file and silently overwriting content the plan never read.
   harness.check(
     "wire description: the published description states the plan-to-commit pre-image check",
     /bytes each target had when the edit was PLANNED are re-checked immediately before the write/.test(description),
     description.slice(-300),
   )
-  // M71.D13: batch is a capability a client must be able to discover from the
-  // published description: that several edits (or one across several files) go in
-  // one atomic call, that the two-on-one-file case is refused, and that the answer
-  // is per file. Each of those is a rule a caller would otherwise meet by being
-  // refused, or — worse, for the duplicate case — never meet at all.
+ // batch is a capability a client must be able to discover from the
+ // published description: that several edits (or one across several files) go in
+ // one atomic call, that the two-on-one-file case is refused, and that the answer
+ // is per file. Each of those is a rule a caller would otherwise meet by being
+ // refused, or — worse, for the duplicate case — never meet at all.
   harness.check(
     "wire description: the published description states what `batch` does and that it is atomic",
     /`batch` applies several edits, or one edit across several files, as ONE atomic call/.test(description),

@@ -1,4 +1,28 @@
-// script/m13/verify-edit-e2e.ts — M13.14 (E9).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E9): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-e2e.ts — (E9).
 //
 // Exercises all five bb_edit modes and their error paths through BOTH real
 // transports: the compiled Node CLI (`node bin/bb tool bb_edit …`) and the
@@ -23,7 +47,7 @@ const harness = new Harness({
   decisions: {
     transports: "compiled CLI via `node bin/bb tool bb_edit --dir <root> --args <json>`; MCP via StdioClientTransport → src/mcp/server.ts (Bun runs server.ts directly, Node uses bin/bb mcp)",
     dryRun: "every positive case uses dryRun:true so no file is written; a separate check confirms the target file does NOT exist after a dry-run write",
-    modeAwareIndexGate: "M71.D6 runs its own leg against the SOURCE MCP server (`--import tsx --input-type=module -e`) on a project with no index: a compiled bundle would answer about whatever it was built from, and the claim under test is the gate in the tree",
+    modeAwareIndexGate: "runs its own leg against the SOURCE MCP server (`--import tsx --input-type=module -e`) on a project with no index: a compiled bundle would answer about whatever it was built from, and the claim under test is the gate in the tree",
   },
   limitations: [
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
@@ -53,29 +77,29 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
 }
 
 {
-  // write (dry-run → no file created)
+ // write (dry-run → no file created)
   const r = cli({ mode: "write", dryRun: true, filePath: "src/written.ts", content: "export const w = 1\n" })
   harness.check("CLI write dry-run succeeds", r.ok && r.text.includes('"dryRun": true'), r.text.slice(0, 160))
   harness.check("CLI write dry-run performs zero writes", !existsSync(path.join(srcDir, "written.ts")))
 }
 {
-  // update
+ // update
   const r = cli({ mode: "update", dryRun: true, symbolName: "e2eTarget", filePath: "src/app.ts", newContent: "return 42" })
   harness.check("CLI update dry-run succeeds", r.ok && r.text.includes('"dryRun": true'), r.text.slice(0, 160))
 }
 {
-  // insert
+ // insert
   const r = cli({ mode: "insert", dryRun: true, targetSymbolName: "e2eTarget", filePath: "src/app.ts", position: "inside-bottom", newContent: "const ins = true" })
   harness.check("CLI insert dry-run succeeds", r.ok && r.text.includes('"dryRun": true'), r.text.slice(0, 160))
 }
 {
-  // delete (dry-run)
+ // delete (dry-run)
   const r = cli({ mode: "delete", dryRun: true, symbolName: "solo", filePath: "src/solo.ts" })
   harness.check("CLI delete dry-run succeeds", r.ok && r.text.includes('"dryRun": true'), r.text.slice(0, 160))
   harness.check("CLI delete dry-run leaves the file untouched", readFileSync(path.join(srcDir, "solo.ts"), "utf8").includes("function solo"))
 }
 {
-  // refactor
+ // refactor
   const r = cli({ mode: "refactor", dryRun: true, symbolName: "e2eTarget", filePath: "src/app.ts", newName: "renamedTarget" })
   harness.check("CLI refactor dry-run succeeds", r.ok && r.text.includes('"dryRun": true'), r.text.slice(0, 160))
 }
@@ -108,23 +132,23 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   }
   try {
     await client.connect(transport)
-    // write
+ // write
     const w = await call({ mode: "write", dryRun: true, filePath: "src/mcp-written.ts", content: "export const m = 1\n" })
     harness.check("MCP write dry-run succeeds", !w.isError && w.text.includes('"dryRun": true'), w.text.slice(0, 160))
     harness.check("MCP write dry-run performs zero writes", !existsSync(path.join(srcDir, "mcp-written.ts")))
-    // update
+ // update
     const u = await call({ mode: "update", dryRun: true, symbolName: "e2eTarget", filePath: "src/app.ts", newContent: "return 42" })
     harness.check("MCP update dry-run succeeds", !u.isError && u.text.includes('"dryRun": true'), u.text.slice(0, 160))
-    // insert
+ // insert
     const i = await call({ mode: "insert", dryRun: true, targetSymbolName: "e2eTarget", filePath: "src/app.ts", position: "inside-bottom", newContent: "const ins = true" })
     harness.check("MCP insert dry-run succeeds", !i.isError && i.text.includes('"dryRun": true'), i.text.slice(0, 160))
-    // delete
+ // delete
     const d = await call({ mode: "delete", dryRun: true, symbolName: "solo", filePath: "src/solo.ts" })
     harness.check("MCP delete dry-run succeeds", !d.isError && d.text.includes('"dryRun": true'), d.text.slice(0, 160))
-    // refactor
+ // refactor
     const rf = await call({ mode: "refactor", dryRun: true, symbolName: "e2eTarget", filePath: "src/app.ts", newName: "renamedTarget" })
     harness.check("MCP refactor dry-run succeeds", !rf.isError && rf.text.includes('"dryRun": true'), rf.text.slice(0, 160))
-    // error paths (negatives)
+ // error paths (negatives)
     const e1 = await call({ mode: "write", content: "x" })
     harness.negative("MCP rejects write without filePath", e1.isError && e1.text.includes("requires filePath"), e1.text.slice(0, 140))
     const e2 = await call({ mode: "write", filePath: "../escape.ts", content: "x" })
@@ -138,7 +162,7 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   }
 }
 
-// ── M71.D6: the index gate is per MODE, over the wire ─────────────────────
+// ── the index gate is per MODE, over the wire ─────────────────────
 // Measured before the fix: ALL FIVE modes answered "No index found" on a project
 // with no index — including `write`, which resolves no symbol and reindexes the
 // file it wrote — and the refusal was returned WITHOUT `isError`, so a client
@@ -153,18 +177,18 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   mkdirSync(path.join(freshRoot, "src"), { recursive: true })
   writeFileSync(path.join(freshRoot, "src", "app.ts"), "export function wireFn(): number { return 1 }\n")
   const freshProject = getProjectId(freshRoot)
-  // The SOURCE server, not bin/bb: the claim under test is the gate in this tree,
-  // and a compiled bundle would answer about whatever it was last built from.
-  // `--input-type=module` is required — a launcher outside the repo is transformed
-  // as CJS by tsx, where top-level await is a hard error (measured).
+ // The SOURCE server, not bin/bb: the claim under test is the gate in this tree,
+ // and a compiled bundle would answer about whatever it was last built from.
+ // `--input-type=module` is required — a launcher outside the repo is transformed
+ // as CJS by tsx, where top-level await is a hard error (measured).
   const bootstrap = `const { startMcpServer } = await import(${JSON.stringify(path.resolve("src/mcp/server.ts"))}); await startMcpServer(process.argv[1])`
-  // The launcher is runtime-AWARE. The tsx form is Node-only: under Bun,
-  // `bun --import tsx --input-type=module -e <code>` fails before the server starts
-  // (measured on Bun 1.3.14: `error: Cannot find module './cjs/index.cjs'`), so the
-  // child exited and every check in this block reported `Connection closed` — a
-  // gate that could not run reading as a gate that FAILED. Bun runs the source file
-  // directly, which is what this block wants anyway (the source tree, not a compiled
-  // bundle), so each runtime gets the invocation it can actually execute.
+ // The launcher is runtime-AWARE. The tsx form is Node-only: under Bun,
+ // `bun --import tsx --input-type=module -e <code>` fails before the server starts
+ // (measured on Bun 1.3.14: `error: Cannot find module './cjs/index.cjs'`), so the
+ // child exited and every check in this block reported `Connection closed` — a
+ // gate that could not run reading as a gate that FAILED. Bun runs the source file
+ // directly, which is what this block wants anyway (the source tree, not a compiled
+ // bundle), so each runtime gets the invocation it can actually execute.
   const isBunRuntime = typeof (globalThis as any).Bun !== "undefined"
   const transport = new StdioClientTransport(
     isBunRuntime
@@ -191,7 +215,7 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   }
   try {
     await client.connect(transport)
-    // Every symbol mode is refused, as an ERROR, with the remediation and the exemption named.
+ // Every symbol mode is refused, as an ERROR, with the remediation and the exemption named.
     for (const [mode, args] of Object.entries({
       update: { mode: "update", symbolName: "wireFn", newContent: "return 2" },
       insert: { mode: "insert", targetSymbolName: "wireFn", newContent: "const inserted = true" },
@@ -204,7 +228,7 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
           && refused.text.includes("`write`") && /needs that index for/.test(refused.text),
         `isError=${refused.isError} ${refused.text.slice(0, 180)}`)
     }
-    // …and `write` is NOT refused: it creates the file, and the words say so.
+ // …and `write` is NOT refused: it creates the file, and the words say so.
     const wrote = await call({ mode: "write", filePath: "src/created.ts", content: "export function created(): number { return 7 }\n", format: false })
     harness.check("no-index wire: write reaches the engine and reports reindexed:true",
       !wrote.isError && wrote.text.includes('"reindexed": true'), `isError=${wrote.isError} ${wrote.text.slice(0, 180)}`)
@@ -212,8 +236,8 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
       existsSync(path.join(freshRoot, "src", "created.ts"))
         && readFileSync(path.join(freshRoot, "src", "created.ts"), "utf8").includes("created"),
       "reading src/created.ts back from disk")
-    // The bootstrap, over the wire: the write indexed what it wrote, so the mode
-    // that was refused a moment ago now resolves on the same project.
+ // The bootstrap, over the wire: the write indexed what it wrote, so the mode
+ // that was refused a moment ago now resolves on the same project.
     const unblocked = await call({ mode: "update", symbolName: "created", newContent: "return 8", format: false })
     harness.check("no-index wire: the write unblocks the symbol modes on the same project",
       !unblocked.isError && readFileSync(path.join(freshRoot, "src", "created.ts"), "utf8").includes("return 8"),
@@ -227,7 +251,7 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   }
 }
 
-// ── M71.D7: the overwrite guard, over the wire ────────────────────────────
+// ── the overwrite guard, over the wire ────────────────────────────
 // The engine half is measured in E7 against real files; what this leg adds is the
 // part a CLIENT sees. A refused write must arrive as an ERROR with the remedy in
 // the text — the same rule the index gate learned in D6 — because the alternative

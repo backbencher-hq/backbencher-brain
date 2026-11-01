@@ -1,4 +1,28 @@
-// script/m15/verify-edit-e2e-docs.ts — M15.E6 + M15.E7
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — +: one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m15/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m15/verify-edit-e2e-docs.ts — + 
 // Real-repo adversarial e2e (dry-run refactor) + docs honesty for bb_edit.
 
 import { writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs"
@@ -13,7 +37,7 @@ let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 // needs its own totals. That is why the counters are reset between them — and the reset is
 // exactly what made this gate dishonest. It printed
 //
-//     E6: KNOWN-GAP (11/8 passed, 4 negatives)
+// E6: KNOWN-GAP (11/8 passed, 4 negatives)
 //
 // and then exited 0, because by the time the process reached its exit code the E6 failures had
 // been zeroed and only E7's clean run remained. A reader of the exit code saw success; a
@@ -52,21 +76,20 @@ function existingGoSample(reposDir: string): string | null {
 }
 
 (async () => {
-  // ═══════════════════════════════════════════════════════════════════════
-  // E6: Real-repo e2e — dry-run classification on actual repo files
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // E6: Real-repo e2e — dry-run classification on actual repo files
+ // ═══════════════════════════════════════════════════════════════════════
 
-  // The corpus is RESOLVED, never assumed. This used to hardcode
-  // `$HOME/fixtures/repositories` — a path that exists on exactly one laptop, so on
-  // every other machine this gate died with a raw ENOENT from `readdirSync`. That is the worst
-  // shape a gate can have here: the crash happened before any check ran, the chain read the
-  // non-zero exit as a verdict, and nothing in the output said "this machine has no corpus".
-  //
-  // script/lib/optional-corpus.ts already declares the resolution order (env override, the
-  // legacy path, $HOME, a sibling checkout, in-repo). Absent corpus is a DECLARED BLOCK with
-  // its own exit code (2), not a crash and not a silent pass — see the exit at the foot of this
-  // file, which also reports the gate's verdict, so a caller reading the exit code can tell
-  // VERIFIED from KNOWN-GAP.
+ // The corpus is RESOLVED, never hardcoded: a literal path exists on one machine
+ // and dies with a raw ENOENT from `readdirSync` everywhere else — a crash before
+ // any check ran, which a chain reads as a verdict while nothing in the output says
+ // "this machine has no corpus". Resolution failure is a declared BLOCK instead.
+ //
+ // script/lib/optional-corpus.ts already declares the resolution order (env override, the
+ // legacy path, $HOME, a sibling checkout, in-repo). Absent corpus is a DECLARED BLOCK with
+ // its own exit code (2), not a crash and not a silent pass — see the exit at the foot of this
+ // file, which also reports the gate's verdict, so a caller reading the exit code can tell
+ // VERIFIED from KNOWN-GAP.
   const REPOS_DIR = resolveOptionalCorpus("repositories", "BB_REPOSITORIES_REPO")
   if (REPOS_DIR === null) {
     console.log("  BLOCKED: " + optionalCorpusMissingMessage("repositories"))
@@ -75,11 +98,11 @@ function existingGoSample(reposDir: string): string | null {
     process.exit(2)
   }
 
-  // Sample one file from each of 5 language families.
-  // graphql-js: pick a real existing .ts (repo layout drifted between clones);
-  // fall back to any real .ts file in the checkout rather than failing on a
-  // stale pinned path — the assertions still validate a REAL file, never a
-  // synthetic one.
+ // Sample one file from each of 5 language families.
+ // graphql-js: pick a real existing .ts (repo layout drifted between clones);
+ // fall back to any real .ts file in the checkout rather than failing on a
+ // stale pinned path — the assertions still validate a REAL file, never a
+ // synthetic one.
   let tsFile = path.join(REPOS_DIR, "graphql-js", "resources", "release-prepare.ts")
   if (!existsSync(tsFile)) {
     const entries: string[] = readdirSync(path.join(REPOS_DIR, "graphql-js"), { recursive: true }) as unknown as string[]
@@ -91,11 +114,11 @@ function existingGoSample(reposDir: string): string | null {
     { lang: "TypeScript", file: tsFile },
     { lang: "Python", file: path.join(REPOS_DIR, "cython", "setup.py") },
     { lang: "Ruby", file: path.join(REPOS_DIR, "rake", "lib", "rake", "task.rb") },
-    // The corpus directory is `go_tools`, not `go-tools`. The hyphenated pin made this read a
-    // file that has never existed in any clone, so the gate reported a parse failure against a
-    // path it invented — a failure that names a real defect and points at nothing. Pinned the
-    // way the sibling sites are, and given the same drift fallback as the TypeScript sample
-    // above, so a future rename produces a declared substitution rather than an ENOENT.
+ // The corpus directory is `go_tools`, not `go-tools`. The hyphenated pin made this read a
+ // file that has never existed in any clone, so the gate reported a parse failure against a
+ // path it invented — a failure that names a real defect and points at nothing. Pinned the
+ // way the sibling sites are, and given the same drift fallback as the TypeScript sample
+ // above, so a future rename produces a declared substitution rather than an ENOENT.
     { lang: "Go", file: existingGoSample(REPOS_DIR) },
     { lang: "F#", file: path.join(REPOS_DIR, "fsharp", "src", "FSharp.Core", "seq.fs") },
   ]
@@ -112,7 +135,7 @@ function existingGoSample(reposDir: string): string | null {
          p.mask.length === content.length,
          "occurrences=" + p.occurrences.length + " mask=" + p.mask.length + "/" + content.length)
       
-      // Verify no comment/string text is classified as live code occurrence
+ // Verify no comment/string text is classified as live code occurrence
       const hasOccurrences = p.occurrences.length > 0
       nk("E6: " + s.lang + " — occurrences extracted from real file", hasOccurrences,
          "got " + p.occurrences.length + " occurrences")
@@ -121,7 +144,7 @@ function existingGoSample(reposDir: string): string | null {
     }
   }
 
-  // Adversary: verify in-code identifiers are live (not masked as comments)
+ // Adversary: verify in-code identifiers are live (not masked as comments)
   {
     const p = await parseForSafety("a.ts", "const myVar = 1\nfunction myFunc() { return myVar }\n")
     const myVar = p.occurrences.filter(o => o.text === "myVar")
@@ -134,27 +157,29 @@ function existingGoSample(reposDir: string): string | null {
   await emitFile("E6", "M15.E6", "bb_edit", "real-repo e2e", "e6.json")
   checks = passed = failed = negatives = negativePassed = 0
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // E7: Docs honesty — prove registry + doc + implementation agree
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // E7: Docs honesty — prove registry + doc + implementation agree
+ // ═══════════════════════════════════════════════════════════════════════
 
   const registrySrc = readFileSync(path.resolve("src/mcp/tool-registry.ts"), "utf8")
   const editEntry = registrySrc.includes('"bb_edit"') || registrySrc.includes("bb_edit")
   ck("E7: bb_edit registered in tool-registry.ts", editEntry)
 
-  // Doc exists
+ // Doc exists
   const docPath = path.resolve("docs/tools/bb_edit.md")
   try {
     const doc = readFileSync(docPath, "utf8")
     ck("E7: docs/tools/bb_edit.md exists", doc.length > 100)
 
-    // Doc mentions modes
-    for (const mode of ["write", "insert", "delete", "refactor", "format"]) {
+ // Doc mentions modes
+ // Six registry modes, not five: `update` is a mode and `format` is an OPTION,
+ // so a mode list that names the wrong set cannot notice a page that forgot one.
+    for (const mode of ["write", "update", "insert", "delete", "refactor", "batch"]) {
       ck("E7: doc mentions mode '" + mode + "'", doc.includes(mode))
     }
 
-    // Doc does NOT claim AST purity falsely (no "pure AST" in context where regex is used)
-    // Honesty check: doc admits tree-sitter-based, not regex-based
+ // Doc does NOT claim AST purity falsely (no "pure AST" in context where regex is used)
+ // Honesty check: doc admits tree-sitter-based, not regex-based
     const docIsHonest = doc.includes("tree-sitter") || doc.includes("syntax tree") || 
                         doc.includes("AST") || doc.includes("parse tree")
     ck("E7: doc references tree-sitter/AST-based implementation", docIsHonest)
@@ -162,28 +187,28 @@ function existingGoSample(reposDir: string): string | null {
     ck("E7: docs/tools/bb_edit.md exists", false, "file not found")
   }
 
-  // Implementation exists
+ // Implementation exists
   const editSrc = readFileSync(path.resolve("src/intelligence/edit/edit-engine.ts"), "utf8")
   ck("E7: edit-engine.ts exists and has executeEdit", editSrc.includes("executeEdit"))
 
-  // Modes match registry
-  const modesInImpl = ["write", "insert", "delete", "refactor", "format"].filter(m => editSrc.includes(m))
-  ck("E7: all 5 modes in implementation", modesInImpl.length === 5,
+ // Modes match registry
+  const modesInImpl = ["write", "update", "insert", "delete", "refactor", "batch"].filter(m => editSrc.includes(m))
+  ck("E7: all 6 modes in implementation", modesInImpl.length === 6,
      "found: " + modesInImpl.join(", "))
 
   await emitFile("E7", "M15.E7", "bb_edit", "docs honesty", "e7.json")
 
-  // THE EXIT CODE IS PART OF THE VERDICT.
-  //
-  // This file had no `process.exit` at all. It printed VERIFIED or KNOWN-GAP and then returned
-  // 0 either way, so `npm run verify` could not tell a clean run from a failing one — it was
-  // only ever observed to exit non-zero because an unhandled rejection killed the process on
-  // this machine, which is an accident, not a contract. script/m62/verify-gates-can-fail.ts
-  // exists to name exactly this, and it named this file.
+ // THE EXIT CODE IS PART OF THE VERDICT.
+ //
+ // This file had no `process.exit` at all. It printed VERIFIED or KNOWN-GAP and then returned
+ // 0 either way, so `npm run verify` could not tell a clean run from a failing one — it was
+ // only ever observed to exit non-zero because an unhandled rejection killed the process on
+ // this machine, which is an accident, not a contract. script/m62/verify-gates-can-fail.ts
+ // exists to name exactly this, and it named this file.
   process.exit(anyFailed ? 1 : 0)
 })().catch((e: any) => {
-  // A thrown error is neither a pass nor a measured failure, so it gets its own code. Exit 1
-  // would be a lie about the verdict and exit 0 would be worse.
+ // A thrown error is neither a pass nor a measured failure, so it gets its own code. Exit 1
+ // would be a lie about the verdict and exit 0 would be worse.
   console.error("FATAL", e)
   process.exit(2)
 })

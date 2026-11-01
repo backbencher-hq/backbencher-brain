@@ -3,6 +3,12 @@
 //
 // WHAT THIS FILE IS — the executable descriptor for bb_edit: name, description, input schema, modes, defaults and examples.
 // WHICH TOOL IT SERVES — bb_edit (this file is the contract authority for the tool's schema and documentation).
+// WHY IT IS SHAPED THIS WAY — the schema is the only place an option becomes
+//   ACCEPTED; the engine and the docs both read the same per-mode table in
+//   src/mcp/tool-validation.ts, so this file names the options while the table
+//   decides which mode may carry them. `requiresIndex: true` with
+//   `indexFreeModes: ["write"]` encodes the one real exemption instead of leaving
+//   the server to keep a second list beside it.
 // WHERE ITS EVIDENCE LIVES — docs/data/public-tools.json, docs/tools/bb_edit.md, validation/tools/bb_edit/**.
 // EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_edit/handler.ts, script/tool-docs/curation/bb_edit.ts, and docs/tools/bb_edit.md (generated).
 // CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
@@ -18,11 +24,11 @@ export const descriptor: ToolDescriptor = {
     mutability: "write",
     requiresIndex: true,
     modes: ["write", "update", "insert", "delete", "refactor", "batch"],
-    // M71.D6: `write` is the one mode of the one write tool that needs no index.
-    // M71.D13: `batch` is absent here on purpose — a batch containing only
-    // `write` entries can run against a project with no index, but the mode's
-    // contract cannot promise that of a list, so the exemption stays with the one
-    // mode whose plan never consults the index.
+    // `write` is the one mode whose plan never consults the index, so it is the
+    // one exemption. `batch` is deliberately absent: a batch containing only
+    // `write` entries could run without an index, but the MODE cannot promise
+    // that of a caller-supplied list, so the exemption stays with the single mode
+    // whose plan provably never reads a row.
     indexFreeModes: ["write"],
     aliases: [],
     deprecated: false,

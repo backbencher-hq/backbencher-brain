@@ -1,14 +1,38 @@
-// script/m13/verify-edit-mask.ts — M13.08 (E3).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E3): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-mask.ts — (E3).
 //
 // Proves bb_edit masks comments and strings per-language (tree-sitter, never the
 // retired JS/C-only codeMask) so no identifier or brace inside a recognized
 // comment/string is treated as live code. Two layers:
 //
-//   - unit: mask coverage for every required form (# , triple-quoted, heredoc,
-//     --, {- -}, --[[ ]], <# #>, /* */, per-language quoting) plus a full
-//     41-language comment/string audit.
-//   - integration: bodyOffsets skips braces inside strings/comments, and
-//     refactor does not rewrite identifiers inside comments/strings.
+// - unit: mask coverage for every required form (# , triple-quoted, heredoc,
+// --, {- -}, --[[ ]], <# #>, /* */, per-language quoting) plus a full
+// 41-language comment/string audit.
+// - integration: bodyOffsets skips braces inside strings/comments, and
+// refactor does not rewrite identifiers inside comments/strings.
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -33,7 +57,7 @@ const harness = new Harness({
     retireCodeMask: "no character-scanning mask remains in the edit path",
   },
   limitations: [
-    "Vue/Svelte embedded <script> content is an opaque raw_text node (the JS grammar is not injected in the shipped WASM), so // comments inside it are not masked — but no identifiers or braces are parsed there either, so bb_edit rename/insert are unaffected. Tracked as analyzer completeness (M14).",
+    "Vue/Svelte embedded <script> content is an opaque raw_text node (the JS grammar is not injected in the bundled WASM), so // comments inside it are not masked — but no identifiers or braces are parsed there either, so bb_edit rename/insert are unaffected. Tracked as analyzer completeness.",
     "Markdown HTML comments (<!-- -->) parse as html_block, not comment, and are not masked — markdown has no identifiers or brace bodies, so bb_edit is unaffected.",
   ],
 })
@@ -73,12 +97,12 @@ const auditLangs: AuditLang[] = [
   { lang: "sql", file: "a.sql", code: `-- zzzL\n/* zzzB */\nSELECT 'zzzS';\n`, ghosts: ["zzzL", "zzzB", "zzzS"] },
   { lang: "bash", file: "a.sh", code: `# zzzL\nx="zzzS"\ncat <<EOF\nzzzH\nEOF\n`, ghosts: ["zzzL", "zzzS", "zzzH"] },
   { lang: "powershell", file: "a.ps1", code: `# zzzL\n<# zzzB #>\n$x = "zzzS"\n`, ghosts: ["zzzL", "zzzB", "zzzS"] },
-  // M71: the fixture used `a.tf`, whose language is `terraform` by design
-  // (src/ast/language-detection.ts: `tf: "terraform"`, so `--language terraform`
-  // and the lane named after what the files are). The assertion below checks the
-  // detected language equals `l.lang`, so the fixture asked for `hcl` and got
-  // `terraform` — a red gate for a fixture spelling, not for the mask. `a.hcl`
-  // exercises the same HCL grammar with the language the label claims.
+ // the fixture used `a.tf`, whose language is `terraform` by design
+ // (src/ast/language-detection.ts: `tf: "terraform"`, so `--language terraform`
+ // and the corpus names files after what they are). The assertion below checks the
+ // detected language equals `l.lang`, so the fixture asked for `hcl` and got
+ // `terraform` — a red gate for a fixture spelling, not for the mask. `a.hcl`
+ // exercises the same HCL grammar with the language the label claims.
   { lang: "hcl", file: "a.hcl", code: `# zzzL\n// zzzS\n/* zzzB */\nx = 1\n`, ghosts: ["zzzL", "zzzS", "zzzB"] },
   { lang: "objective-c", file: "a.m", code: `// zzzL\n/* zzzB */\nNSString *s = @"zzzS";\n`, ghosts: ["zzzL", "zzzB", "zzzS"] },
   { lang: "toml", file: "a.toml", code: `# zzzL\nx = "zzzS"\n`, ghosts: ["zzzL", "zzzS"] },

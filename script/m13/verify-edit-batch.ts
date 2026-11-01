@@ -1,21 +1,45 @@
-// script/m13/verify-edit-batch.ts — M13.18 (E13).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E13): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-batch.ts — (E13).
 //
 // bb_edit mode=batch: one edit across many files, or several edits in one call,
 // as ONE atomic call. What is proven here, in the order the claims are made:
 //
-//   1. the two shapes the mode exists for — a fan-out (`files`) and a list of
-//      different edits (`edits`) — plan and apply;
-//   2. ONE cycle: one `formatting` array and one `derived` block for the whole
-//      batch, where N single calls each carry their own;
-//   3. the plan→commit pre-image check reads the WHOLE batch before the first
-//      write — a target that moved refuses the call with nothing written, even
-//      though another entry's plan was fine;
-//   4. a refusal anywhere in planning writes nothing, and two entries resolving
-//      to one file are refused rather than silently losing one of them;
-//   5. the per-change rollback envelope: a failure AFTER every write restores
-//      every file byte-for-byte, and the envelope says so per file;
-//   6. the same thing over the wire, through the real MCP server, because that
-//      is the interface a caller uses.
+// 1. the two shapes the mode exists for — a fan-out (`files`) and a list of
+// different edits (`edits`) — plan and apply;
+// 2. ONE cycle: one `formatting` array and one `derived` block for the whole
+// batch, where N single calls each carry their own;
+// 3. the plan→commit pre-image check reads the WHOLE batch before the first
+// write — a target that moved refuses the call with nothing written, even
+// though another entry's plan was fine;
+// 4. a refusal anywhere in planning writes nothing, and two entries resolving
+// to one file are refused rather than silently losing one of them;
+// 5. the per-change rollback envelope: a failure AFTER every write restores
+// every file byte-for-byte, and the envelope says so per file;
+// 6. the same thing over the wire, through the real MCP server, because that
+// is the interface a caller uses.
 //
 // The boundaries (`edits`/`files` shape, per-entry mode contract, the entry cap)
 // are read from `expandBatchRequest` — the same function the engine expands a
@@ -127,9 +151,9 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
     () => expandBatchRequest({ mode: "batch", edits: [{ mode: "update", symbolName: "a", newContent: "x" }], files: ["  "] }), "must be a non-empty project-relative path")
   harness.rejects("expand: an empty `files` array is refused",
     () => expandBatchRequest({ mode: "batch", edits: [{ mode: "update", symbolName: "a", newContent: "x" }], files: [] }), "must be a non-empty array")
-  // The cap, on a request that is otherwise perfectly valid — 201 files, one
-  // entry. Nothing here touches the disk: the expansion is refused before any
-  // plan is attempted, which is the point of checking it in this function.
+ // The cap, on a request that is otherwise perfectly valid — 201 files, one
+ // entry. Nothing here touches the disk: the expansion is refused before any
+ // plan is attempted, which is the point of checking it in this function.
   const many = Array.from({ length: MAX_BATCH_EDITS + 1 }, (_, i) => `src/f${i}.ts`)
   harness.rejects(`expand: ${MAX_BATCH_EDITS + 1} planned edits exceed the cap of ${MAX_BATCH_EDITS}`,
     () => expandBatchRequest({ mode: "batch", edits: [{ mode: "update", symbolName: "a", newContent: "x" }], files: many }),
@@ -142,9 +166,9 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
 {
   const f = setup("fanout")
   try {
-    // The realistic fan-out: the SAME symbol name in two modules, which is what
-    // makes a fan-out meaningful — `files` supplies the filePath, so the entry
-    // resolves `shared` separately in each. A third file is the untouched control.
+ // The realistic fan-out: the SAME symbol name in two modules, which is what
+ // makes a fan-out meaningful — `files` supplies the filePath, so the entry
+ // resolves `shared` separately in each. A third file is the untouched control.
     writeFileSync(at(f, "src/a.ts"), seeded("shared", 1))
     writeFileSync(at(f, "src/b.ts"), seeded("shared", 2))
     writeFileSync(at(f, "src/other.ts"), seeded("other", 3))
@@ -201,8 +225,8 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
     harness.check("mixed: the report names each entry's mode and file",
       res.batch?.length === 3 && res.batch.map((b) => `${b.entry}:${b.mode}`).join(" ") === "0:update 1:insert 2:delete" && res.batch.every((b) => b.files.length === 1),
       JSON.stringify(res.batch))
-    // ONE cycle, asserted structurally: a single formatting array covering every
-    // target, and a single derived-data block. N single calls produce N of each.
+ // ONE cycle, asserted structurally: a single formatting array covering every
+ // target, and a single derived-data block. N single calls produce N of each.
     harness.check("mixed: ONE formatting pass covers all three targets",
       res.formatting !== undefined && res.formatting.length === 3 && res.formatting.length === res.changes.length,
       JSON.stringify(res.formatting?.map((c) => c.path)))
@@ -212,9 +236,9 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
     harness.check("mixed: the envelope carries one entry per FILE, not per mode",
       res.envelope?.entries.length === 3 && res.envelope.committed === 3 && res.envelope.failed.length === 0)
 
-    // The control that names the alternative: the same three edits as three
-    // separate calls each carry their own formatting array and derived block —
-    // which is exactly the per-call cost the batch does not pay three times.
+ // The control that names the alternative: the same three edits as three
+ // separate calls each carry their own formatting array and derived block —
+ // which is exactly the per-call cost the batch does not pay three times.
     const singles = [
       await executeEdit(f.root, f.projectId, { mode: "update", filePath: "src/alpha.ts", symbolName: "alpha", newContent: "return 12", format: false }),
       await executeEdit(f.root, f.projectId, { mode: "update", filePath: "src/beta.ts", symbolName: "beta", newContent: "return 22", format: false }),
@@ -265,9 +289,9 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
       error.includes("batch entries 0 and 1 both resolve to") && error.includes("alpha.ts") && error.includes("wrote nothing"),
       error.slice(0, 220))
     harness.negative("duplicate target: the file is untouched", bytesAt(f, "src/alpha.ts") === beforeAlpha)
-    // The composition mechanism, shown rather than asserted: two SEQUENTIAL calls
-    // do exactly what one batch of two entries on a file cannot, because the
-    // second call re-reads the file the first one wrote.
+ // The composition mechanism, shown rather than asserted: two SEQUENTIAL calls
+ // do exactly what one batch of two entries on a file cannot, because the
+ // second call re-reads the file the first one wrote.
     await executeEdit(f.root, f.projectId, { mode: "update", filePath: "src/alpha.ts", symbolName: "alpha", newContent: "return 7", format: false })
     await executeEdit(f.root, f.projectId, { mode: "insert", filePath: "src/alpha.ts", targetSymbolName: "alpha", position: "inside-bottom", newContent: "const second = true", format: false })
     harness.check("duplicate target: the two sequential calls compose (this is the stated way forward)",
@@ -298,11 +322,11 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
       ],
       format: false,
     }
-    // Control: with no concurrent writer, the same batch applies.
+ // Control: with no concurrent writer, the same batch applies.
     const control = await executeEdit(f.root, f.projectId, request)
     harness.check("pre-image control: the batch applies when nothing moves underneath it",
       control.envelope?.committed === 2 && textAt(f, "src/target.ts").includes("// renamed header") && textAt(f, "src/other.ts").includes("return 55"))
-    // Restore the pre-edit state, then re-run with the writer queued.
+ // Restore the pre-edit state, then re-run with the writer queued.
     writeFileSync(at(f, "src/target.ts"), big)
     writeFileSync(at(f, "src/other.ts"), seeded("other", 5))
     await indexProjectParallel(f.projectId, f.root, {})
@@ -337,10 +361,10 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
         edits: [
           { mode: "update", filePath: "src/alpha.py", symbolName: "alpha", newContent: seededPy("alpha", 21) },
           { mode: "update", filePath: "src/gamma.py", symbolName: "gamma", newContent: seededPy("gamma", 23) },
-          // `def (` is a syntax error, so the post-write validation pass refuses
-          // it. It is the LAST entry and therefore the last file in the write
-          // order, so all three files are already replaced on disk when it
-          // throws — the rollback has real work to do.
+ // `def (` is a syntax error, so the post-write validation pass refuses
+ // it. It is the LAST entry and therefore the last file in the write
+ // order, so all three files are already replaced on disk when it
+ // throws — the rollback has real work to do.
           { mode: "write", filePath: "src/beta.py", content: "def (\n" },
         ],
         format: false,
@@ -363,7 +387,7 @@ const errOf = async (fn: () => Promise<unknown>): Promise<string> => {
     harness.check("rollback: the entry labels survive the failure (which entry touched which file)",
       envelope?.entries.map((e) => e.entry).join(",") === "0,1,2" && envelope?.entries[2].mode === "write",
       JSON.stringify(envelope?.entries.map((e) => `${e.entry}:${e.mode}`)))
-    // A leftover temp is the other half of "the tree is as it was".
+ // A leftover temp is the other half of "the tree is as it was".
     harness.check("rollback: no orphaned .bb-edit-* temp file is left in src",
       leftoverTemps(f).length === 0 && ["src/alpha.py", "src/beta.py", "src/gamma.py"].every((rel) => existsSync(at(f, rel))),
       leftoverTemps(f).join(","))
@@ -396,7 +420,7 @@ function leftoverTemps(f: Fixture): string[] {
       error.includes("batch entry 1") && error.includes("write refused"), error.slice(0, 220))
     harness.negative("guard: the other entry's file is untouched too (the batch is refused whole)",
       bytesAt(f, "src/big.ts") === beforeBig && textAt(f, "src/small.ts").includes("export const s = 1"))
-    // The one-word acknowledgement, inside an entry.
+ // The one-word acknowledgement, inside an entry.
     const res = await executeEdit(f.root, f.projectId, {
       mode: "batch",
       edits: [
@@ -432,8 +456,8 @@ function leftoverTemps(f: Fixture): string[] {
     }
     try {
       await client.connect(transport)
-      // (a) the boundary rule reaches the wire: an entry that names its own
-      // filePath while `files` supplies the targets is refused, with the reason.
+ // (a) the boundary rule reaches the wire: an entry that names its own
+ // filePath while `files` supplies the targets is refused, with the reason.
       const conflict = await call({
         mode: "batch",
         edits: [{ mode: "update", filePath: "src/alpha.py", symbolName: "alpha", newContent: seededPy("alpha", 123) }],
@@ -443,8 +467,8 @@ function leftoverTemps(f: Fixture): string[] {
       harness.check("wire: an entry that names its own filePath under `files` is refused with the reason",
         conflict.isError && /must not also name one/.test(conflict.text), conflict.text.slice(0, 200))
 
-      // (b) the fan-out form: `files` supplies the target, so the entry names no
-      // file — here a one-file fan-out, which applies.
+ // (b) the fan-out form: `files` supplies the target, so the entry names no
+ // file — here a one-file fan-out, which applies.
       const fan = await call({
         mode: "batch",
         edits: [{ mode: "update", symbolName: "alpha", newContent: seededPy("alpha", 123) }],
@@ -457,8 +481,8 @@ function leftoverTemps(f: Fixture): string[] {
         fan.json?.batch?.[0]?.files?.[0] === "src/alpha.py" && fan.json?.envelope?.committed === 1 && fan.json.envelope.restored === 0,
         JSON.stringify(fan.json?.envelope))
 
-      // (c) a fan-out whose symbol only exists in SOME of the listed files fails,
-      // naming the entry AND the file it failed on — the reason a caller can act on.
+ // (c) a fan-out whose symbol only exists in SOME of the listed files fails,
+ // naming the entry AND the file it failed on — the reason a caller can act on.
       const partial = await call({
         mode: "batch",
         edits: [{ mode: "update", symbolName: "alpha", newContent: seededPy("alpha", 999) }],
@@ -470,8 +494,8 @@ function leftoverTemps(f: Fixture): string[] {
       harness.negative("wire: and the file where it DID resolve was left alone (the whole batch is refused)",
         !textAt(f, "src/alpha.py").includes("return 999"))
 
-      // (d) the failure path over the wire: all files written, then a validation
-      // failure, then every file restored — with the per-file envelope in the reply.
+ // (d) the failure path over the wire: all files written, then a validation
+ // failure, then every file restored — with the per-file envelope in the reply.
       const envelope = await call({
         mode: "batch",
         edits: [

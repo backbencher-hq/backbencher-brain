@@ -1,4 +1,28 @@
-// script/m13/verify-edit-corpus.ts — M13.15 (E10).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E10): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-corpus.ts — (E10).
 //
 // Runs refactor dry-runs across a representative sample of the pinned corpus
 // repos (one per major language family) and proves: (1) dry-run writes nothing,
@@ -31,7 +55,7 @@ const harness = new Harness({
     corruption: "symbol counts are compared pre- vs post-dry-run reindex; any divergence is a recorded failure, not hidden",
   },
   limitations: [
-    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
+    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed).",
     "Refactor is UNAVAILABLE for Erlang: its grammar yields zero identifier occurrences, so the engine refuses by name rather than reporting a rename it cannot perform (D3/M71; measured with script/m71/diagnose-erlang-refactor.ts). The Erlang leg asserts that refusal instead of pretending the dry-run renamed something.",
   ],
@@ -39,19 +63,19 @@ const harness = new Harness({
 
 // The corpus root was HARD-CODED to another developer's home directory, so this
 // gate could never pass anywhere but their machine — it failed with
-//   corpus rake/lib/rake (Ruby): present
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
-//  each repo path below resolved to a filesystem that does not exist here and the leg
-//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
-//  candidates in order and names them all when none exists.
-//     $HOME/fixtures/repositories/rake/lib/rake missing
+// corpus rake/lib/rake (Ruby): present
+// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// each repo path below resolved to a filesystem that does not exist here and the leg
+// measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+// candidates in order and names them all when none exists.
+// $HOME/fixtures/repositories/rake/lib/rake missing
 // which reads as "bb_edit broke on real repositories" and is in fact "this file
 // names a path that does not exist here".
 //
 // The repository already has the convention for this: BB_CORPUS_ROOT, read by
 // script/m12/verify-corpus-claims.ts, script/m12/zig-deep-review-evidence.ts and
 // script/m15/verify-doc-deep.ts, the last of which already skips cleanly and says
-// how to enable the lane. This gate now does the same, so an absent corpus is a
+// how to enable the optional corpus. This gate does the same, so an absent corpus is a
 // recorded skip rather than a red gate that looks like a product failure — and a
 // corpus that IS present still runs for real.
 // This resolved the corpus as `$HOME/fixtures/repositories`, which does not exist on
@@ -90,14 +114,14 @@ const { executeEdit } = await import("../../src/intelligence/edit/edit-engine")
 for (const [repo, subPath, hint, family] of SAMPLE) {
   const indexRoot = path.join(REPO_ROOT, repo, subPath)
   if (!existsSync(indexRoot)) {
-    // A missing corpus is an ABSENCE OF EVIDENCE, not a product failure, and
-    // recording it as a failed check is how a portable gate stops being portable:
-    // the red line reads as "real repositories broke" to anyone who did not write
-    // it. The other corpus lanes in this repository already skip here; this one
-    // now says the same thing and names the variable that enables it.
-    // No `harness.note` exists, and an optional call to a method that is not there
-    // does nothing at all — which is how the first version of this patch looked
-    // like it recorded the skip while recording nothing.
+ // A missing corpus is an ABSENCE OF EVIDENCE, not a product failure, and
+ // recording it as a failed check is how a portable gate stops being portable:
+ // the red line reads as "real repositories broke" to anyone who did not write
+ // it. The other corpus lanes in this repository already skip here; this one
+ // now says the same thing and names the variable that enables it.
+ // No `harness.note` exists, and an optional call to a method that is not there
+ // does nothing at all — which is how the first version of this patch looked
+ // like it recorded the skip while recording nothing.
     console.log(`  skip: corpus ${repo}/${subPath} (${family}) not present at ${indexRoot} (set BB_CORPUS_ROOT to run this lane)`)
     continue
   }
@@ -110,7 +134,7 @@ for (const [repo, subPath, hint, family] of SAMPLE) {
       harness.check(`corpus ${repo}/${subPath} (${family}): no symbols (recorded, not failed)`, true, "skip")
       continue
     }
-    // Resolve a target symbol: try the hint, else the first indexed symbol.
+ // Resolve a target symbol: try the hint, else the first indexed symbol.
     let found = await ASTEngine.findSymbol(projectId, hint, undefined as any)
     let targetName = hint
     let targetFile = found?.matches?.[0]?.fileId ?? ""
@@ -135,24 +159,25 @@ for (const [repo, subPath, hint, family] of SAMPLE) {
       refusal = String((e as Error)?.message ?? e).slice(0, 200)
       afterContent = existsSync(targetFile) ? readFileSync(targetFile, "utf8") : beforeContent
     }
-    // D3/M71: this leg has exactly two acceptable outcomes, and one it must reject.
-    //
-    // MEASURED (script/m71/diagnose-erlang-refactor.ts): the Erlang grammar produces
-    // ZERO identifier occurrences — `parseForSafety` finds no site in a synthetic
-    // module, for the module symbol and for every function alike — so `cth_fail_fast`
-    // has nothing to rename. The engine used to answer ok with "0 site(s) across 0
-    // file(s)". A rename that covers nothing is a failure, so it now refuses by name.
-    //
-    // A REFUSAL is therefore the correct result for such a lane, while a COMPLETED
-    // dry-run with zero planned changes FAILS: that is exactly the silent no-op this
-    // check exists to reject, and it is what the pre-fix engine did here.
+ // D3/this leg has exactly two acceptable outcomes, and one it must reject.
+ //
+ // MEASURED (script/m71/diagnose-erlang-refactor.ts): the Erlang grammar produces
+ // ZERO identifier occurrences — `parseForSafety` finds no site in a synthetic
+ // module, for the module symbol and for every function alike — so `cth_fail_fast`
+ // has nothing to rename. A rename that covers nothing is a failure, so the
+ // engine refuses it by name rather than answering ok with "0 site(s) across 0
+ // file(s)".
+ //
+ // A REFUSAL is therefore the correct result for such a lane, while a COMPLETED
+ // dry-run with zero planned changes FAILS: that is exactly the silent no-op this
+ // check exists to reject, and it is what the pre-fix engine did here.
     if (refusal === null) {
       harness.check(`corpus ${repo}/${subPath} (${family}): dry-run refactor plans at least one change (no silent no-op)`, plannedChanges > 0, `symbol=${targetName} changes=${plannedChanges}`)
     } else {
       harness.check(`corpus ${repo}/${subPath} (${family}): zero-site rename refused by name (no silent no-op)`, /resolved 0 rename site/.test(refusal), `${targetName}: ${refusal}`)
     }
     harness.negative(`corpus ${repo}/${subPath} (${family}): dry-run writes zero bytes (no mutation)`, afterContent === beforeContent, `changed=${afterContent !== beforeContent}`)
-    // Reindex and compare symbol count (corruption check).
+ // Reindex and compare symbol count (corruption check).
     await indexProjectParallel(projectId, indexRoot, {})
     postCount = await symbolCount(projectId)
     harness.check(`corpus ${repo}/${subPath} (${family}): reindex after dry-run is consistent (no corruption)`, postCount === preCount, `pre=${preCount} post=${postCount}`)

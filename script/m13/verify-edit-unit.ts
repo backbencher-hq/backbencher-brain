@@ -1,4 +1,28 @@
-// script/m13/verify-edit-unit.ts — M13.12 (E7).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E7): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-unit.ts — (E7).
 //
 // Per-mode adversarial UNIT coverage for bb_edit. Each mode (write/update/
 // insert/delete/refactor) has a positive case plus the negatives the E2–E6
@@ -108,31 +132,28 @@ function teardown(f: Fixture): void {
     const res = await executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 42", format: false })
     harness.check("update: rewrites the symbol body", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 42"))
     harness.check("update: reports a single change", res.changes.length === 1)
-    // Stale bounds: change the file on disk so the indexed bounds no longer
-    // match, then update. This block used to assert that the operation ABORTS.
-    //
-    // THAT CONTRACT IS SUPERSEDED, and the old assertion was checking a
-    // superseded behaviour rather than a safety property, so it recorded a
-    // known-gap against code that is right. M59.A11 (#889) changed the contract:
-    // every other read tool refreshes a stale file within budget
-    // (BB_NO_AUTO_REFRESH), so editing refused instead. That made the FIRST
-    // symbol edit after ANY external change — another tool, a git pull, the human
-    // — a hard stop, even when the external change did not touch the symbol at
-    // all. Refusing is not safer here; re-deriving the bounds from the bytes on
-    // disk IS, because the bounds were never the problem.
-    //
-    // What replaced it is the property that actually matters, and it is stronger
-    // than "it threw": the write must land on the CURRENT bytes. Measured across
-    // the four external-change shapes, on the pre-refresh behaviour the last one
-    // below would have spliced at a byte offset that had moved, corrupting the
-    // file — a silent wrong write, which is what the old assertion was reaching
-    // for and could not see.
-    //
-    // 1. body changed externally        -> edits the NEW body, discloses the refresh
-    // 2. lines inserted before it       -> edit lands at the MOVED offset, the
-    //                                       inserted lines survive
-    // 3. symbol renamed externally      -> REFUSED, file untouched
-    // 4. symbol removed externally      -> REFUSED, file untouched
+ // Stale bounds: change the file on disk so the indexed bounds no longer match,
+ // then update. The contract is that the edit REFRESHES that one file,
+ // re-resolves the symbol and applies the edit to the bytes on disk — it does
+ // not abort. Every other read tool refreshes a stale file within budget
+ // (BB_NO_AUTO_REFRESH), and a stale-index abort would make the FIRST symbol
+ // edit after ANY external change — another tool, a git pull, the human — a hard
+ // stop, even when the external change did not touch the symbol at all. Refusing
+ // is not safer here; re-deriving the bounds from the bytes on disk IS, because
+ // the bounds were never the problem.
+ //
+ // What replaced it is the property that actually matters, and it is stronger
+ // than "it threw": the write must land on the CURRENT bytes. Measured across
+ // the four external-change shapes, on the pre-refresh behaviour the last one
+ // below would have spliced at a byte offset that had moved, corrupting the
+ // file — a silent wrong write, which is what the old assertion was reaching
+ // for and could not see.
+ //
+ // 1. body changed externally -> edits the NEW body, discloses the refresh
+ // 2. lines inserted before it -> edit lands at the MOVED offset, the
+ // inserted lines survive
+ // 3. symbol renamed externally -> REFUSED, file untouched
+ // 4. symbol removed externally -> REFUSED, file untouched
     writeFileSync(path.join(f.srcDir, "mod.ts"), `export function target(): number { return 99 }\n`)
     const staleRes = await executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 42", format: false })
     const afterStale = readFileSync(path.join(f.srcDir, "mod.ts"), "utf8")
@@ -143,16 +164,16 @@ function teardown(f: Fixture): void {
     harness.check("update after an external body change leaves the file syntactically whole",
       /^export function target\(\): number \{\n {2}return 42\n\}\n$/.test(afterStale), JSON.stringify(afterStale))
 
-    // The shapes where refreshing genuinely cannot save the edit, because the
-    // symbol the caller named is not the symbol in the file any more. These are
-    // the ones that MUST stay loud; a silent success here would write a body into
-    // whatever the stale bounds happened to cover.
-    //
-    // Each shape gets its OWN fixture. A refused edit still refreshes the index,
-    // so reusing one project made the next shape start from an index that had
-    // already been corrected — the removal case then failed EARLIER, on a
-    // different message, and the gate would have been asserting the wrong
-    // refusal text for the wrong reason.
+ // The shapes where refreshing genuinely cannot save the edit, because the
+ // symbol the caller named is not the symbol in the file any more. These are
+ // the ones that MUST stay loud; a silent success here would write a body into
+ // whatever the stale bounds happened to cover.
+ //
+ // Each shape gets its OWN fixture. A refused edit still refreshes the index,
+ // so reusing one project made the next shape start from an index that had
+ // already been corrected — the removal case then failed EARLIER, on a
+ // different message, and the gate would have been asserting the wrong
+ // refusal text for the wrong reason.
     for (const [label, external, untouched] of [
       ["renamed", `export function renamedElsewhere(): number { return 99 }\n`, "renamedElsewhere"],
       ["removed", `export const somethingElse = 1\n`, "somethingElse"],
@@ -174,35 +195,35 @@ function teardown(f: Fixture): void {
       }
     }
 
-    // The byte-offset case, on `delete` — which is where byte offsets actually
-    // decide the outcome.
-    //
-    // I first wrote this on `update` and the mutation self-test showed it could
-    // not go red: with stale bounds trusted, `update` still produced a correct
-    // file. The reason is that update mode re-parses the body block from the
-    // file on disk, so it is safe by construction and the symbol's bounds are not
-    // load-bearing. Asserting it there would have been asserting a true thing
-    // that proved nothing.
-    //
-    // `delete` splices `match.byteStart .. match.byteEnd` directly, so its
-    // correctness DOES depend on those bounds being current. Measured with the
-    // refresh disabled: the splice lands at the pre-move offset, produces
-    // syntactically invalid source, and only the downstream validation step
-    // catches it — the file would have been written broken had validation not
-    // existed. With the refresh in place the delete is clean.
-    //
-    // This is the assertion that makes the refresh load-bearing rather than
-    // incidental, and it is the one the mutation turns red.
+ // The byte-offset case, on `delete` — which is where byte offsets actually
+ // decide the outcome.
+ //
+ // I first wrote this on `update` and the mutation self-test showed it could
+ // not go red: with stale bounds trusted, `update` still produced a correct
+ // file. The reason is that update mode re-parses the body block from the
+ // file on disk, so it is safe by construction and the symbol's bounds are not
+ // load-bearing. Asserting it there would have been asserting a true thing
+ // that proved nothing.
+ //
+ // `delete` splices `match.byteStart .. match.byteEnd` directly, so its
+ // correctness DOES depend on those bounds being current. Measured with the
+ // refresh disabled: the splice lands at the pre-move offset, produces
+ // syntactically invalid source, and only the downstream validation step
+ // catches it — the file would have been written broken had validation not
+ // existed. With the refresh in place the delete is clean.
+ //
+ // This is the assertion that makes the refresh load-bearing rather than
+ // incidental, and it is the one the mutation turns red.
     {
       const g = setup("stale-moved-delete")
       try {
         await indexProjectParallel(g.projectId, g.root, {})
         writeFileSync(path.join(g.srcDir, "mod.ts"), `export const inserted = 7\nexport function target(): number { return 99 }\n`)
-        // The throw is CAUGHT and recorded, not left to escape. An unguarded
-        // call turns a real defect into a crashed gate, and a crashed gate is
-        // INCONCLUSIVE: it says nothing about which assertion failed, and it
-        // takes the remaining checks with it. This block has to be able to say
-        // "the delete refused" as a named, attributable result.
+ // The throw is CAUGHT and recorded, not left to escape. An unguarded
+ // call turns a real defect into a crashed gate, and a crashed gate is
+ // INCONCLUSIVE: it says nothing about which assertion failed, and it
+ // takes the remaining checks with it. This block has to be able to say
+ // "the delete refused" as a named, attributable result.
         let refused: string | null = null
         try {
           await executeEdit(g.root, g.projectId, { mode: "delete", symbolName: "target", filePath: "src/mod.ts", force: true, format: false })
@@ -234,13 +255,13 @@ function teardown(f: Fixture): void {
   const f = setup("delete")
   try {
     await indexProjectParallel(f.projectId, f.root, {})
-    // 'target' has a caller ('other'), so delete must refuse without force.
+ // 'target' has a caller ('other'), so delete must refuse without force.
     await harness.rejectsAsync(
       "delete: refuses a symbol with active callers (no force)",
       () => executeEdit(f.root, f.projectId, { mode: "delete", symbolName: "target", filePath: "src/mod.ts", format: false }),
       "surviving deletion",
     )
-    // 'other' has no callers; delete succeeds.
+ // 'other' has no callers; delete succeeds.
     const res = await executeEdit(f.root, f.projectId, { mode: "delete", symbolName: "other", filePath: "src/mod.ts", format: false })
     harness.check("delete: removes a caller-less symbol", !readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("function other"))
     harness.check("delete: reports a single change", res.changes.length === 1)
@@ -253,8 +274,8 @@ function teardown(f: Fixture): void {
 {
   const f = setup("refactor-strings")
   try {
-    // A fixture where 'target' appears in a heredoc, a block comment, and
-    // a template interpolation — none of which a rename should touch.
+ // A fixture where 'target' appears in a heredoc, a block comment, and
+ // a template interpolation — none of which a rename should touch.
     writeFileSync(path.join(f.srcDir, "mod.ts"), [
       "export function target(): number { return 1 }",
       "export function caller(): number {",
@@ -272,7 +293,7 @@ function teardown(f: Fixture): void {
     harness.check("refactor: call site renamed", after.includes("renamedTarget()"))
     harness.check("refactor: heredoc text NOT renamed", after.includes("target stays in heredoc"))
     harness.check("refactor: block comment NOT renamed", after.includes("target stays in block comment"))
-    // Interpolation: the live code inside ${...} IS renamed; the literal around it is not.
+ // Interpolation: the live code inside ${...} IS renamed; the literal around it is not.
     harness.check("refactor: interpolation live code renamed", after.includes("${renamedTarget}"))
   } finally {
     teardown(f)
@@ -290,7 +311,7 @@ function teardown(f: Fixture): void {
       () => executeEdit(f.root, f.projectId, { mode: "refactor", symbolName: "target", newName: "renamedTarget", format: false }),
       "ambiguous",
     )
-    // Disambiguation by lineStart must resolve to exactly one symbol.
+ // Disambiguation by lineStart must resolve to exactly one symbol.
     const found2 = await ASTEngine.findSymbol(f.projectId, "target", "src/mod.ts", 2)
     harness.check("refactor: lineStart disambiguates to one symbol", (found2?.matches?.length ?? 0) === 1, `matches=${found2?.matches?.length ?? 0}`)
   } finally {
@@ -300,13 +321,15 @@ function teardown(f: Fixture): void {
 
 // ── INTEGRATION: the formatter step reports what it MEASURED (D5) ──────────
 //
-// `formatted` used to be `request.format !== false` — the request restated as if it
-// were an outcome. Measured before the fix (script/m71/probe-format-truth.ts):
-// `true` for a `.rb` file, which has no formatter mapping at all; `true` with no
-// formatter installed, after 1573ms spent on an npx that could not install one;
-// and `true` for a formatter that exited 3, with `warnings: []`. Every branch is
-// asserted here, and the last block pins the invocation itself: the formatter used
-// to be built as a SHELL command with the path interpolated into it, so a file
+// `formatted` is a measurement of the FILE, never `request.format !== false` (the
+// request restated as an outcome). The measured shapes
+// (script/m71/probe-format-truth.ts) are: `true` for a `.rb` file only if a
+// formatter ran, which cannot happen because that extension has no mapping; not
+// `true` with no formatter installed, after 1573ms spent on an npx that could not
+// install one; and not `true` for a formatter that exited 3, with `warnings: []`.
+// Every branch is asserted here, and the last block pins the invocation itself:
+// the formatter is run as argv, never a shell command with the path interpolated
+// into it, so a file
 // NAMED `inj$(touch pwned).ts` executed `touch pwned`.
 //
 // The formatter is a fake local node_modules/.bin/prettier, so every branch is
@@ -323,7 +346,7 @@ function teardown(f: Fixture): void {
   const write = (filePath: string, content: string, format?: boolean) =>
     executeEdit(f.root, f.projectId, { mode: "write", filePath, content, ...(format === undefined ? {} : { format }) })
   try {
-    // (a) an extension with no formatter mapping at all
+ // (a) an extension with no formatter mapping at all
     writeFileSync(path.join(f.root, "a.rb"), "def   target\n    1\nend\n")
     const noMapping = await write("a.rb", "def   target\n      2\nend\n")
     harness.check("format truth: no mapping → formatted:false (was true while nothing formatted it)",
@@ -334,8 +357,8 @@ function teardown(f: Fixture): void {
     harness.check("format truth: no mapping → the bytes on disk are exactly the splice",
       readFileSync(path.join(f.root, "a.rb"), "utf8") === "def   target\n      2\nend\n")
 
-    // (b) a formatter that runs and rewrites the file: `formatted` true, and the
-    // FILE PROVES the process ran (it is the fake formatter's own output).
+ // (b) a formatter that runs and rewrites the file: `formatted` true, and the
+ // FILE PROVES the process ran (it is the fake formatter's own output).
     fakeFormatter('for a in "$@"; do f="$a"; done; printf "FORMATTED\\n" > "$f"')
     const good = await write("b.ts", "export function b(): number {\n  return 1\n}\n")
     harness.check("format truth: a formatter that exits 0 → formatted:true", good.formatted === true, `formatted=${good.formatted}`)
@@ -344,8 +367,8 @@ function teardown(f: Fixture): void {
     harness.check("format truth: success carries no format warning",
       (good.warnings ?? []).every((w) => !w.startsWith("format:")), JSON.stringify(good.warnings))
 
-    // (c) a formatter that exits non-zero: false, attributed, warned — and the edit
-    // is NOT discarded (formatting is best-effort; only validation rolls back).
+ // (c) a formatter that exits non-zero: false, attributed, warned — and the edit
+ // is NOT discarded (formatting is best-effort; only validation rolls back).
     fakeFormatter('echo "boom: refusing" >&2\nexit 3')
     const failed = await write("c.ts", "export function c(): number {\n  return 3\n}\n")
     harness.check("format truth: a formatter that exits 3 → formatted:false (was true with warnings:[])",
@@ -359,12 +382,12 @@ function teardown(f: Fixture): void {
     harness.check("format truth: a failing formatter does not discard the edit",
       readFileSync(path.join(f.root, "c.ts"), "utf8") === "export function c(): number {\n  return 3\n}\n")
 
-    // (d) a formatter that hangs: killed at the budget, reported, and bounded
+ // (d) a formatter that hangs: killed at the budget, reported, and bounded
     fakeFormatter("sleep 5\nexit 0")
     const hangStarted = Date.now()
-    // Optional-chained on purpose: at the pre-fix revision tryAutoFormat returns
-    // `Promise<void>`, and this gate must report that as a FAILED measurement
-    // rather than crash out of the section and skip the cases below it.
+ // Optional-chained on purpose: at the pre-fix revision tryAutoFormat returns
+ // `Promise<void>`, and this gate must report that as a FAILED measurement
+ // rather than crash out of the section and skip the cases below it.
     const hung = (await BrainSurgicalPatcher.tryAutoFormat(path.join(f.root, "b.ts"))) as FormatOutcome | undefined
     const hangMs = Date.now() - hangStarted
     harness.check("format truth: a hanging formatter is killed and reported as a timeout",
@@ -372,8 +395,8 @@ function teardown(f: Fixture): void {
     harness.negative("format truth: the hang is bounded by the budget, not by the formatter",
       hangMs < 4000, `took ${hangMs}ms`)
 
-    // (e) mapped, but no formatter on this machine: a DIFFERENT fact from (a), and
-    // PATH is scrubbed so this is deterministic wherever the gate runs.
+ // (e) mapped, but no formatter on this machine: a DIFFERENT fact from (a), and
+ // PATH is scrubbed so this is deterministic wherever the gate runs.
     rmSync(path.join(f.root, "node_modules"), { recursive: true, force: true })
     const emptyPathDir = mkdtempSync(path.join(tmpdir(), "bb-e7-emptypath-"))
     const savedPath = process.env.PATH
@@ -395,7 +418,7 @@ function teardown(f: Fixture): void {
       notInstalled.formatted === false && (notInstalled.formatting?.[0]?.reason ?? "").includes("no formatter found"),
       JSON.stringify(notInstalled.formatting))
 
-    // (f) format:false must not run a formatter that IS present
+ // (f) format:false must not run a formatter that IS present
     fakeFormatter('for a in "$@"; do f="$a"; done; printf "FORMATTED\\n" > "$f"')
     writeFileSync(path.join(f.root, "d.ts"), "export function d(): number {\n  return 6\n}\n")
     const optedOut = await write("d.ts", "export function d(): number {\n  return 66\n}\n", false)
@@ -404,13 +427,13 @@ function teardown(f: Fixture): void {
     harness.check("format truth: format:false really does not run the present formatter",
       readFileSync(path.join(f.root, "d.ts"), "utf8") === "export function d(): number {\n  return 66\n}\n")
 
-    // (g) a dry run formats nothing, so it reports nothing
+ // (g) a dry run formats nothing, so it reports nothing
     const dry = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "d.ts", content: "export function d(): number {\n  return 666\n}\n", dryRun: true })
     harness.check("format truth: dry-run → formatted:false and no formatting report",
       dry.formatted === false && dry.formatting === undefined)
 
-    // (h) a file NAME is not shell input. This exact fixture produced the marker
-    // file before the fix (measured: script/m71/probe-format-truth.ts).
+ // (h) a file NAME is not shell input. This exact fixture produced the marker
+ // file before the fix (measured: script/m71/probe-format-truth.ts).
     fakeFormatter("exit 0")
     const marker = path.join(f.root, "pwned")
     const hostile = "inj$(touch pwned).ts"
@@ -424,19 +447,19 @@ function teardown(f: Fixture): void {
       readFileSync(path.join(f.root, hostile), "utf8") === "export function inj(): number {\n  return 77\n}\n",
       JSON.stringify(readFileSync(path.join(f.root, hostile), "utf8")))
 
-    // (i) M66 PRESERVATION: the line-ending flag survived the move from a command
-    // STRING to argv. A CRLF file must hand prettier `--end-of-line crlf`, and an
-    // LF file must NOT (always passing it would rewrite LF files to CRLF — the bug
-    // the flag exists to prevent). These two are guards, not new behavior: they
-    // hold at the pre-fix revision too, and the fake formatter records the argv it
-    // was actually executed with.
+ // (i) PRESERVATION: the line-ending flag survived the move from a command
+ // STRING to argv. A CRLF file must hand prettier `--end-of-line crlf`, and an
+ // LF file must NOT (always passing it would rewrite LF files to CRLF — the bug
+ // the flag exists to prevent). These two are guards, not new behavior: they
+ // hold at the pre-fix revision too, and the fake formatter records the argv it
+ // was actually executed with.
     {
       const argvLog = path.join(f.root, "argv.log")
       fakeFormatter(`printf "%s\\n" "$@" > ${argvLog}`)
       writeFileSync(path.join(f.root, "crlf.ts"), "export function crlf(): number {\r\n  return 9\r\n}\r\n")
       const crlfEdit = await write("crlf.ts", "export function crlf(): number {\r\n  return 99\r\n}\r\n")
       const crlfArgv = readFileSync(argvLog, "utf8").split("\n").filter(Boolean)
-      harness.check("format truth: a CRLF file hands prettier an explicit crlf line ending (M66)",
+      harness.check("format truth: a CRLF file hands prettier an explicit crlf line ending",
         crlfEdit.formatted === true && crlfArgv.includes("--write") && crlfArgv.includes("--end-of-line") && crlfArgv.includes("crlf")
           && crlfArgv[crlfArgv.length - 1].endsWith("crlf.ts"),
         JSON.stringify(crlfArgv))
@@ -447,7 +470,7 @@ function teardown(f: Fixture): void {
         !lfArgv.includes("--end-of-line") && lfArgv[lfArgv.length - 1].endsWith("lf.ts"), JSON.stringify(lfArgv))
     }
 
-    // (j) MULTI-FILE: `formatted` is true only when EVERY changed file succeeded.
+ // (j) MULTI-FILE: `formatted` is true only when EVERY changed file succeeded.
     writeFileSync(path.join(f.root, "p.ts"), "export function aggTarget(): number {\n  return 8\n}\n")
     writeFileSync(path.join(f.root, "q.ts"), "import { aggTarget } from './p'\nexport const q = aggTarget()\n")
     await indexProjectParallel(f.projectId, f.root, {})
@@ -463,7 +486,7 @@ function teardown(f: Fixture): void {
     harness.check("format truth: the failing file is the one warned about",
       (aggregateFail.warnings ?? []).some((w) => w.includes("format: q.ts") && w.includes("exited 4")),
       JSON.stringify(aggregateFail.warnings))
-    // …and true only when every one succeeded (the same run shape, all-ok formatter)
+ // …and true only when every one succeeded (the same run shape, all-ok formatter)
     fakeFormatter("exit 0")
     const aggregateOk = await executeEdit(f.root, f.projectId, { mode: "refactor", symbolName: "aggRenamed", filePath: "p.ts", newName: "aggFinal" })
     harness.check("format truth: multi-file refactor is formatted:true when every file succeeded",
@@ -475,14 +498,14 @@ function teardown(f: Fixture): void {
   }
 }
 
-// ── M71.D6: an unindexed project, told apart from an absent symbol ────────
+// ── an unindexed project, told apart from an absent symbol ────────
 // The MCP server refuses the four symbol modes before they reach the engine, and
 // the CLI door (`bb tool bb_edit`) does not gate on `requiresIndex` at all — so
-// these are the sentences THAT caller receives. Both used to be one sentence,
-// `symbol <name> not found or has no byte bounds`, and on a project the indexer
-// has never run over the shared one is false: the symbol is on disk and there is
-// no index in which it could have been found. The falsification runs both ways —
-// the new message must NOT appear for a real index.
+// these are the sentences THAT caller receives. They are two sentences, not one:
+// `symbol <name> not found or has no byte bounds` is false on a project the
+// indexer has never run over — the symbol is on disk and there is no index in
+// which it could have been found. The falsification runs both ways: the no-index
+// message must NOT appear for a real index.
 {
   const root = mkdtempSync(path.join(tmpdir(), "bb-e7-noindex-"))
   const projectId = getProjectId(root)
@@ -506,8 +529,8 @@ function teardown(f: Fixture): void {
     harness.negative("no-index: delete takes the same path (one shared resolver, not four messages)",
       deleteRefused.includes("has no index (0 files indexed)"), deleteRefused.slice(0, 180))
 
-    // The bootstrap: one `write` leaves rows behind, and the mode that was just
-    // refused resolves on the SAME project with nothing indexed in between.
+ // The bootstrap: one `write` leaves rows behind, and the mode that was just
+ // refused resolves on the SAME project with nothing indexed in between.
     const written = await executeEdit(root, projectId, {
       mode: "write", filePath: "src/app.ts",
       content: "export function freshFn(): number { return 1 }\nexport function second(): number { return freshFn() }\n",
@@ -521,8 +544,9 @@ function teardown(f: Fixture): void {
     const afterWrite = await messageOf({ mode: "update", symbolName: "freshFn", newContent: "return 42", format: false })
     harness.check("no-index: the mode that was refused now resolves — write is the bootstrap", afterWrite === "", afterWrite.slice(0, 160))
 
-    // CONTROL: the new message did not REPLACE the old one. A genuinely absent
-    // name on an indexed project still says exactly what it used to.
+ // CONTROL: the no-index message does not REPLACE the absent-symbol message. A
+ // genuinely absent name on an indexed project still says `not found or has no
+ // byte bounds`.
     await indexProjectParallel(projectId, root, {})
     harness.check("no-index: control — after indexing there ARE rows", (await rows()) >= 1, `rows=${await rows()}`)
     const absent = await messageOf({ mode: "update", symbolName: "definitelyAbsent", newContent: "return 3" })
@@ -534,7 +558,7 @@ function teardown(f: Fixture): void {
   }
 }
 
-// ── M71.D7: the overwrite guard, on real files ─────────────────────────────
+// ── the overwrite guard, on real files ─────────────────────────────
 // MEASURED before the guard existed, by driving the engine on exactly this
 // fixture (script/m71/probe-edit-review.ts, case H4): a 41-line file replaced by
 // one line, reported `ok`, with nothing in the result to tell it apart from an
@@ -554,29 +578,29 @@ function teardown(f: Fixture): void {
     const one = "export const v0 = 0\n"
     writeFileSync(srcFile, big)
 
-    // (a) the measured defect: 41 lines → 1
+ // (a) the measured defect: 41 lines → 1
     await harness.rejectsAsync(
       "overwrite: write over an existing 41-line file with 1 line is refused by name",
       () => executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/big.ts", content: one, format: false }),
       "write refused: it would replace src/big.ts (41 lines) with 1 line(s), removing 40 lines (98%)",
     )
     harness.check("overwrite: the refused write left the file byte-identical", readFileSync(srcFile, "utf8") === big, `${readFileSync(srcFile, "utf8").length} bytes on disk`)
-    // (b) the refusal names BOTH ways forward, so the caller is not left guessing
+ // (b) the refusal names BOTH ways forward, so the caller is not left guessing
     const refused = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/big.ts", content: one, format: false }).then(() => "", (e: Error) => e.message)
     harness.check("overwrite: the refusal names the acknowledgement (`overwrite: true`)", refused.includes("Pass overwrite: true to replace it anyway"), refused.slice(0, 260))
     harness.check("overwrite: and names the targeted modes (update/insert) as the other way", refused.includes("use update/insert to change part of the file"), refused.slice(0, 300))
-    // (c) a DRY RUN reports the same refusal — a preview of a different call is not a preview
+ // (c) a DRY RUN reports the same refusal — a preview of a different call is not a preview
     await harness.rejectsAsync(
       "overwrite: a dry run reports the same refusal (the guard is at plan time)",
       () => executeEdit(f.root, f.projectId, { mode: "write", dryRun: true, filePath: "src/big.ts", content: one, format: false }),
       "write refused",
     )
-    // (d) `overwrite: true` is the acknowledgement, and the whole file is replaced
+ // (d) `overwrite: true` is the acknowledgement, and the whole file is replaced
     const forced = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/big.ts", content: one, overwrite: true, format: false })
     harness.check("overwrite: overwrite:true replaces it, and the result carries the pre-image it replaced",
       readFileSync(srcFile, "utf8") === one && forced.changes[0].before === big,
       `before=${forced.changes[0].before.length}B after=${readFileSync(srcFile, "utf8")}`)
-    // (e) `overwrite: false` is create-only, in both directions
+ // (e) `overwrite: false` is create-only, in both directions
     await harness.rejectsAsync(
       "overwrite: overwrite:false refuses an EXISTING file (create-only) by name",
       () => executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/big.ts", content: big, overwrite: false, format: false }),
@@ -586,12 +610,12 @@ function teardown(f: Fixture): void {
     const created = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/brand-new.ts", content: one, overwrite: false, format: false })
     harness.check("overwrite: overwrite:false still CREATES when nothing is there", created.reindexed === true && existsSync(path.join(f.srcDir, "brand-new.ts")))
 
-    // (f) the rule's cells, through the engine on real files. The thresholds are
-    // the documented ones (more than half AND more than 5 lines), and each cell
-    // below is a real write attempt, not a restatement of the rule.
+ // (f) the rule's cells, through the engine on real files. The thresholds are
+ // the documented ones (more than half AND more than 5 lines), and each cell
+ // below is a real write attempt, not a restatement of the rule.
     const lines = (n: number): string => Array.from({ length: n }, (_, i) => `export const l${i} = ${i}`).join("\n") + "\n"
     const cells: Array<[number, number, boolean]> = [
-      // before, after, refused?
+ // before, after, refused?
       [10, 5, true],    // exactly half gone: the rule is "at least half", so this is the boundary cell
       [10, 6, false],   // 40% gone: an ordinary edit
       [41, 20, true],   // 51% gone
@@ -617,9 +641,9 @@ function teardown(f: Fixture): void {
         harness.negative(`overwrite: the refused ${before}→${after} cell wrote nothing`, readFileSync(path.join(f.srcDir, `cell-${before}-${after}.ts`), "utf8") === lines(before))
       }
     }
-    // (g) an existing EMPTY file is not a replacement at all — the guard must not
-    // fire on it (a false positive here would make `write` unusable on a
-    // placeholder file), while `overwrite: false` still refuses it as existing.
+ // (g) an existing EMPTY file is not a replacement at all — the guard must not
+ // fire on it (a false positive here would make `write` unusable on a
+ // placeholder file), while `overwrite: false` still refuses it as existing.
     writeFileSync(path.join(f.srcDir, "empty.ts"), "")
     const intoEmpty = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/empty.ts", content: one, format: false })
     harness.check("overwrite: writing into an existing EMPTY file is allowed", intoEmpty.reindexed === true && readFileSync(path.join(f.srcDir, "empty.ts"), "utf8") === one)
@@ -630,8 +654,8 @@ function teardown(f: Fixture): void {
       "already exists and overwrite is false",
     )
 
-    // (h) the rule itself is a pure function, so it can be pinned directly — this
-    // is the copy the engine, the docs and the stress matrix all read.
+ // (h) the rule itself is a pure function, so it can be pinned directly — this
+ // is the copy the engine, the docs and the stress matrix all read.
     harness.check("overwrite: the guard's thresholds are the documented ones (5 lines, half)",
       WRITE_GUARD.minRemovedLines === 5 && WRITE_GUARD.maxRemainingRatio === 0.5, JSON.stringify(WRITE_GUARD))
     const pure: Array<[string, number, number, boolean | undefined, boolean]> = [
@@ -655,7 +679,7 @@ function teardown(f: Fixture): void {
   }
 }
 
-// ── M71.D9: the plan → commit pre-image check ──────────────────────────────
+// ── the plan → commit pre-image check ──────────────────────────────
 // The window is real: the plan reads each target, resolves spans from those bytes
 // and returns an `after`; the commit then writes it. Nothing re-read the file in
 // between, so a file that changed in that window was partly overwritten from a
@@ -675,7 +699,7 @@ function teardown(f: Fixture): void {
     const planned = "export const planned = 1\n"
     const external = "export const externalWriter = 2\n// saved by the editor while the plan was being computed\n"
     writeFileSync(moving, planned)
-    // (a) a file that changed inside the window is refused, with nothing written
+ // (a) a file that changed inside the window is refused, with nothing written
     queueMicrotask(() => writeFileSync(moving, external))
     const message = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/moving.ts", content: "export const committed = 3\n", format: false })
       .then(() => "", (e: Error) => e.message)
@@ -691,13 +715,13 @@ function teardown(f: Fixture): void {
     harness.negative("pre-image: no .bb-edit-* temp file was left behind",
       readdirSync(f.srcDir).every((name) => !name.includes(".bb-edit-")), readdirSync(f.srcDir).join(","))
 
-    // (b) control: the identical call, with no interleave, commits
+ // (b) control: the identical call, with no interleave, commits
     const committed = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/moving.ts", content: "export const committed = 3\n", format: false })
     harness.check("pre-image: control — the same edit commits when the file does not move",
       readFileSync(moving, "utf8") === "export const committed = 3\n" && committed.reindexed === true,
       readFileSync(moving, "utf8"))
 
-    // (c) the other direction: a file that APPEARS where the plan intended to create one
+ // (c) the other direction: a file that APPEARS where the plan intended to create one
     const appearing = path.join(f.srcDir, "appearing.ts")
     queueMicrotask(() => writeFileSync(appearing, "export const sneaky = 1\n"))
     const appeared = await executeEdit(f.root, f.projectId, { mode: "write", filePath: "src/appearing.ts", content: "export const mine = 1\n", format: false })
@@ -706,8 +730,8 @@ function teardown(f: Fixture): void {
       appeared.includes("no file at that path") && appeared.includes("src/appearing.ts"), appeared.slice(0, 260))
     harness.check("pre-image: and the appeared file is left as it was found", readFileSync(appearing, "utf8") === "export const sneaky = 1\n")
 
-    // (d) the third direction: the target VANISHES inside the window. The refusal
-    // must not recreate it from the plan's `after`.
+ // (d) the third direction: the target VANISHES inside the window. The refusal
+ // must not recreate it from the plan's `after`.
     const vanishing = path.join(f.srcDir, "vanishing.ts")
     writeFileSync(vanishing, "export const willVanish = 1\n")
     queueMicrotask(() => rmSync(vanishing))

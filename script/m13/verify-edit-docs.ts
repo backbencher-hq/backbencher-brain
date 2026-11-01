@@ -1,17 +1,41 @@
-// script/m13/verify-edit-docs.ts — M13.17 (E12).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E12): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-docs.ts — (E12).
 //
 // Docs + evidence + release gate for bb_edit.
 //
 // 1. DOCS ACCURACY: docs/tools/bb_edit.md must be byte-identical to a fresh
-//    render from the executable registry (proven by running the real generator
-//    in verify mode), and its Contract section must match the registry entry
-//    field-by-field (mutability, requiresIndex, modes, defaults, category).
+// render from the executable registry (proven by running the real generator
+// in verify mode), and its Contract section must match the registry entry
+// field-by-field (mutability, requiresIndex, modes, defaults, category).
 // 2. EVIDENCE COMMITTED: e1..e11.json must all exist, validate against the
-//    shared schema, and claim verified.
+// shared schema, and claim verified.
 // 3. RELEASE GATE: the gate must block a non-passing suite from claiming
-//    verified. We prove this adversarially by tampering with a real evidence
-//    document (failed>0, zero negative cases) and asserting the REAL
-//    validateEvidence (imported from verify-evidence.ts) rejects it.
+// verified. We prove this adversarially by tampering with a real evidence
+// document (failed>0, zero negative cases) and asserting the REAL
+// validateEvidence (imported from verify-evidence.ts) rejects it.
 
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
@@ -35,8 +59,8 @@ const harness = new Harness({
     evidenceInputs: "validation/m13/results/e1..e11.json plus e13.json (batch) must all exist, validate, and claim verified for bb_edit to be release-eligible",
   },
   limitations: [
-    "Docs byte-freshness is proven by the generator's own verify mode, not by a duplicated render.",
-    "This gate covers bb_edit only; other tools have their own issues in M13.",
+    "Docs byte-freshness is proven by the generator's own verify mode SCOPED to bb_edit, not by a duplicated render.",
+    "This gate covers bb_edit only; every other tool has its own verifier.",
     "The hand-page checks are phrase-level: they prove the page STATES each contract and that the enumerations it must match (the accepted sets, the entry cap) come from the enforcing constants, not that every sentence on the page is checked.",
   ],
 })
@@ -74,26 +98,26 @@ if (registry) {
   harness.check("docs: requiresIndex matches registry", doc.includes(`- Requires index: \`${registry.requiresIndex}\``), `registry=${registry.requiresIndex}`)
   harness.check("docs: modes line matches registry", doc.includes(`- Modes: ${modes}`), `registry=${modes}`)
   harness.check("docs: defaults match registry", doc.includes(`- Defaults: \`${defaults}\``), `registry=${defaults}`)
-  // Every declared input property must be documented.
+ // Every declared input property must be documented.
   const props = Object.keys((registry.inputSchema as any).properties ?? {})
   const missing = props.filter((p) => !doc.includes(`"${p}"`))
   harness.check("docs: every input property is documented", missing.length === 0, missing.length ? `missing: ${missing.join(",")}` : `${props.length} props`)
   harness.check("docs: required=['mode'] is documented", doc.includes('"required"') && doc.includes('"mode"'))
-  // Read the enum from the registry rather than a list kept here: this check used
-  // to name the five modes and would have gone on passing — while a sixth mode
-  // shipped undocumented — because it never looked at what the schema declares.
+ // Read the enum from the registry rather than a list kept here: this check used
+ // to name the five modes and would have gone on passing — while a sixth mode
+ // registered undocumented — because it never looked at what the schema declares.
   const declaredModes = ((registry.inputSchema as any).properties?.mode?.enum ?? []) as string[]
   const enumMissing = declaredModes.filter((m) => !doc.includes(`"${m}"`))
   harness.check("docs: every mode in the schema enum appears in the generated page",
     declaredModes.length > 0 && enumMissing.length === 0,
     enumMissing.length ? `missing: ${enumMissing.join(",")}` : `${declaredModes.length} modes: ${declaredModes.join(",")}`)
 
-  // ── M71.D6/D10: the page carries the per-mode facts, rendered from the SAME
-  // constants the server and the validator enforce. The Contract line's boolean
-  // was the whole published answer to "does this need an index?", and it read as
-  // "the tool is unusable until you index" — false for the one mode that creates
-  // files. The mode contract likewise lived only on this page, in prose beside a
-  // rejection that named nothing.
+ // ── /D10: the page carries the per-mode facts, rendered from the SAME
+ // constants the server and the validator enforce. The Contract line's boolean
+ // was the whole published answer to "does this need an index?", and it read as
+ // "the tool is unusable until you index" — false for the one mode that creates
+ // files. The mode contract likewise lived only on this page, in prose beside a
+ // rejection that named nothing.
   const free = registry.indexFreeModes ?? []
   harness.check(
     "docs: the Contract line carries the per-mode index exemption",
@@ -116,7 +140,7 @@ if (registry) {
   )
 }
 
-// ── M71.D8: the HAND-WRITTEN page is checked against the registry too ──────
+// ── the HAND-WRITTEN page is checked against the registry too ──────
 // `docs/tools/bb_edit.md` is generated and byte-freshness-gated. `docs/BB_EDIT.md`
 // is written by hand and was gated by nothing, which is how it came to state that
 // `insert` REQUIRES `position` while the registry makes it optional with a default
@@ -131,13 +155,13 @@ if (registry) {
   harness.check("hand page: docs/BB_EDIT.md exists", hand.length > 0, hand ? "" : "missing file")
   const flat = hand.replace(/\s+/g, " ")
   if (registry && hand.length > 0) {
-    // (a) the per-mode table, cell for cell, against the constant the rejection
-    // builds its message from — so the human page cannot drift from the enforced set.
-    // The ROW MUST COME FROM THE PER-MODE ARGUMENTS SECTION. `write` also appears in
-    // the index table (`| `write` | **no** | …`), and the first matching row was that
-    // one: every mode parsed as an empty set, which is how this check reported a
-    // mismatch for all five at once. A section-scoped read is the difference between
-    // comparing the contract and comparing the wrong table.
+ // (a) the per-mode table, cell for cell, against the constant the rejection
+ // builds its message from — so the human page cannot drift from the enforced set.
+ // The ROW MUST COME FROM THE PER-MODE ARGUMENTS SECTION. `write` also appears in
+ // the index table (`| `write` | **no** | …`), and the first matching row was that
+ // one: every mode parsed as an empty set, which is how this check reported a
+ // mismatch for all five at once. A section-scoped read is the difference between
+ // comparing the contract and comparing the wrong table.
     const argSection = hand.split(/\n## /).find((section) => section.startsWith("Per-Mode Arguments")) ?? ""
     harness.check("hand page: the Per-Mode Arguments section is present", argSection.length > 0, `${argSection.split("\n").length} lines`)
     const mismatches: string[] = []
@@ -149,8 +173,8 @@ if (registry) {
       if (JSON.stringify(documented) !== JSON.stringify([...options])) mismatches.push(`${mode}: documented=[${documented.join(",")}] registry=[${options.join(",")}]`)
     }
     harness.check("hand page: every mode's accepted set matches EDIT_OPTIONS_BY_MODE", mismatches.length === 0, mismatches.join(" · ").slice(0, 300))
-    // (b) the D8 defect itself: `position` is optional (default `after`) per the
-    // schema, and the page said it was required. Read the SCHEMA, not a memory of it.
+ // (b) the D8 defect itself: `position` is optional (default `after`) per the
+ // schema, and the page said it was required. Read the SCHEMA, not a memory of it.
     const insertRequired = ((registry.inputSchema as any).required ?? []).includes("position")
     harness.check("hand page: `insert` position optionality matches the schema",
       insertRequired || (!flat.includes("Required: `targetSymbolName`, `position`, and `newContent`") && flat.includes("`position` is optional and defaults to `after`")),
@@ -158,7 +182,7 @@ if (registry) {
     harness.check("hand page: the `content` alias is documented for the modes that accept it",
       flat.includes("`symbolName`, plus `newContent` (or its alias `content`)") && flat.includes("`targetSymbolName`, plus `newContent` (or its alias `content`)"),
       "update/insert required-field sentences do not name the alias")
-    // (c) M71.D7: the overwrite contract on the page a human reads, all three states.
+ // (c) the overwrite contract on the page a human reads, all three states.
     harness.check("hand page: states the write guard and all three states of `overwrite`",
       flat.includes("**Omitted `overwrite`** replaces the file, but a replacement that removes **at least half** of a file's lines **and at least 5 lines** is refused as a probable mistake")
         && flat.includes("**`overwrite: true`** replaces it whatever the size")
@@ -166,16 +190,16 @@ if (registry) {
       "the hand-written page does not state the guard")
     harness.check("hand page: says the guard is evaluated at PLAN time (a dry run reports it)",
       flat.includes("The refusal happens at PLAN time, so `dryRun: true` reports the same refusal"), "")
-    // (d) M71.D9: the plan-to-commit check, with the refusal text a caller will see.
+ // (d) the plan-to-commit check, with the refusal text a caller will see.
     harness.check("hand page: states the plan-to-commit pre-image check",
       flat.includes("Every target's **sha256 is now taken as the plan reads it**")
         && flat.includes("bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing"),
       "the pre-image check is not documented on the hand-written page")
-    // (e) M71.D13: the batch mode, on the page a human reads. The four claims here
-    // are the ones a caller acts on — what the mode is for, that a refusal writes
-    // nothing, that the envelope is per file, and the two limits (one file per
-    // entry, the entry cap). The cap is read from the ENGINE constant, so the page
-    // cannot state a number the code no longer enforces.
+ // (e) the batch mode, on the page a human reads. The four claims here
+ // are the ones a caller acts on — what the mode is for, that a refusal writes
+ // nothing, that the envelope is per file, and the two limits (one file per
+ // entry, the entry cap). The cap is read from the ENGINE constant, so the page
+ // cannot state a number the code no longer enforces.
     harness.check("hand page: documents `batch` as a mode with its two shapes",
       flat.includes("Required: `edits` — a non-empty list of edits")
         && flat.includes("`files` turns the list into a **fan-out**")
@@ -196,8 +220,8 @@ if (registry) {
       `engine MAX_BATCH_EDITS=${MAX_BATCH_EDITS}`)
     harness.check("hand page: states that `batch` needs an index while `write` does not",
       flat.includes("`batch` is not exempt the way `write` is"), "")
-    // ── The Phase B contracts: each one is a claim a reader acts on, so the hand
-    // page has to carry it and this gate has to be able to go red when it stops.
+ // ── The Phase B contracts: each one is a claim a reader acts on, so the hand
+ // page has to carry it and this gate has to be able to go red when it stops.
     harness.check("hand page: states the import-cleanup scope and the declared skip",
       flat.includes("Import cleanup after the deletion is **TypeScript/JavaScript only**")
         && flat.includes("byte-for-byte unchanged")
@@ -226,7 +250,7 @@ if (registry) {
       flat.includes("A commit therefore costs SECONDS")
         && flat.includes("30 s timeout"),
       "the measured commit cost is not on the page")
-    // ── The generated page must carry the same Phase B contracts. ───────────
+ // ── The generated page must carry the same Phase B contracts. ───────────
     harness.check("docs: the generated page carries the import-pruning limitation and its declaration",
       doc.includes("Import cleanup after `delete` is TypeScript/JavaScript-only")
         && doc.includes("importPruning.attempted: false"),
@@ -242,11 +266,11 @@ if (registry) {
 
 // Byte-freshness: the real generator's verify mode must pass (exit 0). This is
 // the same artifact check the gate runs; we assert it here as the docs gate.
-// The check spawns the generator. It used to spawn `bun`, which is the same
+// The check spawns the generator. Spawning `bun` there is the same
 // hardcoded-runtime bug as `import.meta.dir` in this file: under Node the spawn
 // fails with ENOENT and the assertion reads
 //
-//   docs: generator verify mode passes (bb_edit.md byte-fresh)
+// docs: generator verify mode passes (bb_edit.md byte-fresh)
 //
 // which says the DOCUMENTATION IS STALE. It is not. Running the generator under
 // Node on the same tree prints `TOOL DOCS: PASS (16 public tools, 18 artifacts)`,

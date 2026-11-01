@@ -1,17 +1,41 @@
-// script/m16/verify-edit-real-repo.ts — M16.E1-E5 (bb_edit) real-repo suite.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Proves the M16 edit-engine fixes on a REAL repository copy (rake/lib —
+// WHAT THIS FILE IS — -E5 (bb_edit) real-repo suite: one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m16/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m16/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m16/verify-edit-real-repo.ts — -E5 (bb_edit) real-repo suite.
+//
+// Proves the edit-engine fixes on a REAL repository copy (rake/lib —
 // 44 files / 490 symbols), through the exact production path (executeEdit):
 //
-//  E1  refactor completeness: every AST-classified reference site in the
-//      declaration file is renamed — including sites with NO index
-//      relationship edge (proven missing pre-fix on rake) and the
-//      value/right side of assignments — while unrelated same-stem names and
-//      only the intended file are untouched.
-//  E2  unknown/long-gone target fails loud (never silently renamed).
-//  E3  delete refuses without force when AST references survive; a forced
-//      delete reports those leftovers in warnings (never silent).
-//  E4  write/update/insert regression on the same real copy.
+// E1 refactor completeness: every AST-classified reference site in the
+// declaration file is renamed — including sites with NO index
+// relationship edge (proven missing pre-fix on rake) and the
+// value/right side of assignments — while unrelated same-stem names and
+// only the intended file are untouched.
+// E2 unknown/long-gone target fails loud (never silently renamed).
+// E3 delete refuses without force when AST references survive; a forced
+// delete reports those leftovers in warnings (never silent).
+// E4 write/update/insert regression on the same real copy.
 //
 // No auto-pass assertions — every check can fail; evidence -> E*.json.
 
@@ -33,16 +57,19 @@ if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
 let lastResult: EditResult | null = null
 async function emit(code: string, issue: string, extra?: any) {
+  // `checks` counts positive assertions only; negatives are counted separately.
+  // The denominator is every assertion the run made, so it includes them.
+  const totalChecks = checks + negatives
   const total = passed + negativePassed
-  const e = { issue, code, tool: "bb_edit", title: issue.split(":")[1]?.trim() ?? code, verified: failed === 0, checks, passed: total, failed, negatives, runLog: lastResult ? { validated: lastResult.validated, reindexed: lastResult.reindexed, warnings: lastResult.warnings, summary: lastResult.summary } : null, generatedAt: new Date().toISOString(), ...(extra || {}) }
+  const e = { issue, code, tool: "bb_edit", title: issue.split(":")[1]?.trim() ?? code, verified: failed === 0, checks: totalChecks, passed: total, failed, negatives, runLog: lastResult ? { validated: lastResult.validated, reindexed: lastResult.reindexed, warnings: lastResult.warnings, summary: lastResult.summary } : null, generatedAt: new Date().toISOString(), ...(extra || {}) }
   writeFileSync(path.join(RESULTS_DIR, code + ".json"), JSON.stringify(e, null, 2) + "\n")
-  console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
+  console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + totalChecks + " passed, " + negatives + " negatives)")
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0; lastResult = null }
 
 async function cleanup(root: string, projectId: string) {
-  // Indexing queues embeddings asynchronously. Drain the shared queue and close
-  // the SQLite handle before deleting this temporary project.
+ // Indexing queues embeddings asynchronously. Drain the shared queue and close
+ // the SQLite handle before deleting this temporary project.
   await flushBackgroundEmbeddings()
   BrainDatabase.close(projectId)
   if (root.startsWith(tmpdir())) { try { rmSync(root, { recursive: true, force: true }) } catch (_) {} }
@@ -56,19 +83,19 @@ async function indexProject(root: string) {
 
 const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
-//  each repo path below resolved to a filesystem that does not exist here and the leg
-//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
-//  candidates in order and names them all when none exists.
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
-//  each repo path below resolved to a filesystem that does not exist here and the leg
-//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
-//  candidates in order and names them all when none exists.
+// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// each repo path below resolved to a filesystem that does not exist here and the leg
+// measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+// candidates in order and names them all when none exists.
+// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// each repo path below resolved to a filesystem that does not exist here and the leg
+// measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+// candidates in order and names them all when none exists.
 // Per-repo corpus paths were built on the literal foreign root
-//  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
-//  each repo path below resolved to a filesystem that does not exist here and the leg
-//  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
-//  candidates in order and names them all when none exists.
+// "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+// each repo path below resolved to a filesystem that does not exist here and the leg
+// measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
+// candidates in order and names them all when none exists.
 const RAKE_SRC = `${CORPUS_BASE}/rake/lib`
 
 function freshCopy(): string {
@@ -120,9 +147,9 @@ async function main() {
     return
   }
 
-  // ═════════════════════════════════════════════════════════════════════
-  // E1: refactor COMPLETENESS + surgical precision (the flagship proof)
-  // ═════════════════════════════════════════════════════════════════════
+ // ═════════════════════════════════════════════════════════════════════
+ // E1: refactor COMPLETENESS + surgical precision (the flagship proof)
+ // ═════════════════════════════════════════════════════════════════════
   {
     const root = freshCopy()
     const projectId = await indexProject(root)
@@ -146,11 +173,11 @@ async function main() {
       nk("E1: only rake/task.rb changed", changed.length === 1 && changed[0] === "rake/task.rb", "changed=" + JSON.stringify(changed))
       ck("E1: validated + reindexed true", res.validated === true && res.reindexed === true)
     } finally { await cleanup(root, projectId) }
-    await emit("E1", "M16.E1: refactor renames every AST reference site, edge-independent")
+    await emit("E1", "refactor renames every AST reference site, edge-independent")
     await reset()
   }
 
-  // E1b: class rename — `Task.format_deps` must follow (proven broken pre-fix)
+ // E1b: class rename — `Task.format_deps` must follow (proven broken pre-fix)
   {
     const root = freshCopy()
     const projectId = await indexProject(root)
@@ -162,11 +189,11 @@ async function main() {
       nk("E1b: distinct same-stem names untouched", after.includes("TaskArguments.new(arg_names, args)") && after.includes("Task.format_deps") === false)
       ck("E1b: validated", res.validated === true)
     } finally { await cleanup(root, projectId) }
-    await emit("E1b", "M16.E1 (class rename)")
+    await emit("E1b", "(class rename)")
     await reset()
   }
 
-  // E2: fail-loud guards
+ // E2: fail-loud guards
   {
     const root = freshCopy()
     const projectId = await indexProject(root)
@@ -175,13 +202,13 @@ async function main() {
       try { await edit(root, projectId, { mode: "refactor", symbolName: "prerequisite_tasks", newName: "X", filePath: "rake/does_not_exist.rb", format: false }) } catch (e: any) { threw = String(e?.message || e) }
       ck("E2: refactor with nonexistent file fails loud", /not found|cannot|unknown|no such/i.test(threw), threw.slice(0, 90))
     } finally { await cleanup(root, projectId) }
-    await emit("E2", "M16.E2 (fail-loud guards)")
+    await emit("E2", "(fail-loud guards)")
     await reset()
   }
 
-  // ═════════════════════════════════════════════════════════════════════
-  // E3: delete honesty — dangling reference protection
-  // ═════════════════════════════════════════════════════════════════════
+ // ═════════════════════════════════════════════════════════════════════
+ // E3: delete honesty — dangling reference protection
+ // ═════════════════════════════════════════════════════════════════════
   {
     const root = freshCopy()
     const projectId = await indexProject(root)
@@ -195,13 +222,13 @@ async function main() {
       ck("E3: forced delete removes the method body", !after.includes("def lookup_prerequisite"))
       ck("E3: forced delete leaves the reference (declared) + reports it in warnings", after.includes("private :lookup_prerequisite") && !!res.warnings?.some(w => w.includes("lookup_prerequisite")))
     } finally { await cleanup(root, projectId) }
-    await emit("E3", "M16.E3 (delete dangling-reference guard)")
+    await emit("E3", "(delete dangling-reference guard)")
     await reset()
   }
 
-  // ═════════════════════════════════════════════════════════════════════
-  // E4: write / update / insert regression on the real copy
-  // ═════════════════════════════════════════════════════════════════════
+ // ═════════════════════════════════════════════════════════════════════
+ // E4: write / update / insert regression on the real copy
+ // ═════════════════════════════════════════════════════════════════════
   {
     const root = freshCopy()
     const projectId = await indexProject(root)
@@ -216,35 +243,35 @@ async function main() {
       const ins = await edit(root, projectId, { mode: "insert", targetSymbolName: "prerequisite_tasks", filePath: "rake/task.rb", position: "inside-bottom", content: "def inserted_marker_m16\n  42\nend", format: false })
       ck("E4: insert inside-bottom landed in the method body", read(path.join(root, "rake/task.rb")).includes("def inserted_marker_m16"))
       ck("E4: insert validated", ins.validated === true)
-      // delete-with-references guard + forced-delete warning reporting are
-      // covered by E3 (and the reference-free delete path by the M13 unit
-      // suite) — no redundant re-index dependency here.
+ // delete-with-references guard + forced-delete warning reporting are
+ // covered by E3 (and the reference-free delete path by the unit
+ // suite) — no redundant re-index dependency here.
     } finally { await cleanup(root, projectId) }
-    await emit("E4", "M16.E4 (write/update/insert/delete regression)")
+    await emit("E4", "(write/update/insert/delete regression)")
     await reset()
   }
 
-  // ═════════════════════════════════════════════════════════════════════
-  // E5: cross-language field-aware classification fixture (Ruby/Python/TS)
-  //     — value/right side of assignment is a reference; binding side is not.
-  // ═════════════════════════════════════════════════════════════════════
+ // ═════════════════════════════════════════════════════════════════════
+ // E5: cross-language field-aware classification fixture (Ruby/Python/TS)
+ // — value/right side of assignment is a reference; binding side is not.
+ // ═════════════════════════════════════════════════════════════════════
   {
     const root = mkdtempSync(path.join(tmpdir(), "bb-m16x-"))
     writeFileSync(path.join(root, "mod.rb"), "def target(a)\n  a\nend\n\nv = target(1)\n")
     writeFileSync(path.join(root, "mod.py"), "def target(a):\n    return a\n\nv = target(1)\n")
     const projectId = await indexProject(root)
     try {
-      // Ruby: value side of assignment must be renamed
+ // Ruby: value side of assignment must be renamed
       await edit(root, projectId, { mode: "refactor", symbolName: "target", newName: "targetR", filePath: "mod.rb", format: false })
       const rb = read(path.join(root, "mod.rb"))
       ck("E5: Ruby value-side assignment reference renamed", rb.includes("targetR(1)") && !rb.includes("target(1)"))
 
-      // Python: value side of assignment must be renamed
+ // Python: value side of assignment must be renamed
       await edit(root, projectId, { mode: "refactor", symbolName: "target", newName: "targetP", filePath: "mod.py", format: false })
       const py = read(path.join(root, "mod.py"))
       ck("E5: Python value-side assignment reference renamed", py.includes("targetP(1)") && !py.includes("target(1)"))
     } finally { await cleanup(root, projectId) }
-    await emit("E5", "M16.E1 (cross-language field-aware classification)")
+    await emit("E5", "(cross-language field-aware classification)")
     await reset()
   }
 }

@@ -1,13 +1,37 @@
-// script/m13/verify-edit-rename.ts — M13.07 (E2).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E2): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-rename.ts — (E2).
 //
 // Proves bb_edit refactor renames only actual AST reference occurrences of the
 // target symbol — never unrelated same-name bindings, other-object methods,
 // property keys, or comment/string text. Two layers:
 //
-//   - unit: parseForSafety + isReferenceSite/isBindingParentType/findDeclarationName
-//     classify occurrences correctly for TypeScript, Python, and Java.
-//   - integration: full executeEdit refactor on indexed single-file projects
-//     (TS/Python/Java) plus a cross-file caller-freshness rejection.
+// - unit: parseForSafety + isReferenceSite/isBindingParentType/findDeclarationName
+// classify occurrences correctly for TypeScript, Python, and Java.
+// - integration: full executeEdit refactor on indexed single-file projects
+// (TS/Python/Java) plus a cross-file caller-freshness rejection.
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -37,8 +61,8 @@ const harness = new Harness({
     "Cross-file import-specifier renaming (import { target } ...) is NOT performed: imports live in brain_import, not the calls/references relationships this path consumes. Tracked as cross-file rename completeness.",
     "Same-class instance method calls (obj.target() where obj is an instance of target's class) are conservatively NOT renamed — AST identity alone cannot distinguish same-class from other-object receivers; requires type-aware resolution (M14 analyzer completeness).",
     "Ambiguous same-name symbols require explicit filePath + lineStart (existing uniqueSymbol contract, unchanged).",
-    "Some grammars name declaration identifiers with non-identifier node types (Bash 'word', Perl 'bareword', Erlang 'atom', Clojure 'sym_name'/'sym_lit', PowerShell 'function_name', PHP 'name') and Elixir 'def' names parse as call arguments — these names are not reference occurrences, so rename cannot see them. Tracked as M14 reference-identification completeness.",
-    "R function assignment (foo <- function()) parents the name under 'binary_operator' (ambiguous with arithmetic), so R binding names are not recognized. Tracked as M14.",
+    "Some grammars name declaration identifiers with non-identifier node types (Bash 'word', Perl 'bareword', Erlang 'atom', Clojure 'sym_name'/'sym_lit', PowerShell 'function_name', PHP 'name') and Elixir 'def' names parse as call arguments — these names are not reference occurrences, so rename cannot see them. Tracked as reference-identification completeness.",
+    "R function assignment (foo <- function()) parents the name under 'binary_operator' (ambiguous with arithmetic), so R binding names are not recognized. Tracked as.",
   ],
 })
 
@@ -78,7 +102,7 @@ function atLine(list: Classified[], line: number): Classified {
   harness.check("Python: exactly one reference site (target())", refs.length === 1 && refs[0].line === 3, `got ${refs.map((r) => r.line).join(",")}`)
 }
 
-// Java: declaration / this.target() / target() / helper.target()
+// Java: declaration / this.target / target / helper.target
 {
   const code = `class A {\n  int target() { return 1; }\n  int m() { return this.target() + target() + helper.target(); }\n}\n`
   const c = await classify("A.java", code, "target")
@@ -131,7 +155,7 @@ const xlangDecls: Array<{ lang: string; file: string; code: string; name: string
   { lang: "csharp", file: "a.cs", code: `class A { void Foo() {} }\n`, name: "Foo" },
   { lang: "fsharp", file: "a.fs", code: `let foo x = x\n`, name: "foo" },
   { lang: "objective-c", file: "a.m", code: `@interface A\n- (int)foo;\n@end\n`, name: "foo" },
-  // type/class declarations
+ // type/class declarations
   { lang: "typescript", file: "a.ts", code: `class Foo {}\n`, name: "Foo" },
   { lang: "rust", file: "a.rs", code: `struct Foo {}\n`, name: "Foo" },
   { lang: "cpp", file: "a.cpp", code: `class Foo {};\n`, name: "Foo" },
@@ -165,7 +189,7 @@ const xlangNameGaps: Array<{ lang: string; file: string; code: string; name: str
 ]
 for (const g of xlangNameGaps) {
   const parsed = await parseForSafety(g.file, g.code)
-  harness.check(`${g.lang}: name is a documented M14 reference-identification gap (not an occurrence)`, parsed.occurrences.filter((o) => o.text === g.name).length === 0, `got ${parsed.occurrences.filter((o) => o.text === g.name).length}`)
+  harness.check(`${g.lang}: name is a documented reference-identification gap (not an occurrence)`, parsed.occurrences.filter((o) => o.text === g.name).length === 0, `got ${parsed.occurrences.filter((o) => o.text === g.name).length}`)
 }
 
 // ── UNIT: member-access receiver classification (regression-proof) ──
@@ -183,16 +207,16 @@ for (const g of xlangNameGaps) {
 // Fixtures cover: (a) affected grammars that WERE broken, (b) other grammars
 // to prove no regression, (c) memberNameKnown grammars to verify member side.
 const memberAccessCases: Array<{ lang: string; file: string; code: string; receiverName: string; memberName: string; memberNameKnown: boolean; wasBroken: boolean }> = [
-  // These grammars WERE broken (field_expression / field_access matched t.includes("field")):
+ // These grammars WERE broken (field_expression / field_access matched t.includes("field")):
   { lang: "rust", file: "a.rs", code: `fn f() { let _ = obj.field; }`, receiverName: "obj", memberName: "field", memberNameKnown: true, wasBroken: true },
   { lang: "java", file: "A.java", code: `class A { void f() { int _ = obj.field; } }`, receiverName: "obj", memberName: "field", memberNameKnown: true, wasBroken: true },
   { lang: "cpp", file: "a.cpp", code: `void f() { int _ = obj.field; }`, receiverName: "obj", memberName: "field", memberNameKnown: true, wasBroken: true },
   { lang: "scala", file: "a.scala", code: `object A { def f = { val _ = obj.field } }`, receiverName: "obj", memberName: "field", memberNameKnown: false, wasBroken: true },
-  // These grammars were NOT broken (isMemberNameNode already handles them):
+ // These grammars were NOT broken (isMemberNameNode already handles them):
   { lang: "python", file: "a.py", code: `_ = obj.field`, receiverName: "obj", memberName: "field", memberNameKnown: true, wasBroken: false },
   { lang: "go", file: "a.go", code: `package p\nfunc f() { _ = obj.field }`, receiverName: "obj", memberName: "field", memberNameKnown: true, wasBroken: false },
   { lang: "typescript", file: "a.ts", code: `const _ = obj.field;`, receiverName: "obj", memberName: "field", memberNameKnown: true, wasBroken: false },
-  // Grammars where isMemberNameNode is incomplete (pre-existing, not a regression):
+ // Grammars where isMemberNameNode is incomplete (pre-existing, not a regression):
   { lang: "dart", file: "a.dart", code: `void f() { print(obj.field); }`, receiverName: "obj", memberName: "field", memberNameKnown: false, wasBroken: false },
   { lang: "swift", file: "a.swift", code: `func f() { let _ = obj.field }`, receiverName: "obj", memberName: "field", memberNameKnown: false, wasBroken: false },
   { lang: "kotlin", file: "a.kt", code: `fun f() { val _ = obj.field }`, receiverName: "obj", memberName: "field", memberNameKnown: false, wasBroken: false },
@@ -250,19 +274,19 @@ async function runIntegration(label: string, file: string, code: string, symbol:
   const projectId = getProjectId(root)
   try {
     await indexProjectParallel(projectId, root, {})
-    // `lineStart` disambiguates. The TypeScript fixture deliberately contains
-    // same-name constructs — `{ target: 99 }`, `{ target(x) {...} }` — because the
-    // gate asserts they are NOT renamed. That makes the name genuinely ambiguous
-    // in that file, and bb_edit's documented answer is "provide filePath and
-    // lineStart". The call supplied filePath but not lineStart, so the tool
-    // correctly refused and the gate recorded a failure before reaching any of the
-    // assertions it was written to make.
-    //
-    // Verified rather than assumed: with lineStart:1 the same edit renames the
-    // declaration and its call site, and ALL SEVEN of this gate's own assertions
-    // hold — including every negative (property key, other-object method, member
-    // access, string literal and comment all left alone). The fixture was right;
-    // the CALL was wrong.
+ // `lineStart` disambiguates. The TypeScript fixture deliberately contains
+ // same-name constructs — `{ target: 99 }`, `{ target(x) {...} }` — because the
+ // gate asserts they are NOT renamed. That makes the name genuinely ambiguous
+ // in that file, and bb_edit's documented answer is "provide filePath and
+ // lineStart". The call supplied filePath but not lineStart, so the tool
+ // correctly refused and the gate recorded a failure before reaching any of the
+ // assertions it was written to make.
+ //
+ // Verified rather than assumed: with lineStart:1 the same edit renames the
+ // declaration and its call site, and ALL SEVEN of this gate's own assertions
+ // hold — including every negative (property key, other-object method, member
+ // access, string literal and comment all left alone). The fixture was right;
+ // the CALL was wrong.
     const result = await executeEdit(root, projectId, { mode: "refactor", symbolName: symbol, filePath: file, lineStart, newName: "renamedTarget", format: false })
     harness.check(`${label}: refactor produces exactly one change`, result.changes.length === 1, `got ${result.changes.length}`)
     const after = readFileSync(path.join(root, file), "utf8")
@@ -311,7 +335,7 @@ await runIntegration("java", "A.java", javaFixture, "target", (after) => {
   const projectId = getProjectId(root)
   try {
     await indexProjectParallel(projectId, root, {})
-    // Make the caller file stale, then attempt a cross-file refactor.
+ // Make the caller file stale, then attempt a cross-file refactor.
     appendFileSync(path.join(root, "src", "caller.ts"), "\n// stale change\n")
     await harness.rejectsAsync(
       "cross-file refactor fails loud on a stale caller file",

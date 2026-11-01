@@ -1,4 +1,28 @@
-// script/m13/verify-edit-freshness.ts — M13.10 (E5).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E5): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-freshness.ts — (E5).
 //
 // Proves a cross-file refactor freshness-checks EVERY caller file/span before
 // renaming anything, and that a stale/shrunk/missing caller aborts the whole
@@ -79,7 +103,7 @@ function teardown(f: Fixture): void {
   const f = setupFixture("shrink")
   try {
     await indexProjectParallel(f.projectId, f.root, {})
-    // Shrink the caller: replace the calling body so the indexed byte span is now past EOF.
+ // Shrink the caller: replace the calling body so the indexed byte span is now past EOF.
     writeFileSync(f.callerPath, `import { target } from "./target"\nexport function caller(): number { return 1 }\n`)
     const before = readFileSync(f.targetPath, "utf8")
     await harness.rejectsAsync(
@@ -137,7 +161,7 @@ function teardown(f: Fixture): void {
   ])
   try {
     await indexProjectParallel(f.projectId, f.root, {})
-    // Stale caller2 only.
+ // Stale caller2 only.
     appendFileSync(path.join(f.root, "src", "caller2.ts"), "\n// stale\n")
     const targetBefore = readFileSync(f.targetPath, "utf8")
     const caller1Before = readFileSync(path.join(f.root, "src", "caller1.ts"), "utf8")
@@ -158,7 +182,7 @@ function teardown(f: Fixture): void {
   const f = setupFixture("span")
   try {
     await indexProjectParallel(f.projectId, f.root, {})
-    // Keep the file hash matching (file untouched) but corrupt the caller's byte span.
+ // Keep the file hash matching (file untouched) but corrupt the caller's byte span.
     const raw = await BrainDatabase.getRawInstance(f.projectId)
     const callerFile = raw.prepare("SELECT id FROM brain_file WHERE path = ?").get(f.callerPath) as { id: string } | undefined
     if (!callerFile) throw new Error("caller file row not found")

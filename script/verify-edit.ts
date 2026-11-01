@@ -1,4 +1,4 @@
-// verify-edit.ts — hardened unified bb_edit engine (M9.13).
+// verify-edit.ts — hardened unified bb_edit engine .
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -54,40 +54,32 @@ try {
 
   await rejects("overloaded/same-name symbol requires disambiguation", () => executeEdit(root, projectId, { mode: "update", symbolName: "duplicate", newContent: "export function duplicate() { return 3 }" }), "ambiguous")
 
-  // A delete with live callers is still refused — checked HERE, while `caller`
-  // really does call `target`. It used to sit after the stale step and depended
-  // on that step being REFUSED; now that the step applies (the current contract,
-  // see below) it would have been asserting a precondition the previous line had
-  // already destroyed.
-  // The refusal's wording moved with the M68/M70 delete guard: it names the
-  // INDEXED caller count, the live reference that would survive the deletion
-  // (with its line and kind) and the `force=true` escape hatch, where it used to
-  // say only "active references". The guarantee is unchanged, and asserting it by
-  // the old phrase tested the old sentence rather than the property — so the
-  // property is asserted directly: refused by default, evidence included.
+ // A delete with live callers is refused — checked HERE, while `caller` really
+ // does call `target`. The order matters: after the stale-bounds step below the
+ // file has changed and the precondition would be gone.
+ // The refusal names the INDEXED caller count, the live reference that would
+ // survive the deletion (with its line and kind) and the `force=true` escape
+ // hatch. The property is asserted directly: refused by default, with the
+ // evidence named.
   let deleteRefusal = ""
   try { await executeEdit(root, projectId, { mode: "delete", symbolName: "target", filePath: "src/app.ts" }) } catch (error) { deleteRefusal = String(error) }
   check("delete with callers is blocked", deleteRefusal.includes("cannot delete target"), deleteRefusal.slice(0, 200) || "the delete was NOT refused")
   check("and the refusal names the caller evidence and the override", /\d+ indexed caller\(s\)/.test(deleteRefusal) && /force=true/.test(deleteRefusal), deleteRefusal.slice(0, 200))
 
-  // Stale byte bounds: change the file on disk so the indexed rows no longer
-  // match, then edit. This block used to assert the edit is REFUSED with "stale
-  // index bounds".
-  //
-  // THAT CONTRACT IS SUPERSEDED (M59.A11 / #889). Every other read tool refreshes
-  // a stale file within budget (BB_NO_AUTO_REFRESH); editing refused instead,
-  // which made the FIRST symbol edit after ANY external change — another tool, a
-  // git pull, a person — a hard stop, even when the external change did not touch
-  // the symbol. Refusing was not the safer behaviour: the bounds were never the
-  // problem. The engine now reindexes that one file, re-resolves the symbol and
-  // applies the edit to the CURRENT bytes, disclosing the refresh in `warnings` —
-  // so the property worth asserting is the stronger one: the write lands on the
-  // bytes on disk, at the offset they now have, and nothing else in the file is
-  // disturbed.
-  //
-  // The four external-change shapes (body changed, lines inserted, symbol
-  // renamed, symbol removed) are owned by script/m13/verify-edit-freshness.ts;
-  // this legacy gate keeps the one that used to be here.
+ // Stale byte bounds: change the file on disk so the indexed rows no longer
+ // match, then edit. The contract is that the edit REFRESHES that one file,
+ // re-resolves the symbol and applies the edit to the CURRENT bytes, disclosing
+ // the refresh in `warnings`. Every other read tool refreshes a stale file within
+ // budget (BB_NO_AUTO_REFRESH); an edit that refused instead would make the FIRST
+ // symbol edit after ANY external change — another tool, a git pull, a person —
+ // a hard stop, even when the external change did not touch the symbol. Refusing
+ // is not the safer behaviour: the bounds were never the problem. The property
+ // worth asserting is the stronger one: the write lands on the bytes on disk, at
+ // the offset they now have, and nothing else in the file is disturbed.
+ //
+ // The four external-change shapes (body changed, lines inserted, symbol
+ // renamed, symbol removed) are owned by script/m13/verify-edit-freshness.ts;
+ // this legacy gate keeps the basic one.
   writeFileSync(appPath, readFileSync(appPath, "utf8") + "// external stale change\n")
   const staleEdit = await executeEdit(root, projectId, { mode: "update", symbolName: "target", filePath: "src/app.ts", newContent: "export function target(value: number): number { return 99 }", format: false })
   const afterStale = readFileSync(appPath, "utf8")

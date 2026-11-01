@@ -1,4 +1,28 @@
-// script/m15/verify-edit-classification.ts — M15.E1
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — script/m15/verify-edit-classification.ts —: one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m15/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m15/verify-edit-classification.ts — 
 // Deep audit of isBindingParentType (20 substring rules) + isReferenceSite +
 // findDeclarationName in src/intelligence/edit/edit-engine.ts.
 // Every substring rule gets a positive fixture and an adversary fixture.
@@ -25,17 +49,22 @@ function nk(label: string, cond: boolean, detail?: string) {
 }
 
 function emit() {
+ // `checks` counts only POSITIVE assertions; negatives are counted in their own
+ // field. Reporting passed/checks with passed including negatives produces
+ // fractions like 37/35 and 57/56 — the denominator is every assertion this run
+ // made, so it must include negatives too.
+  const totalChecks = checks + negatives
   const total = passed + negativePassed
   const verdict = failed === 0 ? "VERIFIED" : "KNOWN-GAP"
   const evidence = {
     issue: "M15.E1", code: "E1", tool: "bb_edit",
     verified: failed === 0,
-    checks: checks, passed: total, failed: failed,
+    checks: totalChecks, passed: total, failed: failed,
     negatives: negatives,
     generatedAt: new Date().toISOString(),
   }
   writeFileSync(path.resolve("validation/m15/results/e1.json"), JSON.stringify(evidence, null, 2) + "\n")
-  console.log("\nE1: " + verdict + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
+  console.log("\nE1: " + verdict + " (" + total + "/" + totalChecks + " passed, " + negatives + " negatives)")
   process.exit(failed > 0 ? 1 : 0)
 }
 
@@ -49,9 +78,9 @@ async function classify(file: string, code: string, name: string) {
 }
 
 (async () => {
-  // ═══════════════════════════════════════════════════════════════════════
-  // 1. FALSE_POSITIVE_BINDING_TYPES deny-list — regression-proof
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 1. FALSE_POSITIVE_BINDING_TYPES deny-list — regression-proof
+ // ═══════════════════════════════════════════════════════════════════════
 
   for (const [lang, ext, code, name, parentType] of [
     ["Rust", "a.rs", "fn f() { let _ = obj.field; }", "obj", "field_expression"],
@@ -65,18 +94,18 @@ async function classify(file: string, code: string, name: string) {
        occ !== undefined && !isBindingParentType(occ.parentType) && isReferenceSite(occ, "") === true)
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 2. Each substring rule — positive (real binding) per language
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 2. Each substring rule — positive (real binding) per language
+ // ═══════════════════════════════════════════════════════════════════════
 
-  // declarator: Java
+ // declarator: Java
   {
     const p = await parseForSafety("A.java", "class A { void f() { int x = 0; } }")
     const x = p.occurrences.find(o => o.text === "x")
     ck("Java: 'x' parent is variable_declarator (binding)", x !== undefined && isBindingParentType(x.parentType))
   }
 
-  // declaration: TypeScript class
+ // declaration: TypeScript class
   {
     const p = await parseForSafety("a.ts", "class Foo {}")
     const foo = p.occurrences.find(o => o.text === "Foo")
@@ -84,7 +113,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // field: Rust struct field
+ // field: Rust struct field
   {
     const p = await parseForSafety("a.rs", "struct Foo { x: i32 }")
     const x = p.occurrences.find(o => o.text === "x")
@@ -92,7 +121,7 @@ async function classify(file: string, code: string, name: string) {
        x !== undefined && isBindingParentType(x.parentType))
   }
 
-  // parameter: TypeScript
+ // parameter: TypeScript
   {
     const p = await parseForSafety("a.ts", "function f(x: number) {}")
     const x = p.occurrences.find(o => o.text === "x")
@@ -100,7 +129,7 @@ async function classify(file: string, code: string, name: string) {
        x !== undefined && isBindingParentType(x.parentType))
   }
 
-  // property: TypeScript getter
+ // property: TypeScript getter
   {
     const p = await parseForSafety("a.ts", "class A { get x(): number { return 1; } }")
     const x = p.occurrences.find(o => o.text === "x")
@@ -108,7 +137,7 @@ async function classify(file: string, code: string, name: string) {
        x !== undefined && isBindingParentType(x.parentType))
   }
 
-  // signature: Dart function
+ // signature: Dart function
   {
     const p = await parseForSafety("a.dart", "void foo() {}")
     const foo = p.occurrences.find(o => o.text === "foo")
@@ -116,7 +145,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // method: Ruby
+ // method: Ruby
   {
     const p = await parseForSafety("a.rb", "def foo\n  1\nend")
     const foo = p.occurrences.find(o => o.text === "foo")
@@ -124,14 +153,14 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // class: Ruby
+ // class: Ruby
   {
     const p = await parseForSafety("a.rb", "class Foo\nend")
     const foo = p.occurrences.find(o => o.text === "Foo")
     ck("Ruby: class 'Foo' is a binding", foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // bind: Haskell
+ // bind: Haskell
   {
     const p = await parseForSafety("a.hs", "foo = 1")
     const foo = p.occurrences.find(o => o.text === "foo")
@@ -139,7 +168,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // _item: Rust
+ // _item: Rust
   for (const [name, code] of [
     ["foo", "fn foo() {}"], ["Foo", "struct Foo {}"], ["Foo", "enum Foo { A }"],
   ]) {
@@ -149,7 +178,7 @@ async function classify(file: string, code: string, name: string) {
        occ !== undefined && isBindingParentType(occ.parentType))
   }
 
-  // specifier: C++
+ // specifier: C++
   {
     const p = await parseForSafety("a.cpp", "class Foo {};")
     const foo = p.occurrences.find(o => o.text === "Foo")
@@ -157,7 +186,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // _spec: Go
+ // _spec: Go
   {
     const p = await parseForSafety("a.go", "package p\ntype Foo struct{}")
     const foo = p.occurrences.find(o => o.text === "Foo")
@@ -165,14 +194,14 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // type_name: F#
+ // type_name: F#
   {
     const p = await parseForSafety("a.fs", "type Foo = int")
     const foo = p.occurrences.find(o => o.text === "Foo")
     ck("F#: type 'Foo' is a binding", foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // assignment: Python
+ // assignment: Python
   {
     const p = await parseForSafety("a.py", "foo = 1")
     const foo = p.occurrences.find(o => o.text === "foo")
@@ -180,7 +209,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // pair: JS/TS object key
+ // pair: JS/TS object key
   {
     const p = await parseForSafety("a.ts", "const x = { foo: 1 }")
     const foo = p.occurrences.find(o => o.text === "foo")
@@ -188,7 +217,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // import
+ // import
   {
     const p = await parseForSafety("a.ts", "import { foo } from './bar'")
     const foo = p.occurrences.find(o => o.text === "foo")
@@ -196,7 +225,7 @@ async function classify(file: string, code: string, name: string) {
        foo !== undefined && isBindingParentType(foo.parentType))
   }
 
-  // catch_clause
+ // catch_clause
   {
     const p = await parseForSafety("a.ts", "try { } catch (e) { }")
     const e = p.occurrences.find(o => o.text === "e")
@@ -204,7 +233,7 @@ async function classify(file: string, code: string, name: string) {
        e !== undefined && isBindingParentType(e.parentType))
   }
 
-  // for_in
+ // for_in
   {
     const p = await parseForSafety("a.ts", "for (const key in obj) { }")
     const key = p.occurrences.find(o => o.text === "key")
@@ -212,7 +241,7 @@ async function classify(file: string, code: string, name: string) {
        key !== undefined && isBindingParentType(key.parentType))
   }
 
-  // for_of
+ // for_of
   {
     const p = await parseForSafety("a.ts", "for (const val of arr) { }")
     const val = p.occurrences.find(o => o.text === "val")
@@ -220,23 +249,23 @@ async function classify(file: string, code: string, name: string) {
        val !== undefined && isBindingParentType(val.parentType))
   }
 
-  // shorthand — documented gap: shorthand_property_identifier_pattern is not
-  // extracted by isIdentifierNodeType (ends with "pattern" not "identifier")
+ // shorthand — documented gap: shorthand_property_identifier_pattern is not
+ // extracted by isIdentifierNodeType (ends with "pattern" not "identifier")
   {
     const p = await parseForSafety("a.ts", "const { foo } = obj")
     const foo = p.occurrences.find(o => o.text === "foo")
-    // Documented identifier gap: shorthand destructuring names are not
-    // emitted as renameable occurrences. The check is that this gap stays on
-    // the record (master plan), not that it passes.
+ // Documented identifier gap: shorthand destructuring names are not
+ // emitted as renameable occurrences. The check is that this gap stays on
+ // the record (master plan), not that it passes.
     const plan = readFileSync(path.resolve("docs/m15/M15-MASTER-PLAN.md"), "utf8")
     ck("TypeScript: destructured shorthand — documented identifier gap is on the record (shorthand_property_identifier_pattern)",
        plan.includes("shorthand_property_identifier_pattern") && /identifier gap/i.test(plan),
        foo ? "unexpectedly FOUND (gap may be closed — keep documentation in sync)" : "not found (gap confirmed, documented)")
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 3. isReferenceSite — integration of isMemberName + isBindingParentType
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 3. isReferenceSite — integration of isMemberName + isBindingParentType
+ // ═══════════════════════════════════════════════════════════════════════
 
   {
     const code =
@@ -266,7 +295,7 @@ async function classify(file: string, code: string, name: string) {
        call !== undefined && call.isRef)
   }
 
-  // Multi-language: receiver in obj.method() must be a reference
+ // Multi-language: receiver in obj.method must be a reference
   for (const [lang, ext, code, name] of [
     ["TypeScript", "a.ts", "const x = obj.method()", "obj"],
     ["Python", "a.py", "x = obj.method()", "obj"],
@@ -279,9 +308,9 @@ async function classify(file: string, code: string, name: string) {
        c.length >= 1 && c[0].isRef && !c[0].isBinding)
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 4. findDeclarationName — locates the binding identifier byte range
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 4. findDeclarationName — locates the binding identifier byte range
+ // ═══════════════════════════════════════════════════════════════════════
 
   {
     const code = "export function target(): number { return 1 }\n"
@@ -294,7 +323,7 @@ async function classify(file: string, code: string, name: string) {
     const code = "function target(): number { return 1 }\nfunction caller() { return target() }\n"
     const p = await parseForSafety("a.ts", code)
     const idx = findDeclarationName(p.occurrences, "target", 0, code.length)
-    // First "target" in code is the declaration, not the call
+ // First "target" in code is the declaration, not the call
     const firstTarget = code.indexOf("target")
     ck("findDeclarationName: returns FIRST 'target' (declaration, not call)", idx === firstTarget)
   }

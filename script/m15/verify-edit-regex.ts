@@ -2,29 +2,29 @@
 // Author: Muhammad Ishaq Khan
 //
 // WHAT THIS FILE IS — the bb_edit regex gate: an AST census of every regular
-//   expression the edit surface executes, compared against a reviewed snapshot.
+// expression the edit surface executes, compared against a reviewed snapshot.
 // WHICH TOOL IT SERVES — bb_edit (mutability write, modes: write, update, insert,
-//   delete, refactor, batch).
+// delete, refactor, batch).
 // WHY IT IS SHAPED THIS WAY — the previous version of this verifier declared a
-//   local array of four patterns and asserted `runtimeRegexes.length === 4`; it
-//   never read a regex out of a source file and could not go red when a fifth was
-//   added. Measured with this gate's detector, the edit surface executes thirteen
-//   regex operations across two files, so the old "exactly 4" verdict was both
-//   unfalsifiable and wrong. This gate parses each file with the TypeScript AST
-//   (so a regex-shaped STRING or comment is not a use, and a literal is never
-//   hidden), compares the uses to `validation/tools/bb_edit/regex-surface.json`
-//   by file + kind + source with multiplicities, and fails on a new use, a stale
-//   snapshot row, a missing justification, or a file outside the reviewed list.
-//   It also cross-checks the Lead's authoritative policy baseline for the shared
-//   files it covers, and a `--selftest` mode proves the detector sees literals,
-//   `new RegExp(...)` and misses strings/comments — the gate's own can-fail proof.
+// local array of four patterns and asserted `runtimeRegexes.length === 4`; it
+// never read a regex out of a source file and could not go red when a fifth was
+// added. Measured with this gate's detector, the edit surface executes thirteen
+// regex operations across two files, so the old "exactly 4" verdict was both
+// unfalsifiable and wrong. This gate parses each file with the TypeScript AST
+// (so a regex-shaped STRING or comment is not a use, and a literal is never
+// hidden), compares the uses to `validation/tools/bb_edit/regex-surface.json`
+// by file + kind + source with multiplicities, and fails on a new use, a stale
+// snapshot row, a missing justification, or a file outside the reviewed list.
+// It also cross-checks the repository's authoritative policy baseline for the shared
+// files it covers, and a `--selftest` mode proves the detector sees literals,
+// `new RegExp(...)` and misses strings/comments — the gate's own can-fail proof.
 // WHERE ITS EVIDENCE LIVES — validation/m15/results/e2.json (this run), the
-//   snapshot next to it, validation/tools/regex-baseline.json (Lead policy gate).
+// snapshot next to it, validation/tools/regex-baseline.json (the policy baseline).
 // EDIT TOGETHER WHEN THIS FILE CHANGES — validation/tools/bb_edit/regex-surface.json
-//   and the code files in SCAN_FILES.
+// and the code files in SCAN_FILES.
 // CONTRACTS IT MUST NOT BREAK — a green run means every regex executed by the
-//   edit surface is in the reviewed snapshot with a written reason, the snapshot
-//   has no rows the code no longer uses, and no new regex has appeared.
+// edit surface is in the reviewed snapshot with a written reason, the snapshot
+// has no rows the code no longer uses, and no new regex has appeared.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -39,8 +39,8 @@ const EVIDENCE_PATH = path.join(ROOT, "validation/m15/results/e2.json")
 
 /**
  * The files whose executed regexes this gate owns: the bb_edit code surface.
- * `src/mcp/tool-validation.ts` is deliberately absent — it is the Lead-owned
- * boundary and the Lead's policy gate scans all of `src/mcp`.
+ * `src/mcp/tool-validation.ts` is deliberately absent — it belongs to the MCP
+ * boundary layer, and the repository policy gate already scans all of `src/mcp`.
  */
 const SCAN_FILES = [
   "src/intelligence/edit/edit-engine.ts",
@@ -216,9 +216,9 @@ ck("rules: safety-primitives (the code/comment/string classifier) executes no re
 if (existsSync(BASELINE_PATH) && existsSync(ALLOWLIST_PATH)) {
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as { entries: Array<{ file: string; kind: string; source: string }> }
   const allowlist = JSON.parse(readFileSync(ALLOWLIST_PATH, "utf8")) as { entries: Array<{ file: string; match: string }> }
-  // The policy gate stores literal rows by source text and constructor rows as
-  // "<dynamic>" (the constructed PATTERN is caller-dependent, so only the file
-  // and the count are stable). Mirror that representation when cross-checking.
+ // The policy gate stores literal rows by source text and constructor rows as
+ // "<dynamic>" (the constructed PATTERN is caller-dependent, so only the file
+ // and the count are stable). Mirror that representation when cross-checking.
   const literalBudget = new Map<string, number>()
   const dynamicBudget = new Map<string, number>()
   for (const row of baseline.entries ?? []) {
@@ -241,9 +241,9 @@ if (existsSync(BASELINE_PATH) && existsSync(ALLOWLIST_PATH)) {
     if (left > 0) literalBudget.set(k, left - 1)
     else unaccounted.push(use)
   }
-  ck("policy: every use in a file the Lead's policy gate scans is frozen or allowlisted there", unaccounted.length === 0, JSON.stringify(unaccounted))
+  ck("policy: every use in a file the repository policy gate scans is frozen or allowlisted there", unaccounted.length === 0, JSON.stringify(unaccounted))
   const engineRows = (baseline.entries ?? []).filter((row) => row.file === "src/intelligence/edit/edit-engine.ts").length
-  nk("policy: the engine's regex debt is frozen in the Lead baseline (fails if that baseline lost this lane)", engineRows >= 1, `baseline rows for edit-engine: ${engineRows}`)
+  nk("policy: the engine's regex debt is frozen in the repository baseline (fails if that baseline lost this module)", engineRows >= 1, `baseline rows for edit-engine: ${engineRows}`)
 } else {
   nk("policy: a cross-check is not silently skipped — the baseline/allowlist must exist", false, `${BASELINE_PATH} or ${ALLOWLIST_PATH} missing`)
 }

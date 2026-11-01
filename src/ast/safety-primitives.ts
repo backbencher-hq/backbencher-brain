@@ -1,4 +1,35 @@
-// safety-primitives.ts — M13.04 (B4): shared safety primitives for the edit
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the shared AST safety primitives: identifier occurrences
+//   tagged with grammar node identity, the comment/string syntax mask, declared
+//   names, body ranges, comment sites, and the freshness assertions an edit uses
+//   to prove its bounds come from bytes on disk.
+// WHICH TOOL IT SERVES — bb_edit (all modes: write, update, insert, delete,
+//   refactor, batch), and any read path that must distinguish live code from
+//   comments and string literals.
+// WHY IT IS SHAPED THIS WAY — a rename or a delete is decided by IDENTITY, not by
+//   text: whether an occurrence is a reference depends on its grammar node and
+//   parent, and whether a byte is live code depends on the syntax tree, not on a
+//   character scanner. The primitives here therefore return structures carrying
+//   node types and exact ranges; callers compare those, and a bare substring match
+//   cannot stand in for one. The mask is a Uint8Array walked once per parse so the
+//   classifier is O(bytes) and allocation-free at the per-occurrence level, and
+//   the tree is released by the caller that owns the parse (a transient tree
+//   leaked per edit is a real leak on a large project).
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_edit/** (mask/body probes and
+//   artifacts); gates: script/m13/verify-edit-mask.ts,
+//   script/m13/verify-edit-body.ts, script/m15/verify-edit-mask.ts, and
+//   script/m15/verify-edit-regex.ts for the no-regex rule.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/ast/import-pruner.ts, src/ast/brain-surgical-patcher.ts, and those gates.
+// CONTRACTS IT MUST NOT BREAK — an occurrence is only ever reported with the node
+//   identity that made it one; a mask byte is 1 for live code and 0 for a
+//   comment/string byte; no regular expression classifies source here; a parse
+//   failure returns a typed error rather than a partial guess.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// safety-primitives.ts — (B4): shared safety primitives for the edit
 // tool and any read path that must distinguish live code from comments/strings.
 //
 // Why this exists: the edit engine previously used a hand-rolled, JS/C-only
@@ -73,7 +104,7 @@ export interface BodyRange {
  * A name INTRODUCED by a declaration node, taken from the grammar's own `name`
  * field rather than from a text pattern.
  *
- * M71: bb_edit's `update` mode has to answer "is this new content the symbol's
+ * bb_edit's `update` mode has to answer "is this new content the symbol's
  * own declaration, or a fragment to splice into its body?". It used to answer
  * with two regexes that required a keyword (`function`, `def`, `fn`, …) or a
  * modifier (`public`, `static`, …) IMMEDIATELY before the symbol name. Kotlin's
@@ -103,12 +134,12 @@ export interface DeclaredName {
 }
 
 export interface SafetyParse {
-  /** M24.L9: comment sites read from the tree before it is released. */
+  /** comment sites read from the tree before it is released. */
   commentSites: CommentSite[]
 
-  /** M71: names the fragment/file DECLARES, from each declaration's `name` field. */
+  /** names the fragment/file DECLARES, from each declaration's `name` field. */
   declaredNames: DeclaredName[]
-  /** M71: tree-sitter reported an ERROR node anywhere in the tree. */
+  /** tree-sitter reported an ERROR node anywhere in the tree. */
   hasSyntaxError: boolean
 
   language: string
@@ -161,7 +192,7 @@ export function isIdentifierNodeType(type: string): boolean {
   return type === "identifier" || type.endsWith("identifier") || EXTRA_REFERENCE_TYPES.has(type)
 }
 
-/** True when a node type is a comment in any shipped grammar. */
+/** True when a node type is a comment in any supported grammar. */
 export function isCommentNodeType(type: string): boolean {
   const t = type.toLowerCase()
   return (
@@ -173,7 +204,7 @@ export function isCommentNodeType(type: string): boolean {
   )
 }
 
-/** True when a node type is a string literal in any shipped grammar. */
+/** True when a node type is a string literal in any supported grammar. */
 export function isStringNodeType(type: string): boolean {
   const t = type.toLowerCase()
   return (

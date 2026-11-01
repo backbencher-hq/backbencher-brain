@@ -1,4 +1,28 @@
-// script/m15/verify-edit-mask.ts — M15.E3
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — script/m15/verify-edit-mask.ts —: one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m15/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m15/verify-edit-mask.ts — 
 // Per-language comment/string masking adversary fixtures.
 // Prove buildSyntaxMask + collectMaskedRanges correctly mask comments/strings
 // AND re-expose interpolation code across 20+ languages.
@@ -12,11 +36,16 @@ let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(l: string, c: boolean, d?: string) { checks++; if (c) passed++; else { failed++; console.log("  FAIL: " + l + (d ? " — " + d : "")) } }
 function nk(l: string, c: boolean, d?: string) { negatives++; if (c) negativePassed++; else { failed++; console.log("  FAIL: " + l + " (negative)" + (d ? " — " + d : "")) } }
 function emit() {
+ // `checks` counts only POSITIVE assertions; negatives are counted in their own
+ // field. Reporting passed/checks with passed including negatives produces
+ // fractions like 37/35 and 57/56 — the denominator is every assertion this run
+ // made, so it must include negatives too.
+  const totalChecks = checks + negatives
   const total = passed + negativePassed
   const v = failed === 0 ? "VERIFIED" : "KNOWN-GAP"
   const e = { issue: "M15.E3", code: "E3", tool: "bb_edit", verified: failed === 0, checks: checks, passed: total, failed: failed, negatives: negatives, generatedAt: new Date().toISOString() }
   writeFileSync(path.resolve("validation/m15/results/e3.json"), JSON.stringify(e, null, 2) + "\n")
-  console.log("\nE3: " + v + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
+  console.log("\nE3: " + v + " (" + total + "/" + totalChecks + " passed, " + negatives + " negatives)")
   process.exit(failed > 0 ? 1 : 0)
 }
 
@@ -36,9 +65,9 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
 }
 
 (async () => {
-  // ═══════════════════════════════════════════════════════════════════════
-  // 1. Comments masked — per language comment syntax
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 1. Comments masked — per language comment syntax
+ // ═══════════════════════════════════════════════════════════════════════
 
   const commentMaskFixtures: Array<[string, string, string, string]> = [
     ["TypeScript", "ts", "// target in comment\nconst x = 1", "target"],
@@ -70,7 +99,7 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
     await verifyMask(lang, ext, code, name, false) // comments must be masked (mask=0)
   }
 
-  // Block comments
+ // Block comments
   for (const [lang, ext, code, name] of [
     ["TypeScript", "ts", "/* target in block */\nconst x = 1", "target"],
     ["Rust", "rs", "/* target in block */\nlet x = 1;", "target"],
@@ -86,9 +115,9 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
     await verifyMask(lang, ext, code, name, false)
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 2. String literals masked — per language string syntax
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 2. String literals masked — per language string syntax
+ // ═══════════════════════════════════════════════════════════════════════
 
   for (const [lang, ext, code, name] of [
     ["TypeScript", "ts", 'const s = "target in string"', "target"],
@@ -109,9 +138,9 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
     await verifyMask(lang, ext, code, name, false) // strings must be masked (mask=0)
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 3. Interpolation code re-exposed as LIVE (mask=1)
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 3. Interpolation code re-exposed as LIVE (mask=1)
+ // ═══════════════════════════════════════════════════════════════════════
 
   for (const [lang, ext, code, name] of [
     ["TypeScript", "ts", "const s = `hello ${target()}`", "target"],
@@ -121,9 +150,9 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
     await verifyMask(lang, ext, code, name, true) // interpolation must be LIVE (mask=1)
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 4. Adversaries — code must NOT be masked
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 4. Adversaries — code must NOT be masked
+ // ═══════════════════════════════════════════════════════════════════════
 
   for (const [lang, ext, code, name] of [
     ["TypeScript", "ts", "const target = 1", "target"],
@@ -134,9 +163,9 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
     await verifyMask(lang, ext, code, name, true) // normal code must be LIVE (mask=1)
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 5. Adversary: comment syntax inside strings is still string (masked)
-  // ═══════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════
+ // 5. Adversary: comment syntax inside strings is still string (masked)
+ // ═══════════════════════════════════════════════════════════════════════
 
   {
     const p = await parseForSafety("a.ts", 'const s = "// target in string"')
@@ -151,7 +180,7 @@ async function verifyMask(lang: string, ext: string, code: string, name: string,
        idx >= 0 && p.mask[idx] === 0)
   }
 
-  // ── Adversary: code after comment must be live ──
+ // ── Adversary: code after comment must be live ──
   {
     const p = await parseForSafety("a.ts", "// comment\nconst target = 1")
     const idx = p.content.indexOf("target")

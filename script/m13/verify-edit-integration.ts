@@ -1,4 +1,28 @@
-// script/m13/verify-edit-integration.ts — M13.13 (E8).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — (E8): one verifier of the bb_edit release battery, run
+//   against its own fixture projects (never this repo, never the shared index).
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a release gate is evidence only if it can go RED:
+//   every check asserts a property the engine must hold, and every negative case
+//   pins a refusal the tool must make (a successful edit where a refusal is
+//   required is the defect class this battery exists to catch). The run writes its
+//   verdict to validation/m13/results/<code>.json so the evidence validator and the docs gate
+//   read the same numbers, and the denominator counts positives AND negatives.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/<code>.json for this run; the gate runner
+//   keeps the log beside it, and every failing assertion prints its name and the
+//   measured detail.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/edit/edit-engine.ts,
+//   src/mcp/tools/bb_edit/descriptor.ts, src/mcp/tools/bb_edit/handler.ts,
+//   docs/BB_EDIT.md, docs/tools/bb_edit.md, and script/m13/verify-edit-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — one verdict per run; every negative counted; exit
+//   non-zero on any failure; the evidence file's issue/code/tool fields identify
+//   this gate; a fixture mutation never escapes its temp project.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// script/m13/verify-edit-integration.ts — (E8).
 //
 // Proves the edit → reindex → freshness loop is consistent across languages:
 // after a successful edit the index reflects the new content (fresh), and after
@@ -27,7 +51,7 @@ const harness = new Harness({
     failConsistency: "a failed edit (validation error) rolls back files; the index is not reindexed, so the pre-edit index stays consistent with the rolled-back files",
   },
   limitations: [
-    "The loop is verified at the brain_file/brain_symbol freshness level; full embedding regeneration is async and verified separately in M10.",
+    "The loop is verified at the brain_file/brain_symbol freshness level; full embedding regeneration is async and verified separately in.",
   ],
 })
 
@@ -107,8 +131,8 @@ async function fileIdFor(f: Fixture, relPath: string): Promise<string> {
 
 // ── Failed edit: index stays consistent with the rolled-back files ──────────
 {
-  // Python rename to the keyword `class` yields invalid syntax -> validateFile
-  // throws AFTER the write loop, so rollback fires and the index is never reindexed.
+ // Python rename to the keyword `class` yields invalid syntax -> validateFile
+ // throws AFTER the write loop, so rollback fires and the index is never reindexed.
   const f = setup("fail", [["mod.py", "def target():\n    return 1\n\ndef caller():\n    return target()\n"]])
   try {
     await indexProjectParallel(f.projectId, f.root, {})

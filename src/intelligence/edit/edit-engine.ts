@@ -56,7 +56,7 @@ export type EditRequest = {
   force?: boolean
   format?: boolean
   /**
-   * M71.D7: `write` only. Three states, each honored rather than inferred:
+   * `write` only. Three states, each honored rather than inferred:
    *   undefined (default) — replace, but a replacement that removes more than
    *     half of a file (and more than WRITE_GUARD.minRemovedLines lines) is
    *     refused as a probable mistake;
@@ -68,7 +68,7 @@ export type EditRequest = {
   /** Legacy adapter compatibility only; never exposed by bb_edit. */
   allowStaleIndex?: boolean
   /**
-   * M71.D13: `batch` only. The edits to apply, each a complete request in one of
+   * `batch` only. The edits to apply, each a complete request in one of
    * the five single-file modes. Planned first, in order, as ONE plan; then
    * written, formatted, validated and reindexed as ONE cycle; and rolled back as
    * one envelope if any step of that cycle fails. A batch is all-or-nothing.
@@ -93,7 +93,7 @@ export type EditRequest = {
 export interface EditPlanChange { path: string; before: string; after: string }
 
 /**
- * M71.D13: the per-change rollback envelope.
+ * the per-change rollback envelope.
  *
  * A batch touches many files at once, and "did my working tree survive?" is a
  * per-file question. A single boolean over the whole call cannot answer it: the
@@ -152,7 +152,7 @@ export interface EditResult {
   validated: boolean
   reindexed: boolean
   /**
-   * M40.A3: derived-data outcome of the post-edit reindex — pass used
+   * derived-data outcome of the post-edit reindex — pass used
    * (full/bounded/deferred), per-phase timings, repaired caller edges.
    * Visible in tool output so "queryable with resolved relationships" is a
    * claim the caller can verify, not a silent assumption.
@@ -163,9 +163,9 @@ export interface EditResult {
   warnings?: string[]
   /** Refactor audit: how many files/sites were renamed on this run. */
   summary?: { renamedFiles: number; renamedSites: number }
-  /** M71.D13: batch only — which entry touched which files, in plan order. */
+  /** batch only — which entry touched which files, in plan order. */
   batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[]; importPruning?: ImportPruneReport }>
-  /** M71.D13: the per-file outcome of this call, present for every mode. */
+  /** the per-file outcome of this call, present for every mode. */
   envelope?: EditEnvelope
   /**
    * `delete` only: what the import cleanup DID and — when it did nothing — why.
@@ -220,10 +220,10 @@ function nearestExisting(candidate: string): string {
  * of a file being created does not exist yet — and containment is then judged on
  * the resolved result.
  *
- * The containment guarantee is unchanged and in one place tightened. The
- * non-existent-leaf case used to return `candidate`, the UNRESOLVED spelling, with
- * no realpath check on the final component at all: writing `link-to-outside/
- * newfile.ts` was never checked. It is now checked like every other case.
+ * The containment guarantee is one check for every case, including a leaf that
+ * does not exist yet: the resolved parent is realpath'd and the remainder is
+ * re-attached to it, so `link-to-outside/newfile.ts` is refused like any other
+ * escape rather than written through the link.
  */
 export function resolveSafeEditPath(projectPath: string, requested: string): string {
   const root = realpathSync(projectPath)
@@ -308,7 +308,7 @@ function replaceRange(text: string, start: number, end: number, replacement: str
   return text.slice(0, start) + replacement + text.slice(end)
 }
 
-// ── File-fidelity primitives (M66) ──────────────────────────────────────────
+// ── File-fidelity primitives () ──────────────────────────────────────────
 //
 // A tool that writes source must not change anything the caller did not ask it to
 // change. Three things it WAS changing, each measured rather than assumed (see
@@ -367,7 +367,7 @@ function snapshotOf(file: string): { existed: boolean; bytes: Buffer | null; mod
   const bytes = readFileSync(file)
   let mode: number | null = null
   try { mode = statSync(file).mode & 0o777 } catch { mode = null }
-  // M71.D9: the hash is taken from the SAME bytes the rollback would restore, so
+  // the hash is taken from the SAME bytes the rollback would restore, so
   // the pre-flight check below compares the plan's pre-image with the bytes this
   // commit is about to replace — not with a second, later read of the file.
   return { existed: true, bytes, mode, hash: createHash("sha256").update(bytes).digest("hex") }
@@ -384,7 +384,7 @@ export function fileHash(file: string): string | null {
 }
 
 /**
- * M71.D9: the pre-flight check between plan and commit.
+ * the pre-flight check between plan and commit.
  *
  * The plan reads each target's bytes, resolves spans from them, and returns an
  * `after` text; the commit writes from that plan. Nothing held a project lock or
@@ -428,7 +428,7 @@ function writeBytesPreservingMode(file: string, bytes: Buffer | string, mode: nu
   }
 }
 
-// ── M71.D7: the overwrite guard ────────────────────────────────────────────
+// ── the overwrite guard ────────────────────────────────────────────
 //
 // MEASURED before this guard existed (script/m71/probe-edit-review.ts, case H4):
 // a 41-line file replaced by a single line, reported `ok`. The documented contract
@@ -485,7 +485,7 @@ export function writeGuardMessage(
   return `write refused: it would replace ${relPath} (${beforeLines} lines) with ${afterLines} line(s), removing ${removed} lines (${percent}%) — a write that removes at least half of a file's lines (and at least ${WRITE_GUARD.minRemovedLines}) is treated as a probable mistake. Pass overwrite: true to replace it anyway, or use update/insert to change part of the file.`
 }
 
-// ── M13.09 (E4): language-aware insert body detection ──────────────────────
+// ── (E4): language-aware insert body detection ──────────────────────
 // The body region comes from tree-sitter body nodes (block / compound_statement
 // / statement_block / function_body / body_statement / do_block / …), never a
 // raw `{ }` character scan, so brace, indented (Python), and keyword-terminated
@@ -550,7 +550,7 @@ function computeInnerIndent(text: string, body: BodyRange): string {
   return lineLeadingWhitespace(text, i)
 }
 
-// ── M13.07 (E2): AST reference-identity rename ──────────────────────────────
+// ── (E2): AST reference-identity rename ──────────────────────────────
 // The refactor path must rename only actual reference sites, never unrelated
 // same-name bindings, member accesses, or property keys. Classification is
 // derived from tree-sitter node types (via parseForSafety), not raw-text scans.
@@ -559,9 +559,8 @@ function computeInnerIndent(text: string, body: BodyRange): string {
  *  field, object key). Conservative: ambiguous reassignments are treated as
  *  bindings so a rename never over-reaches and corrupts source.
  *
- *  Cross-language: every shipped grammar names its declaration containers
- *  differently, so this is a deliberate union of those conventions (verified
- *  by script/m13/verify-edit-xlang.ts across all languages). */
+ *  Cross-language: every supported grammar names its declaration containers
+ *  differently, so this is a deliberate union of those conventions. */
 
 /** Tree-sitter node types whose names contain substrings ("field") that would
  *  otherwise falsely match the includes("field") rule below, causing the
@@ -633,7 +632,7 @@ const VALUE_SIDE_BINDING_PARENTS = new Set([
  *  identity filter is type-agnostic so callback and type references are not
  *  dropped.
  *
- *  M16.E1: classification is position-aware, not just parent-type substring
+ * classification is position-aware, not just parent-type substring
  *  matching. A parent bucket like "assignment" binds only its left/name side;
  *  the value/right side (`prereqs = prerequisite_tasks` in Ruby/Python,
  *  `const x = prerequisite_tasks` in TS) is a real reference and must be
@@ -667,7 +666,7 @@ export function findDeclarationName(
 }
 
 /**
- * M59.A11 (#889): the declaration file's indexed rows no longer match disk.
+ * (): the declaration file's indexed rows no longer match disk.
  * Returns the file path when the mismatch is real (the file changed since it
  * was indexed), null when the row is fresh or the hash still agrees.
  */
@@ -685,7 +684,7 @@ function matchesOf(found: any): SymbolMatch[] {
 }
 
 /**
- * How many files this project has indexed (M71.D6).
+ * How many files this project has indexed ().
  *
  * Consulted ONLY on the resolution failure path, to tell two refusals apart: a
  * name that is not in a real index, and a project that has no index to look in.
@@ -718,7 +717,7 @@ async function uniqueSymbol(
   const found: any = await ASTEngine.findSymbol(projectId, name, filePath, lineStart)
   let matches = matchesOf(found)
   if (matches.length === 0) {
-    // M71.D6: name the real cause when there is no index at all. The MCP server
+    // name the real cause when there is no index at all. The MCP server
     // refuses the symbol modes earlier on such a project and says so; this
     // message is the one the CLI door (`bb tool bb_edit`) and any direct handler
     // caller see, and "symbol not found" is the wrong sentence for both of them.
@@ -737,7 +736,7 @@ async function uniqueSymbol(
   const staleFile = await staleDeclarationFile(projectId, match)
   if (!staleFile) return match
 
-  // M59.A11 (#889): agent-real. Every other read tool refreshes a stale file
+  // (): agent-real. Every other read tool refreshes a stale file
   // within budget (BB_NO_AUTO_REFRESH) — editing refused instead, so the first
   // symbol edit after ANY external change (another tool, a git pull, the human)
   // was a hard stop, and the symbol's own bounds were never the problem when
@@ -931,7 +930,7 @@ async function validateFile(filePath: string, content: string): Promise<void> {
 }
 
 /**
- * M16.E1: scopes that re-declare `symbolName` inside the file (shadowing).
+ * scopes that re-declare `symbolName` inside the file (shadowing).
  * An occurrence of `symbolName` inside one of these byte ranges belongs to the
  * inner binding (a nested def/class of the same name, or a local variable), NOT
  * to the symbol being renamed — renaming it would corrupt a different symbol.
@@ -1037,7 +1036,7 @@ function collectShadowScopes(parsed: SafetyParse, symbolName: string, declStart:
     // covered `caller()` in full, so the declaration-file pass left `return target()`
     // alone while the caller-span pass, which had no shadow check at all, renamed it.
     // The pre-fix answer was therefore accidentally correct and the two passes
-    // DISAGREED; making them agree exposed the bug (m67 M2g: 2 sites expected, 1
+    // DISAGREED; making them agree exposed the bug (2 sites expected, 1
     // reported). The exemption is narrow on purpose: a member whose container IS a
     // wrapper (a class/impl/struct body) does shadow bare references inside that
     // container in Java, C#, Kotlin, Ruby and Python, so those stay as they were.
@@ -1048,9 +1047,9 @@ function collectShadowScopes(parsed: SafetyParse, symbolName: string, declStart:
   return out
 }
 
-// ── M71: full declaration vs body fragment, decided by the PARSE ────────────
+// ── full declaration vs body fragment, decided by the PARSE ────────────
 //
-// M48.C2 made `update` fragment-safe: if `newContent` does not declare the
+// made `update` fragment-safe: if `newContent` does not declare the
 // symbol, it is treated as the new BODY, which is the right contract. The
 // DECISION, though, was two regexes that required a keyword (`function`, `def`,
 // `fn`, …) or a modifier (`public`, `static`, …) IMMEDIATELY before the symbol
@@ -1126,9 +1125,11 @@ function declaresSymbolAtTopLevel(parsed: SafetyParse, symbolName: string): bool
 }
 
 /**
- * The M48.C2 keyword/modifier patterns, retained ONLY as the compatibility
- * signal described above. Kept verbatim so no shape they used to recognise is
- * lost; they can only ever ADD a full-declaration verdict, never remove one.
+ * The keyword/modifier patterns, retained ONLY as the compatibility signal
+ * described above. They can only ever ADD a full-declaration verdict, never
+ * remove one: a false positive falls back to the structural declaration test,
+ * while a false negative would treat a declaration as a fragment and splice a
+ * body into it.
  */
 function legacySelfDeclarationPattern(symbolName: string): RegExp {
   const escaped = symbolName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
@@ -1188,7 +1189,7 @@ async function contentDeclaresSymbol(
 }
 
 /**
- * M71: the indexed span is NOT always the DECLARATION range.
+ * the indexed span is NOT always the DECLARATION range.
  *
  * MEASURED (script/m71/debug-java-span.ts): a Java method is indexed from its
  * NAME — `target() {\n return 1;\n }` — with the return type OUTSIDE the span, and
@@ -1229,7 +1230,7 @@ function declarationRangeOf(
   return { start, end }
 }
 
-/** D2/M71: what one `refactor` must rewrite in ONE file. */
+/** D2/ what one `refactor` must rewrite in ONE file. */
 type RefactorFilePlan = {
   declaration?: { start: number; end: number }
   callers: Array<{ start: number; end: number; relType: string }>
@@ -1247,26 +1248,26 @@ type EditPlan = {
   changes: EditPlanChange[]
   warnings: string[]
   summary?: { renamedFiles: number; renamedSites: number }
-  /** M71.D9: the sha256 of each target's bytes AT PLAN TIME (null: the plan
+  /** the sha256 of each target's bytes AT PLAN TIME (null: the plan
    *  intends to create that path). Never part of a result — `executeEdit` uses it
    *  to check, immediately before the first write, that the bytes it is about to
    *  replace are the bytes the plan was computed from. */
   preImages: Record<string, string | null>
-  /** M71.D13: the same read's byte length, per target (null: to be created).
+  /** the same read's byte length, per target (null: to be created).
    *  Free — `readPreImage` already holds the bytes — and it is what lets the
    *  envelope report a real byte count without a second read of every file. */
   preImageBytes: Record<string, number | null>
-  /** M71.D13: which batch entry planned each target, and that entry's mode.
+  /** which batch entry planned each target, and that entry's mode.
    *  A single-mode call reports entry 0 and its own mode, so the envelope has one
    *  shape for both. */
   owners: Record<string, { entry: number; mode: Exclude<EditMode, "batch"> }>
-  /** M71.D13: batch only — the entry each change came from, in plan order. */
+  /** batch only — the entry each change came from, in plan order. */
   batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[]; importPruning?: ImportPruneReport }>
   /** `delete` only: the import-cleanup outcome to declare on the result. */
   importPruning?: ImportPruneReport
 }
 
-// ── M71.D13: batch ─────────────────────────────────────────────────────────
+// ── batch ─────────────────────────────────────────────────────────
 //
 // WHY. A symbol mode edits ONE file and one symbol in it. The edits an agent
 // actually has in front of it are plural and unrelated: a rename that must follow
@@ -1377,10 +1378,10 @@ export function expandBatchRequest(request: EditRequest): BatchEntry[] {
 
 /**
  * Read an edit target's pre-image ONCE: the decoded text the plan works from, and
- * the byte hash the commit re-checks against (M71.D9). Returning both from one
+ * the byte hash the commit re-checks against (). Returning both from one
  * read is what makes the check exact rather than approximate — a second read would
  * have its own window, and `readFileSync(path, "utf8")` cannot be hashed back into
- * the bytes it came from (see the M66 note in `executeEdit`).
+ * the bytes it came from (see the note in `executeEdit`).
  */
 function readPreImage(
   file: string,
@@ -1413,7 +1414,7 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
 }
 
 /**
- * M71.D13: plan every entry of a batch into ONE plan, or write nothing.
+ * plan every entry of a batch into ONE plan, or write nothing.
  *
  * Two things are deliberate here and both are load-bearing:
  *
@@ -1499,7 +1500,7 @@ async function planEditInto(
     const target = resolveSafeEditPath(projectPath, request.filePath)
     const pre = readPreImage(target, preImages, preImageBytes)
     const after = String(request.content ?? request.newContent ?? "")
-    // M71.D7: refused BEFORE the plan is returned, so a `dryRun: true` call
+    // refused BEFORE the plan is returned, so a `dryRun: true` call
     // reports the same refusal the real call would — a preview that says "ok"
     // about a write the commit then refuses is a preview of a different call.
     const refusal = writeGuardMessage(relativeTo(projectPath, target), { existed: pre.existed, before: pre.text, after }, request.overwrite)
@@ -1513,7 +1514,7 @@ async function planEditInto(
   resolveSafeEditPath(projectPath, match.fileId)
   const original = readPreImage(match.fileId, preImages, preImageBytes).text
 
-  // M71: parse the file once, lazily — the declaration-range normalisation needs
+  // parse the file once, lazily — the declaration-range normalisation needs
   // it in update/insert/delete, and update/insert already parse for other
   // reasons, so this replaces those parses rather than adding one.
   let originalParse: SafetyParse | null | undefined
@@ -1535,19 +1536,19 @@ async function planEditInto(
 
   if (request.mode === "update") {
     const newContent = String(request.newContent ?? request.content ?? "")
-    // M48.C2 (#700): fragment-safe update. The documented contract (registry
-    // example) is full-declaration replacement, but a BODY FRAGMENT
-    // ("return 42") used to replace the ENTIRE declaration span — silently
-    // destroying the function while reporting validated:true. If newContent
-    // does not declare the symbol itself, it is treated as the new body:
+    // A fragment-safe update. The documented contract (registry example) is
+    // full-declaration replacement, but a BODY FRAGMENT ("return 42") is a
+    // legitimate request that must not replace the ENTIRE declaration span. If
+    // newContent does not declare the symbol itself, it is treated as the new
+    // body — or refused, when the language exposes no body node to splice:
     // the declaration and signature are kept, only the body block changes.
     //
-    // M71: WHICH of the two it is is now a parse verdict, not a name-adjacent
+    // WHICH of the two it is is now a parse verdict, not a name-adjacent
     // keyword guess — see contentDeclaresSymbol above for the measured defect
     // this replaces (a full method declaration spliced into its own body in
     // Kotlin/C#/Dart, reported as success).
     if (await contentDeclaresSymbol(match.fileId, newContent, symbolName, match.symbolType)) {
-      // M71: replace the DECLARATION's range, not the indexed span, when the two
+      // replace the DECLARATION's range, not the indexed span, when the two
       // differ (see declarationRangeOf: Java/Kotlin index from the name).
       const range = (await declaredRange()) ?? { start: match.byteStart, end: match.byteEnd }
       return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, range.start, range.end, withNewline(newContent, dominantNewline(original))) }], warnings }
@@ -1560,7 +1561,7 @@ async function planEditInto(
       const close = body.endIndex - 1
       const inner = original.slice(open + 1, close)
       const innerIndent = inner.includes("\n") ? computeInnerIndent(original, body) : lineLeadingWhitespace(original, open) + indentUnit(original)
-      // M66: splice with the FILE's line ending. This concatenated a literal "\n",
+      // splice with the FILE's line ending. This concatenated a literal "\n",
       // so a CRLF file came back with the new body on "\n" and the untouched tail
       // still on "\r\n" — a file with MIXED line endings, silently, on a
       // successful edit. `newContent` arrives from an MCP client as a JSON string
@@ -1582,10 +1583,10 @@ async function planEditInto(
     let start = position === "before" ? match.byteStart : match.byteEnd
     let end = start
     let replacement = `\n${content}\n`
-    // M71: `before`/`after` anchor on the DECLARATION, not the indexed span. On a
-    // Java method the span starts at the name, so `before` used to insert between
-    // the return type and the name (`int <new code> target()` — a syntax error at
-    // best); Kotlin did the same after `fun `.
+    // `before`/`after` anchor on the DECLARATION, not the indexed span. On a Java
+    // method the span starts at the name, so an anchor taken from the raw span
+    // would insert between the return type and the name (`int <new code>
+    // target()` — a syntax error at best); Kotlin behaves the same after `fun `.
     if (position === "before" || position === "after") {
       const anchor = (await declaredRange()) ?? { start: match.byteStart, end: match.byteEnd }
       start = end = position === "before" ? anchor.start : anchor.end
@@ -1640,7 +1641,7 @@ async function planEditInto(
         }
       }
     }
-    // M66: `replacement` is assembled from literal "\n" in every branch above, so
+    // `replacement` is assembled from literal "\n" in every branch above, so
     // rather than thread the file's line ending through nine construction sites
     // (each easy to miss in a later edit), the spliced RESULT is normalized once
     // here. `replaceRange` returns the whole new file text; a CRLF file must not
@@ -1653,12 +1654,12 @@ async function planEditInto(
   if (request.mode === "delete") {
     const raw = await BrainDatabase.getRawInstance(projectId)
     const callers = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE target_symbol_id=? AND relationship_type IN ('calls','instantiates','references','uses')").get(match.id) as any)?.c ?? 0
-    // M71: remove the DECLARATION, not the indexed span — deleting a Java method
+    // remove the DECLARATION, not the indexed span — deleting a Java method
     // by its name-anchored span left the return type behind (`int ` alone in the
     // class body), which failed validation after a perfectly legitimate delete.
     const removal = (await declaredRange()) ?? { start: match.byteStart, end: match.byteEnd }
     const deleted = replaceRange(original, removal.start, removal.end, "")
-    // M16.E3: dangling-reference guard. Relationship edges alone are not
+    // dangling-reference guard. Relationship edges alone are not
     // trustworthy (proven on rake: symbol had zero edges while real call sites
     // existed). Scan the post-delete content for remaining AST reference sites
     // of the deleted name — a forced delete must never be silent about them.
@@ -1667,7 +1668,7 @@ async function planEditInto(
       .filter((o) => o.text === symbolName && isReferenceSite(o, ""))
       .map((o) => `line ${o.startLine}: ${o.parentType || "reference"}`)
 
-    // M68: check the files that IMPORT this module, not only this one.
+    // check the files that IMPORT this module, not only this one.
     //
     // MEASURED, three call shapes, same declaration, same index:
     //
@@ -1824,12 +1825,12 @@ async function planEditInto(
   }
   const raw = await BrainDatabase.getRawInstance(projectId)
 
-  // ── D2/M71: cross-file coverage that does not depend on a NON-NULL source ───
+  // ── D2/ cross-file coverage that does not depend on a NON-NULL source ───
   //
   // MEASURED (script/m71/diagnose-refactor-evidence.ts, probe-refactor-completeness.ts):
   // a cross-file call site is stored as a `calls` row with `source_symbol_id = NULL`
   // whenever the call is not inside an indexed symbol — a MODULE-TOP-LEVEL call is
-  // the ordinary case, legitimate since M51.A2 — and `brain_relationship` has NO
+  // the ordinary case, legitimate since — and `brain_relationship` has NO
   // file column, so such a row cannot name the file it lives in. The previous query
   // INNER JOINed `brain_symbol` on `source_symbol_id`, which discarded exactly those
   // rows: the edge existed, the query returned 0 rows, and the rename reported
@@ -1962,7 +1963,7 @@ async function planEditInto(
     )?.startIndex
     const shadowScopes = collectShadowScopes(parsed, symbolName, declStart ?? importAnchor ?? 0)
 
-    // 2. M16.E1: COMPLETE reference rename in the declaration file. The old
+    // 2. COMPLETE reference rename in the declaration file. The old
     // implementation renamed only sites inside index caller spans — when the
     // index had no edge (proven on rake: prerequisite_tasks had zero), real
     // call sites in the SAME file stayed at the old name while the tool
@@ -2070,19 +2071,19 @@ async function planEditInto(
   if (unrenamed.length > 0) {
     throw new Error(`refactor ${symbolName} → ${newName}: ${unrenamed.length} reference(s) this rename found but could not rewrite — ${unrenamed.slice(0, 6).join(", ")}${unrenamed.length > 6 ? ", …" : ""}; reindex the project or rename them manually`)
   }
-  // D3/M13 register: a refactor that resolved ZERO sites changed nothing. It used to
-  // return ok with "0 site(s) across 0 file(s)", which is a 200 over a no-op —
-  // measured on YAML and Makefile, whose grammars expose no identifier reference for
-  // a mapping key or a rule target. A rename that covers nothing is a failure.
+  // A refactor that resolved ZERO sites changed nothing. Answering ok with
+  // "0 site(s) across 0 file(s)" is a success message over a no-op — measured on
+  // YAML and Makefile, whose grammars expose no identifier reference for a mapping
+  // key or a rule target. A rename that covers nothing is a failure.
   if (renamedSites === 0) {
     throw new Error(`refactor ${symbolName} → ${newName}: resolved 0 rename site(s) in 0 file(s) — the symbol was located but nothing could be renamed (this grammar may expose no identifier node for it, as a YAML key or a Makefile target does not). No change was made.`)
   }
-  // A rename must not land on a name the file already declares. `refactor target
-  // → existing` used to be accepted when `existing` was another function in the
-  // declaration file: the result reported success and the file then held TWO
-  // declarations of `existing`, which no compiler accepts. The new name is checked
-  // against every file this plan rewrites — one top-level declaration of it is
-  // expected in the declaration file (the renamed one) and zero elsewhere.
+  // A rename must not land on a name the file already declares: renaming
+  // `target` onto an existing `existing` in the declaration file would leave TWO
+  // declarations of `existing`, which no compiler accepts, while the result would
+  // report success. The new name is checked against every file this plan rewrites —
+  // one top-level declaration of it is expected in the declaration file (the
+  // renamed one) and zero elsewhere.
   const collisions: string[] = []
   for (const change of changes) {
     const parsedAfter = await parseForSafety(change.path, change.after)
@@ -2110,7 +2111,7 @@ async function planEditInto(
 }
 
 /**
- * M71.D13: the envelope a plan starts with — every target planned, nothing
+ * the envelope a plan starts with — every target planned, nothing
  * committed. Built from the plan, so a dry run reports the same file set (and the
  * same byte sizes, measured by the plan's own read) that the commit would touch.
  */
@@ -2162,7 +2163,7 @@ function closeEnvelope(envelope: EditEnvelope, changes: EditPlanChange[]): EditE
  */
 async function commitPlan(projectPath: string, projectId: string, request: EditRequest, plan: EditPlan): Promise<EditResult> {
   const { changes, warnings, summary, preImages, batch } = plan
-  // M66: the snapshot is BYTES, not a decoded string. The previous snapshot was
+  // the snapshot is BYTES, not a decoded string. The previous snapshot was
   // `content: change.before` — the plan's `before` field, which came from
   // `readFileSync(path, "utf8")`. For a file containing any byte sequence that is
   // not valid UTF-8, that read does not fail, it silently substitutes U+FFFD, so
@@ -2186,7 +2187,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
   }
   const envelope = plannedEnvelope(projectPath, plan)
   const envelopeByAbs = new Map(changes.map((change, i) => [change.path, envelope.entries[i]]))
-  // M71.D9: the plan and this commit are two reads of the same files with a
+  // the plan and this commit are two reads of the same files with a
   // window between them, and until now nothing in that window was checked. The
   // bytes about to be replaced must be the bytes the plan was computed from, or
   // the write applies spans resolved against content that is no longer there —
@@ -2204,7 +2205,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       `bb_edit wrote nothing: ${moved.length} target file(s) changed on disk between planning and committing — ${moved.join(", ")}. The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit to re-plan against the current file.`,
     )
   }
-  // M66: which files were ACTUALLY replaced on disk, as opposed to merely
+  // which files were ACTUALLY replaced on disk, as opposed to merely
   // planned. A file whose write never happened needs no restore, and trying to
   // restore one is actively harmful: if the write failed because the directory is
   // read-only, the restore into that same directory fails too, and the rollback
@@ -2224,7 +2225,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       const temporary = `${change.path}.bb-edit-${randomUUID()}`
       temps.push(temporary)
       writeFileSync(temporary, change.after, "utf8")
-      // M66: carry the mode across the rename. renameSync REPLACES the inode, so
+      // carry the mode across the rename. renameSync REPLACES the inode, so
       // a 0755 script or a 0600 secret the tool edited came back 0644 — the temp
       // inherits the process umask and nothing preserved the original. An edit
       // that quietly drops a file's permissions is a change the caller never
@@ -2239,9 +2240,9 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
         try { chmodSync(change.path, originalMode) } catch { /* best effort: content is the contract */ }
       }
     }
-    // D5: formatting is measured, not assumed. `formatted` used to be
+    // Formatting is measured, not assumed. `formatted` is never
     // `request.format !== false` — the request restated as if it were an outcome —
-    // so a caller who trusted it was told a file had been formatted when nothing
+    // because a caller who trusts it is told a file had been formatted when nothing
     // had run (no mapping), nothing could run (no formatter installed), or the
     // formatter failed (exit 3, `warnings: []`). Each outcome is kept per file.
     const formatting = request.format === false
@@ -2276,7 +2277,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       }
     }
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
-    // M40.A3: the reindex call now applies the bounded post-pass internally
+    // the reindex call now applies the bounded post-pass internally
     // (snapshot + repair + scoped enrichment/gravity), so "AI edits a function
     // → seconds later the DB has it with resolved relationships" holds here.
     const reindexResult = await reindexFilesParallel(projectId as any, realpathSync(projectPath), changes.map((change) => ({ path: change.path, type: snapshots.get(change.path)!.existed ? "modified" as const : "added" as const })))
@@ -2298,7 +2299,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       ...(formatting !== undefined ? { formatting } : {}),
       validated: true,
       reindexed,
-      // M40.A3: visible derived-data outcome — never a silent deferral.
+      // visible derived-data outcome — never a silent deferral.
       derived: reindexResult.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 },
       warnings: warnings.length > 0 ? warnings : undefined,
       summary,
@@ -2310,7 +2311,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
     // Roll back every file to its pre-edit snapshot, then scrub any orphaned
     // .bb-edit-* temp files so a mid-loop failure never leaks temp artifacts.
     //
-    // M66: each restore is its own try/catch and the loop does NOT stop on the
+    // each restore is its own try/catch and the loop does NOT stop on the
     // first failure. A bare `writeFileSync(file, snapshot.content)` meant one
     // unwritable file (read-only, vanished directory, permission) threw out of
     // the catch block: the remaining files were never restored, the
@@ -2335,7 +2336,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
         envelopeByAbs.get(file)!.restored = true
       } catch (e: any) {
         rollbackFailures.push(`${file}: ${e?.message ?? String(e)}`)
-        // M71.D13: a restore that failed is named in the envelope with its reason,
+        // a restore that failed is named in the envelope with its reason,
         // beside the file's path, instead of being represented only by a count.
         envelope.failed.push({ path: relativeTo(projectPath, file), reason: e?.message ?? String(e) })
       }
