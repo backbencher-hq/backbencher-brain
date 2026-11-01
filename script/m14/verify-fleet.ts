@@ -41,6 +41,11 @@ type Lane = {
   differentialCounts?: { missing: number; unexplained: number }
   spec: boolean
   declaration: boolean
+  /** ITEM 1: the fleet mutation battery's own result for this lane (validation/m14/results/mutants-fleet.json),
+   *  measured by running every live mutant in a fresh process against the lane's fixtures. A lane the battery
+   *  did not execute is UNMEASURED, and a lane with any SURVIVED mutant has a registry that does not kill the
+   *  defects it declares — a no-op mutant reads as coverage while proving nothing. */
+  mutantsBattery: { measured: boolean; caught: number; survived: number; survivorIds: string[] }
   /** PHASE D of the inbound model (docs/analyzers/INBOUND-EDGE-MODEL.md): the lane's own inbound census.
    *  Every lane's `validation/m14/instruments/<lane>/incoming-declaration.json` declares, per relation type,
    *  how many emitted edges RESOLVED to an identity, how many are external, ambiguous or otherwise unresolved.
@@ -90,6 +95,30 @@ try {
     diffMeasuredLangs.set(lang, { missing: v.missing ?? 0, unexplained: v.unexplained ?? 0 })
   }
 } catch { /* not written yet: every lane then reads from the baseline alone */ }
+// ITEM 1 — the fleet mutation battery artifact. Every lane must have been executed (unmeasured is not a pass)
+// and must have ZERO survivors: a mutant that changes nothing the fixtures pin is a no-op, and a no-op mutant
+// is coverage that cannot fail.
+const mutantsBattery = new Map<string, { measured: boolean; caught: number; survived: number; survivorIds: string[] }>()
+let mutantsBatteryTotals = { mutantsRun: 0, caught: 0, survived: 0 }
+try {
+  const battery = JSON.parse(fs.readFileSync(V("validation/m14/results/mutants-fleet.json"), "utf8")) as {
+    totals?: { mutantsRun?: number; caught?: number; survived?: number }
+    lanes?: Record<string, { caught?: number; survived?: number; survivorIds?: string[] }>
+  }
+  mutantsBatteryTotals = {
+    mutantsRun: battery.totals?.mutantsRun ?? 0,
+    caught: battery.totals?.caught ?? 0,
+    survived: battery.totals?.survived ?? 0,
+  }
+  for (const [lane, row] of Object.entries(battery.lanes ?? {})) {
+    mutantsBattery.set(lane, {
+      measured: true,
+      caught: row.caught ?? 0,
+      survived: row.survived ?? 0,
+      survivorIds: row.survivorIds ?? [],
+    })
+  }
+} catch { /* absent artifact: every lane reads as unmeasured, which the guard refuses */ }
 const mutantsByLang = new Map<string, { live: number; retired: number }>()
 for (const m of MUTANTS) {
   const row = mutantsByLang.get(m.language) ?? { live: 0, retired: 0 }
@@ -176,13 +205,22 @@ const lanes: Lane[] = Object.keys(LANGS)
       differentialCounts: differential === "measured" ? measuredRow : undefined,
       spec: fs.existsSync(V(`script/m14/spec/${lane}-completeness.json`)),
       declaration: fs.existsSync(V(`validation/m14/instruments/${lane}/incoming-declaration.json`)),
+      mutantsBattery: mutantsBattery.get(lane) ?? { measured: false, caught: 0, survived: 0, survivorIds: [] },
       inbound: loadInbound(lane),
     }
   })
 // PHASE D: the fourth guard column is the lane's reconciled inbound census. A lane whose census is absent or
 // does not reconcile is not guarded — its inbound behaviour is not measured, and an unmeasured dimension is
 // not a passing one.
-const guarded = (l: Lane) => l.fixtures && l.mutants > 0 && l.differential !== "absent" && l.inbound.status === "declared"
+const guarded = (l: Lane) =>
+  l.fixtures &&
+  l.mutants > 0 &&
+  l.differential !== "absent" &&
+  l.inbound.status === "declared" &&
+  // ITEM 1: a registry the battery never executed is unmeasured; a registry with survivors does not kill the
+  // defects it declares. Both are unguarded, and the survivor ids are printed so the defect is named.
+  l.mutantsBattery.measured &&
+  l.mutantsBattery.survived === 0
 const bad = lanes.filter((l) => !guarded(l))
 const gaps = {
   noFixtures: lanes.filter((l) => !l.fixtures).map((l) => l.lane),
@@ -192,6 +230,8 @@ const gaps = {
   unmeasuredDifferential: lanes.filter((l) => l.differential === "unmeasured").map((l) => l.lane),
   noSpec: lanes.filter((l) => !l.spec).map((l) => l.lane),
   noDeclaration: lanes.filter((l) => !l.declaration).map((l) => l.lane),
+  mutantsBatteryUnmeasured: lanes.filter((l) => !l.mutantsBattery.measured).map((l) => l.lane),
+  mutantSurvivors: lanes.filter((l) => l.mutantsBattery.survived > 0).map((l) => `${l.lane}(${l.mutantsBattery.survived})`),
   inboundAbsent: lanes.filter((l) => l.inbound.status === "absent").map((l) => l.lane),
   inboundUnreconciled: lanes.filter((l) => l.inbound.status === "unreconciled").map((l) => `${l.lane}(${l.inbound.detail})`),
 }
@@ -223,7 +263,7 @@ try {
   )
 } catch { /* artifact is memory, never a gate: the guard's verdict above does not depend on writing it */ }
 if (JSON_OUT) {
-  console.log(JSON.stringify({ lanes: lanes.length, guarded: lanes.filter(guarded).length, gaps, inboundTotals, rows: lanes }, null, 1))
+  console.log(JSON.stringify({ lanes: lanes.length, guarded: lanes.filter(guarded).length, gaps, inboundTotals, mutantsBatteryTotals, rows: lanes }, null, 1))
 } else {
   console.log(`verify-fleet — ${lanes.length} lanes · guarded ${lanes.filter(guarded).length} · unguarded ${bad.length}`)
   console.log(`  fixtures missing:      ${gaps.noFixtures.length ? gaps.noFixtures.join(" ") : "—"}`)
@@ -231,11 +271,14 @@ if (JSON_OUT) {
   console.log(`  differential absent:   ${gaps.noDifferential.length ? gaps.noDifferential.join(" ") : "—"}`)
   console.log(`  differential measured-unpinned: ${gaps.measuredUnpinned.length ? gaps.measuredUnpinned.map((lane) => { const c = lanes.find((l) => l.lane === lane)?.differentialCounts; return c ? `${lane}(${c.missing}m/${c.unexplained}u)` : lane }).join(" ") : "—"}`)
   console.log(`  differential unmeasured: ${gaps.unmeasuredDifferential.length ? gaps.unmeasuredDifferential.join(" ") : "—"}`)
+  console.log(`  mutant battery unmeasured: ${gaps.mutantsBatteryUnmeasured.length ? gaps.mutantsBatteryUnmeasured.join(" ") : "—"}`)
+  console.log(`  mutant SURVIVORS:         ${gaps.mutantSurvivors.length ? gaps.mutantSurvivors.join(" ") : "—"}`)
+  console.log(`  mutation battery: ${mutantsBatteryTotals.mutantsRun} mutants run — ${mutantsBatteryTotals.caught} caught, ${mutantsBatteryTotals.survived} survived (population: 50 lanes, fresh process per lane)`)
   console.log(`  inbound census absent:  ${gaps.inboundAbsent.length ? gaps.inboundAbsent.join(" ") : "—"}`)
   console.log(`  inbound unreconciled:   ${gaps.inboundUnreconciled.length ? gaps.inboundUnreconciled.join(" ") : "—"}`)
   console.log(`  inbound census (${lanes.filter((l) => l.inbound.status === "declared").length}/${lanes.length} lanes reconciled): ${inboundTotals.edges.toLocaleString("en-US")} declared edges — resolved ${inboundTotals.resolved.toLocaleString("en-US")} (${inboundPct(inboundTotals.resolved)}%), external ${inboundTotals.external.toLocaleString("en-US")} (${inboundPct(inboundTotals.external)}%), ambiguous ${inboundTotals.ambiguous.toLocaleString("en-US")} (${inboundPct(inboundTotals.ambiguous)}%), other unresolved ${inboundTotals.otherUnresolved.toLocaleString("en-US")} (${inboundPct(inboundTotals.otherUnresolved)}%)`)
   console.log("")
-  console.log("lane".padEnd(11) + "fixtures  mutants(live/retired)  differential   spec  decl  inbound")
+  console.log("lane".padEnd(11) + "fixtures  mutants(live/retired)  differential   spec  decl  inbound  battery")
   for (const l of lanes) {
     if (guarded(l) && l.differential !== "unmeasured") continue
     console.log(
@@ -245,10 +288,12 @@ if (JSON_OUT) {
         l.differential.padEnd(15) +
         (l.spec ? "yes" : "NO").padEnd(6) +
         (l.declaration ? "yes" : "NO").padEnd(6) +
-        `${l.inbound.status === "declared" ? `${l.inbound.types}t ${(l.inbound.edges / 1000).toFixed(0)}k edges` : l.inbound.status.toUpperCase()}`
+        `${l.inbound.status === "declared" ? `${l.inbound.types}t ${(l.inbound.edges / 1000).toFixed(0)}k edges` : l.inbound.status.toUpperCase()}`.padEnd(25) +
+        (l.mutantsBattery.measured ? `${l.mutantsBattery.caught}c/${l.mutantsBattery.survived}s` : "UNMEASURED")
     )
   }
   console.log("")
+  console.log(gaps.mutantSurvivors.length ? `MUTATION: ${gaps.mutantSurvivors.length} lane(s) carry a registry that does NOT kill every mutant it declares: ${gaps.mutantSurvivors.join(" ")}` : `MUTATION: 0 survivors — every lane's registry kills every mutant it declares`)
   console.log(bad.length ? `FAIL — ${bad.length} lane(s) unguarded: ${bad.map((l) => l.lane).join(" ")}` : "PASS — every lane carries fixtures, at least one live mutant, and a differential oracle")
 }
 process.exit(bad.length ? 1 : 0)
