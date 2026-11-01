@@ -534,6 +534,7 @@ export function readCodeInputs(root: string): CodeInputs {
 // because the F5 harness resolves oracles through this module, and re-exporting is the
 // whole of this file's JSON footprint beyond the two registrations below.
 import { deriveJsonEdges } from "./oracles/json"
+import { deriveGraphqlTruth } from "./oracles/graphql-truth"
 import { deriveXmlTruth } from "./oracles/xml"
 // THE YAML-EXTENDS ORACLE IS LANE-OWNED: `script/m14/oracles/yaml-extends.ts`, written by the yaml
 // lane from YAML's own semantics, sharing no rule table, key set and path helper with
@@ -25055,6 +25056,16 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "graphql") {
+        // M14 F5 (2026-11-01): graphql had a full analyzer and NO oracle, so `--lang graphql` threw
+        // "derived ZERO truth edges" and the lane could never be measured by this harness. The rule is
+        // SDL's own: contains = a definition body's members; references = a field's written type;
+        // implements/extends = the one `implements` clause labelled by what the document says the
+        // supertype IS; overrides = a same-document supertype field re-declared by the owner; exports =
+        // the definitions the file declares; imports = the `#import "path"` convention; uses = union
+        // members. See oracles/graphql-truth.ts for the derived/refused split.
+        for (const e of deriveGraphqlTruth(root, relPath)) (truth as any[]).push(e)
+      }
       if (lang === "json") {
         // M14 F5: the JSON oracle. `deriveJsonEdges` is written from JSON's own
         // semantics and shares no rule table, key set, path helper or resolver with
@@ -25493,6 +25504,12 @@ async function main() {
           // uses) gap in its fifth distinct direction. Both halves land here: the oracle already derives
           // them, so admitting them compares rather than silently permits.
           ...(lang === "json" ? ["calls", "contains", "exports", "extends", "imports", "overrides", "references", "uses"] : []),
+          // GRAPHQL (2026-11-01): the oracle above derives contains, exports, implements, extends,
+          // imports, overrides, uses and references, and the lane publishes every one of them. Admitting
+          // the set in the same change that derives it is the two-sided rule this file records: an
+          // oracle with no entry compares nothing, and an entry with no oracle turns every analyzer row
+          // into a fabrication.
+          ...(lang === "graphql" ? ["contains", "exports", "implements", "extends", "imports", "overrides", "uses", "references"] : []),
           // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
           // in the same change or the oracle compares nothing — the two-sided rule this file records.
           ...(lang === "c" ? ["contains", "exports"] : []),
