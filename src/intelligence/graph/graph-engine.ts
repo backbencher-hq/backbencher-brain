@@ -268,6 +268,9 @@ type EdgeRow = {
   fileLang: string | null
   srcFileRel: string | null
   extName: string | null
+  /** WHY the target may claim this identity — the stored resolution basis ("symbol" | "external" |
+   *  "unresolved"). See schema-ddl.ensureRelationshipTargetBasisColumn. */
+  targetBasis: string | null
   /** The endpoint the OWNER CASCADE matched, not the symbol being traced.
    *  Equal to the traced symbol ⇒ the stored row names it exactly; different
    *  ⇒ the row names one of its members and the edge is attributed to the
@@ -997,6 +1000,7 @@ export async function traverseGraph(
         // members. Without it, a class with 180 methods answers every caller
         // question as if all 180 methods were the class.
         targetMatch: cascadeMatch(row, symbolId),
+        targetBasis: (row.targetBasis === "symbol" || row.targetBasis === "external" || row.targetBasis === "unresolved") ? row.targetBasis : null,
         matchedMember: matchedMember(row, symbolId),
         metadata: edgeMetadata(row.meta),
       })
@@ -1058,7 +1062,7 @@ export async function traverseGraph(
       "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
-      "src.relative_path AS srcFileRel, r.target_external AS extName, " +
+      "src.relative_path AS srcFileRel, r.target_external AS extName, r.target_basis AS targetBasis, " +
       "casc.id AS matchedId, " +
       KIND_RANK_SQL
 
@@ -1083,7 +1087,7 @@ export async function traverseGraph(
       "NULL AS symId, NULL AS symName, NULL AS line, NULL AS lineEnd, " +
       "NULL AS complexity, NULL AS symType, " +
       "NULL AS fileRel, NULL AS filePath, NULL AS fileLang, " +
-      "src.relative_path AS srcFileRel, r.target_external AS extName, " +
+      "src.relative_path AS srcFileRel, r.target_external AS extName, r.target_basis AS targetBasis, " +
       "casc.id AS matchedId, " +
       KIND_RANK_SQL
 
@@ -1214,6 +1218,7 @@ export async function traverseGraph(
         depth,
         rowId: row.rowId,
         sourceMatch: cascadeMatch(row, symbolId),
+        targetBasis: (row.targetBasis === "symbol" || row.targetBasis === "external" || row.targetBasis === "unresolved") ? row.targetBasis : null,
         matchedMember: matchedMember(row, symbolId),
         metadata: edgeMetadata(row.meta),
       })

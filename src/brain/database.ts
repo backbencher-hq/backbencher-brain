@@ -12,7 +12,7 @@ import * as BrainSchema from "./brain.sql"
 // of the other -- dropping either would leave a column/index unensured at open.
 //   local:  ensureSymbolSupertypesColumn   (symbol.supertypes)
 //   remote: ensureSymbolSourceTextColumn, ensureQueryShapeIndexes
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -123,6 +123,11 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // change, which is why the migration is wired on the same open path as
       // every other additive column rather than only on fresh databases.
       ensureSymbolSourceTextColumn(raw)
+      // INBOUND MODEL: the resolution basis of every relationship target. Same rule as the columns above —
+      // the database every editor and verifier opens is a PRE-EXISTING one, so a migration wired only into
+      // fresh-DB creation is a column nobody has. VIRTUAL GENERATED, so the ALTER computes legacy rows on
+      // read with no backfill writes and the resolver's own updates keep it correct.
+      ensureRelationshipTargetBasisColumn(raw)
       // Indexes a READ-heavy tool needs, on an already-created database. Wiring this
       // only into the DDL is how an index nobody has gets written: the database every
       // editor opens is a pre-existing one. MEASURED on cargo without it,

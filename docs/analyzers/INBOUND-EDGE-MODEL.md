@@ -1,7 +1,9 @@
 # Inbound edges: the data model that stops the reverse walk from lying
 
-Status: **design note + first measurements** (this session, round 3). Not implemented yet; the plan at the
-end is the work order. Everything below cites the command, the population and the scope.
+Status: **phase A IMPLEMENTED and gated** (round 4). The store now carries the resolution basis, the graph
+engine publishes it on every edge, and `script/m26/verify-inbound-basis.ts` passes on a real CLI-built index.
+Phases B–D remain; the plan at the end is the work order. Everything below cites the command, the population
+and the scope.
 
 ## 1. The problem, in the store's own words
 
@@ -83,7 +85,7 @@ full-file walk, so the cache lands with the hover half.
 
 | phase | deliverable | gate |
 |---|---|---|
-| A | `target_basis` column + writer population + backfill; engine external arm requires basis; hover discloses basis | new `script/m26/verify-inbound-basis.ts` (rows: basis counts are a partition; no row with `target_symbol_id` reads `unresolved`; external arm never returns a name-claim without basis) |
+| A | **DONE (round 4)** — `target_basis` is a VIRTUAL GENERATED column (symbol / external / unresolved) on `brain_relationship`; no writer edits were needed (32 `SET target_symbol_id` sites would have had to be edited and every future writer too, and the column would have been a writer-maintained copy that can drift). The migration runs on the PRE-EXISTING-DB open path (the DB every editor opens), computes every legacy row on read with no backfill writes, and the resolver's own updates keep it current. The graph engine selects it and publishes `targetBasis` on every edge (both directions). | **PASS** — `script/m26/verify-inbound-basis.ts` on a real CLI index: column generated (hidden=2), idempotent re-open, 0 invalid bases, 0 partition violations, resolved 8 = `symbol` 8, engine publishes `targetBasis:"symbol"` on the stored extends edge, and the fixture's three cases classify correctly: `external=2` (`readFile`, `node:fs:readFile`), `unresolved=1` (`nowhereDeclared`), `symbol=8`. |
 | B | hover "referenced by" reads stored reverse edges only; absence is one of two named cases | extend `script/m24/verify-hover.ts` (G-cases per basis; no name-matching path) |
 | C | adopt `hover_cache.ts` + `occurrenceAtPoint` (latency contract re-measured on this tree) | `script/m24/verify-hover-latency.ts` (p95 warm under budget, same fixture/bands) |
 | D | per-lane inbound census into the fleet guard | `verify-fleet.ts` fourth column, counts + falsifier per lane |

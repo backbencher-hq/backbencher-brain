@@ -342,6 +342,10 @@ export interface GraphEdge {
    *  Absent means the engine could not resolve the match, which is NOT the
    *  same as "exact" — consumers must read this rather than infer it. */
   targetMatch?: "exact" | "owner-cascade"
+  /** The stored RESOLUTION BASIS of the target: `symbol` means the row names a stored declaration by
+   *  identity; `external`/`unresolved` mean the target was a string. A consumer that presents an edge as
+   *  an inbound claim about a declaration must read this field rather than assume identity. */
+  targetBasis?: "symbol" | "external" | "unresolved" | null
   /** Callees: the same question from the other end — whether the stored row's
    *  SOURCE is the traced symbol or one of its members. */
   sourceMatch?: "exact" | "owner-cascade"

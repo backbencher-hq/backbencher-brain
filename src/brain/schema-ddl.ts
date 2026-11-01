@@ -113,6 +113,16 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         target_symbol_id TEXT,
         source_external TEXT,
         target_external TEXT,
+        -- The RESOLUTION BASIS of the target — see ensureRelationshipTargetBasisColumn for why this is
+        -- a VIRTUAL GENERATED column rather than a writer-maintained one.
+        target_basis TEXT GENERATED ALWAYS AS (
+          CASE
+            WHEN target_symbol_id IS NOT NULL THEN 'symbol'
+            WHEN metadata IS NOT NULL AND json_extract(metadata, '$.isExternalTarget') = 1 THEN 'external'
+            WHEN target_external IS NOT NULL THEN 'unresolved'
+            ELSE 'unresolved'
+          END
+        ) VIRTUAL,
         relationship_type TEXT NOT NULL,
         confidence REAL NOT NULL,
         context TEXT,
@@ -670,6 +680,58 @@ export function ensureSymbolSupertypesColumn(raw: any): void {
  *
  * Idempotent, and a no-op on a fresh DB where the DDL already created it.
  */
+/**
+ * INBOUND BASIS: `brain_relationship.target_basis` — why a reverse walk may (or may not) claim an edge.
+ *
+ * The schema stored no inbound edge at all; every reverse surface (impact, hover, references) answered by
+ * scanning OUTGOING rows and matching targets, and a name match is not an identity (the three lies in
+ * `script/m14/incoming-check.ts`: unreferenced vs never-emitted, name collisions attributing an edge to
+ * the wrong declaration, and hopeless strings indistinguishable from unindexed targets). `target_basis` is
+ * the store's own answer to "WHAT is this target": `symbol` (target_symbol_id names a stored declaration),
+ * `external` (the analyzer classified it as a known-external identity via `metadata.isExternalTarget`) or
+ * `unresolved` (a string the store could not resolve and did not classify).
+ *
+ * A VIRTUAL GENERATED column, NOT a writer-maintained one, and that choice is the whole design: there are
+ * 32 `SET target_symbol_id` sites across six modules (insert path, five resolution passes, binding/import/
+ * member-owner repair, julia collapse), and a column maintained by writers would need all 32 edited plus
+ * every future writer — the exact "a field no gate reads is the field a rebuild loses" shape this project
+ * has been bitten by. Generated columns are recomputed by SQLite on read and on every update of their
+ * inputs, so:
+ *   · existing databases need NO backfill writes (the ALTER computes every legacy row on demand; the only
+ *     information a legacy row carries is preserved exactly — a set id is `symbol`, an external string is
+ *     `unresolved` because the legacy row does not record the analyzer's classification);
+ *   · the resolver's 32 updates keep it correct for free (a row that resolves flips to `symbol`);
+ *   · index write volume does not grow (no second UPDATE per row).
+ * Cost and limit, stated: VIRTUAL generated columns cannot be INDEXED in SQLite, so a reader cannot seek on
+ * `target_basis`; it filters rows already selected by the target identity. That is the access pattern the
+ * inbound model needs (the identity is the seek key; the basis is the disclosure).
+ *
+ * Idempotent, and a no-op on a fresh DB where the DDL above carries it.
+ */
+export function ensureRelationshipTargetBasisColumn(raw: any): void {
+  try {
+    // NOTE: VIRTUAL generated columns are hidden from `PRAGMA table_info` (they appear in
+    // `table_xinfo`), so the usual `cols.includes(...)` idempotency check silently misses one and every
+    // open would re-attempt the ALTER. `table_xinfo` is the correct probe where it exists, with a
+    // direct SELECT fallback for builds that predate it.
+    const hidden = (raw.prepare("PRAGMA table_xinfo(brain_relationship)").all() as Array<{ name: string; hidden?: number }>)
+    if (hidden.length === 0) return // table absent (fresh DB handled by DDL)
+    if (hidden.some((c) => c.name === "target_basis")) return
+    try {
+      raw.prepare("SELECT target_basis FROM brain_relationship LIMIT 1").get()
+      return // column already usable (a build whose xinfo hides it): do not ALTER twice
+    } catch { /* genuinely absent: add it below */ }
+    raw.exec(`ALTER TABLE brain_relationship ADD COLUMN target_basis TEXT GENERATED ALWAYS AS (
+      CASE
+        WHEN target_symbol_id IS NOT NULL THEN 'symbol'
+        WHEN metadata IS NOT NULL AND json_extract(metadata, '$.isExternalTarget') = 1 THEN 'external'
+        WHEN target_external IS NOT NULL THEN 'unresolved'
+        ELSE 'unresolved'
+      END
+    ) VIRTUAL`)
+  } catch {}
+}
+
 export function ensureSymbolSourceTextColumn(raw: any): void {
   try {
     const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
@@ -872,6 +934,9 @@ export function ensureSchema(raw: any): void {
   // The symbol body, so content search can reach a word that appears only
   // inside a function. Idempotent; the DDL above carries it for fresh DBs.
   ensureSymbolSourceTextColumn(raw)
+  // INBOUND BASIS: additive relationship column so a reverse walk can state WHY an edge may claim a
+  // declaration (identity vs name match). Idempotent; the DDL above carries it for fresh DBs.
+  ensureRelationshipTargetBasisColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}
