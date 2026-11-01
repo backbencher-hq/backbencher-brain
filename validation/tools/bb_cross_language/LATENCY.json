@@ -379,10 +379,138 @@
           }
         }
       },
-      "handlerLevel": "not measured on the shared index by rule; handler overhead measured on T0 is within the noise at this scale (round1: component p50 8.011ms vs handler p50 8.086ms on the same fixture)",
+      "handlerLevel": {
+        "measure": "real handler (createToolHandlers) against the COPY of the reference store under validation/tools/bb_cross_language/t2-copy; the shared store is never opened read-write by a measurement",
+        "copy": {
+          "destination": "validation/tools/bb_cross_language/t2-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+          "sourceCounts": {
+            "files": 6452,
+            "symbols": 310423,
+            "relationships": 820040,
+            "crossLanguageRows": 0
+          },
+          "equal": true,
+          "copyMs": 441106
+        },
+        "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/work/latency-t2-handler.mts",
+        "environment": {
+          "node": "v22.22.1",
+          "cpus": 8,
+          "load": "9.91 7.81 5.49 14/2061 98"
+        },
+        "subjects": {
+          "Command": {
+            "copies": 34,
+            "defaultCall": {
+              "args": {
+                "symbol": "Command"
+              },
+              "warmup": 1,
+              "runs": 5,
+              "p50Ms": 7.554,
+              "p95Ms": 7.831,
+              "minMs": 7.486,
+              "maxMs": 7.831,
+              "bytes": 10497
+            },
+            "limit1Call": {
+              "args": {
+                "symbol": "Command",
+                "limit": 1
+              },
+              "runs": 5,
+              "p50Ms": 7.649,
+              "p95Ms": 8.019
+            },
+            "componentMs": 8.858,
+            "handlerMatchesComponent": true,
+            "answerShape": {
+              "declaredAbsent": true,
+              "factCount": 0,
+              "storedRowCount": 0,
+              "deeperDescendantRowCount": 0,
+              "copyCount": 34,
+              "copiesTruncated": false
+            }
+          },
+          "type": {
+            "copies": 5392,
+            "defaultCall": {
+              "args": {
+                "symbol": "type"
+              },
+              "warmup": 1,
+              "runs": 5,
+              "p50Ms": 277.953,
+              "p95Ms": 328.434,
+              "minMs": 188.032,
+              "maxMs": 328.434,
+              "bytes": 56550
+            },
+            "limit1Call": {
+              "args": {
+                "symbol": "type",
+                "limit": 1
+              },
+              "runs": 5,
+              "p50Ms": 298.938,
+              "p95Ms": 335.841
+            },
+            "componentMs": 318.015,
+            "handlerMatchesComponent": true,
+            "answerShape": {
+              "declaredAbsent": true,
+              "factCount": 0,
+              "storedRowCount": 0,
+              "deeperDescendantRowCount": 0,
+              "copyCount": 5392,
+              "copiesTruncated": true
+            }
+          },
+          "file": {
+            "copies": 3457,
+            "defaultCall": {
+              "args": {
+                "symbol": "file"
+              },
+              "warmup": 1,
+              "runs": 5,
+              "p50Ms": 112.127,
+              "p95Ms": 168.906,
+              "minMs": 103.797,
+              "maxMs": 168.906,
+              "bytes": 58156
+            },
+            "limit1Call": {
+              "args": {
+                "symbol": "file",
+                "limit": 1
+              },
+              "runs": 5,
+              "p50Ms": 107.824,
+              "p95Ms": 145.86
+            },
+            "componentMs": 138.923,
+            "handlerMatchesComponent": true,
+            "answerShape": {
+              "declaredAbsent": true,
+              "factCount": 0,
+              "storedRowCount": 0,
+              "deeperDescendantRowCount": 0,
+              "copyCount": 3457,
+              "copiesTruncated": true
+            }
+          }
+        },
+        "budget": {
+          "p95Ms": 5000,
+          "verdict": "within budget — worst p95 328ms (name with 5,392 copies), 15x under the ceiling"
+        },
+        "fixHISTORY": "before the join-order fix the same measurement was p50 3.3-6.5s / p95 4.3-8.9s (round1/round2 in this file) and one sample reached 33.6s; the row statements now drive from brain_sym_proj_name_type_idx (14,641ms -> 26ms for one name) and the depth>=2 count drives from the recursive table (1.4-1.7s -> 5-36ms per call)."
+      },
       "budget": {
         "p95Ms": 5000,
-        "verdict": "BREACH — every T2 subject exceeds the 5s p95 budget in both rounds; one round-2 sample exceeded the 30s client timeout (file, max 33,565ms)"
+        "verdict": "within budget after the fix — see handlerLevel"
       },
       "statementProfile": {
         "file": "AUDIT-t2-statement-profile.txt",
@@ -394,14 +522,17 @@
       }
     }
   },
-  "status": "partial — T0/T1 within budget, T2 BREACH; defect D4 carries the fix plan",
+  "status": "verified — T0/T1/T2 all within budget after the D4 join-order fix",
   "limitations": [
-    "Wall-clock figures belong to this machine and were taken with a load average of ~18–22 on 8 CPUs because the checkout is shared with a fleet process. Ratios between statements and between shipped SQL and the fix prototype are the portable part.",
-    "T1 and T2 indexes carry zero stored cross-language rows, so neither tier exercises the facts path on a large index with rows. The large-with-rows measurement is CL1 on the 616-file elixir corpus (714 stored cross-language rows), recorded in validation/m63/results/CL1.json.",
-    "The official T2 handler-level call is not measured because that opens the shared store read-write; overriding that rule was not done.",
-    "The `indexMs` figures are the one-time fixture build cost, not a tool cost, and are recorded for reproducibility of the fixture."
+    "Wall-clock figures belong to this machine and were taken while a fleet process shares the checkout; the load average is recorded per round.",
+    "The reference index carries ZERO stored cross-language rows, so T2 exercises the absence path only; the facts path on a large row population is measured by the CL1 corpus lane (692-file elixir index, 714 stored rows, 403 checks).",
+    "The T2 numbers before and after the join-order fix are both published; the pre-fix rounds are the regression baseline, not a claim about the shipped code."
   ],
   "defects": [
-    "D4 — the two by-name statements scan the project's relationship table; see AUDIT.md"
-  ]
+    "D4 fixed: by-name statements and the depth>=2 count drive from the symbol/descendant side; row sets proved identical on the elixir corpus (714 rows) by validation/tools/bb_cross_language/verify-cross-language.ts G10/G10b"
+  ],
+  "measuredAfterFixes": {
+    "at": "2026-11-01T20:21:31.270Z",
+    "note": "post-fix measurements; the pre-fix T2 rounds stay in this file as the regression baseline they are"
+  }
 }

@@ -455,21 +455,30 @@ ORDER BY self_file, self_line, owner_file, owner_line, direction, other_file, ot
  *  it targets; counting only the target side under-reported the number and made the
  *  absence note claim there were no deeper rows — measured on a fixture whose
  *  grandchild called into another language (count 0, truth 1). The member scan above
- *  has always covered both directions; this now matches it. */
+ *  has always covered both directions; this now matches it.
+ *
+ *  The join ORDER is part of the statement's cost, the same as the row statements.
+ *  Measured on the 6,452-file reference index, this count was the dominant cost of
+ *  the whole answer (1.4–1.7 s per call) after the row statements were fixed, and
+ *  `EXPLAIN QUERY PLAN` said why: with the relationship table as the outer operand
+ *  SQLite SCANs all 820,040 rows twice, once per union arm, while the descendant
+ *  table it should be walking is a handful of ids. Driving from `down` makes each
+ *  arm an index seek on (symbol_id, is_cross_language): measured 5–36 ms. */
 const DEEPER_DESCENDANT_ROWS_SQL = `
 WITH RECURSIVE down(id, depth) AS (
   SELECT m.id, 1
-  FROM brain_symbol m JOIN brain_symbol o ON o.id = m.owner_symbol_id
+  FROM brain_symbol o
+  CROSS JOIN brain_symbol m ON m.owner_symbol_id = o.id
   WHERE o.project_id = ? AND o.name = ?
   UNION ALL
   SELECT m.id, down.depth + 1
   FROM brain_symbol m JOIN down ON m.owner_symbol_id = down.id
 )
 SELECT COUNT(*) AS n FROM (
-  SELECT r.id FROM brain_relationship r JOIN down ON down.id = r.target_symbol_id
+  SELECT r.id FROM down CROSS JOIN brain_relationship r ON r.target_symbol_id = down.id
   WHERE r.project_id = ? AND r.is_cross_language = 1 AND down.depth >= 2
   UNION
-  SELECT r.id FROM brain_relationship r JOIN down ON down.id = r.source_symbol_id
+  SELECT r.id FROM down CROSS JOIN brain_relationship r ON r.source_symbol_id = down.id
   WHERE r.project_id = ? AND r.is_cross_language = 1 AND down.depth >= 2
 )`
 
