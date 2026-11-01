@@ -377,3 +377,20 @@ client-tooling2api-work/
 
 # The dedicated corpus root for the two lanes the shared corpus cannot measure (matlab, vba).
 .corpus-tail/
+
+# ── LOCAL-ONLY INFRASTRUCTURE AND THE 2026-11-01 TREE CLEANUP ────────────────────────────────────────────────
+# These are machine-local by nature: corpus checkouts and corpus symlink farms, agent-session worktrees, and
+# the harness's local patch/config dirs. They carry hundreds of MB and none of them is build input; listing
+# them here is what lets `git status` mean "the repo is clean" rather than "the machine has extra files".
+.corpus/
+.agent-tooling.worktrees/
+.agents/
+dsh-local-patches/
+.bb-write-probe/
+viz-final-check/
+
+# The local archive from the 2026-11-01 tree-cleanup review: every untracked file whose size/content made git
+# the wrong medium (250+ MB of gate dumps, lane logs, analyzer .bak snapshots, ad-hoc probes) was MOVED here
+# preserving its project-relative path, with local-archive/untracked-2026-11-01/MANIFEST.txt recording sizes.
+# Nothing was deleted; the tracked summary is validation/m14/verification/TREE-SELF-CONTAINMENT.md.
+local-archive/

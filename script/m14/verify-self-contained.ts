@@ -25,6 +25,15 @@
  *      from dependencies and is out of scope.)
  *   3. GRAMMAR PIN RECORDS. Every TRACKED `validation/m14/*-grammar-pin.json` must cite a `wasm` path that
  *      is tracked, and every vendored source directory it names must be tracked.
+ *   4. FLEET-GUARD INPUTS. `verify-fleet.ts` reads four result/baseline files and, for every lane in
+ *      `run-fixtures.ts`'s LANGS, a spec file and an `incoming-declaration.json`. All of them must be TRACKED.
+ *      Found live by this check, after the first repair: lane `vb`'s
+ *      `validation/m14/instruments/vb/incoming-declaration.json` was UNTRACKED — `verify-fleet` reconciled 50/50
+ *      here only because the file sat on this disk, and a fresh clone would have reported the vb lane's inbound
+ *      census ABSENT.
+ *   5. LANE ASSETS. Every LANGS lane must have its analyzer module, its `script/m14/spec/<lane>-completeness.json`
+ *      and at least one tracked fixture file. A lane whose analyzer or fixtures are not in git is a lane the
+ *      repo cannot run.
  *
  * The archive/ tree is excluded BY DESIGN (it is a byte-for-byte recovery archive, not build input); so is
  * script/m14/tmp/ (scratch by convention).
@@ -114,6 +123,29 @@ for (const f of tracked) {
 }
 notes.push(`grammar pins: ${pinsChecked} tracked pin record(s) checked`)
 
+// ── 4. fleet-guard inputs: the files verify-fleet.ts demands must exist in git ─────────────────────────────
+const fleetSrc = readFileSync(path.join(ROOT, "script/m14/verify-fleet.ts"), "utf8")
+const fleetInputs = new Set<string>([...fleetSrc.matchAll(/readFileSync\(V\("([^"]+)"\)/g)].map((m) => m[1]))
+const RUN_FIXTURES = readFileSync(path.join(ROOT, "script/m14/run-fixtures.ts"), "utf8")
+const lanes: { lane: string; wasm: string; analyzerFile: string }[] = []
+for (const m of RUN_FIXTURES.matchAll(/^\s{2}([a-z0-9_]+): \{ wasm: "([^"]+)", analyzerFile: "([^"]+)"/gm)) {
+  lanes.push({ lane: m[1], wasm: m[2], analyzerFile: m[3] })
+}
+let laneChecks = 0
+for (const l of lanes) {
+  laneChecks++
+  const spec = `script/m14/spec/${l.lane}-completeness.json`
+  const decl = `validation/m14/instruments/${l.lane}/incoming-declaration.json`
+  const analyzer = `src/ast/${l.analyzerFile}.ts`
+  for (const [label, p] of [["fleet spec", spec], ["fleet inbound declaration", decl], ["lane analyzer", analyzer]] as const) {
+    if (!isTracked(p)) findings.push(`UNTRACKED ${label}: ${p} (required by verify-fleet/run-fixtures for lane '${l.lane}')`)
+  }
+  const fixturePrefix = `validation/m14/fixtures/${l.lane}/`
+  if (![...tracked].some((t) => t.startsWith(fixturePrefix))) findings.push(`NO TRACKED FIXTURES: ${fixturePrefix} (lane '${l.lane}')`)
+}
+for (const p of fleetInputs) if (!isTracked(p)) findings.push(`UNTRACKED fleet-guard input: ${p} (read by script/m14/verify-fleet.ts)`)
+notes.push(`fleet guard: ${lanes.length} lane(s) checked for spec + inbound declaration + analyzer + fixtures; ${fleetInputs.size} static V("...") input(s) checked`)
+
 console.log("verify-self-contained — is the repository complete in git, not just on this disk?")
 for (const n of notes) console.log("  " + n)
 if (findings.length > 0) {
@@ -121,4 +153,4 @@ if (findings.length > 0) {
   console.error(`FAIL — ${findings.length} finding(s): the working tree is greener than the repository`)
   process.exit(1)
 }
-console.log("PASS — every tracked import, loaded repo grammar wasm and tracked grammar pin resolves to tracked bytes")
+console.log("PASS — every tracked import, loaded repo grammar wasm, grammar pin and fleet-guard/lane input resolves to tracked bytes")
