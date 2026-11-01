@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "b74ae092b2ed5b1143468f2753dc65cf4a9702dc691005c2eaa9f216d1eae045",
-    "sealedAt": "2026-10-31T18:51:56.000Z"
+    "contentSha256": "d66e21e34ca8780c188b77ef032c30b158a5ba820628ec2b442075896f3183e1",
+    "sealedAt": "2026-10-31T19:07:51.000Z"
   },
   "checks": [
     {
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b6141ca84b9ffbb2a93798ab623d51196dc9b60c",
-  "committedAt": "2026-10-31T14:51:56-04:00",
+  "commit": "71851adea6ea964816d1cc16bc382acccf20dbe9",
+  "committedAt": "2026-10-31T15:07:51-04:00",
   "data": {
     "details": [
       {
@@ -9368,8 +9368,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-31T14:51:56-04:00",
-  "regeneratedAtCommit": "b6141ca84b9ffbb2a93798ab623d51196dc9b60c",
+  "regeneratedAt": "2026-10-31T15:07:51-04:00",
+  "regeneratedAtCommit": "71851adea6ea964816d1cc16bc382acccf20dbe9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
