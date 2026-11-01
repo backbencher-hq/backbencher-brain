@@ -1,10 +1,12 @@
 # Inbound edges: the data model that stops the reverse walk from lying
 
-Status: **phases A, B and C IMPLEMENTED and gated** (rounds 4–5). The store carries the resolution basis, the
+Status: **all four phases IMPLEMENTED and gated** (rounds 4–5). The store carries the resolution basis, the
 graph engine publishes it on every edge, hover reads stored reverse edges by IDENTITY and NAMES the absence
-when only string-only rows name the symbol, and the recovered `hover_cache.ts` is ADOPTED with a latency +
-equivalence gate that passes on real files. `script/m26/verify-inbound-basis.ts` passes (14 checks) on a real
-CLI-built index; `script/m24/verify-hover-latency.ts` passes all 6 size bands. Phase D remains. Everything below cites the command, the population
+when only string-only rows name the symbol, the recovered `hover_cache.ts` is ADOPTED with a latency +
+equivalence gate that passes on real files, and the fleet guard carries a reconciled per-lane inbound census
+as its fourth column. `script/m26/verify-inbound-basis.ts` passes (14 checks) on a real CLI-built index;
+`script/m24/verify-hover-latency.ts` passes all 6 size bands; `script/m14/verify-fleet.ts` reads
+**50 lanes · guarded 50 · unguarded 0** with `inbound census (50/50 lanes reconciled)`. Everything below cites the command, the population
 and the scope.
 
 ## 1. The problem, in the store's own words
@@ -107,8 +109,9 @@ Integration facts verified on the current tree (round 4):
 | A | **DONE (round 4)** — `target_basis` is a VIRTUAL GENERATED column (symbol / external / unresolved) on `brain_relationship`; no writer edits were needed (32 `SET target_symbol_id` sites would have had to be edited and every future writer too, and the column would have been a writer-maintained copy that can drift). The migration runs on the PRE-EXISTING-DB open path (the DB every editor opens), computes every legacy row on read with no backfill writes, and the resolver's own updates keep it current. The graph engine selects it and publishes `targetBasis` on every edge (both directions). | **PASS** — `script/m26/verify-inbound-basis.ts` on a real CLI index: column generated (hidden=2), idempotent re-open, 0 invalid bases, 0 partition violations, resolved 8 = `symbol` 8, engine publishes `targetBasis:"symbol"` on the stored extends edge, and the fixture's three cases classify correctly: `external=2` (`readFile`, `node:fs:readFile`), `unresolved=1` (`nowhereDeclared`), `symbol=8`. |
 | B | **DONE (round 4)** — hover's usages/references already read stored reverse edges by IDENTITY (`relations.ts`: `WHERE r.target_symbol_id = ?`), which is the correct half; what was missing was the OTHER half, an absence that cannot lie. New `countUnresolvedNameMatches{ByProjectAndName,}` counts the rows that NAME the symbol's string but resolved to no declaration, split by stored basis, and `SymbolHoverData.unresolvedNameMatches` + a rendered line disclose it: "N stored rows name `X` but resolve to no indexed declaration (E classified external, U unresolved); these are not counted as usages." null = census could not be taken (absence of measurement ≠ measured zero). | **PASS** — `script/m26/verify-inbound-basis.ts` B5: a resolved symbol reports 0 string-only namers; `nowhereDeclared` reports unresolved=1; `readFile` reports external=1/unresolved=0. `script/m24/verify-hover.ts`: 58/58 passed, 6/6 mutants caught, 14 negative — unchanged by the new section. |
 | C | adopt `hover_cache.ts` + `occurrenceAtPoint` (latency contract re-measured on this tree) | `script/m24/verify-hover-latency.ts` (p95 warm under budget, same fixture/bands) |
-| D | per-lane inbound census into the fleet guard | `verify-fleet.ts` fourth column, counts + falsifier per lane |
+| D | **DONE (round 5)** — `verify-fleet.ts` gained its fourth guard column by loading and RECONCILING each lane's own `validation/m14/instruments/<lane>/incoming-declaration.json`: per relation type, `edges` must equal `resolved + external + ambiguous + otherUnresolved + unclassed` (the partition IS the falsifier), a lane with no such file or no declared type with edges is `absent`/`unreconciled` and therefore UNGUARDED, and declarations that predate the `edges` field are counted by their parts with that derivation disclosed (`edgesSource: "parts"`) rather than silently declared reconciled. The census is written to `validation/m14/results/inbound-fleet.json`, deterministic (lane order, no timestamp) so it only changes when a lane's measurement does. | **PASS** — `bun script/m14/verify-fleet.ts`: **50 lanes · guarded 50 · unguarded 0**; `inbound census absent: —`, `inbound unreconciled: —`, and `inbound census (50/50 lanes reconciled): **36,829,585** declared edges — resolved **21,940,661** (59.6%), external **2,512,796** (6.8%), ambiguous **5,163,332** (14.0%), other unresolved **7,212,796** (19.6%)`. Falsifier demonstrated during implementation: the first run reported clojure/csharp/ruby/svelte unreconciled because their declarations carry no `edges` total — the guard refused them until the derivation was explicit, which is the column working. |
 
 Phases A–D are ordered by dependency, and every one is falsifiable: each gate names the exact rows it
-refuses. The engine's reverse walk keeps its current behavior **until** phase A lands, because changing
+refuses. All four are now landed; the ordering was followed (basis → hover absence → cache/latency → fleet
+census) and each phase's gate was run before the next began. The engine's reverse walk keeps its current behavior **until** phase A lands, because changing
 which arm answers without the basis column would move wrong rows from one lie to another.
