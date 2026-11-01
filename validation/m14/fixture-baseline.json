@@ -1,5 +1,7 @@
 {
   "vb": 0,
+  "vba": 0,
+  "matlab": 0,
   "clojure": 0,
   "javascript": 0,
   "vue": 0,
@@ -25,7 +27,7 @@
   "php": 0,
   "protobuf": 0,
   "ruby": 0,
-  "perl": 6,
+  "perl": 0,
   "haskell": 0,
   "elixir": 0,
   "yaml": 0,
@@ -43,7 +45,7 @@
   "css": 0,
   "markdown": 0,
   "scss": 0,
-  "bash": 3,
+  "bash": 0,
   "json": 0,
   "powershell": 0,
   "solidity": 0

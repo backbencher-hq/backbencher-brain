@@ -94,6 +94,9 @@ import { YAML_MUTANTS } from "../m60/yaml-mutants"
 import { JAVASCRIPT_MUTANTS } from "./javascript-mutants"
 import { VBA_MUTANTS } from "./vba-mutants"
 import { MATLAB_MUTANTS } from "./matlab-mutants"
+import { GRAPHQL_MUTANTS } from "./graphql-mutants"
+import { LUA_MUTANTS } from "./lua-mutants"
+import { R_MUTANTS } from "./r-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2539,6 +2542,9 @@ export const MUTANTS: Mutant[] = [
   ...JAVASCRIPT_MUTANTS,
   ...VBA_MUTANTS,
   ...MATLAB_MUTANTS,
+  ...GRAPHQL_MUTANTS,
+  ...LUA_MUTANTS,
+  ...R_MUTANTS,
   ...CLEAN_MUTANTS,
   // task-7 batch A: three registries whose `Mutant[]` comes from this file's own exported type, so
   // their entries are canonically shaped by construction. An import with no spread is still an

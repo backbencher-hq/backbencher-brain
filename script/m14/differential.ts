@@ -664,6 +664,10 @@ export const LANG_REPOS: Record<string, string> = {
   // F5-cert wave (CLJ): the clojure/clojure checkout (pin 2cea6925) was
   // already present as java's second corpus; it becomes clojure's primary.
   clojure: "clojure",
+  // M14 F5 perl: primary corpus added 2026-11-01 — the lane HAD a 600-line oracle (`derivePerlEdges`)
+  // and a second corpus, but no primary mapping, so the sweep printed "no corpus repo mapped" and
+  // the lane derived no truth at all. A second corpus with no primary is a lane that never runs.
+  perl: "mojo",
   // F5 wave (CLEAN): Clyde (109 icl/dcl) is the lane's primary corpus.
   clean: "Clyde",
   // F5 (HCL) — THE LANE COULD NOT RUN, and this line is why. `repoForSweep` reads
@@ -783,7 +787,7 @@ export const SECOND_CORPUS: Record<string, string> = {
   // diff is not walked by a path-limited `-S`. Its first parent carries these lanes, its second does not,
   // and the merge kept the second parent's copy. Ported here by key comparison against main: main's
   // SECOND_CORPUS has 36 keys and HEAD's 31, HEAD has none that main lacks, so this loses nothing.
-  fsharp: "fsharp-data",
+  fsharp: "FSharp.Data",
   hcl: "tf-aws-components",
   make: "consul",
   nim: "pixie",
@@ -1137,6 +1141,16 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // r HAS AN ORACLE AND WAS NEVER REGISTERED, so `--lang r` could not measure it: the registry is what binds a
   // lane to its wasm, its analyzer and its derive function, and the derive function alone does nothing.
   r: { wasm: "tree-sitter-r.wasm", analyzerFile: "real-r-analyzer", className: "RealRAnalyzer", ext: "r,R" },
+
+  // ── THE THREE LANES THE REGISTRY NEVER CARRIED (2026-11-01) ──────────────────────────────────
+  // matlab, protobuf and vba completed the 50-lane campaign but were absent from this map — so
+  // `--lang <lane>` measured ZERO lanes and printed a clean-looking "probe run: measured 0", which
+  // is the vacuous-pass shape this harness exists to refuse. The entries are byte-identical to
+  // run-fixtures.ts's (same wasm pin, class and extensions) so the two maps cannot drift on these
+  // lanes. A lane in no registry is not a lane with no defects; it is a lane nothing measures.
+  matlab: { wasm: "tree-sitter-matlab.wasm", analyzerFile: "real-matlab-analyzer", className: "RealMatlabAnalyzer", ext: "m" },
+  protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },
+  vba: { wasm: "tree-sitter-vba.wasm", analyzerFile: "real-vba-analyzer", className: "RealVbaAnalyzer", ext: "bas,cls,frm" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
