@@ -1171,6 +1171,13 @@ function pushTypeRef(site: any, owner: string, inv: Inventory, push: (l: string,
   // a literal keyword is a value.
   if (inv.values.has(leaf) || inv.callables.has(leaf)) return
   if (LITERAL_KEYWORDS.has(leaf)) return
+  // A KEYWORD-LIKE word is not a typename. Measured on the 10-file sample: `re2.nim` writes
+  // `var re {.global.}: static[ptr]`-shaped code, and the type-position walk derived `references re -> static`
+  // while the analyzer (correctly) does not publish a reference to the `static` type-class keyword. The
+  // analyzer's own type-position filter lists `static` among NIM_TYPE_POSITION_KEYWORDS; this is the mirror
+  // on the truth side, written from the rule (a keyword can never name a declared type) rather than as a
+  // target-specific carve-out.
+  if (KEYWORD_LIKE.has(leaf)) return
   push("references", owner, leaf)
 }
 

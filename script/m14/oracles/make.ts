@@ -218,9 +218,33 @@ export function deriveMakeTruth(root: any, moduleName: string): MakeTruthEdge[] 
   for (const t of declaredTargets) declared.add(t)
 
   // ---- pass 2: the edges ----
-  const claim = (target: string) => {
+  /**
+   * The DECLARED contract on the ANALYZER side is that an edge whose source and target are the same name is
+   * never published (`real-makefile-analyzer.ts` `addRel`: `if (!source || !target || source === target)
+   * return`). The truth side must obey the same rule or it obligates an edge the contract forbids — the
+   * SDJ-17 asymmetry already recorded for empty targets. The measured case: `export PATH :=
+   * $(PWD)/bin:$(GOPATH)/bin:$(PATH)` in consul's Makefile reads PATH inside its OWN declaration, which the
+   * analyzer attributes to owner PATH and drops as a self-edge, while this oracle anchored it at the module
+   * and demanded `references Makefile -> PATH` on every consul draw.
+   */
+  const enclosingDeclName = (n: any): string => {
+    for (let p = n?.parent; p; p = p.parent) {
+      const t = String(p.type)
+      if (t === "variable_assignment" || t === "shell_assignment") return declaredName(p).trim()
+      if (t === "define_directive") {
+        const f = p.childForFieldName?.("name") ?? firstOfType(p, new Set(["word"]))
+        return f ? textOf(f).trim() : ""
+      }
+    }
+    return ""
+  }
+  const claim = (target: string, site?: any) => {
     const t = target.trim()
     if (!t) return
+    // A read of the name its own declaration defines is a SELF-EDGE on the analyzer's contract; the oracle
+    // refuses it rather than charging the analyzer for the difference. The read is still a real fact (it
+    // reads the previous value) — it is just not a graph edge any lane publishes.
+    if (site && enclosingDeclName(site) === t) return
     push(declared.has(t) ? "references" : "uses", moduleName, t)
   }
 
@@ -230,18 +254,18 @@ export function deriveMakeTruth(root: any, moduleName: string): MakeTruthEdge[] 
       if (textOf(n).startsWith("$$")) return // `$$` is Make's escaped dollar: the SHELL's variable
       const w = firstOfType(n, new Set(["word"]))
       const nm = w ? textOf(w).trim() : ""
-      if (nm && !isAllDigits(nm)) { claim(nm); return }
+      if (nm && !isAllDigits(nm)) { claim(nm, n); return }
       // A reference with no `word` is a CONCATENATED name (`$(PAPEROPT_$(PAPER))`): the name is built
       // at expand time and no file can declare it, so it is a fact and lands on `uses`.
       const cat = firstOfType(n, new Set(["concatenation"]))
       const cn = cat ? textOf(cat).trim() : ""
-      if (cn && !isAllDigits(cn)) claim(cn)
+      if (cn && !isAllDigits(cn)) claim(cn, n)
       return
     }
     if (t === "automatic_variable") {
       const w = firstOfType(n, new Set(["word"]))
       const nm = w ? textOf(w).trim() : textOf(n).trim()
-      if (nm) claim(nm)
+      if (nm) claim(nm, n)
       return
     }
     if (t === "function_call") {
@@ -255,7 +279,7 @@ export function deriveMakeTruth(root: any, moduleName: string): MakeTruthEdge[] 
         const callee = argsNode ? (textOf(argsNode).split(",")[0] ?? "").trim() : ""
         if (callee && !BUILTIN_FUNCTIONS.has(callee) && !isAllDigits(callee)) push("calls", moduleName, callee)
       } else if (name && !BUILTIN_FUNCTIONS.has(name)) {
-        claim(name)
+        claim(name, n)
       }
     }
   }

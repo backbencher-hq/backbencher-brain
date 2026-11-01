@@ -606,6 +606,11 @@ export const LANG_REPOS: Record<string, string> = {
   // corpus-restore note records for hcl/make/nim/vb/xml. The corpus is the one the restore doc names for
   // this lane, and the second corpus stays consul (both have real Makefiles: 11454 tracked files there).
   make: "redis",
+  // M14.0.F5 (round 8): vb's primary corpus re-declared, at the remote and revision recorded in
+  // validation/m14/corpus-pins.json. The lane had no mapping at all, and its historical checkout
+  // (P3D-Legacy) was absent from this host; the corpus is the same project (1,880 .vb files measured),
+  // re-cloned shallow because the original checkout is gone. Not a substitution: the same repo.
+  vb: "P3D-Legacy",
   sql: "duckdb",
   r: "dplyr",
   // THESE THREE WERE MISSING FROM THE PRIMARY MAP, so `repoForSweep` returned null and the differential reported
@@ -832,6 +837,8 @@ export const SECOND_CORPUS: Record<string, string> = {
   // LANG_REPOS/SECOND_CORPUS routing for nim") and no evidence could be written. `nim-lang-nimble` is a
   // real second codebase (283 .nim files) and the only mapping change is this name.
   nim: "nim-lang-nimble",
+  // vb's second corpus, same project at the revision recorded in corpus-pins.json (measured: 500 .vb files).
+  vb: "DISMTools",
   perl: "plack",
 
   // M14 (#288): html's second corpus is `sqlite` — 21 files, 21/21 of them FULL
