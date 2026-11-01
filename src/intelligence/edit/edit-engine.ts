@@ -1,3 +1,30 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the bb_edit engine: plan → validate → commit → roll back the
+//   one source-mutating surface, for every mode and every option.
+// WHICH TOOL IT SERVES — bb_edit (mutability write, requiresIndex true, modes:
+//   write, update, insert, delete, refactor, batch).
+// WHY IT IS SHAPED THIS WAY — a write tool is judged by what it does when it
+//   fails, so the plan records each target's exact pre-image bytes, the commit
+//   re-checks them immediately before the first write, and every committed file is
+//   restored byte-for-byte (mode included) if any later step fails. Byte bounds
+//   are UTF-16 code-unit offsets into the decoded text (the indexer's spelling),
+//   never raw bytes; every splice carries the file's own line ending; Windows
+//   path separators are normalised before comparisons. Planning never writes.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_edit.md (generated),
+//   docs/BB_EDIT.md (curated), validation/tools/bb_edit/**, gates:
+//   script/m13/verify-edit-*.ts, script/m15/verify-edit-*.ts,
+//   script/verify-edit.ts, script/m16/verify-edit-real-repo.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_edit/descriptor.ts,
+//   src/mcp/tools/bb_edit/handler.ts, src/ast/import-pruner.ts,
+//   src/ast/brain-surgical-patcher.ts, src/ast/safety-primitives.ts,
+//   script/tool-docs/curation/bb_edit.ts, docs/BB_EDIT.md, the edit gates.
+// CONTRACTS IT MUST NOT BREAK — plan never writes; pre-image re-check before the
+//   first write; byte-identical rollback; declared envelope per file; path
+//   containment; per-mode option acceptance; no regex may rewrite source.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync, statSync, chmodSync } from "node:fs"
 import { createHash } from "node:crypto"
 import path from "node:path"
@@ -6,7 +33,7 @@ import { BrainDatabase } from "../../brain/database"
 import { checkSymbolFreshness, fileUnchangedSince } from "../../brain/freshness"
 import { ASTEngine } from "../../ast/engine"
 import { BrainSurgicalPatcher, type FormatOutcome } from "../../ast/brain-surgical-patcher"
-import { ImportPruner } from "../../ast/import-pruner"
+import { ImportPruner, type ImportPruneReport } from "../../ast/import-pruner"
 import { reindexFilesParallel } from "../../ast/parallel-indexer"
 import { parseForSafety, assertFreshFiles, type DeclaredName, type IdentifierOccurrence, type SafetyParse, type BodyRange } from "../../ast/safety-primitives"
 import { EXTENSION_LANGUAGE } from "../../ast/language-detection"
@@ -132,9 +159,16 @@ export interface EditResult {
   /** Refactor audit: how many files/sites were renamed on this run. */
   summary?: { renamedFiles: number; renamedSites: number }
   /** M71.D13: batch only — which entry touched which files, in plan order. */
-  batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[] }>
+  batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[]; importPruning?: ImportPruneReport }>
   /** M71.D13: the per-file outcome of this call, present for every mode. */
   envelope?: EditEnvelope
+  /**
+   * `delete` only: what the import cleanup DID and — when it did nothing — why.
+   * Import pruning is implemented for TypeScript/JavaScript only; every other
+   * language is left byte-for-byte unchanged and says so here, because "cleaned
+   * up" and "not attempted" are different facts and only one of them is true.
+   */
+  importPruning?: ImportPruneReport
 }
 
 type SymbolMatch = { id: string; fileId: string; byteStart: number; byteEnd: number; lineStart?: number; name: string; symbolType?: string }
@@ -1183,7 +1217,9 @@ type EditPlan = {
    *  shape for both. */
   owners: Record<string, { entry: number; mode: Exclude<EditMode, "batch"> }>
   /** M71.D13: batch only — the entry each change came from, in plan order. */
-  batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[] }>
+  batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[]; importPruning?: ImportPruneReport }>
+  /** `delete` only: the import-cleanup outcome to declare on the result. */
+  importPruning?: ImportPruneReport
 }
 
 // ── M71.D13: batch ─────────────────────────────────────────────────────────
@@ -1389,8 +1425,10 @@ async function planBatch(projectPath: string, projectId: string, request: EditRe
       renamedFiles += planned.summary.renamedFiles
       renamedSites += planned.summary.renamedSites
     }
-    const row = batchRows.get(entry) ?? { entry, mode, files: [] }
+    const row: { entry: number; mode: Exclude<EditMode, "batch">; files: string[]; importPruning?: ImportPruneReport } =
+      batchRows.get(entry) ?? { entry, mode, files: [] }
     row.files.push(...planned.changes.map((change) => relativeTo(projectPath, change.path)))
+    if (planned.importPruning) row.importPruning = planned.importPruning
     batchRows.set(entry, row)
   }
   return {
@@ -1708,8 +1746,14 @@ async function planEditInto(
       const where = [...leftovers.map((l) => `${path.basename(match.fileId)} ${l}`), ...importerLeftovers]
       warnings.push(`delete ${symbolName} (forced): ${totalLeftovers} reference(s) remain — ${where.slice(0, 10).join("; ")}${where.length > 10 ? "; …" : ""}`)
     }
-    const pruned = await ImportPruner.prune(deleted, match.fileId)
-    return { changes: [{ path: match.fileId, before: original, after: pruned }], warnings }
+    const pruneReport = await ImportPruner.pruneWithReport(deleted, match.fileId)
+    if (pruneReport.removedBindings.length > 0) {
+      warnings.push(`delete ${symbolName}: removed ${pruneReport.removedBindings.length} import binding(s) the deletion made dead — ${pruneReport.removedBindings.join(", ")}`)
+    }
+    if (!pruneReport.attempted && pruneReport.reason) {
+      warnings.push(`delete ${symbolName}: import cleanup was not attempted — ${pruneReport.reason}`)
+    }
+    return { changes: [{ path: match.fileId, before: original, after: pruneReport.content }], warnings, importPruning: pruneReport }
   }
 
   const newName = String(request.newName ?? "")
@@ -2146,6 +2190,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       warnings: warnings.length > 0 ? warnings : undefined,
       summary,
       ...(batch ? { batch } : {}),
+      ...(plan.importPruning ? { importPruning: plan.importPruning } : {}),
       envelope: closeEnvelope(envelope, changes),
     }
   } catch (error) {
@@ -2220,6 +2265,7 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       warnings: warnings.length > 0 ? warnings : undefined,
       summary,
       ...(batch ? { batch } : {}),
+      ...(plan.importPruning ? { importPruning: plan.importPruning } : {}),
       envelope: plannedEnvelope(projectPath, plan),
     }
   }

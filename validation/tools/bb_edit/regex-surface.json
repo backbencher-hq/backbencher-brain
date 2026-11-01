@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_edit",
+  "note": "Every regex the bb_edit surface executes, each with a written reason. Regenerate with --write-snapshot after reviewing a new use; an empty/short reason fails the gate.",
+  "entries": [
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/\\r?\\n/g",
+      "reason": "Rewrites an inserted fragment's newlines to the file's own line ending before splicing; text layout, never code classification."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/^[\\t ]+/",
+      "reason": "Reads the indentation of the line at an insertion point, which the AST does not expose as a node; layout only."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "reason": "Normalises Windows path separators in an import specifier before resolving it; the subject is a recorded path, not source text."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/\\\\/g",
+      "reason": "Normalises Windows path separators in an import specifier before resolving it; the subject is a recorded path, not source text."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/syntax error/i",
+      "reason": "Filters parsed-error MESSAGES (not source) so validation reports syntax failures and not every parser diagnostic."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/[.*+?^${}()|[\\]\\\\]/g",
+      "reason": "Escapes a symbol name before it is embedded in a RegExp; input sanitisation, so a name like `$foo` cannot change the pattern."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "constructor",
+      "source": "new RegExp( `(?:function|class|interface|type|enum|struct|impl|def|fn|func|method|const|let|var|val)\\\\s+${escaped}\\\\b` + `|\\\\b(?:public|private|protected|internal|static|abstract|override|readonly|final|sealed|export|declare|async)\\\\s+(?:async\\\\s+)?${escaped}\\\\b`, )",
+      "reason": "Recognises a LEGACY declaration spelling the AST parser does not resolve, after the symbol name was attribute-escaped by the preceding literal; used to choose declaration-vs-fragment."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/method|constructor/i",
+      "reason": "Classifies the analyzer's symbol-TYPE vocabulary string (e.g. `method_declaration`), never source text."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/function|method/i",
+      "reason": "Classifies the analyzer's declaration-TYPE vocabulary string, never source text."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/^[\\t ]*$/",
+      "reason": "Detects a whitespace-only indentation when choosing where a body fragment is spliced; layout only."
+    },
+    {
+      "file": "src/intelligence/edit/edit-engine.ts",
+      "kind": "literal",
+      "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
+      "reason": "Validates a caller-supplied newName as a legal identifier before any rename; input sanitisation."
+    },
+    {
+      "file": "src/ast/brain-surgical-patcher.ts",
+      "kind": "literal",
+      "source": "/\\r\\n/g",
+      "reason": "Finds the CRLF sequences of an existing file so a formatter's output can be restored to the file's own line ending."
+    },
+    {
+      "file": "src/ast/brain-surgical-patcher.ts",
+      "kind": "literal",
+      "source": "/(?<!\\r)\\n/g",
+      "reason": "Finds lone LF newlines so a CRLF file cannot be left with a MIXED ending after formatting."
+    }
+  ]
+}

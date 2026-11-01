@@ -113,5 +113,58 @@ try {
   rmSync(parent, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })
 }
+
+// ── Import pruning after a delete: AST-only, declared when skipped ─────────
+// Deleting a symbol can orphan an import. The prune must remove the orphans it can
+// prove dead (TypeScript/JavaScript, by tree-sitter identity) and must NEVER edit a
+// file whose import syntax it cannot read: a leftover import is harmless, a
+// wrongly-removed one breaks the build. An earlier regex-table implementation
+// corrupted Haskell (`import qualified Data.Map as M` lost its first token),
+// deleted Python multi-name imports while the other name was still used, and
+// dropped aliased Groovy imports used by surviving functions — all reported as
+// successful, validated edits. These fixtures pin the fixed contract.
+{
+  const pruneParent = mkdtempSync(path.join(tmpdir(), "bb-edit-prune-"))
+  const tsRoot = path.join(pruneParent, "ts")
+  mkdirSync(path.join(tsRoot, "src"), { recursive: true })
+  writeFileSync(path.join(tsRoot, "src", "m.ts"),
+    'import { deadName, liveName } from "./mod"\n\nexport function target(): number {\n  return deadName()\n}\n\nexport function keep(): number {\n  return liveName()\n}\n')
+  const tsProject = getProjectId(tsRoot)
+  try {
+    await indexProjectParallel(tsProject, tsRoot, {})
+    const deleted = await executeEdit(tsRoot, tsProject, { mode: "delete", symbolName: "target", filePath: "src/m.ts", format: false })
+    const after = readFileSync(path.join(tsRoot, "src", "m.ts"), "utf8")
+    check("TS delete: the dead named import is removed", !after.includes("deadName") && after.includes("liveName") && after.includes('from "./mod"'), after)
+    check("TS delete: the prune is declared attempted with the language", deleted.importPruning?.attempted === true && deleted.importPruning.language === "typescript", JSON.stringify(deleted.importPruning))
+    check("TS delete: the removed binding is named on the result", JSON.stringify(deleted.importPruning?.removedBindings) === JSON.stringify(["deadName"]), JSON.stringify(deleted.importPruning?.removedBindings))
+  } catch (error) {
+    check("TS delete prune session", false, error instanceof Error ? error.message : String(error))
+  } finally {
+    rmSync(pruneParent, { recursive: true, force: true })
+    rmSync(path.dirname(BrainDatabase.getDbPath(tsProject)), { recursive: true, force: true })
+  }
+
+  const hsParent = mkdtempSync(path.join(tmpdir(), "bb-edit-prune-hs-"))
+  const hsRoot = path.join(hsParent, "hs")
+  mkdirSync(path.join(hsRoot, "src"), { recursive: true })
+  const hsImport = "import qualified Data.Map as M"
+  writeFileSync(path.join(hsRoot, "src", "Main.hs"),
+    "module Main where\n\n" + hsImport + "\n\ntarget x = x + 1\n\nkeep y = M.lookup y\n")
+  const hsProject = getProjectId(hsRoot)
+  try {
+    await indexProjectParallel(hsProject, hsRoot, {})
+    const deleted = await executeEdit(hsRoot, hsProject, { mode: "delete", symbolName: "target", filePath: "src/Main.hs", format: false })
+    const after = readFileSync(path.join(hsRoot, "src", "Main.hs"), "utf8")
+    check("Haskell delete: the aliased import is byte-identical after the delete", after.includes(hsImport) && after.includes("M.lookup y") && !after.includes("\n as M"), after.replace(/\n/g, "\\n"))
+    check("Haskell delete: pruning is DECLARED skipped, with the language and a reason", deleted.importPruning?.attempted === false && deleted.importPruning?.language === "haskell" && /TypeScript\/JavaScript only/.test(deleted.importPruning?.reason ?? ""), JSON.stringify(deleted.importPruning))
+    check("Haskell delete: the skip is surfaced as a warning too", (deleted.warnings ?? []).some((w) => /import cleanup was not attempted/.test(w)), JSON.stringify(deleted.warnings))
+  } catch (error) {
+    check("Haskell delete prune session", false, error instanceof Error ? error.message : String(error))
+  } finally {
+    rmSync(hsParent, { recursive: true, force: true })
+    rmSync(path.dirname(BrainDatabase.getDbPath(hsProject)), { recursive: true, force: true })
+  }
+}
+
 console.log(failures === 0 ? "\nEDIT: PASS" : `\nEDIT: ${failures} FAILURES`)
 process.exit(failures > 0 ? 1 : 0)
