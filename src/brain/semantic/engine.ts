@@ -271,7 +271,13 @@ export namespace SemanticEngine {
     if (!projectId) return null
     try {
       const { BrainDatabase } = await import("../../brain/database")
-      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      // READ path: the vocabulary is read to embed a QUESTION, never to build
+      // the index. Opening read-write ran the additive migrations and moved the
+      // WAL on every ask (measured: one ask created a 32,992-byte WAL), which
+      // made a lookup a write on the filesystem. A readonly open is exactly what
+      // this function needs: read rows, validate the index, and fail loudly when
+      // there is none instead of creating an empty database.
+      const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
       return projectVocabulary(raw, String(projectId))
     } catch {
       return null
