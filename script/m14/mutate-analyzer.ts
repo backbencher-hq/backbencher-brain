@@ -1149,17 +1149,22 @@ function reownAnonTypeToClass() {
 // primary top-level type; before the ruling an ownerless anonymous object
 // qualified, so it claimed every import edge of the file.
 function anonTypeClaimsFileImports() {
+  // MEASURED 2026-11-xx (fleet battery): the fix removed the `references` rows whose source was the literal
+  // `root`, so a transform that re-labels `root` rows now finds none and survives as a NO-OP. The pre-fix
+  // defect the fixture forbids is an EXTRA row — the anonymous type claiming the FILE's import
+  // (`references anonymous_Runnable -> kotlin.coroutines.Continuation`) — so reproduce that shape.
   return (r: any) => {
     const anon = (r.symbols ?? []).find((s: any) => String(s.name ?? "").startsWith("anonymous_"))
     if (!anon) return r
-    return {
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) =>
-        String(x.type) === "references" && String(x.source ?? "") === "root"
-          ? { ...x, source: anon.name, from: anon.name, fromSymbol: anon.name }
-          : x,
-      ),
-    }
+    const rels: any[] = r.relationships ?? []
+    const existing = new Set(rels.filter((x: any) => String(x.type) === "references" && String(x.source) === String(anon.name)).map((x: any) => String(x.target)))
+    const added = rels
+      .filter((x: any) => String(x.type) === "imports")
+      .map((x: any) => String(x.target))
+      .filter((t) => t.length > 0 && !existing.has(t))
+      .map((t) => ({ type: "references", source: String(anon.name), target: t, confidence: 0.9, metadata: { evidenceClass: "inferred" } }))
+    if (added.length === 0) return r
+    return { ...r, relationships: [...rels, ...added] }
   }
 }
 
@@ -6551,7 +6556,9 @@ export const MUTANTS: Mutant[] = [
     language: "scala",
     defectClass: "line-attribution",
     description: "M59 (#825) regression: every supertype edge is stamped with the line the `extends` clause OPENED on, so parents written one per line collapse onto the first one's line — scala/declaration-lines-825 pins `with Mixin` 33 / `with Product` 34 and FORBIDS both at 32.",
-    transform: revertToClauseStartLine,
+    // MEASURED 2026-11-xx: the pre-fix anchor was the DECLARATION line (the clause/class start), not another heritage row; the old "earliest heritage line" map coincided with the pinned line on every fixture, so it removed nothing. Anchoring on the source symbol restores the defect.
+    // MEASURED 2026-11-xx: scala symbols carry their line in `range.startLine`; the old lookup read lineStart/line_start and found nothing. New fixture scala/multiline-heritage separates declaration line 7 from parent lines 8/9, so anchoring on the declaration now fails the pins.
+    transform: r => { const declLines = new Map<string, number>(); for (const sym of (r.symbols ?? []) as any[]) { const ln = Number(sym.range?.startLine ?? sym.lineStart ?? sym.line_start); if (Number.isFinite(ln) && ln > 0) declLines.set(String(sym.name), ln) } const isHeritage = (x: any) => { const t = String(x.type ?? x.relationshipType ?? ""); return t === "extends" || t === "implements" || t === "mixes_in" }; return { ...r, relationships: (r.relationships ?? []).map((x: any) => { if (!isHeritage(x)) return x; const ln = declLines.get(String(x.source ?? x.from ?? "")); return ln === undefined ? x : { ...x, line_number: ln } }) } },
   },
   {
     id: "scala/enclosing-type-start-line",
@@ -7291,7 +7298,8 @@ export const MUTANTS: Mutant[] = [
     language: "scala",
     defectClass: "relationship-loss",
     description: "reverts the import source rewrite to the root placeholder (G1 half 2)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => x.metadata?.isImportDep && x.source !== "root" ? { ...x, source: "root" } : x) }),
+    // MEASURED 2026-11-xx: the current rows already carry `root` only on the REFERENCES arm; the fix rewrote the IMPORTS rows to the file `(file)` and the fixture pins that. Reverting must move the imports rows back to the `root` placeholder.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const t = String(x.type ?? x.relationshipType ?? ""); const isImportish = t === "imports" || (t === "references" && Boolean(x.metadata?.isImportDep)); return isImportish ? { ...x, source: "root", from: "root" } : x }) }),
   },
   {
     id: "scala/drop-pattern-refs",
@@ -8882,16 +8890,8 @@ export const MUTANTS: Mutant[] = [
     defectClass: "name-surface",
     description:
       "R10 regression for go: a struct-embedding `extends` target goes back to RAW source text (`io.Reader`, `Pair[int, string]`) instead of the embedded type's LEAF (`Reader`, `Pair`) — the spelling one relationship kind used while every other surface (`contains`, `references`, `uses`, and the embedded-interface member symbol) used leaves. It is also what put `extends|.` in the lane's unruled separator vocabulary. Caught by go/grouped-and-embedded-fields-889, whose forbidRelationships pins `extends Holder -> Pair[int, string]`.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) => {
-        const rel = normRel(x)
-        if (rel.type !== "extends") return x
-        const raw = (x.metadata as any)?.embeddedStruct
-        if (!raw) return x
-        return { ...x, target: raw }
-      }),
-    }),
+    // MEASURED 2026-11-xx: struct embedding is `mixes_in` (relabel) and the raw source text is metadata.embeddedStruct; the old `extends` filter never matched. On the pointer embed `*Inner` the raw text is not the leaf, which is the defect this models.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const rel = normRel(x); if (rel.type !== "mixes_in" && rel.type !== "extends") return x; const raw = (x.metadata as any)?.embeddedStruct; if (!raw) return x; return { ...x, target: raw } }) }),
   },
   {
     id: "go/qualified-type-raw-text",
@@ -9171,21 +9171,8 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description:
       "GO26 regression: an ALIAS to a struct stops emitting `extends`. `type A = struct{ *Inner }` is legal Go; the pre-round embedding pass read `type_spec` only — as did the F5 oracle, so the two agreed on the omission and no differential could charge it — and the MEMBER symbol was published all the same, leaving the graph claiming `A` contains `Inner` while `A` extended nothing. Reconstructed from the output: an `extends` edge from a source that has a member symbol whose owner is a `type_alias` (metadata.isTypeAlias) and no own struct. Caught by go/round5-surfaces (expects `extends Alias -> Inner`; the oracle change in the same round is what keeps the two sides symmetric).",
-    transform: r => {
-      const aliasStructs = new Set(
-        (r.symbols ?? [])
-          .filter((s: any) => (s.metadata as any)?.isTypeAlias && String(s.kind) === "struct")
-          .map((s: any) => String(s.name)),
-      )
-      if (aliasStructs.size === 0) return r
-      return {
-        ...r,
-        relationships: (r.relationships ?? []).filter((x: any) => {
-          const rel = normRel(x)
-          return !(rel.type === "extends" && aliasStructs.has(rel.source))
-        }),
-      }
-    },
+    // MEASURED 2026-11-xx: the alias symbol does not carry kind "struct" (so the old detector produced an empty set) and its embedding row is now `mixes_in`, not `extends`. Detect the alias flag and drop either spelling.
+    transform: r => { const aliasSources = new Set((r.symbols ?? []).filter((s: any) => (s.metadata as any)?.isTypeAlias).map((s: any) => String(s.name))); if (aliasSources.size === 0) return r; return { ...r, relationships: (r.relationships ?? []).filter((x: any) => { const rel = normRel(x); return !((rel.type === "extends" || rel.type === "mixes_in") && aliasSources.has(rel.source)) }) } },
   },
   {
     id: "go/struct-kind-class-vacuous",
@@ -15034,21 +15021,24 @@ export const MUTANTS: Mutant[] = [
     language: "nim",
     defectClass: "relationship-loss",
     description: "A relative import publishes no edge. The pre-fix rule only read the infix path shape, and the leading `./` is a PREFIX operator, so every `import ./sibling` in a module vanished — measured 0 imports for a three-file module whose files all import each other relatively, while the same analyzer returned imports for `import std/os`. Caught by nim/contract's expectRelationships {imports, -> ./helpers} and {imports, -> ../shared}.",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && (String(x.target).startsWith("./") || String(x.target).startsWith("../")))) }),
+    // MEASURED 2026-11-xx: an import target is the module LEAF (`helpers`); the relative spelling lives in metadata.nimModulePath (`./helpers`). The old filter read the leaf and matched nothing.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => { if (x.type !== "imports") return true; const p = String(x.metadata?.nimModulePath ?? x.target ?? ""); return !(p.startsWith("./") || p.startsWith("../")) }) }),
   },
   {
     id: "nim/deep-import-path-lost",
     language: "nim",
     defectClass: "relationship-loss",
     description: "A path deeper than two segments publishes no edge. The grammar models the separator as a NAMED `operator` node whose text is the whole token (`/`, or `/../` fused with a parent hop), so `op.type` is never `/` and the pre-fix identifier/identifier test never matched: 171 deep-path imports across 141 corpus files and 434 multi-segment relative imports across 299 files published nothing, and because the whole path vanished there was no dangling target to surface it. Caught by nim/contract's expectImports {module: std/private/specialpaths} and its expectRelationships sibling.",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && String(x.target).split("/").length > 2)) }),
+    // MEASURED 2026-11-xx: the path lives in metadata.nimModulePath (`std/private/globs`); the target is the leaf (`globs`).
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => { if (x.type !== "imports") return true; const p = String(x.metadata?.nimModulePath ?? x.target ?? ""); return p.split("/").length <= 2 }) }),
   },
   {
     id: "nim/module-list-collapsed-to-one-edge",
     language: "nim",
     defectClass: "relationship-loss",
     description: "`import std/[os, strutils]` publishes ONE edge for the whole list instead of one per element, so a two-module import becomes a single dependency on a name no file has. Caught by nim/contract's expectImports {module: std/os} AND {module: std/strutils} — one pin alone would pass, which is why both are there.",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && (x.target === "std/os" || x.target === "std/strutils"))) }),
+    // MEASURED 2026-11-xx: stdlib import targets are the LEAF (`os`, `strutils`) and the module path is metadata.nimModulePath; the old dotted targets never existed.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => { if (x.type !== "imports") return true; const leaf = String(x.target ?? ""); const p = String(x.metadata?.nimModulePath ?? leaf); return !(leaf === "os" || leaf === "strutils" || p === "std/os" || p === "std/strutils") }) }),
   },
   {
     id: "nim/from-import-prefix-stripped",

@@ -114,12 +114,30 @@ function exportsPublishesMembers(r: any): any {
  * rule removed. Caught by the fixture's `internal`/`private` forbids.
  */
 function exportsDropsVisibility(r: any): any {
+  // MEASURED 2026-11-xx (fleet mutation battery): the pre-fix defect is an EXTRA edge — `internal`/`private`
+  // declarations were published like `public` — but this mutant only re-labelled metadata on rows that already
+  // existed, so the fixture's target-level forbids could never fire and it survived as a NO-OP. Reproduce the
+  // shape the rule removed: publish every hidden top-level declaration.
+  const hidden = (r.symbols ?? []).filter(
+    (sym: any) =>
+      (sym.visibility === "internal" || sym.visibility === "private") &&
+      (sym.ownerName === undefined || sym.ownerName === null),
+  )
+  if (hidden.length === 0) return r
+  const source = String((r.symbols ?? []).find((sym: any) => sym.kind === "module")?.name ?? "(file)")
   return {
     ...r,
-    exports: (r.exports ?? []).map((e: any) => ({ ...e, visibility: "public" })),
-    relationships: (r.relationships ?? []).map((x: any) =>
-      isExports(x) ? { ...x, metadata: { ...(x.metadata ?? {}), publicationBasis: "default-public" } } : x,
-    ),
+    relationships: [
+      ...(r.relationships ?? []),
+      ...hidden.map((sym: any) => ({
+        source,
+        target: String(sym.name),
+        type: "exports",
+        confidence: 1,
+        line_number: sym.lineStart ?? sym.line_start,
+        metadata: { via: "default-public", visibility: "public", symbolKind: sym.kind, evidenceClass: "structural" },
+      })),
+    ],
   }
 }
 
@@ -132,13 +150,16 @@ function exportsDropsVisibility(r: any): any {
  * walk) was labelled as the minority case.
  */
 function exportsBasisAlwaysExplicit(r: any): any {
+  // MEASURED 2026-11-xx: the basis field is `metadata.via` ("explicit-public" / "default-public") on the
+  // file-level exports rows; `publicationBasis` no longer exists anywhere in the analyzer, so the old relabel
+  // changed nothing and survived.
   const rels: any[] = r.relationships ?? []
   if (!rels.some(isExports)) return r
   return {
     ...r,
     relationships: rels.map((x) =>
       isExports(x)
-        ? { ...x, metadata: { ...(x.metadata ?? {}), publicationBasis: "explicit-public" } }
+        ? { ...x, metadata: { ...(x.metadata ?? {}), via: "explicit-public" } }
         : x,
     ),
   }
