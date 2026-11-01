@@ -37,6 +37,14 @@ import {
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..")
 const NODE = "/usr/local/bin/node"
 
+// RUNTIME NOTE (2026-11-01): this gate exercises Node's fork/worker_threads + tsx startup semantics,
+// which are the shipped binary's worker path. The Bun-from-source CLI uses a different worker
+// implementation; run the gate with `npx tsx` (the supported gate runtime). Under Bun the checks below
+// are not applicable and fail with this note at the top of the output.
+if (typeof (globalThis as any).Bun !== "undefined") {
+  console.error("RUNTIME: bun — verify-pool-doctor exercises Node worker/fork/tsx semantics; run it with `npx tsx` (the shipped binary's runtime). The gate's checks are not applicable under Bun-from-source.")
+}
+
 let checks = 0
 let failures = 0
 function check(label: string, ok: boolean, detail = ""): void {
@@ -135,9 +143,16 @@ section("3b. doctor's own summary — and what it is about")
       JSON.stringify(healthy.pool.facts))
     check("…and naming the root the paths resolved against", healthy.pool.facts.some((f) => /root: /.test(f)))
     const hlines = healthyText.split("\n")
-    check("the rendered report leads with the pool answer",
-      hlines.findIndex((l) => /pool workers:/.test(l)) <
-        hlines.findIndex((l) => /embedding configuration|semantic search/i.test(l)),
+    // The pool verdict must come FIRST — but "first" is only meaningful if an embedding section appears.
+    // A fresh data dir with no provider prints no `embedding configuration`/`semantic search` line at
+    // all, and the old `poolIndex < -1` comparison failed that legitimate report (measured: 58/59 under
+    // tsx on a clean BB_DATA_DIR). Ordering is asserted when both sections exist; presence of the pool
+    // answer is asserted unconditionally.
+    const poolAt = hlines.findIndex((l) => /pool workers:/.test(l))
+    const embedAt = hlines.findIndex((l) => /embedding configuration|semantic search/i.test(l))
+    check("the rendered report carries the pool answer", poolAt >= 0, healthyText.slice(0, 300))
+    check("the rendered report leads with the pool answer (when an embedding section exists)",
+      poolAt >= 0 && (embedAt === -1 || poolAt < embedAt),
       healthyText.slice(0, 300))
 
     // A property worth pinning because it is easy to get wrong: the pool belongs

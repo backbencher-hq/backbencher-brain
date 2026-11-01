@@ -46,6 +46,13 @@ import {
 } from "../src/ast/pool-diagnostics"
 
 let failures = 0
+// RUNTIME NOTE (2026-11-01): this gate exercises Node fork/worker_threads + tsx startup/ABI semantics
+// — the shipped binary's worker path. Run it with `npx tsx`. Under Bun-from-source the worker
+// implementation differs, so these checks are not applicable (the note says so before any failure).
+if (typeof (globalThis as any).Bun !== "undefined") {
+  console.error("RUNTIME: bun — verify-pool-workers exercises Node fork/worker_threads/tsx semantics; run it with `npx tsx` (the shipped binary's runtime). The gate's checks are not applicable under Bun-from-source.")
+}
+
 let checks = 0
 function check(label: string, condition: boolean, detail = ""): void {
   checks++

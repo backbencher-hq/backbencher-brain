@@ -7573,9 +7573,13 @@ export async function indexProjectParallel(
       },
     }
     try {
+      // Same COVERAGE semantics as the first write (see countCoveredFiles): this repersist after
+      // post-processing used to reset indexed_files to THIS RUN's parse count (11 on a resumed run that
+      // skipped 70 already-stored files), so a complete resumed index read as 11/81 and health graded it
+      // broken — measured by script/m21/verify-index-resume.ts, 2026-11-01.
       await BrainDatabase.updateIndexStatus(projectId, {
-        filesIndexed: stats.successFiles + stats.skippedFiles,
-        filesParsed: stats.successFiles,
+        filesIndexed: Math.max(stats.totalFiles, coveredFiles),
+        filesParsed: coveredFiles,
         symbolsIndexed: stats.symbolsExtracted,
         relationshipsIndexed: stats.relationshipsFound,
         // "complete" is a claim about the INDEX, so it is decided by the index: parse

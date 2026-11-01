@@ -354,6 +354,16 @@ If you have `BB_TEST_HOOKS=1` exported, unset it. It also unlocks a freshness
 short-circuit in the `bb_analyze` MCP tool handler
 (`src/mcp/tools/bb_analyze/handler.ts:164`).
 
+## Gate runtime: Node/tsx vs Bun-from-source
+
+The product runs under both Node (the shipped `bin/bb`, `dist/`) and Bun (from source, `bun src/cli/index.ts`),
+but the **pool diagnostics gates** (`script/verify-pool-workers.ts`, `script/verify-pool-doctor.ts`) exercise
+Node's `fork`/`worker_threads` + tsx startup/ABI semantics, which are the shipped binary's worker path. Run
+them with `npx tsx`. Under Bun they print a `RUNTIME: bun — … not applicable under Bun-from-source` note
+before their checks, because the Bun-from-source CLI uses a different worker implementation and a failure
+there is a runtime mismatch, not a product defect. The rest of the gate suite is designed for `npx tsx`;
+`script/m21/verify-index-resume.ts` and the indexer gates are runtime-independent (they call the API).
+
 ## The related lock error
 
 Shape of the message (`src/ast/index-lock.ts:115`; the pid, host and timestamp are
