@@ -25483,6 +25483,16 @@ async function main() {
           // RUBY (phase-2 depth): the ten emitted labels; `implements` stays ADMITTED AS A ZERO
           // (history visible — the analyzer no longer emits it after the RUBY-D1 relabel).
           ...(lang === "ruby" ? ["mixes_in", "contains", "references", "imports", "exports"] : []),
+          // JSON (2026-11-01): THE LANE HAD A FULL ORACLE AND THE COMPARED SET ADMITTED NONE OF IT.
+          // `oracles/json.ts` derives calls, contains, exports, extends, imports, overrides, references
+          // and uses; the allowlist's head gives a lane extends/implements/instantiates/renders/overrides
+          // only, so every `contains`/`imports`/`exports`/`uses`/`references`/`calls` edge the analyzer
+          // emitted was dropped before the comparison — measured `analyzer-edges=0` against 214 truth
+          // edges on five terraform files, which reads exactly like a catastrophic analyzer regression
+          // and was the harness dropping the whole class. This is the #910 (c imports) and G7 (groovy
+          // uses) gap in its fifth distinct direction. Both halves land here: the oracle already derives
+          // them, so admitting them compares rather than silently permits.
+          ...(lang === "json" ? ["calls", "contains", "exports", "extends", "imports", "overrides", "references", "uses"] : []),
           // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
           // in the same change or the oracle compares nothing — the two-sided rule this file records.
           ...(lang === "c" ? ["contains", "exports"] : []),
