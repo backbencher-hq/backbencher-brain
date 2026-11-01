@@ -184,7 +184,7 @@ async function main(): Promise<void> {
   // with isError undefined, so the rule (re-derived here) must fire.
   await mutateAndProbe(
     "T1 mutant: silent empty impact set on unknown symbol is caught",
-    'return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)',
+    'return textResult(`bb_impact: ${message}`, true)',
     'return textResult(JSON.stringify({ symbol, budget: {}, impact: [], shownCount: 0, totalCountIfKnown: null, truncated: false, truncationReason: null }, null, 2))',
     async (mh) => {
       const r = await mh["bb_impact"]({ symbol: "definitely-not-a-symbol-zz" }, { projectId: "no-such-project", projectPath: "/x" })
