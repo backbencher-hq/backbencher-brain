@@ -1,9 +1,25 @@
-// src/lsp/graph_request.ts — M26.W2: the declared, versioned graph transport
-// (issue #510).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// The webview needs server data; undeclared custom channels are how honesty
-// dies (issue evidence). This component is the SINGLE owner of the graph
-// request contract:
+// WHAT THIS FILE IS — the declared, versioned graph transport: the `bb/graph`
+// request contract (method, version, params, validation, the graph and grouped
+// `usages` responses) over the one traversal engine, in both directions.
+// WHICH TOOL IT SERVES — the editor graph panel, hover and the hub, i.e. the
+// LSP twin of the bb_graph agent tool.
+// WHERE ITS EVIDENCE LIVES — docs/m26/GRAPH-TRANSPORT.md, docs/m44, docs/GRAPH_ENGINE.md,
+// docs/m28/MCP-SURFACE.md; gates npx tsx script/m28/verify-union.ts,
+// npx tsx script/m28/verify-surface-parity.ts, script/m55/verify-live-surface.ts,
+// script/m44/verify-usages-groups.ts.
+// EDIT TOGETHER WHEN THIS CHANGES — src/lsp/graph_usages.ts (the grouping core),
+// src/intelligence/graph/graph-engine.ts (the engine), src/lsp/identity.ts (the
+// root resolver this door uses), src/mcp/tools/bb_graph/ (the agent door).
+// CONTRACTS IT MUST NOT BREAK — a version mismatch is a loud declared error; every
+// edge carries its stored rowId; a workspace without an index is a declared
+// error, never an empty graph; failures reach the client with the `bb/graph:`
+// prefix; the agent door and this door answer the same stored rows.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// This component is the SINGLE owner of the graph request contract:
 //
 //   method:         `bb/graph` (bb/ namespace = declared custom surface,
 //                   same convention as bb/staleness)
@@ -30,7 +46,7 @@
 //             evidenceClass passes through when stored)
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
-// M55.T1: the graph door reads the ONE identity resolver directly (the same
+// The graph door reads the ONE identity resolver directly (the same
 // module the impact door re-exports from) — one decision, one owner.
 import { resolveMemberIdentity, memberFileMatches, IDENTITY_TRAVERSABLE_TYPES } from "./identity"
 import type { GraphTraversalResult } from "../intelligence/contracts"
@@ -38,12 +54,12 @@ import { buildGroupedUsages, classifyFileLevel, type GroupedUsages } from "./gra
 import { memberResolutionRecord } from "./identity"
 
 export const GRAPH_REQUEST_METHOD = "bb/graph"
-// M44.U1 (issue #688): the usages-mode RESPONSE became grouped per symbol
+// The usages-mode RESPONSE is grouped per symbol
 // (docs/m44/…). A v1 client would silently mis-render that payload, so the
 // wire schema is bumped and old clients get the loud mismatch error — never
 // a silent break. graph mode's payload is unchanged but shares the constant.
 export const GRAPH_SCHEMA_VERSION = 2
-// M42.H5 (issue #653): the hub's declared query profile. `mode: "usages"`
+// The hub's declared query profile. `mode: "usages"`
 // pins the hub's bounds server-side — direction both, depth capped at the
 // W5 impact cap — so every fork asks for the same declared profile and the
 // panel cannot silently drift to an unbounded query. (docs/m42/HUB.md)
@@ -67,7 +83,7 @@ export interface GraphRequestParams {
   maxDepth?: unknown
   relationshipTypes?: unknown
   includeCrossLanguage?: unknown
-  /** M42.H5: "graph" (default) | "usages" (the hub's declared profile). */
+  /** "graph" (default) | "usages" (the hub's declared profile). */
   mode?: unknown
   /** X1 closure: the hover's defining-file identity. Same-name members
    *  (every real repo's constructors) resolve through it; optional — a bare
@@ -120,9 +136,9 @@ async function resolveTraversalRoot(
   })
   try {
     const r = await deps.traverse(projectId, params.symbol as string, opts())
-    // M53: the hover's server-resolved identity beats the engine's gravity
-    // pick — the SAME post-traverse gate as bb/impact (M48.C1 made the engine
-    // resolve member names directly, silently bypassing the U5 fallback). A
+    // The hover's server-resolved identity beats the engine's gravity pick —
+    // the SAME post-traverse gate as bb/impact (the engine resolves member
+    // names directly, which silently bypasses the owning-declaration fallback). A
     // non-traversable root re-resolves through its owning declaration; a
     // hinted request whose root lands outside the hint is a silent relabel
     // and is refused (declared error, never a guessed root).
@@ -147,7 +163,7 @@ async function resolveTraversalRoot(
   } catch (error) {
     const owner = (deps.resolveMember ?? resolveMemberIdentity)(db, projectId, params.symbol as string, file)
     if (owner === null) {
-      // M55.T1 (Truth Rule 2, declared-error half): a genuinely absent symbol is
+      // A genuinely absent symbol is
       // THIS door's declared error, in this door's language. The engine's
       // "Symbol '<name>' not found" used to escape verbatim, which contradicted
       // the transport doc's own prefix contract ("every failure throws with the
@@ -164,8 +180,8 @@ async function resolveTraversalRoot(
       throw error
     }
     const r = await deps.traverse(projectId, owner.name, opts())
-    // Declare the resolution in the payload (M55.T1 Truth Rule 2; the
-    // record's shape is owned by the identity resolver).
+    // Declare the resolution in the payload (the record's shape is owned by
+    // the identity resolver).
     ;(r as { resolution?: unknown }).resolution = memberResolutionRecord(params.symbol as string, owner.name, file)
     return r
   }
@@ -232,7 +248,7 @@ export async function handleGraphRequest(
       throw new GraphRequestError(`bb/graph: internal consistency failure — edge ${edge.from} -> ${edge.to} has no brain_relationship row id (refusing to serve untraceable data)`)
     }
   }
-  // M28.A2 (D-6): the root's annotations ride along, author-labeled — the
+  // The root's annotations ride along, author-labeled — the
   // human sees the agent's notes where the graph renders. Read from the same
   // store bb_annotations serves; empty array = no badge rendered.
   //
@@ -259,11 +275,11 @@ export async function handleGraphRequest(
     ;(result as { annotations?: never[] }).annotations = []
   }
 
-  // M44.U1 (issue #688): usages mode serves the GROUPED shape. File-level
+  // Usages mode serves the GROUPED shape. File-level
   // imports/exports rows (NULL source symbol, targeting the root) are read
   // directly and land in the declared file-level sections — the traversal's
   // symbol JOIN cannot carry them (no symbol endpoint), and dropping them
-  // would hide how the module reaches the codebase (§13.5).
+  // would hide how the module reaches the codebase.
   if (params.mode === GRAPH_MODE_USAGES) {
     const rootNode = (result as GraphTraversalResult).root
     // PART_OF IS A DEPENDENCY KIND AND THIS READER MUST SEE IT (2026-10-22, cpp lane).
@@ -275,11 +291,11 @@ export async function handleGraphRequest(
     // population = 39,665 QUOTED + 12,209 angle-bracket
     // (script/m14/cpp-four-types-census.ts, validation/m14/measurements/cpp-four-types-census.json).
     //
-    // ⇒⇒⇒ WITHOUT THIS CLAUSE, MOVING THOSE ROWS WOULD DROP THEM OUT OF THE ONE SURFACE THAT ANSWERS
-    // "WHAT DOES THIS TRANSLATION UNIT DEPEND ON" — the exact invisibility #910 was filed to remove.
-    // A KIND THAT IS DISTINCT IN THE VOCABULARY IS NOT A KIND THE READERS MAY IGNORE; the reader
-    // list is the SECOND place the vocabulary lives, and a vocabulary extended in one place and not
-    // the other is the same two-copy defect the shape-agreement scanner was built to find.
+    // WITHOUT THIS CLAUSE, MOVING THOSE ROWS WOULD DROP THEM OUT OF THE ONE SURFACE THAT ANSWERS
+    // "WHAT DOES THIS TRANSLATION UNIT DEPEND ON". A KIND THAT IS DISTINCT IN THE VOCABULARY IS NOT A
+    // KIND THE READERS MAY IGNORE; the reader list is the SECOND place the vocabulary lives, and a
+    // vocabulary extended in one place and not the other is the same two-copy defect the shape-agreement
+    // scanner was built to find.
     const fileLevelRaw = db
       .prepare(
         "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
@@ -288,7 +304,7 @@ export async function handleGraphRequest(
       )
       .all(projectId, rootNode.id) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
     const fileLevel = classifyFileLevel(fileLevelRaw)
-    // M60/#910 (second direction): the SAME section, read outward. The query
+    // The SAME section, read outward. The query
     // above answers "what imports this symbol" (rows targeting the root). A
     // file-level dependency — `#include "util.h"`, emitted by c as the
     // first-class `imports` kind and stored with the importing file in

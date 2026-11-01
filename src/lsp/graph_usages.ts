@@ -1,12 +1,29 @@
-// src/lsp/graph_usages.ts — M44.U1 (issue #688): the usages grouping core.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
+// WHAT THIS FILE IS — the usages grouping core: stored relationship rows are
+// grouped per symbol, with declared multiplicity and declared exclusions, before
+// any renderer sees them.
+// WHICH TOOL IT SERVES — bb/graph (LSP) `mode: "usages"`, i.e. the editor's
+// usage panel and its hover/"who uses this" surfaces.
+// WHERE ITS EVIDENCE LIVES — docs/m44 (usages transport), validation/m44,
+// validation/tools/bb_graph (the same rows are served by the agent door);
+// gate: npx tsx script/m44/verify-usages-groups.ts.
+// EDIT TOGETHER WHEN THIS CHANGES — src/lsp/graph_request.ts (the db-touching
+// layer and the response shape), src/lsp/relations.ts (the relation vocabulary
+// this module reads), the m44 gate.
+// CONTRACTS IT MUST NOT BREAK — one group per symbol; every served stored row
+// appears in exactly one group (a differential against the store); exclusions are
+// declared on the wire, never silent; file-level rows live in their own labeled
+// sections; order is deterministic.
+// ─────────────────────────────────────────────────────────────────────────────
 // bb/graph `mode: "usages"` exists so a developer can understand who uses a
 // symbol and how. The raw traversal answers "which stored rows touch this
 // symbol" — and a caller like buildGreeter legitimately owns several rows
 // (uses + references + instantiates), so the raw list repeats the same
 // symbol five times. That is honest data with an unusable presentation.
 // This module is the SINGLE owner of the grouping: stored rows are grouped
-// per symbol BEFORE any rendering (Understanding Rules §13.1/§13.2/§13.4).
+// per symbol BEFORE any rendering (one group per stored symbol).
 //
 // Declared shape (schemaVersion 2, usages mode):
 //   { root, callers: UsageGroup[], callees: UsageGroup[],
@@ -24,7 +41,7 @@
 //      declaration containments — are named in `declaredExclusions` on the
 //      payload, so "dropped" is a declared filter and never a silent one.
 //   L4 file-level + external rows live in DECLARED, labeled sections — never
-//      merged into symbol rows, never dropped (Understanding Rules §13.5).
+//      merged into symbol rows, never dropped.
 //   L5 deterministic order:   groups sort by file, then name — a stable
 //      render target, never insertion-order luck.
 //
@@ -32,14 +49,14 @@
 // the mutation suite and every consumer exercise it through the same code.
 
 import type { CallSiteAddress, GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence/contracts"
-// M55.T3 (§14 Truth Rule 1): the ONE relation vocabulary. The hub answers the
+// The ONE relation vocabulary. The hub answers the
 // same question hover and `textDocument/references` answer, so it reads the same
 // rule rather than keeping a private filter — a second filter is a second answer.
 import { isDeclarationRelationship, USAGE_COUNT_UNIT_LABEL } from "./relations"
 
 /** The relationship kinds this surface DECLARES it does not serve as a usage,
- *  in the payload's own vocabulary (Understanding Rules §15.1: a surface that
- *  filters differently states its filter). Machine-readable, never prose-only:
+ *  in the payload's own vocabulary: a surface that filters differently states
+ *  its filter. Machine-readable, never prose-only:
  *  a client can diff these against its own traversal and say why a stored row
  *  it holds is not in the list. */
 export const USAGES_DECLARED_EXCLUSIONS = {
@@ -51,8 +68,8 @@ export const USAGES_DECLARED_EXCLUSIONS = {
    *  a member of `Greeter`. Serving the declaration containment as a caller
    *  listed a class among the users of its own member, which is the exact
    *  inversion the vocabulary exists to prevent (src/lsp/relations.ts:
-   *  "a declaration is never a usage"). Found live by the M55.T3 gate on the
-   *  merged branch: `Greeter` was rendered as a caller of `greet`.
+   *  "a declaration is never a usage"). Measured: `Greeter` was rendered as a
+   *  caller of `greet`.
    *
    *  WHY HERE AND NOT IN THE ENGINE'S DEFAULT TYPE LIST: the traversal must walk
    *  `contains` — a graph rooted at a class cannot reach that class's own
@@ -66,7 +83,7 @@ export const USAGES_DECLARED_EXCLUSIONS = {
 
 /** One stored relationship row as it survives grouping. Nothing about the
  *  row is dropped: rowId keeps it traceable, evidenceClass/enrichment ride
- *  along for the badge and tier laws (M26.W4/U4 render from these), and
+ *  along for the badge and tier laws (the editor renders from these), and
  *  depth survives for the hub tree (U3 reworks the tree presentation; the
  *  data keeps the traversal depth declared). */
 export interface GroupedRow {
@@ -83,13 +100,13 @@ export interface GroupedRow {
   bridgeMechanism?: string
   evidenceClass?: string
   enrichment?: NonNullable<GraphEdge["metadata"]>["enrichment"]
-  /** M44.U3 (issue #690): the tree parent of this row's group — the symbol
+  /** The tree parent of this row's group — the symbol
    *  the edge connects toward the root (callers: edge.to; callees:
    *  edge.from), or the root symbol id itself for a depth-0 row. Every
    *  expanded node is itself a caller/callee group, so this id always
    *  resolves to a rendered tree position — a renderer that nests a row
-   *  under a parent that does not own it fabricates a level (harness
-   *  AH7-negative). Kept per ROW because one symbol group can legitimately
+   *  under a parent that does not own it fabricates a level. Kept per ROW
+   *  because one symbol group can legitimately
    *  own rows toward several parents (a diamond); the tree then shows the
    *  symbol once per parent position with each position's own rows. */
   parentSymbolId: string
@@ -108,7 +125,7 @@ export interface UsageGroup {
   /** Definition line of the symbol (navigation target). */
   line: number
   isExternal: boolean
-  /** Per relationship-type stored-row counts (Understanding Rules §13.2). */
+  /** Per relationship-type stored-row counts. */
   relationshipTypes: Array<{ type: string; occurrences: number }>
   /** Total stored rows in this group — the multiplicity. == rows.length. */
   occurrences: number
@@ -152,7 +169,7 @@ export function classifyFileLevel(raw: FileLevelRawRow[]): { imports: FileLevelR
 /** A file-level relationship row (imports/exports with no symbol endpoint).
  *  Storage has no file column for these: the identity is the module
  *  specifier (target_external) plus the stored relationship type. Rendered
- *  in a declared, labeled section — never as a symbol row (§13.5). */
+ *  in a declared, labeled section — never as a symbol row. */
 export interface FileLevelRow {
   rowId: string
   relationshipType: "imports" | "exports" | string
@@ -168,8 +185,8 @@ export interface GroupedUsages {
   callers: UsageGroup[]
   callees: UsageGroup[]
   /** File-level rows, both directions. `imports`/`exports` are INCOMING —
-   *  rows that target the root (who imports this symbol, §13.5).
-   *  `dependencies` (M60/#910) are OUTGOING — the root FILE's own module
+   *  rows that target the root (who imports this symbol).
+   *  `dependencies` are OUTGOING — the root FILE's own module
    *  dependencies, which is the only shape a `#include` can take: it has no
    *  symbol endpoint on either side, so the incoming query can never reach
    *  it. Declared separately rather than mixed into `imports`, so a consumer
@@ -181,7 +198,7 @@ export interface GroupedUsages {
     callerRows: number
     calleeRows: number
     fileLevelRows: number
-    /** M60/#910: the outgoing subset of fileLevelRows — counted so the two
+    /** The outgoing subset of fileLevelRows — counted so the two
      *  directions can never be conflated in a header number. */
     fileDependencyRows: number
   }
@@ -190,19 +207,18 @@ export interface GroupedUsages {
     truncationReason?: string
     crossLanguageGroups: number
   }
-  /** §14 Truth Rule 1, second half: this surface filters, and says so ON THE
-   *  WIRE. Every stored row the traversal returned and this payload does not
-   *  serve is named here with its reason, so a client holding a row this list
-   *  omits can tell "not a usage" from "not reached". Absent before this wave,
-   *  which is why the hub's caller count could disagree with hover's without
-   *  either surface being able to say why. */
+  /** This surface filters, and says so ON THE WIRE. Every stored row the
+   *  traversal returned and this payload does not serve is named here with its
+   *  reason, so a client holding a row this list omits can tell "not a usage"
+   *  from "not reached". Without it a hub's caller count could disagree with
+   *  hover's and neither surface could say why. */
   declaredExclusions?: typeof USAGES_DECLARED_EXCLUSIONS
   /**
-   * M55.T3 integration: what a hub COUNT counts, in the payload beside `counts`.
+   * What a hub COUNT counts, in the payload beside `counts`.
    * `counts.callerGroups` is groups (symbols) and `counts.callerRows` is stored
    * rows; NEITHER is "usages" — the hub's list is one group per symbol, while the
    * hover's is one row per place. A client that renders either number under the
-   * bare word "callers" makes a claim §14 rule 1 does not license, and this
+   * bare word "callers" makes a claim the count unit does not license, and this
    * field is what lets it render the right one. The sentence is the vocabulary
    * owner's single copy (USAGE_COUNT_UNIT_LABEL in src/lsp/relations.ts), so no
    * surface can paraphrase the unit into its own dialect.
@@ -231,13 +247,13 @@ function groupSide(edges: GraphEdge[], nodes: Record<string, GraphNode>, pick: (
     const nodeId = pick(edge)
     const node = nodes[nodeId]
     if (node === undefined) {
-      // Traceability law (M26.W2): an edge whose endpoint is not in the node
+      // Traceability rule: an edge whose endpoint is not in the node
       // registry can never render. Fail loud — never silently drop.
       throw new Error(`bb/graph: usages grouping consistency failure — edge ${edge.from} -> ${edge.to} has no registered node ${nodeId}`)
     }
     // Tree parent must resolve too — a row whose parent endpoint is missing
     // from the registry would let a renderer nest it under a fabricated
-    // parent (U3 AH7-negative). The parent is ALWAYS root or an expanded
+    // parent. The parent is ALWAYS root or an expanded
     // caller/callee, both registered, so a miss is an engine contract break.
     const parentId = parentOf(edge)
     if (nodes[parentId] === undefined) {
@@ -290,21 +306,20 @@ function finalize(byNode: Map<string, UsageGroup>): UsageGroup[] {
  *  whole of the grouping decision — a renderer that repeats a symbol row,
  *  drops a row, or miscounts a group has broken a law this module enforces. */
 export function groupUsagesEdges(result: GraphTraversalResult): { callers: UsageGroup[]; callees: UsageGroup[] } {
-  // Tree parent semantics (U3): an edge's group keys on one endpoint and its
+  // Tree parent semantics: an edge's group keys on one endpoint and its
   // TREE position hangs under the OTHER endpoint — the symbol one hop closer
   // to the root. Caller edge Y→X: group Y (the caller), parent X (Y calls X,
   // X calls root). Callee edge X→Y: group Y (the callee), parent X (X calls
   // Y, root calls X). Depth-0 rows therefore parent to the root symbol id.
   //
-  // M55.T3 (§14 Truth Rule 1): TWO exclusions, ONE vocabulary
-  // (src/lsp/relations.ts). Both are declared in the payload
+  // TWO exclusions, ONE vocabulary (src/lsp/relations.ts). Both are declared
+  // in the payload
   // (`USAGES_DECLARED_EXCLUSIONS`), so neither is a silent thinning:
   //   - a SELF-REFERENTIAL row (from === to) is an analyzer artifact, not a
-  //     usage. Found live by the T3 gate: the graph listed `greet` among
-  //     greet's own callers.
+  //     usage. Measured: the graph listed `greet` among greet's own callers.
   //   - a DECLARATION CONTAINMENT (`contains`/`exports`) is how a symbol is
-  //     DECLARED, never who uses it. Found live by the same gate: `Greeter`
-  //     (the class that CONTAINS `greet`) was rendered as a caller of `greet`.
+  //     DECLARED, never who uses it. Measured: `Greeter` (the class that
+  //     CONTAINS `greet`) was rendered as a caller of `greet`.
   //     The predicate is the vocabulary owner's, not a local type list, so this
   //     surface cannot drift from hover's or references'.
   const usageRowsOnly = <T extends { from: string; to: string; relationshipType: string }>(edges: readonly T[]): T[] =>
