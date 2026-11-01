@@ -1,26 +1,27 @@
-// src/lsp/impact_request.ts — M42.H4 (issue #652): the declared, versioned
-// impact transport.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Hover actions must be honest: "Impact analysis" opens a REAL impact
-// surface, which means the W5 component (src/lsp/impact.ts, bounded
-// reverse-dependency impact with declared truncation) needs a wire. This
-// module is the SINGLE owner of that contract, mirroring the bb/graph
-// transport (M26.W2) law for law:
-//
-//   method:         `bb/impact` (bb/ namespace = declared custom surface)
-//   schema:         versioned; a mismatched version is rejected LOUDLY with
-//                   a machine-parseable `bb/impact:` error prefix
-//   symbol:         resolved SERVER-SIDE (project + name) via computeImpact —
-//                   the client sends a name only, never a guessed position
-//   workspace:      honored only for indexed workspaces; otherwise a
-//                   DECLARED error (never an empty result that would render
-//                   as "no impact")
-//   unknown symbol: DECLARED error with remediation — never an empty set
-//                   that would read as "nothing depends on this"
-//
-// The response is the W5 ImpactResult (bounded, truncation declared with
-// real counts or an honest "unknown" total). Rendering lives in the ONE
-// renderer core (graph-core.renderImpact); this transport only carries data.
+// WHAT THIS FILE IS — the versioned `bb/impact` LSP transport: validates the
+//   request, resolves the symbol SERVER-SIDE through the canonical calculator,
+//   and carries the `ImpactResult` to the client without owning any rendering.
+// WHICH TOOL IT SERVES — the editor twin of bb_impact (mutability read,
+//   requiresIndex true, modes: impact). The MCP tool and this wire call the same
+//   `computeImpact`, so both doors answer the same question identically.
+// WHY IT IS SHAPED THIS WAY — the wire contract is the client's machine
+//   interface, so every failure mode is a declared `bb/impact:`-prefixed error:
+//   a version mismatch is rejected loudly, an unindexed workspace is a named
+//   error, and an unknown/ambiguous symbol is never an empty set that would
+//   render as "no impact". Rendering lives in the ONE renderer core
+//   (`graph-core.renderImpact`); this module only carries data.
+// WHERE ITS EVIDENCE LIVES — validation/m44/** (resolution over the real
+//   server), validation/m26/** (impact mode), validation/tools/bb_impact/**;
+//   gates: script/m44/verify-impact-resolution.ts, script/m26/verify-impact-mode.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/impact.ts (the calculator and
+//   IMPACT_BUDGET), src/lsp/server.ts (the registration), docs/GRAPH_ENGINE.md.
+// CONTRACTS IT MUST NOT BREAK — schema version pinning, the `bb/impact:` error
+//   prefix, server-side symbol resolution, declared errors instead of empty
+//   sets, and read-only operation.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { computeImpact, IMPACT_BUDGET, type ImpactResult } from "./impact"
 import type { CoreDatabase } from "../brain/database"
@@ -40,9 +41,9 @@ export class ImpactRequestError extends Error {
 export interface ImpactRequestParams {
   schemaVersion?: unknown
   symbol?: unknown
-  /** X1 closure: the hover's defining-file identity. Same-name members
-   *  (every real repo's constructors) resolve through it; optional — a bare
-   *  unique name works exactly as before. */
+  /** The hover's defining-file identity. Same-name members (every real repo's
+   *  constructors) resolve through it; optional — a bare unique name works
+   *  exactly as before. */
   file?: unknown
 }
 
@@ -51,8 +52,9 @@ export interface ImpactRequestDeps {
   compute: typeof computeImpact
 }
 
-/** The declared budget the client may rely on (mirrors W5; single source
- *  stays in impact.ts — this is the wire-level copy for capability docs). */
+/** The declared budget the client may rely on (mirrors the calculator; the
+ *  single source stays in impact.ts — this is the wire-level copy for
+ *  capability docs). */
 export const IMPACT_REQUEST_BUDGET = IMPACT_BUDGET
 
 /** Validate params and compute the impact set. Every failure mode is a

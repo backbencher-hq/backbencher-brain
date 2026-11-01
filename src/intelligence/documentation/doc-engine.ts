@@ -1,23 +1,25 @@
-// M20.D3 — the bb_doc documentation generator.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Read-only. It never writes a repository file, never refreshes the index, and
-// never invents a fact: a claim is either extracted from the index, inferred
-// from cited evidence under a cap, or declared unknown.
-//
-// THE CONTRACT THIS FILE IMPLEMENTS is docs/BB_DOC.md. Three rules from it
-// shape everything below, and each one was broken before this revision (the
-// defects are named inline so the reason survives the next edit):
-//
-//   1. "Citation IDs are deterministic for the same project snapshot, query,
-//      and schema version" — so an ID may never contain a machine's absolute
-//      path. It is built from the repository-relative path only.
-//   2. "The deterministic gate fails when ... required mode sections are
-//      absent" — so every mode emits its DECLARED section set, and
-//      completeness is measured against that set rather than against whatever
-//      happened to be produced.
-//   3. "Inferred claims are capped at 0.85; semantic-only feature discovery is
-//      capped at 0.70; stale or missing evidence cannot support a confident
-//      claim" — so confidence is DERIVED, never passed in by a caller.
+// WHAT THIS FILE IS — the bb_doc documentation engine: it selects indexed
+//   evidence for one of seven modes and assembles cited Markdown/JSON documents.
+// WHICH TOOL IT SERVES — bb_doc (mutability read, requiresIndex true, modes:
+//   symbol, file, module, feature, api, project, coverage).
+// WHY IT IS SHAPED THIS WAY — every claim must cite a resolvable source or be
+//   declared unknown; every required section is emitted and explained when
+//   empty; the disclosed bounds are applied and published as numbers; freshness
+//   is derived from disk, never asserted by the caller; and the output budget
+//   is measured on the object the caller receives.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_doc.md, docs/BB_DOC.md,
+//   validation/tools/bb_doc/**, gates: script/m13/verify-doc-*.ts,
+//   script/m15/verify-doc-deep.ts, script/m20/verify-doc-*.ts,
+//   script/verify-doc.ts, script/verify-doc-design.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_doc/handler.ts,
+//   src/mcp/tools/bb_doc/descriptor.ts, docs/BB_DOC*.md, and the gates above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness
+//   flags, the read/write boundary, and the no-regex policy
+//   (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
 import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 import path from "node:path"
@@ -30,6 +32,17 @@ import { checkFileFreshness, resolveRowsFreshnessDetailed } from "../../brain/fr
 import { renderParameterList, renderSignature as renderOwnerSignature, UNKNOWN_PARAMETER_LIST } from "../../lsp/signature"
 import { semanticVectorSearch } from "../search/semantic-search"
 import { languageExtensionEntries } from "../../ast/language-detection"
+
+/**
+ * A request this engine refuses rather than answers with a misleading document.
+ *
+ * The handler turns it into a named error, so a refusal teaches the caller what
+ * to pass. It exists for the cases where an empty document would be a false
+ * claim: a module target that matches no file has no module to describe.
+ */
+export class DocRequestError extends Error {
+  constructor(message: string) { super(message); this.name = "DocRequestError" }
+}
 
 export type DocMode = "symbol" | "file" | "module" | "feature" | "api" | "project" | "coverage"
 export type DocFormat = "markdown" | "json"
@@ -86,7 +99,11 @@ export interface DocUnknown {
 export interface DocQuality {
   passed: boolean
   factuality: { passed: boolean; uncitedClaims: number; unsupportedClaims: number }
-  references: { passed: boolean; broken: number; stale: number; missing: number }
+  /** `stale`/`missing`/`broken` count the citations the answer EMITS; the
+   *  `collected*` figures count everything the generator gathered, including
+   *  evidence no fact referred to. Both are published so the reader-facing
+   *  number is checkable against the Sources list. */
+  references: { passed: boolean; broken: number; stale: number; missing: number; collectedStale: number; collectedMissing: number }
   completeness: { passed: boolean; covered: number; expected: number; unknown: number }
   freshness: { passed: boolean; snapshot: string; staleClaims: number }
   budget: { passed: boolean; estimatedTokens: number; maxTokens: number }
@@ -138,10 +155,10 @@ type Row = Record<string, any>
 // ─────────────────────────────────────────────────────────────────────────────
 // bounds
 // ─────────────────────────────────────────────────────────────────────────────
-const DEFAULT_EVIDENCE_LIMIT = 20
-const MAX_EVIDENCE_LIMIT = 100
-const DEFAULT_TOKEN_BUDGET = 4_000
-const MAX_TOKEN_BUDGET = 16_000
+export const DEFAULT_EVIDENCE_LIMIT = 20
+export const MAX_EVIDENCE_LIMIT = 100
+export const DEFAULT_TOKEN_BUDGET = 4_000
+export const MAX_TOKEN_BUDGET = 16_000
 /** Relationship/import evidence per symbol, before the per-section cap. */
 const RELATIONSHIP_FETCH_CAP = 40
 const IMPORT_FETCH_CAP = 40
@@ -247,7 +264,58 @@ function factsPerSection(detail: DocDetail | undefined, limit: number): number {
 // text helpers (char scans; the project carries no regex by default)
 // ─────────────────────────────────────────────────────────────────────────────
 function quote(value: unknown): string { return String(value ?? "").split("`").join("'") }
-function collapse(value: unknown): string { return String(value ?? "").split(/\s+/).join(" ").trim() }
+/** Collapse runs of ASCII whitespace without a regex (the value is displayed, never parsed). */
+function collapse(value: unknown): string {
+  const text = String(value ?? "")
+  let out = ""
+  let pendingSpace = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\v" || ch === "\f") {
+      if (out.length > 0) pendingSpace = true
+      continue
+    }
+    if (pendingSpace) { out += " "; pendingSpace = false }
+    out += ch
+  }
+  return out
+}
+/** Split on LF or CRLF, exactly what a source file uses, without a regex. */
+function splitLines(text: string): string[] {
+  const parts = text.split("\n")
+  for (let i = 0; i < parts.length; i++) if (parts[i].endsWith("\r")) parts[i] = parts[i].slice(0, -1)
+  return parts
+}
+/** Split a string on any of the given single characters, dropping empty parts. */
+function splitOnChars(text: string, chars: string): string[] {
+  const parts: string[] = []
+  let current = ""
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (chars.includes(ch)) {
+      if (current.length > 0) parts.push(current)
+      current = ""
+    } else current += ch
+  }
+  if (current.length > 0) parts.push(current)
+  return parts
+}
+/** Strip one comment marker from a trimmed source line (C-family markers only). */
+function stripCommentMarker(line: string): string {
+  let body = line
+  if (body.startsWith("/**")) body = body.slice(3)
+  else if (body.startsWith("/*")) body = body.slice(2)
+  if (body.startsWith(" ")) body = body.slice(1)
+  if (body.endsWith("*/")) body = body.slice(0, -2).trimEnd()
+  if (body.startsWith("*")) {
+    body = body.slice(1)
+    if (body.startsWith(" ")) body = body.slice(1)
+  } else if (body.startsWith("//")) {
+    body = body.slice(2)
+    if (body.startsWith(" ")) body = body.slice(1)
+  }
+  return body
+}
 function stripExtension(name: string): string {
   const slash = name.lastIndexOf("/")
   const dot = name.lastIndexOf(".")
@@ -356,9 +424,9 @@ function deriveConfidence(classification: DocFact["classification"], citations: 
     const freshnessCap = CAP_BY_FRESHNESS[citation.freshness]
     if (freshnessCap < cap) cap = freshnessCap
   }
-  // Semantic-only feature discovery is capped lower than lexical discovery.
-  const semanticOnly = citations.length > 0 && citations.every((c) => c.kind === "embedding")
-  if (semanticOnly && cap > 0.7) cap = 0.7
+  // Semantic results are used to DISCOVER candidates only; every emitted fact
+  // cites a concrete symbol, file or edge, so the confidence is always the
+  // evidence's own cap. There is no "semantic-only claim" shape in this engine.
   return Math.round(cap * 100) / 100
 }
 
@@ -425,7 +493,7 @@ class SourceReader {
   private readLines(absPath: string): string[] | null {
     if (this.lines.has(absPath)) return this.lines.get(absPath) ?? null
     let value: string[] | null = null
-    try { value = readFileSync(absPath, "utf8").split(/\r?\n/) } catch { value = null }
+    try { value = splitLines(readFileSync(absPath, "utf8")) } catch { value = null }
     this.lines.set(absPath, value)
     return value
   }
@@ -455,7 +523,7 @@ class SourceReader {
         }
         const isBlock = trimmed.startsWith("/**")
         if (isBlock || trimmed.startsWith("*") || trimmed.startsWith("//")) {
-          comments.unshift(trimmed.replace(/^\/\*\*?\s?/, "").replace(/\*\/$/, "").replace(/^\*\s?/, "").replace(/^\/\/\s?/, ""))
+          comments.unshift(stripCommentMarker(trimmed))
           if (isBlock) break
         } else break
       }
@@ -554,17 +622,35 @@ function targetFiles(raw: any, projectId: string, projectPath: string, request: 
   }
   if (request.mode === "project" || request.mode === "api") {
     // Project/api document the project, so the selection is ordered by how much
-    // code a file actually holds. `ORDER BY relative_path` put .github CI
-    // configuration first on every real repository measured.
+    // code a file holds. One fetch plus one indexed aggregate, then the ordering
+    // happens in JavaScript: the previous form put a correlated count(*) per
+    // candidate file inside ORDER BY, which measured 1.2 s on the reference
+    // index before a single fact was built.
     const total = Number((queryRows(raw, "SELECT count(*) AS c FROM brain_file WHERE project_id=?", projectId)[0]?.c ?? 0))
-    const files = queryRows(
-      raw,
-      `SELECT f.* FROM brain_file f WHERE f.project_id=?
-         ORDER BY (f.is_config_file = 1), (relative_path LIKE '.%'), (relative_path LIKE '%.md'),
-                  (SELECT count(*) FROM brain_symbol s WHERE s.file_id = f.id) DESC, f.relative_path
-       LIMIT ?`,
-      projectId, scopeCap,
-    )
+    const candidates = queryRows(raw, "SELECT * FROM brain_file WHERE project_id=? ORDER BY relative_path LIMIT ?", projectId, scopeCap * 4)
+    const counts = new Map<string, number>()
+    const ids = candidates.map((row) => String(row.id))
+    for (let i = 0; i < ids.length; i += 400) {
+      const slice = ids.slice(i, i + 400)
+      for (const row of queryRows(raw, `SELECT file_id, count(*) AS c FROM brain_symbol WHERE project_id=? AND file_id IN (${slice.map(() => "?").join(",")}) GROUP BY file_id`, projectId, ...slice)) {
+        counts.set(String(row.file_id), Number(row.c ?? 0))
+      }
+    }
+    const ranked = [...candidates].sort((a, b) => {
+      const configA = Number(a.is_config_file ?? 0), configB = Number(b.is_config_file ?? 0)
+      if (configA !== configB) return configA - configB
+      const dotA = String(a.relative_path ?? "").startsWith(".") ? 1 : 0
+      const dotB = String(b.relative_path ?? "").startsWith(".") ? 1 : 0
+      if (dotA !== dotB) return dotA - dotB
+      const mdA = String(a.relative_path ?? "").endsWith(".md") ? 1 : 0
+      const mdB = String(b.relative_path ?? "").endsWith(".md") ? 1 : 0
+      if (mdA !== mdB) return mdA - mdB
+      const countA = counts.get(String(a.id)) ?? 0
+      const countB = counts.get(String(b.id)) ?? 0
+      if (countA !== countB) return countB - countA
+      return String(a.relative_path ?? "") < String(b.relative_path ?? "") ? -1 : 1
+    })
+    const files = ranked.slice(0, scopeCap)
     return { files, truncated: Math.max(0, total - files.length) }
   }
   return { files: [], truncated: 0 }
@@ -575,6 +661,8 @@ interface FeatureDiscovery {
   lexical: number
   semantic: number
   semanticError: string | null
+  /** True when semantic expansion was not asked for; the document states it. */
+  lexicalOnly: boolean
   ms: number
 }
 
@@ -588,12 +676,14 @@ async function discoverFeatureSymbols(raw: any, projectId: string, request: DocR
      ORDER BY s.gravity_score DESC, s.line_start LIMIT ?`,
     projectId, `%${target}%`, `%${target}%`, `%${target}%`, limit,
   )
-  const out: FeatureDiscovery = { symbols: lexical, lexical: lexical.length, semantic: 0, semanticError: null, ms: 0 }
-  // Semantic discovery tops up a thin lexical result. It is the most expensive
-  // dependency this tool has (measured 3-40s on real repositories), so it
-  // runs when it can add candidates, and `detail: "deep"` asks for it outright.
-  const wanted = request.detail === "deep" || lexical.length < limit
-  if (!wanted) { out.ms = Date.now() - started; return out }
+  const out: FeatureDiscovery = { symbols: lexical, lexical: lexical.length, semantic: 0, semanticError: null, lexicalOnly: request.detail !== "deep", ms: 0 }
+  // Semantic expansion is an explicit opt-in, not an automatic top-up: it was
+  // measured at 19-52 s per call on the 310k-symbol reference index, which is
+  // outside this tool's 5 s budget and beyond a 30 s client timeout. `detail:
+  // "deep"` asks for it outright; every other call answers lexically and SAYS SO
+  // (the unknown is added below), so recall is bounded and disclosed rather than
+  // silently slow.
+  if (request.detail !== "deep") { out.ms = Date.now() - started; return out }
   try {
     const discovered = await semanticVectorSearch(projectId as never, String(request.target ?? ""), { maxResults: limit })
     const already = new Set(lexical.map((row) => row.id))
@@ -621,33 +711,64 @@ async function discoverFeatureSymbols(raw: any, projectId: string, request: DocR
 async function targetSymbols(raw: any, projectId: string, request: DocRequest, files: Row[], limit: number): Promise<{ symbols: Row[]; feature: FeatureDiscovery | null }> {
   const target = request.target ? String(request.target) : ""
   if (request.mode === "symbol") {
-    const symbols = queryRows(
+    // `name` is indexed per project; `qualified_name` is not, so an OR over both
+    // forced SQLite to scan every symbol in the project (measured 7.1 s on the
+    // reference index for ONE lookup). The indexed name routes run first, and
+    // the qualified-name match is only reached when they miss.
+    const short = target.split("::").pop() ?? target
+    const leaf = short.split(".").pop() ?? short
+    const names = [...new Set([target, short, leaf])].filter((name) => name.length > 0)
+    const columns = "SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id"
+    const byName = queryRows(
       raw,
-      "SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (s.name=? OR s.qualified_name=? OR s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?",
-      projectId, target, target, target.split(".").pop() ?? target, target.split("::").pop() ?? target, limit,
+      `${columns} WHERE s.project_id=? AND s.name IN (${names.map(() => "?").join(",")}) ORDER BY s.line_start LIMIT ?`,
+      projectId, ...names, limit,
     )
+    if (byName.length >= limit) return { symbols: byName, feature: null }
+    const byQualified = queryRows(
+      raw,
+      `${columns} WHERE s.project_id=? AND s.qualified_name IN (${names.map(() => "?").join(",")}) ORDER BY s.line_start LIMIT ?`,
+      projectId, ...names, limit,
+    )
+    const seen = new Set(byName.map((row) => String(row.id)))
+    const symbols = [...byName, ...byQualified.filter((row) => !seen.has(String(row.id)))].slice(0, limit)
     return { symbols, feature: null }
   }
   if (request.mode === "api") {
-    // Two disjoint routes to the same surface, because only one of them has ever
-    // matched anything: a declared contract or a route-ish symbol type, and a
-    // symbol the index attributes to a file it marks as an HTTP framework. The
-    // first was empty on all 8 measured corpora; the second is not.
+    // The surface has two real routes: a symbol the index attributes to an HTTP
+    // framework, and a symbol the index types as route-bearing. Each route is a
+    // separate indexed query; the old single OR over `api_contract_path IS NOT
+    // NULL OR lower(symbol_type) IN (...) OR (...)` had no index for two of its
+    // three branches and scanned every symbol in the project.
+    const columns = "SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id, f.framework_type FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id"
     const placeholders = HTTP_FRAMEWORK_TYPES.map(() => "?").join(",")
-    return {
-      symbols: queryRows(
-        raw,
-        `SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id, f.framework_type FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
-         WHERE s.project_id=?
-           AND (s.api_contract_path IS NOT NULL
-                OR lower(s.symbol_type) IN ('route','endpoint','controller')
-                OR (f.framework_type IN (${placeholders}) AND lower(s.symbol_type) IN ('function','method')))
-           AND s.visibility IN ('export','public')
-           AND (?='' OR s.api_contract_path=? OR f.relative_path=? OR f.relative_path LIKE ?) ORDER BY f.relative_path, s.line_start LIMIT ?`,
-        projectId, ...HTTP_FRAMEWORK_TYPES, target, target, target, `${normalizeTarget(target)}/%`, limit,
-      ),
-      feature: null,
+    const frameworkFiles = queryRows(raw, `SELECT id, relative_path, framework_type FROM brain_file WHERE project_id=? AND framework_type IN (${placeholders})`, projectId, ...HTTP_FRAMEWORK_TYPES)
+    const frameworkById = new Map(frameworkFiles.map((row) => [String(row.id), row]))
+    const byFile = frameworkFiles.length
+      ? queryRows(raw, `${columns} WHERE s.project_id=? AND s.file_id IN (${frameworkFiles.map(() => "?").join(",")}) AND s.visibility IN ('export','public') LIMIT ?`, projectId, ...frameworkFiles.map((row) => String(row.id)), limit * 4)
+          .filter((row) => ["function", "method"].includes(String(row.symbol_type).toLowerCase()))
+      : []
+    const byType = queryRows(raw, `${columns} WHERE s.project_id=? AND s.symbol_type IN ('route','endpoint','controller') AND s.visibility IN ('export','public') LIMIT ?`, projectId, limit * 4)
+    // api_contract_path has no index; this scan is the one remaining full read
+    // and it only runs to answer a question nothing else answers.
+    const contracts = queryRows(raw, `${columns} WHERE s.project_id=? AND s.api_contract_path IS NOT NULL LIMIT ?`, projectId, limit * 4)
+    const merged: Row[] = []
+    const seen = new Set<string>()
+    for (const row of [...contracts, ...byType, ...byFile]) {
+      const id = String(row.id ?? "")
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      merged.push(row)
     }
+    const normalized = normalizeTarget(target)
+    const filtered = target
+      ? merged.filter((row) => String(row.api_contract_path ?? "") === target || String(row.relative_path ?? "") === target || String(row.relative_path ?? "").startsWith(`${normalized}/`))
+      : merged
+    filtered.sort((a, b) => (String(a.relative_path ?? "") < String(b.relative_path ?? "") ? -1 : String(a.relative_path ?? "") > String(b.relative_path ?? "") ? 1 : Number(a.line_start ?? 0) - Number(b.line_start ?? 0)))
+    return { symbols: filtered.slice(0, limit).map((row) => {
+      const file = frameworkById.get(String(row.file_id ?? ""))
+      return file && !row.framework_type ? { ...row, framework_type: file.framework_type } : row
+    }), feature: null }
   }
   if (request.mode === "feature") {
     const feature = await discoverFeatureSymbols(raw, projectId, request, limit)
@@ -1093,19 +1214,25 @@ function addRelationshipFacts(raw: any, resolver: FreshnessResolver, symbols: Ro
   const symbolIds = [...new Set(symbols.map((symbol) => String(symbol.id)))]
   const inList = symbolIds.map(() => "?").join(",")
   const cap = RELATIONSHIP_FETCH_CAP * Math.max(1, Math.min(symbolIds.length, 8))
-  const relationships = queryRows(
-    raw,
-    `SELECT r.*, ss.name AS source_name, sf.relative_path AS source_path, ts.name AS target_name, ts.qualified_name AS target_qualified,
+  const columns = `SELECT r.*, ss.name AS source_name, sf.relative_path AS source_path, ts.name AS target_name, ts.qualified_name AS target_qualified,
             tf.relative_path AS target_file
        FROM brain_relationship r
        LEFT JOIN brain_symbol ss ON ss.id=r.source_symbol_id
        LEFT JOIN brain_file sf ON sf.id=ss.file_id
        LEFT JOIN brain_symbol ts ON ts.id=r.target_symbol_id
-       LEFT JOIN brain_file tf ON tf.id=ts.file_id
-      WHERE r.project_id=? AND (r.source_symbol_id IN (${inList}) OR r.target_symbol_id IN (${inList}))
-      ORDER BY r.line_number LIMIT ?`,
-    projectId_(symbols), ...symbolIds, ...symbolIds, cap,
-  )
+       LEFT JOIN brain_file tf ON tf.id=ts.file_id`
+  // Two indexed sides, sorted in JavaScript. `(source IN (...) OR target IN
+  // (...)) ORDER BY line_number` had no index for line_number, so SQLite scanned
+  // and sorted the project's whole relationship table: measured 14.5 s on the
+  // 820k-row reference index, against 4 ms + 1 ms for the two indexed sides.
+  const sourceSide = queryRows(raw, `${columns} WHERE r.project_id=? AND r.source_symbol_id IN (${inList}) LIMIT ?`, projectId_(symbols), ...symbolIds, cap)
+  const targetSide = queryRows(raw, `${columns} WHERE r.project_id=? AND r.target_symbol_id IN (${inList}) LIMIT ?`, projectId_(symbols), ...symbolIds, cap)
+  const merged = new Map<string, Row>()
+  for (const row of [...sourceSide, ...targetSide]) {
+    const key = String(row.id ?? `${row.source_symbol_id}|${row.target_symbol_id}|${row.relationship_type}|${row.line_number}`)
+    if (!merged.has(key)) merged.set(key, row)
+  }
+  const relationships = [...merged.values()].sort((a, b) => Number(a.line_number ?? 0) - Number(b.line_number ?? 0)).slice(0, cap)
   const byId = new Map(symbols.map((symbol) => [String(symbol.id), symbol]))
   const seen = new Set<string>()
   // An INBOUND edge names the other file, so its freshness is as resolvable as
@@ -1121,38 +1248,45 @@ function addRelationshipFacts(raw: any, resolver: FreshnessResolver, symbols: Ro
       const symbol = byId.get(ownId)
       if (!symbol) continue
       const outbound = ownId === sourceId
-      const otherSymbol = outbound ? (relationship.target_name ?? relationship.target_qualified) : (relationship.source_name ?? null)
-      const otherExternal = outbound ? relationship.target_external : relationship.source_external
-      const otherFile = outbound ? relationship.target_file : relationship.source_path
-      const other = otherSymbol ?? otherExternal ?? otherFile ?? "an unresolved target"
+      // The OTHER end names the neighbour; the DOCUMENTED symbol is `symbol`.
+      // An inbound edge used to set both subject and object from the neighbour,
+      // so a document for `add` stated "main calls main" and never named `add`.
+      const neighbourName = outbound ? (relationship.target_name ?? relationship.target_qualified) : (relationship.source_name ?? relationship.qualified_name ?? null)
+      const neighbourExternal = outbound ? relationship.target_external : relationship.source_external
+      const documentedName = String(symbol.name ?? "")
+      const subject = outbound ? documentedName : (neighbourName ?? neighbourExternal ?? "an unresolved source")
+      const other = outbound ? (neighbourName ?? neighbourExternal ?? relationship.target_file ?? "an unresolved target") : documentedName
       const type = String(relationship.relationship_type ?? "relates to")
-      const subject = outbound ? String(symbol.name) : (otherSymbol ?? otherExternal ?? "an unresolved source")
       const statement = `${subject} ${type} ${other}.`
       if (seen.has(statement)) continue
       seen.add(statement)
-      if (!otherSymbol && SYMBOL_DIRECTED.has(type)) unresolved++
-      const rel = String(otherFile ?? "")
+      if (!neighbourName && SYMBOL_DIRECTED.has(type)) unresolved++
+      // The call site is in the SOURCE symbol's file for either direction, so the
+      // citation names that file and that line — never the neighbour's file with
+      // a line number from somewhere else.
+      const callSiteRel = String(relationship.source_path ?? symbol.relative_path ?? "")
       const line = Number(relationship.line_number ?? 0)
-      let edgeFileId = outbound ? String(symbol.source_file_id ?? "") : ""
-      if (!edgeFileId && rel) {
-        const cached = fileIdByPath.get(rel)
+      let edgeFileId = String(symbol.source_file_id ?? "")
+      if (!outbound) {
+        const cached = fileIdByPath.get(callSiteRel)
         if (cached !== undefined) edgeFileId = cached
         else {
-          const row = queryRows(raw, "SELECT id FROM brain_file WHERE project_id=? AND relative_path=?", String(symbol.project_id), rel)[0]
+          const row = queryRows(raw, "SELECT id FROM brain_file WHERE project_id=? AND relative_path=?", String(symbol.project_id), callSiteRel)[0]
           edgeFileId = String(row?.id ?? "")
-          fileIdByPath.set(rel, edgeFileId)
+          fileIdByPath.set(callSiteRel, edgeFileId)
         }
       }
       const id = addCitation(citations, {
         kind: "relationship",
-        idParts: [rel, type, line, other],
-        relPath: rel || undefined,
+        idParts: [callSiteRel, type, line, subject, other],
+        relPath: callSiteRel || undefined,
         lineStart: line || undefined,
         relationshipType: type,
-        evidence: `${type} relationship at line ${line || "unknown"}`,
+        evidence: `${type} edge between ${subject} and ${other}`,
         fileId: edgeFileId || undefined,
       }, resolver)
-      const classification: DocFact["classification"] = otherSymbol || otherFile ? "extracted" : "inferred"
+      const neighbourFile = outbound ? relationship.target_file : relationship.source_path
+      const classification: DocFact["classification"] = neighbourName || neighbourFile ? "extracted" : "inferred"
       facts.push(fact(classification, statement, [id], citations))
     }
   }
@@ -1200,7 +1334,7 @@ function addImportFacts(raw: any, resolver: FreshnessResolver, files: Row[], cit
  * defined and never called, so the `finding` citation kind and the risks the
  * spec requires for `file` and `project` modes did not exist.
  */
-function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: string, files: Row[], citations: DocCitation[], unknowns: DocUnknown[]): DocFact[] {
+function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: string, files: Row[], citations: DocCitation[], unknowns: DocUnknown[], projectWideRisks: boolean): DocFact[] {
   const rows = queryRows(
     raw,
     `SELECT f.*, o.location FROM brain_analysis_finding f
@@ -1238,11 +1372,21 @@ function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: strin
   // The highest measured complexity in scope — a measured value, cited, and the
   // reader can see the threshold it was selected by.
   const COMPLEXITY_OUTLIER = 15
-  const outliers = queryRows(
-    raw,
-    "SELECT s.name, s.complexity, s.line_start, s.line_end, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND s.complexity >= ? ORDER BY s.complexity DESC, s.name LIMIT 20",
-    projectId, COMPLEXITY_OUTLIER,
-  )
+  // A file/module document reports outliers in ITS scope; a project document
+  // reports the project's. Unscoped, the ORDER BY complexity DESC has no index
+  // and scans every symbol (measured 0.7 s on the reference index).
+  const scopeIds = projectWideRisks ? [] : files.map((file) => String(file.id))
+  const outliers = scopeIds.length
+    ? queryRows(
+        raw,
+        `SELECT s.name, s.complexity, s.line_start, s.line_end, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND s.file_id IN (${scopeIds.map(() => "?").join(",")}) AND s.complexity >= ? ORDER BY s.complexity DESC, s.name LIMIT 20`,
+        projectId, ...scopeIds, COMPLEXITY_OUTLIER,
+      )
+    : queryRows(
+        raw,
+        "SELECT s.name, s.complexity, s.line_start, s.line_end, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND s.complexity >= ? ORDER BY s.complexity DESC, s.name LIMIT 20",
+        projectId, COMPLEXITY_OUTLIER,
+      )
   if (outliers.length) {
     const healthId = addCitation(citations, {
       kind: "health", idParts: ["risk", "complexity", String(COMPLEXITY_OUTLIER)], indexScoped: true,
@@ -1300,13 +1444,21 @@ function addInventoryFacts(raw: any, resolver: FreshnessResolver, projectId: str
   if (Number(totals.syntax_error_files ?? 0) > 0) {
     facts.push(fact("extracted", `${totals.syntax_error_files} files carry recorded parser errors, so their symbols and bounds may be wrong.`, [healthId], citations))
   }
-  const languages = queryRows(
-    raw,
-    `SELECT f.language, count(DISTINCT f.id) AS files, count(s.id) AS symbols
-       FROM brain_file f LEFT JOIN brain_symbol s ON s.file_id = f.id
-      WHERE f.project_id=? AND f.language IS NOT NULL GROUP BY f.language ORDER BY symbols DESC, files DESC LIMIT 12`,
-    projectId,
-  ) as Array<{ language: string; files: number; symbols: number }>
+  // Two indexed aggregates instead of one 310k-row LEFT JOIN+GROUP BY (measured
+  // 2.2 s on the reference index): file counts come from brain_file alone, and
+  // symbol counts come from the indexed (project_id, file_id) path.
+  const filesPerLanguage = new Map<string, number>()
+  for (const row of queryRows(raw, "SELECT language, count(*) AS files FROM brain_file WHERE project_id=? AND language IS NOT NULL GROUP BY language", projectId)) {
+    filesPerLanguage.set(String(row.language), Number(row.files ?? 0))
+  }
+  const symbolsPerLanguage = new Map<string, number>()
+  for (const row of queryRows(raw, "SELECT f.language AS language, count(*) AS symbols FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? GROUP BY f.language", projectId)) {
+    symbolsPerLanguage.set(String(row.language), Number(row.symbols ?? 0))
+  }
+  const languages = [...new Set([...filesPerLanguage.keys(), ...symbolsPerLanguage.keys()])]
+    .map((language) => ({ language, files: filesPerLanguage.get(language) ?? 0, symbols: symbolsPerLanguage.get(language) ?? 0 }))
+    .sort((a, b) => (b.symbols - a.symbols) || (b.files - a.files) || (a.language < b.language ? -1 : 1))
+    .slice(0, 12)
   for (const row of languages) {
     const id = addCitation(citations, {
       kind: "health", idParts: ["language", row.language], indexScoped: true,
@@ -1599,9 +1751,28 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     }
   }
 
+  // A module document for a directory the index does not hold describes no
+  // module. It used to answer with project-wide inventory and pass, which is a
+  // document about a different subject; refuse and name the forms tried.
+  if (mode === "module") {
+    const forms = normalizeTarget(String(request.target ?? ""))
+    const matched = scope.files.length
+    if (matched === 0) {
+      throw new DocRequestError(
+        `bb_doc module mode: no indexed file matches the module "${forms || String(request.target ?? "")}" — tried the repository-relative directory prefix "${forms}/" and the path prefix "${forms}". Pass a repository-relative directory that the index holds (e.g. "src/lib"), or use mode "file" for a single file.`,
+      )
+    }
+  }
+
   const citations: DocCitation[] = []
   const unknowns: DocUnknown[] = []
-  const includeTests = request.includeTests === true || mode === "symbol" || mode === "coverage" || mode === "feature"
+  // Tri-state: absent means the mode's default (test evidence is part of
+  // symbol/feature documents), explicit true asks for it, explicit false
+  // suppresses it. The handler refuses the option where the mode renders no
+  // test evidence at all.
+  const includeTests = request.includeTests === undefined
+    ? mode === "symbol" || mode === "feature" || mode === "coverage"
+    : request.includeTests === true
   // One indexed read, and it is what makes an import resolvable to a local
   // file. Gating it on the mode left `symbol` mode reporting every import in
   // the symbol's own file as an external dependency.
@@ -1613,6 +1784,9 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   if (feature?.semanticError) {
     unknowns.push({ statement: `Semantic candidate discovery did not run: ${feature.semanticError}. Only lexical candidates are used, so feature recall is lower than the mode's ceiling.`, reason: "not-observed", affectedSection: concern("semantic") })
   }
+  if (feature?.lexicalOnly) {
+    unknowns.push({ statement: "Semantic candidate expansion was not requested (detail is not \"deep\"), so feature candidates are lexically discovered only. Pass detail: \"deep\" to add semantic candidates — it is an order of magnitude slower.", reason: "not-observed", affectedSection: concern("semantic") })
+  }
 
   // Freshness is resolved ONCE for every file this generation could cite, not
   // once per citation: the resolver is the shared batch one every other read
@@ -1621,6 +1795,25 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     ...files.map((file) => String(file.id)),
     ...symbols.map((symbol) => String(symbol.source_file_id ?? "")),
   ])
+
+  // A mode that documents a scope selects at most 2x the evidence limit in
+  // symbols. The bound is real (the reference index holds 310,423 symbols and a
+  // limit:100 project document maps at most 200 of them), so it is declared as a
+  // bound with both numbers, and not left for the reader to infer from a short
+  // section.
+  if (mode === "project" || mode === "module" || mode === "coverage" || mode === "file") {
+    const scopeFileIds = files.map((file) => String(file.id))
+    const totalSymbols = scopeFileIds.length
+      ? Number((queryRows(raw, `SELECT count(*) AS c FROM brain_symbol WHERE project_id=? AND file_id IN (${scopeFileIds.map(() => "?").join(",")})`, projectId, ...scopeFileIds)[0]?.c ?? 0))
+      : 0
+    if (totalSymbols > symbols.length) {
+      unknowns.push({
+        statement: `The evidence limit selected ${symbols.length} of ${totalSymbols} indexed symbol(s) in this scope (at most twice the limit); the document describes the selection, not the whole set. Raise limit or narrow the target to widen it.`,
+        reason: "output-budget",
+        affectedSection: concern("scope"),
+      })
+    }
+  }
 
   const fileFacts = addFileFacts(raw, resolver, files, citations, unknowns)
   const usesSymbolFacts = mode === "symbol" || mode === "feature" || mode === "api"
@@ -1640,7 +1833,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const relationshipParts = addRelationshipFacts(raw, resolver, symbols, citations)
   const importFacts = addImportFacts(raw, resolver, files, citations, local)
   const inventory = mode === "project" || mode === "module" ? addInventoryFacts(raw, resolver, projectId, files, citations) : { facts: [] as DocFact[], languages: [] as Array<{ language: string; files: number; symbols: number }> }
-  const findingFacts = mode === "file" || mode === "project" || mode === "module" ? addFindingFacts(raw, resolver, projectId, files, citations, unknowns) : []
+  const findingFacts = mode === "file" || mode === "project" || mode === "module" ? addFindingFacts(raw, resolver, projectId, files, citations, unknowns, mode === "project") : []
   const entryPointFacts = mode === "project" || mode === "module" ? addEntryPointFacts(raw, resolver, projectId, citations) : []
   if (relationshipParts.unresolved > 0) {
     unknowns.push({ statement: `${relationshipParts.unresolved} relationship(s) name a target the index did not resolve to a symbol; those edges are reported as inferred, not extracted.`, reason: "not-indexed", affectedSection: concern("graph") })
@@ -1659,7 +1852,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "tests", heading: "Tests", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names this symbol and no indexed relationship reaches it from a test, so its test coverage is not established." })
     push({ id: "limitations", heading: "Limitations", required: true, audience: ["maintainer", "website"], facts: symbolParts.limitations, lead: "What this document cannot say is stated here rather than filled in.", emptyExplanation: "None of the measured limits applies to this symbol: its docstring, test, relationship and source-freshness checks all returned a result." })
   } else if (mode === "file") {
-    push({ id: "overview", heading: "Overview", required: true, audience: "all", facts: fileFacts, emptyExplanation: "No indexed file matched this target, so there is nothing about it to describe." })
+    push({ id: "overview", heading: "Overview", required: true, audience: "all", facts: fileFacts, emptyExplanation: `No indexed file matched this target. The four forms tried were: an exact repository-relative path, an absolute path, a directory prefix, and a bare file name with or without its extension.` })
     push({ id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations), emptyExplanation: "No exported or public symbol is indexed in this file." })
     push({ id: "dependencies", heading: "Dependencies", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts], emptyExplanation: "No import of this file and no relationship out of it is indexed, so its dependency edge is not established." })
     push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts, emptyExplanation: "No analysis finding, parser error or complexity outlier is indexed for this file, so no risk is asserted — the absence of evidence is not evidence of absence." })
@@ -1961,9 +2154,13 @@ interface MakeResultArgs {
 function makeResult(args: MakeResultArgs): DocResult {
   const { projectId, projectPath, request, mode, audience, detail, sections, citations, unknowns } = args
   const maxTokens = resolveTokenBudget(request.maxTokens)
-  const stale = citations.filter((citation) => citation.freshness === "stale").length
-  const missing = citations.filter((citation) => citation.freshness === "missing").length
-  const broken = citations.filter((citation) => citationBroken(projectPath, args.reader, citation)).length
+  // Counts are split by WHAT THE READER CAN CHECK. `citations` is the collected
+  // list; `keptCitations` (below) is what the answer emits. Reporting the
+  // collected counts next to the emitted list told a reader to look for 56 stale
+  // sources in a Sources list that showed none, so the primary numbers are the
+  // emitted ones and the collected figures are published beside them.
+  const collectedStale = citations.filter((citation) => citation.freshness === "stale").length
+  const collectedMissing = citations.filter((citation) => citation.freshness === "missing").length
   const uncitedClaims = sections.flatMap((section) => section.facts).filter((item) => item.citationIds.length === 0 && item.classification !== "generated").length
   const facts = sections.flatMap((section) => section.facts)
 
@@ -1981,8 +2178,7 @@ function makeResult(args: MakeResultArgs): DocResult {
   const expected = REQUIRED_SECTION_IDS[mode].length
   const sourceLanguage = args.inventory.languages[0]?.language ?? (args.files[0]?.language ?? args.symbols[0]?.language ?? null)
   const canonicalPath = request.target ? normalizeTarget(String(request.target)) : mode
-  const slugParts = String(request.target ?? "")
-    .split(/[\\/.: ]+/)
+  const slugParts = splitOnChars(String(request.target ?? ""), "\\/.: ")
     .map((part) => part.trim())
     .filter(Boolean)
     .slice(0, 4)
@@ -2001,9 +2197,9 @@ function makeResult(args: MakeResultArgs): DocResult {
     quality: {
       passed: false,
       factuality: { passed: false, uncitedClaims, unsupportedClaims: 0 },
-      references: { passed: false, broken, stale, missing },
+      references: { passed: false, broken: 0, stale: 0, missing: 0, collectedStale, collectedMissing },
       completeness: { passed: false, covered: 0, expected, unknown: unknowns.length },
-      freshness: { passed: false, snapshot: snapshotId, staleClaims: stale },
+      freshness: { passed: false, snapshot: snapshotId, staleClaims: collectedStale },
       budget: { passed: false, estimatedTokens: 0, maxTokens },
       // The real figures are written once the budget pass has finished trimming;
       // this placeholder exists only so that pass can measure the payload.
@@ -2060,14 +2256,18 @@ function makeResult(args: MakeResultArgs): DocResult {
     keptCitations = keptByReference()
     result.citations = keptCitations
     const droppedCitations = citations.length - keptCitations.length
+    const stale = keptCitations.filter((citation) => citation.freshness === "stale").length
+    const missing = keptCitations.filter((citation) => citation.freshness === "missing").length
+    const brokenCitations = keptCitations.filter((citation) => citationBroken(projectPath, args.reader, citation))
+    const broken = brokenCitations.length
     const budgetPassed = estimated <= maxTokens
     const covered = REQUIRED_SECTION_IDS[mode].filter((id) => result.sections.some((section) => section.id === id)).length
     const factualityPassed = uncitedClaims === 0 && hasEvidence
     const referencesPassed = missing === 0 && broken === 0
     const warnings: string[] = [...result.unknowns.map((unknown) => unknown.statement)]
-    if (stale) warnings.push(`${stale} citation(s) are stale: the file changed after indexing`)
-    if (missing) warnings.push(`${missing} citation(s) point at a file that no longer exists`)
-    if (broken) warnings.push(`${broken} citation(s) could not be resolved on disk`)
+    if (stale) warnings.push(`${stale} of the listed source(s) are stale: the file changed after indexing`)
+    if (missing) warnings.push(`${missing} of the listed source(s) point at a file that no longer exists`)
+    if (broken) warnings.push(`${broken} listed source(s) could not be resolved on disk`)
     if (trimmedSections) warnings.push(`${trimmedSections} section(s) were trimmed to stay inside the output budget`)
     if (droppedCitations) warnings.push(`${droppedCitations} collected citation(s) were not emitted because no fact referred to them`)
     if (!hasEvidence) warnings.push("no cited claim was produced: this result documents nothing, and the unknowns above say why")
@@ -2079,9 +2279,12 @@ function makeResult(args: MakeResultArgs): DocResult {
       // claims, which this result does not make.
       passed: factualityPassed && referencesPassed && budgetPassed && covered === expected,
       factuality: { passed: factualityPassed, uncitedClaims, unsupportedClaims: 0 },
-      references: { passed: referencesPassed, broken, stale, missing },
+      references: { passed: referencesPassed, broken, stale, missing, collectedStale, collectedMissing },
       completeness: { passed: covered === expected, covered, expected, unknown: result.unknowns.length },
-      freshness: { passed: stale === 0 && missing === 0, snapshot: snapshotId, staleClaims: stale },
+      // Freshness is judged on every citation the document COLLECTED, because a
+      // dropped citation cannot make the answer fresher; the reader-facing
+      // stale/missing counts above are the emitted ones.
+      freshness: { passed: collectedStale === 0 && collectedMissing === 0, snapshot: snapshotId, staleClaims: collectedStale },
       budget: { passed: budgetPassed, estimatedTokens: estimated, maxTokens },
       bounds: result.quality.bounds,
       warnings,
@@ -2121,7 +2324,7 @@ function makeResult(args: MakeResultArgs): DocResult {
   const rebuildBudgetNotes = (): void => {
     for (let i = result.unknowns.length - 1; i >= 0; i--) {
       const unknown = result.unknowns[i]
-      if (unknown.reason === "output-budget" && /item\(s\) were dropped to stay inside/.test(unknown.statement)) result.unknowns.splice(i, 1)
+      if (unknown.reason === "output-budget" && unknown.statement.includes("item(s) were dropped to stay inside")) result.unknowns.splice(i, 1)
     }
     for (const [id, record] of droppedPerSection) {
       result.unknowns.push({ statement: `${record.dropped} more ${record.heading.toLowerCase()} item(s) were dropped to stay inside the ${maxTokens}-token budget.`, reason: "output-budget", affectedSection: id })

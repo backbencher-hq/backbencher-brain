@@ -396,7 +396,7 @@ async function main(): Promise<void> {
   // leg (R2b) where the stored claim is removed — and to keep the outcome honest
   // either way.
   {
-    const handlerSource = readFileSync(path.join(ROOT, "src", "mcp", "tool-handlers.ts"), "utf8")
+    const handlerSource = readFileSync(path.join(ROOT, "src", "mcp", "tools", "bb_graph", "handler.ts"), "utf8")
     // The anchor is the DELEGATION this gate depends on, not a brace count: the
     // parameter's type literal opens a brace before the body does, so a brace
     // matcher terminates inside the signature and leaves a module that cannot
@@ -409,10 +409,11 @@ async function main(): Promise<void> {
     } else {
       const driftedCopy = `const tierFor = (e: { relationshipType: string; confidence: number | null; metadata?: { evidenceClass?: string | null } }): string => {\n      const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])\n      const IMPORT = new Set(["imports", "import"])\n      const stored = e.metadata?.evidenceClass\n      if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored\n      if (STRUCTURAL.has(e.relationshipType)) return (e.confidence ?? 0) >= 0.7 ? "structural" : "inferred"\n      if (IMPORT.has(e.relationshipType)) return "import_based"\n      return "inferred"\n    }\n`
       const mutatedSource = handlerSource.replace(delegation, driftedCopy)
-      const mutatedPath = path.join(ROOT, "src", "mcp", `__u1mutant-handlers-${process.pid}.ts`)
+      const mutatedPath = path.join(ROOT, "src", "mcp", "tools", "bb_graph", `__u1mutant-${process.pid}.ts`)
       writeFileSync(mutatedPath, mutatedSource)
       try {
-        const mutantHandlers: any = (await import(mutatedPath) as any).createToolHandlers()
+        const mutantModule: any = await import(mutatedPath)
+        const mutantHandlers: any = { ...createToolHandlers(), bb_graph: mutantModule.handler }
         const mutated = await callMcpThrough(mutantHandlers, "bb_graph", { symbol: "Warehouse" })
         const mutatedEdges = [...(mutated?.callers ?? []), ...(mutated?.callees ?? [])].map(edgeKey).sort()
         const sample = mutatedEdges.filter((k, i) => k !== ideDerived[i]).slice(0, 3)

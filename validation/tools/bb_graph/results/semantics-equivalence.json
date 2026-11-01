@@ -1,0 +1,148 @@
+{
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "symbols": [
+    {
+      "name": "likeContains",
+      "present": true,
+      "cascadeIdsOld": 1,
+      "cascadeIdsNew": 1,
+      "cascadeIdSetsEqual": true,
+      "callerRowSetsEqual": true,
+      "callerRows": 3,
+      "calleeRowSetsEqual": true,
+      "calleeRows": 0,
+      "unresolvedRowSetsEqual": true,
+      "unresolvedRows": 0,
+      "unattributedCallers": {
+        "old": 1,
+        "new": 1,
+        "equal": true
+      },
+      "unattributedCallees": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      }
+    },
+    {
+      "name": "OrderService",
+      "present": true,
+      "cascadeIdsOld": 7,
+      "cascadeIdsNew": 7,
+      "cascadeIdSetsEqual": true,
+      "callerRowSetsEqual": true,
+      "callerRows": 20,
+      "calleeRowSetsEqual": true,
+      "calleeRows": 37,
+      "unresolvedRowSetsEqual": true,
+      "unresolvedRows": 0,
+      "unattributedCallers": {
+        "old": 3,
+        "new": 3,
+        "equal": true
+      },
+      "unattributedCallees": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      }
+    },
+    {
+      "name": "InventoryService",
+      "present": true,
+      "cascadeIdsOld": 6,
+      "cascadeIdsNew": 6,
+      "cascadeIdSetsEqual": true,
+      "callerRowSetsEqual": true,
+      "callerRows": 17,
+      "calleeRowSetsEqual": true,
+      "calleeRows": 17,
+      "unresolvedRowSetsEqual": true,
+      "unresolvedRows": 0,
+      "unattributedCallers": {
+        "old": 3,
+        "new": 3,
+        "equal": true
+      },
+      "unattributedCallees": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      }
+    },
+    {
+      "name": "PricingService",
+      "present": true,
+      "cascadeIdsOld": 3,
+      "cascadeIdsNew": 3,
+      "cascadeIdSetsEqual": true,
+      "callerRowSetsEqual": true,
+      "callerRows": 8,
+      "calleeRowSetsEqual": true,
+      "calleeRows": 12,
+      "unresolvedRowSetsEqual": true,
+      "unresolvedRows": 0,
+      "unattributedCallers": {
+        "old": 3,
+        "new": 3,
+        "equal": true
+      },
+      "unattributedCallees": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      }
+    },
+    {
+      "name": "traverseGraph",
+      "present": true,
+      "cascadeIdsOld": 1,
+      "cascadeIdsNew": 1,
+      "cascadeIdSetsEqual": true,
+      "callerRowSetsEqual": true,
+      "callerRows": 2,
+      "calleeRowSetsEqual": true,
+      "calleeRows": 143,
+      "unresolvedRowSetsEqual": true,
+      "unresolvedRows": 26,
+      "unattributedCallers": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      },
+      "unattributedCallees": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      }
+    },
+    {
+      "name": "getProjectId",
+      "present": true,
+      "cascadeIdsOld": 1,
+      "cascadeIdsNew": 1,
+      "cascadeIdSetsEqual": true,
+      "callerRowSetsEqual": true,
+      "callerRows": 672,
+      "calleeRowSetsEqual": true,
+      "calleeRows": 0,
+      "unresolvedRowSetsEqual": true,
+      "unresolvedRows": 0,
+      "unattributedCallers": {
+        "old": 455,
+        "new": 455,
+        "equal": true
+      },
+      "unattributedCallees": {
+        "old": 0,
+        "new": 0,
+        "equal": true
+      }
+    }
+  ],
+  "allEqual": true,
+  "sourceCounts": {
+    "symbols": 310423,
+    "relationships": 820040
+  }
+}

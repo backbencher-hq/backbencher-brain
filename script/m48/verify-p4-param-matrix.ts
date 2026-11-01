@@ -15,6 +15,7 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m48/results")
@@ -31,34 +32,27 @@ function negative(label: string, ok: boolean, detail = "") { negatives++; check(
 
 interface MatrixRow { tool: string; kind: "param" | "enum" | "mode" | "planned" | "cli-flag" | "cli-command" | "rejection"; name: string; verifiedBy: string | null }
 
+/**
+ * The registry surface, read from the LIVE registry — not from a copy of its
+ * source text. The previous version scraped `src/mcp/tool-registry.ts` with
+ * regexes; when the registry became an assembler over per-tool descriptor
+ * modules that scrape found zero descriptors and the gate reported a green
+ * matrix over an empty surface. Importing the registry means a descriptor is
+ * enumerated where it is defined, and a new parameter appears here without a
+ * second copy to keep in step.
+ */
 function registrySurface(): { tools: string[]; rows: MatrixRow[] } {
-  const src = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf8")
-  // Name-index based slicing: each descriptor runs from its `name:` to the
-  // next descriptor's `name:` (or the array close). Robust to comments inside
-  // the descriptor brace before `name:` (bb_index/bb_graph/bb_impact/...).
-  const nameIdx = [...src.matchAll(/name:\s*"(bb_[a-z_]+)"/g)]
-  const tools = [...new Set(nameIdx.map((m) => m[1]))]
+  const tools = TOOL_DESCRIPTORS.map((descriptor) => descriptor.name)
   const rows: MatrixRow[] = []
-  const arrayClose = src.indexOf("] as const satisfies")
-  for (let i = 0; i < nameIdx.length; i++) {
-    const tool = nameIdx[i][1]
-    const start = nameIdx[i].index ?? 0
-    const end = i + 1 < nameIdx.length ? (nameIdx[i + 1].index ?? src.length) : arrayClose
-    const block = src.slice(start, end)
-    const propLines = [...block.matchAll(/([a-zA-Z][a-zA-Z0-9]*): \{ type: "(string|number|boolean|array)"/g)].map((m) => m[1])
-    for (const p of new Set(propLines)) rows.push({ tool, kind: "param", name: p, verifiedBy: null })
-    const enums = [...block.matchAll(/enum: \[([^\]]*)\]/g)]
-    for (const e of enums) {
-      for (const v of [...e[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])) rows.push({ tool, kind: "enum", name: v, verifiedBy: null })
+  for (const descriptor of TOOL_DESCRIPTORS) {
+    const tool = descriptor.name
+    const properties = (descriptor.inputSchema.properties ?? {}) as Record<string, { enum?: readonly string[] }>
+    for (const param of Object.keys(properties).sort()) rows.push({ tool, kind: "param", name: param, verifiedBy: null })
+    for (const [param, property] of Object.entries(properties)) {
+      for (const value of property.enum ?? []) rows.push({ tool, kind: "enum", name: `${param}=${value}`, verifiedBy: null })
     }
-    const modes = [...block.matchAll(/modes: \[([^\]]*)\]/g)]
-    for (const m of modes) {
-      for (const v of [...m[1].matchAll(/"([^"]+)"/g)].map((m2) => m2[1])) rows.push({ tool, kind: "mode", name: v, verifiedBy: null })
-    }
-    const planned = [...block.matchAll(/plannedModes: \[([^\]]*)\]/g)]
-    for (const m of planned) {
-      for (const v of [...m[1].matchAll(/"([^"]+)"/g)].map((m2) => m2[1])) rows.push({ tool, kind: "planned", name: v, verifiedBy: null })
-    }
+    for (const mode of descriptor.modes) rows.push({ tool, kind: "mode", name: mode, verifiedBy: null })
+    for (const mode of descriptor.plannedModes ?? []) rows.push({ tool, kind: "planned", name: mode, verifiedBy: null })
   }
   return { tools, rows }
 }

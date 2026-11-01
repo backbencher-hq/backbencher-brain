@@ -7,8 +7,8 @@
     "height": 1080
   },
   "editor": {
-    "binary": "Command failed: bash -lc command -v code",
-    "version": "",
+    "binary": "/usr/bin/code",
+    "version": "1.144.0",
     "pinnedDeclared": "1.85.0 (.vscode-test)",
     "pinHonored": false
   },
@@ -19,17 +19,17 @@
     "bundleSha256": ""
   },
   "fixture": {
-    "workspace": "$HOME/Documents/Default Project/ishaq/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
+    "workspace": "$HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
     "present": false,
     "contentHash": null,
     "indexedProjectDir": null
   },
   "flows": [],
-  "generatedAt": "2026-10-09T23:53:34.180Z",
-  "reason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), code (the editor under test), python3 + PIL (script/m55/pixel-read.py), declared fixture workspace ($HOME/Documents/Default Project/ishaq/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
+  "generatedAt": "2026-11-01T19:31:33.283Z",
+  "reason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), declared fixture workspace ($HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T23:53:34.336Z",
-    "contentSha256": "fa51d87044394619179b4cc09144645b537f39499f6a042c9110a0bb29eff754"
+    "sealedAt": "2026-11-01T19:31:33.531Z",
+    "contentSha256": "e477ea43992c0156dbc1af45f067a90897ddbb8387b512ca7042b594f0c78ba9"
   }
 }

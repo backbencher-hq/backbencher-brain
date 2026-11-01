@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_health",
+  "phase": "A-baseline",
+  "generatedAt": "2026-11-01T18:55:00Z",
+  "checkout": {
+    "repo": "$HOME/mcp/backbencher-brain",
+    "gitHead": "c43282e92",
+    "version": "backbencher-brain 0.3.0",
+    "note": "Measured after the module-per-tool split; src/mcp/tools/bb_health/{handler,descriptor}.ts and script/tool-docs/curation/bb_health.ts existed for all measurements. The shared checkout is being edited/built concurrently (brain-index-health.ts changed mid-audit); file hashes in validation/tools/bb_health/gates/file-hashes.txt pin the audited inputs."
+  },
+  "method": {
+    "warm": "one untimed warm-up call in the same process, then N measured calls",
+    "runsPerTier": 5,
+    "percentiles": "nearest-rank over the measured runs",
+    "harness": "validation/tools/bb_health/work/phaseA-measure.mts (T0,T1) and phaseA-t2.mts (T2) calling getUnifiedHealth(projectId, projectPath, {}) — the provider the MCP handler calls",
+    "readOnly": "BB_NO_AUTO_REFRESH=1 on every measurement; no write tool or indexer was run against .bb-data",
+    "medianReport": "report.timing is the provider's own measured phase split; `this call:` is the rendered line a caller sees"
+  },
+  "budgets": {
+    "charterSection6": "bb_health default args p95 T2 < 2 s; T0 default < 250 ms; T1 default < 1 s; no default call may exceed the 30 s client timeout"
+  },
+  "tiers": {
+    "T0": {
+      "subject": "test/fixtures/polyglot (5 files, ts-js + java-scala), isolated BB_DATA_DIR=validation/tools/bb_health/bbdata",
+      "command": "BB_DATA_DIR=$PWD/validation/tools/bb_health/bbdata BB_NO_AUTO_REFRESH=1 node --import tsx validation/tools/bb_health/work/phaseA-measure.mts",
+      "counts": { "files": 5, "symbols": 13, "relationships": 26, "imports": 2, "syntaxErrors": 0 },
+      "freshness": { "mode": "complete", "checked": 5, "total": 5 },
+      "wallMs": [57, 53, 50, 58, 49],
+      "p50Ms": 53,
+      "p95Ms": 58,
+      "thisCall": "this call: total=36ms (freshness=14ms aggregates=2ms)",
+      "budgetMs": 250,
+      "verdict": "PASS"
+    },
+    "T1": {
+      "subject": ".perf-fixtures/bb-scale/n100 (97 indexed of 100 files), isolated BB_DATA_DIR=validation/tools/bb_health/bbdata",
+      "command": "BB_DATA_DIR=$PWD/validation/tools/bb_health/bbdata BB_NO_AUTO_REFRESH=1 node --import tsx validation/tools/bb_health/work/phaseA-measure.mts",
+      "counts": { "files": 97, "symbols": 3512, "relationships": 17068, "imports": 633, "syntaxErrors": 2 },
+      "freshness": { "mode": "complete", "checked": 97, "total": 97 },
+      "wallMs": [28, 52, 35, 65, 28],
+      "p50Ms": 35,
+      "p95Ms": 65,
+      "thisCall": "this call: total=22ms (freshness=2ms aggregates=13ms)",
+      "budgetMs": 1000,
+      "verdict": "PASS"
+    },
+    "T2": {
+      "subject": "the workspace .bb-data index (charter reference large tier), read-only",
+      "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 node --import tsx validation/tools/bb_health/work/phaseA-t2.mts",
+      "counts": { "files": 6452, "symbols": 310423, "relationships": 820040, "imports": 25122, "syntaxErrors": 100 },
+      "freshness": { "mode": "sampled", "requestedMode": "sampled", "checked": 200, "total": 6452, "fresh": 194, "stale": 6, "missing": 0, "reasons": { "metadata-fast-path": 194, "hash-differs": 6 } },
+      "firstCallInFreshProcessMs": 12880,
+      "wallMs": [5204, 4692, 4575, 4338, 3395],
+      "p50Ms": 4575,
+      "p95Ms": 5204,
+      "minMs": 3395,
+      "maxMs": 5204,
+      "reportAggregatesMs": [3840, 2977, 2905, 2979, 2305],
+      "reportFreshnessMs": [71, 41, 160, 49, 45],
+      "thisCall": "this call: total=2677ms (freshness=45ms aggregates=2305ms)",
+      "budgetMs": 2000,
+      "verdict": "FAIL — p50 2.29x over the 2 s budget, p95 2.60x; first call 6.4x over"
+    }
+  },
+  "knownDefectReproduction": {
+    "claim": "default bb_health exceeded a 30 s MCP client timeout on the ~1.28M-symbol workspace index while bb_analyze stats answered",
+    "servedIndexFacts": {
+      "note": "The live bb MCP server in this DSH profile is started as `bin/bb mcp --dir <repo>` with NO BB_DATA_DIR, so it serves the default data dir ~/.bb, not .bb-data.",
+      "dataDir": "$HOME/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "brainDbBytes": 17018064896,
+      "walBytes": 8732393592,
+      "brainIndexStatusTotalSymbols": 1284808,
+      "brainIndexStatusTotalRelationships": 4425214,
+      "matchesCharterAppendixSymbols": 1283638
+    },
+    "mcpDoorObservation": {
+      "client": "the configured DSH bb MCP client (toolCallTimeoutMs=120000 in ~/.dsh/profiles/web/cordis.patch.yml)",
+      "calls": [
+        "bb_health {} -> Error: Request timed out",
+        "bb_health {\"paths\":[\"src/mcp/server.ts\"]} -> Error: Request timed out"
+      ],
+      "interpretation": "the default call did not answer within the 120 s client timeout on the served ~/.bb index (17 GB db + 8.7 GB WAL against 15 GB RAM, 1.28M symbols); a subsequent bb_search call returned `Cannot find module dist/symbol-search-SCZXX3WR.js`, i.e. the server's lazy imports were invalidated by a concurrent dist rebuild, so no further live-door probes were possible"
+    },
+    "controlledReproduction": {
+      "fixture": "validation/tools/bb_health/bbdata/projects/<workspace-pid>/brain.db — a copy of the .bb-data index with symbols raised to the charter's reference count (1,283,638); triggers dropped, ANALYZE run. Built by validation/tools/bb_health/work/build-scale-copy.sh",
+      "command": "BB_DATA_DIR=$PWD/validation/tools/bb_health/bbdata BB_NO_AUTO_REFRESH=1 node --import tsx validation/tools/bb_health/work/phaseA-t2.mts",
+      "firstCallInFreshProcessMs": 76713,
+      "wallMs": [14054, 11934, 12752, 14916, 12752],
+      "p50Ms": 12752,
+      "p95Ms": 14916,
+      "verdict": "REPRODUCES the >30 s defect: first default call 76.7 s (2.56x the 30 s client timeout); warm p50 12.8 s. Same code, same default arguments; the difference from T2 is the per-symbol work the default call does unconditionally."
+    },
+    "mechanismColdProfileOnT2": {
+      "note": "per-query timings from validation/tools/bb_health/work/profile-queries.cjs, first (cold) pass on .bb-data; these eight aggregates all run on a DEFAULT call today",
+      "counts": { "brain_symbol": 1001, "brain_relationship": 2048, "brain_import": 69 },
+      "fileLangRows": 217,
+      "symLangRows": 2217,
+      "modelRows": 282,
+      "entityTypeRows": 3225,
+      "embeddedEntities": 81,
+      "kindsWithNoEmbeddings": 6792,
+      "embeddedByLanguage": 3699,
+      "sumMs": 17591,
+      "note2": "the two O(symbols) correlated EXISTS probes (kindsWithNoEmbeddings, embeddedByLanguage) and the O(symbols) JOIN/group-bys exist only to feed verbose output (languages, searchable-by-language, embedded/unembedded kinds) yet are computed on every default call; at 1.28M symbols they scale ~4.1x"
+    }
+  },
+  "summary": {
+    "T0": "PASS (p95 58 ms < 250 ms)",
+    "T1": "PASS (p95 65 ms < 1000 ms)",
+    "T2": "FAIL (p95 5204 ms vs 2000 ms budget; p50 4575 ms)",
+    "T2Scale": "FAIL (first call 76.7 s; warm p50 12.8 s) — known defect reproduced",
+    "primaryCause": "default calls compute verbose-only, per-symbol aggregates over brain_symbol (two correlated EXISTS, one JOIN group-by, one embedding group-by) plus four full-table COUNT(*)s; no clock/row bound and no lazy evaluation"
+  }
+}

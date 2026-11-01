@@ -1,14 +1,14 @@
 {
   "status": "blocked",
   "workspace": "$HOME/bb-demo-hub",
-  "serverPath": "$HOME/Documents/Default Project/ishaq/backbencher-brain/dist/lsp/server.js",
+  "serverPath": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
   "blockedFlows": [],
   "flows": {},
-  "generatedAt": "2026-10-09T23:53:30.680Z",
+  "generatedAt": "2026-11-01T19:30:43.554Z",
   "reason": "declared fixture workspace is absent: $HOME/bb-demo-hub",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-09T23:53:30.709Z",
-    "contentSha256": "4b716341387cf23f487041a02a7526dc1c158f5432bc2385a65f297d0f091bba"
+    "sealedAt": "2026-11-01T19:30:43.555Z",
+    "contentSha256": "304e458df2c3fb166ac35567aa0d0634be286cd4d579a33ee66c2bced8983481"
   }
 }

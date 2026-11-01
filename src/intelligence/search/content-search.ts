@@ -40,13 +40,25 @@ const CONTENT_FTS_META = "brain_symbol_content_fts_meta"
 function detectFts5(raw: { exec: (sql: string) => void }): boolean {
   if (fts5Available !== null) return fts5Available
   try {
-    raw.exec("CREATE VIRTUAL TABLE IF NOT EXISTS __bb_fts_probe USING fts5(x)")
-    raw.exec("DROP TABLE IF EXISTS __bb_fts_probe")
+    // temp schema: a content QUERY must not create objects in the project index
+    // DB. The probe used to be a main-schema virtual table, so the first read in
+    // every process wrote DDL into the shared index.
+    raw.exec("CREATE VIRTUAL TABLE IF NOT EXISTS temp.__bb_fts_probe USING fts5(x)")
+    raw.exec("DROP TABLE IF EXISTS temp.__bb_fts_probe")
     fts5Available = true
   } catch {
     fts5Available = false
   }
   return fts5Available
+}
+
+/** Does a table exist, WITHOUT creating it? Reads sqlite_master only. */
+function tableExists(raw: any, name: string): boolean {
+  try {
+    return raw.prepare("SELECT 1 AS present FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) != null
+  } catch {
+    return false
+  }
 }
 
 // The giant path cannot rebuild an ephemeral FTS table for every query. Keep a
@@ -83,16 +95,25 @@ function contentFtsSchema(raw: any): void {
 async function ensureContentFts(raw: any, projectId: ProjectID): Promise<boolean> {
   if (!detectFts5(raw)) return false
   try {
-    contentFtsSchema(raw)
+    // The read path only READS the persistent trigram index. It used to CREATE
+    // it (7 tables + 3 triggers) on the first content query, i.e. a read tool
+    // wrote schema into the shared index DB. Installation belongs to the
+    // maintenance build (rebuildContentSearchIndex); a project without it falls
+    // back to the SQL path, which is complete over name/qualified-name/
+    // docstring/body rather than a subset.
+    if (!tableExists(raw, CONTENT_FTS_META) || !tableExists(raw, CONTENT_FTS_TABLE)) return false
     const marker = raw.prepare(
       `SELECT symbol_count AS symbolCount, max_updated AS maxUpdated FROM ${CONTENT_FTS_META} WHERE project_id = ?`,
-    ).get(projectId) as { symbolCount: number; maxUpdated: number } | undefined
-    // The rebuild writes the marker only after every row is inserted. Symbol
-    // mutations delete the marker through the triggers above, so readiness is
-    // O(1) and never performs a million-row COUNT on the query path. A missing
-    // marker deliberately falls back to the bounded SQL path until maintenance
-    // rebuilds the index; stale content is never presented as fresh.
-    return marker !== undefined
+    ).get(projectId) as { symbolCount: number; maxUpdated: number } | null | undefined
+    // The rebuild writes the marker only after every row is inserted, and symbol
+    // mutations delete it, so readiness is O(1) and never performs a
+    // million-row COUNT on the query path.
+    //
+    // `!= null`, not `!== undefined`: bun:sqlite returns null for "no row" where
+    // better-sqlite3 returns undefined. The `!== undefined` form was true under
+    // Bun for EVERY project, which made the bounded path skip its SQL fallback
+    // and search nothing but symbol names.
+    return marker != null
   } catch {
     return false
   }
@@ -239,8 +260,12 @@ export async function searchContent(projectId: ProjectID, query: string, options
 function isGiantCorpus(raw: any, projectId: ProjectID): boolean {
   const probe = raw.prepare(
     "SELECT id FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE ? LIMIT 1 OFFSET ?",
-  ).get(projectId, "/%/%", GIANT_CORPUS_OFFSET) as { id: string } | undefined
-  return probe !== undefined
+  ).get(projectId, "/%/%", GIANT_CORPUS_OFFSET) as { id: string } | null | undefined
+  // `!= null` is load-bearing: bun:sqlite returns null for "no row" and
+  // better-sqlite3 returns undefined. The old `!== undefined` reported every
+  // project as giant under Bun, so the classic path — the one that carries the
+  // terms route and the complete field scan — could not run there at all.
+  return probe != null
 }
 
 // Original full-corpus + FTS5 path for normal-size projects (unchanged).
@@ -255,18 +280,25 @@ async function searchContentClassic(
 ): Promise<SearchResults> {
   const params: unknown[] = [projectId]
   let filters = ""
+  // Case-insensitive, the rule the descriptor states and the boundary already
+  // enforces when it accepts the value. Without NOCASE here, `language:"Go"`
+  // passed validation and then matched nothing while `language:"go"` matched —
+  // a filter the caller believes is scoping results, silently excluding them.
   if (options.languages?.length) {
-    filters += " AND f.language IN (" + options.languages.map(() => "?").join(",") + ")"
+    filters += " AND f.language COLLATE NOCASE IN (" + options.languages.map(() => "?").join(",") + ")"
     params.push(...options.languages)
   }
   if (options.symbolKind) {
-    filters += " AND s.symbol_type = ?"
+    filters += " AND s.symbol_type COLLATE NOCASE = ?"
     params.push(options.symbolKind)
   }
 
   const corpus = raw.prepare(
     "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-      "s.docstring, s.symbol_type AS symbolType, " +
+      // The body. Omitting it here is what made a body-only word unreachable on
+      // this path while the bounded path could find it: two paths, one matching
+      // rule, and only one of them had the column.
+      "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
       "COALESCE(s.complexity, 0) AS complexity, " +
       "f.relative_path AS relativePath, f.path AS filePath, " +
@@ -350,16 +382,30 @@ async function searchContentBounded(
   const cap = phaseCap(pageBudget)
   let truncated = false
 
-  // Phases 1-3 are NOT gated on the page already being full.
-  //
-  // They used to be, and that made recall a function of the page size: a symbol
-  // reachable only by a docstring or qualified-name match was in the answer for
-  // limit=200 and absent for limit=15, because the exact-name phase alone
-  // filled the 15-slot budget. Measured on phpunit, the substring set lost 995
-  // of 7,256 matches this way — the same 15-row answer that a caller would
-  // trust as complete. The phases are bounded by `cap`, which is what actually
-  // bounds the work, so gating them bought nothing and cost recall.
-  const needed = () => byId.size < pageBudget
+  /**
+   * Candidate ids for ONE literal needle over the four matchable fields.
+   *
+   * Bounded by `cap` and driver-agnostic: this is the path that actually runs
+   * for a project whose persistent trigram index has not been built (the normal
+   * case), and it is also the per-term probe the terms route uses. A match in
+   * a symbol body is included — a word that appears only inside a function is
+   * exactly the thing content search exists to reach.
+   */
+  const sqlNeedleIds = (needleText: string): Array<{ id: string }> => {
+    const needle = "%" + escapeLike(needleText) + "%"
+    const ids = raw
+      .prepare(
+        "SELECT id FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' " +
+          `AND (name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR qualified_name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR docstring LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR source_text LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE}) LIMIT ?`,
+      )
+      .all(projectId, needle, needle, needle, needle, cap) as Array<{ id: string }>
+    if (ids.length >= cap) truncated = true
+    return ids
+  }
+
+  // Phases 1-3 are NOT gated on the page already being full: recall must not be
+  // a function of the page size. `cap` bounds the work of each phase and hitting
+  // it is declared on the answer.
 
   // 1. exact name (indexed via the NOCASE index).
   bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
@@ -405,24 +451,80 @@ async function searchContentBounded(
     // rebuilt by a maintenance script, so the SQL path is the normal path, not
     // a "compatibility fallback": a short query, a missing marker, or a corpus
     // with fewer rows than the trigram tokenizer's minimum all land here.
-    if (!contentFtsReady || trimmed.length < 3) {
-      const needle = "%" + escapeLike(trimmed) + "%"
-      const fallbackIds = raw
-        .prepare(
-          "SELECT id FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' " +
-            `AND (name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR qualified_name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR docstring LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR source_text LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE}) LIMIT ?`,
-        )
-        .all(projectId, needle, needle, needle, needle, cap) as Array<{ id: string }>
-      if (fallbackIds.length >= cap) truncated = true
-      push(fetchByIds(raw, projectId, fallbackIds, idFilterSql, idFilterParams))
+    //
+    // It also runs when the FTS call returned nothing and no earlier phase found
+    // a row — the trigram tokenizer can miss camelCase/partial tokens that the
+    // substring rule matches, and a silent miss here is an under-answered set.
+    const ftsCameBackEmpty = contentFtsReady && trimmed.length >= 3 && broadIds.length === 0 && byId.size === 0
+    if (!contentFtsReady || trimmed.length < 3 || ftsCameBackEmpty) {
+      push(fetchByIds(raw, projectId, sqlNeedleIds(trimmed), idFilterSql, idFilterParams))
     }
   }
+
+  // ── terms route, parity with the classic path ─────────────────────────────
+  // The classic path answers a natural-language question by matching the
+  // question's content words when the phrase matched nothing; without this the
+  // SAME question answered differently depending on which path the project size
+  // selected. Reported as matchMode "terms" and the words that carried it.
+  let matchMode: ContentMatchMode = "phrase"
+  let termMatch: { queryTerms: string[]; topMatched: string[] } | undefined
+  if (byId.size === 0) {
+    const terms = contentQueryTerms(trimmed)
+    if (terms.length > 0 && hasWhitespace(trimmed)) {
+      matchMode = "terms"
+      const scored = new Map<string, { row: CorpusRow; score: number; hits: string[] }>()
+      for (const term of terms) {
+        for (const row of fetchByIds(raw, projectId, sqlNeedleIds(term), idFilterSql, idFilterParams)) {
+          const weight = bestFieldTermScore(row, term)
+          if (weight === 0) continue
+          const existing = scored.get(row.id)
+          if (existing) {
+            existing.score += weight
+            existing.hits.push(term)
+          } else {
+            scored.set(row.id, { row, score: weight, hits: [term] })
+          }
+        }
+      }
+      const ordered = [...scored.values()].sort(
+        (a, b) =>
+          b.score - a.score ||
+          b.hits.length - a.hits.length ||
+          b.row.complexity - a.row.complexity ||
+          compareCodeUnits(a.row.relativePath, b.row.relativePath),
+      )
+      for (const entry of ordered) byId.set(entry.row.id, { row: entry.row, score: entry.score })
+      if (ordered.length > 0) termMatch = { queryTerms: terms, topMatched: ordered[0]!.hits }
+    }
+  }
+
+  // How much of THIS corpus carries a searchable body. A database indexed by an
+  // analyzer that does not store bodies has none, and the answer says so rather
+  // than letting a partial corpus look complete. One COUNT, own index.
+  const coverage = raw
+    .prepare(
+      "SELECT COUNT(*) AS symbols, " +
+        "SUM(CASE WHEN source_text IS NOT NULL AND length(source_text) > 0 THEN 1 ELSE 0 END) AS withBody " +
+        "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
+        "WHERE s.project_id = ? AND COALESCE(s.line_start, 0) > 0 AND s.name NOT LIKE '/%/%'" +
+        idFilterSql,
+    )
+    .get(projectId, ...idFilterParams) as { symbols: number; withBody: number | null } | null | undefined
+  const coverageSymbols = Number(coverage?.symbols ?? 0)
+  const withBody = Number(coverage?.withBody ?? 0)
+  const bodyCoverage = { withBody, symbols: coverageSymbols, ratio: coverageSymbols ? withBody / coverageSymbols : 1 }
 
   const ranked = [...byId.values()]
     .sort((a, b) => b.score - a.score || b.row.complexity - a.row.complexity || compareCodeUnits(a.row.relativePath, b.row.relativePath))
     .map((entry) => entry.row)
   const page = ranked.slice(offset, offset + maxResults)
-  return buildResults(raw, page, "content", maxResults, { totalMatches: ranked.length, truncated })
+  return buildResults(raw, page, "content", maxResults, {
+    totalMatches: ranked.length,
+    truncated,
+    matchMode,
+    ...(termMatch ? { termMatch } : {}),
+    bodyCoverage,
+  })
 }
 
 /**
@@ -593,7 +695,13 @@ function rankWithFts5(
   candidates: CorpusRow[],
 ): CorpusRow[] {
   if (candidates.length < 2) return candidates
-  const table = "__bb_content_fts_" + Math.random().toString(36).slice(2, 10)
+  // temp.<name>: the ranking table belongs to this connection, not to the
+  // project index. Creating it in the main schema made a read tool take DDL
+  // and write transactions on a shared index DB. The schema-qualified name is
+  // used for DDL/DML, while FTS5's MATCH/bm25 expressions must name the table
+  // unqualified (a qualified name there is a "no such column" driver error).
+  const tableName = "__bb_content_fts_" + Math.random().toString(36).slice(2, 10)
+  const table = "temp." + tableName
   try {
     // The body is a FOURTH indexed column, not an afterthought: bm25 is the only
     // IDF-aware ranker in the product, and leaving the body out of it would mean
@@ -603,10 +711,10 @@ function rankWithFts5(
     for (const row of candidates) {
       insert.run(row.id, row.name, row.qualifiedName ?? "", row.docstring ?? "", row.sourceText ?? "")
     }
-    const terms = query.split(/\s+/).filter(Boolean).map(ftsQuote).join(" OR ")
+    const terms = splitOnWhitespace(query).filter(Boolean).map(ftsQuote).join(" OR ")
     if (!terms) return candidates
     const ranked = raw.prepare(
-      "SELECT id, bm25(" + table + ") AS score FROM " + table + " WHERE " + table + " MATCH ?",
+      "SELECT id, bm25(" + tableName + ") AS score FROM " + table + " WHERE " + tableName + " MATCH ?",
     ).all(terms) as Array<{ id: string; score: number }>
     if (ranked.length === 0) return candidates
     const byId = new Map(candidates.map((row) => [row.id, row]))
@@ -683,6 +791,49 @@ const QUESTION_FRAME_WORDS = new Set([
  */
 const TERMS_FALLBACK_CAP = 2000
 
+/** True when the text contains a Unicode/ASCII whitespace code unit. */
+export function hasWhitespace(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    if (code === 32 || (code >= 9 && code <= 13) || code === 0x85 || code === 0xa0 || code === 0x1680 || (code >= 0x2000 && code <= 0x200a) || code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f || code === 0x3000) return true
+  }
+  return false
+}
+
+/** Split on runs of whitespace without a regular expression (a text split is
+ *  cheaper to reason about and cannot be defeated by grammar changes). */
+export function splitOnWhitespace(text: string): string[] {
+  const parts: string[] = []
+  let start = -1
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    const space = code === 32 || (code >= 9 && code <= 13) || code === 0x85 || code === 0xa0 || code === 0x1680 || (code >= 0x2000 && code <= 0x200a) || code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f || code === 0x3000
+    if (space) {
+      if (start !== -1) {
+        parts.push(text.slice(start, i))
+        start = -1
+      }
+    } else if (start === -1) start = i
+  }
+  if (start !== -1) parts.push(text.slice(start))
+  return parts
+}
+
+/**
+ * The strongest field ONE term matches, by the same weights the phrase route
+ * uses: name 3 / qualified name 2 / docstring or body 1.
+ *
+ * One definition shared by both content paths and the terms route, so a symbol
+ * can never be "a name hit" in one answer and "a body hit" in the next.
+ */
+function bestFieldTermScore(row: CorpusRow, lowerTerm: string): number {
+  if (row.name.toLowerCase().includes(lowerTerm)) return 3
+  if ((row.qualifiedName ?? "").toLowerCase().includes(lowerTerm)) return 2
+  if ((row.docstring ?? "").toLowerCase().includes(lowerTerm)) return 1
+  if (row.sourceText && row.sourceText.toLowerCase().includes(lowerTerm)) return 1
+  return 0
+}
+
 /** Distinct content terms of a query, in the shared tokenizer. */
 export function contentQueryTerms(query: string): string[] {
   const terms = new Set<string>()
@@ -734,24 +885,15 @@ function matchContentRows(
   // come back empty; splitting it into pieces it never had is what took that
   // away.
   const terms = contentQueryTerms(query)
-  const isSingleToken = !/\s/.test(query.trim())
+  const isSingleToken = !hasWhitespace(query.trim())
   if (terms.length === 0 || isSingleToken) return { rows: [], mode: "phrase", truncated: false }
 
   const scored: Array<{ row: CorpusRow; score: number; all: number; hitTerms: string[] }> = []
   for (const row of corpus) {
-    const name = row.name.toLowerCase()
-    const qn = (row.qualifiedName ?? "").toLowerCase()
-    const ds = (row.docstring ?? "").toLowerCase()
-    const st = row.sourceText ? row.sourceText.toLowerCase() : ""
     let score = 0
     const hitTerms: string[] = []
     for (const t of terms) {
-      // Same relative weights as the phrase route, extended per term rather
-      // than re-tuned: a name is still the strongest evidence available.
-      let best = 0
-      if (name.includes(t)) best = 3
-      else if (qn.includes(t)) best = 2
-      else if (ds.includes(t) || st.includes(t)) best = 1
+      const best = bestFieldTermScore(row, t)
       if (best > 0) { score += best; hitTerms.push(t) }
     }
     if (hitTerms.length > 0) scored.push({ row, score, all: hitTerms.length === terms.length ? 1 : 0, hitTerms })
@@ -800,17 +942,6 @@ function sortByFieldWeight(query: string, corpus: CorpusRow[]): CorpusRow[] {
 /** Locale-independent ordering — the previous localeCompare made page order depend on the host's ICU locale. */
 function compareCodeUnits(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0
-}
-
-/**
- * The no-FTS5 ordering. Same weights, same locale-independent tie-break as
- * `sortByFieldWeight`; kept as a named export of the ordering rule rather than
- * as a second, subtly different scorer — the two used to disagree (this one had
- * no prefix bonus and used localeCompare), which meant the answer changed when
- * a repository crossed GIANT_CORPUS_OFFSET.
- */
-function rankWithLike(query: string, corpus: CorpusRow[]): CorpusRow[] {
-  return sortByFieldWeight(query, corpus)
 }
 
 function withMeta(results: SearchResults, mode: string): SearchResults {

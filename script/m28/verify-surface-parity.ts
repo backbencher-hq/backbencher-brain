@@ -56,6 +56,7 @@ import crypto from "node:crypto"
 import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
+import { combinedToolSource, toolModuleSourceOf } from "../lib/tool-sources.ts"
 import { classifyTier, isDeclaredTier, EVIDENCE_TIERS, STRUCTURAL_FLOOR, UNCLAIMED_STORE_LABELS, evidenceClassOf } from "../../src/lsp/evidence_tier"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../../src/lsp/cross_language_hover"
 import { renderSignature, renderParameterList, parseParameters, carriesRawJson, UNKNOWN_PARAMETER_LIST } from "../../src/lsp/signature"
@@ -178,9 +179,9 @@ async function main(): Promise<void> {
   notes.push(`fixture relationship kinds: ${indexKinds.join(",") || "(none)"}`)
 
   // --- R2: P1, source level --------------------------------------------------
-  const handlersSrc = sourceOf("src/mcp/tool-handlers.ts")
+  const handlersSrc = combinedToolSource()
   const handlersCode = codeOnly(handlersSrc)
-  check("U2 P1: src/mcp/tool-handlers.ts imports the tier owner src/lsp/evidence_tier", /from\s+"\.\.\/lsp\/evidence_tier"/.test(handlersCode), "the agent door must CALL the one owner, not carry its own rule")
+  check("U2 P1: the agent door's tool modules import the tier owner src/lsp/evidence_tier", /from\s+"(?:\.\.\/)+lsp\/evidence_tier"/.test(handlersCode), "the agent door must CALL the one owner, not carry its own rule")
   check("U2 P1: src/mcp/tool-handlers.ts carries no inline derivation (kind set / tier vocabulary / structural verdict)", inlineDerivation(handlersSrc).length === 0, inlineDerivation(handlersSrc).join("; "))
 
   // --- R3: P2, behavioural — the bytes a consumer of bb_graph reads ----------
@@ -357,7 +358,7 @@ async function main(): Promise<void> {
   }
 
   // --- R5: the cross-language door -------------------------------------------
-  const crossHandlerBody = handlersCode.slice(handlersCode.indexOf("bb_cross_language: async"), handlersCode.indexOf("bb_annotate: async"))
+  const crossHandlerBody = codeOnly(toolModuleSourceOf("bb_cross_language"))
   const CROSS_OWNER_CALLS = /tierForCrossLanguageEdge|factsFromRows|storedCrossLanguageRows|storedCrossLanguageFactsByName/
   check("U2 P1: bb_cross_language reuses src/lsp/cross_language_hover.ts rather than re-deriving tiers", CROSS_OWNER_CALLS.test(crossHandlerBody) && !/\btierFor\s*=/.test(crossHandlerBody) && inlineDerivation(crossHandlerBody).length === 0, `delegates=${CROSS_OWNER_CALLS.test(crossHandlerBody)} inline=${inlineDerivation(crossHandlerBody).join("; ") || "none"}`)
   const invRow = raw.prepare("SELECT s.id, f.language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = 'Inventory'").get(projectId) as { id: string; language: string } | undefined
@@ -415,9 +416,9 @@ async function main(): Promise<void> {
   const impact = await callJson("bb_impact", { symbol: "count" })
   check("U2 §15.2: bb_impact carries the component's resolution record (identity stated, never silent)", impact && typeof impact.resolution === "object" && typeof impact.resolution.through === "string", JSON.stringify(impact?.resolution ?? null))
   check("U2 §15.2: a resolution that substituted names BOTH the member and the owner", impact?.resolution?.through === "direct" || (typeof impact?.resolution?.memberName === "string" && typeof impact?.resolution?.ownerName === "string"), JSON.stringify(impact?.resolution ?? null))
-  const impactBody = handlersCode.slice(handlersCode.indexOf("bb_impact: async"), handlersCode.indexOf("bb_cross_language: async"))
+  const impactBody = codeOnly(toolModuleSourceOf("bb_impact"))
   check("U2 §15.2: bb_impact does not compute the resolution itself (the owner decides)", !/through:\s*"owning-declaration"/.test(impactBody) && /impact\.resolution/.test(impactBody), "a substitution decided here is a second decision")
-  const graphBody = handlersCode.slice(handlersCode.indexOf("bb_graph: async"), handlersCode.indexOf("bb_impact: async"))
+  const graphBody = codeOnly(toolModuleSourceOf("bb_graph"))
   check("U2 §15.2: bb_graph states how the requested name resolved (root.match / root.candidates), never a silent relabel", /rootMatch/.test(graphBody) && /candidates:/.test(graphBody), "a name held by several symbols must say so where the target is named")
 
   // --- R7: §15.4 human text is human, on the tool side -----------------------
@@ -514,7 +515,7 @@ async function main(): Promise<void> {
 
   // M1 — the CL1 shape: the agent door keeps its own drifted inline copy.
   {
-    const res = await loadMutant("src/mcp/tool-handlers.ts", (src) => {
+    const res = await loadMutant("src/mcp/tools/bb_graph/handler.ts", (src) => {
       const anchor = "return textResult(JSON.stringify({\n      symbol,"
       if (!src.includes(anchor)) return null
       const copy = `const tierForMutant = (e: { relationshipType: string; confidence: number; metadata?: { evidenceClass?: string } }): string => {\n      const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])\n      const IMPORT = new Set(["imports", "import"])\n      const stored = e.metadata?.evidenceClass\n      if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored\n      if (STRUCTURAL.has(e.relationshipType)) return e.confidence >= 0.7 ? "structural" : "inferred"\n      if (IMPORT.has(e.relationshipType)) return "import_based"\n      return "inferred"\n    }\n    `
@@ -524,7 +525,7 @@ async function main(): Promise<void> {
     if (!res.ok) {
       mutant("U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging", "unverifiable", res.why)
     } else {
-      const outcome = await parityAgainst(() => (res.mod as any).createToolHandlers?.() ?? (res.mod as any).default)
+      const outcome = await parityAgainst(() => ({ ...createToolHandlers(), bb_graph: (res.mod as any).handler }))
       if ("unreachable" in outcome) mutant("U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging", "unreachable", outcome.unreachable)
       else if (outcome.diverged > 0) mutant("U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging", "observed", `${outcome.diverged} of ${seedReturned} shapes diverge; ${outcome.sample.join(" ;; ")}`)
       else mutant("U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging", "unverifiable", "the mutated copy agreed with the owner on every shape the corpus exercises — the probe cannot see this class")
@@ -630,7 +631,7 @@ async function main(): Promise<void> {
   check("U2 §15.2 probe reachable: the fixture holds a member that resolves through its owning declaration", memberImpactDirect?.resolution?.through === "owning-declaration", JSON.stringify(memberImpactDirect?.resolution ?? null))
   check("U2 §15.2: the substituted resolution names BOTH the member and the owner on the tool side", memberImpactDirect?.resolution?.memberName === memberShape?.name && typeof memberImpactDirect?.resolution?.ownerName === "string", JSON.stringify(memberImpactDirect?.resolution ?? null))
   {
-    const res = await loadMutant("src/mcp/tool-handlers.ts", (src) => {
+    const res = await loadMutant("src/mcp/tools/bb_impact/handler.ts", (src) => {
       const anchor = "resolution: impact.resolution,"
       if (!src.includes(anchor)) return null
       return src.replace(anchor, "resolution: { through: impact.resolution.through },")
@@ -643,7 +644,7 @@ async function main(): Promise<void> {
       let observed = ""
       let why = ""
       try {
-        const mh: any = (res.mod as any).createToolHandlers?.() ?? (res.mod as any).default
+        const mh: any = { ...createToolHandlers(), bb_impact: (res.mod as any).handler }
         const d = JSON.parse((await mh.bb_impact({ symbol: memberShape!.name }, ctx)).content[0].text)
         observed = JSON.stringify(d.resolution)
         if (d.resolution?.through === "owning-declaration" && (d.resolution?.memberName === undefined || d.resolution?.ownerName === undefined)) {
@@ -664,7 +665,7 @@ async function main(): Promise<void> {
   // reader trusts. The probe must OBSERVE that the named target is not the
   // resolved one.
   {
-    const res = await loadMutant("src/mcp/tool-handlers.ts", (src) => {
+    const res = await loadMutant("src/mcp/tools/bb_graph/handler.ts", (src) => {
       const anchor = "root: {\n        id: result.root?.id,\n        name: result.root?.name,"
       if (!src.includes(anchor)) return null
       return src.replace(anchor, `root: {\n        id: result.root?.id,\n        name: (result.root?.file ?? "").split("/").pop()?.replace(/\\.[^.]+$/, "") ?? result.root?.name,`)
@@ -675,7 +676,7 @@ async function main(): Promise<void> {
       let observed = ""
       let why = ""
       try {
-        const mh: any = (res.mod as any).createToolHandlers?.() ?? (res.mod as any).default
+        const mh: any = { ...createToolHandlers(), bb_graph: (res.mod as any).handler }
         const real = await callJson("bb_graph", { symbol: "count", maxDepth: 3 })
         const d = JSON.parse((await mh.bb_graph({ symbol: "count", maxDepth: 3 }, ctx)).content[0].text)
         if (real?.root?.name !== undefined && d.root?.name !== real?.root?.name) {

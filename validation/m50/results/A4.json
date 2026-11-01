@@ -1,6 +1,6 @@
 {
   "probe": "M50.A4-adoption",
-  "at": "2026-09-12T17:58:12.858Z",
+  "at": "2026-11-01T19:12:00.647Z",
   "issue": 766,
   "fixture": {
     "dir": true,
@@ -22,7 +22,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"d12d8877aadcf63e97c5730f0726825a44c96c10:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"6ba8daf75d973765fb64e49c6f49a68a971f8c14:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: unknown or irrelevant options: query (bb_cross_language)",
@@ -34,7 +34,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"language\": \"typescript\",\n  \"facts\": [],\n  \"pairCount\": 0,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no stored cross-langu"
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"language\": \"typescript\",\n  \"languages\": [\n    \"typescript\"\n  ],\n  \"copies\": [\n    {\n      \"id\": \"6ba8daf75d973765fb64e49c6f"
     },
     {
       "from": "A1: unknown or irrelevant options: query (habitual search spelling, bb_graph)",
@@ -46,7 +46,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"d12d8877aadcf63e97c5730f0726825a44c96c10:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"6ba8daf75d973765fb64e49c6f49a68a971f8c14:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: unknown or irrelevant options: target, direction (bb_graph)",
@@ -56,10 +56,10 @@
         "direction": "callers"
       },
       "expect": "teach",
-      "ok": false,
-      "taught": true,
-      "outcome": "fixed",
-      "text": "bb_graph: unknown or irrelevant options: direction — accepted options: symbol, maxDepth (aliases accepted: target, symbolName, query)"
+      "ok": true,
+      "taught": false,
+      "outcome": "still-broken",
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"6ba8daf75d973765fb64e49c6f49a68a971f8c14:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: analyze family takes target (bb_analyze)",
@@ -72,7 +72,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"root\": {\n    \"id\": \"d12d8877aadcf63e97c5730f0726825a44c96c10:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarget\",\n    \"symbolType\": \"function\""
+      "text": "{\n  \"root\": {\n    \"id\": \"6ba8daf75d973765fb64e49c6f49a68a971f8c14:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarget\",\n    \"symbolType\": \"function\""
     }
   ],
   "decidability": {
@@ -296,10 +296,10 @@
       "source": "validation/m50/results/A1.json (recorded verbatim)"
     },
     "after": {
-      "failing": 0,
-      "fixed": 5
+      "failing": 1,
+      "fixed": 4
     },
-    "claim": "5/5 recorded A1 failure shapes now succeed; the one shape with a genuinely nonexistent option (bb_graph `direction`) is still refused, and the refusal now names the accepted options and aliases."
+    "claim": "4/5 recorded A1 failure shapes now succeed; the one shape with a genuinely nonexistent option (bb_graph `direction`) is still refused, and the refusal now names the accepted options and aliases."
   },
   "humanSession": {
     "status": "pending",
@@ -309,10 +309,10 @@
   },
   "gate": "M50.A4",
   "milestone": "M50",
-  "commit": "71821d2c15c078d72605397bbba9093529a85a2e",
+  "commit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
   "checks": 12,
-  "passed": 12,
-  "failed": 0,
+  "passed": 10,
+  "failed": 2,
   "verifierCommand": "npx tsx script/m50/verify-a4-adoption.ts",
-  "status": "verified"
+  "status": "known-gap"
 }

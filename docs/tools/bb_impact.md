@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_impact: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_impact through any MCP host, the CLI (`bb tool bb_impact`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_impact/descriptor.ts, src/mcp/tools/bb_impact/handler.ts, script/tool-docs/curation/bb_impact.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_impact --write`.
+-->
 # `bb_impact`
 
 Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and a declared total that is the size of the set the answer is a prefix of — measured, not inferred, so an answer that is short of the whole set says so even when no bound fired. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows. The relationship kinds that count are named in every answer's `rule.relationshipTypes` and can be overridden; a dependent carries its evidence tier, cross-language flag, bridge and position.
@@ -94,4 +101,4 @@ This is the bounded-impact specialist; `bb_analyze` mode `impact` aggregates the
 
 Freshness modes (registered as `freshnessModes`): `impact`. Staleness surfaces as: per-dependent `stale` flag (three states: `true`/`false`, or `null` when the file is not in the index at all), the root's own `rootStale`, and a `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`). Stale files inside the answer are repaired within budget and the walk is re-run, declared in `autoRefresh`; `refresh=false` opts out. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

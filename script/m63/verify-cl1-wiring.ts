@@ -104,7 +104,10 @@ check(
 
 // ── every anchor must still be present in the file it mutates ───────────────
 const sources: Record<string, string> = {}
-const src = (file: string) => (sources[file] ??= readFileSync(join(ROOT, "src", file === "handler" ? "mcp" : "lsp", file === "handler" ? "tool-handlers.ts" : "cross_language_hover.ts"), "utf8"))
+const src = (file: string) => (sources[file] ??= readFileSync(
+  join(ROOT, "src", file === "handler" ? join("mcp", "tools", "bb_cross_language", "handler.ts") : join("lsp", "cross_language_hover.ts")),
+  "utf8",
+))
 
 let liveAnchors = 0
 const dead: string[] = []
@@ -112,7 +115,7 @@ for (const m of mutants) {
   const body = src(m.file)
   if (!body.includes(m.from)) {
     dead.push(m.id)
-    check(`${m.id}: its anchor is still present in ${m.file === "handler" ? "tool-handlers.ts" : "cross_language_hover.ts"}`, false, "ANCHOR NOT FOUND — this mutant would be skipped, and the gate would still report success")
+    check(`${m.id}: its anchor is still present in ${m.file === "handler" ? "src/mcp/tools/bb_cross_language/handler.ts" : "src/lsp/cross_language_hover.ts"}`, false, "ANCHOR NOT FOUND — this mutant would be skipped, and the gate would still report success")
     continue
   }
   liveAnchors++
@@ -208,9 +211,12 @@ check(
 check("the harness does not bank a failed import as a caught defect without checking it is not a broken probe",
   /brokenProbe/.test(gate) && /is not a function/.test(gate),
   "the broken-probe guard is missing — a TypeError in a probe would count as caught")
-check("the import-path helper produces a usable directory path",
-  /\$\{p \? "" : "\/"\}/.test(gate),
-  "abs() must append a trailing slash for the empty path, or the catch-all rewrite emits invalid specifiers")
+check("a HANDLER mutant is written beside its owning module and carries the createToolHandlers shim the probes call",
+  /mcp", "tools", "bb_cross_language"/.test(gate) && /createToolHandlers\(\) \{ return \{ bb_cross_language: handler \} \}/.test(gate),
+  "a handler mutant written elsewhere imports different modules; a mutant without the shim makes every probe throw — which used to bank as a caught defect")
+check("a COMPONENT-VIA-HANDLER mutant redirects the handler's component import to the mutated component",
+  /const componentSpecifier = "\.\.\/\.\.\/\.\.\/lsp\/cross_language_hover"/.test(gate) && /const componentPath = join\(ROOT, "src", "lsp"/.test(gate),
+  "the handler must import the mutated component, or the probe measures the unmutated one")
 
 // ── the seeded states the guards depend on ──────────────────────────────────
 // Two counters no corpus can reach are verified by building the store state that

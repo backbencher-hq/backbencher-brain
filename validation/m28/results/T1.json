@@ -2,24 +2,24 @@
   "issue": "M28.T1",
   "code": "T1",
   "milestone": "M28",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 24,
-  "passed": 24,
-  "failed": 0,
-  "mutantsCaught": 2,
+  "passed": 23,
+  "failed": 1,
+  "mutantsCaught": 1,
   "mutantsTotal": 2,
   "mutantRecords": [
     {
       "name": "T1 mutant: silent empty impact set on unknown symbol is caught",
-      "caught": true
+      "caught": false
     },
     {
       "name": "T1 mutant: fabricated cross-language fact for unknown symbol is caught",
       "caught": true
     }
   ],
-  "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
-  "sourceFingerprint": "56c737fb7da1dffeb0c52d3396ad4c3bbe5d7cb0345239a5474818ebc2610f43",
+  "currentCommit": "ba9455decfe49609feb69380c3444124531a8c2c",
+  "sourceFingerprint": "13b949a10443d362919abf754a0c1f0ed7f5196c4674cbc000f9246179fe4ab3",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-mcp-tools.ts",
@@ -28,14 +28,14 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-10-15T07:48:32.498Z",
+  "generatedAt": "2026-11-01T19:40:20.707Z",
   "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
   "limitations": [
     "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T07:48:32.499Z",
-    "contentSha256": "41276f76c389fc504ae55f5f7042d07f8d41bc4edd92ae0c1ca29a78e56d9dce"
+    "sealedAt": "2026-11-01T19:40:20.708Z",
+    "contentSha256": "51f0587bd5dd41579e22f0e65ac5273be00d66f7ac62629937542527fc6ee14a"
   }
 }

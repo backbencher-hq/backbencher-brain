@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_ask: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_ask through any MCP host, the CLI (`bb tool bb_ask`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_ask/descriptor.ts, src/mcp/tools/bb_ask/handler.ts, script/tool-docs/curation/bb_ask.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_ask --write`.
+-->
 # `bb_ask`
 
 Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores.
@@ -73,4 +80,4 @@ For exact symbol/content/file retrieval use `bb_search`; this tool answers natur
 
 Freshness modes (registered as `freshnessModes`): `answer`. Staleness surfaces as: per-source `[STALE — file changed since index]` markers on retrieval answers, repeated in the source list; a verified aggregate answer carries no per-file marker (it describes the whole index, not a file). This tool does not auto-refresh, and it emits no `freshness` envelope: a verified aggregate answer is a count over the whole index rather than a per-file fact, so there is no per-file envelope to publish. When a cited source is stale, remediation is manual: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only). Nothing is stale → no marker. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

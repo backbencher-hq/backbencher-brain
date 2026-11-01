@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_doc: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_doc through any MCP host, the CLI (`bb tool bb_doc`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_doc/descriptor.ts, src/mcp/tools/bb_doc/handler.ts, script/tool-docs/curation/bb_doc.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_doc --write`.
+-->
 # `bb_doc`
 
 Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Every mode emits its declared section set, an empty result is never reported as passing, and the token budget is enforced against the whole payload. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When the cited files are stale, the handler auto-refreshes exactly those files within budget and regenerates the document; refresh=false opts out and answers from existing data with the freshness block.
@@ -137,4 +144,4 @@ For raw symbol metadata use `bb_search` mode `symbol`; this tool composes docume
 
 Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

@@ -232,11 +232,11 @@ bun run script/verify-mcp-e2e.ts && npx tsx script/verify-mcp-e2e.ts # public to
 
 Note: `verify-mcp-e2e.ts` spawns the real runtime entry — `node bin/bb mcp`
 (compiled dist) under Node and `bun src/mcp/server.ts` (source, bun:sqlite)
-under Bun, exercising the ten advertised tools and hidden compatibility calls.
+under Bun, exercising the sixteen advertised tools and hidden compatibility calls.
 
 ## Public API lifecycle
 
-Version `0.3.0` exposes the ten-tool MCP surface above. Removed aliases and their
+Version `0.3.0` exposes the sixteen-tool MCP surface above. Removed aliases and their
 replacements are listed in [MCP_TOOL_MIGRATION.md](./docs/MCP_TOOL_MIGRATION.md) and
 [CHANGELOG.md](./CHANGELOG.md).
 The machine-readable artifact is standalone JSON, so website and host integrations

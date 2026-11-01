@@ -2,10 +2,10 @@
   "issue": "M28.V1",
   "code": "V1",
   "milestone": "M28",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 13,
-  "passed": 12,
-  "failed": 1,
+  "passed": 13,
+  "failed": 0,
   "mutantsCaught": 2,
   "mutantsTotal": 2,
   "mutantRecords": [
@@ -18,8 +18,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "ca6c232165a6a77ccc11a5ac8ddd209d20a9097c",
-  "sourceFingerprint": "e10c9f7cfbd3959aef00172152630b284cf2198ff728461c0c78d094ca99b39f",
+  "currentCommit": "ba9455decfe49609feb69380c3444124531a8c2c",
+  "sourceFingerprint": "2e76a9c2cae6a2ffcd833123ca35a231b35d2d9cfa5fb24133e749ceade26371",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-mcp-surface.ts",
@@ -28,14 +28,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-15T22:58:11.399Z",
+  "generatedAt": "2026-11-01T19:41:03.030Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
-  "failures": [
-    "V1: union claim cites the real U1 numbers —  verified via [U1.json](../../validation/m28/results/U1.json) (30/30 checks, 4/4 mutants).\n\n## Annotations (D-3/D-6)\n\nProvenance is schema-enforced (`author_cla"
-  ],
+  "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T22:58:11.400Z",
-    "contentSha256": "d146ea4073ccca027cf14345db7e0b5b65499c541a042b0d9560b05d539709f2"
+    "sealedAt": "2026-11-01T19:41:03.032Z",
+    "contentSha256": "4754c183b0f52cfa77031fb6a35922de3e2a18542ccff2131a409187dea8c017"
   }
 }

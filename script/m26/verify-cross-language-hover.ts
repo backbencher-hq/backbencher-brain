@@ -73,7 +73,12 @@ async function makeFixture(): Promise<{ projectId: string; raw: any; ws: string;
   const ws = mkdtempSync(join(tmpdir(), "w3-ws-"))
   const dataDir = mkdtempSync(join(tmpdir(), "w3-data-"))
   // Hover side: typescript; other side: kotlin (a launch-language pair).
-  writeFileSync(join(ws, "main.ts"), "export function main(): void {}\n")
+  // Three REAL declaration lines. The fixture used to write a ONE-LINE file and seed
+  // symbols at lines 2 and 3, so the hover was asked about positions outside the
+  // parsed tree and correctly returned nothing — the gate was red on a fixture that
+  // described a file the editor would never see. The line/position pair asserted for
+  // each symbol now exists in the file.
+  writeFileSync(join(ws, "main.ts"), "export function main(): void {}\nexport function localCaller(): void {}\nexport function quietFn(): void {}\n")
   writeFileSync(join(ws, "service.kt"), "fun service() {}\n")
   const canonical = realpathSync(ws)
   const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
@@ -238,10 +243,12 @@ async function main(): Promise<void> {
         probe: (m) => m.crossLanguageSection([]) !== "", // empty facts produce a section => defect visible
       },
       {
+        // The unnamed-bridge wording is a named constant now, shared by both
+        // projections so the two surfaces cannot phrase the same absence differently.
         name: "M2 bridge fabricated",
         file: "component",
-        from: 'row.bridge_mechanism ?? "unnamed bridge (stored row carries no mechanism)"',
-        to: 'row.bridge_mechanism ?? "resolved via import graph"',
+        from: "bridge: row.bridge_mechanism ?? UNNAMED_BRIDGE,",
+        to: 'bridge: row.bridge_mechanism ?? "resolved via import graph",',
         probe: (m) => {
           const f = m.factsFromRows([{ relationship_type: "calls", confidence: 1, bridge_mechanism: null, other_language: "kotlin", direction: "caller", evidence_class: null }], "typescript")
           return f[0]!.bridge === "resolved via import graph" // invented mechanism present => defect visible

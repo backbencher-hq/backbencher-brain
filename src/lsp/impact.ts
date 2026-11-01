@@ -249,40 +249,40 @@ export interface ImpactResult {
    *  not be established (a member lookup the index refused), which is a third
    *  thing again, and is not zero. */
   cascade: { exact: number; member: number; rangeFolded: number } | null
-  /** M63.T2: HOW completeness was established, so a reader can tell an answer
-   *  that is complete BY CONSTRUCTION from one that was measured and agreed.
+  /** HOW completeness was established, so a reader can tell an answer that is
+   *  complete BY CONSTRUCTION from one that was measured and agreed.
    *
    *  `ran: false` — the walk never reached the depth boundary, so no node could
    *  have been blocked, every bound that could fire has declared itself, and the
    *  set is the whole truth without a measurement having been paid for.
    *  `ran: true, timedOut: false` — the set was measured against an unbounded
-   *  walk of the same rule and the two agree.
+   *  walk of the same rule; `complete` says whether that measurement agrees with
+   *  the returned set.
    *  `ran: true, timedOut: true` — the measurement stopped on the wall clock.
    *  That is the ONE case where the same question can get two different answers,
    *  because it is the only field here that depends on the machine rather than
    *  on the index — so it is published rather than folded into the total's null,
-   *  where a reader could not tell a busy refusal from a structural one. */
-  countVerification: { ran: boolean; timedOut: boolean; boundarySuspect: boolean }
-  /** M63.T2: would this answer be the same if it were asked again?
+   *  where a reader could not tell a busy refusal from a structural one.
+   *
+   *  `complete` is deliberately three-state: `true` (measured, agrees: the set is
+   *  the whole truth even if an ENGINE bound fired on the way — a row cap that
+   *  dropped only duplicate call sites of a dependent already counted hides no
+   *  dependent), `false` (measured, disagrees or could not read: the answer is a
+   *  prefix or a declared unknown), and `null` (not measured: complete by
+   *  construction, which is a different claim from a measured one). */
+  countVerification: { ran: boolean; timedOut: boolean; boundarySuspect: boolean; complete: boolean | null }
+  /** Would this answer be the same if it were asked again?
    *
    *  Every bound this tool and the engine declare is a property of the INDEX —
    *  a node budget, a depth cap, a site limit, a caller budget — so the same
-   *  question on the same index gets the same answer, and the lane's suite holds
-   *  the tool to that. ONE bound is not: the engine's 2 000 ms walk-time budget
-   *  (its owner's declared trade-off — a node is not a unit of work, and a bound
-   *  that does not bound is worse than a slow one).
-   *
-   *  Measured on the lane's largest index, `bb_impact {symbol:"file"}` on cargo
-   *  returned 142, 95, 142, 142, 95 rows over five identical calls, and `cargo`
-   *  178 or 172. The engine declares the cause on exactly the short runs
-   *  (`walk-time-budget-exhausted` in `traversal.engineTruncationReason`), but
-   *  this tool's headline `truncationReason` names the first clause of the set —
-   *  `caller-site-limit`, which also fired — so two answers with different row
-   *  counts carried the SAME declared reason.
-   *
-   *  So this field is the reader's answer to "will I get this again?", and it is
-   *  false when a time bound fired on either side: the engine's walk, or the
-   *  counting walk behind the declared total (`countVerification.timedOut`). */
+   *  question on the same index gets the same answer, and the suite holds the
+   *  tool to that. The one exception is a WALL-CLOCK bound. The engine walks
+   *  with no clock bound unless a caller asks for one, and this component asks
+   *  for none; what can still vary is this component's own breaker on the
+   *  counting walk behind the declared total (`countVerification.timedOut`).
+   *  When that fires, two identical calls can return different counts, so this
+   *  field answers "will I get this again?" instead of leaving it to be guessed
+   *  from a sibling field. */
   reproducible: boolean
 }
 
@@ -488,14 +488,17 @@ export interface ImpactTotalCount {
   /** Symbols the walk opened (the other declared cost bound). */
   expansions: number
   hitScanCeiling: boolean
-  /** M63.T2: the walk stopped on the WALL CLOCK, not on a declared work bound.
+  /** True when the walk stopped on the WALL CLOCK, not on a declared work bound.
    *  A separate field from `hitScanCeiling` because the two mean different
    *  things to a reader: the work ceilings are properties of the INDEX (the
    *  same question always gives the same answer), and the clock is a property
    *  of the MACHINE (the same question can give a different one). Keeping them
-   *  apart is what lets a reader — and the lane's stability law — tell a
-   *  structural unknown from a busy one. */
+   *  apart is what lets a reader tell a structural unknown from a busy one. */
   timedOut: boolean
+  /** True when the counting walk could not read the index at all — a refused
+   *  query, not a measured ceiling. A refusal is not a zero: both counts are
+   *  null and the answer declares the measurement unavailable. */
+  failed: boolean
   /** The walk's composition by HOW each dependent is a dependent, measured
    *  under the same rule as `total`. See `ImpactResult.cascade`. */
   cascade: { exact: number; member: number; rangeFolded: number } | null
@@ -553,6 +556,24 @@ export function countImpactDependents(
   // hands both the same array, so a total can never describe a set that was
   // measured under a different rule.
   const relTypes = options.relationshipTypes ?? IMPACT_REL_TYPES
+  // An empty rule cannot match anything, and the traversal substitutes its
+  // DEFAULT kind set for an empty list — so a caller that is handed both an
+  // empty list and a default walk would be measuring two different rules. This
+  // walk refuses that state rather than publishing a number about it.
+  if (relTypes.length === 0) {
+    return {
+      total: null,
+      direct: 0,
+      rowsScanned: 0,
+      expansions: 0,
+      hitScanCeiling: false,
+      timedOut: false,
+      failed: true,
+      depths: new Map(),
+      parents: new Map(),
+      cascade: null,
+    }
+  }
   const relPlaceholders = relTypes.map(() => "?").join(",")
   // One level, one statement. Every symbol at the same distance from the root
   // is asked about at once, so the walk asks "who depends on ANY of these" once
@@ -680,12 +701,15 @@ export function countImpactDependents(
       expansions,
       hitScanCeiling,
       timedOut,
+      failed: false,
       depths,
       parents,
       cascade: classifyCascade(db, projectId, [...found], opened),
     }
   } catch {
-    // Unreadable index: the declared unknown, never a guess.
+    // Unreadable index: the declared unknown, never a guess. `failed` keeps the
+    // refusal distinct from a measured zero — `direct: 0` below is a placeholder
+    // the caller must read as "not measured", never as "no direct dependents".
     return {
       total: null,
       direct: 0,
@@ -693,6 +717,7 @@ export function countImpactDependents(
       expansions: 0,
       hitScanCeiling: false,
       timedOut: false,
+      failed: true,
       depths: new Map(),
       parents: new Map(),
       cascade: null,
@@ -755,32 +780,47 @@ function classifyCascade(
  *  when the root cannot be resolved — an unknown symbol has no impact set,
  *  and inventing an empty one would read as "no one depends on this".
  *
- *  M44.U5: a member-name target (the hover's server-resolved identity for a
- *  constructor or member) that the engine's root whitelist excludes is
- *  re-rooted through its OWNING declaration when the member has no stored
- *  reverse edges of its own — and the result says so (resolution field).
- *  A genuinely absent symbol still throws: no silent re-rooting, no empty
- *  set that would read as "no one depends on this". */
+ *  A member-name target (a constructor or member whose server-resolved identity
+ *  the editor hover carries, and that the MCP door exposes as `file`) that the
+ *  engine's root whitelist excludes is re-rooted through its OWNING declaration
+ *  when the member has no stored reverse edges of its own — and the result says
+ *  so (`resolution`). A genuinely absent symbol still throws: no silent
+ *  re-rooting, no empty set that would read as "no one depends on this".
+ *  A file hint is a REFUSAL input: if it does not identify the symbol, the
+ *  answer is the declared error, never another same-named copy. */
 export async function computeImpact(
   db: ImpactDb,
   projectId: string,
   symbolName: string,
   deps: ImpactDeps = {},
-  /** X1 closure: the hover's defining-file identity. Same-name members
+  /** The caller's defining-file hint (the editor hover's server-resolved
+   *  identity; `bb_impact`'s optional `file` argument). Same-name members
    *  (every real repo's constructors) resolve ONLY through it; without it an
-   *  ambiguous member name keeps the declared error. Positional so existing
+   *  ambiguous member name keeps the declared error. A hint that cannot
+   *  identify the symbol is REFUSED, never ignored. Positional so existing
    *  call sites stay source-compatible. */
   memberFile?: string,
-  /** M63.T2: named options. `relationshipTypes` defaults to the declared
+  /** Named options. `relationshipTypes` defaults to the declared
    *  IMPACT_REL_TYPES and is handed to BOTH walks, so the set and its declared
-   *  total are always measurements of the same rule. */
+   *  total are always measurements of the same rule. An EMPTY list is refused:
+   *  the engine would silently substitute its default kind set. */
   options: { relationshipTypes?: readonly string[] } = {},
 ): Promise<ImpactResult> {
   const traverse = deps.traverse ?? graphTraversal
-  // M63.T2: ONE list, handed to the walk and to the counting walk. The engine
-  // applies exactly the kinds it is given, so the set is a measurement of this
-  // list and so is the total — not "whatever each side defaulted to".
+  // ONE list, handed to the walk and to the counting walk. The engine applies
+  // exactly the kinds it is given, so the set is a measurement of this list and
+  // so is the total — not "whatever each side defaulted to".
   const relationshipTypes = options.relationshipTypes ?? IMPACT_REL_TYPES
+  // An empty list is not "a rule that matches nothing" to the graph engine: it
+  // substitutes the DEFAULT kind set for it. Handing the same empty list to the
+  // counting walk (which has no such substitution) would measure a different
+  // set, and `rule.relationshipTypes` would publish a third. Refuse it instead
+  // of answering under a rule the caller did not name.
+  if (relationshipTypes.length === 0) {
+    throw new Error(
+      "bb/impact: relationshipTypes must name at least one relationship kind — an empty list matches nothing and would be silently re-read as the engine's default",
+    )
+  }
   const walk = { direction: "callers" as const, maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes: [...relationshipTypes] }
   let resolution: ImpactResult["resolution"] = { through: "direct" }
   let result: Awaited<ReturnType<typeof graphTraversal>>
@@ -887,13 +927,13 @@ export async function computeImpact(
               .slice(0, 8)
               .map((c) => `${c.file || "?"}:${c.line}`)
               .slice(0, 8)
-              .join(", ")}${nameTotal !== null && nameTotal > 8 ? `, +${nameTotal - 8} more` : ""}; re-ask with a file`
+              .join(", ")}${nameTotal !== null && nameTotal > 8 ? `, +${nameTotal - 8} more` : ""}; re-ask with the \`file\` option naming one of them`
           : ""
       throw new Error(
         `bb/impact: symbol '${symbolName}' is not a traversable root (${rootType}) — no impact set exists` +
           ` (declared error: the symbol was not found as a traversable root${
             memberFile
-              ? "; the hinted file does not disambiguate it — hover a symbol that was indexed"
+              ? "; the supplied file hint does not identify it — pass a project-relative path to its defining file"
               : "; run `bb index` or check the name"
           }${candidates})`,
       )
@@ -903,10 +943,10 @@ export async function computeImpact(
     resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
   } else if (memberFile && result.root && rootType && IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
     // Traversable root WITH a hint: still the hinted identity's truth or the
-    // declared error — gravity never overrules the hover's identity.
+    // declared error — a gravity pick never overrules the caller's file hint.
     if (typeof result.root.file !== "string" || !memberFileMatches(memberFile, result.root.file)) {
       throw new Error(
-        `bb/impact: symbol '${symbolName}' resolves to a member in '${result.root.file}' but the hover's identity is '${memberFile}' — the hinted symbol was not found at that identity; refusing the silent relabel (declared error)`,
+        `bb/impact: symbol '${symbolName}' resolves to '${result.root.file}' but the supplied file hint '${memberFile}' does not identify it — refusing to answer about a different copy (declared error; pass the symbol's own file, or omit \`file\` when the name is unique)`,
       )
     }
   }
@@ -1092,6 +1132,7 @@ export async function computeImpact(
         direct: directFromSet,
         hitScanCeiling: false,
         timedOut: false,
+        failed: false,
         depths: new Map<string, number>(),
         parents: new Map<string, string>(),
         cascade: null,
@@ -1172,11 +1213,27 @@ export async function computeImpact(
     }
   }
   // A count that cannot be trusted is worse than no count: when the counting
-  // walk hit its ceiling BOTH numbers are null (declared unknown), never a
-  // partial count presented as a whole.
-  const total = counts.hitScanCeiling ? null : counts.total
-  const direct = counts.hitScanCeiling ? null : counts.direct
-  if (verify && counts.hitScanCeiling) {
+  // walk hit its ceiling, was refused, or stopped on the clock, BOTH numbers are
+  // null (declared unknown), never a partial count presented as a whole.
+  const unmeasurable = counts.hitScanCeiling || counts.failed
+  const total = unmeasurable ? null : counts.total
+  const direct = unmeasurable ? null : counts.direct
+  // A depth cap is the one bound the counting walk shares with the traversal: the
+  // engine refuses to expand past `maxDepth - 1`, and the counting walk measures
+  // under the same `maxDepth`, so it cannot see past the cap either. Every other
+  // engine bound (a per-query row cap, a caller budget, a total edge cap) drops
+  // ROWS, not dependents, so the measurement can still prove nothing was missed.
+  const depthCapFired = reasons.includes("caller-depth-cap-reached")
+  const provenComplete =
+    verify && !unmeasurable && counts.timedOut !== true && counts.total === impact.length && !depthCapFired
+  if (verify && counts.failed) {
+    // The measurement could not read the index at all. Name that refusal; do not
+    // present it as "the set is shorter than the unbounded walk", which is a
+    // finding this component did not establish.
+    truncated = true
+    const clause = "count: measurement unavailable — the completeness walk could not read the index"
+    truncationReason = truncationReason === null ? clause : `${truncationReason} (${clause})`
+  } else if (verify && counts.hitScanCeiling) {
     // Completeness could not be established either way, and no bound declared
     // it. Say that rather than letting the reader assume the whole set.
     truncated = true
@@ -1186,6 +1243,16 @@ export async function computeImpact(
     // a larger truth, and it says that instead of claiming to be the whole.
     truncated = true
     truncationReason = truncationReason ?? "impact-set-shorter-than-unbounded-walk"
+  }
+  // `truncated` is about the DEPENDENT SET, not about the engine's rows. When the
+  // measurement completed cleanly and agrees with the returned set, a row cap
+  // that fired hid no dependent: the set is the whole truth, and the engine's
+  // bound stays published where it belongs (`traversal.engineTruncated` /
+  // `engineTruncationReason`). Keeping a stale prefix claim here would
+  // contradict the set this component just measured.
+  if (provenComplete && !walkTimeBoundFired) {
+    truncated = false
+    truncationReason = null
   }
   // M63.T2: a time bound on EITHER side makes the answer unreproducible, and the
   // reason has to say so. The engine's walk-time clause is handled where the
@@ -1272,7 +1339,7 @@ export async function computeImpact(
       maxDepth: IMPACT_BUDGET.maxDepth,
     },
     cascade,
-    countVerification: { ran: verify, timedOut: verify && counts.timedOut === true, boundarySuspect },
+    countVerification: { ran: verify, timedOut: verify && counts.timedOut === true, boundarySuspect, complete: verify ? provenComplete : null },
     reproducible: !walkTimeBoundFired && !(verify && counts.timedOut === true),
   }
 }

@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_index: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_index through any MCP host, the CLI (`bb tool bb_index`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_index/descriptor.ts, src/mcp/tools/bb_index/handler.ts, script/tool-docs/curation/bb_index.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_index --write`.
+-->
 # `bb_index`
 
 Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). mode=post re-runs the heavy derived-data phases (relationships/enrichment/gravity/taints/health) WITHOUT re-parsing — the remediation after edits on incremental paths. The path MUST be inside this project: an absolute path elsewhere, a `../` traversal and a foreign directory are all REFUSED, because an out-of-tree file would be stored with a `relative_path` that is not relative to anything and every scoped query, file name and freshness check for it would then be wrong. The report says what happened rather than only how much: `outcome` is `indexed`, `partial`, `no-op` or `indexed`, and a `no-op` carries a `reason` distinguishing "nothing changed" from "this file holds nothing the indexer extracts"; when errors occurred, `errorDetail` names the file and the message beside the `errors` count. Paths in the report are PROJECT-RELATIVE, so the same request returns the same bytes on any machine. The counts are stable between identical calls; the `ms` fields are measured wall-clock and are expected to vary.
@@ -90,4 +97,4 @@ The CLI twin is `bb index` (same semantics; see docs/MCP_CLI_INDEXER_GUIDE.md). 
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

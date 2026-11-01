@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_graph: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_graph through any MCP host, the CLI (`bb tool bb_graph`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_graph/descriptor.ts, src/mcp/tools/bb_graph/handler.ts, script/tool-docs/curation/bb_graph.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_graph --write`.
+-->
 # `bb_graph`
 
 Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. Traversal semantics: a relationship stored against any member of a class (a method call, an inherited behavior) is attributed to the owner class, so caller/callee sets include the owner-family level — every edge still traces to a stored relationship row. Each edge's `rowId` is the stored relationship key with its leading '<projectHash>:rel:' removed, and each endpoint's `id` is the stored symbol key with its leading '<projectHash>:' removed — both prefixes are constant within one answer, and `root.id` carries the FULL stored form, so '<projectHash>' is the segment before its first ':' and prepending it (plus ':rel:' for a rowId) reconstructs the store key exactly. An `ext:` id has no such prefix and is returned whole. The two stored keys are 127-248 and 65-144 characters and were 28-31% and 28.6% of every edge's bytes.
@@ -149,4 +156,4 @@ For richer analysis (dependencies, complexity, tests, impact aggregation) use `b
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

@@ -1,0 +1,11 @@
+{
+  "issue": "M15.S4",
+  "code": "S4",
+  "tool": "bb_search",
+  "verified": true,
+  "checks": 3,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-01T17:56:46.625Z"
+}

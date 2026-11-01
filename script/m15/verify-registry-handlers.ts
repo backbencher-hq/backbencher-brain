@@ -1,160 +1,230 @@
-// script/m15/verify-registry-handlers.ts — M15.C2
-// Tool registry + handlers + validation — boundary enforcement across 10 tools.
-// 1. Every descriptor has a handler function
-// 2. Every handler has a registry descriptor
-// 3. Mode validation is consistent (registry modes ⊇ handler-checked modes)
-// 4. validateToolDescriptors catches all known error cases
-// 5. Registry is the single authority (no parallel copy drift)
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the C2 gate for the public tool surface: it proves the
+//   registry descriptors and the handler modules correspond one-to-one, that the
+//   descriptor schema validator rejects planted defects, and that the write/
+//   index policy is pinned so a new tool cannot silently change it.
+// WHY IT READS SOURCE MODULES INSTEAD OF PARSING THEM — the previous version
+//   scanned `tool-registry.ts` / `tool-handlers.ts` as TEXT and asserted "10
+//   tools", so it went green against a surface it was no longer describing and
+//   then reported zero descriptors once the registry was split into per-tool
+//   modules. A gate that parses another file's source is a second, weaker copy
+//   of that file; this one imports the real registry and the real handlers.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/c2.json.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tool-registry.ts,
+//   src/mcp/tools/<tool>/descriptor.ts, src/mcp/tool-handlers.ts,
+//   src/mcp/tools/<tool>/handler.ts.
+// CONTRACTS IT MUST NOT BREAK — every check must be able to go red: the
+//   negative controls below plant a defect and require the validator to throw.
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { readFileSync, existsSync, mkdirSync } from "node:fs"
-import { writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
-let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
+import {
+  TOOL_DESCRIPTORS,
+  PUBLIC_TOOL_DESCRIPTORS,
+  validateToolDescriptors,
+  deriveToolContracts,
+  toMcpToolList,
+} from "../../src/mcp/tool-registry"
+import { createToolHandlers } from "../../src/mcp/tool-handlers"
+import type { ToolDescriptor } from "../../src/mcp/tool-registry"
 
-function ck(label: string, cond: boolean, detail?: string) {
+const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+
+let checks = 0
+let passed = 0
+let failed = 0
+let negatives = 0
+let negativePassed = 0
+
+function ck(label: string, cond: boolean, detail?: string): void {
   checks++
-  if (cond) { passed++; return }
+  if (cond) {
+    passed++
+    return
+  }
   failed++
   console.log("  FAIL: " + label + (detail ? " — " + detail : ""))
 }
 
-function nk(label: string, cond: boolean, detail?: string) {
+function nk(label: string, cond: boolean, detail?: string): void {
+  checks++
   negatives++
-  if (cond) { negativePassed++; return }
+  if (cond) {
+    negativePassed++
+    return
+  }
   failed++
   console.log("  FAIL: " + label + " (negative)" + (detail ? " — " + detail : ""))
 }
 
-function emit(code: string, label: string) {
+function throws(fn: () => void): boolean {
+  try {
+    fn()
+    return false
+  } catch {
+    return true
+  }
+}
+
+function emit(code: string, label: string): void {
   const total = passed + negativePassed
-  console.log("\n" + code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
+  console.log(
+    "\n" + code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") +
+      " (" + total + "/" + checks + " passed, " + negatives + " negatives)",
+  )
   const resultsDir = path.join(ROOT, "validation/m15/results")
   if (!existsSync(resultsDir)) mkdirSync(resultsDir, { recursive: true })
-  const evidence: any = {
-    issue: "M15.C2", code, tool: "registry+handlers",
-    label, verified: failed === 0,
-    checks, passed: total, failed, negatives,
+  const evidence = {
+    issue: "M15.C2",
+    code,
+    tool: "registry+handlers",
+    label,
+    verified: failed === 0,
+    toolCount: TOOL_DESCRIPTORS.length,
+    checks,
+    passed: total,
+    failed,
+    negatives,
     generatedAt: new Date().toISOString(),
   }
   writeFileSync(path.join(resultsDir, "c2.json"), JSON.stringify(evidence, null, 2) + "\n")
   process.exitCode = failed > 0 ? 1 : 0
 }
 
-const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+const registryNames = TOOL_DESCRIPTORS.map((descriptor) => descriptor.name)
+const handler = createToolHandlers()
+const handlerNames = Object.keys(handler).sort()
 
-// === 1. Parse registry descriptors from source ===
-const registryText = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf-8")
-const handlerText = readFileSync(path.join(ROOT, "src/mcp/tool-handlers.ts"), "utf-8")
-const validationText = readFileSync(path.join(ROOT, "src/mcp/tool-validation.ts"), "utf-8")
+// === 1. The registry is the single authority ===
+ck("registry is not empty", TOOL_DESCRIPTORS.length > 0)
+ck("all descriptor names are unique", new Set(registryNames).size === registryNames.length)
+ck(
+  "PUBLIC_TOOL_DESCRIPTORS is the same set as TOOL_DESCRIPTORS",
+  PUBLIC_TOOL_DESCRIPTORS.length === TOOL_DESCRIPTORS.length &&
+    PUBLIC_TOOL_DESCRIPTORS.every((descriptor, index) => descriptor.name === registryNames[index]),
+)
+ck("the shipped registry passes its own validator", !throws(() => validateToolDescriptors(TOOL_DESCRIPTORS)))
 
-// Extract tool names from registry "name" fields
-const nameRE = /name:\s*"(bb_\w+)"/g
-const registryNames: string[] = []
-let m
-while ((m = nameRE.exec(registryText)) !== null) {
-  registryNames.push(m[1])
-}
-ck("registry has 10 tool descriptors", registryNames.length === 10, "found " + registryNames.length + ": " + registryNames.join(", "))
-
-// Extract tool names from handler property keys
-const handlerRE = /^\s+(bb_\w+):\s*(?:async\s*)?\(/gm
-const handlerNames: string[] = []
-while ((m = handlerRE.exec(handlerText)) !== null) {
-  handlerNames.push(m[1])
-}
-ck("handler has 10 tool functions", handlerNames.length === 10, "found " + handlerNames.length + ": " + handlerNames.join(", "))
-
-// === 2. 1:1 correspondence ===
+// === 2. Descriptor ↔ handler one-to-one correspondence ===
 const registrySet = new Set(registryNames)
 const handlerSet = new Set(handlerNames)
+const registryOnly = registryNames.filter((name) => !handlerSet.has(name))
+const handlerOnly = handlerNames.filter((name) => !registrySet.has(name))
+ck("every descriptor has a handler", registryOnly.length === 0, "registry-only: " + (registryOnly.join(", ") || "none"))
+ck("every handler has a descriptor", handlerOnly.length === 0, "handler-only: " + (handlerOnly.join(", ") || "none"))
+ck(
+  "registry ↔ handler is one-to-one",
+  registryOnly.length === 0 && handlerOnly.length === 0,
+  registryOnly.length + " registry-only, " + handlerOnly.length + " handler-only",
+)
 
-for (const name of registrySet) {
-  ck("registry '" + name + "' has handler", handlerSet.has(name), name)
-}
-for (const name of handlerSet) {
-  ck("handler '" + name + "' has registry entry", registrySet.has(name), name)
-}
+// === 3. Schema hygiene every public descriptor must satisfy ===
+ck(
+  "every required field is a declared property",
+  TOOL_DESCRIPTORS.every((descriptor) => {
+    const properties = descriptor.inputSchema.properties ?? {}
+    return (descriptor.inputSchema.required ?? []).every((required) => required in properties)
+  }),
+)
+ck("every descriptor has at least one mode", TOOL_DESCRIPTORS.every((descriptor) => descriptor.modes.length > 0))
+ck(
+  "every descriptor carries a documentation summary and category",
+  TOOL_DESCRIPTORS.every(
+    (descriptor) => descriptor.documentation.summary.length > 0 && descriptor.documentation.category.length > 0,
+  ),
+)
 
-// Count mismatch
-const regOnly = [...registrySet].filter(n => !handlerSet.has(n))
-const hndOnly = [...handlerSet].filter(n => !registrySet.has(n))
-nk("no registry-only tools without handlers", regOnly.length === 0, "registry-only: " + (regOnly.length ? regOnly.join(", ") : "none"))
-nk("no handler-only tools without registry", hndOnly.length === 0, "handler-only: " + (hndOnly.length ? hndOnly.join(", ") : "none"))
-ck("registry ↔ handler 1:1 correspondence", regOnly.length === 0 && hndOnly.length === 0, regOnly.length + " registry-only, " + hndOnly.length + " handler-only")
+// === 4. The policy is pinned on purpose: changing it must edit this file too ===
+const writeTools = TOOL_DESCRIPTORS.filter((descriptor) => descriptor.mutability === "write")
+  .map((descriptor) => descriptor.name)
+  .sort()
+ck(
+  "write-capable tools are exactly bb_annotate, bb_edit, bb_index",
+  JSON.stringify(writeTools) === JSON.stringify(["bb_annotate", "bb_edit", "bb_index"]),
+  writeTools.join(", "),
+)
+const indexFree = TOOL_DESCRIPTORS.filter((descriptor) => !descriptor.requiresIndex)
+  .map((descriptor) => descriptor.name)
+  .sort()
+ck(
+  "index-free tools are exactly bb_annotate, bb_annotations, bb_health, bb_index",
+  JSON.stringify(indexFree) === JSON.stringify(["bb_annotate", "bb_annotations", "bb_health", "bb_index"]),
+  indexFree.join(", "),
+)
+ck(
+  "no tool is deprecated without a replacement",
+  TOOL_DESCRIPTORS.every((descriptor) => !descriptor.deprecated || descriptor.replacement !== undefined),
+)
 
-// === 3. Mode consistency: handler mode checks vs registry modes ===
-// Parse modes from registry
-const modesMap = new Map<string, string[]>()
-for (const name of registrySet) {
-  // Find mode array in the descriptor block
-  const descRE = new RegExp("name:\\s*\"" + name + "\"[\\s\\S]*?modes:\\s*\\[([^\\]]*)\\]", "m")
-  const dm = descRE.exec(registryText)
-  if (dm) {
-    const modes = dm[1].split(",").map(s => s.trim().replace(/"/g, "").replace(/'/g, "")).filter(Boolean)
-    modesMap.set(name, modes)
-  }
-  const plannedRE = new RegExp("name:\\s*\"" + name + "\"[\\s\\S]*?plannedModes:\\s*\\[([^\\]]*)\\]", "m")
-  const pm = plannedRE.exec(registryText)
-  if (pm) {
-    const planned = pm[1].split(",").map(s => s.trim().replace(/"/g, "").replace(/'/g, "")).filter(Boolean)
-    const existing = modesMap.get(name) || []
-    modesMap.set(name, [...existing, ...planned])
-  }
-}
+// === 5. Negative controls: the validator must reject planted defects ===
+const base = TOOL_DESCRIPTORS[0] as ToolDescriptor
+const withMutant = (patch: Partial<ToolDescriptor>): ToolDescriptor[] => [
+  ...TOOL_DESCRIPTORS,
+  { ...base, ...patch },
+]
+nk("validator rejects a duplicate descriptor", throws(() => validateToolDescriptors(withMutant({}))))
+nk(
+  "validator rejects a non-object input schema",
+  throws(() =>
+    validateToolDescriptors(
+      withMutant({ name: "bb_mutant_schema", inputSchema: { type: "array" } as unknown as ToolDescriptor["inputSchema"] }),
+    ),
+  ),
+)
+nk(
+  "validator rejects a required field that is not declared",
+  throws(() =>
+    validateToolDescriptors(
+      withMutant({
+        name: "bb_mutant_required",
+        inputSchema: { type: "object", properties: {}, required: ["nope"] },
+      }),
+    ),
+  ),
+)
+nk(
+  "validator rejects duplicate modes",
+  throws(() =>
+    validateToolDescriptors(withMutant({ name: "bb_mutant_modes", modes: [base.modes[0], base.modes[0]] })),
+  ),
+)
+nk(
+  "validator rejects a deprecated tool without a replacement",
+  throws(() =>
+    validateToolDescriptors(withMutant({ name: "bb_mutant_deprecated", deprecated: true, replacement: undefined })),
+  ),
+)
+nk(
+  "validator rejects planned modes that overlap executable modes",
+  throws(() => validateToolDescriptors(withMutant({ name: "bb_mutant_planned", plannedModes: [base.modes[0]] }))),
+)
+nk(
+  "validator rejects indexFreeModes on a tool that never needs an index",
+  throws(() =>
+    validateToolDescriptors(
+      withMutant({ name: "bb_mutant_free", requiresIndex: false, indexFreeModes: [base.modes[0]] }),
+    ),
+  ),
+)
 
-// Check handler mode validation strings
-for (const name of registrySet) {
-  const modes = modesMap.get(name) || []
-  ck(name + " has modes in registry", modes.length > 0, modes.join(", "))
-}
+// === 6. Derived surfaces agree with the registry ===
+const derived = deriveToolContracts()
+ck(
+  "deriveToolContracts covers every descriptor",
+  derived.length === TOOL_DESCRIPTORS.length && derived.every((contract, index) => contract.name === registryNames[index]),
+)
+ck("toMcpToolList carries a schema for every descriptor", toMcpToolList().every((tool) => tool.inputSchema.type === "object"))
 
-// Check each tool's mode validation in handler
-for (const name of registrySet) {
-  // Find mode validation pattern in handler for this tool
-  // Patterns: `bb_analyze mode:`, `bb_edit requires mode:`, etc.
-  const hasModeValidation = handlerText.includes(name + " mode:") ||
-    handlerText.includes(name + " requires mode:") ||
-    handlerText.includes(`"${name}" mode`) ||
-    !registryText.includes("modes: []") // tools with no modes don't need validation
-  ck(name + " has mode validation (or no modes)", hasModeValidation || modesMap.get(name)!.length === 0, name)
-}
+// === 7. The split is real: every tool has its own descriptor and handler module ===
+const missingModules = TOOL_DESCRIPTORS.filter(
+  (descriptor) =>
+    !existsSync(path.join(ROOT, "src/mcp/tools", descriptor.name, "descriptor.ts")) ||
+    !existsSync(path.join(ROOT, "src/mcp/tools", descriptor.name, "handler.ts")),
+).map((descriptor) => descriptor.name)
+ck("every tool owns a descriptor module and a handler module", missingModules.length === 0, missingModules.join(", "))
 
-// === 4. validateToolDescriptors catches errors ===
-ck("validateToolDescriptors function exists", validationText.includes("export function validateToolDescriptors") || registryText.includes("export function validateToolDescriptors"), "in tool-registry.ts")
-ck("validateToolDescriptors called at module load", registryText.includes("validateToolDescriptors(TOOL_DESCRIPTORS)"), "self-call in registry")
-ck("validateToolDescriptors checks duplicate names", registryText.includes("duplicate") || registryText.includes("names.has"), "duplicate detection")
-ck("validateToolDescriptors checks schema type", registryText.includes('"object"'), "schema type check")
-ck("validateToolDescriptors checks required fields", registryText.includes("required") && registryText.includes("inputSchema.required"), "required field validation")
-ck("validateToolDescriptors checks duplicate modes", registryText.includes("duplicate modes"), "duplicate mode detection")
-ck("validateToolDescriptors checks planned overlap", registryText.includes("planned") && registryText.includes("overlap"), "planned mode overlap")
-ck("validateToolDescriptors checks deprecation", registryText.includes("deprecated") && registryText.includes("replacement"), "deprecation check")
-
-// === 5. Single authority: no parallel hand-maintained copy ===
-// TOOL_DESCRIPTORS is the only exported registry; PUBLIC_TOOL_DESCRIPTORS aliases it
-ck("TOOL_DESCRIPTORS is exported", registryText.includes("export const TOOL_DESCRIPTORS"), "primary export")
-ck("PUBLIC_TOOL_DESCRIPTORS aliases TOOL_DESCRIPTORS", registryText.includes("PUBLIC_TOOL_DESCRIPTORS") && registryText.includes("descriptors"), "alias")
-
-// deriveToolContracts proves no separate copy
-ck("deriveToolContracts derives from registry", registryText.includes("deriveToolContracts") && registryText.includes("TOOL_DESCRIPTORS"), "derived from source")
-
-// === 6. Mutability audit ===
-const mutRE = /mutability:\s*"(read|write)"/g
-const muts: string[] = []
-while ((m = mutRE.exec(registryText)) !== null) muts.push(m[1])
-const readCount = muts.filter(x => x === "read").length
-const writeCount = muts.filter(x => x === "write").length
-ck("only bb_edit has write mutability", writeCount === 1 && readCount === 9, `write=${writeCount} read=${readCount}`)
-
-// === 7. requiresIndex audit ===
-const riRE = /requiresIndex:\s*(true|false)/g
-const riVals: string[] = []
-while ((m = riRE.exec(registryText)) !== null) riVals.push(m[1])
-const riTrueCount = riVals.filter(x => x === "true").length
-ck("9 of 10 tools require index (bb_health is flexible)", riTrueCount >= 9, String(riTrueCount))
-
-// === 8. No deprecated tools without replacement ===
-ck("no deprecated tools in registry", !registryText.includes("deprecated: true"), "all tools are active")
-
-// === FINAL ===
 emit("C2", "registry + handlers + validation")

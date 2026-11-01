@@ -1,5 +1,5 @@
 {
-  "status": "known-gap",
+  "status": "verified",
   "checkedPairs": [
     {
       "source": "kotlin",
@@ -16,813 +16,138 @@
       "origin": "fixture (W3 suite, seeded)"
     },
     {
-      "source": "bash",
-      "target": "json",
-      "edgeCount": 145,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "bash",
-      "target": "markdown",
-      "edgeCount": 11,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "bash",
-      "target": "typescript",
-      "edgeCount": 240,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "bash",
-      "target": "yaml",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
       "source": "c",
-      "target": "json",
-      "edgeCount": 6,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "erlang",
-      "target": "markdown",
+      "target": "cpp",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "database": "38efa84d12ab7f95e13e5caf90bdf3dffce81cb4",
       "origin": "real project index"
     },
     {
       "source": "go",
-      "target": "typescript",
-      "edgeCount": 1,
+      "target": "yaml",
+      "edgeCount": 40,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "database": "3cc416747a0082a80b42b89928cb8c909e09e371",
       "origin": "real project index"
     },
     {
-      "source": "graphql",
+      "source": "javascript",
       "target": "typescript",
-      "edgeCount": 4003,
+      "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9",
+      "origin": "real project index"
+    },
+    {
+      "source": "vue",
+      "target": "typescript",
+      "edgeCount": 2,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9",
       "origin": "real project index"
     },
     {
       "source": "groovy",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "haskell",
-      "target": "json",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "java",
-      "target": "json",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "java",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "java",
-      "target": "typescript",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "json",
-      "edgeCount": 309,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "markdown",
-      "edgeCount": 218,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "python",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "typescript",
-      "edgeCount": 527,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "yaml",
-      "edgeCount": 35,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "json",
-      "target": "javascript",
-      "edgeCount": 5,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "json",
-      "target": "markdown",
-      "edgeCount": 229,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "json",
-      "target": "typescript",
-      "edgeCount": 434,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "kotlin",
-      "target": "json",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "kotlin",
-      "target": "typescript",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "markdown",
-      "target": "json",
-      "edgeCount": 48,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "markdown",
-      "target": "typescript",
-      "edgeCount": 69,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "php",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "php",
-      "target": "typescript",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "python",
-      "target": "json",
-      "edgeCount": 107,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "python",
-      "target": "markdown",
-      "edgeCount": 69,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "python",
-      "target": "typescript",
-      "edgeCount": 204,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "python",
-      "target": "yaml",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "r",
-      "target": "bash",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "r",
-      "target": "json",
-      "edgeCount": 8,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "r",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "r",
-      "target": "typescript",
-      "edgeCount": 8,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "r",
-      "target": "yaml",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "ruby",
-      "target": "json",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "ruby",
-      "target": "typescript",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "scala",
       "target": "java",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "scala",
-      "target": "json",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "scala",
-      "target": "typescript",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "database": "5beed1b97e35797710f9e6bed37356d751da06be",
       "origin": "real project index"
     },
     {
-      "source": "toml",
-      "target": "json",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "toml",
-      "target": "yaml",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "tsx",
-      "target": "bash",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "tsx",
-      "target": "json",
-      "edgeCount": 40,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "tsx",
-      "target": "markdown",
-      "edgeCount": 20,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "tsx",
-      "target": "python",
-      "edgeCount": 6,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "tsx",
-      "target": "typescript",
-      "edgeCount": 246,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "tsx",
+      "source": "go",
       "target": "yaml",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e",
+      "origin": "real project index"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 22,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e",
       "origin": "real project index"
     },
     {
       "source": "typescript",
       "target": "json",
-      "edgeCount": 20492,
+      "edgeCount": 361,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "markdown",
-      "edgeCount": 1026,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "python",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "tsx",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "database": "b750c2644e0f50449cd827105bcd2a22fce791dd",
       "origin": "real project index"
     }
   ],
   "realPairRows": [
     {
-      "source": "bash",
-      "target": "json",
-      "edgeCount": 145,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "bash",
-      "target": "markdown",
-      "edgeCount": 11,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "bash",
-      "target": "typescript",
-      "edgeCount": 240,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "bash",
-      "target": "yaml",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
       "source": "c",
-      "target": "json",
-      "edgeCount": 6,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "erlang",
-      "target": "markdown",
+      "target": "cpp",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      "database": "38efa84d12ab7f95e13e5caf90bdf3dffce81cb4"
     },
     {
       "source": "go",
+      "target": "yaml",
+      "edgeCount": 40,
+      "sampleBridge": "name-resolution",
+      "database": "3cc416747a0082a80b42b89928cb8c909e09e371"
+    },
+    {
+      "source": "javascript",
       "target": "typescript",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9"
     },
     {
-      "source": "graphql",
+      "source": "vue",
       "target": "typescript",
-      "edgeCount": 4003,
+      "edgeCount": 2,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9"
     },
     {
       "source": "groovy",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "haskell",
-      "target": "json",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "java",
-      "target": "json",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "java",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "java",
-      "target": "typescript",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "javascript",
-      "target": "json",
-      "edgeCount": 309,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "javascript",
-      "target": "markdown",
-      "edgeCount": 218,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "javascript",
-      "target": "python",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "javascript",
-      "target": "typescript",
-      "edgeCount": 527,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "javascript",
-      "target": "yaml",
-      "edgeCount": 35,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "json",
-      "target": "javascript",
-      "edgeCount": 5,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "json",
-      "target": "markdown",
-      "edgeCount": 229,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "json",
-      "target": "typescript",
-      "edgeCount": 434,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "kotlin",
-      "target": "json",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "kotlin",
-      "target": "typescript",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "markdown",
-      "target": "json",
-      "edgeCount": 48,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "markdown",
-      "target": "typescript",
-      "edgeCount": 69,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "php",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "php",
-      "target": "typescript",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "python",
-      "target": "json",
-      "edgeCount": 107,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "python",
-      "target": "markdown",
-      "edgeCount": 69,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "python",
-      "target": "typescript",
-      "edgeCount": 204,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "python",
-      "target": "yaml",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "r",
-      "target": "bash",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "r",
-      "target": "json",
-      "edgeCount": 8,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "r",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "r",
-      "target": "typescript",
-      "edgeCount": 8,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "r",
-      "target": "yaml",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "ruby",
-      "target": "json",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "ruby",
-      "target": "typescript",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "scala",
       "target": "java",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "scala",
-      "target": "json",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "scala",
-      "target": "typescript",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      "database": "5beed1b97e35797710f9e6bed37356d751da06be"
     },
     {
-      "source": "toml",
-      "target": "json",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "toml",
-      "target": "yaml",
-      "edgeCount": 4,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "tsx",
-      "target": "bash",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "tsx",
-      "target": "json",
-      "edgeCount": 40,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "tsx",
-      "target": "markdown",
-      "edgeCount": 20,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "tsx",
-      "target": "python",
-      "edgeCount": 6,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "tsx",
-      "target": "typescript",
-      "edgeCount": 246,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "tsx",
+      "source": "go",
       "target": "yaml",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 22,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e"
     },
     {
       "source": "typescript",
       "target": "json",
-      "edgeCount": 20492,
+      "edgeCount": 361,
       "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "typescript",
-      "target": "markdown",
-      "edgeCount": 1026,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "typescript",
-      "target": "python",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
-    },
-    {
-      "source": "typescript",
-      "target": "tsx",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      "database": "b750c2644e0f50449cd827105bcd2a22fce791dd"
     }
   ],
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 327,
-    "skipped": 0
+    "scanned": 949,
+    "skipped": 31
   },
-  "generatedAt": "2026-10-15T07:45:16.275Z",
+  "generatedAt": "2026-11-01T19:16:06.997Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T07:45:16.279Z",
-    "contentSha256": "745899e4878d41f7e421f609bd54dd9aa4491e369e5c642d3aecc2f9f650fc3d"
+    "sealedAt": "2026-11-01T19:16:07.015Z",
+    "contentSha256": "c9fbb6e37fd86eba4d70f36766b30df67e7a8e0cc37bdbdd19d1bf0be757b5e8"
   }
 }

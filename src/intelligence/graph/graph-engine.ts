@@ -354,26 +354,58 @@ function prepared(db: unknown, sql: string): { all: (...params: unknown[]) => un
  * The absence is measured once per connection, not per query.
  */
 const EXTERNAL_ARM_SOURCE_INDEX = "brain_rel_proj_source_idx"
-const indexPresence = new WeakMap<object, boolean>()
+/** The composite first: the owner range query always carries `project_id`, and
+ *  an index whose leading column is the project lets the range be seeked inside
+ *  one project instead of filtered after the fact. The owner-only index is the
+ *  fallback for an index built before the composite existed; a database with
+ *  neither gets the unhinted (correct, slower) range JOIN. */
+const OWNER_RANGE_INDEXES = ["brain_symbol_project_owner_idx", "brain_symbol_owner_idx"] as const
+const SYMBOL_NAME_INDEX = "brain_sym_proj_name_idx"
 
-function externalArmIndexClause(raw: unknown): string {
+/**
+ * One index hint, gated on the index actually existing on this connection.
+ *
+ * A hint is a structural promise to the planner: it must SEEK the index, so a
+ * predicate the index cannot answer turns into a full index scan. That is why
+ * each hint below is attached to the one predicate it was measured for and no
+ * other. `INDEXED BY` naming a missing index is a PREPARE-TIME error — one
+ * older index file, or a connection to a database mid-migration, would take
+ * the whole call-hierarchy and graph surface down instead of degrading — so
+ * presence is probed once per connection and the query is unchanged when the
+ * index is absent.
+ */
+const indexPresence = new WeakMap<object, Map<string, boolean>>()
+
+function indexedBy(raw: unknown, indexName: string): string {
   if (raw === null || typeof raw !== "object") return ""
   const db = raw as { prepare?: (s: string) => { all: (...a: unknown[]) => unknown[] } }
   if (typeof db.prepare !== "function") return ""
-  let present = indexPresence.get(db as object)
+  let presence = indexPresence.get(db as object)
+  if (presence === undefined) {
+    presence = new Map()
+    indexPresence.set(db as object, presence)
+  }
+  let present = presence.get(indexName)
   if (present === undefined) {
     present = false
     try {
       const rows = db
         .prepare("SELECT 1 AS present FROM sqlite_master WHERE type = 'index' AND name = ?")
-        .all(EXTERNAL_ARM_SOURCE_INDEX)
+        .all(indexName)
       present = rows.length > 0
     } catch {
       present = false // a schema we cannot interrogate gets the unhinted query
     }
-    indexPresence.set(db as object, present)
+    presence.set(indexName, present)
   }
-  return present ? ` INDEXED BY ${EXTERNAL_ARM_SOURCE_INDEX}` : ""
+  return present ? ` INDEXED BY ${indexName}` : ""
+}
+
+/** The unresolved arm joins the cascade on the SOURCE side and its predicate
+ *  ends `target_symbol_id IS NULL`, which no target seek can answer; the source
+ *  index is the only seek available to it. See the block comment above. */
+function externalArmIndexClause(raw: unknown): string {
+  return indexedBy(raw, EXTERNAL_ARM_SOURCE_INDEX)
 }
 
 function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
@@ -390,37 +422,114 @@ function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
  * interprets as "there are none of these" — the misreading this whole field
  * exists to end.
  */
+/**
+ * The owner cascade as IDS, computed once per traced symbol.
+ *
+ * A stored relationship that names a member of a class is attributed to the
+ * class: the member's `owner_symbol_id` starts with the traced symbol's own
+ * `…:<Name>:` prefix, so the member set is the range query below. Measured on
+ * the reference index: for a class with six members the range returns exactly
+ * those six rows, equal to the count of rows whose owner is that class id.
+ *
+ * WHY THE IDS ARE FETCHED SEPARATELY. Writing that range INTO each edge query
+ * as `JOIN (SELECT ? UNION ALL SELECT m.id …) casc` makes SQLite materialise a
+ * co-routine per statement, and on a 310,423-symbol project the planner scans
+ * the whole project for it (`SEARCH m USING INDEX brain_symbol_gravity_idx
+ * (project_id=?)` — the owner range is not seeked). Measured per statement on
+ * the reference index: that materialisation alone costs ~1 s, and one node pays
+ * it four to five times (caller arm, callee arm, two unattributed counts).
+ * Fetching the ids once — through the owner index when the connection has it —
+ * and reusing them as a bounded `IN` list removes the repeated scans while
+ * keeping the ROW SET identical: `casc.id` still names the id that matched, so
+ * `targetMatch`/`sourceMatch` and `matchedMember` are computed from the same
+ * value as before.
+ *
+ * The list is bounded. Past CASCADE_INLINE_MAX the JOIN form is kept, because
+ * an `IN` list that long is a worse plan than the join it would replace, and
+ * the SIZE OF A CLASS must never change the answer.
+ */
+const CASCADE_INLINE_MAX = 400
+
+function ownerRangeSeek(db: unknown): string {
+  for (const index of OWNER_RANGE_INDEXES) {
+    const hint = indexedBy(db, index)
+    if (hint) return hint
+  }
+  return ""
+}
+
+function cascadeIds(db: unknown, projectId: string, symbolId: string): string[] | null {
+  try {
+    const { prefix, upper } = cascadeBounds(symbolId)
+    const ownerSeek = ownerRangeSeek(db)
+    const rows = prepared(
+      db,
+      `SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m${ownerSeek} WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ? LIMIT ?`,
+    ).all(symbolId, prefix, upper, projectId, CASCADE_INLINE_MAX + 1) as Array<{ id: string }>
+    if (rows.length > CASCADE_INLINE_MAX) return null
+    return rows.map((row) => row.id)
+  } catch {
+    return null
+  }
+}
+
+/** One JOIN clause over an explicit id list, plus its parameters. `casc.id` is
+ *  the id that matched, exactly as the range form's `casc.id` was. */
+function cascadeInlineJoin(ids: string[], column: "target_symbol_id" | "source_symbol_id"): { sql: string; params: string[] } {
+  const arms = ids.map(() => "SELECT ? AS id").join(" UNION ALL ")
+  return { sql: `JOIN (${arms}) casc ON casc.id = r.${column}`, params: ids }
+}
+
+/** The cascade JOIN for one traced symbol, from the per-traversal cache, with
+ *  the range form as the bounded fallback. */
+function cascadeJoinFor(
+  db: unknown,
+  projectId: string,
+  symbolId: string,
+  column: "target_symbol_id" | "source_symbol_id",
+  cache: Map<string, string[] | null>,
+): { sql: string; params: unknown[] } {
+  if (!cache.has(symbolId)) cache.set(symbolId, cascadeIds(db, projectId, symbolId))
+  const ids = cache.get(symbolId)
+  if (ids !== null && ids !== undefined) return cascadeInlineJoin(ids, column)
+  const { prefix, upper } = cascadeBounds(symbolId)
+  return {
+    sql: `JOIN (SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?) casc ON casc.id = r.${column}`,
+    params: [symbolId, prefix, upper, projectId],
+  }
+}
+
 function countUnattributedRows(
   db: unknown,
   projectId: string,
   rootId: string,
   relTypes: string[],
+  cascadeCache: Map<string, string[] | null>,
 ): { callers: number; callees: number } | null {
   try {
-    const { prefix, upper } = cascadeBounds(rootId)
-    const cascade =
-      "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
     const relPlaceholders = relTypes.map(() => "?").join(",")
     // Caller side: the row TARGETS the symbol (or a cascade member) and its
     // SOURCE did not resolve — the `JOIN brain_symbol ON s.id = r.source_symbol_id`
     // in the caller query has nothing to attach it to.
+    const callersJoin = cascadeJoinFor(db, projectId, rootId, "target_symbol_id", cascadeCache)
     const callersRow = prepared(
       db,
       `SELECT COUNT(*) AS c FROM brain_relationship r
-        JOIN (${cascade}) casc ON casc.id = r.target_symbol_id
+        ${callersJoin.sql}
        WHERE r.project_id = ? AND r.relationship_type IN (${relPlaceholders})
          AND r.source_symbol_id IS NULL`,
-    ).all(rootId, prefix, upper, projectId, projectId, ...relTypes)[0] as any
+    ).all(...(callersJoin.params as any[]), projectId, ...relTypes)[0] as any
     // Callee side: the row is SOURCED from the symbol (or a cascade member) and
     // its target is NULL with no name either — a named unresolved target is
     // already visible as an `ext:<name>` node, this is the unnamed remainder.
+    const calleesJoin = cascadeJoinFor(db, projectId, rootId, "source_symbol_id", cascadeCache)
     const calleesRow = prepared(
       db,
       `SELECT COUNT(*) AS c FROM brain_relationship r
-        JOIN (${cascade}) casc ON casc.id = r.source_symbol_id
+        ${calleesJoin.sql}
        WHERE r.project_id = ? AND r.relationship_type IN (${relPlaceholders})
          AND r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NULL AND r.target_external IS NULL`,
-    ).all(rootId, prefix, upper, projectId, projectId, ...relTypes)[0] as any
+    ).all(...(calleesJoin.params as any[]), projectId, ...relTypes)[0] as any
     return { callers: Number(callersRow?.c ?? 0), callees: Number(calleesRow?.c ?? 0) }
   } catch {
     return null
@@ -624,7 +733,11 @@ export async function traverseGraph(
     spellingVariantsCollapsed: number
   }
 }> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  // READ-ONLY OPEN: a graph question must not mutate the index by being asked.
+  // The default open runs the additive migrations/healers, which moves the WAL
+  // and made every "read" a filesystem write (measured on the reference index:
+  // 18.7 s of open time and a moved WAL before the first edge was read).
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   // Clamped at BOTH ends, and the lower clamp is the one that matters.
   // `Math.min(options.maxDepth || DEFAULT, 10)` leaves a negative depth intact,
   // and `depth >= maxDepth` is then true at depth 0 — so a caller passing
@@ -758,6 +871,18 @@ export async function traverseGraph(
   // `undefined` for every exact match, so nearly all of that was discarded work.
   // The ids are memoised for the traversal because a member recurs across edges.
   const matchedIdentities = new Map<string, { name: string; file: string }>()
+  /**
+   * The owner cascade, resolved once per traced symbol for the whole walk.
+   *
+   * Both arms and both unattributed counts ask the same question about the same
+   * symbol ("which ids are this symbol's owner family?"). Answering it inside
+   * each statement makes SQLite materialise a co-routine per statement — the
+   * plan scans the project's symbols for it — and a node pays that four to five
+   * times. One lookup per symbol, reused, is the same row set with one scan.
+   * `null` is a MEASURED "too large to inline", not "not computed"; the range
+   * JOIN is used for those symbols and the answer is identical either way.
+   */
+  const cascadeCache = new Map<string, string[] | null>()
 
   const attachMatchedIdentities = (rows: EdgeRow[], tracedId: string): void => {
     const wanted: string[] = []
@@ -872,8 +997,7 @@ export async function traverseGraph(
       return
     }
     visitedCallers.add(symbolId)
-    const { prefix, upper } = cascadeBounds(symbolId)
-    const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
+    const callerCascade = cascadeJoinFor(raw, projectId, symbolId, "target_symbol_id", cascadeCache)
     const callerSql =
       "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
       "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
@@ -881,6 +1005,7 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "f.relative_path AS srcFileRel, NULL AS extName, " +
+      "r.target_basis AS targetBasis, " +
       "casc.id AS matchedId, " +
       KIND_RANK_SQL +
       "FROM brain_relationship r " +
@@ -889,11 +1014,13 @@ export async function traverseGraph(
       // A JOIN, not `target_symbol_id IN (cascade)`. The IN form filters
       // correctly but discards WHICH id matched, and that is the only thing
       // separating "someone calls Command" from "someone calls
-      // Command.Execute, attributed to its owner". Binding order follows the
-      // text, so the cascade's four parameters now precede the WHERE clause's.
-      "JOIN (" + cascade + ") casc ON casc.id = r.target_symbol_id " +
+      // Command.Execute, attributed to its owner". The join is over the
+      // cascade's own ID LIST (see cascadeJoinFor), so `casc.id` is still the
+      // id that matched while the statement no longer re-materialises the
+      // owner range.
+      callerCascade.sql + " " +
       "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ")"
-    const callerParams = [symbolId, prefix, upper, projectId, projectId, ...relTypes]
+    const callerParams = [...(callerCascade.params as any[]), projectId, ...relTypes]
     // Deterministic order (M59.A12, #888 sibling of #885): a bare LIMIT on an
     // unordered query returned a DIFFERENT 200 rows per run, so two identical
     // questions could disagree. Stable order makes the bound reproducible.
@@ -1053,8 +1180,7 @@ export async function traverseGraph(
     }
     visitedCallees.add(symbolId)
     const isExternal = symbolId.startsWith("ext:")
-    const { prefix, upper } = cascadeBounds(symbolId)
-    const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
+    const calleeCascade = isExternal ? null : cascadeJoinFor(raw, projectId, symbolId, "source_symbol_id", cascadeCache)
 
     const selectCols =
       "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
@@ -1102,7 +1228,7 @@ export async function traverseGraph(
           "JOIN brain_file f ON f.id = s.file_id " +
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
-          "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
+          calleeCascade!.sql + " " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
           "AND r.target_symbol_id IS NOT NULL " +
           "UNION ALL " +
@@ -1140,12 +1266,12 @@ export async function traverseGraph(
           // project instead of using `brain_rel_proj_type_target_idx`.
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
-          "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
+          calleeCascade!.sql + " " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
           "AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL"
       const calleeParams = [
-        symbolId, prefix, upper, projectId, projectId, ...relTypes,
-        symbolId, prefix, upper, projectId, projectId, ...relTypes,
+        ...(calleeCascade!.params as any[]), projectId, ...relTypes,
+        ...(calleeCascade!.params as any[]), projectId, ...relTypes,
       ]
       const calleeOrder = " ORDER BY " + CALLEE_ORDER
       // Same one-row-over rule as the callers side: `LIMIT edgeLimit` cannot
@@ -1286,7 +1412,7 @@ export async function traverseGraph(
     timeBudgetMs,
     timeBudgetExhausted,
     noiseFiltered: { callers: noiseFilteredCallers, callees: noiseFilteredCallees },
-    unattributed: countUnattributedRows(raw, projectId, root.id, relTypes),
+    unattributed: countUnattributedRows(raw, projectId, root.id, relTypes, cascadeCache),
     crossLanguageExcluded: { callers: crossLangExcludedCallers, callees: crossLangExcludedCallees },
     edgeLimit,
     maxEdges,
@@ -1351,14 +1477,27 @@ export async function resolveGraphRootDetailed(
       | { root: null; candidates: 0; match: null }
       | { root: SymbolRow; candidates: number; match: RootMatch }
     > {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const STRUCTURAL = "('function','method','class','interface','trait','struct','enum','macro')"
-  const base =
+  const baseFor = (symbolHint: string) =>
     "SELECT s.id, s.name, s.symbol_type AS symbolType, COALESCE(s.line_start,0) AS line, " +
     "COALESCE(s.line_end,0) AS lineEnd, f.relative_path AS relativePath, f.path AS filePath, " +
     "COALESCE(f.language,'unknown') AS language, COALESCE(s.complexity,0) AS complexity " +
-    "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id " +
+    "FROM brain_symbol s" + symbolHint + " JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id " +
     "WHERE s.project_id = ? "
+  const base = baseFor("")
+  /**
+   * The EXACT steps get the name index; the containment step does not.
+   *
+   * Both exact predicates are `s.name = ?`, which the composite
+   * (project_id, name) index answers with a seek. Without the hint the planner
+   * scans the project's symbols in gravity order to satisfy `ORDER BY
+   * gravity_score DESC` first and filters names afterwards — measured at 945 ms
+   * for one row on a 310,423-symbol index. A leading-wildcard LIKE cannot use
+   * the index at all, so the containment step is left unhinted: forcing the
+   * index there would turn one scan into a full index scan.
+   */
+  const exactBase = baseFor(indexedBy(raw, SYMBOL_NAME_INDEX))
   // Every ranking is a TOTAL order. `ORDER BY gravity_score DESC LIMIT 1` alone
   // leaves the winner undefined when two same-named symbols tie on gravity, and
   // SQLite is free to return either one — the answer would then depend on the
@@ -1370,8 +1509,8 @@ export async function resolveGraphRootDetailed(
   // The three steps, as data. Which one produced the winning row is carried
   // with it rather than inferred afterwards, because recounting the wrong
   // population would describe a step that never ran.
-  const exactStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?`
-  const exactAnyKind = base + "AND s.name = ?"
+  const exactStructural = exactBase + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?`
+  const exactAnyKind = exactBase + "AND s.name = ?"
   const fuzzyStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'`
   // Set alongside `predicate`, so what is REPORTED cannot drift from what RAN.
   let match: RootMatch = "exact"

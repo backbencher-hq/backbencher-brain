@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "status": "verified",
+  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
+  "verifierCommand": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/verify-cross-language.ts",
+  "passed": 43,
+  "failed": 0,
+  "negativeCases": 8,
+  "mutantsCaught": 8,
+  "mutantsTotal": 8,
+  "mutantRecords": [
+    {
+      "id": "M1",
+      "name": "row-level project leak (row project predicate dropped)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M2",
+      "name": "cross-language flag dropped (a same-language row becomes a fact)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M3",
+      "name": "storedRowCount drops the member section (rows silently uncounted)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M4",
+      "name": "the deeper count is target-only again (outgoing descendant rows vanish)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M5",
+      "name": "a member fact's self goes back to the owner (pair no longer recomputable)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M6",
+      "name": "absence keyed on emitted facts again (a stored row is declared absent)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M7",
+      "name": "own-first budget broken (a member's edge crowds out the symbol's own)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M8",
+      "name": "a pair is fabricated for a row that cannot name one",
+      "caught": true,
+      "note": ""
+    }
+  ],
+  "generatedAt": "2026-11-01T19:12:12.636Z",
+  "fixtures": {
+    "projects": [
+      "clgatea0000000000000000000000000000000",
+      "clgateb0000000000000000000000000000000"
+    ],
+    "kind": "seeded store states the shipped corpora cannot reach"
+  },
+  "blockedLegs": [],
+  "claimLevel": "verified — seeded-state answers checked against fixtures this gate owns, the D4 join-order rewrite proved row-set-identical when a corpus index is supplied, and every planted defect (including a ROW-LEVEL project-predicate leak) caught by a probe proved false on the unmutated code"
+}

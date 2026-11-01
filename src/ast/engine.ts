@@ -2769,6 +2769,9 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       byteStart: number | null
       byteEnd: number | null
       language: string | null
+      /** The project-relative path. Noise rules are relative-path rules; the
+       *  absolute `fileId` must not be used for them (see the filter below). */
+      relativePath: string
     }
 
     let results: SymbolRow[] = await db
@@ -2785,6 +2788,7 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
         // (m0.ts:1)` with no language while the DEFAULT mode printed
         // `(typescript, m0.ts:1)` — the two modes disagreed about the same symbol.
         language: BrainFileTable.language,
+        relativePath: BrainFileTable.relative_path,
       })
       .from(BrainSymbolTable)
       .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
@@ -2803,6 +2807,11 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
           lineStart: BrainSymbolTable.line_start,
           byteStart: BrainSymbolTable.byte_start,
           byteEnd: BrainSymbolTable.byte_end,
+          // This fallback SELECT omitted the file columns entirely, so a match
+          // resolved through a relative `filePath` came back with no language
+          // and could not be noise-classified by its relative path.
+          language: BrainFileTable.language,
+          relativePath: BrainFileTable.relative_path,
         })
         .from(BrainSymbolTable)
         .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
@@ -2867,8 +2876,16 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
 
     // Consistency with search: symbols in hard-noise files (JSON configs,
     // minified/d.ts/map assets) are excluded from every read surface.
+    //
+    // The rule is a RELATIVE-path rule (`fixtures`, `gen`, `build`, `dist`,
+    // `vendor`, `snapshots`, … are directory segments of the project), so it is
+    // applied to `relative_path`. It used to be applied to `fileId`, which is the
+    // file PATH — so a project checked out under `test/fixtures/…`, a `build/`
+    // workspace or a `dist/` checkout matched a noise segment in its own absolute
+    // prefix and this mode returned `matches: []` for every symbol it asked
+    // about, while `mode:"symbols"` found the same symbol.
     const { isHardNoisePath } = await import("./analysis-exclusions")
-    matches = matches.filter((m: SymbolRow) => !isHardNoisePath(m.fileId ?? ""))
+    matches = matches.filter((m: SymbolRow) => !isHardNoisePath(m.relativePath ?? m.fileId ?? ""))
 
     // If multiple matches at the exact same file, prefer class/interface over constructor/function
     if (matches.length > 1 && filePath) {

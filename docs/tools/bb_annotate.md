@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_annotate: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_annotate through any MCP host, the CLI (`bb tool bb_annotate`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_annotate/descriptor.ts, src/mcp/tools/bb_annotate/handler.ts, script/tool-docs/curation/bb_annotate.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_annotate --write`.
+-->
 # `bb_annotate`
 
 Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location, enforced by a unique index over (project, symbol, author, path). The symbol is NOT checked against the index, so a note may name anything; instead the reply MEASURES whether an editor surface can show it and says so in `surfacing` (`editor`, `matchedAs`, `matchedNames`, `statement`) — a typo'd name or a qualified name is stored and reported honestly rather than promised to a surface it cannot reach. `path` is resolved to the index's own spelling, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Annotations are opinions layered on evidence, never index facts. To change source code use bb_edit; to read notes back use bb_annotations.
@@ -90,4 +97,4 @@ To change source code use `bb_edit`; this tool stores provenance-enforced notes 
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

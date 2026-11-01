@@ -51,6 +51,11 @@ const transport = new StdioClientTransport({
   command: isBun ? "bun" : "npx",
   args: isBun ? [entry, "--dir", root] : ["tsx", entry, "--dir", root],
   cwd: process.cwd(),
+  // The gate indexes the fixture under the data dir the TEST process was given.
+  // The MCP SDK's default env allowlist drops BB_DATA_DIR, so without this the
+  // spawned server looks in the default store and answers "No index found" — a
+  // red that describes the harness, not the product.
+  env: process.env as Record<string, string>,
   stderr: "pipe",
 })
 const client = new Client({ name: "verify", version: "1.0.0" })

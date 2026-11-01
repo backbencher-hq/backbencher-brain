@@ -4,19 +4,18 @@
   "milestone": "M28",
   "status": "known-gap",
   "checks": 31,
-  "passed": 26,
-  "failed": 5,
+  "passed": 28,
+  "failed": 3,
   "failures": [
-    "X1: A2 verifier passes at HEAD — exit=1",
-    "X1: V1 verifier passes at HEAD — exit=1",
-    "X1: v4 completion bar audited item-by-item — zero violations — bar4: the annotations-in-IDE leg is not verified (A2); bar4: no real in-editor leg; bar: the generated MCP surface doc is not verified (V1)",
-    "X1: A2 regeneration run passes — exit=1",
-    "X1: V1 regeneration run passes — exit=1"
+    "X1: A2 verifier passes at HEAD — A2: KNOWN-GAP (12/13 passed, 5/5 mutants)  (exit=1)",
+    "X1: v4 completion bar audited item-by-item — zero violations — bar3: provenance not enforced; bar4: the annotations-in-IDE leg is not verified (A2); bar4: no real in-editor leg; bar: the generated MCP surface doc is not verified (V1)",
+    "X1: A2 regeneration run passes — A2: KNOWN-GAP (12/13 passed, 5/5 mutants)  (exit=1)"
   ],
   "negativeCases": 4,
-  "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
   "verifierCommand": "npx tsx script/m28/verify-closure.ts",
   "barViolations": [
+    "bar3: provenance not enforced",
     "bar4: the annotations-in-IDE leg is not verified (A2)",
     "bar4: no real in-editor leg",
     "bar: the generated MCP surface doc is not verified (V1)"
@@ -28,10 +27,10 @@
     "A2": [],
     "V1": []
   },
-  "generatedAt": "2026-10-15T07:48:56.727Z",
+  "generatedAt": "2026-11-01T19:30:36.698Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T07:48:56.728Z",
-    "contentSha256": "b9d60db8ac919d7ed351870cde0699d1fc93a69798f1c43ca84f8ed9c7d4070d"
+    "sealedAt": "2026-11-01T19:30:36.699Z",
+    "contentSha256": "5d30ee02bd59c66f8829b45942a969716e0490dcb35c7005a78487ed2cd9cfcd"
   }
 }

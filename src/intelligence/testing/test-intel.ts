@@ -148,9 +148,31 @@ function classify(relType: string): TestEvidenceKind | null {
   return null
 }
 
-/** Escape %/_/\ and append the prefix wildcard for a LIKE path-prefix match. */
-function likePrefix(p: string): string {
-  return p.replace(/[\\%_]/g, (c) => "\\" + c).replace(/\/+$/, "") + "/%"
+/** Escape %/_/\ so a path is a VALUE in a LIKE comparison, never a pattern.
+ *  Character-wise, because a path is data the caller typed — there is no
+ *  pattern here to get wrong. */
+function escapeLikeValue(value: string): string {
+  let out = ""
+  for (const ch of value) out += ch === "\\" || ch === "%" || ch === "_" ? "\\" + ch : ch
+  return out
+}
+
+/**
+ * A project-relative path scope: the FILE ITSELF, or any file under it on a
+ * whole segment boundary.
+ *
+ * The exact-match arm is the same rule `dependencies` and `complexity` apply,
+ * and it was missing here: `filePath: "src/core/engine.ts"` (a real file) was a
+ * scope with zero matches, so the report said the file holds no production
+ * symbols — a confident false negative. A prefix without a segment boundary is
+ * the other failure this predicate prevents: `src/util` must not match
+ * `src/utilities`.
+ */
+function pathScope(alias: string, filePath: string): { sql: string; params: string[] } {
+  let clean = filePath
+  while (clean.endsWith("/")) clean = clean.slice(0, -1)
+  const col = alias ? `${alias}.relative_path` : "relative_path"
+  return { sql: ` AND (${col} = ? OR ${col} LIKE ? ESCAPE '\\')`, params: [clean, escapeLikeValue(clean) + "/%"] }
 }
 
 function strongest(links: TestLink[]): TestEvidenceKind | "none" {
@@ -163,11 +185,12 @@ function strongest(links: TestLink[]): TestEvidenceKind | "none" {
 async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath?: string) {
   const raw = await BrainDatabase.getRawInstance(projectId)
 
-  // Optional scope: production symbols under a project-relative path prefix.
-  // Applied at the SQL layer (prefix match on brain_file.relative_path) so a
-  // scoped call is cheaper than project-wide, not just a post-filter.
-  const scopeSql = filePath ? " AND f.relative_path LIKE ? ESCAPE '\\'" : ""
-  const scopeParams: string[] = filePath ? [likePrefix(filePath)] : []
+  // Optional scope: production symbols under a project-relative path prefix, or
+  // in one named file. Applied at the SQL layer so a scoped call is cheaper than
+  // project-wide, not just a post-filter.
+  const scope = filePath ? pathScope("f", filePath) : { sql: "", params: [] as string[] }
+  const scopeSql = scope.sql
+  const scopeParams: string[] = scope.params
 
   const prodRows = raw.prepare(
     "SELECT s.id, s.name, s.symbol_type AS symbolType, f.relative_path AS file, " +

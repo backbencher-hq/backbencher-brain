@@ -90,16 +90,34 @@ export function scanWithDeadline(request: ScanRequest, timeoutMs: number): Promi
   return new Promise<ScanOutcome>((resolve) => {
     let settled = false
     let worker: Worker | null = null
+    let budgetTimer: ReturnType<typeof setTimeout> | null = null
+    const timers: Array<ReturnType<typeof setTimeout>> = []
     const finish = (outcome: ScanOutcome) => {
       if (settled) return
       settled = true
-      clearTimeout(timer)
+      for (const timer of timers) clearTimeout(timer)
       try {
         worker?.terminate()
       } catch {}
       resolve(outcome)
     }
-    const timer = setTimeout(() => finish({ matchedIndexes: [], scanned: 0, timedOut: true, inline: false }), timeoutMs)
+    /**
+     * The worker did not produce a scan result: run the ONE matching loop here.
+     *
+     * `matchNames` is the same function the worker body calls, so this is not a
+     * second implementation. It runs only when the worker could not be created,
+     * failed to start, or exited without a message — i.e. when isolation is
+     * unavailable, which the outcome declares (`inline: true`).
+     */
+    const runInline = () => {
+      if (settled) return
+      try {
+        const matchedIndexes = matchNames(request)
+        finish({ matchedIndexes, scanned: request.names.length, timedOut: false, inline: true })
+      } catch {
+        finish({ matchedIndexes: [], scanned: 0, timedOut: false, inline: true })
+      }
+    }
     try {
       worker = new Worker(new URL(import.meta.url), {
         workerData: { __regexScanWorker: true, request },
@@ -111,21 +129,43 @@ export function scanWithDeadline(request: ScanRequest, timeoutMs: number): Promi
     } catch {
       // No worker available (restricted environment). The inline path is the one
       // that can hang, so the caller is told the answer was NOT isolated.
-      try {
-        const matchedIndexes = matchNames(request)
-        finish({ matchedIndexes, scanned: request.names.length, timedOut: false, inline: true })
-      } catch {
-        finish({ matchedIndexes: [], scanned: 0, timedOut: false, inline: true })
-      }
+      runInline()
       return
     }
+    /**
+     * Start the matching budget when the thread is ONLINE, not before.
+     *
+     * The timer used to be armed at construction, so worker-thread startup (load
+     * the chunk and its import graph inside the thread) was charged against the
+     * PATTERN's budget. On a loaded machine a trivial `^handle.*` scan over 41
+     * names reported "scan was cut short (time-budget)" and answered "no results"
+     * on about 3 of 10 consecutive runs. Startup is engine cost, not pattern
+     * cost, so the clock starts at the moment matching can begin.
+     */
+    const startBudget = () => {
+      if (settled || budgetTimer !== null) return
+      budgetTimer = setTimeout(
+        () => finish({ matchedIndexes: [], scanned: 0, timedOut: true, inline: false }),
+        timeoutMs,
+      )
+      timers.push(budgetTimer)
+    }
+    worker.on("online", startBudget)
     worker.on("message", (message: ScanResponse) => {
       if (message?.ok) finish({ matchedIndexes: message.matchedIndexes, scanned: message.scanned, timedOut: false, inline: false })
-      else finish({ matchedIndexes: [], scanned: 0, timedOut: false, inline: true })
+      else runInline()
     })
-    worker.on("error", () => finish({ matchedIndexes: [], scanned: 0, timedOut: false, inline: true }))
+    worker.on("error", () => runInline())
     worker.on("exit", () => {
-      if (!settled) finish({ matchedIndexes: [], scanned: 0, timedOut: false, inline: false })
+      if (!settled) runInline()
     })
+    // A worker that never comes online cannot be running the pattern: it is not
+    // a time-budget hit, it is an isolation failure. Bound startup separately so
+    // the answer says which one happened instead of blaming the pattern.
+    timers.push(
+      setTimeout(() => {
+        if (!settled && budgetTimer === null) runInline()
+      }, Math.max(1000, timeoutMs)),
+    )
   })
 }

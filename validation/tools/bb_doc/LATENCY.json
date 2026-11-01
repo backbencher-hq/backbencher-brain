@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_doc",
+  "measuredAt": "2026-11-01T18:55:00Z",
+  "model": "deepseek-flash",
+  "host": "shared checkout; load average 12-22 during measurement",
+  "method": "Real registered handler through createToolHandlers().bb_doc against real bb indexes; warm = project opened and one discarded call completed in the same process; T2 split into mode groups because a single run is interrupted by the host load and the harness.",
+  "env": {
+    "BB_NO_AUTO_REFRESH": "1 on every measurement read (charter rule 6)",
+    "BB_DATA_DIR": "T0/T1: validation/tools/bb_doc/bbdata; T2: .bb-data (read-only measurement)"
+  },
+  "budgets": {
+    "charter": {
+      "T0defaultMs": 250,
+      "T1defaultMs": 1000,
+      "T2defaultMs": 5000,
+      "clientTimeoutMs": 30000
+    },
+    "observedBreaches": [
+      "T0 feature p95 819 ms > 250 ms",
+      "T1 feature p95 1594 ms > 1000 ms",
+      "T2 feature p50 18982 ms / max 52063 ms > 5000 ms budget and > 30000 ms client timeout",
+      "T2 symbol p95 4458 ms (within), file/module/api/project p50 2.2-7.0 s > 5000 ms",
+      "T2 cold first call 8460-36191 ms"
+    ]
+  },
+  "tiers": [
+    {
+      "tier": "T0",
+      "subject": "test/fixtures/polyglot (ts-js, java-scala)",
+      "command": "BB_DATA_DIR=validation/tools/bb_doc/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/measure.ts --tier T0",
+      "coldMs": 172,
+      "warmRuns": 5,
+      "env": {
+        "BB_DATA_DIR": "validation/tools/bb_doc/bbdata",
+        "BB_NO_AUTO_REFRESH": "1",
+        "command": "BB_DATA_DIR=validation/tools/bb_doc/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/measure.ts --tier T0"
+      },
+      "budgetMs": 250,
+      "rows": [
+        {
+          "mode": "symbol",
+          "runsMs": [
+            52,
+            22,
+            34,
+            34,
+            50
+          ],
+          "p50Ms": 34,
+          "p95Ms": 52,
+          "maxMs": 52,
+          "budgetMs": 250,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "file",
+          "runsMs": [
+            81,
+            61,
+            31,
+            35,
+            32
+          ],
+          "p50Ms": 35,
+          "p95Ms": 81,
+          "maxMs": 81,
+          "budgetMs": 250,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "module",
+          "runsMs": [
+            35,
+            43,
+            48,
+            67,
+            50
+          ],
+          "p50Ms": 48,
+          "p95Ms": 67,
+          "maxMs": 67,
+          "budgetMs": 250,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "feature",
+          "runsMs": [
+            819,
+            164,
+            225,
+            158,
+            255
+          ],
+          "p50Ms": 225,
+          "p95Ms": 819,
+          "maxMs": 819,
+          "budgetMs": 250,
+          "p95WithinBudget": false
+        },
+        {
+          "mode": "api",
+          "runsMs": [
+            83,
+            53,
+            63,
+            54,
+            45
+          ],
+          "p50Ms": 54,
+          "p95Ms": 83,
+          "maxMs": 83,
+          "budgetMs": 250,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "project",
+          "runsMs": [
+            63,
+            20,
+            68,
+            61,
+            54
+          ],
+          "p50Ms": 61,
+          "p95Ms": 68,
+          "maxMs": 68,
+          "budgetMs": 250,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "coverage",
+          "runsMs": [
+            44,
+            20,
+            18,
+            58,
+            58
+          ],
+          "p50Ms": 44,
+          "p95Ms": 58,
+          "maxMs": 58,
+          "budgetMs": 250,
+          "p95WithinBudget": true
+        }
+      ],
+      "hostLoad": "load at start:  13:39:46 up 2 days, 20:56,  1 user,  load average: 20.29, 15.49, 11.58"
+    },
+    {
+      "tier": "T1",
+      "subject": ".perf-fixtures/bb-scale/n100",
+      "command": "BB_DATA_DIR=validation/tools/bb_doc/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/measure.ts --tier T1",
+      "coldMs": 791,
+      "warmRuns": 5,
+      "env": {
+        "BB_DATA_DIR": "validation/tools/bb_doc/bbdata",
+        "BB_NO_AUTO_REFRESH": "1",
+        "command": "BB_DATA_DIR=validation/tools/bb_doc/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/measure.ts --tier T1"
+      },
+      "budgetMs": 1000,
+      "rows": [
+        {
+          "mode": "symbol",
+          "runsMs": [
+            46,
+            69,
+            62,
+            65,
+            62
+          ],
+          "p50Ms": 62,
+          "p95Ms": 69,
+          "maxMs": 69,
+          "budgetMs": 1000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "file",
+          "runsMs": [
+            89,
+            115,
+            111,
+            114,
+            127
+          ],
+          "p50Ms": 114,
+          "p95Ms": 127,
+          "maxMs": 127,
+          "budgetMs": 1000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "module",
+          "runsMs": [
+            420,
+            357,
+            309,
+            236,
+            178
+          ],
+          "p50Ms": 309,
+          "p95Ms": 420,
+          "maxMs": 420,
+          "budgetMs": 1000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "feature",
+          "runsMs": [
+            1594,
+            442,
+            700,
+            922,
+            580
+          ],
+          "p50Ms": 700,
+          "p95Ms": 1594,
+          "maxMs": 1594,
+          "budgetMs": 1000,
+          "p95WithinBudget": false
+        },
+        {
+          "mode": "api",
+          "runsMs": [
+            286,
+            163,
+            144,
+            281,
+            290
+          ],
+          "p50Ms": 281,
+          "p95Ms": 290,
+          "maxMs": 290,
+          "budgetMs": 1000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "project",
+          "runsMs": [
+            574,
+            341,
+            216,
+            213,
+            258
+          ],
+          "p50Ms": 258,
+          "p95Ms": 574,
+          "maxMs": 574,
+          "budgetMs": 1000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "coverage",
+          "runsMs": [
+            280,
+            209,
+            264,
+            239,
+            201
+          ],
+          "p50Ms": 239,
+          "p95Ms": 280,
+          "maxMs": 280,
+          "budgetMs": 1000,
+          "p95WithinBudget": true
+        }
+      ],
+      "hostLoad": "load at start:  13:40:06 up 2 days, 20:56,  1 user,  load average: 20.35, 15.74, 11.72"
+    },
+    {
+      "tier": "T2",
+      "subject": "this workspace's reference index (BB_DATA_DIR=.bb-data, projectId 1d3d57103be91b8f9716d70199fe28a3f39245d9)",
+      "command": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/measure.ts --tier T2 (run per mode group; see validation/tools/bb_doc/logs/latency-t2*.log)",
+      "coldMs": 8460,
+      "warmRuns": 5,
+      "budgetMs": 5000,
+      "rows": [
+        {
+          "mode": "symbol",
+          "runsMs": [
+            2573,
+            3142,
+            3124,
+            3576,
+            4458
+          ],
+          "p50Ms": 3142,
+          "p95Ms": 4458,
+          "maxMs": 4458,
+          "budgetMs": 5000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "file",
+          "runsMs": [
+            5381,
+            4215,
+            6774,
+            53721,
+            31596
+          ],
+          "p50Ms": 6774,
+          "p95Ms": 53721,
+          "maxMs": 53721,
+          "budgetMs": 5000,
+          "p95WithinBudget": false
+        },
+        {
+          "mode": "module",
+          "runsMs": [
+            9458,
+            4708,
+            4294,
+            8212,
+            4439
+          ],
+          "p50Ms": 4708,
+          "p95Ms": 9458,
+          "maxMs": 9458,
+          "budgetMs": 5000,
+          "p95WithinBudget": false
+        },
+        {
+          "mode": "api",
+          "runsMs": [
+            6974,
+            5880,
+            10592,
+            4785,
+            7719
+          ],
+          "p50Ms": 6974,
+          "p95Ms": 10592,
+          "maxMs": 10592,
+          "budgetMs": 5000,
+          "p95WithinBudget": false
+        },
+        {
+          "mode": "project",
+          "runsMs": [
+            7033,
+            13414,
+            5025,
+            5896,
+            7875
+          ],
+          "p50Ms": 7033,
+          "p95Ms": 13414,
+          "maxMs": 13414,
+          "budgetMs": 5000,
+          "p95WithinBudget": false
+        },
+        {
+          "mode": "coverage",
+          "runsMs": [
+            2750,
+            2012,
+            1854,
+            2655,
+            2231
+          ],
+          "p50Ms": 2231,
+          "p95Ms": 2750,
+          "maxMs": 2750,
+          "budgetMs": 5000,
+          "p95WithinBudget": true
+        },
+        {
+          "mode": "feature",
+          "runsMs": [
+            18982,
+            52063
+          ],
+          "p50Ms": 18982,
+          "p95Ms": 52063,
+          "maxMs": 52063,
+          "budgetMs": 5000,
+          "p95WithinBudget": false
+        }
+      ],
+      "hostLoad": "load average 15.9-21.5 during measurement (shared checkout with the fleet process); warm p50 is the honest figure, max is host-contention contaminated",
+      "note": "feature mode measured with BB_DOC_RUNS=2 because each call costs 19-52 s; the 5-run p95 is therefore not available for feature. Cold first call 8.5-36 s (DB open + schema/index setup in a fresh process)."
+    }
+  ],
+  "notes": [
+    "Byte counts per mode are identical across the five warm runs, so the documents are deterministic in size (only reference.generatedAt moves).",
+    "T2 project mode with limit=100/maxTokens=16000 took 25034 ms and still reported budget.passed=false: 18052 estimated tokens against the 16000 ceiling, 22126 wire tokens.",
+    "No default-argument T2 call is under the 5 s budget for file/module/api/project, and feature mode exceeds the client timeout; this is a campaign finding, not an environment excuse, because the host load only inflates a 2-7 s cost."
+  ]
+}

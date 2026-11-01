@@ -1,0 +1,11 @@
+{
+  "issue": "M15.S7",
+  "code": "S7",
+  "tool": "bb_search",
+  "verified": false,
+  "checks": 6,
+  "passed": 7,
+  "failed": 1,
+  "negatives": 2,
+  "generatedAt": "2026-11-01T17:56:53.128Z"
+}

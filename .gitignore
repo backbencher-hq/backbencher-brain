@@ -394,3 +394,22 @@ viz-final-check/
 # preserving its project-relative path, with local-archive/untracked-2026-11-01/MANIFEST.txt recording sizes.
 # Nothing was deleted; the tracked summary is validation/m14/verification/TREE-SELF-CONTAINMENT.md.
 local-archive/
+
+# ── Tools campaign working state: indexes and copies are BUILD ARTIFACTS ───────
+# Per-lane fixture indexes and full-size copies are regenerable and are hundreds
+# of MB to multiple GB each. They are working state, never repository content.
+validation/tools/**/bbdata/
+validation/tools/**/t2-copy/
+validation/tools/**/*.db
+validation/tools/**/*.db-wal
+validation/tools/**/*.db-shm
+validation/tools/**/node_modules/
+# Screenshots and archives produced by gates are artifacts, not evidence text.
+validation/tools/**/*.png
+validation/tools/**/*.asar
+validation/tools/**/*.zip
+# Fixture backup/evidence copies inside lane workspaces duplicate repo content.
+validation/tools/**/work/**/backup/
+validation/tools/**/artifacts/
+# Rendered visualization previews are regenerable output.
+validation/tools/**/preview-*.html

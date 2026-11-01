@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_cross_language: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_cross_language through any MCP host, the CLI (`bb tool bb_cross_language`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_cross_language/descriptor.ts, src/mcp/tools/bb_cross_language/handler.ts, script/tool-docs/curation/bb_cross_language.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_cross_language --write`.
+-->
 # `bb_cross_language`
 
 Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Every fact names both ends — the copy of the requested name it came from and the other symbol's name, file, language and line — plus the stored row id. A name is many symbols (the index holds one per file/name/line), so facts are the union over every copy; `copies` names them and `ambiguous` says so. SEPARATELY, `memberFacts` holds the rows on the copies' MEMBERS, each marked `match: 'owner-cascade'` with `matchedMember` naming the member: 95% of stored cross-language rows target a member, so a class often has none of its own, and those rows are reported as the MEMBER's edges rather than absorbed into the symbol's — `ownFactCount`, `memberFactCount` and `silentItselfButNotItsMembers` tell the two apart. Absence is declared only when neither the copies nor their members hold a stored row. The answer is bounded by `limit` (default 200, max 1000) with `truncated` and `totalCountIfKnown` declared. This tool never infers, guesses, or aspires. Same source and laws as the editor's cross-language hover section.
@@ -87,4 +94,4 @@ For same-language callers/callees use `bb_graph`; this tool reports cross-langua
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

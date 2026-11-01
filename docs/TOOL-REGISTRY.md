@@ -1,5 +1,15 @@
 # Tool Registry Architecture
 
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — how the sixteen public MCP tools are described, attached to
+handlers, validated, and published to generated documentation.
+WHO IT IS FOR — anyone adding, changing, or reviewing a public tool.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tool-registry.ts, src/mcp/tools/<tool>/descriptor.ts,
+src/mcp/tool-handlers.ts, src/mcp/tools/<tool>/handler.ts, script/verify-tool-docs.ts.
+-->
+
 `src/mcp/tool-registry.ts` is the canonical source for public MCP tool metadata. The registry is importable without starting an MCP server and contains no runtime handlers.
 
 ## Descriptor Model
@@ -23,7 +33,9 @@ The registry validates itself when imported. Validation rejects empty or duplica
 
 ## Runtime Attachment
 
-`src/mcp/tool-handlers.ts` owns the current behavior implementations. `createToolHandlers()` verifies a one-to-one mapping:
+`src/mcp/tool-handlers.ts` is the assembler: it binds each registered public tool
+name to one handler module, `src/mcp/tools/<tool>/handler.ts`. `createToolHandlers()`
+verifies a one-to-one mapping:
 
 - Every registered descriptor has a handler.
 - No handler exists without a public descriptor.
@@ -49,7 +61,7 @@ This is the initial source for future generated documentation. The website at `$
 
 ## Compatibility Boundary
 
-Version `0.3.0` exposes exactly ten descriptors. The compatibility aliases from
+Version `0.3.0` exposes exactly sixteen descriptors. The compatibility aliases from
 `0.2.x` were removed after the migration window and are preserved only in the
 historical migration guide and changelog.
 

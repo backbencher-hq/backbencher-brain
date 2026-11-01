@@ -12,9 +12,11 @@ adapters so MCP, CLI, and library consumers share behavior.
 3. `src/intelligence/` owns strict search, semantic, graph, analysis, pattern,
    security, testing, documentation, visualization, migration, edit, and health
    engines. Internal engines are implementation details, not additional public tools.
-4. `src/mcp/tool-registry.ts` defines the public contracts. Shared handlers route
-   both MCP and `bb tool` CLI calls to the intelligence engines.
-5. `src/mcp/server.ts` advertises exactly the ten public tools and validates
+4. `src/mcp/tool-registry.ts` assembles the public contracts from one descriptor
+   module per tool (`src/mcp/tools/<tool>/descriptor.ts`); the shared handlers
+   (`src/mcp/tool-handlers.ts` over `src/mcp/tools/<tool>/handler.ts`) route both
+   MCP and `bb tool` CLI calls to the intelligence engines.
+5. `src/mcp/server.ts` advertises exactly the sixteen public tools and validates
    arguments before dispatch. The `0.3.0` breaking release removed all hidden aliases.
 
 ## Evidence

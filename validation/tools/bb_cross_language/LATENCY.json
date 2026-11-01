@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_cross_language",
+  "generatedAt": "2026-11-01T18:54:18.443Z",
+  "currentCommit": "a512c71f0",
+  "contract": "CHARTER §6: three tiers, warm, five runs, p50/p95 recorded with the exact command and environment. Budgets for default arguments (p95): T0 < 250ms, T1 < 1s, T2 < 5s; nothing may exceed the 30s client timeout.",
+  "environment": {
+    "node": "v22.22.1",
+    "platform": "linux x64",
+    "cpus": 8,
+    "totalMemGB": 15
+  },
+  "load": {
+    "round1": "17.23 21.98 17.66 20/2197 4",
+    "round2": "20.64 21.45 18.10 22/2478 54",
+    "note": "The checkout is shared with a fleet process; both rounds ran with high load average (8 CPUs). Round 1 is the quieter observation and is used for the handler-overhead figure; both are published because latency is the point of this file."
+  },
+  "commands": {
+    "fixtures": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/work/index-fixtures.mts",
+    "latency": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/work/latency.mts",
+    "t2StatementProfile": "node validation/tools/bb_cross_language/work/profile-queries.cjs",
+    "t2QueryFixPrototype": "node validation/tools/bb_cross_language/work/profile-cross-join.cjs (writes results/AUDIT-t2-query-fix-prototype.json)"
+  },
+  "tiers": {
+    "T0": {
+      "subject": {
+        "path": "test/fixtures/polyglot",
+        "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+        "indexedUnder": "validation/tools/bb_cross_language/bbdata",
+        "indexMs": 9934,
+        "files": 5,
+        "symbols": 13,
+        "crossLanguageRows": 5,
+        "pairs": [
+          "scala → java (3)",
+          "typescript → javascript (2)"
+        ]
+      },
+      "call": {
+        "args": {
+          "symbol": "Inventory"
+        },
+        "warmup": 1,
+        "runs": 5
+      },
+      "round1": {
+        "default": {
+          "args": {
+            "symbol": "Inventory"
+          },
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 8.771,
+          "p95Ms": 11.987,
+          "minMs": 7.606,
+          "maxMs": 11.987,
+          "bytes": {
+            "min": 4338,
+            "max": 4338
+          },
+          "answerShape": {
+            "declaredAbsent": false,
+            "ownFactCount": 1,
+            "memberFactCount": 2,
+            "copyCount": 1,
+            "copiesTruncated": false,
+            "truncated": false,
+            "totalCountIfKnown": 3
+          }
+        },
+        "limit1": {
+          "args": {
+            "symbol": "Inventory",
+            "limit": 1
+          },
+          "runs": 5,
+          "p50Ms": 11.198,
+          "p95Ms": 14.216,
+          "minMs": 8.825,
+          "maxMs": 14.216
+        },
+        "unknown": {
+          "args": {
+            "symbol": "no-such-name-xyz"
+          },
+          "runs": 5,
+          "p50Ms": 4.281,
+          "p95Ms": 4.331,
+          "minMs": 4.158,
+          "maxMs": 4.331,
+          "isError": true
+        }
+      },
+      "round2": {
+        "default": {
+          "args": {
+            "symbol": "Inventory"
+          },
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 8.261,
+          "p95Ms": 8.59,
+          "minMs": 7.907,
+          "maxMs": 8.59,
+          "bytes": {
+            "min": 4338,
+            "max": 4338
+          },
+          "answerShape": {
+            "declaredAbsent": false,
+            "ownFactCount": 1,
+            "memberFactCount": 2,
+            "copyCount": 1,
+            "copiesTruncated": false,
+            "truncated": false,
+            "totalCountIfKnown": 3
+          }
+        },
+        "limit1": {
+          "args": {
+            "symbol": "Inventory",
+            "limit": 1
+          },
+          "runs": 5,
+          "p50Ms": 8.197,
+          "p95Ms": 8.699,
+          "minMs": 7.8,
+          "maxMs": 8.699
+        },
+        "unknown": {
+          "args": {
+            "symbol": "no-such-name-xyz"
+          },
+          "runs": 5,
+          "p50Ms": 3.523,
+          "p95Ms": 3.63,
+          "minMs": 3.396,
+          "maxMs": 3.63,
+          "isError": true
+        }
+      },
+      "budget": {
+        "p95Ms": 250,
+        "verdict": "within budget"
+      }
+    },
+    "T1": {
+      "subject": {
+        "path": ".perf-fixtures/bb-scale/n100",
+        "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+        "indexedUnder": "validation/tools/bb_cross_language/bbdata",
+        "indexMs": 36245,
+        "files": 97,
+        "symbols": 3512,
+        "crossLanguageRows": 0,
+        "note": "single-language TypeScript corpus: exercises the absence path only"
+      },
+      "call": {
+        "args": {
+          "symbol": "id"
+        },
+        "warmup": 1,
+        "runs": 5
+      },
+      "round1": {
+        "default": {
+          "args": {
+            "symbol": "id"
+          },
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 32.516,
+          "p95Ms": 33.955,
+          "minMs": 28.367,
+          "maxMs": 33.955,
+          "bytes": {
+            "min": 11173,
+            "max": 11173
+          },
+          "answerShape": {
+            "declaredAbsent": true,
+            "ownFactCount": 0,
+            "memberFactCount": 0,
+            "copyCount": 44,
+            "copiesTruncated": false,
+            "truncated": false,
+            "totalCountIfKnown": 0
+          }
+        },
+        "limit1": {
+          "args": {
+            "symbol": "id",
+            "limit": 1
+          },
+          "runs": 5,
+          "p50Ms": 26.261,
+          "p95Ms": 29.872,
+          "minMs": 24.789,
+          "maxMs": 29.872
+        },
+        "unknown": {
+          "args": {
+            "symbol": "no-such-name-xyz"
+          },
+          "runs": 5,
+          "p50Ms": 6.036,
+          "p95Ms": 6.749,
+          "minMs": 3.375,
+          "maxMs": 6.749,
+          "isError": true
+        }
+      },
+      "round2": {
+        "default": {
+          "args": {
+            "symbol": "id"
+          },
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 38.94,
+          "p95Ms": 59.686,
+          "minMs": 25.791,
+          "maxMs": 59.686,
+          "bytes": {
+            "min": 11173,
+            "max": 11173
+          },
+          "answerShape": {
+            "declaredAbsent": true,
+            "ownFactCount": 0,
+            "memberFactCount": 0,
+            "copyCount": 44,
+            "copiesTruncated": false,
+            "truncated": false,
+            "totalCountIfKnown": 0
+          }
+        },
+        "limit1": {
+          "args": {
+            "symbol": "id",
+            "limit": 1
+          },
+          "runs": 5,
+          "p50Ms": 58.835,
+          "p95Ms": 65.301,
+          "minMs": 29.748,
+          "maxMs": 65.301
+        },
+        "unknown": {
+          "args": {
+            "symbol": "no-such-name-xyz"
+          },
+          "runs": 5,
+          "p50Ms": 3.855,
+          "p95Ms": 4.871,
+          "minMs": 3.719,
+          "maxMs": 4.871,
+          "isError": true
+        }
+      },
+      "budget": {
+        "p95Ms": 1000,
+        "verdict": "within budget"
+      }
+    },
+    "T2": {
+      "subject": {
+        "path": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "crossLanguageRows": 0,
+        "note": "the workspace reference index; it carries ZERO stored cross-language rows (measured), so T2 exercises the absence path only"
+      },
+      "measure": "shared owner module over a READ-ONLY better-sqlite3 connection (the handler opens the shared store read-write; the campaign rule forbids writing it from a measurement)",
+      "subjects": [
+        "type (5,392 copies)",
+        "file (3,457 copies)",
+        "Command (34 copies)"
+      ],
+      "round1": {
+        "type": {
+          "copies": 5392,
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 5803.193,
+          "p95Ms": 8277.984,
+          "minMs": 4646.755,
+          "maxMs": 8277.984,
+          "answer": {
+            "facts": 0,
+            "memberFacts": 0,
+            "storedRowCount": 0,
+            "deeperDescendantRowCount": 0,
+            "copiesTruncated": true
+          }
+        },
+        "file": {
+          "copies": 3457,
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 6533.335,
+          "p95Ms": 8882.88,
+          "minMs": 4906.774,
+          "maxMs": 8882.88,
+          "answer": {
+            "facts": 0,
+            "memberFacts": 0,
+            "storedRowCount": 0,
+            "deeperDescendantRowCount": 0,
+            "copiesTruncated": true
+          }
+        },
+        "Command": {
+          "copies": 34,
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 4997.629,
+          "p95Ms": 6638.754,
+          "minMs": 4516.264,
+          "maxMs": 6638.754,
+          "answer": {
+            "facts": 0,
+            "memberFacts": 0,
+            "storedRowCount": 0,
+            "deeperDescendantRowCount": 0,
+            "copiesTruncated": false
+          }
+        }
+      },
+      "round2": {
+        "type": {
+          "copies": 5392,
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 5197.414,
+          "p95Ms": 6506.969,
+          "minMs": 4898.257,
+          "maxMs": 6506.969,
+          "answer": {
+            "facts": 0,
+            "memberFacts": 0,
+            "storedRowCount": 0,
+            "deeperDescendantRowCount": 0,
+            "copiesTruncated": true
+          }
+        },
+        "file": {
+          "copies": 3457,
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 5368.887,
+          "p95Ms": 33565.546,
+          "minMs": 4908.079,
+          "maxMs": 33565.546,
+          "answer": {
+            "facts": 0,
+            "memberFacts": 0,
+            "storedRowCount": 0,
+            "deeperDescendantRowCount": 0,
+            "copiesTruncated": true
+          }
+        },
+        "Command": {
+          "copies": 34,
+          "warmup": 1,
+          "runs": 5,
+          "p50Ms": 6258.23,
+          "p95Ms": 7188.697,
+          "minMs": 4940.377,
+          "maxMs": 7188.697,
+          "answer": {
+            "facts": 0,
+            "memberFacts": 0,
+            "storedRowCount": 0,
+            "deeperDescendantRowCount": 0,
+            "copiesTruncated": false
+          }
+        }
+      },
+      "handlerLevel": "not measured on the shared index by rule; handler overhead measured on T0 is within the noise at this scale (round1: component p50 8.011ms vs handler p50 8.086ms on the same fixture)",
+      "budget": {
+        "p95Ms": 5000,
+        "verdict": "BREACH — every T2 subject exceeds the 5s p95 budget in both rounds; one round-2 sample exceeded the 30s client timeout (file, max 33,565ms)"
+      },
+      "statementProfile": {
+        "file": "AUDIT-t2-statement-profile.txt",
+        "finding": "the two by-name statements (agent facts, member facts) dominate: 3.8–17.6 s each under load, because the query plan SEARCHes brain_relationship USING INDEX brain_rel_project_idx (project_id=?) and scans every relationship row in the project; the (target_symbol_id, is_cross_language) / (source_symbol_id, is_cross_language) indexes are never used."
+      },
+      "fixPrototype": {
+        "file": "AUDIT-t2-query-fix-prototype.json",
+        "finding": "forcing the join order (CROSS JOIN driving from brain_symbol by name) makes the planner use brain_sym_proj_name_type_idx then the cross-language indexes: Command 5,578ms → 14ms (own) and 8,851ms → 70ms (member); type 11,746ms → 466ms; file 14,598ms → 880ms. Same row set: INNER joins are commutative and every predicate is preserved."
+      }
+    }
+  },
+  "status": "partial — T0/T1 within budget, T2 BREACH; defect D4 carries the fix plan",
+  "limitations": [
+    "Wall-clock figures belong to this machine and were taken with a load average of ~18–22 on 8 CPUs because the checkout is shared with a fleet process. Ratios between statements and between shipped SQL and the fix prototype are the portable part.",
+    "T1 and T2 indexes carry zero stored cross-language rows, so neither tier exercises the facts path on a large index with rows. The large-with-rows measurement is CL1 on the 616-file elixir corpus (714 stored cross-language rows), recorded in validation/m63/results/CL1.json.",
+    "The official T2 handler-level call is not measured because that opens the shared store read-write; overriding that rule was not done.",
+    "The `indexMs` figures are the one-time fixture build cost, not a tool cost, and are recorded for reproducibility of the fixture."
+  ],
+  "defects": [
+    "D4 — the two by-name statements scan the project's relationship table; see AUDIT.md"
+  ]
+}

@@ -1,5 +1,31 @@
-// M64.H7: `existsSync` was imported here and never called — the one dead
-// binding in this module.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the index-health report engine: it measures an index's
+// counts, schema, runtime, embeddings, freshness (sampled or complete), optional
+// per-path state, optional completeness walk, optional integrity battery and
+// optional analysis history, and renders the text report bb_health returns.
+// WHICH TOOL IT SERVES — bb_health (mutability read, requiresIndex false,
+//   behaviours: status, refresh).
+// WHY IT IS SHAPED THIS WAY — the report is the answer to "may I trust this
+// index", so every number must be measured rather than inferred, every optional
+// cost must be opt-in, and sampled counts must declare that they are a lower
+// bound. The expensive per-symbol aggregates (per-language symbol counts,
+// searchable-by-language, embedded/unembedded kinds, embedding chain) feed
+// verbose output only and therefore run only for verbose=true; a default call
+// stays bounded by the file count, not the symbol count.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_health.md, docs/BB_HEALTH.md,
+//   validation/tools/bb_health/**, gates: script/verify-health.ts,
+//   script/m13/verify-health-*.ts, script/m15/verify-health-deep.ts,
+//   script/m40/verify-a6-health-refresh.ts, script/m51/verify-a2-health-split.ts,
+//   script/m64/verify-*.ts (bb_health battery).
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_health/{descriptor,
+//   handler}.ts, script/tool-docs/curation/bb_health.ts, docs/tools/bb_health.md
+//   (generated), docs/BB_HEALTH.md, and the gate scripts above.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness
+//   reasons, the read/write boundary (`refresh`/`force` are the only mutations),
+//   the sampled-vs-complete declaration, and the no-regex policy.
+// ─────────────────────────────────────────────────────────────────────────────
 import { relative as relativePath, resolve, isAbsolute, sep } from "node:path"
 import { statSync } from "node:fs"
 import { BrainDatabase } from "../../brain/database"
@@ -112,20 +138,20 @@ export interface UnifiedHealthReport {
     embeddedEntities: number
     symbolCoveragePercent: number
     models: Array<{ model: string; count: number; dimensions: number[] }>
-    /** M64.R5: entity kinds that have embeddings, so the % can be read. */
+    /** Entity kinds that have embeddings. Verbose output only; `[]` on a default call. */
     embeddedByEntityType: Array<{ entityType: string; count: number }>
-    /** M64.R5: symbol kinds with zero embeddings — unattempted, not partial. */
+    /** Symbol kinds with zero embeddings — unattempted, not partial. Verbose output only; `[]` on a default call. */
     unembeddedKinds: Array<{ kind: string; count: number }>
     /**
-     * M64.A2: per-language searchability — the join of the per-language census
-     * and the embedding census, which is the number that answers "will bb_ask
-     * find anything about this language?". A language at 0% is unreachable by
-     * semantic search however healthy the project total looks.
+     * Per-language searchability — the join of the per-language census and the
+     * embedding census, which answers "will bb_ask find anything about this
+     * language?". A language at 0% is unreachable by semantic search however
+     * healthy the project total looks. Verbose output only; `[]` on a default
+     * call, because the join costs one EXISTS probe per indexed symbol.
      */
     byLanguage: Array<{ language: string; symbols: number; embedded: number; searchablePercent: number }>
   }
   schema: { version: number | null; migration: string | null; tables: number }
-  /** M64.H7: `parserStatus` was removed — hardcoded "unknown", printed by nothing. */
   runtime: { runtime: "bun" | "node"; version: string; database: string }
   /**
    * M64.A3: what THIS call cost, measured from function entry. The `perf:` line
@@ -137,7 +163,7 @@ export interface UnifiedHealthReport {
    * belong to no bucket. `totalMs` is the number to act on; the phases are for
    * explaining it.
    */
-  timing: { totalMs: number; aggregatesMs: number; freshnessMs: number; integrityMs: number; refreshMs: number; pathsMs: number }
+  timing: { totalMs: number; aggregatesMs: number; freshnessMs: number; integrityMs: number; refreshMs: number; pathsMs: number; unindexedMs: number }
   integrity: IndexHealthReport | null
   // M64.D: present only when paths was asked for. It states IN THE PAYLOAD that
   // the rest of the report is project-wide, so a scoped answer can never be read
@@ -173,16 +199,22 @@ export interface UnifiedHealthReport {
   /** M64.H9: `runs` is a COUNT(*), not the length of a 100-row page. */
   analysisRuns: { runs: number; findings: number; byState: Record<string, number>; runTotalKnown: boolean } | null
   refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null; derived: string | null }
-  /** M40.A8: effective embedding config + per-field source, per the single documented precedence. */
+  /** Verbose only: effective embedding config + per-field source, per the single documented precedence. */
   effectiveConfig: { baseURL: string; model: string; configured: boolean; sources: { baseURL: string; model: string; apiKey: string } } | null
   /**
-   * The provider chain and its problems — the same object `bb doctor` and
-   * `bb setup show` print, so all three surfaces answer "which provider am I on
-   * and is it working" identically. Structured (not pre-rendered) so a JSON
-   * consumer reads it without parsing prose; `null` when unavailable.
+   * Verbose only: the provider chain and its problems — the same object
+   * `bb doctor` and `bb setup show` print, so all three surfaces answer "which
+   * provider am I on and is it working" identically. Structured (not
+   * pre-rendered) so a JSON consumer reads it without parsing prose; `null`
+   * when unavailable or when verbose was not requested.
    */
   embeddingChain: EmbeddingDiagnosis | null
-  /** Per-language file+symbol counts; always collected, printed only when verbose. */
+  /**
+   * Per-language file+symbol counts. Collected only for verbose=true: the
+   * file-side census is cheap but the symbol-side count is one row per indexed
+   * symbol, and a default call is bounded by the file count, not the symbol
+   * count. `[]` on a default call (not collected, never "no languages").
+   */
   languages: Array<{ language: string; files: number; symbols: number }>
   /** Mirrors the request; the formatter prints the verbose sections only when true. */
   verbose: boolean
@@ -340,6 +372,108 @@ function queueRefresh(
 }
 
 
+
+/**
+ * The honest answer for a project with NO usable index.
+ *
+ * A read-only open refuses to invent an index, so "no index" arrives as an
+ * error from the database layer. bb_health exists to REPORT that state (it is
+ * `requiresIndex: false` precisely so an agent can ask before one exists), so
+ * the report is built here without opening a database: every count is a
+ * measured zero over an empty population, `recordPresent` is false, and the
+ * EMPTY_INDEX warning is an error-severity finding — the same finding a healthy
+ * open would produce for a zero-file index. Named paths are stat-ed and
+ * reported as not-indexed/absent, because that question can be answered
+ * without an index and pretending otherwise would be a worse answer.
+ */
+function emptyIndexReport(
+  projectId: string,
+  projectPath: string,
+  options: UnifiedHealthOptions,
+  warnings: HealthWarning[],
+  timing: UnifiedHealthReport["timing"],
+  startedCall: number,
+  refresh: UnifiedHealthReport["refresh"],
+  error: unknown,
+): UnifiedHealthReport {
+  const reason = error instanceof Error ? error.message : String(error)
+  warnings.push({
+    code: "EMPTY_INDEX",
+    message: `no usable index for ${projectPath}: ${reason}. This is an unindexed project, not a verified healthy one. Run bb_health with refresh=true, wait=true (or: bb index "${projectPath}") to build it.`,
+    severity: "error",
+  })
+  let pathChecks: UnifiedHealthReport["pathChecks"] = null
+  let scope: UnifiedHealthReport["scope"] = null
+  if (options.paths && options.paths.length > 0) {
+    const resolved: NonNullable<UnifiedHealthReport["pathChecks"]> = []
+    const refused: Array<{ requested: string; reason: string }> = []
+    for (const requested of options.paths) {
+      const trimmed = String(requested).trim()
+      const abs = resolve(projectPath, trimmed)
+      const rel = relativePath(projectPath, abs)
+      if (rel === "" || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+        refused.push({ requested: trimmed, reason: `path escapes project root: ${trimmed}` })
+        continue
+      }
+      let onDisk = false
+      try { onDisk = statSync(abs).isFile() } catch { onDisk = false }
+      resolved.push({
+        requested: trimmed,
+        path: rel.split(sep).join("/"),
+        status: onDisk ? "not-indexed" : "absent",
+        reason: onDisk
+          ? "on disk but the project has no index — run refresh=true (or bb index) to index it"
+          : "not in the index and not on disk — this path does not exist",
+        language: null,
+        symbols: 0,
+        verifiedBy: null,
+      })
+    }
+    pathChecks = resolved
+    scope = {
+      kind: "paths",
+      requested: options.paths.map((p) => String(p).trim()),
+      refused,
+      note: "no index exists, so no freshness can be verified. Every other line in this report is a zero over an empty index, not a project measurement.",
+    }
+    const notIndexed = resolved.filter((r) => r.status === "not-indexed").map((r) => r.path)
+    if (notIndexed.length > 0) {
+      warnings.push({ code: "PATHS_NOT_INDEXED", message: `${notIndexed.length} of the ${resolved.length} path(s) you named exist on disk but the project has no index: ${notIndexed.slice(0, 5).join(", ")}. Index the project (refresh=true) before asking for per-file freshness.`, severity: "warning" })
+    }
+    if (refused.length > 0) {
+      warnings.push({ code: "PATHS_REFUSED", message: `${refused.length} path(s) were REFUSED and are NOT checked: ${refused.map((r) => `${r.requested} (${r.reason})`).join("; ")}. A refused path is not a clean one.`, severity: "error" })
+    }
+  }
+  timing.totalMs = Date.now() - startedCall
+  const zeroReasons = { "metadata-fast-path": 0, "hash-match": 0, "hash-differs": 0, "file-gone": 0, unreadable: 0, "no-row": 0 }
+  return {
+    projectId, projectPath, timestamp: Date.now(),
+    counts: { files: 0, symbols: 0, relationships: 0, imports: 0, syntaxErrors: 0 },
+    indexStatus: { lastFullIndex: null, lastIncrementalIndex: null, indexedFiles: null, totalFilesDiscovered: null, indexShortfall: 0, isIncomplete: false, indexingVersion: null, status: null, errors: [], recordPresent: false },
+    performanceStats: { schemaVersion: null, runs: [], latestRun: null },
+    freshness: {
+      mode: "complete", requestedMode: options.freshness ?? "sampled",
+      checked: 0, total: 0, fresh: 0, stale: 0, missing: 0, staleFiles: [], missingFiles: [], unresolved: 0, isComplete: true,
+      reasons: { byKind: zeroReasons, freshVerifiedByContent: 0, freshVerifiedByMetadata: 0, isSample: false },
+    },
+    embeddings: { total: 0, embeddedEntities: 0, symbolCoveragePercent: 0, models: [], embeddedByEntityType: [], unembeddedKinds: [], byLanguage: [] },
+    schema: { version: null, migration: null, tables: 0 },
+    runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: "sqlite" },
+    timing,
+    integrity: null,
+    scope,
+    pathChecks,
+    unindexed: null,
+    analysisRuns: null,
+    refresh,
+    effectiveConfig: null,
+    embeddingChain: null,
+    languages: [],
+    verbose: options.verbose === true,
+    warnings,
+  }
+}
+
 export async function getUnifiedHealth(projectId: string, projectPath: string, options: UnifiedHealthOptions = {}): Promise<UnifiedHealthReport> {
   // M64.A3: what THIS call cost. The report had a `perf:` line, but it reports
   // the last INDEX RUN's phases — a different measurement of a different thing,
@@ -352,15 +486,14 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // work, the aggregates are index scans, and the optional integrity battery
   // content-hashes the corpus when it is in `complete` mode. `totalMs` is from
   // function entry, so it includes the aggregates this object reports.
-  const timing = { totalMs: 0, aggregatesMs: 0, freshnessMs: 0, integrityMs: 0, refreshMs: 0, pathsMs: 0 }
+  const timing = { totalMs: 0, aggregatesMs: 0, freshnessMs: 0, integrityMs: 0, refreshMs: 0, pathsMs: 0, unindexedMs: 0 }
   const startedCall = Date.now()
   const now = () => Date.now()
   const warnings: HealthWarning[] = []
   const refresh = { requested: options.refresh === true || options.force === true, force: options.force === true, wait: options.wait !== false, completed: false, durationMs: null as number | null, processedFiles: null as number | null, derived: null as string | null }
-  let raw = await BrainDatabase.getRawInstance(projectId)
-  // M64.N3: a previous detached refresh's outcome is reported BEFORE this
-  // call's own work, so the reading of the index below is never presented as a
-  // clean snapshot while a wipe is still in flight or has just failed.
+  // A previous detached refresh's outcome is reported BEFORE this call's own
+  // work, so the reading of the index below is never presented as a clean
+  // snapshot while a wipe is still in flight or has just failed.
   const priorDetached = detachedRefreshes.get(projectId)
   if (priorDetached) {
     if (priorDetached.state === "running") {
@@ -372,8 +505,26 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       warnings.push({ code: "REFRESH_FAILED_ASYNC", message: `the detached refresh started ${Math.round((Date.now() - priorDetached.startedAt) / 1000)}s ago FAILED${priorDetached.force ? " after a force wipe, so the index may be empty" : ""}: ${priorDetached.error ?? "unknown error"}. Re-run with refresh=true, wait=true.`, severity: "error" })
       detachedRefreshes.delete(projectId)
     } else {
+      // A detached refresh that finished is REPORTED ONCE here: the caller asked
+      // not to wait, and the declared contract says the next call reports whether
+      // it completed — including the success case, which used to be dropped in
+      // silence because a completed job needs no remediation.
+      warnings.push({ code: "REFRESH_COMPLETED", message: `the detached refresh started ${Math.round((Date.now() - priorDetached.startedAt) / 1000)}s ago completed in ${priorDetached.durationMs ?? "?"}ms (${priorDetached.processedFiles ?? "?"} file(s) processed, derived=${priorDetached.derived ?? "unknown"}). This notice is one-shot.`, severity: "warning" })
       detachedRefreshes.delete(projectId)
     }
+  }
+  // A read opens the index READ-ONLY: the default open runs additive migrations
+  // and healers, which makes "is my index healthy?" a write in the filesystem
+  // sense. Only refresh/force legitimately write, so only they get the writable
+  // handle. A missing/uninitialised index is a loud error from the readonly
+  // open; it is answered as an EMPTY_INDEX report rather than by creating a
+  // database to measure.
+  const writeRequested = options.refresh === true || options.force === true
+  let raw: Awaited<ReturnType<typeof BrainDatabase.getRawInstance>>
+  try {
+    raw = await BrainDatabase.getRawInstance(projectId, { readonly: !writeRequested })
+  } catch (error) {
+    return emptyIndexReport(projectId, projectPath, options, warnings, timing, startedCall, refresh, error)
   }
   if (options.refresh === true || options.force === true) {
     const started = Date.now()
@@ -434,7 +585,11 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
         // M40.A6: honest derived-data signal from the refresh run itself —
         // never imply derived data is current when the pass did not run.
         refresh.derived = typeof stats?.summary?.derivedPass === "string" ? stats.summary.derivedPass : "unknown"
-        raw = await BrainDatabase.getRawInstance(projectId)
+        try {
+          raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
+        } catch {
+          raw = await BrainDatabase.getRawInstance(projectId)
+        }
       } catch (error) {
         warnings.push({ code: "REFRESH_FAILED", message: error instanceof Error ? error.message : String(error), severity: "error" })
         refresh.durationMs = Date.now() - started
@@ -471,7 +626,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // because every 10th index is also every 5th sampled index. Hash ranking
   // cannot alias — it is independent of the sort order — and it is a pure
   // function of the id set, so identical state still gives an identical answer.
-  const aggregatesStarted = now()
+  const freshnessStarted = now()
   const allFileRows = raw.prepare("SELECT id, relative_path FROM brain_file WHERE project_id=?").all(projectId) as Array<{ id: string; relative_path: string }>
   const fileRows = freshnessMode === "complete" ? selectSampleFiles(allFileRows, Number.MAX_SAFE_INTEGER) : selectSampleFiles(allFileRows, sampleSize)
   // M64.H4: the old call was `checkResultsFreshness`, which runs one
@@ -485,7 +640,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // M64.A3: the freshness scan is O(files checked) disk work — one stat each and
   // a content read on a fast-path miss — so it is the phase that decides whether
   // a call is fast, and it is worth naming separately from the index scans.
-  timing.freshnessMs = now() - aggregatesStarted - timing.refreshMs
+  timing.freshnessMs = now() - freshnessStarted
   const statuses = resolved.statuses
   let fresh = 0, stale = 0, missing = 0
   const staleFiles: string[] = [], missingFiles: string[] = []
@@ -546,40 +701,44 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // in code. LEFT-JOIN semantics preserved: languages with zero symbols still
   // appear (from the file-side query) with symbols=0. V1 parity proves
   // byte-equality against the legacy query on the real index.
+  const aggregatesStarted = now()
+  // The file-side census is bounded by the file count and is cheap, so it is
+  // collected for every call. The symbol-side count is one row per indexed
+  // symbol and feeds verbose output only, so it is collected only when the
+  // caller asked for verbose — a default call must not cost O(symbols).
   const fileLangRows = raw.prepare(
     "SELECT language, COUNT(DISTINCT id) AS files FROM brain_file WHERE project_id = ? GROUP BY language",
   ).all(projectId) as Array<{ language: string | null; files: number }>
-  const symLangRows = raw.prepare(
-    "SELECT f.language AS language, COUNT(*) AS symbols FROM brain_symbol s " +
-      "JOIN brain_file f ON f.id = s.file_id AND f.project_id = ? " +
-      "WHERE s.project_id = ? GROUP BY f.language",
-  ).all(projectId, projectId) as Array<{ language: string | null; symbols: number }>
-  const langMap = new Map<string, { language: string | null; files: number; symbols: number }>()
-  for (const fr of fileLangRows) langMap.set(String(fr.language), { language: fr.language, files: Number(fr.files), symbols: 0 })
-  for (const sr of symLangRows) {
-    const bucket = langMap.get(String(sr.language))
-    if (bucket) bucket.symbols = Number(sr.symbols)
+  let languageRows: Array<{ language: string; files: number; symbols: number }> = []
+  if (options.verbose === true) {
+    const symLangRows = raw.prepare(
+      "SELECT f.language AS language, COUNT(*) AS symbols FROM brain_symbol s " +
+        "JOIN brain_file f ON f.id = s.file_id AND f.project_id = ? " +
+        "WHERE s.project_id = ? GROUP BY f.language",
+    ).all(projectId, projectId) as Array<{ language: string | null; symbols: number }>
+    const langMap = new Map<string, { language: string | null; files: number; symbols: number }>()
+    for (const fr of fileLangRows) langMap.set(String(fr.language), { language: fr.language, files: Number(fr.files), symbols: 0 })
+    for (const sr of symLangRows) {
+      const bucket = langMap.get(String(sr.language))
+      if (bucket) bucket.symbols = Number(sr.symbols)
+    }
+    // `language TEXT` is nullable in the schema, so a null can reach this row.
+    // Sort is a total order: files DESC, then language ASC with NULL first, so
+    // output is deterministic rather than left to SQLite's sorter.
+    languageRows = [...langMap.values()].sort((a, b) => {
+      if (b.files !== a.files) return b.files - a.files
+      if (a.language === b.language) return 0
+      if (a.language == null) return -1
+      if (b.language == null) return 1
+      return String(a.language) < String(b.language) ? -1 : 1
+    }) as Array<{ language: string; files: number; symbols: number }>
   }
-  // Runtime note: `language TEXT` is nullable in the schema, so a null can
-  // reach this row in both the legacy query and this merge — the boundary cast
-  // mirrors the legacy code exactly (no normalization), keeping V1 parity
-  // byte-equal even in the null case.
-  // Sort is a total order: files DESC (the legacy query's only guaranteed
-  // ordering), then language ASC with NULL first — M52 DEFINES the tie order
-  // because legacy left it to SQLite's unspecified sorter behavior (observed
-  // to flip between lexicographic directions), so output is now deterministic.
-  const languageRows = [...langMap.values()].sort((a, b) => {
-    if (b.files !== a.files) return b.files - a.files
-    if (a.language === b.language) return 0
-    if (a.language == null) return -1
-    if (b.language == null) return 1
-    return String(a.language) < String(b.language) ? -1 : 1
-  }) as Array<{ language: string; files: number; symbols: number }>
   const modelRows = raw.prepare("SELECT embedding_model AS model, COUNT(*) c, GROUP_CONCAT(DISTINCT vector_dimension) dims FROM brain_semantic_embedding WHERE project_id=? GROUP BY embedding_model ORDER BY c DESC").all(projectId) as any[]
-  // M64.R5: which kinds the embedder actually touched. Bounded by the number of
-  // distinct entity_type values (4 on this repo), not by the row count, and read
-  // off the same covering index the M52.P1 aggregate uses.
-  const entityTypeRows = raw.prepare("SELECT entity_type, COUNT(*) c FROM brain_semantic_embedding WHERE project_id=? GROUP BY entity_type ORDER BY c DESC").all(projectId) as any[]
+  // Which kinds the embedder actually touched; verbose output only, bounded by
+  // the number of distinct entity_type values rather than the row count.
+  const entityTypeRows = options.verbose === true
+    ? (raw.prepare("SELECT entity_type, COUNT(*) c FROM brain_semantic_embedding WHERE project_id=? GROUP BY entity_type ORDER BY c DESC").all(projectId) as any[])
+    : []
   const embeddingTotal = modelRows.reduce((sum, row) => sum + Number(row.c ?? 0), 0)
   const embeddedEntities = (raw.prepare("SELECT COUNT(DISTINCT entity_id) c FROM brain_semantic_embedding WHERE project_id=?").get(projectId) as any)?.c ?? 0
   const schema = raw.prepare("SELECT version, migration_name FROM brain_schema_version ORDER BY version DESC LIMIT 1").get() as any
@@ -589,16 +748,14 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // source of each field, per the single documented precedence (env > file >
   // default). API key value is never printed, only its source.
   let effectiveConfig: UnifiedHealthReport["effectiveConfig"] = null
-  // The chain, from the same builder `bb doctor` and `bb setup show` use. Read
-  // OUTSIDE the verbose gate: `bb health` is the command a script runs to decide
-  // whether embeddings are usable, and a machine consumer wants the structured
-  // verdict in the JSON whether or not a human asked for verbose output. The
-  // human-facing lines are still verbose-only below.
+  // The provider chain and the per-field config source are verbose output only:
+  // both read configuration files and build a diagnosis whose human-facing lines
+  // are printed only for verbose, so a default call does neither.
   let embeddingChain: EmbeddingDiagnosis | null = null
-  try {
-    embeddingChain = buildEmbeddingDiagnosis({ state: describeEmbeddingConfig() })
-  } catch { embeddingChain = null }
   if (options.verbose === true) {
+    try {
+      embeddingChain = buildEmbeddingDiagnosis({ state: describeEmbeddingConfig() })
+    } catch { embeddingChain = null }
     try {
       const { resolveEmbeddingConfig } = await import("../../config/config")
       const fileCfg = await Config.get()
@@ -620,6 +777,8 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // semantic reader looks for, so "searchable here" means searchable by the thing
   // that will search.
   const embeddedByLanguage = (() => {
+    // The join is one EXISTS probe per indexed symbol; verbose output only.
+    if (options.verbose !== true) return []
     try {
       const rows = raw.prepare(
         "SELECT f.language AS language, COUNT(DISTINCT s.id) AS embedded " +
@@ -640,7 +799,9 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     }
   })()
 
-  // M64.C: files on disk that the index does not contain.
+  timing.aggregatesMs = now() - aggregatesStarted
+
+  // Files on disk that the index does not contain.
   //
   // The report has always covered ONE direction of the index/disk difference:
   // `missingFiles` is in the index and gone from disk. The other direction — on
@@ -665,6 +826,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // cost as one index run's discovery phase. Affordable, but not free, and a
   // default health call must not silently acquire it.
   let unindexed: UnifiedHealthReport["unindexed"] = null
+  const unindexedStarted = now()
   if (options.checkUnindexed === true) {
     const walkStarted = now()
     try {
@@ -707,6 +869,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       warnings.push({ code: "UNINDEXED_SCAN_FAILED", message: `could not compare the index against disk: ${error instanceof Error ? error.message : String(error)}. Whether the index is COMPLETE is UNKNOWN — this is not a verified result.`, severity: "warning" })
       unindexed = null
     }
+    timing.unindexedMs = now() - unindexedStarted
   }
 
   // M64.D: per-path state.
@@ -892,7 +1055,6 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // M64.A4: with the battery reusing the freshness verdicts it no longer does
   // its own corpus hash, so this is now 13 SQL aggregates rather than a second
   // pass over the disk.
-  timing.aggregatesMs = now() - aggregatesStarted - timing.refreshMs - timing.freshnessMs - timing.integrityMs
   let analysisRuns: UnifiedHealthReport["analysisRuns"] = null
   if (options.includeAnalysisRuns === true) {
     // M64.H9: this asked getAnalysisHistory for 100 rows and then reported
@@ -974,6 +1136,12 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // not.
   const recordedTotal = typeof status?.total_files === "number" ? status.total_files : null
   const recordedIndexed = typeof status?.indexed_files === "number" ? status.indexed_files : null
+  // The counters in brain_index_status describe the LAST RUN (files found and
+  // written by it), not the index. Printing `indexedFiles=1/1` beside
+  // `files=6452` is two different populations without a label, so a recorded
+  // total that is smaller than the live file count is named as a contradiction
+  // rather than skimmed as an index-wide number.
+  const statusCountersDisagree = statusRecordPresent && recordedTotal !== null && files > 0 && recordedTotal < files
   const indexShortfall = recordedTotal !== null && recordedIndexed !== null && recordedIndexed < recordedTotal
     ? { missing: recordedTotal - recordedIndexed, total: recordedTotal, indexed: recordedIndexed }
     : null
@@ -983,6 +1151,13 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       code: "INCOMPLETE_INDEX",
       message: `the last index run recorded ${indexShortfall.indexed} of ${indexShortfall.total} files as indexed — ${indexShortfall.missing} file(s) were found by the walk but never written, so the index is INCOMPLETE${contradicted ? " even though the status field says \"complete\"" : ""}. counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.`,
       severity: "error",
+    })
+  }
+  if (statusCountersDisagree) {
+    warnings.push({
+      code: "INDEX_STATUS_COUNTERS",
+      message: `the index status record's last-run counters (${recordedIndexed ?? "?"} indexed of ${recordedTotal ?? "?"} discovered) describe a smaller population than the ${files} files the index actually holds — these counters are the LAST RUN's numbers, not index-wide totals, and must not be read as either a complete count or a shortfall of this index`,
+      severity: "warning",
     })
   }
   if (!statusRecordPresent) {
@@ -1095,7 +1270,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
 function renderFileList(label: string, files: string[], cap = 20): string {
   if (files.length === 0) return `${label}: none`
   if (files.length <= cap) return `${label}: ${files.join(", ")}`
-  return `${label}: ${files.length} total, first ${cap}: ${files.slice(0, cap).join(", ")} — raise \`limit\`/use freshness="complete" and read freshness.staleFiles in the JSON for the rest`
+  return `${label}: ${files.length} total, first ${cap}: ${files.slice(0, cap).join(", ")} — use freshness="complete" and read freshness.staleFiles in the JSON for the rest`
 }
 
 /**
@@ -1112,6 +1287,7 @@ function renderTiming(t: UnifiedHealthReport["timing"]): string {
   const parts: string[] = []
   if (t.refreshMs) parts.push(`refresh=${t.refreshMs}ms`)
   if (t.integrityMs) parts.push(`integrity=${t.integrityMs}ms`)
+  if (t.unindexedMs) parts.push(`unindexed-walk=${t.unindexedMs}ms`)
   if (t.freshnessMs) parts.push(`freshness=${t.freshnessMs}ms`)
   if (t.aggregatesMs) parts.push(`aggregates=${t.aggregatesMs}ms`)
   return `total=${t.totalMs}ms${parts.length ? ` (${parts.join(" ")})` : ""}`
@@ -1131,8 +1307,21 @@ function renderTiming(t: UnifiedHealthReport["timing"]): string {
  * path like `bb index <dir>.` is not mistaken for a sentence end.
  */
 function firstSentence(text: string): string {
-  const m = /^(.*?[.!?])(?:\s|$)/.exec(text.trim())
-  const out = (m ? m[1] : text.trim()).replace(/\s+/g, " ")
+  const trimmed = text.trim()
+  let cut = trimmed.length
+  for (let i = 0; i < trimmed.length; i++) {
+    const ch = trimmed[i]
+    if (ch !== "." && ch !== "!" && ch !== "?") continue
+    const next = trimmed[i + 1]
+    if (next === undefined || next === " " || next === "\t" || next === "\n" || next === "\r") { cut = i + 1; break }
+  }
+  let out = ""
+  let inSpace = false
+  for (let i = 0; i < cut; i++) {
+    const ch = trimmed[i]
+    const space = ch === " " || ch === "\t" || ch === "\n" || ch === "\r"
+    if (space) { if (!inSpace) out += " "; inSpace = true } else { out += ch; inSpace = false }
+  }
   return out.length > 400 ? `${out.slice(0, 397)}…` : out
 }
 
@@ -1163,6 +1352,10 @@ function renderReasonMix(f: UnifiedHealthReport["freshness"]): string {
 
 export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   const c = report.counts, f = report.freshness, e = report.embeddings
+  // brain_index_status counters describe the last index RUN. When they are
+  // smaller than the file count the index holds, label them so the line cannot
+  // be read as "the index has N files" (or as a shortfall of it).
+  const lastRunCountersOnly = report.indexStatus.totalFilesDiscovered !== null && report.indexStatus.totalFilesDiscovered < report.counts.files
   // M64.D: when a scoped question was asked, the SCOPED answer comes FIRST and
   // everything after it is labelled project-wide. A caller reading top-down
   // cannot reach a 3-file verdict and then read `files=1654` as part of it.
@@ -1172,7 +1365,12 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     for (const p of report.pathChecks) {
       const bare = p.status === "gone" || p.status === "not-indexed" || p.status === "absent"
       const detail = [bare ? null : `${p.symbols} symbol(s)`, p.language, p.verifiedBy ? `verified by ${p.verifiedBy}` : null].filter(Boolean).join(", ")
-      pre.push(`  ${p.status.padEnd(12)} ${p.path}${detail ? ` — ${detail}` : ""}${bare ? ` — ${p.reason}` : ""}`)
+      // "gone" is documented as "indexed but deleted from disk". An unreadable
+      // file still exists, so the state word is qualified rather than printed as
+      // a deletion — the two need different fixes (a refresh vs. permissions).
+      const stateWord = p.status === "gone" && p.reason === "unreadable" ? "gone?" : p.status
+      const goneNote = p.status === "gone" && p.reason === "unreadable" ? " (exists but could not be read — not deleted)" : ""
+      pre.push(`  ${stateWord.padEnd(12)} ${p.path}${detail ? ` — ${detail}` : ""}${bare ? ` — ${p.reason}${goneNote}` : ""}`)
     }
     if (report.scope.refused.length) pre.push(`  REFUSED (not checked): ${report.scope.refused.map((r) => `${r.requested} — ${r.reason}`).join("; ")}`)
     pre.push("")
@@ -1214,7 +1412,7 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // the line cannot be read as a healthy zero next to files=1654.
     // M64.P1: a recorded shortfall prints as INCOMPLETE, so a half-built index
     // cannot be skimmed as a normal one.
-    `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"}/${report.indexStatus.totalFilesDiscovered ?? "unrecorded"}${report.indexStatus.isIncomplete ? ` — INCOMPLETE, ${report.indexStatus.indexShortfall} file(s) found by the walk were never written` : ""} status=${report.indexStatus.status ?? "unrecorded"} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
+    `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"}/${report.indexStatus.totalFilesDiscovered ?? "unrecorded"}${report.indexStatus.isIncomplete ? ` — INCOMPLETE, ${report.indexStatus.indexShortfall} file(s) found by the walk were never written` : ""}${lastRunCountersOnly ? " (last-run counters, not an index total)" : ""} status=${report.indexStatus.status ?? "unrecorded"} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
     // The last INDEX RUN, labelled as such: this is not the cost of the call you
     // just made, and the two were previously on adjacent lines under a bare
     // `perf:` with nothing to say which was which.
@@ -1284,7 +1482,7 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     if (report.embeddingChain) {
       lines.push(`embedding chain: ${report.embeddingChain.disabled ? "disabled (BB_EMBEDDING_DISABLED) — local only" : report.embeddingChain.remoteReady ? "remote ready" : "remote NOT usable"}`)
       for (const line of renderChainSummary(report.embeddingChain)) lines.push(line)
-      for (const p of report.embeddingChain.problems.filter((x) => !/^No embedding provider is configured/.test(x.message))) {
+      for (const p of report.embeddingChain.problems.filter((x) => !x.message.startsWith("No embedding provider is configured"))) {
         lines.push(`embedding problem: ${p.envVar ? `${p.envVar}: ` : ""}${p.message}`)
       }
       for (const f of report.embeddingChain.observedFailures) {

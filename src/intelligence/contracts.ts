@@ -390,11 +390,14 @@ export interface GraphTraversalOptions {
   /** Bound on the SIZE OF THE ANSWER, not of one query (default 1000, max
    *  5000). Reaching it is declared as `total-edge-limit`. */
   maxEdges?: number
-  /** Wall-clock budget for the whole walk, in milliseconds (default 2,000;
-   *  0 disables it). A node is not a unit of work: the per-node caller query
-   *  is priced by the reproducible ORDER BY, which SQLite applies BEFORE the
-   *  LIMIT, so `edgeLimit` does not bound it. When this fires the walk stops
-   *  and `summary.truncated` is true with reason
+  /** Wall-clock budget for the whole walk, in milliseconds. The ENGINE applies
+   *  no clock bound unless a caller asks for one (`0`/omitted = no bound); tool
+   *  surfaces that need a ceiling declare it themselves and publish the value on
+   *  the answer (bb_analyze passes 2,000 and reports it as `summary.timeBudgetMs`;
+   *  bb_graph takes it from `timeBudgetMs`). A node is not a unit of work: the
+   *  per-node caller query is priced by the reproducible ORDER BY, which SQLite
+   *  applies BEFORE the LIMIT, so `edgeLimit` does not bound it. When this fires
+   *  the walk stops and `summary.truncated` is true with reason
    *  "walk-time-budget-exhausted". */
   timeBudgetMs?: number
 }
@@ -659,6 +662,13 @@ export interface ComplexityReport {
    *  `scope` reads `"file"` for both, which reads as ONE file: measured,
    *  `target: "src/wide"` reported `scope: "file"` with `filesInScope: 68`. */
   scopeMatch?: "exact-file" | "directory-prefix"
+  /** How many breakdown rows THIS answer returned, and whether the list was cut.
+   *  `breakdown` is capped at the 20 highest-complexity symbols and `symbolCount`
+   *  states the population, so both fields are required for a short list not to
+   *  read as the whole set (measured: symbolCount 206, breakdown 20). Optional so
+   *  a hand-built DTO from an older consumer still type-checks. */
+  breakdownReturned?: number
+  breakdownTruncated?: boolean
   /** Which relationship types `metrics.couplingEdges` counted. `exports` and
    *  `contains` are index bookkeeping; counting them inflated the number by
    *  1.20x on bb's own src and 2.24x on a small corpus. */
@@ -945,6 +955,22 @@ export interface TestImpactReport {
   indirectTests: Array<{ testSymbol: string; testFile: string; depth: number; relationshipType: string; evidence: TestEvidenceKind }>
   affectedTestFiles: string[]
   truncated: boolean
+  /** What the walk returned, against what it found, and WHICH bound fired.
+   *  This mode refuses `limit`, so without this object `truncated: true` named no
+   *  bound at all (measured on the reference index: truncated with 0 rows and no
+   *  explanation). `timeBudgetMs`/`depthCap` are declared limits; `returned` is
+   *  `directTests.length + indirectTests.length` and `total` is the set the walk
+   *  produced before any cap. Optional for compatibility. */
+  summary?: {
+    returned: number
+    total: number
+    truncated: boolean
+    truncationReason: string | null
+    timeBudgetMs: number
+    timeBudgetExhausted: boolean
+    depthCap: number
+  }
+  truncationReason?: string | null
   provenance: EvidenceProvenance
   // Runtime coverage is a SEPARATE field; only populated from a real artifact.
   runtimeCoverage: { available: false } | { available: true; percent: number; source: string }
@@ -1015,6 +1041,15 @@ export interface TestQualityReport {
     filesWithContent: number
     filesUnknown: number
     unsupportedDimensionCount: number
+    /** Rows this answer returned, the population they were drawn from, and
+     *  whether the list was cut. `limit` bounds the files analysed AND the files
+     *  returned; before these fields existed the list was unfiltered (measured:
+     *  `limit: 1` answered 3 rows) and a page was indistinguishable from the
+     *  whole corpus. Optional for compatibility — the shipped engine always sets
+     *  them. */
+    returned?: number
+    totalFiles?: number
+    truncated?: boolean
   }
 }
 

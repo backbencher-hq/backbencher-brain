@@ -108,7 +108,11 @@ const dropAllTempDirs = () => {
 process.once("exit", dropAllTempDirs)
 
 const COMPONENT = join(ROOT, "src", "lsp", "cross_language_hover.ts")
-const HANDLERS = join(ROOT, "src", "mcp", "tool-handlers.ts")
+/** The tool's OWN handler module. The module split moved this code out of the
+ *  2,892-line src/mcp/tool-handlers.ts; a gate that still reads the assembler
+ *  finds no handler anchors, skips every handler mutant and reports success —
+ *  which is exactly what it did for six mutants before this path was corrected. */
+const HANDLERS = join(ROOT, "src", "mcp", "tools", "bb_cross_language", "handler.ts")
 const RESULTS_DIR = join(ROOT, "validation/m63/results")
 const EVIDENCE = "CL1.json"
 
@@ -324,8 +328,18 @@ async function main(): Promise<void> {
     // alone, which made every owner with member rows fail — the check was
     // detecting the fix, not a defect.
     check(`CL1 B: every stored row is reported — ${name}`,
-      result.parsed?.pairCount === totalPairable && result.parsed?.ownFactCount === ownPairable.length && result.parsed?.memberFactCount === memPairable.length,
-      `tool(pair/own/member)=${result.parsed?.pairCount}/${result.parsed?.ownFactCount}/${result.parsed?.memberFactCount} independent=${totalPairable}/${ownPairable.length}/${memPairable.length} copies=${truth.copies.length}`)
+      result.parsed?.factCount === totalPairable && result.parsed?.ownFactCount === ownPairable.length && result.parsed?.memberFactCount === memPairable.length,
+      `tool(fact/own/member)=${result.parsed?.factCount}/${result.parsed?.ownFactCount}/${result.parsed?.memberFactCount} independent=${totalPairable}/${ownPairable.length}/${memPairable.length} copies=${truth.copies.length}`)
+    // pairCount is DISTINCT language pairs, independently derived from the rows the
+    // tool does not read. A count of facts is factCount above; these are different
+    // numbers for any name whose rows share a pair, and the field name must mean it.
+    const expectedPairs = new Set<string>([
+      ...ownPairable.map((r) => `${r.selfLang} → ${r.otherLang}`),
+      ...memPairable.map((r) => `${r.memberLang} → ${r.otherLang}`),
+    ])
+    check(`CL1 B1: pairCount is the DISTINCT language pairs in the answer — ${name}`,
+      result.parsed?.pairCount === expectedPairs.size,
+      `tool=${result.parsed?.pairCount} independent=${expectedPairs.size} facts=${result.parsed?.factCount}`)
     check(`CL1 B2: the declared total equals the independent total — ${name}`,
       result.parsed?.totalCountIfKnown === totalPairable,
       `tool=${result.parsed?.totalCountIfKnown} independent=${totalPairable}`)
@@ -333,9 +347,13 @@ async function main(): Promise<void> {
     // C: absence means THE NAME IS SILENT — neither the copies nor their
     // members. Before CL2 this only knew about own rows, so the gate could not
     // have caught the defect that motivated CL2 at all.
+    // The law: absence is declared only when neither the copies nor their direct
+    // members hold a STORED row. A row that exists but cannot name a pair is
+    // unpairableRowCount + pairlessRowNote, never absence. So the independent row
+    // count is the oracle, not the pairable count.
     check(`CL1 C: absence is never false — ${name}`,
-      result.parsed?.declaredAbsent !== true || totalPairable === 0,
-      `declaredAbsent=${result.parsed?.declaredAbsent} independentPairableRows=${totalPairable}`)
+      result.parsed?.declaredAbsent !== true || (truth.rows.length + truth.memberRows.length) === 0,
+      `declaredAbsent=${result.parsed?.declaredAbsent} independentRows=${truth.rows.length + truth.memberRows.length} pairable=${totalPairable}`)
     check(`CL1 A2: copy count matches the index — ${name}`, result.parsed?.copyCount === truth.copies.length,
       `tool=${result.parsed?.copyCount} independent=${truth.copies.length}`)
 
@@ -371,6 +389,24 @@ async function main(): Promise<void> {
     }
     check(`CL1 I: every member fact is marked owner-cascade and names its member — ${name}`, markOk, `memberFacts=${memberFacts.length}`)
     check(`CL1 I2: every claimed member is really a member of a copy — ${name}`, memberReal, `memberFacts=${memberFacts.length} realMembers=${truth.memberIds.size}`)
+    // The fact-shape invariant: `pair` is a pure function of the fact's own ends, so
+    // any consumer can re-derive it. A member fact's `self` is the MEMBER the row
+    // names and `owner` names the copy it was attributed through; `matchedMember`
+    // mirrors `self`. This check exists because the old shape put the OWNER in
+    // `self` while deriving `pair` from the member's file, so a fact could say
+    // self.language=kotlin and pair=typescript → python at the same time.
+    let pairConsistent = true
+    let memberShape = true
+    for (const f of [...facts, ...memberFacts]) {
+      if (typeof f.pair === "string" && f.pair !== `${f.self?.language} → ${f.other?.language}`) pairConsistent = false
+    }
+    for (const f of memberFacts) {
+      if (JSON.stringify(f.matchedMember) !== JSON.stringify(f.self)) memberShape = false
+      if (!f.owner || typeof f.owner.symbol !== "string") memberShape = false
+      if (typeof f.matchedMemberId !== "string") memberShape = false
+    }
+    check(`CL1 I4: every fact's pair is recomputable from its own self/other ends — ${name}`, pairConsistent, `facts=${facts.length} memberFacts=${memberFacts.length}`)
+    check(`CL1 I5: a member fact names the member as self and the copy as owner, with matchedMember mirroring self — ${name}`, memberShape, `memberFacts=${memberFacts.length}`)
     check(`CL1 I3: memberCount matches the distinct members the truth has — ${name}`,
       // Compared against the TRUTH, not against the members that survived the
       // limit: `memberCount` describes the whole answer while the sample
@@ -508,7 +544,12 @@ async function main(): Promise<void> {
       check("CL1 S1: the seeded unpairable row EXISTS (otherwise the check is vacuous)", oracle?.n === 1, `oracle=${oracle?.n}`)
       check("CL1 S1: unpairableRowCount counts it", p.unpairableRowCount === 1, `tool=${p.unpairableRowCount}`)
       check("CL1 S1: no fact is emitted for a row that cannot name a pair", p.pairCount === 0, `pairCount=${p.pairCount}`)
-      check("CL1 S1: and it is a declared absence, not a silence", p.declaredAbsent === true, `declaredAbsent=${p.declaredAbsent}`)
+      // A stored row EXISTS. Absence is a property of the store, so this state must
+      // report declaredAbsent=false and explain the empty fact set with the counted
+      // reason instead — the answer here used to claim "no stored cross-language rows
+      // anywhere in this project" while storedRowCount said 1 in the same envelope.
+      check("CL1 S1: absence is NOT declared when a stored row exists", p.declaredAbsent === false, `declaredAbsent=${p.declaredAbsent}`)
+      check("CL1 S1: the empty fact set names its counted reason", typeof p.pairlessRowNote === "string" && /unpairable/i.test(String(p.pairlessRowNote)), `pairlessRowNote=${String(p.pairlessRowNote).slice(0, 90)}`)
       check("CL1 S1: storedRowCount still counts the row, so nothing is silently dropped",
         p.storedRowCount === 1, `storedRowCount=${p.storedRowCount}`)
     }
@@ -518,7 +559,7 @@ async function main(): Promise<void> {
         const r: any = await (seedHandlers as any).bb_cross_language({ symbol: "seedTwin" }, seededCtx as any)
         return JSON.parse(r.content[0].text)
       })
-      check("CL1 S2: the seeded same-named cross-language row is emitted exactly once", p.pairCount === 1, `pairCount=${p.pairCount}`)
+      check("CL1 S2: the seeded same-named cross-language row is emitted exactly once", p.factCount === 1, `factCount=${p.factCount}`)
       check("CL1 S2: the second match is counted as collapsed, not dropped silently", p.collapsedRowCount === 1, `collapsed=${p.collapsedRowCount}`)
       const rowIds = new Set((p.facts ?? []).map((f: any) => f.rowId))
       check("CL1 S2: the row appears once in the facts, not twice", rowIds.size === (p.facts ?? []).length, `facts=${(p.facts ?? []).length} distinct=${rowIds.size}`)
@@ -541,8 +582,8 @@ async function main(): Promise<void> {
       const full = await call("bb_cross_language", { symbol: hub.name })
       const total = full.parsed?.totalCountIfKnown
       const capped = await call("bb_cross_language", { symbol: hub.name, limit: 5 })
-      check("CL1 F: the hub declares its true total", typeof total === "number" && total >= capped.parsed?.pairCount, `total=${total}`)
-      check("CL1 F2: limit is honoured", capped.parsed?.pairCount === 5, `pairCount=${capped.parsed?.pairCount}`)
+      check("CL1 F: the hub declares its true total", typeof total === "number" && total >= capped.parsed?.factCount, `total=${total}`)
+      check("CL1 F2: limit is honoured", capped.parsed?.factCount === 5, `factCount=${capped.parsed?.factCount}`)
       check("CL1 F3: truncation is first-class (never silent)", capped.parsed?.truncated === true && typeof capped.parsed?.truncationReason === "string",
         `truncated=${capped.parsed?.truncated} reason=${String(capped.parsed?.truncationReason).slice(0, 80)}`)
       check("CL1 F4: truncation means the total exceeds the cap", total > 5, `total=${total}`)
@@ -555,8 +596,8 @@ async function main(): Promise<void> {
       check("CL1 F7: limit 0 is refused", zero.isError === true, zero.text.slice(0, 120))
       // The measured payload bound, stated as a fact.
       const bytes = full.text.length
-      check("CL1 F8: the hub answer is bounded and declares what it dropped", bytes < 400_000 && full.parsed?.truncated === (full.parsed?.pairCount < total),
-        `bytes=${bytes} shown=${full.parsed?.pairCount} total=${total} truncated=${full.parsed?.truncated}`)
+      check("CL1 F8: the hub answer is bounded and declares what it dropped", bytes < 400_000 && full.parsed?.truncated === (full.parsed?.factCount < total),
+        `bytes=${bytes} shown=${full.parsed?.factCount} total=${total} truncated=${full.parsed?.truncated}`)
     }
   }
 
@@ -743,7 +784,8 @@ async function main(): Promise<void> {
         const full = await gapAsk("memberTrunc", "kOwner")
         check("CL1 K: the fixture is the shape that only the member path can truncate", full.ownFactCount === 0 && full.memberFactCount === 6, `own=${full.ownFactCount} member=${full.memberFactCount}`)
         const p = await gapAsk("memberTrunc", "kOwner", { limit: 4 })
-        check("CL1 K: the member section honours the budget", p.memberFactCount === 4 && p.pairCount === 4, `member=${p.memberFactCount} pair=${p.pairCount}`)
+        check("CL1 K: the member section honours the budget", p.memberFactCount === 4 && p.factCount === 4, `member=${p.memberFactCount} fact=${p.factCount}`)
+        check("CL1 K: pairCount is the DISTINCT pair set, so six facts of one pair are one pair", p.pairCount === 1, `pair=${p.pairCount}`)
         check("CL1 K: a member-driven truncation is declared, not silent", p.truncated === true, `truncated=${p.truncated}`)
         check("CL1 K: and the true total is the whole union, not the shown part", p.totalCountIfKnown === 6, `total=${p.totalCountIfKnown}`)
         check("CL1 K: the reason attributes the drop to the member section", /on its members/.test(String(p.truncationReason)), String(p.truncationReason).slice(0, 90))
@@ -774,9 +816,10 @@ async function main(): Promise<void> {
         check("CL1 L: at limit 1 the OWN row wins the budget (a member's edge never crowds out the symbol's own)", at1.ownFactCount === 1 && at1.memberFactCount === 0, `own=${at1.ownFactCount} member=${at1.memberFactCount}`)
         check("CL1 L: and the one fact shown is the owner's, named as the self side", (at1.facts?.[0]?.self?.symbol) === "pTarget", `self=${at1.facts?.[0]?.self?.symbol}`)
         check("CL1 L: the dropped member row is declared, not vanished", at1.truncated === true && at1.totalCountIfKnown === 3, `truncated=${at1.truncated} total=${at1.totalCountIfKnown}`)
-        check("CL1 L: at limit 2 the member row appears and truncation is still declared", at2.pairCount === 2 && at2.memberFactCount === 1 && at2.truncated === true, `pair=${at2.pairCount} member=${at2.memberFactCount}`)
-        check("CL1 L: at limit 4 nothing is dropped and nothing claims truncation", at4.pairCount === 3 && at4.truncated === false, `pair=${at4.pairCount} truncated=${at4.truncated}`)
-        check("CL1 L: the answer is never larger than the budget at any limit", [at1, at2, at4].every((r: any) => r.pairCount === Math.min(r.limit, r.totalCountIfKnown)), [at1, at2, at4].map((r: any) => `${r.limit}:${r.pairCount}/${r.totalCountIfKnown}`).join(" "))
+        check("CL1 L: at limit 2 the member row appears and truncation is still declared", at2.factCount === 2 && at2.memberFactCount === 1 && at2.truncated === true, `fact=${at2.factCount} member=${at2.memberFactCount}`)
+        check("CL1 L: at limit 4 nothing is dropped and nothing claims truncation", at4.factCount === 3 && at4.truncated === false, `fact=${at4.factCount} truncated=${at4.truncated}`)
+        check("CL1 L: the shown FACT count is never larger than the budget at any limit", [at1, at2, at4].every((r: any) => r.factCount === Math.min(r.limit, r.totalCountIfKnown)), [at1, at2, at4].map((r: any) => `${r.limit}:${r.factCount}/${r.totalCountIfKnown}`).join(" "))
+        check("CL1 L: while pairCount stays the DISTINCT pair set (one pair per section here)", at4.pairCount === 2 && at1.pairCount === 1, `at1=${at1.pairCount} at4=${at4.pairCount}`)
       }
 
       // ── M: the absence note's SCOPE (M63.CL4) ────────────────────────────
@@ -917,16 +960,28 @@ async function main(): Promise<void> {
       {
         // CONTROL — the store really does hold a depth-2 row the cascade cannot
         // reach, counted independently of the component.
+        // The oracle counts BOTH directions. It used to join the descendant only as
+        // r.target_symbol_id, which is the same blind spot the component had — an
+        // oracle that shares the defect cannot see it.
         const depth2 = (rawN.prepare(
-          `SELECT COUNT(*) AS n FROM brain_relationship r JOIN brain_symbol s ON s.id = r.target_symbol_id
-           JOIN brain_symbol c ON c.id = s.owner_symbol_id
-           WHERE r.project_id = ? AND r.is_cross_language = 1 AND c.owner_symbol_id IS NOT NULL`,
-        ).get(PID_N) as any).n
+          `WITH RECURSIVE down(id, depth) AS (
+             SELECT m.id, 1 FROM brain_symbol m JOIN brain_symbol o ON o.id = m.owner_symbol_id
+             WHERE o.project_id = ? AND o.name IN ('nOwner', 'nQuiet')
+             UNION ALL SELECT m.id, down.depth + 1 FROM brain_symbol m JOIN down ON m.owner_symbol_id = down.id
+           )
+           SELECT COUNT(*) AS n FROM (
+             SELECT r.id FROM brain_relationship r JOIN down ON down.id = r.target_symbol_id
+             WHERE r.project_id = ? AND r.is_cross_language = 1 AND down.depth >= 2
+             UNION
+             SELECT r.id FROM brain_relationship r JOIN down ON down.id = r.source_symbol_id
+             WHERE r.project_id = ? AND r.is_cross_language = 1 AND down.depth >= 2
+           )`,
+        ).get(PID_N, PID_N, PID_N) as any).n
         check("CL1 O: the fixture really holds a depth-2 cross-language row (control)", depth2 === 1, `depth2Rows=${depth2}`)
 
         const owner = await cl5Ask(PID_N, "nOwner")
         check("CL1 O: the deeper row is COUNTED and declared", owner.p.deeperDescendantRowCount === 1, `declared=${owner.p.deeperDescendantRowCount}`)
-        check("CL1 O: and the note names what it is — the descendants' edges, not the owner's", /members-of-members/i.test(String(owner.p.deeperDescendantNote ?? "")), String(owner.p.deeperDescendantNote ?? "").slice(0, 90))
+        check("CL1 O: and the note names what it is — the descendants' edges, not the owner's", /descendants/i.test(String(owner.p.deeperDescendantNote ?? "")), String(owner.p.deeperDescendantNote ?? "").slice(0, 90))
         // THE BOUNDARY. CL2: a member's edges are the member's, never the owner's.
         // Emitting the grandchild's row as the owner's fact is the laundering M7
         // catches, so this asserts it did NOT happen.
@@ -949,6 +1004,23 @@ async function main(): Promise<void> {
         check("CL1 O: while a genuinely unconnected symbol still gets the plain note",
           (await cl5Ask(PID_N, "nOwner")).p.declaredAbsent === false ||
           /no stored cross-language rows/.test(String(quiet.p.absenceNote ?? "")), "sanity")
+
+        // THE OTHER DIRECTION. A descendant that is the SOURCE of a cross-language
+        // row is as much a stored row about that descendant as one it targets, and
+        // counting only the target side answered 0 for this shape while the store
+        // held the row — which made the absence note claim there were no deeper rows.
+        SFile(rawN, PID_N, "n-out-owner", "outOwner.ts", "typescript")
+        SFile(rawN, PID_N, "n-out-child", "outChild.clj", "clojure")
+        SFile(rawN, PID_N, "n-out-grand", "outGrand.kt", "kotlin")
+        SFile(rawN, PID_N, "n-out-other", "outOther.java", "java")
+        SSym(rawN, PID_N, "n-out-owner-s", "n-out-owner", "nOutOwner")
+        SSym(rawN, PID_N, "n-out-child-s", "n-out-child", "nOutChild", "n-out-owner-s")
+        SSym(rawN, PID_N, "n-out-grand-s", "n-out-grand", "nOutGrand", "n-out-child-s")
+        SSym(rawN, PID_N, "n-out-other-s", "n-out-other", "nOutOther")
+        SRel(rawN, PID_N, "n-out-r", "n-out-grand-s", "n-out-other-s")
+        const outgoing = await cl5Ask(PID_N, "nOutOwner")
+        check("CL1 O2: a deeper row whose DESCENDANT is the source is counted too", outgoing.p.deeperDescendantRowCount === 1, `declared=${outgoing.p.deeperDescendantRowCount}`)
+        check("CL1 O2: and it is not cascaded into the owner's facts", (outgoing.p.memberFacts ?? []).length === 0, `memberFacts=${(outgoing.p.memberFacts ?? []).length}`)
       }
     } finally {
       process.env.BB_DATA_DIR = savedCl5
@@ -1009,8 +1081,8 @@ async function main(): Promise<void> {
     },
     {
       id: "M2", name: "false absence", file: "handler",
-      from: "      declaredAbsent: shownCount === 0,",
-      to: "      declaredAbsent: shownCount < 3,",
+      from: "  const declaredAbsent = result.storedRowCount === 0",
+      to: "  const declaredAbsent = result.storedRowCount < 3",
       probe: async (m, r, pid) => {
         const candidates = await pickAmbiguousWithSingleRow(r, pid)
         if (candidates.length === 0) throw new Error("M2 UNVERIFIABLE: no ambiguous name with exactly one stored cross-language row")
@@ -1027,7 +1099,7 @@ async function main(): Promise<void> {
           const out = await hs.bb_cross_language({ symbol }, { projectId: pid, projectPath: "." } as any)
           const p = JSON.parse(out.content[0].text)
           // 1 or 2 facts, and the mutation has declared absence for it.
-          if (p.pairCount > 0 && p.pairCount < 3 && p.declaredAbsent === true) return true
+          if (p.factCount > 0 && p.factCount < 3 && p.declaredAbsent === true) return true
         }
         throw new Error(`M2 UNVERIFIABLE: none of ${candidates.length} candidates had 1-2 facts, so the mutation is a no-op on all of them`)
       },
@@ -1044,19 +1116,19 @@ async function main(): Promise<void> {
     },
     {
       id: "M4", name: "no bound (limit ignored, truncation undeclared)", file: "handler",
-      from: "    const ownShown = result.facts.slice(0, limit)",
-      to: "    const ownShown = result.facts.slice(0, Number.MAX_SAFE_INTEGER)",
+      from: "  const ownShown = result.facts.slice(0, limit)",
+      to: "  const ownShown = result.facts.slice(0, Number.MAX_SAFE_INTEGER)",
       probe: async (m, r, pid) => {
         const hub = await pickHub(r, pid)
         const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: hub, limit: 5 }, { projectId: pid, projectPath: "." } as any)
         const parsed = JSON.parse(out.content[0].text)
-        return parsed.pairCount > 5 || parsed.truncated !== true
+        return parsed.factCount > 5 || parsed.truncated !== true
       },
     },
     {
       id: "M5", name: "cross-project leak (row filter dropped)", file: "component-via-handler",
-      from: "WHERE r.project_id = ? AND r.is_cross_language = 1 AND ts.name = ?",
-      to: "WHERE r.is_cross_language = 1 AND ts.name = ?",
+      from: "WHERE ts.name = ? AND r.project_id = ?\nUNION ALL",
+      to: "WHERE ts.name = ?\nUNION ALL",
       probe: async (m, r, pid) => {
         // Plant a row owned by ANOTHER project whose target is this project's
         // symbol. A handler that does not filter the row by project returns it.
@@ -1084,7 +1156,7 @@ async function main(): Promise<void> {
       // never exercised is a comment, so each is exercised and each is broken.
       id: "M11", name: "unpairable rule removed (a row with no language gets a fabricated pair)", file: "component-via-handler",
       from: "  if (pair === null) { counters.unpairable++; return null }",
-      to: "  if (pair === null) { counters.unpairable++; const fab = { ...row } as any; fab.self_language = fab.self_language ?? \'unknown\'; fab.other_language = fab.other_language ?? \'unknown\'; return factFromRow(fab, match, { unpairable: 0 }, matchedMember, pairFromLanguage) }",
+      to: "  if (pair === null) { counters.unpairable++; return { self: { symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line }, direction: row.direction, other: { symbol: row.other_name, file: row.other_file, language: row.other_language, line: row.other_line }, pair: \"unknown → unknown\", bridge: UNNAMED_BRIDGE, tier: \"inferred\", confidence: row.confidence ?? 0, relationshipType: row.relationship_type, rowId: row.row_id, match } }",
       probe: async (m) => {
         const name = seededNameFor("unpairable")
         if (!name) throw new Error("M11 UNVERIFIABLE: the seeded unpairable state is missing")
@@ -1163,8 +1235,8 @@ async function main(): Promise<void> {
       // single occurrence. A mutant whose reach depends on which copy of its anchor
       // the harness finds is not a mutant, so the wiring check now asserts
       // uniqueness for every anchor.
-      from: "      absenceNote: shownCount === 0\n        ? (result.deeperDescendantRowCount > 0\n            ? `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}' or for any of its DIRECT members — but ${result.deeperDescendantRowCount} row(s) sit on members-of-members and deeper (deeperDescendantRowCount), which are the descendants' edges and are deliberately not cascaded. Absence at this level declared, never guessed; this is not the same as the symbol being unconnected.`\n            : `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}', for any of its members, or on any member-of-member and deeper — absence declared, never guessed`)\n        : null,",
-      to: "      absenceNote: shownCount === 0\n        ? (result.deeperDescendantRowCount > 0\n            ? `no stored cross-language rows anywhere in the index for '${symbol}' or for any of its DIRECT members — but ${result.deeperDescendantRowCount} row(s) sit on members-of-members and deeper (deeperDescendantRowCount), which are the descendants' edges and are deliberately not cascaded. Absence at this level declared, never guessed; this is not the same as the symbol being unconnected.`\n            : `no stored cross-language rows anywhere in the index for '${symbol}', for any of its members, or on any member-of-member and deeper — absence declared, never guessed`)\n        : null,",
+      from: "          : `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}', for any of its members, or on any deeper descendant — absence declared, never guessed`)",
+      to: "          : `no stored cross-language rows anywhere in the index for '${symbol}', for any of its members, or on any deeper descendant — absence declared, never guessed`)",
       probe: async (m) => {
         const seed = await seedScopePair()
         // `return false` here reports SURVIVED, which is indistinguishable from a
@@ -1259,15 +1331,15 @@ async function main(): Promise<void> {
     },
     {
       id: "M12", name: "collapse rule removed (a same-named cross-language row is emitted twice)", file: "component-via-handler",
-      from: "    if (seenRows.has(row.row_id)) { collapsed++; continue }\n    seenRows.add(row.row_id)\n\n    const fact = factFromRow(row, \"exact\", counters)",
-      to: "    seenRows.add(row.row_id)\n\n    const fact = factFromRow(row, \"exact\", counters)",
+      from: "    if (seenRows.has(row.row_id)) { collapsed++; continue }\n    seenRows.add(row.row_id)\n    const fact = factFromRow(row, \"exact\", counters)",
+      to: "    seenRows.add(row.row_id)\n    const fact = factFromRow(row, \"exact\", counters)",
       probe: async (m) => {
         const name = seededNameFor("collapsed")
         if (!name) throw new Error("M12 UNVERIFIABLE: the seeded same-named cross-language state is missing")
         return withSeeded(async () => {
           const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: name }, seededCtx as any)
           const p = JSON.parse(out.content[0].text)
-          return p.pairCount > 1 || p.collapsedRowCount !== 1
+          return p.factCount > 1 || p.collapsedRowCount !== 1
         })
       },
     },
@@ -1275,8 +1347,8 @@ async function main(): Promise<void> {
       // M63.CL2 — the three ways the member section can lie. Each is caught by a
       // different check, so passing means the checks are independent.
       id: "M7", name: "cascade laundered: member rows absorbed into facts", file: "handler",
-      from: "      facts: ownShown,",
-      to: "      facts: [...ownShown, ...memberShown],",
+      from: "    facts: ownShown,",
+      to: "    facts: [...ownShown, ...memberShown],",
       probe: async (m, r, pid) => {
         const name = await pickOwnerWithMembers(r, pid)
         // `return false` here would report SURVIVED, which is indistinguishable
@@ -1299,8 +1371,8 @@ async function main(): Promise<void> {
       // where `ownShown.length === 0` and `shownCount === 0` agree — so the mutation
       // was a no-op and the mutant survived while its probe looked sound.
       id: "M8", name: "the pre-CL2 absence rule (own rows only)", file: "handler",
-      from: "      declaredAbsent: shownCount === 0,",
-      to: "      declaredAbsent: ownShown.length === 0,",
+      from: "  const declaredAbsent = result.storedRowCount === 0",
+      to: "  const declaredAbsent = result.facts.length === 0",
       probe: async (m, r, pid) => {
         // Corpus first, seeded fixture second — and the reason is measured, not
         // defensive: the JVM corpus has 72 owners with member rows and none of their
@@ -1324,8 +1396,8 @@ async function main(): Promise<void> {
     },
     {
       id: "M9", name: "cascade reported with no member to check it against", file: "component-via-handler",
-      from: "    }, row.member_language, row.member_id)",
-      to: "    }, row.member_language)",
+      from: "    fact.matchedMemberId = row.self_id",
+      to: "    fact.matchedMemberId = undefined",
       probe: async (m, r, pid) => {
         const name = await pickOwnerWithMembers(r, pid)
         // `return false` here would report SURVIVED, which is indistinguishable
@@ -1339,12 +1411,18 @@ async function main(): Promise<void> {
     },
     {
       id: "M6", name: "pair fabrication where the row has no languages", file: "component-via-handler",
-      from: "  const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()\n    ? `${selfLang} → ${otherLang}`\n    : null",
-      to: "  const pair = `${selfLang ?? 'unknown'} → ${otherLang ?? 'unknown'}`",
-      probe: async (m, r, pid) => {
-        const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: await pickUniqueWithRows(r, pid) }, { projectId: pid, projectPath: "." } as any)
-        const parsed = JSON.parse(out.content[0].text)
-        return (parsed.facts ?? []).some((f: any) => typeof f.pair === "string" && f.pair.includes("unknown"))
+      from: "  const pair = row.self_language && row.other_language && row.self_language.toLowerCase() !== row.other_language.toLowerCase()\n    ? `${row.self_language} → ${row.other_language}`\n    : null",
+      to: "  const pair = row.self_language && row.other_language && row.self_language.toLowerCase() !== row.other_language.toLowerCase()\n    ? `${row.self_language} → ${row.other_language}`\n    : \"unknown → unknown\"",
+      probe: async (m) => {
+        // The fabrication is only observable where a row CANNOT name a pair — no
+        // corpus holds one, so the seeded unpairable state is the fixture.
+        const name = seededNameFor("unpairable")
+        if (!name) throw new Error("M6 UNVERIFIABLE: the seeded unpairable state is missing")
+        return withSeeded(async () => {
+          const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: name }, seededCtx as any)
+          const p = JSON.parse(out.content[0].text)
+          return (p.facts ?? []).some((f: any) => typeof f.pair === "string" && f.pair.includes("unknown"))
+        })
       },
     },
   ]
@@ -1542,10 +1620,19 @@ async function main(): Promise<void> {
       raw.prepare("INSERT OR REPLACE INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, bridge_mechanism) VALUES (?,?,?,?,?,?,?,?)")
         .run("q-r", P, "q-gc-s", "q-grand-s", "calls", 0.9, 1, "name-resolution")
       const storeCount = (raw.prepare(
-        `SELECT COUNT(*) AS n FROM brain_relationship r JOIN brain_symbol s ON s.id = r.target_symbol_id
-         JOIN brain_symbol c ON c.id = s.owner_symbol_id
-         WHERE r.is_cross_language = 1 AND c.owner_symbol_id IS NOT NULL`,
-      ).get() as any).n
+        `WITH RECURSIVE down(id, depth) AS (
+           SELECT m.id, 1 FROM brain_symbol m JOIN brain_symbol o ON o.id = m.owner_symbol_id
+           WHERE o.project_id = ? AND o.name = 'm17Owner'
+           UNION ALL SELECT m.id, down.depth + 1 FROM brain_symbol m JOIN down ON m.owner_symbol_id = down.id
+         )
+         SELECT COUNT(*) AS n FROM (
+           SELECT r.id FROM brain_relationship r JOIN down ON down.id = r.target_symbol_id
+           WHERE r.is_cross_language = 1 AND down.depth >= 2
+           UNION
+           SELECT r.id FROM brain_relationship r JOIN down ON down.id = r.source_symbol_id
+           WHERE r.is_cross_language = 1 AND down.depth >= 2
+         )`,
+      ).get(P) as any).n
       return { dir, name: "m17Owner", projectId: P, storeCount }
     } finally { process.env.BB_DATA_DIR = saved }
   }
@@ -1665,7 +1752,12 @@ async function main(): Promise<void> {
       console.log(`  ANCHOR MISS: ${mutant.id} ${mutant.name}`)
       continue
     }
-    const mutatedPath = join(ROOT, "src", mutant.file === "handler" ? "mcp" : "lsp", `__cl1-mutant-${mutant.id}.ts`)
+    const mutatedPath = join(
+      ROOT,
+      "src",
+      mutant.file === "handler" ? join("mcp", "tools", "bb_cross_language") : "lsp",
+      `__cl1-mutant-${mutant.id}.ts`,
+    )
     let src = target.replace(mutant.from, mutant.to)
     // Absolute specifiers so the mutant resolves from wherever it is imported.
     //
@@ -1681,43 +1773,31 @@ async function main(): Promise<void> {
     // numbers this gate reported before — 9/9, 13/13, 14/14 — were the count of
     // import errors, not of observed defects. It was found by auditing how each
     // probe reaches the mutated module, which is the question a red gate never asks.
-    const abs = (p: string) => `file://${join(ROOT, "src", p).replace(/\\/g, "/")}${p ? "" : "/"}`
+    // The entry point every probe calls. The module split moved the handler out of
+    // src/mcp/tool-handlers.ts into src/mcp/tools/bb_cross_language/handler.ts, so a
+    // handler mutant is written BESIDE that module (its ../shared and ../../../… 
+    // imports only resolve from there) and carries this shim, keeping the probes on
+    // the same `createToolHandlers().bb_cross_language` entry they always used.
+    const SHIM = "\nexport function createToolHandlers() { return { bb_cross_language: handler } }\n"
     if (mutant.file === "component-via-handler") {
-      // The mutated COMPONENT goes to its own file, and an UNMUTATED handler is
-      // rewritten to import it. The probe then gets a real `createToolHandlers`
-      // whose component IS the mutation — the only sound way to observe a
-      // component defect that is visible solely in the envelope.
+      // The mutated COMPONENT goes to its own file (src/lsp resolves ./evidence_tier
+      // unchanged), and the HANDLER source is rewritten to import it, so the probe
+      // gets a real handler whose component IS the mutation — the only sound way to
+      // observe a component defect that is visible solely in the envelope.
       const componentPath = join(ROOT, "src", "lsp", `__cl1-mutant-${mutant.id}.ts`)
-      writeFileSync(componentPath, src.replace(/from "\.\/evidence_tier"/g, `from "${abs("lsp/evidence_tier.ts")}"`))
-      const handlerSrc = readFileSync(join(ROOT, "src", "mcp", "tool-handlers.ts"), "utf8")
-      writeFileSync(mutatedPath, handlerSrc
-        .replace(/from "\.\.\/brain\/database"/g, `from "${abs("brain/database.ts")}"`)
-        .replace(/from "\.\.\/lsp\/cross_language_hover"/g, `from "${abs(`lsp/__cl1-mutant-${mutant.id}.ts`)}"`)
-        .replace(/from "\.\/tool-registry"/g, `from "${abs("mcp/tool-registry.ts")}"`)
-        .replace(/from "\.\.\//g, `from "${abs("")}"`))
+      writeFileSync(componentPath, src)
+      const componentSpecifier = "../../../lsp/cross_language_hover"
+      if (!handlerSrc.includes(`from "${componentSpecifier}"`)) {
+        throw new Error(`CL1 harness: the handler no longer imports the component as ${componentSpecifier}`)
+      }
+      src = handlerSrc.replace(
+        `from "${componentSpecifier}"`,
+        `from "${componentPath.replace(/\\/g, "/")}"`,
+      ) + SHIM
     } else if (mutant.file === "handler") {
-      src = src
-        .replace(/from "\.\.\/brain\/database"/g, `from "${abs("brain/database.ts")}"`)
-        .replace(/from "\.\.\/lsp\/cross_language_hover"/g, `from "${abs("lsp/__cl1-mutant-M.ts")}"`)
-        .replace(/from "\.\/tool-registry"/g, `from "${abs("mcp/tool-registry.ts")}"`)
-        .replace(/from "\.\.\//g, `from "${abs("")}`)
-    } else {
-      src = src.replace(/from "\.\/evidence_tier"/g, `from "${abs("lsp/evidence_tier.ts")}"`)
+      src = src + SHIM
     }
-    // The handler mutant must load the COMPONENT mutant, so M3/M5/M6 compose
-    // with M1/M2/M4 instead of silently importing the real component.
-    if (mutant.file === "handler" && !mutant.id.match(/M3|M5|M6/)) {
-      writeFileSync(join(ROOT, "src", "lsp", "__cl1-mutant-M.ts"), componentSrc)
-    }
-    // NOT for component-via-handler: that branch has already written the HANDLER to
-    // `mutatedPath`, and writing `src` here — the mutated component — over it put
-    // the component back. The probe then received a module with no
-    // `createToolHandlers` on it, which is exactly the "m.createToolHandlers is not a
-    // function" that six probes reported. The mutation was never observed, and the
-    // harness was right to call the probe broken rather than bank the throw.
-    if (mutant.file !== "component-via-handler") {
-      writeFileSync(mutatedPath, src)
-    }
+    writeFileSync(mutatedPath, src)
     let detected = false
     let note = ""
     try {
@@ -1749,8 +1829,12 @@ async function main(): Promise<void> {
         : `load/throw: ${message.slice(0, 120)}`
     } finally {
       try { rmSync(mutatedPath, { force: true }) } catch {}
-      if (mutant.file === "handler" && !mutant.id.match(/M3|M5|M6/)) {
-        try { rmSync(join(ROOT, "src", "lsp", "__cl1-mutant-M.ts"), { force: true }) } catch {}
+      // A component-via-handler mutant writes TWO files: the mutated component in
+      // src/lsp and the handler shim that imports it. Leaving the component behind
+      // puts a second copy of the module graph in the tree, where a later run can
+      // import it — the same class of leak the corpus-project snapshot below guards.
+      if (mutant.file === "component-via-handler") {
+        try { rmSync(join(ROOT, "src", "lsp", `__cl1-mutant-${mutant.id}.ts`), { force: true }) } catch {}
       }
     }
     if (detected) { caught++; console.log(`  caught: ${mutant.id} ${mutant.name}`) } else { console.log(`  SURVIVED: ${mutant.id} ${mutant.name}`) }

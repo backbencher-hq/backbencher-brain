@@ -23,6 +23,8 @@ import { execFileSync } from "node:child_process"
 import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
+import { TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
+import { combinedToolSource, toolModuleSourceOf } from "../lib/tool-sources.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
@@ -41,12 +43,16 @@ function check(label: string, condition: boolean, detail = ""): void {
 }
 
 // --- R1: registry invariants -------------------------------------------------
-const registrySrc = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf8")
-const handlersSrc = readFileSync(path.join(ROOT, "src/mcp/tool-handlers.ts"), "utf8")
+// The split moved each tool's descriptor and handler out of the assemblers. The
+// registration checks read the LIVE registry and the real handlers, never a
+// file's text; the source-text checks below read every tool module through the
+// one accessor, so a future module move is a one-line change here.
+const handlersSrc = combinedToolSource()
+const registryNames = new Set(TOOL_DESCRIPTORS.map((descriptor) => descriptor.name))
 
 function checkRegistered(name: string): void {
-  check(`T1: ${name} registered in the tool registry`, registrySrc.includes(`name: "${name}"`))
-  check(`T1: ${name} has a handler`, handlersSrc.includes(`${name}: async`))
+  check(`T1: ${name} registered in the tool registry`, registryNames.has(name))
+  check(`T1: ${name} has a handler`, typeof createToolHandlers()[name] === "function")
 }
 checkRegistered("bb_graph")
 checkRegistered("bb_impact")
@@ -68,9 +74,9 @@ try {
 // readers that the suite is broken when the suite is fine. It now asserts the
 // DECLARED property (the door delegates its rows to the owner module, through
 // whichever entry point that module publishes) rather than one call spelling.
-check("T1: handlers import src/lsp/impact (computeImpact) — no reimplementation", handlersSrc.includes('from "../lsp/impact"') && handlersSrc.includes("computeImpact("))
+check("T1: handlers import src/lsp/impact (computeImpact) — no reimplementation", handlersSrc.includes('from "../../lsp/impact"') && handlersSrc.includes("computeImpact("))
 const crossLanguageOwnerCalls = [...handlersSrc.matchAll(/\b(storedCrossLanguageRows|storedCrossLanguageFactsByName|factsFromRows|tierForCrossLanguageEdge)\b/g)]
-check("T1: handlers import src/lsp/cross_language_hover and call it — no reimplementation", handlersSrc.includes('from "../lsp/cross_language_hover"') && crossLanguageOwnerCalls.length > 0, `owner entry points used: ${[...new Set(crossLanguageOwnerCalls.map((m) => m[1]))].join(", ") || "none"}`)
+check("T1: handlers import src/lsp/cross_language_hover and call it — no reimplementation", handlersSrc.includes('from "../../../lsp/cross_language_hover"') && crossLanguageOwnerCalls.length > 0, `owner entry points used: ${[...new Set(crossLanguageOwnerCalls.map((m) => m[1]))].join(", ") || "none"}`)
 
 async function main(): Promise<void> {
   let currentCommit = "unknown"
@@ -145,19 +151,20 @@ async function main(): Promise<void> {
   // the suite cannot tell the difference.
   const mutateAndProbe = async (name: string, from: string, to: string, probe: (handlers: any) => Promise<boolean>): Promise<void> => {
     mutantsTotal++
-    if (!handlersSrc.includes(from)) {
+    const target = [...registryNames].find((tool) => toolModuleSourceOf(tool).includes(from))
+    if (target === undefined) {
       mutantRecords.push({ name, caught: false })
       console.log(`  WARN: mutant anchor not found: ${name}`)
       return
     }
-    // Written BESIDE the original (src/mcp/) so the mutant's relative imports
-    // (../lsp/impact, ./tool-registry, ...) resolve — a crash-on-import would
-    // otherwise fake a catch. Unique name per mutant; removed in finally.
-    const mutatedPath = path.join(ROOT, "src", "mcp", `__mutant-handlers-${mutantsTotal}.ts`)
-    writeFileSync(mutatedPath, handlersSrc.replace(from, to))
+    // Written BESIDE the tool's own handler so the module's `../shared` and
+    // `../../../` imports resolve; the mutant module's entry point is the named
+    // `handler` export, so the mutant map is the real map with one entry replaced.
+    const mutatedPath = path.join(ROOT, "src", "mcp", "tools", target, `__mutant-${mutantsTotal}.ts`)
+    writeFileSync(mutatedPath, toolModuleSourceOf(target).replace(from, to))
     try {
-      const mutantMod = await import(mutatedPath)
-      const mutantHandlers = (mutantMod as any).default ?? (mutantMod as any).createToolHandlers?.() ?? mutantMod
+      const mutantMod = (await import(`${mutatedPath}?m=${Date.now()}`)) as { handler: (args: any, ctx: any) => Promise<any> }
+      const mutantHandlers = { ...createToolHandlers(), [target]: mutantMod.handler }
       const caught = await probe(mutantHandlers)
       mutantRecords.push({ name, caught })
       if (caught) mutantsCaught++
@@ -169,7 +176,6 @@ async function main(): Promise<void> {
       mutantsCaught++
     } finally {
       rmSync(mutatedPath, { force: true })
-      void base
     }
   }
   // M1: the impact handler silently returns an empty set on unknown symbols

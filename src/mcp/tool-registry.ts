@@ -1,434 +1,54 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the canonical public MCP tool registry: assembles the sixteen descriptors and derives the executable contract.
+// WHICH TOOL IT SERVES — all sixteen public tools (the MCP server, CLI, unit tests and docs generator all read this file).
+// WHERE ITS EVIDENCE LIVES — docs/data/public-tools.json, docs/tools/*.md, website/src/data/tools.generated.ts, gates script/verify-public-surface.ts and script/verify-tool-registry.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/<tool>/descriptor.ts, src/mcp/tools/types.ts, script/verify-tool-docs.ts.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
+//   read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import type { ToolMutability } from "../contracts/tool-contracts"
+import type { ToolDescriptor, ToolInputSchema, ToolDocumentation, JsonSchemaProperty } from "./tools/types"
+export type { ToolDescriptor, ToolInputSchema, ToolDocumentation, JsonSchemaProperty } from "./tools/types"
 
-export type JsonSchemaProperty = {
-  type: "string" | "number" | "boolean" | "array" | "object"
-  description?: string
-  enum?: readonly string[]
-  items?: JsonSchemaProperty
-  /**
-   * The value used when the caller omits this property.
-   *
-   * Declared so it can be stated in the SCHEMA rather than only in prose inside the
-   * description. A default that exists only as the word "(default)" in a sentence is
-   * something a caller has to read and interpret, while a schema `default` is a fact a
-   * client, a test or a generated page can read directly. bb_visualize's `view` states
-   * it both ways on purpose: the machine-readable field for tools, the prose for people
-   * reading the parameter list.
-   *
-   * It is documentation, not behaviour: validateProperty never reads it, because an
-   * omitted property is defaulted by the tool itself and an explicit one is checked
-   * against `enum`. Adding it must not change what any call validates as.
-   */
-  default?: string | number | boolean
-}
-
-export interface ToolInputSchema {
-  type: "object"
-  properties: Readonly<Record<string, JsonSchemaProperty>>
-  required?: readonly string[]
-}
-
-export interface ToolDocumentation {
-  category: "search" | "analysis" | "operations" | "lifecycle" | "graph" | "annotations"
-  summary: string
-  defaults: Readonly<Record<string, string | number | boolean>>
-  examples: readonly Readonly<Record<string, unknown>>[]
-}
-
-export interface ToolDescriptor {
-  name: string
-  description: string
-  inputSchema: ToolInputSchema
-  mutability: ToolMutability
-  requiresIndex: boolean
-  modes: readonly string[]
-  /** Modes on the roadmap but NOT executable. Never advertised as available. */
-  plannedModes?: readonly string[]
-  /**
-   * M35.E1: modes whose JSON envelope must carry the registered staleness
-   * block ({ fresh, stale, missing, staleRatio, mode, remediation }).
-   * Enforced by script/m35/verify-envelope-contract.ts against the real
-   * handlers: a registered mode that omits the block fails the gate.
-   */
-  freshnessModes?: readonly string[]
-  /**
-   * M71.D6: modes that do NOT need an index — the per-mode refinement of
-   * `requiresIndex`, the same way `freshnessModes` refines a tool's freshness
-   * surface.
-   *
-   * The tool-level boolean was the whole story, and for bb_edit it was a
-   * refusal with no work behind it: the MCP server blocked EVERY bb_edit call
-   * on a project with no index (`src/mcp/server.ts`), including `write` — which
-   * resolves no symbol, plans from the request and the disk, and reindexes the
-   * file it wrote. So an agent could not create the first file of a new project
-   * with the tool that exists to create files; measured, all five modes came
-   * back "No index found" and the engine below them would have answered four of
-   * them correctly.
-   *
-   * A mode listed here is exempt from the server's index gate. A mode NOT listed
-   * is refused with the reindex remediation when the project has no index, and
-   * the refusal names which modes are still available — a caller blocked from
-   * `update` should learn that `write` works, not just that it cannot proceed.
-   *
-   * Deliberately narrow: the requirement is relaxed only where the code path
-   * provably never reads the index. Enforced like every other per-mode field —
-   * `validateToolDescriptors` rejects duplicates, modes that are not executable,
-   * and the declaration on a tool that does not require an index at all.
-   */
-  indexFreeModes?: readonly string[]
-  aliases: readonly string[]
-  deprecated: boolean
-  replacement?: {
-    tool: string
-    mode?: string
-  }
-  documentation: ToolDocumentation
-}
+import { descriptor as bb_search } from "./tools/bb_search/descriptor"
+import { descriptor as bb_ask } from "./tools/bb_ask/descriptor"
+import { descriptor as bb_health } from "./tools/bb_health/descriptor"
+import { descriptor as bb_patterns } from "./tools/bb_patterns/descriptor"
+import { descriptor as bb_security } from "./tools/bb_security/descriptor"
+import { descriptor as bb_visualize } from "./tools/bb_visualize/descriptor"
+import { descriptor as bb_migrate } from "./tools/bb_migrate/descriptor"
+import { descriptor as bb_analyze } from "./tools/bb_analyze/descriptor"
+import { descriptor as bb_doc } from "./tools/bb_doc/descriptor"
+import { descriptor as bb_edit } from "./tools/bb_edit/descriptor"
+import { descriptor as bb_index } from "./tools/bb_index/descriptor"
+import { descriptor as bb_graph } from "./tools/bb_graph/descriptor"
+import { descriptor as bb_impact } from "./tools/bb_impact/descriptor"
+import { descriptor as bb_cross_language } from "./tools/bb_cross_language/descriptor"
+import { descriptor as bb_annotate } from "./tools/bb_annotate/descriptor"
+import { descriptor as bb_annotations } from "./tools/bb_annotations/descriptor"
 
 const descriptors = [
-  {
-    name: "bb_search",
-    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, the handler auto-refreshes exactly those files (reindexFilesParallel) before answering and declares it in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block. Every response declares its match set: totalMatches is the number of matching symbols the page was cut from (not the page size) and truncated is true when a candidate cap or the noise filter kept matches out, so a short page is never mistaken for a complete one. Options a mode cannot honor are rejected with an error naming that mode's accepted options, never silently ignored. Content mode also declares HOW it matched: matchMode is phrase when the query appeared verbatim in the name, qualified name, docstring or symbol body, and terms when nothing matched verbatim and the query's content words were matched instead — a phrase hit means the code contains this text, a terms hit means it discusses the same words, which is weaker evidence. It declares bodyCoverage ({ withBody, symbols, ratio }) because a project indexed before bodies were stored has no searchable body at all, so 'nothing matched' from such a project means something different from 'nothing could match'. language and symbolKind are matched case-insensitively against the indexed vocabulary, and a value the index does not contain is reported as an error rather than as zero results.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        mode: { type: "string", enum: ["symbols", "content", "symbol", "file"], description: "retrieval mode (default symbols)" },
-        query: { type: "string", description: "symbol/content/regex query, trimmed before use; also accepted as the exact symbol name in symbol mode. Not accepted in file mode" },
-        symbolName: { type: "string", description: "exact symbol name for symbol mode; supplying it with a different query is an error" },
-        filePath: { type: "string", description: "file target for file mode, or symbol disambiguation in symbol mode. Not accepted in symbols/content modes" },
-        limit: { type: "number", description: "max results (default 15); 0 returns no rows; must be a whole number. symbols/content/symbol modes only" },
-        language: { type: "string", description: "filter by language, case-insensitive (e.g. typescript, python, go); a language this project does not index is an error. symbols/content modes only" },
-        symbolKind: { type: "string", description: "filter by symbol kind, case-insensitive (function, class, variable, interface, enum, ...); a kind this project does not index is an error. symbols/content modes only" },
-        includeContent: { type: "boolean", description: "include a code snippet per result (default false). symbols mode only" },
-        exact: { type: "boolean", description: "only exact name matches (default false); obeys caseSensitive. symbols mode only" },
-        caseSensitive: { type: "boolean", description: "case-sensitive matching (default false); folds every Unicode case pair, not only ASCII. symbols mode only" },
-        regex: { type: "boolean", description: "treat query as a regex against symbol names (default false). symbols mode only" },
-        offset: { type: "number", description: "pagination offset (default 0)" },
-        refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of stale files (default: auto-refresh within budget before answering)" },
-      },
-      required: [],
-    },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["symbols", "content", "symbol", "file"],
-    freshnessModes: ["symbol", "content", "file"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "search", summary: "Unified lexical, content, exact-symbol, and file retrieval.", defaults: { mode: "symbols", limit: 15, includeContent: false, exact: false, caseSensitive: false, regex: false, offset: 0 }, examples: [{ mode: "symbols", query: "handleRequest", limit: 5 }, { mode: "content", query: "serialize cache entry" }, { mode: "symbol", symbolName: "handleRequest" }, { mode: "file", filePath: "src/app.ts" }] },
-  },
-  {
-    name: "bb_ask",
-    description: "Answer a question about the codebase using semantic search over the index. Returns matched symbols with similarity scores.",
-    inputSchema: { type: "object", properties: { query: { type: "string", description: "natural-language question" }, limit: { type: "number", description: "max results (default 5)" } }, required: ["query"] },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["answer"],
-    plannedModes: ["explain", "feature"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "search", summary: "Natural-language answers and semantic matches.", defaults: { limit: 5 }, examples: [{ query: "how does request handling work?" }] },
-  },
-  {
-    name: "bb_health",
-    // M64.H5: this description said "complete=true for full (not sampled)
-    // freshness". There is no `complete` property — the option is
-    // `freshness: "complete"` — so an agent that followed the description got
-    // back `bb_health: unknown or irrelevant options: complete — accepted
-    // options: verbose, history, limit, refresh, force, wait, freshness,
-    // sampleSize, integrity, includeAnalysisRuns`. The description is the
-    // contract an agent reads before it has the schema, so a wrong option name
-    // in it costs a round-trip on the single most common follow-up question.
-    // M64.I2: the integrity check count is no longer asserted here (it is
-    // derived from the report and printed as `N checks`).
-    description: "Unified index health: file/symbol/relationship/imports counts, embedding model + coverage, schema version, runtime, file freshness, and what this call cost. The default output names WHY each file was classified: `freshness why` separates fresh-verified-by-content-hash from fresh-verified-by-mtime+size-only (the file was not read), and names content-changed, deleted-from-disk, unreadable and unindexed separately, because those need different fixes and a single 'N stale' number is not actionable. Every report also carries a top-level `healthy` boolean. Use verbose=true for a per-language breakdown, PER-LANGUAGE SEARCHABILITY (the share of each language's symbols a semantic query can reach — a language at 0% is invisible to bb_ask), the embedded/unembedded symbol kinds, and stale-file names; refresh=true to reindex before reporting; force=true to force a full in-place reindex (this WIPES the index before rebuilding it); integrity=true for the index integrity check battery, which NAMES each non-ok check with its remediation rather than only a score; freshness=\"complete\" (not a `complete` option) to check every indexed file instead of a sample; includeAnalysisRuns=true for persisted run/finding totals; history=true for persisted analysis history. Freshness defaults to a DETERMINISTIC sample spread across the whole index: `stale` is then a lower bound on the project, not a total, and the report says so — pass freshness=\"complete\" when you need the exact count.",
-    inputSchema: { type: "object", properties: { verbose: { type: "boolean", description: "include stale/missing file names and the embedded/unembedded symbol kinds (default false)" }, history: { type: "boolean", description: "return persisted analysis history (default false). CHANGES THE OUTPUT SHAPE: this mode answers with a JSON object { health, history } instead of the text report, so a caller must not parse the text form when asking for it. Every other option still applies, and the result carries the same top-level `healthy` boolean as the text form (false when the report contains an error-severity finding)" }, limit: { type: "number", description: "history run limit (default 20)" }, refresh: { type: "boolean", description: "reindex the project before reporting" }, force: { type: "boolean", description: "force a full in-place reindex before reporting — DESTRUCTIVE: the index is wiped before it is rebuilt, so a failure leaves it empty" }, wait: { type: "boolean", description: "wait for refresh to finish (default true); wait=false detaches it and the NEXT call reports whether it completed" }, freshness: { type: "string", enum: ["sampled", "complete"], description: "freshness mode (default sampled — a deterministic, unbiased sample spread over every indexed file, NOT the first N)" }, sampleSize: { type: "number", description: "freshness sample count (default 200); must be >= 1" }, integrity: { type: "boolean", description: "run the index integrity check battery" }, includeAnalysisRuns: { type: "boolean", description: "include persisted analysis run/finding totals" }, paths: { type: "array", items: { type: "string" }, description: "report the state of these project-relative files INSTEAD of a project-wide freshness answer — for the question an agent actually has after an edit, at O(files named) rather than O(project). At most 50. The answer is a SEPARATE self-describing block, so every other number in the report stays project-wide and the two can never be read as one. Each path is FIVE-state, not a boolean: fresh (indexed, on disk, unchanged), stale (content changed), gone (indexed but deleted from disk), NOT-INDEXED (on disk, the indexer has not run since it appeared — a freshness verdict here would be meaningless), or absent (no such path). Paths that resolve outside the project, or through a symlink out of it, are REFUSED and reported as unchecked rather than answered" }, checkUnindexed: { type: "boolean", description: "WALK the project and report files on disk that the indexer would index but the index does NOT contain — the direction freshness cannot see (freshness reports files IN the index and gone from disk). Costs a stat per eligible file, i.e. the discovery phase of an index run, so it is opt-in. Uses the INDEXER'S OWN discovery rules, so gitignored files, node_modules, unsupported extensions and >5MB files are correctly NOT counted, and the output names that population. Without this option, index completeness is not asserted at all" } } },
-    mutability: "read",
-    requiresIndex: false,
-    modes: ["status", "refresh"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "lifecycle", summary: "Unified index, schema, freshness, embeddings, runtime, integrity, and analysis history.", defaults: { verbose: false, history: false, limit: 20, refresh: false, force: false, wait: true, freshness: "sampled", sampleSize: 200, integrity: false, includeAnalysisRuns: false }, examples: [{ verbose: true }, { history: true }, { refresh: true, force: true }, { integrity: true }, { freshness: "complete" }, { includeAnalysisRuns: true }] },
-  },
-  {
-    name: "bb_patterns",
-    description: "Detect orphaned code, framework patterns, and anti-patterns, ranked by evidence-derived confidence, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.",
-    inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["orphaned", "all"], description: "orphaned only, or all pattern classes (default all)" }, limit: { type: "number", description: "max results (default 20)" }, includeOrphaned: { type: "boolean", description: "include orphaned-code patterns in an all scan (default true)" }, includeFramework: { type: "boolean", description: "include framework patterns (default true)" }, includeAntiPatterns: { type: "boolean", description: "include anti-patterns (default true)" }, confidenceThreshold: { type: "number", description: "drop findings below this confidence (default 0 = report everything, ranked). Orphan confidence is evidence-derived and spans 0.3-0.7; anti-pattern confidence is 0.6-0.9" }, history: { type: "boolean", description: "return persisted pattern history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run (persists the whole census, not the displayed page)" } } },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["orphaned", "all"],
-    plannedModes: ["quality", "architecture"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "analysis", summary: "Pattern/orphan analysis ranked by evidence-derived confidence, with optional persisted run history.", defaults: { scope: "all", limit: 20, includeOrphaned: true, includeFramework: true, includeAntiPatterns: true, confidenceThreshold: 0, history: false, recordRun: false }, examples: [{ scope: "orphaned" }, { confidenceThreshold: 0.6 }, { recordRun: true }] },
-  },
-  {
-    name: "bb_security",
-    // Corrected against the code, not paraphrased. The previous text claimed
-    // "hardcoded secrets" (no writer emits any secret vulnerability type — that
-    // rule lives in bb_patterns, not here) and "weak crypto" (emitted only as an
-    // isolated sink with no co-located source, so it is classified `unresolved`
-    // and reported as an unvalidated observation, never as a finding).
-    // "Cross-language" is retained because cross-file taint resolution exists
-    // and is reported, but docs/BB_SECURITY.md now states precisely what the
-    // flag does and does not mean.
-    description: "Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injection, path traversal, insecure deserialization, SSRF, open redirect and code execution. Flows whose endpoints both resolve to indexed symbols are findings; one-sided flows are reported separately as unvalidated observations, never as confirmed exploits. Findings whose underlying file changed after indexing carry a staleness marker.",
-    inputSchema: { type: "object", properties: { history: { type: "boolean", description: "return persisted security history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" }, limit: { type: "number", description: "history run limit (default 20)" } } },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["findings"],
-    plannedModes: ["flow", "summary", "hotspots"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "analysis", summary: "Taint-flow findings over the index, with optional persisted run history. A flow is a finding only when both endpoints resolve to indexed symbols; one-sided flows are reported as unvalidated observations. Every response states the census so a capped scan is never mistaken for a complete one. Not detected: hardcoded secrets; genuine cross-language taint; standalone weak crypto.", defaults: { history: false, recordRun: false, limit: 20 }, examples: [{}, { recordRun: true }, { history: true }] },
-  },
-  {
-    name: "bb_visualize",
-    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and genuinely self-contained HTML (no network, no fonts, no build step — it renders offline, in an air-gapped editor, anywhere). The answer is an AUDITABLE projection of the index, not a picture: every link carries the stored relationship row it traces to (rowId) and its stored confidence, and every node carries its line, lineEnd and qualifiedName, so the graph is navigable and every edge can be checked against the row that justifies it. Distinct relationship types between the same pair are SEPARATE links, so a pair that is both contains and exports renders as both. Node size follows the index’s own gravity score. In the HTML, edge opacity encodes stored confidence, relationship type sets colour and a structural/behavioural dash, a CROSS-LANGUAGE edge gets its own wide dash and is drawn beneath the local edges so a polyglot project shows where one language hands off to another, and a stale endpoint (file changed since index) is drawn as a hollow ring; links inherit worst-of-endpoints. Nodes are grouped into the NAMED REGION they live in — a directory of the project, a directory with fewer than three matching symbols folded into its parent — each region placed at its own anchor inside a rounded pod and switchable from the sidebar like any other class, At overview zoom an edge BETWEEN two regions is drawn as one REGION LINK per region pair — dotted, because it is a summary and not a stored row; its width and alpha come from how many stored edges it stands for — while an edge INSIDE one region is always drawn as itself, and the individual cross-region edges return past ~1.15x zoom or when a link is opened (double-click frames both of its regions). Edges drawn individually are capped at a zoom-dependent count with the readout naming the cap, because an uncapped aggregate is a smear rather than a map; the frame's readout reconciles the picture with the census (how many cross-region edges the links stand for, how many pairs exist, how to open them), the sidebar's live line repeats it, and the links — with their regions, counts, stored rows, commonest relationship and screen geometry — are PUBLISHED on the view's API rather than only painted, because a summary that can only be seen cannot be checked. Moving the pointer across the map never changes the view: hover emphasises the node's own edges, and a CLICK is what focuses, so the map cannot dissolve under the reader's hand. The graph has TWO arrangements and the reader picks: `layout: \"regions\"` (the default) is the region map described above, and `layout: \"force\"` drops the directories entirely — one force layout, no region pods and no region links, every stored edge drawn as itself under the same zoom-dependent cap — which is the graph as it looked before the regions existed, and which is the honest shape for a project whose parts do not fall along directory lines. The layout is written onto the document itself (data-bb-layout) and both arrangements are offered as a switch in the generated page's sidebar, so `layout` sets the arrangement the page OPENS with and the reader can move between them without regenerating anything. The picked-item panel is deliberately not a modal: it docks to either side of the frame and collapses to its own heading — which always names what is picked — while KEEPING the selection, because hiding a panel to see the picture must not cost the reader the focus and the zoom they just asked for (its X is the control that clears). The layout runs in frame-sized slices with a progress readout, so the artifact stays interactive and visible at the maximum graph size and in a background tab. Every answer declares its bounds as three DISTINCT numbers — totalNodesAvailable (what the scope and filters actually match), truncation.originalNodes (what reached the projection) and nodes (what was returned) — so a short page can never be mistaken for a whole set. `offset` walks that same order rather than re-reading the first page: the ranking carries a final `s.id` tiebreaker so page k+1 begins exactly where page k ended, and `considered.page` declares which page the answer is, of how many, and where the next one starts (null on the last) — a scope larger than one page can be walked, and an offset past the end is stated as an empty PAGE rather than as an empty project. Whatever the noise filter removes is counted onto excluded with the patterns responsible — always present, including when it is empty, so silence and zero are never confused — and an empty answer is declaredAbsent with a reason rather than an empty result that looks like a real project. `considered` declares what the answer actually READ: how many relationships exist, how many the query read, and in what words the selection is an arbitrary primary-key slice rather than a ranking, plus which symbols got a chance to be in the graph and in what order. `considered.overlays` carries the index's OTHER facts about the returned symbols — agent annotations from `bb_annotate`, matched by NAME AND PATH (never by name alone: two symbols can share a name, and a note is about one of them), with the notes themselves, the author class, and a count of notes that name a symbol of this scope at another path and are therefore NOT attached. The layer is declared even when it is empty, so \"no agent has annotated these symbols\" and \"nobody looked\" are different replies. Language filters are applied BEFORE the limit, so a rare language receives the same budget as a common one. The DEFAULT text format carries the same declared coverage, selection and exclusion as the JSON one, so the reply a caller gets without asking is the reply that can be audited. Member-level relationships are FOLDED onto the owner class, and every folded edge says so: when a class-like symbol is selected and a relationship is stored on one of its MEMBERS that is not itself in the node set, the row is attributed to the owner and the edge carries ownerCascade with matchedMembers naming the member it came through — so an attributed edge is never presented as one the index stored between the two drawn nodes. The fold is deliberately narrow (one level, class-like owners only, never for contains, an exact edge always preferred to an attributed one) and `considered.ownerCascade` declares whether it ran, how many members it scanned, how many rows it folded and whether a cap truncated it, so \"nothing to fold\" and \"the fold never ran\" are distinguishable. This is NOT bb_graph's depth-N traversal: the edge set is the relationships between the selected nodes, plus the folded member rows.",
-    inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target (`symbol`/`symbolName`/`query` are accepted as aliases)" }, maxNodes: { type: "number", description: "max nodes (default 200, accepted range 1-2000); 0 and anything above the ceiling are REFUSED with the range named rather than clamped, because a returned page must mean the page that was asked for" }, maxLinks: { type: "number", description: "max links (default 5000, accepted range 1-20000); 0 and anything above the ceiling are REFUSED with the range named rather than clamped, because a returned page must mean the page that was asked for" }, offset: { type: "number", description: "how many symbols of the ranking to SKIP before this page starts (default 0; a whole number >= 0, refused rather than normalised). The order is the scope's own ranking with a final `s.id` tiebreaker, so page k+1 begins where page k ended and no symbol is repeated or lost. `considered.page` states the page number, the page count, the total matching the scope, and the next offset (null on the last page). Without this, a scope bigger than `maxNodes` had symbols that could not be asked for at all" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter. Matched case-insensitively against the index's OWN stored spellings, and a type the index does not contain is REJECTED with the stored set named (never answered as zero links, which would read like a project with no calls). The applied filter is echoed in considered.relationshipTypesConsidered." }, symbolKinds: { type: "array", items: { type: "string" }, description: "symbol kinds to KEEP (class, interface, struct, enum, function, method, property, constant, variable, ...). Omitted = every kind, and on a real project gravity ranks files\u2019 constants and properties first: the reply states the composition it returned in `considered.kindCensus`, so a graph of string constants is visible as one rather than mistaken for the architecture. Matched case-insensitively against the index\u2019s own spellings, and a kind the index does not contain is REJECTED with the stored set named (never answered as zero nodes). The applied filter is echoed in considered.symbolKindsConsidered." }, languages: { type: "array", items: { type: "string" }, description: "language filter. Matched case-insensitively against the index's OWN stored spellings, and an unknown language is REJECTED with the stored set named (never answered as zero nodes). Applied BEFORE the node limit, so a rare language receives the same budget as a common one, and the applied filter is echoed in considered.languagesConsidered." }, excludePatterns: { type: "array", items: { type: "string" }, description: "path SEGMENTS treated as build noise and excluded. Matched on whole segments, never as substrings — a substring rule removed `src/util/edit_distance.rs` because `dist` is inside `edit_distance`, and `src/compiler/layout.rs` because `out` is inside `layout`. Omit to use the defaults (node_modules, .git, .next, .turbo, .cache, coverage, dist, build, out, target, vendor, __pycache__)" }, includeTests: { type: "boolean", description: "include test/spec sources. Default true: they are ordinary source. When false, test/spec/testdata directories and *_test.* / *spec.* files are excluded and counted" }, view: { type: "string", enum: ["graph"], default: "graph", description: "The dependency map (nodes are symbols, lines are relationships, sized by stored evidence). Accepts only `graph`; any other value is REFUSED rather than answered as the graph." }, layout: { type: "string", enum: ["regions", "force"], default: "regions", description: "the GRAPH view's arrangement, and the only option here that shapes the picture without changing the data. `regions` (default) groups every node into the DIRECTORY it lives in, anchors and names each region, and summarises the edges between regions as one dotted region link per pair at the overview. `force` ignores directories entirely: one force layout, no pods and no region links, every stored edge drawn as itself under a zoom-dependent cap the readout names. The generated page carries BOTH as a switch in its sidebar, so this sets the arrangement the page OPENS with; the layout is declared on the document itself (data-bb-layout), so the file draws what it says it is." }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" } } },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["project", "file", "module", "symbol", "feature"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "analysis", summary: "Scoped canonical dependency graphs with explicit truncation and provenance.", defaults: { scope: "project", maxNodes: 200, maxLinks: 5000, offset: 0, format: "text" }, examples: [{ scope: "symbol", target: "handleRequest", format: "json" }, { scope: "module", target: "src/api", format: "html" }] },
-  },
-  {
-    name: "bb_migrate",
-    description: "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Plans whose source file changed since the last index are flagged stale up front — a plan is a claim about current code; JSON output carries the freshness block.",
-    inputSchema: { type: "object", properties: { symbolName: { type: "string", description: "legacy single symbol alias" }, symbolNames: { type: "array", items: { type: "string" }, description: "one or more symbols to migrate" }, paths: { type: "array", items: { type: "string" }, description: "project-relative file or DIRECTORY paths; every indexed symbol in them joins the request, so a whole module can be planned in one call. UNION with symbolNames, not a replacement: naming a symbol AND a path that contains it plans it once" }, symbolIds: { type: "array", items: { type: "string" }, description: "indexed symbol ids, the ONLY unambiguous way to name a component. Use this when a refusal reported that a name matches several symbols; a name is not an identity, and two components can share one name in two files" }, targetLanguage: { type: "string", description: "e.g. rust, go, python" }, format: { type: "string", enum: ["text", "json"], description: "output format (default text)" } }, required: ["targetLanguage"] },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["plan"],
-    freshnessModes: ["plan"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "analysis", summary: "Batch cross-language migration plans with ordering, waves, cohort rollup, scope completeness, and unsupported mappings.", defaults: { format: "text" }, examples: [{ symbolName: "handleRequest", targetLanguage: "go" }, { symbolNames: ["parse", "handle"], targetLanguage: "rust", format: "json" }, { paths: ["src/api"], targetLanguage: "go" }, { symbolIds: ["sym_01H..."], targetLanguage: "go" }] },
-  },
-  {
-    name: "bb_analyze",
-    description: "Unified evidence-backed analysis over graph relationships, dependencies, project statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree, and report rows carry a stale flag when their file changed after indexing. Every mode is BOUNDED and says so: `limit` is the most items returned (edges per direction for callers/callees/trace, files for dependencies, entries for the test modes, the same everywhere) and the answer reports what it returned against what exists, so a page is never read as the whole set. callers/callees/trace/impact share the graph engine's owner-cascade semantics — a relationship stored against a class member is attributed to the owner class — and every edge states which it was through `targetMatch`. WHICH symbol the name resolved to is declared as well: `rootMatch` is `exact`, `exact-any-kind` or `containment`, and `containment` means the answer is about a symbol whose name CONTAINS the one asked for, or differs only in case — `found: true` on its own does not mean the name was itself a symbol. Locations are project-relative. Per-mode parameters: target applies to callers, callees, trace, complexity, impact, and test_impact; filePath scopes dependencies, test_mapping, test_gaps, and test_quality to a project-relative path PREFIX and is REFUSED (not ignored) on every other mode; limit applies to callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality and is refused elsewhere; stats is always project-wide.",
-    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "A symbol name for callers/callees/trace/impact/test_impact, or a project-relative FILE PATH for complexity (an exact file, or a directory prefix at any depth INCLUDING a top-level one; anything else is refused rather than treated as a path fragment). `symbol`/`symbolName`/`query` are accepted as aliases. A target is a VALUE, never a pattern: `%`, `_` and `\\` are escaped and match themselves. Echoed back bounded at 200 characters with its full length stated — the search always uses the whole string." }, filePath: { type: "string", description: "Project-relative path PREFIX scoping dependencies, test_mapping, test_gaps and test_quality. Refused on every other mode. Matched on a whole segment boundary, so `src/util` does not match `src/utilities`." }, limit: { type: "number", description: "Maximum items returned: edges per direction for callers/callees/trace, files for dependencies, entries for test_mapping/test_gaps/test_quality. Defaults: 25 edges per direction, 20 files, 50 entries. Range 1-5000 (graph modes) or 1-2000 (the rest); 0 and anything above the ceiling are REFUSED rather than clamped, because a returned page must mean the page that was asked for. The answer reports what it returned and whether that is the whole set. Refused on the modes it does not apply to." } }, required: ["mode"] },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
-    // M35.S1: every bb_analyze mode is a read path over the index — all carry
-    // the staleness envelope on their output.
-    freshnessModes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
-    aliases: [],
-    deprecated: false,
-    documentation: {
-      category: "analysis",
-      summary: "One typed analysis surface over the graph, the file graph, project counts, complexity, impact and test evidence. Every mode is bounded, declares its own bounds, and reports what it returned against what exists.",
-      defaults: { limit: 20 },
-      examples: [{ mode: "callers", target: "handleRequest" }, { mode: "complexity", target: "src/api" }, { mode: "test_quality" }, { mode: "dependencies", filePath: "src/core" }, { mode: "impact", target: "handleRequest", limit: 50 }],
-    },
-  },
-  {
-    name: "bb_doc",
-    description: "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Every mode emits its declared section set, an empty result is never reported as passing, and the token budget is enforced against the whole payload. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When the cited files are stale, the handler auto-refreshes exactly those files within budget and regenerates the document; refresh=false opts out and answers from existing data with the freshness block.",
-    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["symbol", "file", "module", "feature", "api", "project", "coverage"], description: "documentation mode" }, target: { type: "string", description: "symbol, file, module, feature, or API target (`symbol`/`symbolName`/`query` are accepted as aliases); optional for project and coverage" }, format: { type: "string", enum: ["markdown", "json"], description: "output format (default markdown)" }, audience: { type: "string", enum: ["developer", "maintainer", "user", "website"], description: "documentation audience" }, detail: { type: "string", enum: ["brief", "standard", "deep"], description: "detail level" }, includeExamples: { type: "boolean", description: "include only source-backed examples" }, includeDiagrams: { type: "boolean", description: "include cited diagrams when available" }, includeTests: { type: "boolean", description: "include indexed test evidence" }, limit: { type: "number", description: "maximum evidence items" }, maxTokens: { type: "number", description: "output token budget" }, refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of the files this document cites (default: auto-refresh those files within budget, then regenerate)" } }, required: ["mode"] },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["symbol", "file", "module", "feature", "api", "project", "coverage"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "analysis", summary: "Cited Markdown or JSON documentation over indexed source and relationships.", defaults: { format: "markdown", audience: "developer", detail: "standard", includeExamples: false, includeDiagrams: false, includeTests: false, limit: 20, maxTokens: 4000 }, examples: [{ mode: "symbol", target: "handleRequest" }, { mode: "feature", target: "request handling", format: "json" }, { mode: "coverage", target: "src" }] },
-  },
-  {
-    name: "bb_edit",
-    description: "Unified, validated source mutation. Discriminated by mode: write, update, insert, delete, or refactor. Supports dry-run previews, separator/symlink-safe paths, AST byte bounds, caller protection, rollback on validation failure, formatting, and reindexing. If the target file changed since it was indexed, this tool refreshes that one file and re-resolves the symbol before editing (reported in warnings) — an edit is never applied to stale byte bounds, and a symbol that was renamed or removed is refused by name. The bytes each target had when the edit was PLANNED are re-checked immediately before the write, so a file that changed in between (an editor saving during a multi-file refactor, say) is refused with nothing written rather than overwritten from a plan computed against its previous contents. A project with no index is not a dead end: `write` plans from the request and the disk, resolves no symbol, and reindexes the file it wrote (so `reindexed` is how a brand-new project gets its first indexed rows), while `update`, `insert`, `delete` and `refactor` resolve their target through the index and are refused — with the mode that still works named beside the reindex command — until one exists. `write` replacing an existing file is guarded: a replacement that removes at least half of a file's lines (and at least 5 lines) is refused as a probable mistake unless `overwrite: true` is passed, and `overwrite: false` makes the write create-only — the refusal names the file, the line counts and both options. `batch` applies several edits, or one edit across several files, as ONE atomic call: every entry is planned before anything is written (so a refusal anywhere writes nothing), the bytes of EVERY target are re-checked together immediately before the first write, and formatting, validation and reindexing each run ONCE for the whole call. Two entries may not resolve to the same file — each is planned from its file's pre-edit bytes, so the second would discard the first, and that is refused by entry index. Every answer carries a per-file `envelope` (`planned`, `committed`, `restored`, and the pre/post byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves.",
-    inputSchema: { type: "object", properties: {        mode: { type: "string", enum: ["write", "update", "insert", "delete", "refactor", "batch"], description: "Edit kind: write (create or overwrite a file), update (replace a symbol body), insert (add code relative to a symbol), delete (remove a symbol), refactor (identifier-aware rename), or batch (apply several edits, or one edit across several files, as one atomic call)" }, dryRun: { type: "boolean", description: "Preview the planned changes without writing any file (default false)" }, filePath: { type: "string", description: "write: project-relative target file to create or overwrite. Other modes: disambiguates symbolName when it appears in multiple files" }, symbolName: { type: "string", description: "Name of the symbol to update, delete, or refactor (the index must contain it; a target file changed since indexing is refreshed automatically before the edit)" }, lineStart: { type: "number", description: "Declaration line of the target symbol, used with symbolName/filePath to disambiguate repeated names" }, content: { type: "string", description: "Full file content for write mode; also accepted in place of newContent for update and insert" }, newContent: { type: "string", description: "Replacement source: update swaps the symbol body for this text; insert adds this text relative to targetSymbolName" }, targetSymbolName: { type: "string", description: "insert: symbol whose body or boundary receives the new code (required for insert)" }, position: { type: "string", enum: ["before", "after", "inside-top", "inside-bottom"], description: "insert anchor relative to targetSymbolName (default after)" }, newName: { type: "string", description: "refactor: the valid identifier the symbol is renamed to" }, force: { type: "boolean", description: "delete: allow removal when indexed callers or live references survive; leftovers are reported as warnings (default false)" }, format: { type: "boolean", description: "Run the project formatter on written files after the edit (default true)" }, overwrite: { type: "boolean", description: "write only. Omitted: replace the file, but refuse a replacement that removes at least half of a file's lines and at least 5 lines (a probable mistake, such as a body fragment sent to write instead of update). true: replace it whatever the size. false: create-only — refuse when the file already exists." }, edits: { type: "array", description: "batch only, required there: the edits to apply, each a complete request in one of the five single-file modes (write|update|insert|delete|refactor), e.g. [{mode:'update',symbolName:'helper',newContent:'...'},{mode:'delete',symbolName:'oldFlag'}]. Entries may not set dryRun or format (those belong to the batch, which previews, formats and reindexes once), may not nest a batch, and may not two of them resolve to the same file — each entry is planned from its file's pre-edit bytes, so a second entry on one file would discard the first (refused by entry index).", items: { type: "object", description: "one edit: `mode` (required: write|update|insert|delete|refactor) plus exactly the options THAT mode accepts at the top level — write takes filePath+content/newContent (+overwrite), update takes symbolName+newContent, insert takes targetSymbolName+newContent (+position), delete takes symbolName (+force), refactor takes symbolName+newName; every entry may also take filePath and lineStart to disambiguate. An option the entry's own mode would not accept at the top level is refused here too, by name, so an entry is validated by the same rule as the single-mode call it mirrors." } }, files: { type: "array", description: "batch only: the fan-out form — each entry applies once per listed project-relative path, and `files` supplies the filePath of every entry (so an entry with `files` must not name its own). Omit it to let each entry name its own target. The list may not repeat a path.", items: { type: "string" } } }, required: ["mode"] },
-    mutability: "write",
-    requiresIndex: true,
-    modes: ["write", "update", "insert", "delete", "refactor", "batch"],
-    // M71.D6: `write` is the one mode of the one write tool that needs no index.
-    // M71.D13: `batch` is absent here on purpose — a batch containing only
-    // `write` entries can run against a project with no index, but the mode's
-    // contract cannot promise that of a list, so the exemption stays with the one
-    // mode whose plan never consults the index.
-    indexFreeModes: ["write"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "operations", summary: "Unified safe source editing with preview, validation, rollback, and reindex.", defaults: { dryRun: false, format: true, force: false }, examples: [{ mode: "update", symbolName: "helper", newContent: "export function helper() { return 2 }" }, { mode: "insert", targetSymbolName: "main", position: "inside-top", newContent: "const started = true" }, { mode: "write", filePath: "src/new.ts", content: "export const value = 1" }] },
-  },
-  {
-    // M22.E1: agent-driven freshness — an agent that just wrote/edited a file
-    // can immediately make it (and only it) visible instead of waiting for a
-    // full reindex. This is the direct fix for "agent created a function,
-    // seconds later it's not in the DB".
-    name: "bb_index",
-    description: "Reindex a file or directory so the index reflects edits immediately (agent-fresh). Accepts a path (file or dir); a file reindexes only that file, a dir runs an incremental index of that dir (changed files only). mode=post re-runs the heavy derived-data phases (relationships/enrichment/gravity/taints/health) WITHOUT re-parsing — the remediation after edits on incremental paths. The path MUST be inside this project: an absolute path elsewhere, a `../` traversal and a foreign directory are all REFUSED, because an out-of-tree file would be stored with a `relative_path` that is not relative to anything and every scoped query, file name and freshness check for it would then be wrong. The report says what happened rather than only how much: `outcome` is `indexed`, `partial`, `no-op` or `indexed`, and a `no-op` carries a `reason` distinguishing \"nothing changed\" from \"this file holds nothing the indexer extracts\"; when errors occurred, `errorDetail` names the file and the message beside the `errors` count. Paths in the report are PROJECT-RELATIVE, so the same request returns the same bytes on any machine. The counts are stable between identical calls; the `ms` fields are measured wall-clock and are expected to vary.",
-    inputSchema: { type: "object", properties: { path: { type: "string", description: "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project whose derived phases should be re-run. REQUIRED in every mode, and for mode=post it is checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too." }, mode: { type: "string", enum: ["auto", "file", "dir", "post"], description: "auto (default) infers file vs dir from path; file reindexes one file; dir runs an incremental directory index; post re-runs derived phases (relationships/taints/health) without re-parsing" } }, required: ["path"] },
-    mutability: "write",
-    requiresIndex: false,
-    modes: ["auto", "file", "dir", "post"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "operations", summary: "Immediately refresh the index for a just-written/edited file or directory; mode=post re-derives relationships/taints/health without re-parsing.", defaults: { mode: "auto" }, examples: [{ path: "src/new-file.ts" }, { path: "src", mode: "dir" }, { path: "post", mode: "post" }] },
-  },
-  {
-    // M28.T1 (issue #624): the agent door to the graph the IDE shows. The
-    // handler reuses the same graph engine the LSP bb/graph handler uses —
-    // one truth, two doors (M28 decision D-1/D-2).
-    name: "bb_graph",
-    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. Traversal semantics: a relationship stored against any member of a class (a method call, an inherited behavior) is attributed to the owner class, so caller/callee sets include the owner-family level — every edge still traces to a stored relationship row. Each edge's `rowId` is the stored relationship key with its leading '<projectHash>:rel:' removed, and each endpoint's `id` is the stored symbol key with its leading '<projectHash>:' removed — both prefixes are constant within one answer, and `root.id` carries the FULL stored form, so '<projectHash>' is the segment before its first ':' and prepending it (plus ':rel:' for a rowId) reconstructs the store key exactly. An `ext:` id has no such prefix and is returned whole. The two stored keys are 127-248 and 65-144 characters and were 28-31% and 28.6% of every edge's bytes.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        symbol: { type: "string", description: "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases)" },
-        maxDepth: { type: "number", description: "traversal depth bound (default 3)" },
-        direction: {
-          type: "string",
-          enum: ["callers", "callees", "both"],
-          description:
-            "which side to traverse (default both). 'callers' answers \"who depends on this\" and skips the callee walk entirely — on a real index that is the difference between 1 edge and 37 in the same payload.",
-        },
-        relationshipTypes: {
-          type: "array",
-          items: { type: "string" },
-          description:
-            "stored relationship kinds to include. Default: EVERY kind the index stores (calls, extends, implements, uses, instantiates, overrides, contains, references, imports, exports) — deliberately not narrowed, because a narrower default silently drops a fifth of the graph and cannot descend a class hierarchy: 'contains' is the parent-to-member edge, so excluding it means a traversal rooted at a class cannot reach that class's own methods. The cost is size — the type-level 'uses'/'references'/'contains' rows are roughly half of what a typical index stores, so a hub symbol's default answer is 2.5-4.8x larger than a filtered one (measured: lodash 487 KiB against 101 KiB, ripgrep 795 against 321). Pass relationshipTypes: ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction; a kind you do not list is never reported, and a filter you supply is recorded in the answer's truncationReason so a filtered answer is never read as the whole graph.",
-        },
-        includeCrossLanguage: {
-          type: "boolean",
-          description: "include edges the indexer marked cross-language (default true). Set false for a single-language view.",
-        },
-        timeBudgetMs: {
-          type: "number",
-          description:
-            "wall-clock ceiling for the whole walk in milliseconds. DEFAULT 0 = NO clock bound: every other bound on this answer is a function of the DATA (edgeLimit, the 50-symbol per-direction fan-out, maxEdges, maxDepth), so the default answer is complete over them and byte-identical on a re-run. Pass a value only to cap latency, and know what you are buying: a run that hits the ceiling returns a SAMPLE of the set, because the walk can only stop between statements — the ceiling is checked between queries, never inside one. The sample is declared, never silent: `summary.timeBudgetExhausted` is true and `walk-time-budget-exhausted` is among `summary.truncationReasons`. There is no value that makes a clock-bounded answer reproducible; if you need the whole set, leave this unset",
-        },
-        maxEdges: {
-          type: "number",
-          description:
-            "hard cap on the number of edges in the WHOLE answer, across both directions and all depths (default 1000, max 5000). `edgeLimit` bounds one query and this bounds the answer; their product is what a caller receives. Reaching it is declared as `total-edge-limit` with the value in `summary.maxEdges`. Raise it for a hub symbol, lower it for a quick shape check — a value below `edgeLimit` IS honored (the answer stops at it and says so), so `maxEdges` is the knob for \"just show me the shape\"",
-        },
-        edgeLimit: { type: "number", description: "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`summary.calleesIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer." },
-      },
-      required: ["symbol"],
-    },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["graph"],
-    aliases: [],
-    deprecated: false,
-    documentation: {
-      category: "graph",
-      summary: "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.",
-      defaults: { maxDepth: 3, direction: "both" },
-      examples: [
-        { symbol: "handleRequest" },
-        { symbol: "handleRequest", maxDepth: 5 },
-        { symbol: "handleRequest", direction: "callers" },
-        { symbol: "Handler", relationshipTypes: ["calls"] },
-      ],
-    },
-  },
-  {
-    // M28.T1 (issue #624): the agent door to bounded impact. Reuses
-    // src/lsp/impact.ts (the component the editor graph panel's impact mode
-    // uses) so agent and developer see identical totals and truncation.
-    name: "bb_impact",
-    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and a declared total that is the size of the set the answer is a prefix of — measured, not inferred, so an answer that is short of the whole set says so even when no bound fired. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows. The relationship kinds that count are named in every answer's `rule.relationshipTypes` and can be overridden; a dependent carries its evidence tier, cross-language flag, bridge and position.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        symbol: { type: "string", description: "symbol name to compute impact for (`target`/`symbolName`/`query` are accepted as aliases)" },
-        relationshipTypes: { type: "array", items: { type: "string" }, description: "stored relationship kinds to count as dependencies. Default: calls, instantiates, extends, implements. A kind that is not listed is never reported, and the applied list is echoed in `rule.relationshipTypes` on every answer. This is the same control bb_graph has, so a caller who wants the type-level `uses`/`references` rows can ask for them on either door." },
-        refresh: { type: "boolean", description: "set false to skip the bounded staleness repair and answer from the existing index. When omitted, stale files inside the answer are repaired and the walk is re-run so the answer is not built from the rows the refresh replaced." },
-      },
-      required: ["symbol"],
-    },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["impact"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "graph", summary: "Bounded impact with declared truncation — identical numbers to the editor's impact mode.", defaults: {}, examples: [{ symbol: "handleRequest" }] },
-  },
-  {
-    // M28.T1 (issue #624): the agent door to cross-language facts. Reuses
-    // src/lsp/cross_language_hover.ts (stored rows only, per-pair, declared
-    // absence) — the agent reads the same facts the human's hover renders.
-    // M63.CL1: same owner, a projection built for a reader that does not have
-    // the card around it. Every fact names BOTH ends (the copy of the
-    // requested name, and the counterparty's symbol/file/language/line) plus
-    // the stored row id, because a language pair alone cannot answer "does my
-    // Kotlin Warehouse reach my Java Inventory, and where" — the shape
-    // bb_graph already returns. A name is many symbols in the index (`invoke`
-    // is 227 in a 230-file JVM corpus), so the facts are the union over every
-    // copy, `copies` names them, and `ambiguous` says so; absence is declared
-    // only when no copy holds a stored row. Bounded by a declared limit with
-    // first-class truncation, as bb_impact is. Same source and same laws as
-    // the editor's cross-language hover section; never infers, guesses, or
-    // aspires.
-    name: "bb_cross_language",
-    description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Every fact names both ends — the copy of the requested name it came from and the other symbol's name, file, language and line — plus the stored row id. A name is many symbols (the index holds one per file/name/line), so facts are the union over every copy; `copies` names them and `ambiguous` says so. SEPARATELY, `memberFacts` holds the rows on the copies' MEMBERS, each marked `match: 'owner-cascade'` with `matchedMember` naming the member: 95% of stored cross-language rows target a member, so a class often has none of its own, and those rows are reported as the MEMBER's edges rather than absorbed into the symbol's — `ownFactCount`, `memberFactCount` and `silentItselfButNotItsMembers` tell the two apart. Absence is declared only when neither the copies nor their members hold a stored row. The answer is bounded by `limit` (default 200, max 1000) with `truncated` and `totalCountIfKnown` declared. This tool never infers, guesses, or aspires. Same source and laws as the editor's cross-language hover section.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        symbol: { type: "string", description: "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)" },
-        limit: { type: "number", description: "max facts to return (default 200, max 1000); truncation is declared, never silent" },
-      },
-      required: ["symbol"],
-    },
-    mutability: "read",
-    requiresIndex: true,
-    modes: ["cross-language"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "graph", summary: "Stored cross-language pairs, each naming both ends, with member rows reported separately, and declared absence and truncation.", defaults: { limit: 200 }, examples: [{ symbol: "Warehouse" }, { symbol: "Iterate" }, { symbol: "invoke", limit: 50 }] },
-  },
-
-  {
-    // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
-    // ENFORCED, not delegated: author_class is hardcoded 'agent' here — a tool
-    // call can never masquerade as a human note. Upsert keyed on
-    // (project, symbol, path, author) so re-annotation updates instead of
-    // flooding; body length is bounded by a declared limit.
-    name: "bb_annotate",
-    description: "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location, enforced by a unique index over (project, symbol, author, path). The symbol is NOT checked against the index, so a note may name anything; instead the reply MEASURES whether an editor surface can show it and says so in `surfacing` (`editor`, `matchedAs`, `matchedNames`, `statement`) — a typo'd name or a qualified name is stored and reported honestly rather than promised to a surface it cannot reach. `path` is resolved to the index's own spelling, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Annotations are opinions layered on evidence, never index facts. To change source code use bb_edit; to read notes back use bb_annotations.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        symbol: { type: "string", description: "symbol name to annotate (`target`/`query` are accepted as aliases)" },
-        body: { type: "string", description: "annotation text (max 2000 chars)" },
-        path: { type: "string", description: "optional file path to disambiguate same-named symbols; resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path all reach the same note" },
-        toolIdentity: { type: "string", description: "optional name of the calling agent/tool (recorded verbatim)" },
-      },
-      required: ["symbol", "body"],
-    },
-    mutability: "write",
-    requiresIndex: false,
-    modes: ["annotate"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "annotations", summary: "Agent note with enforced provenance, stored where the human reads.", defaults: {}, examples: [{ symbol: "handleRequest", body: "Legacy auth path — scheduled for removal in Q3." }] },
-  },
-  {
-    // M28.A1 (issue #626, decision D-3): the read door. Provenance fields are
-    // always returned — a reader can always tell an agent note from a human
-    // note. Declared absence when there are none; bounded by a declared limit.
-    name: "bb_annotations",
-    description: "Read annotations for a symbol, one file's copy of a symbol (optional `path`), or all annotations up to the declared limit, with full provenance on every row: author class, tool identity, and timestamps. Every answer declares its bound: `count` is the page size, `totalCountIfKnown` the true total, and `truncated`/`truncationReason` fire when the limit actually dropped rows — a short page is never mistaken for a complete one. A `symbol` also matches notes written under a symbol's qualified name, the same predicate the editor uses. No annotations is a declared absence, never an error. To write a note use bb_annotate.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        symbol: { type: "string", description: "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases" },
-        path: { type: "string", description: "optional file path; resolved to the index's own spelling first, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol" },
-        limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
-        includeNameLevel: { type: "boolean", description: "with `path` and no `symbol`, also return name-level notes (written with no path), which apply wherever their name appears. Off by default, so a path filter answers the question as asked rather than mixing in the whole project" },
-      },
-      required: [],
-    },
-    mutability: "read",
-    requiresIndex: false,
-    modes: ["annotate"],
-    aliases: [],
-    deprecated: false,
-    documentation: { category: "annotations", summary: "Annotations with full provenance; absence declared.", defaults: { limit: 50 }, examples: [{ symbol: "handleRequest" }, { limit: 100 }] },
-  },
+  bb_search,
+  bb_ask,
+  bb_health,
+  bb_patterns,
+  bb_security,
+  bb_visualize,
+  bb_migrate,
+  bb_analyze,
+  bb_doc,
+  bb_edit,
+  bb_index,
+  bb_graph,
+  bb_impact,
+  bb_cross_language,
+  bb_annotate,
+  bb_annotations,
 ] as const satisfies readonly ToolDescriptor[]
+
 
 export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = descriptors
 

@@ -1,10 +1,34 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the deprecated component-level change-impact calculator
+//   (`analyzeImpact`), retained as an exported unit for the legacy analysis gate.
+// WHICH TOOL IT SERVES — none directly. `bb_analyze` mode=impact aggregates the
+//   canonical `src/lsp/impact.ts` walk (`computeImpact`); no public tool calls
+//   this function.
+// WHY IT IS SHAPED THIS WAY — a deprecated calculator is still a calculator, and
+//   one measuring a different dependency set would make the legacy reachability
+//   proof a proof about a number nothing else agrees with. So it imports the
+//   canonical dependency rule (`IMPACT_REL_TYPES`) from its owner instead of
+//   re-declaring one, and walks the shared graph engine. Its depth-capped
+//   "transitive" scope cannot prove completeness — it can report truncated:false
+//   while real dependents exist beyond the cap — which is why no tool surface is
+//   wired to it.
+// WHERE ITS EVIDENCE LIVES — validation/m15/** and the canonical surface's
+//   evidence in validation/tools/bb_impact/**, docs/GRAPH_ENGINE.md; gates:
+//   script/m15/verify-analyze-deep.ts, script/verify-analyze.ts,
+//   script/m48/verify-p2-honesty-fields.ts (legacy-import guard).
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/impact.ts (IMPACT_REL_TYPES),
+//   src/intelligence/contracts.ts (ImpactReport), and the analysis gates above.
+// CONTRACTS IT MUST NOT BREAK — the dependency rule is imported, never
+//   re-declared; read-only operation; the ImpactReport shape the gates read.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { graphTraversal } from "../graph/graph-engine"
-// The DEPENDENCY rule, imported from its owner (see IMPACT_REL_TYPES). This
-// legacy unit counted every stored kind as a reverse dependency, which is the
-// defect the canonical surface measured and fixed (`GraphQLList` declared 57
-// reverse dependencies of which 8 are dependency rows); a deprecated calculator
-// is still a calculator, and leaving it measuring a different set would make the
-// M15 gate's reachability proof a proof about a number nothing else agrees with.
+// The DEPENDENCY rule, imported from its owner. This legacy unit once counted
+// every stored kind as a reverse dependency, which is the defect the canonical
+// surface fixed (a class declared 57 reverse dependencies of which 8 were
+// dependency rows).
 import { IMPACT_REL_TYPES } from "../../lsp/impact"
 import type { ProjectID } from "../../project/schema"
 import type { ImpactReport } from "../contracts"
@@ -13,24 +37,17 @@ import { makeProvenance } from "../evidence"
 const ENGINE = "impact@intelligence"
 const ENGINE_VERSION = "m10.04"
 
-// M48.P1/P2 (#696/#697): DEPRECATED as a tool-surface calculator. bb_analyze
-// mode=impact aggregates the canonical computeImpact walk (src/lsp/impact.ts)
-// since M48.P1; this function is no longer reachable from any public tool and
-// its depth-capped "transitive" scope could report truncated:false while real
-// dependents exist beyond the cap. Retained only as an exported unit for the
-// M15 legacy gate (which asserts reachability, never truncation). Do not wire
-// it into a tool handler; the M48.P2 gate fails if a handler imports it.
-
 // Change impact: who is affected when the target changes. Built over the shared
 // graph engine (callers direction) under the DECLARED dependency rule
 // (IMPACT_REL_TYPES: calls, instantiates, extends, implements) — the same rule
 // the canonical surface walks, so `directSymbols` is a count of dependents and
 // not of rows. `contains` is what that excludes and why it matters: it is the
-// parent -> member edge, so under the all-kinds default a class reported its own
-// methods as symbols affected by a change to it, and a changed method counted
-// the class that merely holds it. Distinguishes direct (depth 0), transitive
-// (depth > 0), and global (full traversal). Reports cross-language and
-// unresolved edges. Makes NO test-coverage claims (that belongs to M9.10).
+// parent -> member edge, so under an all-kinds default a class would report its
+// own methods as symbols affected by a change to it, and a changed method would
+// count the class that merely holds it. Distinguishes direct (depth 0),
+// transitive (depth > 0), and global (full traversal). Reports cross-language and
+// unresolved edges. Makes NO test-coverage claims (that belongs to the test
+// intelligence surface).
 export async function analyzeImpact(
   projectId: ProjectID,
   target: string,

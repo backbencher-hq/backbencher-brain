@@ -1,3 +1,10 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the generated reference for bb_annotations: contract, input schema, returns, examples, errors, limitations, performance, safety and evidence semantics.
+WHO IT IS FOR — callers of bb_annotations through any MCP host, the CLI (`bb tool bb_annotations`), or a library.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_annotations/descriptor.ts, src/mcp/tools/bb_annotations/handler.ts, script/tool-docs/curation/bb_annotations.ts; regenerate with `npx tsx script/verify-tool-docs.ts --only bb_annotations --write`.
+-->
 # `bb_annotations`
 
 Read annotations for a symbol, one file's copy of a symbol (optional `path`), or all annotations up to the declared limit, with full provenance on every row: author class, tool identity, and timestamps. Every answer declares its bound: `count` is the page size, `totalCountIfKnown` the true total, and `truncated`/`truncationReason` fire when the limit actually dropped rows — a short page is never mistaken for a complete one. A `symbol` also matches notes written under a symbol's qualified name, the same predicate the editor uses. No annotations is a declared absence, never an error. To write a note use bb_annotate.
@@ -83,4 +90,4 @@ To write a note use `bb_annotate`; this tool reads stored annotations and declar
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).
 
-This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it.
+This page is generated from the executable registry and curated documentation. Run `npm run docs:generate` to update it, or `npx tsx script/verify-tool-docs.ts --only <tool> --write` for a single page.

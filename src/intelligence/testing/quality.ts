@@ -55,15 +55,37 @@ function clamp01(x: number): number {
   return Math.max(0, Math.min(1, x))
 }
 
+/** Escape %/_/\ so a path is a VALUE in a LIKE comparison, never a pattern. */
+function escapeLikeValue(value: string): string {
+  let out = ""
+  for (const ch of value) out += ch === "\\" || ch === "%" || ch === "_" ? "\\" + ch : ch
+  return out
+}
+
+/**
+ * A project-relative path scope: the FILE ITSELF, or any file under it on a
+ * whole segment boundary — the same rule `dependencies` and `complexity` use.
+ * The exact-match arm is why it exists here: without it
+ * `filePath: "test/unit/engine.test.ts"` (a real code test file) was a scope
+ * with zero rows, and the report said no test file lives at that path.
+ */
+function testFileScope(filePath: string | undefined): { sql: string; params: string[] } {
+  if (!filePath) return { sql: "", params: [] }
+  let clean = filePath
+  while (clean.endsWith("/")) clean = clean.slice(0, -1)
+  return { sql: " AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')", params: [clean, escapeLikeValue(clean) + "/%"] }
+}
+
 export async function testQuality(projectId: ProjectID, options: QualityOptions = {}): Promise<TestQualityReport> {
   const maxFiles = options.maxFiles ?? 50
   const maxBytes = options.maxBytes ?? 64 * 1024
-  // Optional scope: test files under a project-relative path prefix, applied
-  // at the SQL layer so a scoped call reads less, not post-filtered. Neither
-  // statement here aliases brain_file, so the predicate uses the bare column
-  // (unambiguous — brain_import has no relative_path).
-  const scopeSql = options.filePath ? " AND relative_path LIKE ? ESCAPE '\\'" : ""
-  const scopeParams: string[] = options.filePath ? [options.filePath.replace(/[\\%_]/g, (c) => "\\" + c).replace(/\/+$/, "") + "/%"] : []
+  // Optional scope: test files under a project-relative path prefix, or in one
+  // named file, applied at the SQL layer so a scoped call reads less, not
+  // post-filtered. Neither statement here aliases brain_file, so the predicate
+  // uses the bare column (unambiguous — brain_import has no relative_path).
+  const scope = testFileScope(options.filePath)
+  const scopeSql = scope.sql
+  const scopeParams: string[] = scope.params
 
   const raw = await BrainDatabase.getRawInstance(projectId)
 

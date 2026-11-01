@@ -14,21 +14,21 @@ Tool count: 16 (11 pre-existing + 5 added by M28).
 | bb_health | read | verbose?, history?, limit?, refresh?, force?, wait?, freshness?, sampleSize?, integrity?, includeAnalysisRuns?, paths?, checkUnindexed? | pre-existing tool (v3 surface) | — |
 | bb_patterns | read | scope?, limit?, includeOrphaned?, includeFramework?, includeAntiPatterns?, confidenceThreshold?, history?, recordRun? | pre-existing tool (v3 surface) | — |
 | bb_security | read | history?, recordRun?, limit? | pre-existing tool (v3 surface) | — |
-| bb_visualize | read | scope?, target?, maxNodes?, maxLinks?, relationshipTypes?, symbolKinds?, languages?, excludePatterns?, includeTests?, view?, layout?, format? | pre-existing tool (v3 surface) | — |
+| bb_visualize | read | scope?, target?, maxNodes?, maxLinks?, offset?, relationshipTypes?, symbolKinds?, languages?, excludePatterns?, includeTests?, view?, layout?, format? | pre-existing tool (v3 surface) | — |
 | bb_migrate | read | symbolName?, symbolNames?, paths?, symbolIds?, targetLanguage, format? | pre-existing tool (v3 surface) | — |
 | bb_analyze | read | mode, target?, filePath?, limit? | pre-existing tool (v3 surface) | — |
 | bb_doc | read | mode, target?, format?, audience?, detail?, includeExamples?, includeDiagrams?, includeTests?, limit?, maxTokens?, refresh? | pre-existing tool (v3 surface) | — |
-| bb_edit | write | mode, dryRun?, filePath?, symbolName?, lineStart?, content?, newContent?, targetSymbolName?, position?, newName?, force?, format?, overwrite? | pre-existing tool (v3 surface) | — |
+| bb_edit | write | mode, dryRun?, filePath?, symbolName?, lineStart?, content?, newContent?, targetSymbolName?, position?, newName?, force?, format?, overwrite?, edits?, files? | pre-existing tool (v3 surface) | — |
 | bb_index | write | path, mode? | pre-existing tool (v3 surface) | — |
 | bb_graph **(M28)** | read | symbol, maxDepth?, direction?, relationshipTypes?, includeCrossLanguage?, timeBudgetMs?, maxEdges?, edgeLimit? | graph engine + tier rules (same as the editor graph panel) | [T1.json](../../validation/m28/results/T1.json) |
-| bb_impact **(M28)** | read | symbol, relationshipTypes?, refresh? | src/lsp/impact.ts (identical totals + truncation declarations) | [T1.json](../../validation/m28/results/T1.json) |
+| bb_impact **(M28)** | read | symbol, relationshipTypes?, file?, refresh? | src/lsp/impact.ts (identical totals + truncation declarations) | [T1.json](../../validation/m28/results/T1.json) |
 | bb_cross_language **(M28)** | read | symbol, limit? | cross-language hover facts (stored rows only, declared absence) | [T1.json](../../validation/m28/results/T1.json) |
 | bb_annotate **(M28)** | write | symbol, body, path?, toolIdentity? | writes the store the hover section + graph badge render | [T1.json](../../validation/m28/results/T1.json) |
 | bb_annotations **(M28)** | read | symbol?, path?, limit?, includeNameLevel? | reads the store the hover section + graph badge render | [T1.json](../../validation/m28/results/T1.json) |
 
 ## The union claim (machine-checked)
 
-One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven identical answers — graph edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence. Claim: verified via [U1.json](../../validation/m28/results/U1.json) (30/30 checks, 4/4 mutants).
+One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven identical answers — graph edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence. Claim: verified via [U1.json](../../validation/m28/results/U1.json) (30/30 checks, 6/6 mutants).
 
 ## Annotations (D-3/D-6)
 

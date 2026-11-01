@@ -13,13 +13,13 @@
       "name": "U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging",
       "caught": true,
       "verdict": "observed",
-      "observed": "365 of 2170 shapes diverge; instantiates conf=0.9 stored=\"semantic_candidate\": surface=inferred owner=structural ;; uses conf=1 stored=\"\": surface=inferred owner=usage_contextual ;; use conf=1 stored=\"indexed\": surface=inferred owner=usage_contextual"
+      "observed": "445 of 2450 shapes diverge; references conf=0.7 stored=\"nonsense-tier\": surface=inferred owner=usage_contextual ;;  Calls  conf=1 stored=\"nonsense-tier\": surface=inferred owner=structural ;; CALLS conf=0.9 stored=\"indexed\": surface=inferred owner=structural"
     },
     {
       "name": "U2 M2: a clone-anchored gate CONCLUDES DIFFERENTLY from the owner-anchored one (the gate is not CL5's 'two doors, one bug')",
       "caught": true,
       "verdict": "observed",
-      "observed": "owner-anchored reports 0, clone-anchored reports 365 — a gate anchored on a copy of the surface's rule would report 365 instead"
+      "observed": "owner-anchored reports 0, clone-anchored reports 445 — a gate anchored on a copy of the surface's rule would report 445 instead"
     },
     {
       "name": "U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line",
@@ -40,8 +40,8 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
-  "sourceFingerprint": "6cf1db34d4785b65901d729f44de4a7d8b5cf194f137e6989f9ca1bf17c7dc7e",
+  "currentCommit": "ba9455decfe49609feb69380c3444124531a8c2c",
+  "sourceFingerprint": "53fffa8e93c99a67f813f9b726b846d2a155541e8d8787dc6401958db6d1130a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-surface-parity.ts",
@@ -54,10 +54,10 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-10-16T19:35:05.941Z",
+  "generatedAt": "2026-11-01T19:40:50.924Z",
   "counts": {
-    "seededRelationshipShapes": 2170,
-    "seededShapesReturnedByBbGraph": 2170,
+    "seededRelationshipShapes": 2450,
+    "seededShapesReturnedByBbGraph": 2450,
     "hubEdgesRead": 8,
     "hubTierDivergences": 0,
     "seedTierDivergences": 0,
@@ -70,12 +70,12 @@
     {
       "name": "U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging",
       "verdict": "observed",
-      "observed": "365 of 2170 shapes diverge; instantiates conf=0.9 stored=\"semantic_candidate\": surface=inferred owner=structural ;; uses conf=1 stored=\"\": surface=inferred owner=usage_contextual ;; use conf=1 stored=\"indexed\": surface=inferred owner=usage_contextual"
+      "observed": "445 of 2450 shapes diverge; references conf=0.7 stored=\"nonsense-tier\": surface=inferred owner=usage_contextual ;;  Calls  conf=1 stored=\"nonsense-tier\": surface=inferred owner=structural ;; CALLS conf=0.9 stored=\"indexed\": surface=inferred owner=structural"
     },
     {
       "name": "U2 M2: a clone-anchored gate CONCLUDES DIFFERENTLY from the owner-anchored one (the gate is not CL5's 'two doors, one bug')",
       "verdict": "observed",
-      "observed": "owner-anchored reports 0, clone-anchored reports 365 — a gate anchored on a copy of the surface's rule would report 365 instead"
+      "observed": "owner-anchored reports 0, clone-anchored reports 445 — a gate anchored on a copy of the surface's rule would report 445 instead"
     },
     {
       "name": "U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line",
@@ -101,13 +101,13 @@
   ],
   "notes": [
     "fixture relationship kinds: calls,contains,exports,imports,references",
-    "seeded 2170 relationship shapes across 73 probe symbols (2170 kind x confidence x stored-class combinations)",
-    "seed reachability: 2170 rows returned for 2170 seeded; 73 of 73 pages declared the requested filter (filterNarrowed), 0 declared a bound (truncated)",
-    "seeded a member-through-owner shape: u2SeedMember (field) owned by Barcode (class)"
+    "seeded 2450 relationship shapes across 82 probe symbols (2450 kind x confidence x stored-class combinations)",
+    "seed reachability: 2450 rows returned for 2450 seeded; 82 of 82 pages declared the requested filter (filterNarrowed), 0 declared a bound (truncated)",
+    "seeded a member-through-owner shape: u2SeedMember (field) owned by Warehouse (class)"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-16T19:35:05.942Z",
-    "contentSha256": "36bab181dd297b7e42930b046c66c6b03ad839c77500c1e0a20bf53d8fc0d60b"
+    "sealedAt": "2026-11-01T19:40:50.925Z",
+    "contentSha256": "334ede84a8bee516a04f1065d9bd8710ec3234154be5ee4fced241220fd62ef1"
   }
 }
