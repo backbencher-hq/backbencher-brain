@@ -1093,7 +1093,13 @@ export async function traverseGraph(
       // different spelling → one edge, first spelling wins. Line-guarded:
       // a NULL line cannot prove two rows name one site.
       if (row.lineNumber != null && row.lineNumber > 0) {
-        const siteKey = `${row.relType}|${row.symId ?? ""}|${symbolId}|${row.srcFileRel ?? ""}|${row.lineNumber}`
+        // The TARGET identity is the id the stored row matched, not the traced
+        // symbol: with the owner cascade, one source line can call two members
+        // of the traced class, and keying on the traced symbol made those two
+        // rows look like one spelling variant. Measured on a fixture: a caller
+        // line calling `m.a()` and `m.b()` answered ONE edge naming `a` with
+        // `spellingVariantsCollapsed: 1`.
+        const siteKey = `${row.relType}|${row.symId ?? ""}|${row.matchedId ?? symbolId}|${row.srcFileRel ?? ""}|${row.lineNumber}`
         if (emittedCallerSites.has(siteKey)) {
           collapsedSpellingVariants++
           continue
@@ -1315,7 +1321,9 @@ export async function traverseGraph(
       emittedCalleeRows.add(row.rowId)
       // M59 (#854, consumer option): same-site spelling collapse, as in callers.
       if (row.lineNumber != null && row.lineNumber > 0) {
-        const calleeKey = `${row.relType}|${symbolId}|${row.symId ?? `ext:${row.extName ?? ""}`}|${row.srcFileRel ?? ""}|${row.lineNumber}`
+        // Same rule from the other end: the SOURCE identity is the id the row
+        // matched (a member, under the cascade), not the traced owner.
+        const calleeKey = `${row.relType}|${row.matchedId ?? symbolId}|${row.symId ?? `ext:${row.extName ?? ""}`}|${row.srcFileRel ?? ""}|${row.lineNumber}`
         if (emittedCalleeSites.has(calleeKey)) {
           collapsedSpellingVariants++
           continue

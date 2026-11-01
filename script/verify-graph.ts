@@ -84,6 +84,14 @@ mkdirSync(path.join(root, "src"), { recursive: true })
 writeFileSync(path.join(root, "src", "chain.ts"), TS_CHAIN)
 writeFileSync(path.join(root, "src", "Chain.java"), JAVA_CHAIN)
 writeFileSync(path.join(root, "src", "Chain2.scala"), SCALA_CHAIN)
+// One source line calling two members of one class: the owner cascade attributes
+// both rows to the class, and the same-site collapse must keep them apart
+// because they are different targets (each names its own member).
+writeFileSync(
+  path.join(root, "src", "multi.ts"),
+  "export class Multi {\n  a(): number { return 1 }\n  b(): number { return 2 }\n}\n" +
+    "export function sameLineCaller(m: Multi): number {\n  return m.a() + m.b()\n}\n",
+)
 
 const projectId = getProjectId(root)
 try {
@@ -379,6 +387,15 @@ try {
     "door: every edge publishes the stored tier claim and resolution basis beside the derived tier",
     doorEdges.length > 0 && doorEdges.every((e: any) => "evidenceClass" in e && "targetBasis" in e && "rowId" in e),
     `${doorEdges.length} edge(s); fields=${JSON.stringify(Object.keys(doorEdges[0] ?? {}))}`,
+  )
+
+  // Same-line, two-member calls: two stored rows, two edges, no collapse.
+  const sameLine = await door({ symbol: "Multi", direction: "callers", maxDepth: 1, relationshipTypes: ["calls"] })
+  const sameLineMembers = sameLine.ok ? sameLine.json.callers.map((e: any) => e.matchedMember?.name ?? null) : []
+  check(
+    "door: one source line calling two members of a class answers TWO caller edges (each naming its member), not one collapsed spelling variant",
+    sameLine.ok && sameLine.json.callers.length === 2 && sameLineMembers.includes("a") && sameLineMembers.includes("b") && sameLine.json.summary.dedupedAtToolLayer.spellingVariantsCollapsed === 0,
+    sameLine.ok ? `callers=${sameLine.json.callers.length} members=${JSON.stringify(sameLineMembers)} collapsed=${sameLine.json.summary.dedupedAtToolLayer.spellingVariantsCollapsed}` : sameLine.error,
   )
 
   // Not-found throws
