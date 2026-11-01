@@ -811,7 +811,11 @@ export const SECOND_CORPUS: Record<string, string> = {
   fsharp: "FSharp.Data",
   hcl: "tf-aws-components",
   make: "consul",
-  nim: "pixie",
+  // M14 (2026-11-01): nim's second corpus pointed at `pixie`, a checkout that contains ZERO .nim files,
+  // so the canonical sweep DIED at its batch ("corpus repo pixie contains no nim files — fix
+  // LANG_REPOS/SECOND_CORPUS routing for nim") and no evidence could be written. `nim-lang-nimble` is a
+  // real second codebase (283 .nim files) and the only mapping change is this name.
+  nim: "nim-lang-nimble",
   perl: "plack",
 
   // M14 (#288): html's second corpus is `sqlite` — 21 files, 21/21 of them FULL
