@@ -183,12 +183,19 @@ const lanes: Lane[] = Object.keys(LANGS)
   .map((lane) => {
     const mut = mutantsByLang.get(lane) ?? { live: 0, retired: 0 }
     const measuredRow = diffMeasuredLangs.get(lane)
+    // MEASUREMENT OUTRANKS THE BASELINE'S `unmeasured` BOOKKEEPING. That map is CARRIED across baseline
+    // updates by design (mergeBaseline's #870 note: rows measured but deliberately not pinned are
+    // bookkeeping), and entries from a sweep where an oracle did not exist yet survive forever. The
+    // fresh measurement record is the current verdict, so it is consulted first: a lane with a row there
+    // was measured THIS sweep and cannot be "unmeasured". Measured 2026-11-01 (round 8): bash, nim and vb
+    // were reported unmeasured by the guard even though the canonical sweep had just measured them,
+    // because their 2026-10-xx zero-truth entries were still in the carried map.
     const differential: Lane["differential"] = diffPinnedLangs.has(lane)
       ? "pinned"
-      : diffUnmeasuredLangs.has(lane)
-        ? "unmeasured"
-        : measuredRow
-          ? "measured"
+      : measuredRow
+        ? "measured"
+        : diffUnmeasuredLangs.has(lane)
+          ? "unmeasured"
           : "absent"
     return {
       lane,

@@ -17,6 +17,14 @@
       "pinned": false,
       "dirtyCorpus": false
     },
+    "otp:bash": {
+      "missing": 0,
+      "unexplained": 5,
+      "heuristic": 0,
+      "sampleSetHash": "3189d395fa1f18c4",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
     "powershell:powershell": {
       "missing": 142,
       "unexplained": 49,
@@ -337,6 +345,22 @@
       "pinned": false,
       "dirtyCorpus": false
     },
+    "redis:make": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "e1b49ce25608c189",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "nim:nim": {
+      "missing": 4,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "fd6837c766748fae",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
     "mojo:perl": {
       "missing": 291,
       "unexplained": 1,
@@ -355,9 +379,17 @@
     },
     "duckdb:sql": {
       "missing": 0,
-      "unexplained": 4,
+      "unexplained": 0,
       "heuristic": 0,
       "sampleSetHash": "8378a1275fc0b970",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "P3D-Legacy:vb": {
+      "missing": 2,
+      "unexplained": 0,
+      "heuristic": 9,
+      "sampleSetHash": "d092e10cc54c3af0",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -625,6 +657,22 @@
       "pinned": false,
       "dirtyCorpus": false
     },
+    "consul:make": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "abac0ebd75471c84",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "nim-lang-nimble:nim": {
+      "missing": 1,
+      "unexplained": 2,
+      "heuristic": 0,
+      "sampleSetHash": "78e85e478d4f8eec",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
     "plack:perl": {
       "missing": 351,
       "unexplained": 0,
@@ -633,50 +681,13 @@
       "pinned": false,
       "dirtyCorpus": false
     },
-    "otp:bash": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "sampleSetHash": null,
+    "DISMTools:vb": {
+      "missing": 27,
+      "unexplained": 1,
+      "heuristic": 25,
+      "sampleSetHash": "b7668c006e2a5997",
       "pinned": false,
-      "unmeasured": true,
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
-    },
-    "bash": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "sampleSetHash": null,
-      "pinned": false,
-      "unmeasured": true,
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
-    },
-    "nim:nim": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "sampleSetHash": null,
-      "pinned": false,
-      "unmeasured": true,
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
-    },
-    "nim": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "sampleSetHash": null,
-      "pinned": false,
-      "unmeasured": true,
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
-    },
-    "nim-lang-nimble:nim": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "sampleSetHash": null,
-      "pinned": false,
-      "unmeasured": true,
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
+      "dirtyCorpus": false
     }
   }
 }

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-31T19:08:21.507Z",
+  "generatedAt": "2026-11-01T13:14:17.964Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",

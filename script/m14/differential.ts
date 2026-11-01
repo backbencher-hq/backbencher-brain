@@ -26786,6 +26786,24 @@ async function main() {
     for (const k of ["floorMoves", "unmeasured", "recovered"] as const) {
       if (previous[k] !== undefined && previous[k] !== null) carried[k] = previous[k]
     }
+    // A CARRIED `unmeasured` ENTRY IS A HISTORICAL RECORD, AND A LANE THAT WAS MEASURED THIS RUN IS NO
+    // LONGER UNMEASURED. The map is preserved by name (see above) because nothing regenerates it, but
+    // preserving it verbatim made it permanent: bash/nim/vb's "no oracle yet" entries from earlier sweeps
+    // survived the round-8 sweep that MADE oracles for them and registered them, and `verify-fleet.ts` read
+    // that stale map as the current verdict. Prune every key this run measured (clean or not), then record
+    // any NEW zero-truth lanes the opt-in probe found.
+    const measuredThisRun = new Set(Object.keys({ ...current, ...currentSecond }))
+    const measuredLangsThisRun = new Set([...measuredThisRun].map((k) => k.includes(":") ? k.split(":").pop()! : k))
+    const carriedUnmeasured: Record<string, unknown> = {}
+    const carriedUnmeasuredIn = (carried.unmeasured as Record<string, unknown>) ?? {}
+    for (const [k, v] of Object.entries(carriedUnmeasuredIn)) {
+      // A bare lane key (`bash`) is the pre-G5 spelling of the same lane the sweep now reports as
+      // `<repo>:<lang>` (`otp:bash`); prune it too when ANY row of that lane was measured.
+      if (measuredThisRun.has(k) || (!k.includes(":") && measuredLangsThisRun.has(k))) continue
+      carriedUnmeasured[k] = v
+    }
+    if (Object.keys(carriedUnmeasured).length > 0) carried.unmeasured = carriedUnmeasured
+    else delete carried.unmeasured
     // lanes an opt-in mid-repair sweep found carrying no oracle are recorded, never counted
     if (Object.keys(zeroTruthUnmeasured).length > 0) {
       carried.unmeasured = { ...((carried.unmeasured as object) ?? {}), ...zeroTruthUnmeasured }

@@ -1,9 +1,9 @@
 {
   "issue": "491",
   "code": "L2",
-  "status": "known-gap",
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
-  "sourceFingerprint": "c7d921cbae0dcf42b6d9818aefdcffed5a79ea9a8490978e5ccb024d2c93b8ad",
+  "status": "verified",
+  "currentCommit": "f8fc2d718c5c4652f5ab67abddc07418154da6b3",
+  "sourceFingerprint": "625ecc463bea7faf739fa529ab6e21a13cc4e9be65a1e25042523bdd68894487",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-hover.ts",
@@ -13,15 +13,13 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-17T17:03:27.827Z",
-  "passed": 57,
-  "failed": 1,
-  "failures": [
-    "G6: p95 warm hover under 50ms budget"
-  ],
+  "generatedAt": "2026-11-01T13:16:06.595Z",
+  "passed": 58,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 14,
   "verdict": {
-    "realComponentFailures": 1,
+    "realComponentFailures": 0,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
     "mutantsByComponent": {
@@ -36,7 +34,7 @@
         "anchorDrift": 0
       }
     },
-    "ok": false,
+    "ok": true,
     "anchorDrift": 0,
     "anchorDriftNote": "A mutant whose anchor no longer exists, or whose module fails to load, no longer tests what this gate names. It is reported as NOT-CAUGHT and forces known-gap — §8.3: silence is guilt, and a skip is not a pass.",
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
@@ -52,7 +50,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:03:27.828Z",
-    "contentSha256": "0bc7b5f37381b7d3c38743fd2797f151c4d06d4d47c9b3cec8a3a09879003ecf"
+    "sealedAt": "2026-11-01T13:16:06.596Z",
+    "contentSha256": "f89792314ba28e08fadfb224b15a2752c9ef5abb10a6cfaaca69fdaf12b8f45e"
   }
 }

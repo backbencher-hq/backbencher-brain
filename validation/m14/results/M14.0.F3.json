@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "d66e21e34ca8780c188b77ef032c30b158a5ba820628ec2b442075896f3183e1",
-    "sealedAt": "2026-10-31T19:07:51.000Z"
+    "contentSha256": "3b9573d8498658f73d6ea7498016bf6da10d262e891f7466429d2d8463570c5f",
+    "sealedAt": "2026-11-01T12:49:35.000Z"
   },
   "checks": [
     {
@@ -73,7 +73,7 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "83/83 fixtures pass",
+      "detail": "84/84 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "71851adea6ea964816d1cc16bc382acccf20dbe9",
-  "committedAt": "2026-10-31T15:07:51-04:00",
+  "commit": "f8fc2d718c5c4652f5ab67abddc07418154da6b3",
+  "committedAt": "2026-11-01T07:49:35-05:00",
   "data": {
     "details": [
       {
@@ -3963,6 +3963,11 @@
       },
       {
         "fixture": "scala/mixin-trait-extends-trait",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/multiline-heritage",
         "ok": true,
         "problems": []
       },
@@ -9299,7 +9304,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 83
+        "pass": 84
       },
       "scss": {
         "fail": 0,
@@ -9368,8 +9373,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-10-31T15:07:51-04:00",
-  "regeneratedAtCommit": "71851adea6ea964816d1cc16bc382acccf20dbe9",
+  "regeneratedAt": "2026-11-01T07:49:35-05:00",
+  "regeneratedAtCommit": "f8fc2d718c5c4652f5ab67abddc07418154da6b3",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

@@ -1,2005 +1,1975 @@
 {
-  "samplePerLang": 60,
-  "loadContext": {
-    "loadAvgStart": 2.51,
-    "loadAvgEnd": 3.8,
-    "sliceCount": 11
+ "samplePerLang": 60,
+ "loadContext": {
+  "loadAvgStart": 3.27,
+  "loadAvgEnd": 3.89,
+  "sliceCount": 11
+ },
+ "counts": {
+  "java": {
+   "missing": 0,
+   "unexplained": 0
   },
-  "counts": {
-    "java": {
-      "missing": 0,
-      "unexplained": 0
-    },
-    "groovy": {
-      "missing": 0,
-      "unexplained": 0
-    },
-    "grails-core:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "grails-core:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 81,
-      "perf": {
-        "avgMsPerFile": 4.7
-      },
-      "sampleSetHash": "2fff892462bb64ee"
-    },
-    "grails-core:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 33,
-      "perf": {
-        "avgMsPerFile": 17.7
-      },
-      "sampleSetHash": "3a9248865d3bbbd9"
-    },
-    "Exposed:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 87,
-      "perf": {
-        "avgMsPerFile": 61.3
-      },
-      "sampleSetHash": "f39e30d3648bd4a2"
-    },
-    "Exposed:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "Exposed:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "scala3:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "scala3:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 36,
-      "perf": {
-        "avgMsPerFile": 3.8
-      },
-      "sampleSetHash": "49b947fefb290066"
-    },
-    "scala3:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 3.6
-      }
-    },
-    "scala3:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "Exposed:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "grails-core:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "vue-core:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 113.1
-      },
-      "sampleSetHash": "771c854fefb7fcdc"
-    },
-    "vue-core:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "vue-core:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "vue-core:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "vue-core:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "Exposed:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "graphql-js:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 16
-      }
-    },
-    "graphql-js:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 21.9
-      }
-    },
-    "graphql-js:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "graphql-js:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "graphql-js:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "graphql-js:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "cats-effect:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "cats-effect:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "cats-effect:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "cats-effect:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 36,
-      "perf": {
-        "avgMsPerFile": 13.6
-      },
-      "sampleSetHash": "45c0a06542ed9f1a"
-    },
-    "cats-effect:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "perf": {
-        "avgMsPerFile": 4.7
-      }
-    },
-    "cats-effect:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "scala3:javascript": {
-      "missing": 0,
-      "unexplained": 6,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 62
-      }
-    },
-    "scala3:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "grails-core:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 8.3
-      },
-      "sampleSetHash": "32c4318f0f3db775"
-    },
-    "grails-core:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "Exposed:javascript": {
-      "missing": 2,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 410.5
-      }
-    },
-    "vue-core:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 9.3
-      }
-    },
-    "lodash:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 314.1
-      },
-      "sampleSetHash": "494e1b94766e8ade"
-    },
-    "lodash:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "lodash:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "lodash:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "lodash:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "lodash:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "element-plus:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 268.9
-      }
-    },
-    "element-plus:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 11.7
-      },
-      "sampleSetHash": "258bbdbad4d0a7bc"
-    },
-    "element-plus:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "element-plus:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "element-plus:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "element-plus:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "element-plus:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 8.9
-      },
-      "sampleSetHash": "ac4d0a05fa0c0ec0"
-    },
-    "vue-core:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 142.1
-      }
-    },
-    "grails-core:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "svelte:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 7.3
-      },
-      "sampleSetHash": "b3f5ca3dabe585c8"
-    },
-    "svelte:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 107.2
-      }
-    },
-    "svelte:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "svelte:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "svelte:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "svelte:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "svelte:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "svelte:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 18.1
-      },
-      "sampleSetHash": "c1c6f9e95bf02a6b"
-    },
-    "grails-core:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "shadcn-svelte:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 64.5
-      }
-    },
-    "shadcn-svelte:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 25.5
-      }
-    },
-    "shadcn-svelte:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "shadcn-svelte:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "shadcn-svelte:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "shadcn-svelte:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "shadcn-svelte:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "shadcn-svelte:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 16.7
-      },
-      "sampleSetHash": "2f6fd79cf720707d"
-    },
-    "fmt:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 8.7
-      }
-    },
-    "fmt:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "fmt:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 154.1
-      },
-      "sampleSetHash": "89b51095c4659906"
-    },
-    "jq:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 36.3
-      }
-    },
-    "jq:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "jq:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 203.8
-      },
-      "sampleSetHash": "2b743b65d0eac283"
-    },
-    "ripgrep:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "ripgrep:rust": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 80.9
-      },
-      "sampleSetHash": "3726f83d65a6e09a"
-    },
-    "sqlite:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 243.8
-      },
-      "sampleSetHash": "ef6794727cd236d8"
-    },
-    "fmt:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 20.3
-      }
-    },
-    "go-tools:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 127.3
-      }
-    },
-    "go-tools:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 3.8
-      }
-    },
-    "go-tools:rust": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "go-tools:go": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 36.4
-      },
-      "sampleSetHash": "ae9449eb50c1f68f"
-    },
-    "zig:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 688.8
-      }
-    },
-    "zig:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 10.8
-      }
-    },
-    "zig:rust": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:go": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "zig:zig": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 85.5
-      },
-      "sampleSetHash": "053fa67f6663fddb"
-    },
-    "powershell:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:typescript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:scala": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:svelte": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:rust": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:go": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:zig": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": null
-      }
-    },
-    "powershell:csharp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 52.7
-      },
-      "sampleSetHash": "3b3dd5e9fc860788"
-    },
-    "proxicall:dart": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 91.7
-      },
-      "sampleSetHash": "0e484c4b04addfbd"
-    },
-    "swift-nio:swift": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 61.7
-      },
-      "sampleSetHash": "ea2ac2a489ca0853"
-    },
-    "phpunit:php": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 6.5
-      },
-      "sampleSetHash": "4be02ca7685ed414"
-    },
-    "rake:c": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 4.7
-      }
-    },
-    "rake:ruby": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 307,
-      "perf": {
-        "avgMsPerFile": 3.9
-      },
-      "sampleSetHash": "0c505b9b4aeda127"
-    },
-    "cython:javascript": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 158.5
-      }
-    },
-    "cython:c": {
-      "missing": 10,
-      "unexplained": 73,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 89.4
-      }
-    },
-    "cython:python": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 127,
-      "perf": {
-        "avgMsPerFile": 50.6
-      },
-      "sampleSetHash": "d44b4e45b381caec"
-    },
-    "cabal:haskell": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 11.1
-      },
-      "sampleSetHash": "2040e3ad57636818"
-    },
-    "jq:python": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 7.8
-      }
-    },
-    "fmt:python": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 29.3
-      }
-    },
-    "cython:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 2.8
-      }
-    },
-    "sdwebimage:objc": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 163,
-      "perf": {
-        "avgMsPerFile": 26.6
-      },
-      "sampleSetHash": "8234cb008232a69b"
-    },
-    "elixir:elixir": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 33
-      },
-      "sampleSetHash": "96895fbad6c5eabd"
-    },
-    "rebar3:erlang": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 8
-      },
-      "sampleSetHash": "346c26d74ea36d84"
-    },
-    "clojure:clojure": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 17.2
-      },
-      "sampleSetHash": "e0395ac2bf495bf0"
-    },
-    "kotlinx-coroutines:kotlin": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 87,
-      "perf": {
-        "avgMsPerFile": 14
-      },
-      "sampleSetHash": "d2351846d054edea"
-    },
-    "clojure:java": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 64,
-      "perf": {
-        "avgMsPerFile": 22.9
-      },
-      "sampleSetHash": "86f37ca7cf27bbd4"
-    },
-    "geb:groovy": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 32,
-      "perf": {
-        "avgMsPerFile": 3.9
-      },
-      "sampleSetHash": "afddb7a7aeb00bd8"
-    },
-    "vue-element-admin:vue": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 44.8
-      },
-      "sampleSetHash": "ceda7eae9ea97e76"
-    },
-    "nlohmann-json:cpp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 52.7
-      },
-      "sampleSetHash": "88dc095dd86d8301"
-    },
-    "cargo:rust": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 33.1
-      },
-      "sampleSetHash": "e09029111a6cc4ec"
-    },
-    "terraform:go": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 58.3
-      },
-      "sampleSetHash": "9c09cea779eb5ca6"
-    },
-    "zls:zig": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 98.8
-      },
-      "sampleSetHash": "c1285552d459a43a"
-    },
-    "fsharp:csharp": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 54.5
-      },
-      "sampleSetHash": "ff6eeb46eef5e9d4"
-    },
-    "dart-http:dart": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 20
-      },
-      "sampleSetHash": "549143339f0cfaa9"
-    },
-    "alamofire:swift": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 83.5
-      },
-      "sampleSetHash": "0052e892f6e0d27b"
-    },
-    "afnetworking:objc": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 315,
-      "perf": {
-        "avgMsPerFile": 22.9
-      },
-      "sampleSetHash": "29684f4b8391be9f"
-    },
-    "phpmyadmin:php": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 20.7
-      },
-      "sampleSetHash": "a6ec6aafaf16080e"
-    },
-    "rack:ruby": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 58,
-      "perf": {
-        "avgMsPerFile": 7
-      },
-      "sampleSetHash": "cbf9b090af441408"
-    },
-    "requests:python": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 50,
-      "perf": {
-        "avgMsPerFile": 61
-      },
-      "sampleSetHash": "e3679fa2131e9b78"
-    },
-    "hledger:haskell": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 9.8
-      },
-      "sampleSetHash": "d1c3ed0e861d118d"
-    },
-    "phoenix:elixir": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 11.4
-      },
-      "sampleSetHash": "5c95656137506145"
-    },
-    "otp:erlang": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 13.9
-      },
-      "sampleSetHash": "c3632c972f79c9a2"
-    },
-    "clj-kondo:clojure": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 6.5
-      },
-      "sampleSetHash": "93bd5239a044ad6d"
-    },
-    "svelte:css": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "truthRows": 68,
-      "covered": 68,
-      "coveragePct": 100,
-      "filesSampled": 60,
-      "perf": {
-        "avgMsPerFile": 1.408,
-        "filesMeasured": 185,
-        "loadAvg1AtMeasure": 30.85,
-        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
-        "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
-      },
-      "sampleSetHash": "def94838c364b04e"
-    },
-    "grails-core:css": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 14.4
-      },
-      "sampleSetHash": "b1a764a028ab54fa"
-    },
-    "kubernetes:yaml": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 31.459,
-        "unit": "ms per file, PRODUCTION entry (pool-worker parseFile), draw = 60 files",
-        "draw": {
-          "corpus": "kubernetes",
-          "available": 6608,
-          "files": 60,
-          "stride": 110.1,
-          "rule": "the baseline's declared samplePerLang=60 with a deterministic stride over the sorted file list"
-        },
-        "method": "5 timed repetitions of the same 60-file draw after one warm-up parse; the MEDIAN is recorded",
-        "spread": {
-          "min": 24.591,
-          "max": 65.509,
-          "all": [
-            33.136,
-            65.509,
-            24.591,
-            30.707,
-            31.459
-          ]
-        },
-        "loadContext": {
-          "loadAvgAtMeasurement": [
-            28.93,
-            31.1,
-            32.17
-          ],
-          "baselineRecordedLoadAvg": [
-            4.85,
-            5.19
-          ],
-          "caveat": "This number was measured at a load average of ~29 against the ~5 recorded in this file's own loadContext, and the 24.6-65.5 ms spread is that contention, not analyzer variance. It is recorded with the load and the spread rather than as a bare figure because a perf claim whose measurement environment is not stated cannot be compared against a later run, and a 6x-loaded box makes any single number a claim about the box. Re-measure on an idle machine before treating it as a regression threshold."
-        }
-      },
-      "differentialDraw": {
-        "corpora": 8,
-        "filesPerCorpus": 200,
-        "comparedFiles": 1004,
-        "truthPaths": 357304,
-        "oracle": "PyYAML 6.0.1 compose_all",
-        "note": "the floor counts are the 8-corpus deep draw, which is WIDER than this file's declared 60-per-lane draw; a wider draw can only make the floor harder to hold, so the 0/0 is a stronger claim than the canonical draw would give"
-      },
-      "grammarResidual": {
-        "files": 15,
-        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment — the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
-        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained — a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
-      },
-      "note": "Added 2026-09-27 with the yaml lane (M14 #286). The lane has an INDEPENDENT oracle rather than a hand-authored truth file: PyYAML 6.0.1 compose, sharing no code, algorithm or data model with the tree-sitter side, which is the property the shared F5 sweep requires of a lane's truth source (a truth file written by the same hand as the analyzer is a mirror, not a differential)."
-    },
-    "scala3:markdown": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 2.2
-      },
-      "sampleSetHash": "8127d7c0de552761"
-    },
-    "kubernetes:markdown": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 1.9
-      },
-      "sampleSetHash": "850beced0f7f393d"
-    },
-    "element-plus:scss": {
-      "missing": 56,
-      "unexplained": 3,
-      "heuristic": 0,
-      "truthRows": 1614,
-      "covered": 1558,
-      "coveragePct": 96.5,
-      "filesSampled": 149,
-      "perf": {
-        "avgMsPerFile": 21.691,
-        "filesMeasured": 160,
-        "loadAvg1AtMeasure": 35.63,
-        "method": "analyze() only, min of 5 runs after 2 warmups — the differential's own grain and a stricter run selection",
-        "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
-      },
-      "sampleSetHash": "dd6619b1d6986840"
-    },
-    "solidity:solidity": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 6.6
-      },
-      "sampleSetHash": "e9708e750546e983"
-    },
-    "julia:julia": {
-      "missing": 83,
-      "unexplained": 434,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 722
-      }
-    },
-    "otp:html": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 2.3
-      },
-      "sampleSetHash": "30e4242514acef78"
-    },
-    "cargo:toml": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 0.2
-      },
-      "sampleSetHash": "2887280c3e2a105b"
-    },
-    "sqlite:html": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 1.3
-      },
-      "sampleSetHash": "3316e7bdc525d7af"
-    },
-    "ripgrep:toml": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 2.2
-      },
-      "sampleSetHash": "c5e515b54f5e915c"
-    },
-    "tf-aws-components:hcl": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 5
-      },
-      "sampleSetHash": "1bae8a312cc9c4a2"
-    },
-    "ansible:yaml": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 12.5
-      },
-      "sampleSetHash": "c9d0e1b59b1676f8"
-    },
-    "grails-core:xml": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 18.8
-      },
-      "sampleSetHash": "ffe6839fc280fa8a"
-    },
-    "terraform:json": {
-      "missing": 0,
-      "unexplained": 0,
-      "heuristic": 0,
-      "perf": {
-        "avgMsPerFile": 3.5
-      },
-      "sampleSetHash": "a3d0513e0c1e2d44"
+  "groovy": {
+   "missing": 0,
+   "unexplained": 0
+  },
+  "grails-core:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "grails-core:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 81,
+   "perf": {
+    "avgMsPerFile": 10.9
+   },
+   "sampleSetHash": "2fff892462bb64ee"
+  },
+  "grails-core:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 33,
+   "perf": {
+    "avgMsPerFile": 17.7
+   },
+   "sampleSetHash": "3a9248865d3bbbd9"
+  },
+  "Exposed:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 87,
+   "perf": {
+    "avgMsPerFile": 57.2
+   },
+   "sampleSetHash": "f39e30d3648bd4a2"
+  },
+  "Exposed:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "Exposed:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "scala3:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "scala3:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 36,
+   "perf": {
+    "avgMsPerFile": 3.8
+   },
+   "sampleSetHash": "49b947fefb290066"
+  },
+  "scala3:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 3.6
+   }
+  },
+  "scala3:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "Exposed:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "grails-core:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "vue-core:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 113.1
+   },
+   "sampleSetHash": "771c854fefb7fcdc"
+  },
+  "vue-core:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "vue-core:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "vue-core:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "vue-core:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "Exposed:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "graphql-js:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 16
+   }
+  },
+  "graphql-js:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 21.9
+   }
+  },
+  "graphql-js:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "graphql-js:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "graphql-js:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "graphql-js:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "cats-effect:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "cats-effect:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "cats-effect:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "cats-effect:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 36,
+   "perf": {
+    "avgMsPerFile": 13.6
+   },
+   "sampleSetHash": "45c0a06542ed9f1a"
+  },
+  "cats-effect:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "perf": {
+    "avgMsPerFile": 4.7
+   }
+  },
+  "cats-effect:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "scala3:javascript": {
+   "missing": 0,
+   "unexplained": 6,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 62
+   }
+  },
+  "scala3:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "grails-core:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 8.3
+   },
+   "sampleSetHash": "32c4318f0f3db775"
+  },
+  "grails-core:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "Exposed:javascript": {
+   "missing": 2,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 410.5
+   }
+  },
+  "vue-core:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 9.3
+   }
+  },
+  "lodash:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 356.4
+   },
+   "sampleSetHash": "494e1b94766e8ade"
+  },
+  "lodash:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "lodash:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "lodash:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "lodash:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "lodash:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "element-plus:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 268.9
+   }
+  },
+  "element-plus:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 11.7
+   },
+   "sampleSetHash": "258bbdbad4d0a7bc"
+  },
+  "element-plus:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "element-plus:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "element-plus:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "element-plus:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "element-plus:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 8.9
+   },
+   "sampleSetHash": "ac4d0a05fa0c0ec0"
+  },
+  "vue-core:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 142.1
+   }
+  },
+  "grails-core:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "svelte:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 7.4
+   },
+   "sampleSetHash": "b3f5ca3dabe585c8"
+  },
+  "svelte:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 107.2
+   }
+  },
+  "svelte:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "svelte:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "svelte:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "svelte:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "svelte:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "svelte:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 11.3
+   },
+   "sampleSetHash": "c1c6f9e95bf02a6b"
+  },
+  "grails-core:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "shadcn-svelte:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 64.5
+   }
+  },
+  "shadcn-svelte:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 25.5
+   }
+  },
+  "shadcn-svelte:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "shadcn-svelte:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "shadcn-svelte:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "shadcn-svelte:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "shadcn-svelte:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "shadcn-svelte:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 16.7
+   },
+   "sampleSetHash": "2f6fd79cf720707d"
+  },
+  "fmt:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 8.7
+   }
+  },
+  "fmt:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "fmt:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 154.1
+   },
+   "sampleSetHash": "89b51095c4659906"
+  },
+  "jq:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 36.3
+   }
+  },
+  "jq:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "jq:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 203.8
+   },
+   "sampleSetHash": "2b743b65d0eac283"
+  },
+  "ripgrep:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "ripgrep:rust": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 80.9
+   },
+   "sampleSetHash": "3726f83d65a6e09a"
+  },
+  "sqlite:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 243.8
+   },
+   "sampleSetHash": "ef6794727cd236d8"
+  },
+  "fmt:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 20.3
+   }
+  },
+  "go-tools:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 127.3
+   }
+  },
+  "go-tools:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 3.8
+   }
+  },
+  "go-tools:rust": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "go-tools:go": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 36.4
+   },
+   "sampleSetHash": "ae9449eb50c1f68f"
+  },
+  "zig:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 688.8
+   }
+  },
+  "zig:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 10.8
+   }
+  },
+  "zig:rust": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:go": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "zig:zig": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 85.5
+   },
+   "sampleSetHash": "053fa67f6663fddb"
+  },
+  "powershell:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:typescript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:scala": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:svelte": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:rust": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:go": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:zig": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": null
+   }
+  },
+  "powershell:csharp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 88.5
+   },
+   "sampleSetHash": "3b3dd5e9fc860788"
+  },
+  "proxicall:dart": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 91.7
+   },
+   "sampleSetHash": "0e484c4b04addfbd"
+  },
+  "swift-nio:swift": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 95.4
+   },
+   "sampleSetHash": "ea2ac2a489ca0853"
+  },
+  "phpunit:php": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 7.7
+   },
+   "sampleSetHash": "4be02ca7685ed414"
+  },
+  "rake:c": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 4.7
+   }
+  },
+  "rake:ruby": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 307,
+   "perf": {
+    "avgMsPerFile": 3.9
+   },
+   "sampleSetHash": "0c505b9b4aeda127"
+  },
+  "cython:javascript": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 158.5
+   }
+  },
+  "cython:c": {
+   "missing": 10,
+   "unexplained": 73,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 89.4
+   }
+  },
+  "cython:python": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 127,
+   "perf": {
+    "avgMsPerFile": 56.2
+   },
+   "sampleSetHash": "d44b4e45b381caec"
+  },
+  "cabal:haskell": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 11.1
+   },
+   "sampleSetHash": "2040e3ad57636818"
+  },
+  "jq:python": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 7.8
+   }
+  },
+  "fmt:python": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 29.3
+   }
+  },
+  "cython:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 2.8
+   }
+  },
+  "sdwebimage:objc": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 163,
+   "perf": {
+    "avgMsPerFile": 26.6
+   },
+   "sampleSetHash": "8234cb008232a69b"
+  },
+  "elixir:elixir": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 20.1
+   },
+   "sampleSetHash": "96895fbad6c5eabd"
+  },
+  "rebar3:erlang": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 8
+   },
+   "sampleSetHash": "346c26d74ea36d84"
+  },
+  "clojure:clojure": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 27.7
+   },
+   "sampleSetHash": "e0395ac2bf495bf0"
+  },
+  "kotlinx-coroutines:kotlin": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 87,
+   "perf": {
+    "avgMsPerFile": 17.8
+   },
+   "sampleSetHash": "d2351846d054edea"
+  },
+  "clojure:java": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 64,
+   "perf": {
+    "avgMsPerFile": 27.4
+   },
+   "sampleSetHash": "86f37ca7cf27bbd4"
+  },
+  "geb:groovy": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 32,
+   "perf": {
+    "avgMsPerFile": 3.9
+   },
+   "sampleSetHash": "afddb7a7aeb00bd8"
+  },
+  "vue-element-admin:vue": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 44.8
+   },
+   "sampleSetHash": "ceda7eae9ea97e76"
+  },
+  "nlohmann-json:cpp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 52.7
+   },
+   "sampleSetHash": "88dc095dd86d8301"
+  },
+  "cargo:rust": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 33.1
+   },
+   "sampleSetHash": "e09029111a6cc4ec"
+  },
+  "terraform:go": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 58.3
+   },
+   "sampleSetHash": "9c09cea779eb5ca6"
+  },
+  "zls:zig": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 98.8
+   },
+   "sampleSetHash": "c1285552d459a43a"
+  },
+  "fsharp:csharp": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 36
+   },
+   "sampleSetHash": "ff6eeb46eef5e9d4"
+  },
+  "dart-http:dart": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 20
+   },
+   "sampleSetHash": "549143339f0cfaa9"
+  },
+  "alamofire:swift": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 42.4
+   },
+   "sampleSetHash": "0052e892f6e0d27b"
+  },
+  "afnetworking:objc": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 315,
+   "perf": {
+    "avgMsPerFile": 22.9
+   },
+   "sampleSetHash": "29684f4b8391be9f"
+  },
+  "phpmyadmin:php": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 18.8
+   },
+   "sampleSetHash": "a6ec6aafaf16080e"
+  },
+  "rack:ruby": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 58,
+   "perf": {
+    "avgMsPerFile": 7
+   },
+   "sampleSetHash": "cbf9b090af441408"
+  },
+  "requests:python": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 50,
+   "perf": {
+    "avgMsPerFile": 56.1
+   },
+   "sampleSetHash": "e3679fa2131e9b78"
+  },
+  "hledger:haskell": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 9.8
+   },
+   "sampleSetHash": "d1c3ed0e861d118d"
+  },
+  "phoenix:elixir": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 17.7
+   },
+   "sampleSetHash": "5c95656137506145"
+  },
+  "otp:erlang": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 13.9
+   },
+   "sampleSetHash": "c3632c972f79c9a2"
+  },
+  "clj-kondo:clojure": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 16.4
+   },
+   "sampleSetHash": "93bd5239a044ad6d"
+  },
+  "svelte:css": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "truthRows": 68,
+   "covered": 68,
+   "coveragePct": 100,
+   "filesSampled": 60,
+   "perf": {
+    "avgMsPerFile": 1.408,
+    "filesMeasured": 185,
+    "loadAvg1AtMeasure": 30.85,
+    "method": "analyze() only, min of 5 runs \u2014 the differential's own grain and a stricter run selection",
+    "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
+   },
+   "sampleSetHash": "def94838c364b04e"
+  },
+  "grails-core:css": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 14
+   },
+   "sampleSetHash": "b1a764a028ab54fa"
+  },
+  "kubernetes:yaml": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 31.459,
+    "unit": "ms per file, PRODUCTION entry (pool-worker parseFile), draw = 60 files",
+    "draw": {
+     "corpus": "kubernetes",
+     "available": 6608,
+     "files": 60,
+     "stride": 110.1,
+     "rule": "the baseline's declared samplePerLang=60 with a deterministic stride over the sorted file list"
+    },
+    "method": "5 timed repetitions of the same 60-file draw after one warm-up parse; the MEDIAN is recorded",
+    "spread": {
+     "min": 24.591,
+     "max": 65.509,
+     "all": [
+      33.136,
+      65.509,
+      24.591,
+      30.707,
+      31.459
+     ]
+    },
+    "loadContext": {
+     "loadAvgAtMeasurement": [
+      28.93,
+      31.1,
+      32.17
+     ],
+     "baselineRecordedLoadAvg": [
+      4.85,
+      5.19
+     ],
+     "caveat": "This number was measured at a load average of ~29 against the ~5 recorded in this file's own loadContext, and the 24.6-65.5 ms spread is that contention, not analyzer variance. It is recorded with the load and the spread rather than as a bare figure because a perf claim whose measurement environment is not stated cannot be compared against a later run, and a 6x-loaded box makes any single number a claim about the box. Re-measure on an idle machine before treating it as a regression threshold."
     }
+   },
+   "differentialDraw": {
+    "corpora": 8,
+    "filesPerCorpus": 200,
+    "comparedFiles": 1004,
+    "truthPaths": 357304,
+    "oracle": "PyYAML 6.0.1 compose_all",
+    "note": "the floor counts are the 8-corpus deep draw, which is WIDER than this file's declared 60-per-lane draw; a wider draw can only make the floor harder to hold, so the 0/0 is a stronger claim than the canonical draw would give"
+   },
+   "grammarResidual": {
+    "files": 15,
+    "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment \u2014 the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
+    "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained \u2014 a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
+   },
+   "note": "Added 2026-09-27 with the yaml lane (M14 #286). The lane has an INDEPENDENT oracle rather than a hand-authored truth file: PyYAML 6.0.1 compose, sharing no code, algorithm or data model with the tree-sitter side, which is the property the shared F5 sweep requires of a lane's truth source (a truth file written by the same hand as the analyzer is a mirror, not a differential)."
   },
-  "hashes": {
-    "grails-core:javascript": "32c4318f0f3db775",
-    "vue-core:typescript": "771c854fefb7fcdc",
-    "Exposed:kotlin": "f39e30d3648bd4a2",
-    "scala3:scala": "49b947fefb290066",
-    "grails-core:java": "2fff892462bb64ee",
-    "grails-core:groovy": "3a9248865d3bbbd9",
-    "element-plus:vue": "ac4d0a05fa0c0ec0",
-    "fmt:cpp": "89b51095c4659906",
-    "sqlite:c": "ef6794727cd236d8",
-    "ripgrep:rust": "3726f83d65a6e09a",
-    "go-tools:go": "ae9449eb50c1f68f",
-    "zig:zig": "053fa67f6663fddb",
-    "powershell:csharp": "3b3dd5e9fc860788",
-    "proxicall:dart": "0e484c4b04addfbd",
-    "swift-nio:swift": "ea2ac2a489ca0853",
-    "sdwebimage:objc": "8234cb008232a69b",
-    "phpunit:php": "4be02ca7685ed414",
-    "rake:ruby": "0c505b9b4aeda127",
-    "cython:python": "d44b4e45b381caec",
-    "cabal:haskell": "2040e3ad57636818",
-    "elixir:elixir": "96895fbad6c5eabd",
-    "rebar3:erlang": "346c26d74ea36d84",
-    "clojure:clojure": "e0395ac2bf495bf0",
-    "lodash:javascript": "494e1b94766e8ade",
-    "element-plus:typescript": "258bbdbad4d0a7bc",
-    "kotlinx-coroutines:kotlin": "d2351846d054edea",
-    "cats-effect:scala": "45c0a06542ed9f1a",
-    "clojure:java": "86f37ca7cf27bbd4",
-    "geb:groovy": "afddb7a7aeb00bd8",
-    "vue-element-admin:vue": "ceda7eae9ea97e76",
-    "nlohmann-json:cpp": "88dc095dd86d8301",
-    "cargo:rust": "e09029111a6cc4ec",
-    "terraform:go": "9c09cea779eb5ca6",
-    "zls:zig": "c1285552d459a43a",
-    "fsharp:csharp": "ff6eeb46eef5e9d4",
-    "dart-http:dart": "549143339f0cfaa9",
-    "alamofire:swift": "0052e892f6e0d27b",
-    "afnetworking:objc": "29684f4b8391be9f",
-    "phpmyadmin:php": "a6ec6aafaf16080e",
-    "rack:ruby": "cbf9b090af441408",
-    "requests:python": "e3679fa2131e9b78",
-    "hledger:haskell": "d1c3ed0e861d118d",
-    "phoenix:elixir": "5c95656137506145",
-    "otp:erlang": "c3632c972f79c9a2",
-    "clj-kondo:clojure": "93bd5239a044ad6d",
-    "svelte:svelte": "c1c6f9e95bf02a6b",
-    "shadcn-svelte:svelte": "2f6fd79cf720707d",
-    "jq:c": "2b743b65d0eac283",
-    "svelte:css": "def94838c364b04e",
-    "grails-core:css": "b1a764a028ab54fa",
-    "scala3:markdown": "8127d7c0de552761",
-    "kubernetes:markdown": "850beced0f7f393d",
-    "element-plus:scss": "dd6619b1d6986840",
-    "solidity:solidity": "e9708e750546e983",
-    "julia:julia": "0b7c135add6ea602",
-    "otp:html": "30e4242514acef78",
-    "cargo:toml": "2887280c3e2a105b",
-    "sqlite:html": "3316e7bdc525d7af",
-    "ripgrep:toml": "c5e515b54f5e915c",
-    "tf-aws-components:hcl": "1bae8a312cc9c4a2",
-    "ansible:yaml": "c9d0e1b59b1676f8",
-    "grails-core:xml": "ffe6839fc280fa8a",
-    "terraform:json": "a3d0513e0c1e2d44",
-    "svelte:javascript": "b3f5ca3dabe585c8"
+  "scala3:markdown": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 2.2
+   },
+   "sampleSetHash": "8127d7c0de552761"
   },
-  "floorMoves": {
-    "solidity:solidity": {
-      "from": 18,
-      "to": 21,
-      "why": "SOL-15. The floor moved UP, which is the direction that normally means a regression, so the reason is recorded rather than the number quietly edited. Two repairs landed together. (1) The analyzer's `revert_statement` case had NEVER FIRED — it tested `namedChild(0).type === \"identifier\"` and the grammar puts an `expression` wrapper there for every spelling — so 453 custom-error call edges over the 389-file corpus did not exist in this lane at all. (2) The ORACLE had the identical dead branch, which is why F5 agreed at zero: two instruments that are both dead look like corroboration. Fixing only the analyzer made the pair disagree and F5 reported 37 unexplained edges that no re-run would clear, because `sweepStateKey` hashed every analyzer in src/ast but NOT script/m14/oracles — so an oracle edit left the journal key byte-identical and the next run printed `RESUMED` with the previous truth function's numbers. All three are fixed: the oracles are now part of the sweep state. On the adjudication draw the oracle repair cut calls-unexplained from 47 to 2. The residual 3 is custom-error calls to an error declared in ANOTHER file, classified `evm-member-call` alongside the rest of the cross-file residue; `unclassifiable` is 0."
-    },
-    "julia:julia": {
-      "from": null,
-      "to": 83,
-      "why": "First floor for the julia lane, recorded from a real F5 probe rather than declared. The sample ROTATES 60 of 941 files per run, so `missing` and `unexplained` move between runs on the same code — observed 98.5%/8.5%, 99.3%/9.6% and 98.0%/9.6% across three probes this session. The stable figures are the unexplained RATE and a direct 40-file measurement (extends 39/39, instantiates 27/27, uses 98.8%, references 97.3%), so the floor is set from the WEAKEST probe rather than the best, and the reason is recorded here because a floor that moves silently is indistinguishable from a regression being tolerated.",
-      "note": "unexplained is dominated by the oracles' own scope limits — they decline cross-file callee resolution — plus @eval module and quoted-block shapes. Widening them would mean guessing."
-    }
+  "kubernetes:markdown": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 1.9
+   },
+   "sampleSetHash": "850beced0f7f393d"
   },
-  "unmeasured": {
-    "otp:bash": {
-      "repo": "otp",
-      "language": "bash",
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
-      "corpusOnBox": true
-    },
-    "grails-core:xml": {
-      "repo": "grails-core",
-      "language": "xml",
-      "reason": "xml's 324-line oracle block is not in this tree: merge 16075a5a1 dropped it, and the lane had already withdrawn the claim it produced (c82067ea9 — the oracle resolved the XSD namespace for 1 of 62 elements and published `xsd:element` where the analyzer published `component-scan`; CHECK G replaced it). The corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": true,
-      "recoveredRow": true,
-      "at": "7ab888b79"
-    },
-    "tf-aws-components:hcl": {
-      "repo": "tf-aws-components",
-      "language": "hcl",
-      "reason": "hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here — the row recovered from bc3bc4de1 is retained as evidence, not as a floor",
-      "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "bc3bc4de1"
-    },
-    "terraform:hcl": {
-      "repo": "terraform",
-      "language": "hcl",
-      "reason": "hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1); the corpus IS checked out, so a sweep reaches the lane and derives zero truth edges — the row recovered from bc3bc4de1 is retained as evidence, not as a floor",
-      "corpusOnBox": true,
-      "recoveredRow": true,
-      "at": "bc3bc4de1"
-    },
-    "consul:make": {
-      "repo": "consul",
-      "language": "make",
-      "reason": "make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the consul corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "7ab888b79"
-    },
-    "nim:nim": {
-      "repo": "nim",
-      "language": "nim",
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
-      "corpusOnBox": true
-    },
-    "pixie:nim": {
-      "repo": "pixie",
-      "language": "nim",
-      "reason": "same dropped oracle block, and the pixie corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "7ab888b79"
-    },
-    "tf-aws-components:make": {
-      "repo": "tf-aws-components",
-      "language": "make",
-      "reason": "make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "7ab888b79"
-    },
-    "P3D-Legacy:vb": {
-      "repo": "P3D-Legacy",
-      "language": "vb",
-      "reason": "vb's 543-line oracle block is not in this tree (dropped by merge 16075a5a1), and the P3D-Legacy corpus is not checked out here",
-      "at": "16075a5a1"
-    },
-    "bash": {
-      "repo": "otp",
-      "language": "bash",
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
-      "corpusOnBox": true
-    },
-    "nim": {
-      "repo": "nim",
-      "language": "nim",
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
-      "corpusOnBox": true
-    },
-    "nim-lang-nimble:nim": {
-      "repo": "nim-lang-nimble",
-      "language": "nim",
-      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
-      "corpusOnBox": true
-    }
+  "element-plus:scss": {
+   "missing": 56,
+   "unexplained": 3,
+   "heuristic": 0,
+   "truthRows": 1614,
+   "covered": 1558,
+   "coveragePct": 96.5,
+   "filesSampled": 149,
+   "perf": {
+    "avgMsPerFile": 21.691,
+    "filesMeasured": 160,
+    "loadAvg1AtMeasure": 35.63,
+    "method": "analyze() only, min of 5 runs after 2 warmups \u2014 the differential's own grain and a stricter run selection",
+    "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
+   },
+   "sampleSetHash": "dd6619b1d6986840"
   },
-  "recovered": {
-    "consul:make": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 6.5,
-          "maxMsPerFile": 97.8,
-          "samplesTimed": 5,
-          "loadAvgRetried": true,
-          "loadAvg1": 39.92
-        },
-        "sampleSetHash": "abac0ebd75471c84"
-      },
-      "sampleSetHash": "abac0ebd75471c84",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "grails-core:xml": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 9.9,
-          "maxMsPerFile": 599,
-          "samplesTimed": 40,
-          "loadAvgRetried": true,
-          "loadAvg1": 21.1
-        },
-        "sampleSetHash": "886d9f67517b879e"
-      },
-      "sampleSetHash": "886d9f67517b879e",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "mojo:perl": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 22,
-          "maxMsPerFile": 1500,
-          "samplesTimed": 60,
-          "loadAvgRetried": true,
-          "loadAvg1": 27.69
-        },
-        "sampleSetHash": "8a36c71dab2d084f"
-      },
-      "sampleSetHash": "8a36c71dab2d084f",
-      "reMeasuredAt": "fe749f419abe0599ab0d87b65b54ed0ee97f9368",
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "nim:nim": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 26.4,
-          "maxMsPerFile": 935.8,
-          "samplesTimed": 60,
-          "loadAvgRetried": true,
-          "loadAvg1": 37.75
-        },
-        "sampleSetHash": "6743270c88c3d253"
-      },
-      "sampleSetHash": "6743270c88c3d253",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "pixie:nim": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 155.1,
-          "maxMsPerFile": 2116.1,
-          "samplesTimed": 60,
-          "loadAvgRetried": true,
-          "loadAvg1": 42.19
-        },
-        "sampleSetHash": "a896b7ba60b1b1e0"
-      },
-      "sampleSetHash": "a896b7ba60b1b1e0",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "plack:perl": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 4.7,
-          "maxMsPerFile": 196.4,
-          "samplesTimed": 60,
-          "loadAvgRetried": true,
-          "loadAvg1": 24.64
-        },
-        "sampleSetHash": "fdc7963ba43db622"
-      },
-      "sampleSetHash": "fdc7963ba43db622",
-      "reMeasuredAt": "fe749f419abe0599ab0d87b65b54ed0ee97f9368",
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "tf-aws-components:hcl": {
-      "recoveredFrom": "bc3bc4de1",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 6.2,
-          "maxMsPerFile": 182.8,
-          "samplesTimed": 60,
-          "loadAvgRetried": true,
-          "loadAvg1": 44.07
-        },
-        "sampleSetHash": "7c80eed7b9f98324"
-      },
-      "sampleSetHash": "7c80eed7b9f98324",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "terraform:hcl": {
-      "recoveredFrom": "bc3bc4de1",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 2.1,
-          "maxMsPerFile": 26.8,
-          "samplesTimed": 60,
-          "loadAvgRetried": true,
-          "loadAvg1": 42.51
-        },
-        "sampleSetHash": "f31a3e00122c4639"
-      },
-      "sampleSetHash": "f31a3e00122c4639",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    },
-    "tf-aws-components:make": {
-      "recoveredFrom": "7ab888b79",
-      "lostAt": "16075a5a1",
-      "row": {
-        "missing": 0,
-        "unexplained": 0,
-        "heuristic": 0,
-        "perf": {
-          "avgMsPerFile": 1.3,
-          "maxMsPerFile": 20,
-          "samplesTimed": 53,
-          "loadAvgRetried": true,
-          "loadAvg1": 40.93
-        },
-        "sampleSetHash": "00ec53d40fe79068"
-      },
-      "sampleSetHash": "00ec53d40fe79068",
-      "reMeasuredAt": null,
-      "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
-    }
+  "solidity:solidity": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 6.4
+   },
+   "sampleSetHash": "e9708e750546e983"
+  },
+  "julia:julia": {
+   "missing": 83,
+   "unexplained": 434,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 722
+   }
+  },
+  "otp:html": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 2.1
+   },
+   "sampleSetHash": "30e4242514acef78"
+  },
+  "cargo:toml": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 0.2
+   },
+   "sampleSetHash": "2887280c3e2a105b"
+  },
+  "sqlite:html": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 2.6
+   },
+   "sampleSetHash": "3316e7bdc525d7af"
+  },
+  "ripgrep:toml": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 1.9
+   },
+   "sampleSetHash": "c5e515b54f5e915c"
+  },
+  "tf-aws-components:hcl": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 5
+   },
+   "sampleSetHash": "1bae8a312cc9c4a2"
+  },
+  "ansible:yaml": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 12.7
+   },
+   "sampleSetHash": "c9d0e1b59b1676f8"
+  },
+  "grails-core:xml": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 18.8
+   },
+   "sampleSetHash": "ffe6839fc280fa8a"
+  },
+  "terraform:json": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 3.4
+   },
+   "sampleSetHash": "a3d0513e0c1e2d44"
+  },
+  "redis:make": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 4.1
+   },
+   "sampleSetHash": "e1b49ce25608c189"
+  },
+  "duckdb:sql": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 4.3
+   },
+   "sampleSetHash": "8378a1275fc0b970"
+  },
+  "consul:make": {
+   "missing": 0,
+   "unexplained": 0,
+   "heuristic": 0,
+   "perf": {
+    "avgMsPerFile": 4
+   },
+   "sampleSetHash": "abac0ebd75471c84"
   }
+ },
+ "hashes": {
+  "grails-core:javascript": "32c4318f0f3db775",
+  "vue-core:typescript": "771c854fefb7fcdc",
+  "Exposed:kotlin": "f39e30d3648bd4a2",
+  "scala3:scala": "49b947fefb290066",
+  "grails-core:java": "2fff892462bb64ee",
+  "grails-core:groovy": "3a9248865d3bbbd9",
+  "element-plus:vue": "ac4d0a05fa0c0ec0",
+  "fmt:cpp": "89b51095c4659906",
+  "sqlite:c": "ef6794727cd236d8",
+  "ripgrep:rust": "3726f83d65a6e09a",
+  "go-tools:go": "ae9449eb50c1f68f",
+  "zig:zig": "053fa67f6663fddb",
+  "powershell:csharp": "3b3dd5e9fc860788",
+  "proxicall:dart": "0e484c4b04addfbd",
+  "swift-nio:swift": "ea2ac2a489ca0853",
+  "sdwebimage:objc": "8234cb008232a69b",
+  "phpunit:php": "4be02ca7685ed414",
+  "rake:ruby": "0c505b9b4aeda127",
+  "cython:python": "d44b4e45b381caec",
+  "cabal:haskell": "2040e3ad57636818",
+  "elixir:elixir": "96895fbad6c5eabd",
+  "rebar3:erlang": "346c26d74ea36d84",
+  "clojure:clojure": "e0395ac2bf495bf0",
+  "lodash:javascript": "494e1b94766e8ade",
+  "element-plus:typescript": "258bbdbad4d0a7bc",
+  "kotlinx-coroutines:kotlin": "d2351846d054edea",
+  "cats-effect:scala": "45c0a06542ed9f1a",
+  "clojure:java": "86f37ca7cf27bbd4",
+  "geb:groovy": "afddb7a7aeb00bd8",
+  "vue-element-admin:vue": "ceda7eae9ea97e76",
+  "nlohmann-json:cpp": "88dc095dd86d8301",
+  "cargo:rust": "e09029111a6cc4ec",
+  "terraform:go": "9c09cea779eb5ca6",
+  "zls:zig": "c1285552d459a43a",
+  "fsharp:csharp": "ff6eeb46eef5e9d4",
+  "dart-http:dart": "549143339f0cfaa9",
+  "alamofire:swift": "0052e892f6e0d27b",
+  "afnetworking:objc": "29684f4b8391be9f",
+  "phpmyadmin:php": "a6ec6aafaf16080e",
+  "rack:ruby": "cbf9b090af441408",
+  "requests:python": "e3679fa2131e9b78",
+  "hledger:haskell": "d1c3ed0e861d118d",
+  "phoenix:elixir": "5c95656137506145",
+  "otp:erlang": "c3632c972f79c9a2",
+  "clj-kondo:clojure": "93bd5239a044ad6d",
+  "svelte:svelte": "c1c6f9e95bf02a6b",
+  "shadcn-svelte:svelte": "2f6fd79cf720707d",
+  "jq:c": "2b743b65d0eac283",
+  "svelte:css": "def94838c364b04e",
+  "grails-core:css": "b1a764a028ab54fa",
+  "scala3:markdown": "8127d7c0de552761",
+  "kubernetes:markdown": "850beced0f7f393d",
+  "element-plus:scss": "dd6619b1d6986840",
+  "solidity:solidity": "e9708e750546e983",
+  "julia:julia": "0b7c135add6ea602",
+  "otp:html": "30e4242514acef78",
+  "cargo:toml": "2887280c3e2a105b",
+  "sqlite:html": "3316e7bdc525d7af",
+  "ripgrep:toml": "c5e515b54f5e915c",
+  "tf-aws-components:hcl": "1bae8a312cc9c4a2",
+  "ansible:yaml": "c9d0e1b59b1676f8",
+  "grails-core:xml": "ffe6839fc280fa8a",
+  "terraform:json": "a3d0513e0c1e2d44",
+  "svelte:javascript": "b3f5ca3dabe585c8",
+  "redis:make": "e1b49ce25608c189",
+  "duckdb:sql": "8378a1275fc0b970",
+  "consul:make": "abac0ebd75471c84"
+ },
+ "floorMoves": {
+  "solidity:solidity": {
+   "from": 18,
+   "to": 21,
+   "why": "SOL-15. The floor moved UP, which is the direction that normally means a regression, so the reason is recorded rather than the number quietly edited. Two repairs landed together. (1) The analyzer's `revert_statement` case had NEVER FIRED \u2014 it tested `namedChild(0).type === \"identifier\"` and the grammar puts an `expression` wrapper there for every spelling \u2014 so 453 custom-error call edges over the 389-file corpus did not exist in this lane at all. (2) The ORACLE had the identical dead branch, which is why F5 agreed at zero: two instruments that are both dead look like corroboration. Fixing only the analyzer made the pair disagree and F5 reported 37 unexplained edges that no re-run would clear, because `sweepStateKey` hashed every analyzer in src/ast but NOT script/m14/oracles \u2014 so an oracle edit left the journal key byte-identical and the next run printed `RESUMED` with the previous truth function's numbers. All three are fixed: the oracles are now part of the sweep state. On the adjudication draw the oracle repair cut calls-unexplained from 47 to 2. The residual 3 is custom-error calls to an error declared in ANOTHER file, classified `evm-member-call` alongside the rest of the cross-file residue; `unclassifiable` is 0."
+  },
+  "julia:julia": {
+   "from": null,
+   "to": 83,
+   "why": "First floor for the julia lane, recorded from a real F5 probe rather than declared. The sample ROTATES 60 of 941 files per run, so `missing` and `unexplained` move between runs on the same code \u2014 observed 98.5%/8.5%, 99.3%/9.6% and 98.0%/9.6% across three probes this session. The stable figures are the unexplained RATE and a direct 40-file measurement (extends 39/39, instantiates 27/27, uses 98.8%, references 97.3%), so the floor is set from the WEAKEST probe rather than the best, and the reason is recorded here because a floor that moves silently is indistinguishable from a regression being tolerated.",
+   "note": "unexplained is dominated by the oracles' own scope limits \u2014 they decline cross-file callee resolution \u2014 plus @eval module and quoted-block shapes. Widening them would mean guessing."
+  }
+ },
+ "unmeasured": {
+  "terraform:hcl": {
+   "repo": "terraform",
+   "language": "hcl",
+   "reason": "hcl's 128-line oracle block is not in this tree (dropped by merge 16075a5a1); the corpus IS checked out, so a sweep reaches the lane and derives zero truth edges \u2014 the row recovered from bc3bc4de1 is retained as evidence, not as a floor",
+   "corpusOnBox": true,
+   "recoveredRow": true,
+   "at": "bc3bc4de1"
+  },
+  "pixie:nim": {
+   "repo": "pixie",
+   "language": "nim",
+   "reason": "same dropped oracle block, and the pixie corpus is not checked out here \u2014 the row recovered from 7ab888b79 is retained as evidence, not as a floor",
+   "corpusOnBox": false,
+   "recoveredRow": true,
+   "at": "7ab888b79"
+  },
+  "tf-aws-components:make": {
+   "repo": "tf-aws-components",
+   "language": "make",
+   "reason": "make's 215-line oracle block is not in this tree (dropped by merge 16075a5a1), and the tf-aws-components corpus is not checked out here \u2014 the row recovered from 7ab888b79 is retained as evidence, not as a floor",
+   "corpusOnBox": false,
+   "recoveredRow": true,
+   "at": "7ab888b79"
+  }
+ },
+ "recovered": {
+  "consul:make": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 6.5,
+     "maxMsPerFile": 97.8,
+     "samplesTimed": 5,
+     "loadAvgRetried": true,
+     "loadAvg1": 39.92
+    },
+    "sampleSetHash": "abac0ebd75471c84"
+   },
+   "sampleSetHash": "abac0ebd75471c84",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "grails-core:xml": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 9.9,
+     "maxMsPerFile": 599,
+     "samplesTimed": 40,
+     "loadAvgRetried": true,
+     "loadAvg1": 21.1
+    },
+    "sampleSetHash": "886d9f67517b879e"
+   },
+   "sampleSetHash": "886d9f67517b879e",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "mojo:perl": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 22,
+     "maxMsPerFile": 1500,
+     "samplesTimed": 60,
+     "loadAvgRetried": true,
+     "loadAvg1": 27.69
+    },
+    "sampleSetHash": "8a36c71dab2d084f"
+   },
+   "sampleSetHash": "8a36c71dab2d084f",
+   "reMeasuredAt": "fe749f419abe0599ab0d87b65b54ed0ee97f9368",
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "nim:nim": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 26.4,
+     "maxMsPerFile": 935.8,
+     "samplesTimed": 60,
+     "loadAvgRetried": true,
+     "loadAvg1": 37.75
+    },
+    "sampleSetHash": "6743270c88c3d253"
+   },
+   "sampleSetHash": "6743270c88c3d253",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "pixie:nim": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 155.1,
+     "maxMsPerFile": 2116.1,
+     "samplesTimed": 60,
+     "loadAvgRetried": true,
+     "loadAvg1": 42.19
+    },
+    "sampleSetHash": "a896b7ba60b1b1e0"
+   },
+   "sampleSetHash": "a896b7ba60b1b1e0",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "plack:perl": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 4.7,
+     "maxMsPerFile": 196.4,
+     "samplesTimed": 60,
+     "loadAvgRetried": true,
+     "loadAvg1": 24.64
+    },
+    "sampleSetHash": "fdc7963ba43db622"
+   },
+   "sampleSetHash": "fdc7963ba43db622",
+   "reMeasuredAt": "fe749f419abe0599ab0d87b65b54ed0ee97f9368",
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "tf-aws-components:hcl": {
+   "recoveredFrom": "bc3bc4de1",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 6.2,
+     "maxMsPerFile": 182.8,
+     "samplesTimed": 60,
+     "loadAvgRetried": true,
+     "loadAvg1": 44.07
+    },
+    "sampleSetHash": "7c80eed7b9f98324"
+   },
+   "sampleSetHash": "7c80eed7b9f98324",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "terraform:hcl": {
+   "recoveredFrom": "bc3bc4de1",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 2.1,
+     "maxMsPerFile": 26.8,
+     "samplesTimed": 60,
+     "loadAvgRetried": true,
+     "loadAvg1": 42.51
+    },
+    "sampleSetHash": "f31a3e00122c4639"
+   },
+   "sampleSetHash": "f31a3e00122c4639",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  },
+  "tf-aws-components:make": {
+   "recoveredFrom": "7ab888b79",
+   "lostAt": "16075a5a1",
+   "row": {
+    "missing": 0,
+    "unexplained": 0,
+    "heuristic": 0,
+    "perf": {
+     "avgMsPerFile": 1.3,
+     "maxMsPerFile": 20,
+     "samplesTimed": 53,
+     "loadAvgRetried": true,
+     "loadAvg1": 40.93
+    },
+    "sampleSetHash": "00ec53d40fe79068"
+   },
+   "sampleSetHash": "00ec53d40fe79068",
+   "reMeasuredAt": null,
+   "note": "row recovered from the recorded sweep at the named commit, as EVIDENCE; the merge above kept the other parent's copy of this file. It is not a pin: differential.ts's mergeBaseline replaces this entry when a sweep re-measures the key"
+  }
+ }
 }
