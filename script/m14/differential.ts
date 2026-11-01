@@ -26612,6 +26612,36 @@ async function main() {
       // is scored against a different sample and mislabelled a regression.
       if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
     }
+    // A PER-LANE MEASUREMENT RECORD, INCLUDING THE LANES THAT CANNOT BE PINNED.
+    // The pin gate above deliberately refuses to pin a lane carrying missing/unexplained rows, which is
+    // correct — but before this record the refusal lived only in stdout, so `verify-fleet.ts` could not
+    // tell "measured, carries 5 unexplained" from "never measured". The record names every lane's row
+    // and its pin disposition, so the fleet guard reports a VERDICT rather than an absence.
+    try {
+      const measurements: Record<string, any> = {}
+      for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
+        measurements[k] = {
+          missing: v.missing ?? 0,
+          unexplained: v.unexplained ?? 0,
+          heuristic: v.heuristic ?? 0,
+          sampleSetHash: v.sampleHash ?? null,
+          pinned: !pinSkipped.some((p) => p.startsWith(`${k} (`)),
+        }
+      }
+      for (const [k, v] of Object.entries<any>(zeroTruthUnmeasured)) {
+        measurements[k] = { missing: 0, unexplained: 0, heuristic: 0, sampleSetHash: null, pinned: false, unmeasured: true, reason: v.reason }
+      }
+      const outPath = path.join(ROOT, "validation", "m14", "results", "M14.0.F5.lane-measurements.json")
+      fs.mkdirSync(path.dirname(outPath), { recursive: true })
+      fs.writeFileSync(outPath, JSON.stringify({
+        note: "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence.",
+        lanes: measurements,
+      }, null, 2) + "\n")
+      console.log(`differential lane measurements written: ${Object.keys(measurements).length} lane(s) — ${Object.values(measurements).filter((m: any) => m.pinned).length} pinned, ${Object.values(measurements).filter((m: any) => !m.pinned).length} measured-unpinned`)
+    } catch (err) {
+      console.log(`differential lane measurements NOT written: ${(err as Error).message}`)
+    }
+
     // THE THREE KEYS THIS WRITER DOES NOT RECOMPUTE ARE CARRIED FROM THE FILE IT REPLACED.
     // `floorMoves` (a floor that moved UP, with the reason it was allowed to), `unmeasured`
     // (rows measured but deliberately NOT pinned — pinning would bury a real anomaly, #870)
