@@ -1,0 +1,682 @@
+{
+  "note": "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence.",
+  "lanes": {
+    "terraform:json": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "a3d0513e0c1e2d44",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "kubernetes:yaml": {
+      "missing": 0,
+      "unexplained": 9,
+      "heuristic": 0,
+      "sampleSetHash": "e16a7ffe72767537",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "powershell:powershell": {
+      "missing": 142,
+      "unexplained": 49,
+      "heuristic": 10,
+      "sampleSetHash": "00d5982e5cf1f4c6",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "solidity:solidity": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "e9708e750546e983",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "svelte:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "b3f5ca3dabe585c8",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "vue-core:typescript": {
+      "missing": 197,
+      "unexplained": 221,
+      "heuristic": 0,
+      "sampleSetHash": "771c854fefb7fcdc",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "Exposed:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 87,
+      "sampleSetHash": "f39e30d3648bd4a2",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "scala3:scala": {
+      "missing": 50,
+      "unexplained": 1,
+      "heuristic": 55,
+      "sampleSetHash": "807ae633353d4d0f",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "grails-core:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 81,
+      "sampleSetHash": "2fff892462bb64ee",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "grails-core:groovy": {
+      "missing": 0,
+      "unexplained": 4,
+      "heuristic": 33,
+      "sampleSetHash": "05f479fd007b734c",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "element-plus:vue": {
+      "missing": 181,
+      "unexplained": 181,
+      "heuristic": 0,
+      "sampleSetHash": "31404f2ddefaec87",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "svelte:svelte": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "c1c6f9e95bf02a6b",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "svelte:css": {
+      "missing": 0,
+      "unexplained": 1,
+      "heuristic": 0,
+      "sampleSetHash": "e91f17bb6c98ffe3",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "gql-graphql-platform:graphql": {
+      "missing": 80,
+      "unexplained": 426,
+      "heuristic": 0,
+      "sampleSetHash": "1f61dc3ef8597e2b",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "element-plus:scss": {
+      "missing": 58,
+      "unexplained": 4,
+      "heuristic": 0,
+      "sampleSetHash": "09fd97de2a99a550",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "fmt:cpp": {
+      "missing": 285,
+      "unexplained": 2146,
+      "heuristic": 0,
+      "sampleSetHash": "89b51095c4659906",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "sqlite:c": {
+      "missing": 113,
+      "unexplained": 22,
+      "heuristic": 0,
+      "sampleSetHash": "ef6794727cd236d8",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "ripgrep:rust": {
+      "missing": 0,
+      "unexplained": 5,
+      "heuristic": 0,
+      "sampleSetHash": "3726f83d65a6e09a",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "go-tools:go": {
+      "missing": 8,
+      "unexplained": 0,
+      "heuristic": 8,
+      "sampleSetHash": "ae9449eb50c1f68f",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "zig:zig": {
+      "missing": 48,
+      "unexplained": 41,
+      "heuristic": 0,
+      "sampleSetHash": "053fa67f6663fddb",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "powershell:csharp": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "3b3dd5e9fc860788",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "proxicall:dart": {
+      "missing": 0,
+      "unexplained": 42,
+      "heuristic": 0,
+      "sampleSetHash": "fb6aa92e8421a989",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "swift-nio:swift": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "ea2ac2a489ca0853",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "sdwebimage:objc": {
+      "missing": 1,
+      "unexplained": 18,
+      "heuristic": 87,
+      "sampleSetHash": "34ae730653481ed1",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "phpunit:php": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "4be02ca7685ed414",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "rake:ruby": {
+      "missing": 5,
+      "unexplained": 31,
+      "heuristic": 0,
+      "sampleSetHash": "0c505b9b4aeda127",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "cython:python": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 127,
+      "sampleSetHash": "d44b4e45b381caec",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "cabal:haskell": {
+      "missing": 0,
+      "unexplained": 13,
+      "heuristic": 0,
+      "sampleSetHash": "2040e3ad57636818",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "elixir:elixir": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "96895fbad6c5eabd",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "rebar3:erlang": {
+      "missing": 9,
+      "unexplained": 200,
+      "heuristic": 0,
+      "sampleSetHash": "346c26d74ea36d84",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "clojure:clojure": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "e0395ac2bf495bf0",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "Clyde:clean": {
+      "missing": 136,
+      "unexplained": 506,
+      "heuristic": 0,
+      "sampleSetHash": "978c5398ef710288",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "fsharp:fsharp": {
+      "missing": 11,
+      "unexplained": 67,
+      "heuristic": 0,
+      "sampleSetHash": "2143f8bdc90fe3f1",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "otp:html": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "30e4242514acef78",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "cargo:toml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "2887280c3e2a105b",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "scala3:markdown": {
+      "missing": 2,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "3e7de98a887db464",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "dplyr:r": {
+      "missing": 31,
+      "unexplained": 5,
+      "heuristic": 0,
+      "sampleSetHash": "d03edb1b1921e704",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab:matlab": {
+      "missing": 834,
+      "unexplained": 94,
+      "heuristic": 816,
+      "sampleSetHash": "b21c90671b755238",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "pb-googleapis:protobuf": {
+      "missing": 0,
+      "unexplained": 326,
+      "heuristic": 0,
+      "sampleSetHash": "1e3fce8d817064ba",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web:vba": {
+      "missing": 0,
+      "unexplained": 12,
+      "heuristic": 0,
+      "sampleSetHash": "fbc566714707462f",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "tf-aws-components:hcl": {
+      "missing": 0,
+      "unexplained": 40,
+      "heuristic": 0,
+      "sampleSetHash": "1bae8a312cc9c4a2",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "julia:julia": {
+      "missing": 2,
+      "unexplained": 4,
+      "heuristic": 0,
+      "sampleSetHash": "1ab6b77fd0181926",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "mojo:perl": {
+      "missing": 291,
+      "unexplained": 1,
+      "heuristic": 0,
+      "sampleSetHash": "ef8da5f86e5e0814",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "kong:lua": {
+      "missing": 189,
+      "unexplained": 1139,
+      "heuristic": 0,
+      "sampleSetHash": "340a66783dcf3790",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "duckdb:sql": {
+      "missing": 0,
+      "unexplained": 4,
+      "heuristic": 0,
+      "sampleSetHash": "8378a1275fc0b970",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "grails-core:xml": {
+      "missing": 0,
+      "unexplained": 4,
+      "heuristic": 0,
+      "sampleSetHash": "c2ee15031bcf970a",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "ansible:yaml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "c9d0e1b59b1676f8",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "ansible:powershell": {
+      "missing": 157,
+      "unexplained": 78,
+      "heuristic": 0,
+      "sampleSetHash": "b316cd3dd025ab43",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "lodash:javascript": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "494e1b94766e8ade",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "element-plus:typescript": {
+      "missing": 59,
+      "unexplained": 76,
+      "heuristic": 0,
+      "sampleSetHash": "02f7248d60f646f7",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "kotlinx-coroutines:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 87,
+      "sampleSetHash": "d2351846d054edea",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "cats-effect:scala": {
+      "missing": 96,
+      "unexplained": 0,
+      "heuristic": 84,
+      "sampleSetHash": "8e07cd86346c004a",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "clojure:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 64,
+      "sampleSetHash": "86f37ca7cf27bbd4",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "geb:groovy": {
+      "missing": 1,
+      "unexplained": 16,
+      "heuristic": 15,
+      "sampleSetHash": "64fae4a36e5f2d8a",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "vue-element-admin:vue": {
+      "missing": 132,
+      "unexplained": 138,
+      "heuristic": 0,
+      "sampleSetHash": "b38e2e502caa0f35",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "shadcn-svelte:svelte": {
+      "missing": 69,
+      "unexplained": 69,
+      "heuristic": 0,
+      "sampleSetHash": "ed416fc8cc76ca47",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "grails-core:css": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "b1a764a028ab54fa",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "nlohmann-json:cpp": {
+      "missing": 18,
+      "unexplained": 40,
+      "heuristic": 0,
+      "sampleSetHash": "8a5dd461fa134b39",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "jq:c": {
+      "missing": 147,
+      "unexplained": 1,
+      "heuristic": 0,
+      "sampleSetHash": "2b743b65d0eac283",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "cargo:rust": {
+      "missing": 0,
+      "unexplained": 4,
+      "heuristic": 0,
+      "sampleSetHash": "e09029111a6cc4ec",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "terraform:go": {
+      "missing": 2,
+      "unexplained": 0,
+      "heuristic": 2,
+      "sampleSetHash": "9c09cea779eb5ca6",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "zls:zig": {
+      "missing": 252,
+      "unexplained": 45,
+      "heuristic": 0,
+      "sampleSetHash": "c1285552d459a43a",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "fsharp:csharp": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "ff6eeb46eef5e9d4",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "dart-http:dart": {
+      "missing": 0,
+      "unexplained": 3,
+      "heuristic": 0,
+      "sampleSetHash": "549143339f0cfaa9",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "alamofire:swift": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "0052e892f6e0d27b",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "afnetworking:objc": {
+      "missing": 5,
+      "unexplained": 39,
+      "heuristic": 256,
+      "sampleSetHash": "c11ef488d519be41",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "phpmyadmin:php": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "a6ec6aafaf16080e",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "rack:ruby": {
+      "missing": 7,
+      "unexplained": 15,
+      "heuristic": 0,
+      "sampleSetHash": "cbf9b090af441408",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "requests:python": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 50,
+      "sampleSetHash": "e3679fa2131e9b78",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "hledger:haskell": {
+      "missing": 0,
+      "unexplained": 36,
+      "heuristic": 0,
+      "sampleSetHash": "d1c3ed0e861d118d",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "phoenix:elixir": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "5c95656137506145",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "otp:erlang": {
+      "missing": 3,
+      "unexplained": 175,
+      "heuristic": 0,
+      "sampleSetHash": "c3632c972f79c9a2",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "clj-kondo:clojure": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "93bd5239a044ad6d",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "clean-stdlib:clean": {
+      "missing": 40,
+      "unexplained": 474,
+      "heuristic": 0,
+      "sampleSetHash": "cb9a513e3948c179",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "FSharp.Data:fsharp": {
+      "missing": 5,
+      "unexplained": 100,
+      "heuristic": 0,
+      "sampleSetHash": "eb130f595cf5269c",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "sqlite:html": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "3316e7bdc525d7af",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "ripgrep:toml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "c5e515b54f5e915c",
+      "pinned": true,
+      "dirtyCorpus": false
+    },
+    "kubernetes:markdown": {
+      "missing": 434,
+      "unexplained": 4,
+      "heuristic": 0,
+      "sampleSetHash": "e6daa535a3109a5c",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "plack:perl": {
+      "missing": 351,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": "1590d2f7ff4d704b",
+      "pinned": false,
+      "dirtyCorpus": false
+    },
+    "otp:bash": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": null,
+      "pinned": false,
+      "unmeasured": true,
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
+    },
+    "bash": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": null,
+      "pinned": false,
+      "unmeasured": true,
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
+    },
+    "nim:nim": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": null,
+      "pinned": false,
+      "unmeasured": true,
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
+    },
+    "nim": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": null,
+      "pinned": false,
+      "unmeasured": true,
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
+    },
+    "nim-lang-nimble:nim": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "sampleSetHash": null,
+      "pinned": false,
+      "unmeasured": true,
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane."
+    }
+  }
+}

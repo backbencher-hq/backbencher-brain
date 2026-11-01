@@ -1,9 +1,9 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 23.57,
-    "loadAvgEnd": 22.42,
-    "sliceCount": 1
+    "loadAvgStart": 2.51,
+    "loadAvgEnd": 3.8,
+    "sliceCount": 11
   },
   "counts": {
     "java": {
@@ -27,7 +27,7 @@
       "unexplained": 0,
       "heuristic": 81,
       "perf": {
-        "avgMsPerFile": 7.8
+        "avgMsPerFile": 4.7
       },
       "sampleSetHash": "2fff892462bb64ee"
     },
@@ -43,9 +43,9 @@
     "Exposed:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 57,
+      "heuristic": 87,
       "perf": {
-        "avgMsPerFile": 99.2
+        "avgMsPerFile": 61.3
       },
       "sampleSetHash": "f39e30d3648bd4a2"
     },
@@ -309,7 +309,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1724.9
+        "avgMsPerFile": 314.1
       },
       "sampleSetHash": "494e1b94766e8ade"
     },
@@ -432,8 +432,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 11.1
-      }
+        "avgMsPerFile": 7.3
+      },
+      "sampleSetHash": "b3f5ca3dabe585c8"
     },
     "svelte:typescript": {
       "missing": 0,
@@ -488,9 +489,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.6
+        "avgMsPerFile": 18.1
       },
-      "sampleSetHash": "05b3e3087abed566"
+      "sampleSetHash": "c1c6f9e95bf02a6b"
     },
     "grails-core:svelte": {
       "missing": 0,
@@ -1136,7 +1137,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 78.6
+        "avgMsPerFile": 52.7
       },
       "sampleSetHash": "3b3dd5e9fc860788"
     },
@@ -1154,16 +1155,16 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 92.1
+        "avgMsPerFile": 61.7
       },
       "sampleSetHash": "ea2ac2a489ca0853"
     },
     "phpunit:php": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 94,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 9.5
+        "avgMsPerFile": 6.5
       },
       "sampleSetHash": "4be02ca7685ed414"
     },
@@ -1203,9 +1204,9 @@
     "cython:python": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 428,
+      "heuristic": 127,
       "perf": {
-        "avgMsPerFile": 67.2
+        "avgMsPerFile": 50.6
       },
       "sampleSetHash": "d44b4e45b381caec"
     },
@@ -1256,7 +1257,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 31.4
+        "avgMsPerFile": 33
       },
       "sampleSetHash": "96895fbad6c5eabd"
     },
@@ -1274,16 +1275,16 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 19.9
+        "avgMsPerFile": 17.2
       },
       "sampleSetHash": "e0395ac2bf495bf0"
     },
     "kotlinx-coroutines:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 81,
+      "heuristic": 87,
       "perf": {
-        "avgMsPerFile": 19.1
+        "avgMsPerFile": 14
       },
       "sampleSetHash": "d2351846d054edea"
     },
@@ -1292,7 +1293,7 @@
       "unexplained": 0,
       "heuristic": 64,
       "perf": {
-        "avgMsPerFile": 13.8
+        "avgMsPerFile": 22.9
       },
       "sampleSetHash": "86f37ca7cf27bbd4"
     },
@@ -1355,7 +1356,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 72.1
+        "avgMsPerFile": 54.5
       },
       "sampleSetHash": "ff6eeb46eef5e9d4"
     },
@@ -1373,7 +1374,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 84.9
+        "avgMsPerFile": 83.5
       },
       "sampleSetHash": "0052e892f6e0d27b"
     },
@@ -1389,9 +1390,9 @@
     "phpmyadmin:php": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 159,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 6.3
+        "avgMsPerFile": 20.7
       },
       "sampleSetHash": "a6ec6aafaf16080e"
     },
@@ -1407,9 +1408,9 @@
     "requests:python": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 118,
+      "heuristic": 50,
       "perf": {
-        "avgMsPerFile": 33.2
+        "avgMsPerFile": 61
       },
       "sampleSetHash": "e3679fa2131e9b78"
     },
@@ -1427,7 +1428,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 14.9
+        "avgMsPerFile": 11.4
       },
       "sampleSetHash": "5c95656137506145"
     },
@@ -1445,7 +1446,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4.4
+        "avgMsPerFile": 6.5
       },
       "sampleSetHash": "93bd5239a044ad6d"
     },
@@ -1470,18 +1471,10 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "truthRows": 475,
-      "covered": 475,
-      "coveragePct": 100,
-      "filesSampled": 60,
       "perf": {
-        "avgMsPerFile": 13.964,
-        "filesMeasured": 191,
-        "loadAvg1AtMeasure": 29.77,
-        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
-        "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
+        "avgMsPerFile": 14.4
       },
-      "sampleSetHash": "13f8825d05114cf8"
+      "sampleSetHash": "b1a764a028ab54fa"
     },
     "kubernetes:yaml": {
       "missing": 0,
@@ -1573,11 +1566,11 @@
       "sampleSetHash": "dd6619b1d6986840"
     },
     "solidity:solidity": {
-      "missing": 2,
-      "unexplained": 21,
+      "missing": 0,
+      "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 5.3
+        "avgMsPerFile": 6.6
       },
       "sampleSetHash": "e9708e750546e983"
     },
@@ -1594,7 +1587,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4.8
+        "avgMsPerFile": 2.3
       },
       "sampleSetHash": "30e4242514acef78"
     },
@@ -1603,7 +1596,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.3
+        "avgMsPerFile": 0.2
       },
       "sampleSetHash": "2887280c3e2a105b"
     },
@@ -1612,7 +1605,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4.1
+        "avgMsPerFile": 1.3
       },
       "sampleSetHash": "3316e7bdc525d7af"
     },
@@ -1621,7 +1614,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.8
+        "avgMsPerFile": 2.2
       },
       "sampleSetHash": "c5e515b54f5e915c"
     },
@@ -1639,7 +1632,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 24.4
+        "avgMsPerFile": 12.5
       },
       "sampleSetHash": "c9d0e1b59b1676f8"
     },
@@ -1651,6 +1644,15 @@
         "avgMsPerFile": 18.8
       },
       "sampleSetHash": "ffe6839fc280fa8a"
+    },
+    "terraform:json": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 3.5
+      },
+      "sampleSetHash": "a3d0513e0c1e2d44"
     }
   },
   "hashes": {
@@ -1699,11 +1701,11 @@
     "phoenix:elixir": "5c95656137506145",
     "otp:erlang": "c3632c972f79c9a2",
     "clj-kondo:clojure": "93bd5239a044ad6d",
-    "svelte:svelte": "05b3e3087abed566",
+    "svelte:svelte": "c1c6f9e95bf02a6b",
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
     "jq:c": "2b743b65d0eac283",
     "svelte:css": "def94838c364b04e",
-    "grails-core:css": "13f8825d05114cf8",
+    "grails-core:css": "b1a764a028ab54fa",
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
@@ -1715,7 +1717,9 @@
     "ripgrep:toml": "c5e515b54f5e915c",
     "tf-aws-components:hcl": "1bae8a312cc9c4a2",
     "ansible:yaml": "c9d0e1b59b1676f8",
-    "grails-core:xml": "ffe6839fc280fa8a"
+    "grails-core:xml": "ffe6839fc280fa8a",
+    "terraform:json": "a3d0513e0c1e2d44",
+    "svelte:javascript": "b3f5ca3dabe585c8"
   },
   "floorMoves": {
     "solidity:solidity": {
@@ -1732,8 +1736,10 @@
   },
   "unmeasured": {
     "otp:bash": {
-      "reason": "measured but not pinned: missing=0 unexplained=5 — pinning would bury a real anomaly (#870)",
-      "at": "481fc4c4fe4c6d8855b23f5d8591276cab90651b"
+      "repo": "otp",
+      "language": "bash",
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
+      "corpusOnBox": true
     },
     "grails-core:xml": {
       "repo": "grails-core",
@@ -1770,10 +1776,8 @@
     "nim:nim": {
       "repo": "nim",
       "language": "nim",
-      "reason": "nim's 12-line oracle block is not in this tree (dropped by merge 16075a5a1), and the nim corpus is not checked out here — the row recovered from 7ab888b79 is retained as evidence, not as a floor",
-      "corpusOnBox": false,
-      "recoveredRow": true,
-      "at": "7ab888b79"
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
+      "corpusOnBox": true
     },
     "pixie:nim": {
       "repo": "pixie",
@@ -1796,6 +1800,24 @@
       "language": "vb",
       "reason": "vb's 543-line oracle block is not in this tree (dropped by merge 16075a5a1), and the P3D-Legacy corpus is not checked out here",
       "at": "16075a5a1"
+    },
+    "bash": {
+      "repo": "otp",
+      "language": "bash",
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
+      "corpusOnBox": true
+    },
+    "nim": {
+      "repo": "nim",
+      "language": "nim",
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
+      "corpusOnBox": true
+    },
+    "nim-lang-nimble:nim": {
+      "repo": "nim-lang-nimble",
+      "language": "nim",
+      "reason": "oracle derives ZERO truth edges on 60 parsed file(s): no oracle for this lane in the tree yet, so nothing compares. Recorded as unmeasured rather than as a clean lane.",
+      "corpusOnBox": true
     }
   },
   "recovered": {
