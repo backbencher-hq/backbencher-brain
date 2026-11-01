@@ -534,5 +534,82 @@
   "measuredAfterFixes": {
     "at": "2026-11-01T20:21:31.270Z",
     "note": "post-fix measurements; the pre-fix T2 rounds stay in this file as the regression baseline they are"
+  },
+  "postEngineRewrite": {
+    "measuredAt": "2026-11-01T23:08:52.203Z",
+    "why": "the graph owner's shared-engine rewrite landed (read paths byte-read-only, owner-range index, door contract); the Lead asked for T2 to be re-measured after it",
+    "indexSnapshot": {
+      "path": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+      "bytes": 3639963648,
+      "mtime": "2026-11-01T22:37:46.803Z",
+      "counts": {
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "crossLanguageRows": 0
+      },
+      "copyBytes": 3639963648,
+      "copyMs": 141007,
+      "copyEqual": true,
+      "copyCommand": "node validation/tools/bb_cross_language/work/copy-t2-db.cjs (read-only source, SQLite backup API)"
+    },
+    "command": "BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_cross_language/work/latency-t2-handler.mts",
+    "environment": {
+      "node": "v22.22.1",
+      "cpus": 8,
+      "load": "33.23 29.38 19.22 19/2360 57"
+    },
+    "subjects": {
+      "Command": {
+        "copies": 34,
+        "defaultCall": {
+          "p50Ms": 96.149,
+          "p95Ms": 122.255,
+          "minMs": 60.687,
+          "maxMs": 122.255
+        },
+        "limit1Call": {
+          "p50Ms": 101.184,
+          "p95Ms": 135.992
+        },
+        "componentMs": 113.925,
+        "handlerMatchesComponent": true
+      },
+      "type": {
+        "copies": 5392,
+        "defaultCall": {
+          "p50Ms": 549.316,
+          "p95Ms": 1608.775,
+          "minMs": 370.24,
+          "maxMs": 1608.775
+        },
+        "limit1Call": {
+          "p50Ms": 337.756,
+          "p95Ms": 574.22
+        },
+        "componentMs": 572.469,
+        "handlerMatchesComponent": true
+      },
+      "file": {
+        "copies": 3457,
+        "defaultCall": {
+          "p50Ms": 143.261,
+          "p95Ms": 318.271,
+          "minMs": 120.192,
+          "maxMs": 318.271
+        },
+        "limit1Call": {
+          "p50Ms": 153.992,
+          "p95Ms": 255.256
+        },
+        "componentMs": 114.55,
+        "handlerMatchesComponent": true
+      }
+    },
+    "budget": {
+      "p95Ms": 5000,
+      "verdict": "within budget — worst p95 1,609ms (5,392-copy name) under a load average of 33, 3.1x inside the ceiling; the quiet-load run of the same code is recorded in tiers.T2.handlerLevel"
+    },
+    "note": "both handler runs are published: tiers.T2.handlerLevel was taken at load ~10 and this one at load ~33 after the engine landed. The numbers move with load; the budget verdict does not."
   }
 }
