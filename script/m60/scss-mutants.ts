@@ -136,7 +136,9 @@ const addReturnSelfEdge = (r: any) => {
     if (s.metadata?.isScssFunction && s.metadata?.scssReturns) {
       edges.push({
         source: s.name,
-        target: s.name,
+        // MEASURED 2026-11-xx: the fixture forbids `contains @function double -> fixtures/scss/…::@function double`
+        // (a SCOPED target); the bare self target never matched and the mutant survived.
+        target: `${scssScopePrefixOf(r) ?? ""}${String(s.name)}`,
         type: "contains",
         line_number: s.range?.startLine,
         metadata: { evidenceClass: "structural", isScssReturn: true },
@@ -441,7 +443,9 @@ const widenExportsToScoped = (r: any) => {
     .filter((s: any) => s.kind === "variable" && s.scope && !already.has(`${module.name}->${s.name}`))
     .map((s: any) => ({
       source: module.name,
-      target: s.name,
+      // MEASURED 2026-11-xx (fleet battery): the fixture forbids the SCOPED spelling
+      // (`fixtures/scss/<file>::$local` / `$invented`); the bare target matched nothing and the mutant survived.
+      target: `${scssScopePrefixOf(r) ?? ""}${String(s.name)}`,
       type: "exports",
       line_number: s.range?.startLine ?? 1,
       confidence: 1,
@@ -768,3 +772,13 @@ export const SCSS_MUTANTS = [
     transform: relabelFunctionCallToUses,
   },
 ]
+
+/** The `<file>::` scope prefix this lane's qualified targets use, read off an existing scoped target. */
+function scssScopePrefixOf(r: any): string | null {
+  for (const x of (r.relationships ?? []) as any[]) {
+    const t = String(x.target ?? "")
+    const i = t.indexOf("::")
+    if (i > 0) return t.slice(0, i + 2)
+  }
+  return null
+}

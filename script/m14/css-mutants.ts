@@ -81,7 +81,9 @@ export const CSS_MUTANTS: Mutant[] = [
           .map((s: any) => ({
             type: "overrides",
             source: String(s.name),
-            target: String(s.name),
+            // MEASURED 2026-11-xx (fleet battery): the fixtures pin SCOPED targets
+            // (`fixtures/css/<file>::spin`); a bare target matched no forbid and survived.
+            target: `${scopePrefixOf(r) ?? ""}${String(s.name)}`,
             confidence: 1,
             line_number: s.range?.startLine,
             metadata: { cssSpecific: true, isOverride: true, isVendorPrefixedPair: true },
@@ -131,13 +133,16 @@ export const CSS_MUTANTS: Mutant[] = [
         ...(r.relationships ?? []),
         // The block scope dropped: one edge per (name, occurrence) instead of per
         // (block, name), built from the `variable` symbols the analyzer publishes.
+        // MEASURED 2026-11-xx (fleet battery): the fixture forbids the SCOPED self row
+        // (`fixtures/css/<file>::--twice`), while this mutant emitted the bare name — so the forbid could
+        // never match and the mutant survived. The scope prefix is read off an existing scoped target.
         ...(r.symbols ?? [])
           .filter((s: any) => s.kind === "variable" && String(s.name ?? "").startsWith("--"))
           .filter((s: any) => (s.metadata as any)?.occurrences > 1)
           .map((s: any) => ({
             type: "overrides",
             source: String(s.name),
-            target: String(s.name),
+            target: `${scopePrefixOf(r) ?? ""}${String(s.name)}`,
             confidence: 1,
             line_number: s.startLine ?? s.range?.startLine,
             metadata: { cssSpecific: true, isOverride: true, isCrossBlockRedefinition: true, distinctSites: true },
@@ -564,3 +569,15 @@ export const CSS_MUTANTS: Mutant[] = [
     }),
   },
 ]
+/**
+ * The `<file>::` scope prefix the lane's own qualified targets use, read off one of the result's existing
+ * scoped targets. Used by the fabrication mutants so their rows speak the spelling the fixtures pin.
+ */
+function scopePrefixOf(r: any): string | null {
+  for (const x of (r.relationships ?? []) as any[]) {
+    const t = String(x.target ?? "")
+    const i = t.indexOf("::")
+    if (i > 0) return t.slice(0, i + 2)
+  }
+  return null
+}

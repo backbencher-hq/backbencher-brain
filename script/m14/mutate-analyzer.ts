@@ -2421,44 +2421,31 @@ function tomlNameLosesItsPath() {
 }
 
 function tomlOwnerLookupUsesRawSegments() {
+  // MEASURED 2026-11-xx (fleet battery): the previous body keyed on
+  // `metadata.impliedParents`, which the current analyzer does not emit on property symbols, so it found
+  // nothing and survived as a NO-OP. The defect the quoted/raw mismatch produces is still observable and is
+  // the one the fixture pins: the ancestor lookup MISSES the declared table and the property is re-parented
+  // from the MODULE. Reproduce exactly that: every property-containment edge whose source is a qualified
+  // table (`<file>.<table>`) is rewritten to the module root.
   return (r: MutantPayload) => {
     const syms = r.symbols ?? []
     const mod = syms.find((s: any) => s?.kind === "module")
     if (!mod) return r
-    const tableNames = new Set(syms.filter((s: any) => s?.kind === "namespace").map((s: any) => String(s.name)))
-    /** The declared ancestor the raw-segment lookup would have MISSED. */
-    const missed = (s: any): string | null => {
-      const implied = s?.metadata?.impliedParents
-      if (!Array.isArray(implied) || implied.length === 0) return null
-      const name = String(s.name)
-      const listed = new Set(implied.map((x: any) => String(x)))
-      let best: string | null = null
-      for (const t of tableNames) {
-        if (t === name) continue
-        if (!name.startsWith(`${t}.`)) continue
-        if (listed.has(t)) continue
-        if (best === null || t.length > best.length) best = t
-      }
-      return best
-    }
-    const byTarget = new Map<string, any>()
-    for (const s of syms) {
-      const m = missed(s)
-      if (m !== null) byTarget.set(String(s.name), m)
-    }
-    if (byTarget.size === 0) return r
-    // The defect RE-PARENTS: the edge that correctly runs from the declared
-    // ancestor to the section is rewritten to run from the MODULE instead, because
-    // the raw-segment lookup could not find the ancestor. The previous version
-    // rewrote in the other direction — hunting for a module-sourced edge that
-    // should not exist — which is a no-op on correct output by construction, and a
-    // mutant that cannot fire is a mutant that proves nothing.
+    const moduleName = String(mod.name)
+    const rewritable = new Set(
+      (r.relationships ?? [])
+        .filter((x: any) => String(x.type) === "contains")
+        .filter((x: any) => String(x.source ?? "").includes(".") && String(x.target ?? "").includes("."))
+        .map((x: any) => `${x.source}\u0000${x.target}`),
+    )
+    if (rewritable.size === 0) return r
     return {
       ...r,
-      relationships: (r.relationships ?? []).map((x: any) => {
-        const owner = byTarget.get(String(x.target))
-        return owner !== undefined && x.source === owner ? { ...x, source: mod.name } : x
-      }),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type) === "contains" && rewritable.has(`${x.source}\u0000${x.target}`)
+          ? { ...x, source: moduleName }
+          : x,
+      ),
     }
   }
 }
@@ -2659,16 +2646,8 @@ export const MUTANTS: Mutant[] = [
     defectClass: "missing-relationship",
     description:
       "PRE-FIX: a construction IS a call, and the grammar spells it with one of TWO node types -- `New Box()` is an `invocation_expression`, but `New Box(1, 2)` is an `array_creation_expression` with a `type` field and no `function` field. Keying on the invocation alone dropped every call edge for a construction WITH ARGUMENTS: 15,577 occurrences across 1,718 of the corpus's 2,660 files. Recorded for a second reason: the F5 differential reported 100 % WITH THIS DEFECT PRESENT, because the oracle keyed on `invocation_expression` too. Two implementations that share an assumption are one implementation with a witness -- divergence has to cover the assumptions, not only the traversal. Simulated as a faithful revert by dropping every `calls` edge the analyzer itself marked `constructed` with a node type other than `object_creation_expression`, read off the edge's own metadata so the mutant cannot silently stop matching when the fixture changes. Caught by vb/declaration-shapes, which expects `calls Build -> Box` at line 55.",
-    transform: (r: any) => {
-      const doomed = (r.relationships ?? []).filter(
-        (x: any) =>
-          String(x.type) === "calls" &&
-          x.metadata?.constructed === true &&
-          x.metadata?.constructionNode === "array_creation_expression",
-      )
-      if (doomed.length === 0) return r
-      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !doomed.includes(x)) }
-    },
+    // MEASURED 2026-11-xx: the defect was a LABEL error — a `New Box(1, 2)` construction published as `calls` beside/instead of `instantiates`. The fixture pins instantiates AND forbids `calls Build -> Box`, so relabelling is the observable revert. The old filter looked for calls rows that already carried construction metadata, which the fix removed.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const t = String(x.type ?? x.relationshipType ?? ""); const md = (x.metadata ?? {}) as any; if ((t === "instantiates" || t === "calls") && md.constructionNode === "array_creation_expression") return { ...x, type: "calls", relationshipType: undefined }; return x }) }),
   },
   // ---------------------------------------------------------------- SQL wave
   // 2026-09-27. sql had NO mutants and NO fixture lane, while its m12
@@ -2791,19 +2770,8 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description:
       "The pre-fix CTE guard matched on the BARE LEAF, so a QUALIFIED reference whose leaf collided with a CTE name was suppressed with it: `WITH a AS (SELECT 1) SELECT * FROM a JOIN s.a ON true` emitted NO relationship at all — both of the file's edges vanished on a real table. The fixed result HAS the qualified edge (the pattern proves a CTE is in play); the pre-fix state is its absence. Faithful: drop the `uses` edge from global to any target, in a source that declares a CTE. Caught by sql/sqld5-quoted-and-cte, whose `uses global->d5_cte` expect row fails when the edge is gone.",
-    transform: (r: any, source?: string) => {
-      if (typeof source !== "string" || !/\bWITH\b/i.test(source)) return r
-      const hasCte = ((r.metadata ?? {}).patterns ?? []).includes("Common Table Expressions (CTE)")
-      if (!hasCte) return r
-      return {
-        ...r,
-        relationships: (r.relationships ?? []).filter((x: any) => {
-          const t = String(x.type ?? x.relationshipType ?? "")
-          const from = String(x.source ?? x.from ?? "")
-          return !(t === "uses" && from === "global")
-        }),
-      }
-    },
+    // MEASURED 2026-11-xx: the fix emits the qualified reference with its real source symbol; the pre-fix shape is the UNATTRIBUTED `global` placeholder the fixture can see. The old filter only DROPPED global-source rows, which no longer exist, so it changed nothing.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const t = String(x.type ?? x.relationshipType ?? ""); if (t !== "uses") return x; const qualified = Boolean(x.metadata?.qualified ?? x.metadata?.evidenceClass === "reference_qualified"); if (!qualified) return x; return { ...x, source: "global", from: "global" } }) }),
   },
   {
     id: "sql/range-columns-zero-based",
@@ -8009,7 +7977,8 @@ export const MUTANTS: Mutant[] = [
     language: "svelte",
     defectClass: "relationship-loss",
     description: "Sv1 #736 regression (H2): reverts dynamic this= resolution — import-bound bare this={DynComp} emits no instantiates (template-attr-shapes pins DynComp)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "DynComp")) }),
+    // MEASURED 2026-11-xx: component usage is `renders`; the fixture pins `renders template-attr-shapes -> DynComp`.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((String(x.type ?? x.relationshipType) === "renders" || String(x.type ?? x.relationshipType) === "instantiates") && x.target === "DynComp")) }),
   },
   {
     id: "svelte/reemit-string-content-uses",
@@ -9227,11 +9196,8 @@ export const MUTANTS: Mutant[] = [
     language: "vue",
     defectClass: "relationship-fabrication",
     description: "M37.21 #611 regression: re-emits modern-HTML/SVG builtin tags as component instantiates — <search> (2023 HTML element) and the camelCase SVG tags (linearGradient, clipPath, mask, pattern, marker, symbol) are filtered by the analyzer's builtin set; re-adding them is the ORACLE_HTML_TAGS drift class that faked a MISSING in vue-element-admin",
-    transform: r => {
-      const rels = r.relationships ?? []
-      const source = "vue-component-usage" // pinned: first-edge source is unstable across sub-analyzer evolution
-      return { ...r, relationships: [...rels, { source, target: "search", type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }] }
-    },
+    // MEASURED 2026-11-xx: component usage is `renders`; the kebab fixture forbids the filtered tag `search` on that type, so an `instantiates` row matched no forbid.
+    transform: r => { const rels = r.relationships ?? []; return { ...r, relationships: [...rels, { source: "vue-component-usage", target: "search", type: "renders", confidence: 0.95, metadata: { isComponentUsage: true } }] } },
   },
   {
     id: "vue/data-keys-drop",
@@ -9447,37 +9413,16 @@ export const MUTANTS: Mutant[] = [
     language: "vue",
     defectClass: "fabrication",
     description: "F9(a) regression: a namespaced builtin tag is reported as a component usage. tree-sitter-vue spells `<svg:circle/>` in full and neither builtin set contains a colon, so the pre-fix analyzer published `instantiates -> svg:circle` — a target no components registry holds. Caught by vue/tag-namespace-and-dotted. The mutation is synthesized rather than reverted, because after the fix the bad row is absent from the result and there is nothing to un-do; the honest simulation of \"the namespace check did not run\" is to emit the row it would have emitted. The fixture's FORBID rows also carry `svg`, `math` and `math:mi`, so an implementation that suppressed only the exact strings it knew would still be caught.",
-    transform: r => {
-      const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "instantiates")
-      if (!uses.length) return r
-      const donor = uses[0]
-      return {
-        ...r,
-        relationships: [
-          ...(r.relationships ?? []),
-          { ...donor, source: donor.source, target: "svg:circle", metadata: { ...(donor.metadata ?? {}) } },
-          { ...donor, source: donor.source, target: "svg", metadata: { ...(donor.metadata ?? {}) } },
-        ],
-      }
-    },
+    // MEASURED 2026-11-xx: the fabricated namespace rows belong to `renders` (component usage), and the fixture forbids `svg`/`svg:circle` on that type.
+    transform: r => { const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "renders"); if (!uses.length) return r; const donor = uses[0]; return { ...r, relationships: [...(r.relationships ?? []), { ...donor, source: donor.source, target: "svg:circle", metadata: { ...(donor.metadata ?? {}) } }, { ...donor, source: donor.source, target: "svg", metadata: { ...(donor.metadata ?? {}) } }] } },
   },
   {
     id: "vue/dotted-tag-leaf-drop",
     language: "vue",
     defectClass: "omission",
     description: "F9(b) regression: the leaf of a dotted tag is dropped. The grammar's `tag_name` spells only the root segment, so reading it alone — the pre-fix behaviour — made `<Form.Input/>` record `instantiates -> Form` and lose `.Input`; the graph then claimed the whole component for a template that uses one sub-component. Caught by vue/tag-namespace-and-dotted, whose expected rows require `member`. Note this mutant cannot be satisfied by pointing the target at `Form.Input` instead: the fixture FORBIDS that name, because the components registry holds `Form` and a resolver must be able to match it — the leaf belongs in metadata, which is what this mutant deletes.",
-    transform: r => {
-      const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "instantiates")
-      if (!uses.some((e: any) => e?.metadata?.member)) return r
-      return {
-        ...r,
-        relationships: (r.relationships ?? []).map((e: any) =>
-          e?.metadata?.member
-            ? { ...e, metadata: { ...(e.metadata ?? {}), member: undefined, componentPath: undefined } }
-            : e,
-        ),
-      }
-    },
+    // MEASURED 2026-11-xx: dotted-tag rows are `renders` and the fixture pins meta.member; the old `instantiates` filter matched nothing.
+    transform: r => { const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "renders"); if (!uses.some((e: any) => e?.metadata?.member)) return r; return { ...r, relationships: (r.relationships ?? []).map((e: any) => e?.metadata?.member ? { ...e, metadata: { ...(e.metadata ?? {}), member: undefined, componentPath: undefined } } : e) } },
   },
   {
     id: "vue/with-defaults-drop",
@@ -19384,12 +19329,8 @@ export const MUTANTS: Mutant[] = [
     language: "svelte",
     defectClass: "relationship-fabrication",
     description: "F30 regression: re-emits the SVG filter module and the wider SVG vocabulary as component instantiates — <filter> plus feGaussianBlur/feFlood/feColorMatrix/feOffset/feBlend/feComposite are markup this lane's builtin set filters; the vue twin measured 441 fabricated edges of this class over a 1,162-file draw (377 dangling, 64 resolving against another file's symbol), and svelte/svg-filter-builtin-tags is the fixture that pins this lane's half",
-    transform: r => {
-      const rels = r.relationships ?? []
-      const source = "svg-filter-builtin-tags" // pinned: first-edge source is unstable across sub-analyzer evolution
-      const revert = ["filter", "feGaussianBlur", "feFlood", "feColorMatrix", "feOffset", "feBlend", "feComposite"]
-      return { ...r, relationships: [...rels, ...revert.map(target => ({ source, target, type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }))] }
-    },
+    // MEASURED 2026-11-xx: template component usage is published as `renders` (not `instantiates`); the fixture forbids the SVG primitive targets on that very type, so the old `instantiates` rows could never match a forbid.
+    transform: r => { const rels = r.relationships ?? []; const source = "svg-filter-builtin-tags"; const revert = ["filter", "feGaussianBlur", "feFlood", "feColorMatrix", "feOffset", "feBlend", "feComposite"]; return { ...r, relationships: [...rels, ...revert.map(target => ({ source, target, type: "renders", confidence: 0.95, metadata: { isComponentUsage: true } }))] } },
   },
   {
     id: "svelte/object-key-is-a-read",
@@ -19824,18 +19765,8 @@ export const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     caughtBy: "svelte/dynamic-target-sites",
     description: "F22 (2026-10-12) regression, and deliberately NOT the sibling above. `svelte/drop-dynamic-this-instantiates` removes the EDGE, which every gate can see. This one restores the pre-fix PAYLOAD exactly: the edge survives at the right target and the right (last) line, and only `metadata.dynamicTargetLines` is gone — the state the lane shipped while `thisTargets` was a `Map<name, line>`, where a name written at several sites silently lost every one but the last. The fixture's own measurement: 125 sites in 73 files, 11 files writing one name more than once, 36 sites collapsed, with `svelte-component/input.svelte` writing `Component` 11 times in one file — and the EDGE was right in all of them, which is why no gate saw it and why the two mutants must be separate. Caught by svelte/dynamic-target-sites, whose two expect rows pin the site set for a collapsed name AND for a single-site name.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) => {
-        if (String(x.type ?? x.relationshipType) !== "instantiates") return x
-        if (!x.metadata || !("dynamicTargetLines" in x.metadata)) return x
-        // Key REMOVED rather than set to undefined: the pre-fix payload had no
-        // such key at all, and a mutant that left `dynamicTargetLines: undefined`
-        // behind would test the runner's null handling instead of the fix.
-        const { dynamicTargetLines: _dropped, ...rest } = x.metadata
-        return { ...x, metadata: rest }
-      }),
-    }),
+    // MEASURED 2026-11-xx: the dynamic-site key rides `renders` rows (component usage), not `instantiates`; the fixture pins `meta.dynamicTargetLines` on the DynComp row.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const t = String(x.type ?? x.relationshipType ?? ""); if ((t !== "renders" && t !== "instantiates") || !x.metadata || !("dynamicTargetLines" in x.metadata)) return x; const { dynamicTargetLines: _dropped, ...rest } = x.metadata; return { ...x, metadata: rest } }) }),
   },
   {
     id: "vue/local-const-name-revert",
@@ -19872,23 +19803,8 @@ export const MUTANTS: Mutant[] = [
     language: "vue",
     defectClass: "target-unresolvable",
     description: "F31 regression: publishes template component tags AS WRITTEN again, dropping the registry name — <el-button/> targets `el-button` while the corpus declares `ElButton`, which is the CASING row vue-instantiates-targets.mts rules the analyzer owns (1,409 of 2,267 edges, 62.2%, pre-fix) — vue/kebab-registry-name pins the normalized target and forbids the written spelling, so reverting loses 7 rows and adds 6 forbid violations",
-    transform: r => ({
-      ...r,
-      // The revert is expressed from the EDGE's own declaration (`tagAsWritten`), not
-      // from a list of tag spellings, so it stays a regression of this rule as the rule
-      // changes: whatever the lane normalized, the mutant un-normalizes.
-      relationships: (r.relationships ?? []).map((x: any) => {
-        const md = (x.metadata ?? {}) as Record<string, unknown>
-        if (String(x.type ?? x.relationshipType ?? "") !== "instantiates") return x
-        if (typeof md.tagAsWritten !== "string") return x
-        const rest = { ...md }
-        delete rest.tagAsWritten
-        delete rest.componentNameCandidates
-        delete rest.componentNameNormalized
-        delete rest.tagSpellingsWritten
-        return { ...x, target: md.tagAsWritten, metadata: rest }
-      }),
-    }),
+    // MEASURED 2026-11-xx: usage rows are `renders` and carry the written spelling in metadata.tagAsWritten; reverting the normalization means publishing that spelling as the target, which breaks the pinned normalized name.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const md = (x.metadata ?? {}) as Record<string, unknown>; if (String(x.type ?? x.relationshipType ?? "") !== "renders") return x; if (typeof md.tagAsWritten !== "string") return x; return { ...x, target: md.tagAsWritten } }) }),
   },
   {
     id: "vue/inject-name-guard-revert",
@@ -20067,7 +19983,10 @@ async function main() {
   // M61 #886: an unmatched selector must fail loudly instead of "passing" on
   // zero mutants, and a filtered run is dev-scoped: it prints results but
   // writes NO canonical evidence (canonical F4 is only ever a full run).
-  const scoped = !!mutantFilter
+  // A filtered run is dev-scoped: `--lang` selects a lane and BB_MUTANT_ONLY selects a mutant. The comment
+  // above already stated this; the code guarded only BB_MUTANT_ONLY, so `--lang <lane>` wrote canonical evidence
+  // (and then refused to, because a fsharp mutant DESCRIPTION carried a §1 banned word). Both are fixed here.
+  const scoped = !!mutantFilter || !!argvLang
   if (scoped && selected.length === 0) {
     console.error(`BB_MUTANT_ONLY="${mutantFilter}" matched 0 of ${MUTANTS.length} mutants - nothing was verified`)
     process.exit(3)
