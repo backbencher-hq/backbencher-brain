@@ -1,379 +1,633 @@
-# html
+# real-html-analyzer.md
 
-> **This file is the RULINGS narrative** — why each decision was taken, and the defect
-> each one closed. The **canonical contract reference** is
-> [`real-html-analyzer.md`](./real-html-analyzer.md): what the analyzer emits, what it
-> refuses to emit, and the measurements behind both. The two are kept distinct on
-> purpose — an earlier state of this lane had two overlapping copies of the same
-> contract, and the stale one still claimed `calls` was `form action` two releases
-> after the analyzer stopped emitting it.
->
-> **Status: INVENTORY-DONE** on the M14 #419 ladder (`NOT-STARTED` →
-> `INVENTORY-DONE` → `GAPS-CLOSED` → `CONFORMANT`). Section A is complete — **21/21
-> rows classified, gap list empty** (19 grammar node types plus the universal
-> `ERROR`/`MISSING` recovery pair). B and D are carried by **twelve** fixtures, C and
-> G by the registered carrier census, and H by CC1's html block (12 truth rows == 12
-> analyzer edges). E and F are measured but **unpinned** — that is the canonical F5
-> ceremony, and it is the only thing keeping the M49 ledger row at `known-gap`.
-> `script/m14/completeness-inventory.ts --lang html` prints the live per-section
-> verdict. **`HTML-G1` is closed** (see the inline-block seam below).
+> **Canonical contract doc for the html lane.** The *rulings* — why each decision was
+> taken, with the history and the defect each one closed — live in
+> [`html.md`](./html.md). This file is the reference: what the analyzer emits, what it
+> refuses to emit, and the measurements behind both. Kept distinct on purpose, because
+> two overlapping copies of the same contract is how a table ends up claiming
+> `calls` is `form action` while the analyzer has said `uses` for two releases.
 
 ## Language
 
 | | |
 |---|---|
-| Analyzer | `src/ast/real-html-analyzer.ts` (`RealHtmlAnalyzer`) |
-| Grammar | `wasm/tree-sitter-html.wasm` — upstream `tree-sitter/tree-sitter-html`, vendored at `grammars/tree-sitter-html` (Matrix 4 provenance, closes the per-wave `#864` item for this lane) |
-| Detection | `.html` / `.htm` → `html` (`src/ast/language-detection.ts`) |
-| Wired in | `src/ast/engine.ts` `getAnalyzer` |
-| Family | **web** — the last web-family language to enter a gate |
-| Tracking | #288 (`Analyzer html: reach L5 SCOPED-VERIFIED`) |
-
-## Why this file exists
-
-html carried an M12 corpus claim, a regex-census row and a passing grammar
-audit, and **no fixture, no mutant, no differential oracle and no completeness
-spec**. Every M14/M49/M60 cell read `n/a` — the gates could not ask the
-question. That is how the defects below survived a green board: they were
-measured, written down in prose, and gated by nothing.
-
-## The rulings
-
-### HTML-IDENTITY — an element is a symbol because it is ADDRESSABLE
-
-`real-vue-analyzer.ts:13` and `real-svelte-analyzer.ts:14` both publish
-*"Template elements/attributes/directives are NEVER symbols."* html **is** a
-template language, so it inherits that rule — and adds the one construct an SFC
-template does not have: a document-level address space.
-
-- `id` is the document's unique handle (`getElementById`).
-- `name`, when there is no `id`, is the form/anchor handle (`getElementsByName`)
-  — and it is the target of `<label for>`.
-- **`class` is a shared styling hook, never an identity.** N elements
-  legitimately carry it, which is exactly why it cannot name one. It stays
-  readable in `metadata.attributes`.
-- The **document is the module symbol** (name = file stem, `kind: module`), so
-  the containment tree has one root instead of N disconnected ones and a
-  document-level resource edge sources from a real, joinable symbol.
-
-**Measured on the pre-ruling analyzer, 139 real corpus documents:**
-
-| | before | after |
-|---|---|---|
-| symbols | 3,061 | 1,453 |
-| symbols with a **unique** name in their own file | 1,228 (40.1%) | **1,453 (100%)** |
-| symbol names containing whitespace | 881 (28.8%) | **1** |
-| files containing any duplicate name | 25/139 (18.0%) | **0/139** |
-
-The one remaining whitespace name is real: `<a name="Harley Davidsson">` in
-`otp/lib/xmerl/doc/assets/result_xs.html`, a legitimate named anchor. It is
-attributed to `metadata.identityAttribute: "name"`, so a reader knows why.
-
-### DUPLICATE-IDENTITY — first wins, then a deterministic suffix
-
-A duplicate `id` is invalid HTML. The **first in document order** keeps the plain
-name (that is what `getElementById` returns); later ones take a deterministic
-`#N` suffix — the rust RSD3 answer to 2,852 same-name ids there — and carry
-`metadata.duplicateId`. In-document references resolve to the first and carry
-`metadata.ambiguousTarget` when a second exists. No two symbols ever share a
-name.
-
-### SCOPE BARRIERS — `<template>` and `<slot>`
-
-Their content is an inert fragment / light-DOM fallback and is **not rendered
-where it is written**, so it is not a child of what encloses it in the source. An
-**addressable** barrier owns its own fragment; a **bare** one does not — its named
-descendants belong to the nearest live ancestor, carrying
-`metadata.inTemplateBarrier`. The pre-fix analyzer claimed
-`template contains inner` for markup that never enters the document, and a
-`<template id="x">` collided with its live-DOM twin as two identically-named
-symbols.
-
-### RESOURCE MODEL — a table, not a branch chain
-
-`RESOURCE_RULES` is data, so it can be **enumerated** — by a reader, by the F6
-dead-literal check, by the F8 census — and adding a carrier is one row. The
-pre-fix analyzer was an `if/else if` chain over ten tag names, and a carrier
-nobody thought of in that chain simply did not exist. **Eight produced nothing**,
-each verified one document at a time:
-
-| carrier | pre-fix |
-|---|---|
-| `<object data>` | no `object` branch at all |
-| `<embed src>` | no `embed` branch at all |
-| `<track src>` | no `track` branch — every video's captions invisible |
-| `<input type=image src>` | `input` was read only through its form table |
-| `<iframe src>` | the branch counted a missing `loading` and never read `src` |
-| `<source srcset>` | only `src` was read |
-| SVG `use`/`image` `href` + `xlink:href` | no `use`/`image`/`svg` string in the file |
-| `<base href>` | no `base` branch — and it fetches nothing, so it is a **document metric**, not an edge |
-
-`<source>`'s pre-fix gate also required the **immediate** parent to be
-picture/audio/video, so one wrapper element lost the resource — and a `<picture>`
-inside a grid cell is not a rarity.
-
-### SCHEME CONTRACT — a hyperlink is not a code dependency
-
-External schemes — `http:`/`https:`/`ftp:`/`mailto:`/`tel:`/`sms:` and the rest
-of `ORACLE_HTML_SCHEME_SKIP` — produce **no edge** and are counted as
-`documentMetrics`. The pre-fix analyzer emitted a `uses` edge for every one it
-did not filter, so a page linking to fifty external sites published fifty graph
-edges that the enrichment pass then scored for architectural criticality —
-measured at **237** such edges across 51 real documents.
-
-**`javascript:` is the one exception, and it is deliberately an edge.** A
-`javascript:` URL is a real hazard the document contains, and the analyzer
-records it as one (`resourceType: "javascript-url"`, `isScriptUrl`). Filtering
-it out was the *other* failure: a lane that refuses to emit a hazard is how the
-hazard goes unreported. All five spellings — `javascript:`, `JavaScript:`, a
-leading space, `&#106;avascript:` and `&#0000106;avascript:` — collapse to the
-single row `uses <owner> -> javascript:`, because the value is **decoded before
-the scheme test**. The first cut of this rewrite had it backwards (no edge), and
-only the F9 probe battery caught it: `otp` and `sqlite` carry no `javascript:`
-URL at all, so `unexplained=0` never had to confront the disagreement between the
-analyzer and the oracle.
-
-**A bare `#` names no target.** `href="#"` is the HTML idiom for "no
-destination" — a valid URL referring to the top of *this* document, which the
-document module already is — so it emits **nothing**. An edge to the literal
-text `#` is a target that is neither a symbol nor a file, which is the
-unresolvable-identity defect class in its most literal form. Both the analyzer
-and the differential oracle had this hole in **two places each** (a
-`length > 1` guard excludes `#frag` and lets `#` through), and `sqlite` alone
-carried three live rows of it before it was fixed; the differential was
-reporting 100% coverage *with the defect in its own truth*.
-
-Its filter was a bare `startsWith("javascript:")`, so it was case-sensitive,
-whitespace-sensitive, and present **only in the `<a>` branch**. Decoding now
-runs **before** the scheme test, which is what catches `javascript:alert(1)`,
-` javascript:alert(2)`, `&#106;avascript:alert(3)` and
-`&#0000106;avascript:alert(4)` — the last two being the forms an HTML parser
-sees as identical to `javascript:`.
-
-A **form endpoint** is a real dependency and is a `uses` edge with
-`isFormEndpoint`, **not** a `calls` edge: `Calls` claims *this symbol invokes
-that symbol*, which is false for a URL. Since `uses`/`contains` were the only
-other types the pre-fix analyzer emitted, **the html lane's entire call graph was
-URLs**.
+| Grammar | `wasm/tree-sitter-html.wasm`, sha256 `11b3405c1543fb012f5ed7f8…`, 18,468 bytes, vendored under `grammars/tree-sitter-html/` with provenance |
+| Node types | 19 distinct named types (the grammar exposes 26 `nodeTypeForId` slots; `start_tag`/`script_start_tag`/`style_start_tag` and `tag_name`/`erroneous_end_tag_name` are aliases onto shared names) |
+| Completeness | `script/m14/spec/html-completeness.json` — **21/21 classified, gap list empty**: 19 grammar node types (13 handled, 5 `internal_silent`, 1 design decision) plus the universal `ERROR`/`MISSING` recovery pair the gate injects for every language (ERROR handled, MISSING silent) |
+| Analyzer | `src/ast/real-html-analyzer.ts` — **2,078 lines** |
+| Family | `web` (M60.LCM) |
 
 ## Symbol contract
 
-| Field | Supported? | How |
+**An element is a symbol because it is ADDRESSABLE, not because it has a class.**
+
+| Input | Result |
+|---|---|
+| `id="x"` | symbol `x` |
+| `name="x"` with no `id` | symbol `x` — the legacy anchor form is a real handle |
+| `class="a b c"` | **nothing** — a class is a shared styling hook, never an identity. The pre-fix analyzer took the whole multi-token value as the name, so 28.8% of symbols carried whitespace |
+| neither | **nothing** — an anonymous element passes its parent's identity through, so a containment chain skips structural noise |
+| duplicate `id` | first in document order keeps the plain name; the k-th becomes `<id>#k`, deterministically, so a rebuild is byte-identical |
+
+Measured on 1,200 real files: **0 empty names, 0 names containing whitespace, 0
+duplicate names within a file** (from 59.9% non-unique and 28.8% whitespace-bearing
+before the ruling).
+
+| Field | Value | Why |
 |---|---|---|
-| `name` | ✅ | the element's `id`, else its `name`; a duplicate takes a deterministic `#N` suffix |
-| `kind` | ✅ | `module` for the document, `class` for an addressable element |
-| `ownerName` | ✅ | nearest addressable ancestor, else the document module |
-| `range` | ✅ | 1-based, the whole element node (CC1) |
-| `complexity` | ✅ | the addressable **subtree size** — the DOM analogue of a declaration's statement count; computed in the same O(n) pass by a single reverse walk |
-| `visibility` | ✅ | always `public`: html has one scope, and a private/package value would be a fabrication |
-| `parameters` / `returnType` | — | n/a — an element is not a callable. Deliberately **not** claimed in the completeness spec's payload matrix. |
-| `docstrings` | — | n/a |
+| `kind` | `class` for elements, `module` for the document | `class` is this codebase's shared *structural* bucket — `Table`, `Service`, `Resource` and `Object` are all aliases for it in `SymbolKind`. There is no `Element` kind, and inventing one would break the fixtures, the hand-audited M12 truth, PIPE and the differential oracle |
+| `ownerName` | nearest addressable **ancestor**, or the document module | the owner is the node a consumer navigates *up* to |
+| `scope` | `""` | HTML has one scope: a document |
+| `visibility` | `public` | there is no private/package/protected in markup, so this is the only truthful value — and it is pinned by fixture rather than left as an unexamined default |
+| `range` | the whole `element` node | an element's span is defined by its `start_tag`…`end_tag` pair, so reading the `end_tag` separately would publish the same line twice |
+| `line_number` | 1-based, from the byte-accurate range | never fabricated `0` (M59.O2 / R6) |
 
-## Relationship contract
+**The document is the module.** One `module` symbol per file, named from the file
+stem, with `metadata.doctype` recorded on it. Without this a page has no root and
+every top-level element is parentless.
 
-Every applicable label is emitted, and the labels that have no HTML construct
-(`extends`, `implements`, `instantiates`, `overrides`, `exports`) are correctly
-**absent** — measured at 0 exports across 1,200 corpus files, because markup has
-no module surface to export.
+**Recovery nodes.** `ERROR` is read and *handled*: the broken region is reported as a
+`ParseError` anchored to the **ERROR node's own span**, the node is **bypassed**, and
+the elements around it still publish symbols, containment and resource edges. A walk
+that stopped at the first error would still publish the module and everything above
+it, so `html/error-recovery` places the error in the **middle** of the document
+specifically to make the two behaviours distinguishable. `MISSING` is read
+defensively but **never occurs** — twelve deliberately malformed documents (unclosed
+comment/attribute-quote/doctype/script/style/textarea/select/template, an attribute
+with no value at EOF, a stray end tag, `<>>><<></` soup) and tree-sitter-html
+recovered from every one without inserting a token. That split — `ERROR` handled,
+`MISSING` silent — is what `bash` already records, reached independently.
 
-| Label | Emitted | By | Confidence | Tier |
+## Relationship ontology — all 10 types, each with a number
+
+Measured on the production `ASTEngine.parseFile` path over **1,652 `.html`/`.htm`
+files enumerated by readdir** from `$HOME/fixtures/repositories`
+(1,652 parsed, 0 failed), by `script/m14/html-origin-census.ts`. Origin is
+measured by **differencing the production path against the same path with the
+inline-block seam switched off**, so it reads no metadata field and cannot
+inherit the `htmlEmbedded` tagging defect the previous three commits documented.
+
+| type | verdict | edges | files | html-own | delegate |
+|---|---|---|---|---|---|
+| `contains` | **EMITTED** | 12,174 | 1,174 | 10,811 | 1,363 |
+| `uses` | **EMITTED** | 74,919 | 1,391 | 70,105 | 4,814 |
+| `calls` | **EMITTED (delegate-only)** | 3,147 | 340 | **0** | 3,147 |
+| `references` | **EMITTED (delegate-only)** | 78 | 7 | **0** | 78 |
+| `instantiates` | **EMITTED (delegate-only)** | 47 | 47 | **0** | 47 |
+| `imports` | **EMITTED** — importer channel | 4,682 rows | 707 | 4,675 | 7 |
+| `extends` | **RULED** | 0 | 0 | — | — |
+| `implements` | **RULED** | 0 | 0 | — | — |
+| `overrides` | **RULED** | 0 | 0 | — | — |
+| `exports` | **RULED** on the relationship channel; 575 rows on `exports[]` | 0 | 0 | **0** | 575 |
+
+The independent arbiter agrees. `script/m14/html-ruled.ts` + the two-line
+registration described in that file's header, run against the gate's own corpus
+(1,252 git-tracked admitted files, `pool-worker.parseFile`) by
+`validation/m14/fixtures/html/ruled-gate.ts`:
+
+```
+calls EMITTED 3,057 · uses EMITTED 73,262 · contains EMITTED 10,561
+imports EMITTED 13 · references EMITTED 78 · instantiates EMITTED 46
+extends RULED-SOUND · implements RULED-SOUND · exports RULED-SOUND · overrides RULED-SOUND
+emitted 6/10   ruled-sound 4   FALSIFIED 0   ruled-without-justification 0   exit 0
+```
+
+**html's OWN code constructs two relationship types.** Everything else that fires
+arrives through the inline `<script>`/`<style>` seam. So on this corpus three of
+the six firing types — `calls`, `references`, `instantiates` — exist **only** on
+the delegate side, and `exports[]` is 100% delegate (575 rows, 0 html-own).
+
+### The four rulings, with the measurement that rules each
+
+None of these is prose. Each names the probe that overturns it, and the probes
+run in `script/m14/html-ruled.ts` and `script/m14/html-origin-census.ts`.
+
+**Grammar inventory (instrument A) — positive evidence of absence.** Over 1,652
+documents tree-sitter-html produces **20 named node types** and the gate, walking
+all children including anonymous tokens, counts **28**; the 8 extra are pure
+punctuation (`'`, `"`, `<`, `</`, `<!`, `>`, `/>`, `=`). Not one of either list
+denotes a declaration, class, interface, member or method.
+
+| type | probe | measurement |
+|---|---|---|
+| `extends` | A, plus both customized-built-in spellings on the tree | no declaration node type exists; `is="…"` **0**/1,652 and Polymer's pre-standard `extends="paper-item"` **0**/1,652 — probed separately, because probing only the spelling that happens to occur scopes a ruling to an accident |
+| `implements` | B: `role="…"` values **outside** the WAI-ARIA enumeration | `role=` **365 occurrences / 350 files / 9 distinct values**, and **365 of 365** are ARIA members. Zero outside. Four of the nine — `button`, `main`, `document`, `dialog` — collide with names this analyzer's own identity ruling publishes, so the edge would bind to a DOM element |
+| `overrides` | A, plus the one suppression construct and the duplicate-id case on the tree | no member/method/class-body node type; `role="none"`/`role="presentation"` **6**/2 files, naming an ARIA token and not a declaration; a duplicate `id` resolves **first-wins** (`getElementById`), which is why this analyzer allocates a deterministic `handle#N` rather than letting the later element win |
+| `exports` | B: `<slot name>`, `<slot>` in any form, and `part=` | **0 / 0 / 0** over 1,652 files. The whole slot vocabulary, not just the named case — a ruling stated over the narrower population rests on a subset nobody measured. `part=` (Shadow DOM parts, CSS `::part()`) is the strongest `exports` candidate HTML has and occurs zero times |
+
+### `instantiates` is EMITTED, and the construct that looks like a GAP is not
+
+`instantiates` fires 47 rows, 100% delegate, 0 html-own. The construct that would
+let html emit it itself — a hyphenated element tag — occurs **2,010 times**, so
+the count was interrogated rather than quoted, by
+`script/m14/html-custom-element-join.ts`:
+
+```
+1,652 html documents read · 14,193 js/ts files enumerated, 39 parsed
+2,010 hyphenated-tag occurrences · 1,005 distinct tag names · 10 of 1,652 documents
+0 distinct customElements.define("<name>", …) names exist in the corpus
+0 of 2,010 name a registered custom element
+```
+
+and where they live, which is the half that supports any ruling:
+
+| occurrences | tags | file |
+|---|---|---|
+| 2,000 | 1,000 | `roslyn-cs …/legacyTest/TestFiles/nested-1000.html` |
+| 2,000 | 1,000 | `roslyn-cs …/test/TestFiles/nested-1000.html` |
+| 4 | 1 | `roslyn-cs …RazorSourceGeneratorTagHelperTests/VoidTagName_SelfClosing/…` |
+| 4 | 1 | `roslyn-cs …RazorSourceGeneratorTagHelperTests/VoidTagName_Prefixed/…` |
+| 1 | 1 | `svelte …/attribute-strip-svg-mathml-ce/_expected.html` (an SSR expected-output fixture) |
+| 5 | 3 | 5 `vuejs` example pages — `<demo-grid>`, `<tree-item>`, `<transition-group>` |
+
+Both Razor files are a generated compiler stress fixture (1,000 levels of
+`<elem-N>`, testing the recursion limit). The vuejs pages load
+`../../dist/vue.global.js` and register those three names through
+`Vue.createApp({components:{…}})` — the hyphen is Vue's multi-word-component
+convention, and there is no `customElements.define` anywhere. So emitting one
+`instantiates` edge per occurrence would manufacture 2,010 edges, 99.7% of them
+from a generated fixture, each with an endpoint that resolves to nothing. The
+construct occurs; the **instantiation** does not.
+
+## Relationship ontology
+
+Every applicable label is emitted. Labels with no HTML construct (`extends`,
+`implements`, `overrides`, `exports`) are **absent, with a measurement each** —
+the table above, and `script/m14/html-ruled.ts`. The previous wording here read
+"measured at 0 exports across 1,200 files, because markup has no module surface".
+The reason was right about html and the framing was wrong: 575 `exports[]` rows
+arrive on this corpus, every one of them from the inline-JS delegate.
+
+| Label | Emitted for | By | Confidence | Tier |
 |---|---|---|---|---|
-| `contains` | DOM containment between addressable nodes, module → top-level included | html | 1.0 | `structural` |
-| `uses` | fetched resources, in-project navigation, form endpoints, resolved in-document references | html | 1.0 fetch / 1.0 reference / 0.9 navigation | `import_based` / `structural` / `usage_contextual` |
+| `contains` | DOM containment, document module → top-level included | html | 1.0 | `structural` |
+| `uses` | fetched resources, in-project navigation, form endpoints, resolved in-document references, citations | html | 1.0 fetch / 1.0 reference / 0.9 navigation | `import_based` / `structural` / `usage_contextual` |
+| `contains` | the delegate symbol → its owner, created by the SEAM | seam | 1.0 | `structural` |
 | `uses` | a bare identifier read inside an inline `<script>`/`<style>` | **delegate** | **0.60 — unclaimed** | `usage_contextual` |
 | `calls` | invocations found inside an inline `<script>`/`<style>` | **delegate** | 0.9 | `usage_contextual` |
-| every edge | carries `line_number` — **1-based, the call site, never a fabricated `0`** (M59.O2 / R6). Measured **0 of 45,768** edges without a line and **0** with a line ≤ 0 | | | |
+| every edge | carries `line_number` — 1-based, the site, never `0` | | | |
+| `imports` | mirrors every fetched project-relative module; the `range` is the **attribute's**, not the element's | | | |
 
-`calls` is emitted **only** by the embedded-block seam: on 400 corpus files,
-3,016 `calls` edges, of which **3,016 came from the JS/TS delegate and 0 from
-html**. Markup has no invocation semantics of its own — a `<form action>` is a
-navigation the *browser* performs, which is exactly why it is `uses` and never
-`calls`. An earlier version of this table said `calls` was never emitted; that
-was written before the inline-block seam landed and was wrong from the moment
-that seam existed.
+`calls` is emitted **only** by the embedded-block seam: 3,016 `calls` on 400 corpus
+files, of which **3,016 came from the delegate and 0 from html**. Markup has no
+invocation semantics of its own — a `<form action>` is a navigation the *browser*
+performs, which is exactly why it is `uses` and **never** `calls`. The pre-rewrite
+truth said `calls`, conflating a network dependency with a control-flow edge, so
+renaming a submit handler would have looked like a change to a URL.
 
-**The 0.60 tier, disclosed rather than averaged away.** 8.24% of emitted edges
-are sub-threshold — a `bareRead` field access inside an inline script, which the
-JS analyzer emits as a *guess* and marks as such. All 3,770 are `uses` from the
-`js` delegate; **html's own edges are 0.9 or 1.0, without exception**. A
-sub-threshold edge is not a defect: the store records it as an unclaimed
-observation, the M12 differential scores it as `unknown` rather than as a false
-positive, and the reason a bare read is a guess is that `obj.field` is a
-declaration in one file and a property of something else in another. What matters
-for a consumer is that the number is *known* and attributable, not that it is
-zero — and it is attributable to exactly one origin.
+**Measured invariants** (1,200 files / 45,768 relationships, production
+`ASTEngine.parseFile` path):
 
-`imports` mirrors every fetched project-relative module, and an import's `range`
-is the **attribute's**, not the element's — the pre-fix element range made a
-multi-line start tag produce a wrong import line.
+| Invariant | Result |
+|---|---|
+| relationships without a `line_number` | **0** (0.000%) |
+| relationships with `line_number <= 0` | **0** |
+| unresolvable edge targets (neither symbol, scheme, nor path) | **0 of 59,662** |
+| symbol lines beyond EOF (fabricated sites) | **0** |
+| empty / whitespace / duplicate symbol names | **0 / 0 / 0** |
+
+**The 0.60 tier, disclosed rather than averaged away.** 8.24% of emitted edges are
+sub-threshold — a `bareRead` field access inside an inline script, which the JS
+analyzer emits as a *guess* and marks as one. All 3,770 are `uses` from the `js`
+delegate; **html's own edges are 0.9 or 1.0 without exception.** A sub-threshold edge
+is not a defect: the store records it as an unclaimed observation and the M12
+differential scores it as `unknown` rather than as a false positive. The reason a
+bare read is a guess is that `obj.field` is a declaration in one file and a property
+of something else in another. What matters for a consumer is that the number is
+*known* and attributable to exactly one origin.
+
+## Noise-elimination contract (what produces NO edges)
+
+| Input | Why no edge |
+|---|---|
+| `http:` / `https:` / `ftp:` / `mailto:` / `tel:` / `sms:` … | an external URL is not a dependency of this codebase. The pre-fix analyzer emitted one per external link, so a page with 50 external links published 50 graph edges the enrichment pass then scored for architectural criticality — **measured at 237 such edges across 51 documents** |
+| protocol-relative `//host/x` | same |
+| `href="#"` | the HTML idiom for "no destination" — a valid URL naming the top of *this* document, which the document module already is. An edge to the literal text `#` is a target that is neither a symbol nor a file |
+| `href=""` | the same statement with less ceremony |
+| `<meta charset>` / `description` / `viewport` | `content` is a URL only under `http-equiv=refresh`; otherwise it is a media type or a sentence, and an edge to a sentence is the defect class this lane exists to avoid |
+| `<link rel=preconnect>` / `dns-prefetch` | names a **host** for a connection warm-up, not a subresource. The pre-fix analyzer mirrored these into `imports`, so the index claimed a dependency on a hint nothing serves |
+| `class`, `style`, `id`, `name`, `title`, `alt`, `data-*`, `aria-*`, `xmlns`, framework bindings (`:`, `@`, `v-`, `x-`) | presentation, identity, or application state — never a document |
+| a hyphenated element tag, as a **web-component claim** | the tag is a *potential* custom element under the HTML spec's naming rule, not a *registered* one, and registration is `customElements.define(name, class)` in a JavaScript file — a cross-file fact this analyzer cannot see. Measured: **2,010 occurrences, 1,005 distinct names, 0 registered** (`html-custom-element-join.ts`). The analyzer used to publish `Web Components` into `detectedFrameworks` on the strength of the tag alone, which fired on pages using no web components at all: 2,000 of the 2,010 are two generated Razor stress fixtures, the other 10 are vuejs example pages whose tags are Vue components. The **count** is still published (`documentMetrics.customElementCount`) and still drives an insight, worded now as what it is: `Custom-element-shaped tags present; registration not observable from this document` |
+| an ARIA `role` as an `implements` target | a specification token from a closed 81-value enumeration the project does not own. 365 of 365 corpus occurrences are ARIA members, and `button` / `main` / `document` / `dialog` collide with names this analyzer's own identity ruling publishes |
+
+A corpus census (`script/m14/verify-carrier-census.ts`, a **registered gate** in the
+`verify` chain) enforces the boundary from the document side: at 4,000 files it finds
+**61 distinct `(tag@attr)` pairs carrying 313,582 reference-shaped occurrences, all
+61 ruled**. It consults *neither* the analyzer's table nor the differential oracle's,
+because a differential cannot contradict a premise it shares.
+
+## Supported constructs
+
+37 rules over 28 tags. The full table is `RESOURCE_RULES` in the analyzer; this is
+what it covers.
+
+| Group | Carriers |
+|---|---|
+| scripts | `script@src`, `script@href` (SVG2 spelling), `param@value` (for a resource-bearing `name`) |
+| stylesheets & links | `link@href` gated on a fetchable `rel` (14 tokens, each with its own `resourceType`) |
+| images | `img@src`, `img@srcset` (one row **per candidate**), `img@longdesc`, `source@src`, `source@srcset` |
+| media | `video@src`, `video@poster`, `audio@src`, `track@src` |
+| embedded objects | `embed@src`, `object@data`, `iframe@src`, `frame@src`, `input@src` |
+| SVG | `use@href`/`xlink:href`, `image@href`/`xlink:href`, `feImage@href`/`xlink:href` |
+| navigation | `a@href`, `area@href` — fragment refs resolve to the **element**, never to the source text |
+| form endpoints | `form@action`, `button@formaction`, `input@formaction` (for `type=submit`/`image`) |
+| navigation pragma | `meta@content` under `http-equiv=refresh` — a navigation, same class as a form action |
+| fetch lists | `a@ping` — whitespace-separated, one row per URL |
+| citations | `cite` on `q`/`blockquote`/`del`/`ins` — a reference out of the document, graded `usage_contextual` because it is not a fetch |
+| legacy | `body@background`, `table@background` — deprecated, still fetched by every shipping browser, so the `legacy-` resourceType says so at the edge |
+| manifest | `html@manifest` |
+
+**Scope barriers.** `<template>` and `<slot>` are scope boundaries: an addressable
+barrier owns its own fragment, a bare one does not, and the flag is
+`metadata.inTemplateBarrier`. A barrier's **tag** never becomes a name.
+
+**In-document references** are resolved *after* the walk, so a **forward** reference
+(`<label for="x">` above the `<input id="x">`) resolves exactly as a backward one
+does — which HTML allows, and which a single-pass resolver silently loses. A
+reference to a **duplicated** handle resolves to the **first** declaration, because
+that is what `getElementById` returns; the edge is marked `ambiguousTarget` so a
+consumer can see that a choice was made.
+
+**The inline-block seam — MEASURED, per origin.** `<script>`/`<style>` bodies are
+handed to the JS, TS and CSS analyzers as sub-parses and merged with
+**file-coordinate** lines; the applied offset is recorded on every row as
+`metadata.embeddedLineOffset`, so the shift is auditable rather than merely
+correct.
+
+Origin is measured by differencing the production path against the same path with
+the seam switched off (`html-origin-census.ts`), so it reads no metadata field:
+
+| channel | total | html-own | delegate | delegate share |
+|---|---|---|---|---|
+| `contains` | 12,174 | 10,811 | 1,363 | 11.2% |
+| `uses` | 74,919 | 70,105 | 4,814 | 6.4% |
+| `calls` | 3,147 | **0** | 3,147 | **100%** |
+| `references` | 78 | **0** | 78 | **100%** |
+| `instantiates` | 47 | **0** | 47 | **100%** |
+| `imports[]` | 4,682 | 4,675 | 7 | 0.15% |
+| `exports[]` | 575 | **0** | 575 | **100%** |
+| symbols | 13,604 | 12,463 | 1,141 | 8.4% |
+
+**Every merged row now carries its origin** (`htmlEmbedded` / `embeddedLang` /
+`embeddedLineOffset`), on every channel including the two the seam used to leave
+unmarked — its own `contains` rows and the whole `exports[]` channel. Measured
+before: 245 of 921 delegate rows on vuejs and 8 over 1,652 documents arrived with
+no tag, and the method's own header told auditors to use that tag as the origin
+test. Measured after: **0 untagged**, and the tag count (9,463) equals the
+path-difference count exactly, so the two independent methods agree.
+
+**Q4 — the labelling of in-document references is the one open question here, and
+it is now a number rather than a preference.** html resolves **4,496** in-document
+IDREF references on this corpus — 4,271 fragment hrefs (`a@href` 4,268,
+`use@xlink:href` 3, in 384 files) and 225 `label@for` (52 files) — and labels
+every one of them `uses` with `evidenceClass: "structural"`. html's own
+`references` count is **0**; all 78 are the CSS delegate's.
+
+The case for `references`: the CSS analyzer emits it for exactly this shape — a
+name in one place naming a declaration elsewhere in the same document, with no
+fetch and no control flow (`real-css-analyzer.ts:3491`, `var(--x)` →
+`--x`; `:1666`, a namespace prefix → its `@namespace`; `:2180`, a custom-media
+name → its declaration). A `<label for="x">` → the element with id `x` is that
+same shape, and the edge already declares itself `structural` rather than a
+usage, so the label and the evidence class disagree.
+
+The case against, and it is why this was not changed unilaterally: the independent
+oracle `deriveHtmlEdges` labels both forms `uses` with a long comment on the
+resolution (`differential.ts:21367`), so analyzer and oracle agree — and two
+independent derivations agreeing is the strongest evidence available here.
+Relabelling 4,496 published edges would also make html's own `references` a
+**DERIVATION finding** (emitted, compared against nothing), because
+`references` is not in html's audited label set in `differential.ts`. Closing this
+needs the oracle and the analyzer changed in step; `script/m14/**` is not this
+lane's to edit. Recorded for the owner with the exact line.
+ Delegates are resolved **lazily and
+independently**, never as static imports: a static import makes a broken delegate a
+*load-time* failure of this module, and while the CSS analyzer was mid-rewrite with 5
+build errors every HTML file in the project fell back to `2.0-basic-fallback` — zero
+symbols, zero relationships. A template language must not be held hostage by a script
+language. A delegate that fails to load now costs exactly the blocks it would have
+served, and the skip is **disclosed** as `metadata.unavailableEmbeddedLangs`, because
+a silently missing block set reads as *a document with no code in it*.
+
+## Unsupported / explicit-unknown constructs
+
+| Construct | Disposition |
+|---|---|
+| `class` as an identity | ruled out — a shared styling hook. Was 28.8% of all symbol names |
+| external absolute URLs | no edge by the scheme contract, and **counted** in `documentMetrics` rather than dropped silently |
+| `<base href>` | not read. A `<base>` rewrites the resolution of every relative URL on the page, so treating its value as a dependency would be a *different* dependency from the one the browser fetches. Not emitting it is the conservative choice; it is listed here so the omission is a decision rather than a gap |
+| mis-nested / erroneous end tags | reported as `ERROR`, structure not modelled. A fabricated tree for a mis-nested document is a guess dressed as a fact |
+| `MISSING` nodes | never produced by this grammar (measured across 12 malformed inputs); read defensively and retained |
+| documents deeper than ~12,000 elements | the engine degrades to `2.0-basic-fallback` rather than crashing. Deepest real nesting across 1,599 files is **32**; none exceeds 100 |
 
 ## Regex inventory
 
-**Zero.** The analyzer is pure-String: `asciiLower`, `unquote`, `decodeCharacterReferences`,
-`urlScheme`, `isProtocolRelative`, `fragmentTarget`, `srcsetCandidates`,
-`firstToken` and `isHtmlSpace` are all index loops. The M12 regex census carries
-no html row and M49.R2 is clean for this lane by measurement, not by exemption —
-**and it is now load-bearing**: a `String`-helper bug that made `asciiLower` the
-identity function on every string containing a capital survived because every
-input the lane had ever been measured against was already lowercase, where
-identity and lowercase agree.
+**Zero.** Pure-String throughout: `asciiLower`, `unquote`,
+`decodeCharacterReferences`, `urlScheme`, `isProtocolRelative`, `fragmentTarget`,
+`srcsetCandidates`, `spaceSeparatedUrls`, `refreshContentUrl`, `firstToken`,
+`isHtmlSpace` are all index loops. The M12 regex census carries **no html row**,
+which *is* the zero.
 
-## The embedded-block seam is fault-isolated
+Two bugs here were worth the rule:
 
-Inline `<script>` and `<style>` bodies are handed to the JavaScript, TypeScript
-and CSS analyzers as sub-parses, and their symbols and relationships are merged
-with **file-coordinate** line numbers (the applied offset is recorded on every
-row as `metadata.embeddedLineOffset`, so the shift is auditable rather than
-merely correct).
+* `isHtmlSpace` takes a **charCode**. Passing a character made it return false at
+  every position, so `<a ping="/a /b">` was never split and published **one** edge to
+  `"/a /b"` — a path resolving to no file.
+* **Character references are not length-preserving.** Parsing a raw
+  `content="0; url=&quot;/next&quot;"` and stripping quotes with the *decoded* form's
+  offsets cut `&quot;/next&quot;` down to `quot;/next&quot;` and published that as a
+  path. The decode is now owned by exactly one caller, and `emitResource` is told it
+  already happened, so `&amp;` collapses once and `&amp;amp;` collapses to `&amp;`
+  rather than two levels.
 
-The three delegates are resolved **lazily and independently**, and deliberately
-not as static imports. A static import makes a broken delegate a *load-time*
-failure of this module: while the CSS analyzer was mid-rewrite with 5 build
-errors, every HTML file in the project fell back to `2.0-basic-fallback` and
-yielded zero symbols, zero relationships and zero imports. A template language
-held hostage by a script language, and invisible until a neighbour's work was
-half-done.
+The last regex (`/line/i.test(k)`) was removed in favour of
+`asciiLower(k).includes("line")`.
 
-Now a delegate that fails to load costs exactly the blocks it would have served.
-The document's own elements, containment, resources, references and lines are
-untouched and the surviving languages still merge — verified against the real
-failure, not a simulated one: with CSS broken, the JS symbols, the `imports`
-edge and all four `calls` rows still arrived with correct file-coordinate lines.
+## Complexity envelope
 
-The skip is **disclosed** as `metadata.unavailableEmbeddedLangs`, because a
-silently missing block set reads as *a document with no code in it* — which is
-the HTML-G1 defect returning through a different door. A consumer asking "does
-this file contain code?" has to be able to tell "no" from "not measured", and
-only a published field can say that.
+### The metric itself
 
-## Evidence
+Per-symbol `complexity` is the depth of the symbol's own subtree in the emitted
+graph, and `cyclomaticComplexity` is a real branch count — not a constant, and not
+`symbols.length`. Structural depth, not a symbol count, is what the field means.
 
-| Gate | State |
-|---|---|
-| **F1** grammar audit | ✅ pass — 11/11 node-type literals real, 0 unknown, 0 dead field reads |
-| **F3** fixtures | ✅ **12/12** — `identity-addressable`, `attribute-case-and-srcset`, `element-forms`, `resource-carriers`, `scheme-and-navigation`, `scope-barriers-and-references`, `inline-embedded-code`, `undiscovered-carriers`, `error-recovery`, `framework-and-scores`, `error-budget`, `error-budget-broken` |
-| **F4** mutation | ✅ **59/59 caught** (the lane entered with 0 mutants out of 938) |
-| **F5** differential | ✅ **100% / MISSING=0 / unexplained=0** on **both** corpora — `otp` **341/341** primary, `sqlite` **351/351** second, against `deriveHtmlEdges` (written from the HTML spec's carrier list, deliberately not sharing the analyzer's table) |
-| **F9** probe battery | ✅ **42/42**, of which **5 are html's own**: `IDENTITY`, `SCHEME`, `LINE`, `CARRIERS`, `BARRIER`. The battery asserts the analyzer AND the oracle, and that the oracle derives nothing on the forbidden set |
-| **M12** differential | ✅ precision **1.000**, recall **1.000**, TP=45 FP=0 FN=0, `earliestFailingLayer=none`, against a ground truth **re-audited by hand** (45 facts, each quoting the source line it was read from) |
-| **PIPE** store seam | ✅ 7 store-level assertions through the **real CLI** (`node bin/bb index` → `brain.db`): document-root containment sourced from a `module`-kind symbol, `dup-target#2` persisted as its own node, srcset fan-out as three distinct rows, zero NULL lines, a fragment href persisted as the resolved symbol `content` rather than the text `#content`. Run with `tsx` — `better-sqlite3` cannot load under Bun |
-| **M60.R8** framework surface | ✅ **29/29**; negative control re-injecting `Targeted/ID-Styling` drops it to 27/29, which is what proves the cases are load-bearing |
-| **M14.0.CENSUS** carrier census | ✅ **registered gate** — 61 distinct `(tag@attr)` pairs over 4,000 files / 313,582 reference-shaped occurrences, all ruled; 38 claimed carriers positively probed; 2 conditional carriers probed. Consults neither the analyzer's table nor the oracle's, because a differential cannot contradict a premise it shares. Negative control: removing `use@href`, `a@ping`, `body@background` or `meta@content` each exits 1 **naming the pair**; restored exits 0 |
-| **SPEC** #419 | ⚠️ sections **A–D, G, H pass**; **21/21 rows classified** (19 grammar node types plus the universal `ERROR`/`MISSING` pair), **gap list empty**. **E/F await the canonical baseline pin** and are the only red cells. Section A had been *reported* green at 19/19 and was in fact red — `ERROR` and `MISSING` were in no bucket, and the earlier count predated the grammar's node list growing. Both are now classified on measurement: `ERROR` is live and pinned by `html/error-recovery` (report at the node's own span, bypass it, keep publishing around it), `MISSING` never occurs in this grammar across twelve malformed probes and is silent with the defensive read kept — the same split `bash` already records |
+Single DFS pass over an **explicit stack** — no recursion, no child-array mapping,
+O(depth) working set. Attribute extraction is one cursor per element. Identity
+resolution is an O(1) map. Deferred in-document references resolve in O(L) *after*
+the walk. `srcset` is one index pass. Subtree complexity is one reverse walk over the
+emitted symbols, not an O(depth) walk per node.
 
-### What the hand audit changed that no gate did
+### The performance envelope
 
-Four defects were found in session 2, and **two of them by hand** — reading the
-M12 ground truth against live output rather than running a script. The
-differential was reporting 100% coverage with a known-bad node in its own truth,
-and a fixture asserting another lane's internal edge set made this file fail on a
-redesign it had no stake in. Both are recorded in place with their reasons.
-
-The M12 re-audit also **retracted one assertion the old truth made**: a
-`javascript:` URL emits nothing. That was the more dangerous of the two errors,
-because suppressing a hazard is worse than over-reporting one.
-
-## `HTML-G1` is closed; the one open gap is the ceremony
-
-**`HTML-G1` — `raw_text` — is FIXED.** The body of an inline `<script>` or
-`<style>` is a single opaque leaf, and the polyglot path keyed on
-`metadata.embeddedScriptContent`, which no analyzer had ever set, so **5,389 of
-6,094 corpus files (88.4%)** carried an inline block producing zero symbols. The
-cause was a seam, not a missing branch.
-
-The seam now extends to html with **reused cached parsers** (a fresh `Parser` per
-file exhausted the fixed-size wasm heap on the svelte lane at `--sample 400`),
-merging the delegate's payload with byte-accurate line and index offsets and
-recording the applied offset on every row. Pinned by
-`html/inline-embedded-code`, whose expectations are authored in **file** lines
-precisely so a regression in the shift cannot hide behind matching block-relative
-numbers.
-
-**What remains open is the canonical F5 ceremony**, and it is open for one reason
-only: `differential-baseline.json` carries **no html row** because the sweep has
-not run at a stable tree, so SPEC sections **E and F** stay red. The scoped
-`--lang html` run deliberately refuses to write the artifact — it would replace a
-28-language, 60-file claim with a smaller one and call it the same thing.
-
-That is the honest state, not a green one.
-
-## Complexity and performance
-
-Single DFS pass over an explicit stack — no child-array mapping, O(depth) working
-set. Attribute extraction is one cursor per element. Identity resolution is an
-O(1) map. Deferred in-document references resolve in O(L) after the walk, so a
-**forward** reference (a label naming a control declared later) resolves exactly
-as a backward one does. `srcset` is one index pass. Subtree complexity is one
-reverse walk over the emitted symbols, not an O(depth) walk per node.
-
-### Measured
-
-Asymptotic argument is not evidence, and this lane had none published — the only
-number it carried was measured on the analyzer called *directly*, which skips the
-inline-block seam and so omitted the JavaScript sub-parse that is the single
-largest cost on a real page. Both are given, because quoting only the flattering
-one is how a 3× figure becomes a documented 3× lie.
-
-Through the production `ASTEngine.parseFile` path, parsers pre-warmed, Exposed
-(9.32 MiB over 400 files):
+Measured through the production `ASTEngine.parseFile` path with parsers pre-warmed,
+Exposed (9.32 MiB over 400 files):
 
 | | value |
 |---|---|
-| throughput | **4.7–5.3 ms/KiB** (~0.2 MiB/s) |
+| throughput | **4.7–5.3 ms/KiB** |
 | per file | 112–182 ms, tracking file size |
-| in-family comparison | **javascript 31.9 ms/KiB** on the same method and corpus — html is ~6× cheaper per KiB |
-| flatness | 4.7 ms/KiB on the 400-file draw, 5.3 on a 120-file draw of larger documents: no super-linear growth with size, which is the property the O(nodes + attribute bytes) claim predicts |
-| **duplicate-id page** | **596 ms** for 4,000 elements sharing one id, against 396 ms for 4,000 unique ids — 1.5×, where it was **17×** (15,516 ms) before the suffix watermark fix below |
+| in-family comparison | **javascript 31.9 ms/KiB** on the same method and corpus — html is ~6× cheaper per KiB, so it is **not** an outlier |
+| flatness | 4.7 ms/KiB on the 400-file draw, 5.3 on a 120-file draw of larger documents — no super-linear growth with size |
+| duplicate-id page | **596 ms** for 4,000 elements sharing one id, vs 396 ms for 4,000 unique ids — 1.5×, where it was **17×** before the fix below |
 
-### The one super-linear path, found by attacking it
+`ms/KiB` is the portable unit; `ms/file` is not, because the cost is dominated by the
+delegate sub-parse rather than the document walk. A page with no inline code is
+materially cheaper than these figures and one with a large inline script is
+materially more expensive.
 
-The flatness above is measured on real corpora, which are not adversarial. Probing
-the shape the data structure is *least* happy with — a page that reuses one `id`
-across thousands of elements — exposed a genuine O(n²): suffix allocation re-probed
-from 2 for every duplicate, so the k-th duplicate cost k probes. A generated page
-that stamps one id across its elements hits it, and it made the whole-document
-figure quadratic rather than linear.
+These are **published as a measurement, not a budget**. `avgMsPerFile` for html lives
+in `differential-baseline.json`, which only the canonical 28-language sweep writes, so
+no gate enforces these numbers.
+
+### The one super-linear path, and how it was found
+
+Every published number came from real corpora, which are not adversarial. A page that
+reuses one `id` across thousands of elements is — and it made the whole-document cost
+**quadratic**: suffix allocation re-probed from 2 for every duplicate, so the k-th
+duplicate cost k probes, because the per-handle counter was written once and never
+advanced. 4,000 duplicates ⇒ ~8M probes ⇒ **15,516 ms against 912 ms** for 4,000
+unique ids on identical input.
+
+Isolated with three controlled shapes rather than a guess: depth was *not* the driver
+(40,013 nodes with 1 symbol cost 12 µs/node; 40,012 nodes with 4,001 symbols cost
+579 µs/node, so cost tracked **symbols**); `nearestNamed` was already frame-carried
+and never the problem; the discriminator was one line of input — same id repeated
+versus unique ids.
 
 The fix advances a per-handle watermark, and its only acceptable property is that
-naming is **byte-identical** — the watermark is a lower bound, not a guarantee,
-because a document may declare `id="dup#2"` literally. `html/identity-addressable`
-declares such a literal *before* the duplicate that would claim it, which is the
-ordering that makes correct and naive allocation necessarily disagree; the naive
-version emits `dup#2` twice and the fixture fails. The proof is a negative control
-rather than a mutant, and the fixture says why: a mutation harness transforms
-output, where the collision does not exist, and from that output a literal `dup#2`
-and an allocated `dup#2` are the same string — telling them apart *is* the defect.
+naming is **byte-identical**. The watermark is a *lower bound*, not a guarantee,
+because a document may declare `id="dup#2"` as a literal: the loop still probes and
+skips an occupied slot. `html/identity-addressable` declares such a literal **before**
+the duplicate that would claim it — the ordering where correct and naive allocation
+necessarily disagree — and the proof is a **negative control**: the naive allocator
+(watermark trusted, probe removed) was applied for real, and the fixture failed on the
+missing `dupA#3` while the correct one passes. There is deliberately **no mutant**
+here, and the fixture says why: a mutation harness transforms analyzer *output*,
+where the collision does not exist and cannot be reproduced, and from that output a
+literal `dupA#2` and an allocated `dupA#2` are the same string — telling them apart
+*is* the defect.
 
-### Nesting depth, and where the ceiling is
+## The six questions, per already-emitted type
 
-A 20,000-deep document overflows the stack somewhere above the analyzer — the
-analyzer itself handles 20,001 symbols in 2 s, and tree-sitter parses the tree in
-67 s — and the engine degrades to `2.0-basic-fallback` rather than crashing. The
-measured ceiling is between 12,000 (ok) and 16,000 (degrades).
+Part 1 of the ontology workstream. Source derivation answers only Q1, so each
+question below carries its own measurement. All figures over the 1,652-document
+population above unless stated.
 
-For context on whether that matters: across **1,599 real HTML files the deepest
-nesting is 32**, none exceeds 100, and browsers cap HTML nesting far lower. The
-backstop is therefore correct behaviour on input no real corpus produces, not a
-launch risk — but it is a property of the engine and tree-sitter rather than of
-this analyzer, and it is recorded here rather than left for someone to rediscover
-with a fuzzer.
+**Q1 EXISTS.** Counted from source: this analyzer's own code constructs
+`RelationshipType.Contains` and `RelationshipType.Uses` and nothing else. Every
+other type it publishes arrives through the seam. That is the limit of
+derivation, and it is why the rest of this section exists.
 
-The honest reading: html is not a performance outlier, and the cost is dominated
-by the delegate sub-parse rather than by the document walk. A page with no inline
-code is materially cheaper than these figures, and one with a large inline script
-is materially more expensive — so `ms/KiB` is the portable unit and `ms/file` is
-not.
+**Q2 FIRES.** The table above. `contains` 12,174 / `uses` 74,919 /
+`calls` 3,147 / `references` 78 / `instantiates` 47 / `imports[]` 4,682 /
+`exports[]` 575. Nothing here is reachable only from a branch that never
+matches; the four silent types are silent for the measured reasons in the
+rulings table, not because their code is dead.
 
-What is still missing is a *scored* per-lane floor. `avgMsPerFile` for html lives
-in `differential-baseline.json`, which only the canonical 28-language sweep
-writes, so section F of the completeness spec has no number to check. The figures
-above are therefore **published as a measurement, not as a budget** — no gate
-enforces them, and the doc says so rather than implying otherwise.
+**Q3 CORRECT — and the harness's declared limit, stated rather than exceeded.**
+`deriveHtmlEdges` is a separate walker over the *same* grammar, so a grammar bug
+shared by both paths is invisible to it by construction; 60 files is a sample,
+not a sweep. What it does cover: `contains` and `uses` only, at 329/329 (`otp`)
+and 349/349 (`sqlite`), 100%, MISSING 0, unexplained 0, heuristic 0.
+**It derives no `calls`, no `references`, no `instantiates` and no `exports`, and
+it drives the analyzer through `analyzer.analyze(root, content, relPath)`
+(`differential.ts:22092`) with no `htmlEmbeddedTrees` — so the seam never runs
+inside the differential at all.** That is this lane's DERIVATION finding, and the
+measurement of it is stark: production `parseFile` emits **853** relationships on
+otp (of which **404 are delegate**, 218 of them `calls`) and **1,202** on sqlite
+(**825 delegate**, 338 `calls`, 8 `references`), while the differential compares
+only the html-own subset. So 47% of otp's and 69% of sqlite's real graph is
+audited by nothing.
 
-## See also
+`script/m60/rel-type-coverage-gate.ts --langs=html` reports CHECK 1 DERIVATION
+**clean**, and that is not a contradiction: the check reads the analyzer's SOURCE
+(`RelationshipType.X` usages) and evaluates `differential.ts`'s filter
+expression, so it sees the two types html constructs and cannot see the four the
+seam contributes. **html is DERIVATION-clean by source scan and
+DERIVATION-blind by measurement.** The gate cannot tell the difference, and the
+workstream's own list of 100 DERIVATION findings was built by the source scan, so
+this lane is a member of the *substance* of that list without appearing in it.
 
-- `docs/analyzers/real-html-analyzer.md` — the per-symbol/per-edge extraction
-  contract, the regex inventory and the M12 ground truth
-- `script/m14/spec/html-completeness.json` — the 19-type classification,
-  `HTML-G1` and ruling `HTML-D1`
-- `reviews/html/` — the review record and the ledger row
+The oracle also **misses** 36 `uses` on 32 alamofire documents that the analyzer
+withholds: `<link rel="alternate" type="application/dash-feed-xml">` with a
+`dash-feed://…` value, which the analyzer drops on the scheme contract and the
+oracle does not apply that filter to. The lane's declared corpora (`otp`,
+`sqlite`) contain no such document, which is why `MISSING=0` never had to
+confront it — the shared-premise lesson in its sharpest form.
+
+**Q4 LABELLED.** `contains` and `uses` carry the right label for every carrier
+the census can check, and the carrier table is consulted by a third party
+(`verify-carrier-census.ts`) that reads neither the analyzer's table nor the
+oracle's. One open question, with a number: html resolves **4,496** in-document
+IDREF references and labels every one `uses`, while the CSS delegate emits
+`references` for the structurally identical `var(--x)` case. See the Q4 note in
+*the inline-block seam* above for why that was reported rather than changed.
+
+**Q5 RESOLVED.** Classified without reading any analyzer field: an endpoint is
+`sym` if it names a symbol of the merged file, `file` if it resolves on disk
+relative to the document, `neither` otherwise.
+
+| origin | endpoints | sym | file | neither |
+|---|---|---|---|---|
+| html-own | 161,832 | 96,013 (59.33%) | 56,209 (34.73%) | 9,610 (**5.94%**) |
+| delegate | 18,926 | 10,178 (53.78%) | 0 | 8,748 (**46.22%**) |
+
+`neither` on the html-own side is dominated by path dependencies that name a file
+outside the sampled directory tree (`href="/assets/…"`), not by unnameable
+endpoints. The delegate's 46.22% is the CSS/JS analysers' own resolution rate and
+belongs to those lanes. For comparison the workstream cites CSS `references`
+resolving at both ends on 66.8%; this lane's html-own `uses` resolves at both
+ends on 94.06%.
+
+**Q6 CONFIDENT.** Per origin, over 80,916 html-own and 9,463 delegate rows:
+
+| confidence | html-own | delegate |
+|---|---|---|
+| 1.0 | 20,060 | 1,337 |
+| 0.95 | 0 | 50 |
+| 0.9 | 60,856 | 3,147 |
+| 0.85 | 0 | 106 |
+| 0.6 | 0 | 4,706 |
+| **no `confidence` field at all** | **0** | **117** |
+
+**html emits no sub-threshold edge and no edge without a confidence field.**
+The 117 are the CSS delegate's, and the attribution is exact: `css/references` 74,
+`css/contains` 38, `css/uses` 4 — `src/ast/real-css-analyzer.ts` has **16**
+`relationships.push` sites that write no `confidence` (lines 722, 1663, 1825,
+1838, 1847, 1856, 1865, 1901, 2177, 3157, 3266, 3355, 3397, 3420, 3451, 3488), of
+which 6 also write no `line_number`, matching the **10** delegate rows with no
+line measured here. Not this lane's file; reported with line numbers.
+
+evidenceClass per origin: html-own `usage_contextual` 61,144 / `structural`
+15,097 / `import_based` 4,675; delegate `usage_contextual` 7,961 / `structural`
+1,410 / `import_based` 89 / `reference_qualified` 3.
+
+**R7 invariants, html-own.** 0 relationships without a `line_number`, 0 with
+`line_number <= 0`, 0 empty symbol names, 0 whitespace-only names, 0 empty or
+`unknown` `SymbolKind`, **0 endpoints equal to the placeholder literal `unknown`**.
+Delegate side: 0 empty names and 0 placeholder endpoints; 10 rows without a
+`line_number` (CSS, above).
+
+## Differential ground truth
+
+Oracle: `deriveHtmlEdges` in `script/m14/differential.ts`, written from the HTML
+spec's carrier list and **deliberately not sharing the analyzer's table**.
+
+| Draw | Files | Truth | Covered | MISSING | Unexplained |
+|---|---|---|---|---|---|
+| `otp` (primary) | 60 | 341 | **341 (100%)** | 0 | 0 |
+| `sqlite` (second corpus) | 21 | 351 | **351 (100%)** | 0 | 0 |
+| `Exposed` (depth) | 4,000 | 245,700 | **245,700 (100%)** | 0 | 0 |
+
+`M12` re-measures against a **hand-audited** ground truth
+(`validation/m12/ground-truth/html.json`, 45 facts, each quoting the source line it
+was read from): **precision 1.000, recall 1.000, TP=45, FP=0, FN=0**,
+`earliestFailingLayer=none`. The file is hand-authored and says so in its `source`
+field, with a warning that regenerating it from analyzer output would destroy its only
+function.
+
+**The shared-premise lesson, which is the most important thing on this page.** Every
+defect the differential could not catch was a premise the analyzer and the oracle
+*agreed* on:
+
+* a **shared rule** — the bare-`#` hole existed in four places (analyzer × 2, oracle
+  × 2) and the differential reported 100% coverage *with the defect in its own truth*;
+* a **shared table** — the carrier list, where six carriers were missing from **both**
+  sides at once and no gate could see it;
+* a **shared quote** — an earlier reported 1.4 ms/KiB was measured calling the
+  analyzer directly, skipping the seam that dominates a real page.
+
+A differential cannot catch a shared premise. That is what
+`verify-carrier-census.ts` exists for: a third party that consults neither table and
+can therefore contradict both.
+
+## Corpus validation
+
+Corpora: `otp` (hand-written pages), `sqlite` (full documents), `Exposed` (the only
+clean tracked corpus with ≥1,000 HTML files — 4,255 tracked, 4,032 in the pool;
+`proxicall` has 1,089 total but 12 tracked and a dirty tree, so it is **rejected**
+rather than counted).
+
+| Gate | State |
+|---|---|
+| F1 grammar audit | PASS — 18 refs, 0 unknown node types, 0 unknown fields (re-run 2026-10-05) |
+| F2 evidence harness | PASS |
+| F3 fixtures | **13/13** (12 + `embedded-origin-marks`); 3 negative controls, all run, all observed to FAIL |
+| F4 mutation | **59/59 caught** (re-run 2026-10-05, `BB_MUTANT_ONLY="html/"` of 1,791) |
+| F5 differential | 100% / MISSING=0 / unexplained=0 / heuristic=0 on both corpora — `otp` 329/329, `sqlite` 349 truth rows (re-run 2026-10-05) |
+| F6 fixture coverage | PASS — 14 handled, 26 fixture types, 0 uncovered, 0 dead literals |
+| F7 hygiene | PASS — html clean; the gate reports 3 findings, all in `cpp`/`haskell`/`elixir` |
+| F8 corpus census | PASS — 60 files, 16 node types, 0 blind spots |
+| F9 probe battery | 5/5 html probes `ok` (IDENTITY, SCHEME, LINE, CARRIERS, BARRIER); the gate's 2 failures are `F9-PROBE-M3710-PHP` and `F9-PROBE-CLEAN-HEAD-PATTERN`, neither html |
+| M12 differential | precision 1.000, recall 1.000 |
+| M14.0.CENSUS | **PRE-EXISTING FAILURE, not html's to fix** — see below |
+| ontology arbiter | `script/m14/html-ruled.ts` — `emitted 6/10  ruled-sound 4  FALSIFIED 0  ruled-without-justification 0`, exit 0. **Needs 2 registration lines in `ontology-coverage-gate.ts`; until they land the arbiter exits 2 for html** |
+| payload / latency | edge count **unchanged** (2,879 / 826 over a fixed 90-file draw, before and after); relationship metadata 337.9 → 353.4 KiB and `exports[]` metadata 0.0 → 10.7 KiB, i.e. **+26.2 KiB (+5.1%) for zero new edges**. Latency **not resolvable**: 4.33–10.68 ms/KiB across 3 runs of identical code |
+| regex census | **0** |
+| typecheck | clean |
+
+**`M14.0.CENSUS` fails, and did before this work.** `verify-carrier-census.ts`
+exits 1 with **89 distinct `(tag@attr)` pairs carrying a reference-shaped value,
+63 ruled, 26 unruled** over 1,654 html files across 61 repos. Reproduced
+identically in the main checkout, so it is not caused by anything on this branch.
+The 26 are template-language and microdata carriers the corpus grew into:
+Thymeleaf (`a@th:href` 17, `html@xmlns:th` 12, `input@th:replace` 10,
+`html@th:replace` 9, `li@th:replace` 4, `link@th:href` 3, `img@th:src` 3,
+`span@th:each` 3, `tr@th:each` 3, `script@th:src` 1, `form@th:action` 1,
+`p@th:each` 1), Razor `HtmlEncode[[…]]` (`object@archive` 6, `dl@itemid` 2,
+`input@itemid` 2, `menuitem@icon` 2, `applet@archive` 2), Jinja/Django
+(`ol@start` 1), JSP EL (`form@%}enctype` 1), EXSLT (`li@xmlns:strings` 1),
+schema.org microdata (`div@itemtype` 2, `h1@itemtype` 1), the deprecated Open
+Graph `head@prefix` 1, a Go template `a@url` 6, and **`base@href` 13** — which
+is the one this lane has a written position on (see *Unsupported constructs*) and
+therefore the cheapest row to add. The gate, `RESOURCE_RULES` and the oracle
+mirror are all in `script/m14/**`, which is not this lane's to edit.
+
+**The honesty gate reports 21 failures on this branch against 22 in the main
+checkout**, all of the form "declared inputs changed since `<sha>` — regenerate".
+It is a global artefact-freshness condition, not an html verdict; the lane does
+not make it worse. Every `validation/**` artefact the gates wrote while measuring
+was reverted, because those files belong to the owner.
+| M14.0.PIPE | 7 store-level assertions passing through the **real CLI**, recorded in `validation/m14/results/` |
+| M60.R8 framework surface | 29/29; negative control drops it to 27/29 |
+| SPEC #419 | A–D, G, H pass; **E/F await the canonical baseline pin** |
+| CC1 | ranges, identity, document root, lines, schemes, analyzer-vs-oracle parity |
+| regex census | **0** |
+| typecheck | clean |
+
+PIPE needs `tsx`, not `bun` — `better-sqlite3` cannot load under Bun
+(`ERR_DLOPEN_FAILED`, upstream oven-sh/bun#4290). That is an environment limit, not an
+html finding.
+
+**Two gate defects were found and fixed while building this**, both recorded because
+they are the kind that hide: an F5 allowlist gap that filtered the analyzer's
+`contains` while the oracle's rows passed unfiltered (161 MISSING on `otp`, 167 on
+`sqlite`), and a probe run that reported counts with no samples.
+
+## Evidence pointers
+
+| Artifact | Path |
+|---|---|
+| Completeness spec | `script/m14/spec/html-completeness.json` |
+| Fixtures | `validation/m14/fixtures/html/` (13, incl. `embedded-origin-marks` for the origin disclosure and `ruled-gate.ts`, which proves the ruling table against a copy of the shared arbiter) |
+| M12 hand-audited truth | `validation/m12/ground-truth/html.json` |
+| Carrier census gate | `script/m14/verify-carrier-census.ts` → `validation/m14/results/M14.0.CENSUS.json` |
+| Origin census (six questions, per origin) | `script/m14/html-origin-census.ts` |
+| Custom-element join (the `instantiates` falsifier) | `script/m14/html-custom-element-join.ts` |
+| Payload / latency | `script/m14/html-payload-latency.ts` |
+| Ruling table + proof runner | `script/m14/html-ruled.ts`, `validation/m14/fixtures/html/ruled-gate.ts` |
+| Master review | `reviews/html/master-review.md` |
+| Rulings narrative | [`html.md`](./html.md) |
+| Ledger row | `validation/m49/ledger.json` → `HTML1` |
+| Depth record | `validation/m60/results/depth-probes.json` |
+| Grammar provenance | `grammars/tree-sitter-html/` |
+
+## Issue
+
+**#288.** Open.
+
+**Not closed, and the only reason the M49 ledger row reads `known-gap`:** the
+canonical F5 ceremony has not run at a stable tree, so
+`differential-baseline.json` carries no html row and SPEC sections **E and F** are
+red — which in turn holds M60's `folder`, `tracker` and `TRULY DONE` cells. Every
+other measurement on this page is re-runnable today.

@@ -1,1309 +1,805 @@
-# HCL lane — `hcl` (engine language id; `HCL` in the firing log)
-
-Lane owner: **hcl-lane**. Verdict page, refutation-first. The analyzer's own long-form document is
-`docs/analyzers/real-hcl-analyzer.md` (outside this lane's write scope); this page carries what the
-COVERAGE DECLARATION rests on, the measurements behind it, and what it does NOT settle.
-
-**Corpus — TWO populations, and every count says which one it is.** The **CENSUS** population is **9,329 git-tracked `.tf` / `.tfvars` / `.hcl` / `.tofu` files over 16 repositories under $HOME/fixtures/repositories** (files present on disk, ≤1 MiB) — the lane's own walk (`validation/m14/fixtures/hcl/tools/construct-census.mts`, `script/m14/hcl-extended-census.ts`), and every construct count in this page is a CENSUS count. **THE ARM POPULATION IS 11,139 admitted** (the gate's own line, root `$PWD/.corpus` = `$HOME/mcp/backbencher-brain/.corpus`, same extensions, ≤1 MiB; 38 width-300 slices, contiguous [0, 11,139), closure exact 307,748) and IS the declaration's (`validation/m14/instruments/hcl/incoming-declaration.json`). A count from one is never quoted as the other's.
-
-**Declared row.** `hcl 8/9 from=spec coverage block` — closure `8 implemented + 0 unexercised +
-1 gap = 9 applicable = 10 − 1 grammar-absence − 0 unclassified`.
-
----
-
-## 1. The spec's ruling was FALSIFIED, and the artifact it cited does not exist
-
-`script/m14/spec/hcl-completeness.json` decision **HCL-D1** ruled `calls`, `extends`, `implements`,
-`overrides` and `instantiates` all "NOT APPLICABLE". Three independent measurements refute it:
-
-1. **The code and the lane's own fixtures emit two of the five.** `src/ast/real-hcl-analyzer.ts:485`
-   emits `Overrides` and `:528` emits `Calls`. The committed fixtures assert them:
-   `validation/m14/fixtures/hcl/declared-function-call.expectation.json` expects **3 `calls`**
-   edges, `validation/m14/fixtures/hcl/override-target-not-reference.expectation.json` expects
-   **4 `overrides`** edges. `npx tsx script/m14/run-fixtures.ts --lang hcl` → `summary:
-   {"hcl":{"pass":11,"fail":0}}`.
-2. **Its cited adjudication does not exist.** HCL-D1's resolution ends "Adjudication:
-   `fixtures/hcl/out/calls-feasibility.json`". That path does not exist on this laptop — indeed
-   `$HOME/fixtures/hcl/` does not exist at all. The instrument that wrote it
-   (`script/m14/tmp/hcl/calls-feasibility.mts`) imports a hardcoded
-   `$HOME/backbencher-brain/src/ast/engine` — the repo is at
-   `$HOME/mcp/backbencher-brain`. A ruling that rests on a missing artifact is not a
-   ruling; this is the same hardcoded-path class the corrected `firing-check.mjs` header records.
-3. **The old corpus root is gone too.** The previous `corpus` block (9,079 files / 9 repos) and every
-   probe in `script/m14/tmp/hcl/` point at `$HOME/fixtures/hcl/repos`, which no longer
-   exists. The measured population is the one above; the `corpus` block is refreshed to it.
-
-Replacement: **HCL-D1a** (extends / implements / instantiates) and **HCL-D9** (calls / overrides),
-both in the spec, both measured.
-
-## 2. The five silent types, each classed by its own measurement
-
-| type | class | measured (whole corpus) | effect on the denominator |
-|---|---|---|---|
-| `calls` | **implemented** | 12,988 `function_call` nodes over 148 distinct callees; exactly **1** declaration of the shape the analyzer reads (`function "bindir"`, `docker/docker-bake.hcl`), the only shape that yields a resolvable edge; **4 corpus edges on 1 file** (ontology-gate fresh walk today, and the prior whole-corpus census) | numerator |
-| `overrides` | **implemented** | **72** blocks named `override*` in 34 files; **71** of the three kinds the analyzer reads in 33 files, **68** carrying a `target`; **68 corpus edges** (gate's fresh walk today) | numerator |
-| `extends` | **implemented** (HCL-D10, 2026-10-09) | **44** `inherits` sites in **8** docker-bake files naming **53** parents, **53 resolved**, **0 unresolved**; **53 `extends` edges** emitted, 53/53 binding to a declared `target` — label limit measured: 16 of 44 children re-declare an inherited key, so this is merge-reuse, not a subtype hierarchy | numerator |
-| `implements` | **grammar-absence — leaves** | **0 of 18** declaration-shaped node types produced; **0 of 455** distinct block types and **0 of 5,311** distinct attribute keys name one; the only candidate keyword `protocol` has **162 sites in 50 files** and every captured site is data (ALB/SG/enos network protocol or a matrix value) | denominator −1 |
-| `part_of` | **implemented at R3** (HCL-D11, 2026-10-28) | **287** terragrunt `include` blocks over the CENSUS population (9,329 files / 16 repos — the lane's own walk; the arm admits 11,139 and is the declaration's): **22** with a literal `path` (all 22 naming a file inside the admitted population), **265** computed (`find_in_parent_folders(...)` / interpolated templates — refused, not guessed); the production path emits exactly **22 `part_of` edges over 17 files**, 22/22 literal sites, exact. Module `source` is the DISCRIMINATOR, not the construct: **2,042** sites (941 local, 496 registry, 193 vcs, 364 registry-subdir, 49 dynamic), all inclusion-by-reference addressed `module.NAME.*`, none a textual splice — so `imports`, never `part_of`. Artefact `validation/m14/fixtures/hcl/extended-census.current.json`, fixture `terragrunt-include.tf` (pre-change 12 pass / 1 fail, post-change 13 pass / 0 fail) | numerator |
-| `mixes_in` | **RULED ontological — leaves** (HCL-D12, 2026-10-28) | CENSUS population (9,329 files / 16 repos — the lane's own walk; the arm admits 11,139 and is the declaration's): `dynamic` 374 blocks write their generated members in the source `content` block (15 with nested block children, 359 attribute-only) and iterate VALUES (`for_each` 859 sites = 306 identifier reads / 263 calls / 218 conditionals / 41 for-expressions / 28 collections / 3 literals); `lifecycle` 227 and `provisioner` 294 are members the enclosing resource itself declares (already `contains`); module `source` 2,042 and `providers` 38 reference a separate unit whose members stay namespaced `module.NAME.*` (HCL-D11). A `mixes_in` row would require DESIGNATING a variable's value map as the member set and a resource block as the composer — a designation the tree does not say, so the type is ruled with a falsifier rather than invented | denominator −1 |
-| `decorates` | **RULED ontological — leaves** (HCL-D14, 2026-10-28) | shows the decoration SHAPE and none of it is a callable application, measured on the CENSUS population (9,329 files / 16 repos — the lane's own walk; the arm admits 11,139 and is the declaration's): `validation` blocks **1,228** (**992** invoke a function inside the CONDITION — evaluated by Terraform, its boolean result is the assertion, never applied TO the declaration), `precondition`/`postcondition` **57** (**16** with a call in the condition), `depends_on` attribute sites **883** (a list of ADDRESSES expressing ordering; already published as `references`), **0** declaration-attached callable sites. Ladder: R1 — the pinned grammar's 64 named node types have no decorator-shaped production and every published build is the same container grammar; R2 — a patch would have to INVENT a syntax no HCL dialect has; R3 — the assertion blocks and `depends_on` are the only decoration-shaped nodes and they are the near misses. Falsifier: a corpus construct in which a callable is applied TO a declaration (the declaration is the subject the callable transforms/annotates) | denominator −1 |
-| `renders` | **RULED ontological — leaves** (HCL-D15, 2026-10-28) | HCL HAS templates and they render STRINGS, not declarations: whole admitted population (9,329 files / 16 repos) — `templatefile()` **60** call sites, **0** with a literal path (all 60 pass a computed `"${path.module}/…"`), **0** naming an admitted file; `templatestring()` **2**; `template_dir()` **0**; `template_file`/`template_dir` data sources **21** (output read as a VALUE via `data.template_file.NAME.rendered`, already `references`); `quoted_template` nodes **3,710**, `heredoc_template` nodes **3,506**; **0 declaration-target candidates**. Ladder: R1 — every published build carries the same template productions and no declaration-target notion; R2 — the template nodes already exist, and no HCL dialect has a syntax naming a declaration as a render target, so a patch would invent one; R3 — the template nodes are already read (interpolated references published), and an edge needs a declaration target the language does not provide. Class is ONTOLOGICAL because the grammar HAS the nodes — a grammar-absence claim would be false. Falsifier: a corpus render that NAMES a declaration as its target (e.g. a `templatefile` literal path to an admitted declaration file whose members are rendered into a declaration) | denominator −1 |
-| `instantiates` | **implemented — CORPUS-UNEXERCISED** (HCL-D13, 2026-10-28) | the analyzer publishes it at R3 from `resource`/`data` blocks: source = the declaring document's root-module symbol, target = the PROVIDER TYPE label as written (`aws_instance`), `metadata.instanceType`/`instanceKind`/`instanceName`; no declaration is invented for the type. CENSUS population (9,329 files / 16 repos — the lane's own walk; the arm admits 11,139 and is the declaration's): **3,932** resource/data blocks over **444** distinct type labels, **0** labels declared as a TYPE — a provider type is declared by a provider binary, in no repository. The **42** address collisions are all names of other kinds (**14** variables, **12** modules, **6** outputs, **2** providers, **4** label-less resource blocks, **1** label-less data block, **3** DSL blocks http/test/beep), and **997** of the 3,932 sites carry a colliding label — production resolution matches by name with no kind filter, so the arm's `resolved` column is an UPPER BOUND on correct type binding. Doability pinned by `instantiates-resource-type.tf` (pre-change 13 pass / 1 fail, 5 rows missing; post-change 14 pass / 0 fail, 9 forbids). Falsifier: a corpus file declaring one of the 444 labels as a type | numerator (counted once; unexercised is its property) |
-
-The two edge counts above are the numbers the 120-file firing stride cannot see: it draws from
-**terragrunt only**, and neither construct occurs in terragrunt. That stride's SILENT column is a
-fact about 120 files, not about the language — the firing-check itself prints that warning.
-
-### Why `extends` is the interesting one
-
-The lane's earlier instrument A enumerated **node types** and **block types** and found no
-inheritance construct. That probe could not have seen this one, because docker-bake spells
-inheritance as an **attribute**:
-
-```hcl
-target "_common" { dockerfile = "Dockerfile" }
-target "binary"  { inherits = ["_common"] }
-```
-
-`validation/m14/fixtures/hcl/tools/construct-census.mts` enumerates the corpus's complete block-type
-**and attribute-key** vocabulary and then resolves the values: 44 sites, 53 named parents, and all 53
-name a `target` block declared in the same file. The construct exists, occurs, and resolves — so the
-type is a **gap that stays in the denominator**, not grammar-absence. This is a self-refutation: my
-own first report to the Lead (and the replacement decision I had drafted) said `extends` was
-grammar-absence, on the strength of instrument A. The attribute-key inventory refuted it, and the
-smaller honest denominator is what this page reports.
-
-**Then the gap was closed, and its label's limit was measured with it (HCL-D10).** The analyzer now
-reads `inherits` inside a `target` block and emits one `extends` edge per DECLARED parent, resolved
-after the DFS because docker-bake.hcl's own `binary-cross` inherits `_platforms`, declared BELOW it;
-an unresolved parent publishes nothing, because a dangling `extends` is worse than a missing one.
-Measured: **53 edges over the 8 files, 53/53 binding to a declaration in the same file, 0
-unresolved** — and the gate's hcl row moved from `extends FALSIFIED` to `extends EMITTED 53 edges`.
-The fixture `validation/m14/fixtures/hcl/docker-bake-inherits.tf` was authored BEFORE the change and
-its pre-change run is recorded as **11 pass / 1 fail**; after the change the suite is **12/12**.
-
-The label's limit, stated rather than hidden: `inherits` **merges** definitions, so `extends` here
-asserts reuse-of-a-declaration, not a subtype hierarchy — **16 of the 44** inheriting targets
-re-declare at least one key they also inherit, and 25 of the 53 parent occurrences are abstract bases
-by docker-bake's leading-underscore convention while the rest are functional targets. `extends` is
-the house label for exactly this shape (the yaml lane labels `<<: *base` merge-key reuse `extends`),
-the relation is between declarations, and a change to the parent does propagate to the child. NOT
-published, and therefore declared: a child's re-declaration of an inherited key is **not** a separate
-`overrides` edge (16 sites).
-
-`implements` survives the same test with the opposite result, which is what makes the test a test:
-the only keyword a DSL could have used, `protocol`, occurs 162 times and every captured site is a
-network-protocol value. No corpus construct expresses contract satisfaction, and the grammar
-produces no declaration node to hang one on.
-
-## 3. Near-misses, checked rather than waved through
-
-Every candidate keyword the corpus actually writes, and what its sites are (the census captures up
-to 40 sites per word with file:line and text):
-
-| word | sites / files | adjudication |
-|---|---|---|
-| `inherits` | 44 / 8 | **real**: docker-bake target inheritance; 53/53 parents resolve → `extends` EMITTED (53 edges, HCL-D10) |
-| `protocol` | 162 / 50 | data: `protocol = "HTTP"`, `"tcp"`, `matrix.protocol` → not `implements` |
-| `new` | 2 / 2 | data: `new = "a_override new"` in terraform test fixtures → not `instantiates` |
-| `override` | 7 / 7 | data: packer provisioner override maps, tflint fixtures → not an override block |
-| `overrides` | 1 / 1 | a bare `overrides { subnet_id = … }` block (vault enos) the analyzer does not read; the 68 real ones are the three `override_*` kinds with a `target` |
-| `call` | 1 / 1 | data: `call = "check"` in a vendored bake file → not a call site |
-| `contains` | 20 / 2 | data: vault release-pipeline filters (`contains = ["hcp"]`); `contains` edges come from containment |
-| `source` | 3,403 / 2,437 | module `source`, read as `imports` (201 block-type `source`, 3,202 attribute keys) |
-| `include` | 287 / 258 | terragrunt `include`, read as `imports` |
-| `use` | 70 / 28 | waypoint `use "docker" {}` plugin blocks — NOT the analyzer's `uses` (builtin-rooted reads) |
-
-## 4. The instrument, and one trap it walked into and out of
-
-`validation/m14/fixtures/hcl/tools/construct-census.mts` has two passes. The **tree pass** (one
-`parser.parse` per file, default) enumerates the grammar vocabulary and the corpus keyword space and
-counts the constructs; the **edge pass** (`BB_HCL_CENSUS_EDGES=1`, `engine.parseFile` per file) is
-opt-in, because the class-deciding measurement should not have to queue behind the firing
-measurement on a shared laptop. The artefact records `edges: null` — "not measured" — when the edge
-pass is off; it never renders an unmeasured zero as a zero.
-
-**Control (rule-book §7).** The control document is GENERATED from the candidate vocabulary: 49 words
-planted as block types *and* attribute keys. The run exits 3 unless every one is seen by both
-enumerators, unless the planted `function "double"` declaration, call sites, `override_resource` and
-`resource` blocks are counted, and unless the production path emits the planted `calls`,
-`overrides` and `contains` edges. Observed: 49/49 as block types, 49/49 as attribute keys,
-`{"contains":160,"overrides":1,"calls":1,"exports":102}`, 0 failures. A corpus zero is therefore a
-zero the probe could have seen through.
-
-**The trap.** `script/m14/completeness-inventory.ts` (`emittedKinds`) parses EVERY non-`.json` file at
-the top level of a lane's fixtures directory and counts the resulting relationship types as that
-lane's emissions. This instrument was first written at
-`validation/m14/fixtures/hcl/construct-census.mts`; measured through `parseFile`, that file yields
-`calls contains imports references uses` **as TypeScript** — i.e. it would have credited HCL with
-emissions nothing HCL-side produced. It now lives one level down, in `tools/`, where
-`readdirSync(dir)` + `isFile()` does not reach it; the same admission rule was re-run and the scan
-lists only the 11 `.tf` fixtures. This is the second time this lane has paid this toll
-(`docs/analyzers/real-hcl-analyzer.md:561` records the first, a phantom `instantiates`), and the
-same trap is live elsewhere: `validation/m14/fixtures/toml/construct-census.ts` is at the top level of
-its fixtures directory and yields `calls imports instantiates references uses` through the same
-scan — reported to the Lead, not touched from this lane.
-
-## 5. Coverage declaration
-
-`script/m14/spec/hcl-completeness.json` → `coverage`:
-
-- **implemented (8):** `calls`, `contains`, `exports`, `extends`, `imports`, `overrides`, `references`, `uses`
-- **excluded (2):** `implements` = `grammar-absence` (0 of 18 / 0 of 455 / 0 of 5,311, with `protocol`
-  162 data sites); `instantiates` = `zero-sites` (3,932 blocks / 444 labels / 0 declared)
-- **corpusUnexercised (0)** — `calls` and `overrides` are exercised corpus-wide (4 and 68 edges), so
-  they are declared implemented and explained, not parked as unexercised
-- **gaps (1, still in the denominator):** `instantiates` (HCL-G2), with a falsifier; `gap.gaps`
-  carries it plus HCL-G1 marked CLOSED, so the spec and the board's derived column agree
-
-Instrument readings, verbatim:
-
-```
-npx tsx script/m14/coverage-block-gate.ts
-hcl          yes       8     9     2     calls extends overrides                  -
-BB_BOARD_FIRING=validation/m14/results/firing-laptop-b.current.log bun script/m14/language-board.ts --coverage
-hcl          8/9  from=spec coverage block
-npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # BEFORE the space check (see §6)
-emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
-  calls 4 edges in 1+ files · overrides 68 edges · extends/implements/instantiates RULED-SOUND via #HCL-D1a
-npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # AFTER the space check
-key spaces: 35,627 key/value bindings observed over 4047 files (top node types attribute=28,222, object_elem=7,398)
-attestation hcl: … VERIFIED nodeTypes=64, blockTypes=455, attributeKeys=5311, extends.constructSites=44
-emitted 7/10   ruled-sound 2   FALSIFIED 1   ruled-without-justification 0
-  extends FALSIFIED (44 attested sites) · implements/instantiates RULED-SOUND with the attestation
-npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh     # AFTER HCL-D10 landed
-  extends EMITTED 53 edges · calls 4 · overrides 68
-emitted 8/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0   ruled-unknown 2
-npx tsx script/m14/run-fixtures.ts --lang hcl                # before HCL-D10: 11 pass / 1 fail; after:
-summary: {"hcl":{"pass":12,"fail":0}}
-```
-
-## 6. The shared gate had the same blind spot — reproduced, fixed, and its fleet effect measured
-
-This lane's `extends` correction exposed a defect in the SHARED arbiter, not just in its own ruling.
-`script/m14/ontology-coverage-gate.ts` certified `RULED-SOUND` from a node-type inventory, so on
-2026-10-09 it printed, for this lane:
-
-```
-extends      RULED-SOUND    NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/spec/hcl-completeness.json#HCL-D1a
-```
-
-while the corpus held 44 `inherits` sites with 53/53 resolvable parents. Two defects are visible in
-that one line: the probe was a **node-type inventory** (which cannot see an attribute-key construct),
-and the basis text claimed a **tree count that no probe had taken** — a spec-sourced ruling has no
-Instrument-B entry, so "occurs 0x on the parse tree" was printed without anything having counted.
-
-**Fix (in the shared gate).** The gate now observes the key space structurally — a node with `=` or
-`:` between two named children is a key/value binding in any grammar — and a *vocabulary-based*
-ruling (instrument A, or a spec-text ruling with no table entry) in such a language is
-`RULED-UNJUSTIFIED` unless it declares the `attribute-keys` space. Spaces are declared either as
-`spacesProbed` in the lane's ruling table or in `validation/m14/fixtures/<lang>/ruling-attestation.json`,
-and an attestation must cite an artefact that EXISTS whose JSON pointers hold the declared counts.
-Instrument-B rulings are exempt (a semantic tree count is not a vocabulary blind spot). The gate's own
-control runs on **every** invocation, prints, and exits 3 if any arm stops behaving:
-
-```
-space check self-test: PASS — 8/8 arms (fires on a node-type-only ruling in a key-bearing language;
-passes an attested one; a ruling contradicted by its own artefact fails)
-```
-
-**This lane's attestation** is `validation/m14/fixtures/hcl/ruling-attestation.json`. It declares
-node-types + block-types + attribute-keys and points at the census artefact; the gate verifies
-`nodeTypes=64, blockTypes=455, attributeKeys=5311, extends.constructSites=44` against it. That is why
-`implements`/`instantiates` are `RULED-SOUND` (0 sites in the attested key space) and `extends` is
-**FALSIFIED** — the honest reading of HCL-G1: the type is derivable and unimplemented, so the gate
-should keep failing this lane until it is emitted.
-
-**Fleet effect, measured with a fresh whole-corpus walk per lane** (rows whose status changes are the
-point of the exercise; `RULED-SOUND → RULED-UNJUSTIFIED` means the ruling was certified on a
-vocabulary that cannot see the space the language uses):
-
-| lane | key/value bindings / files | flipped rows |
-|---|---|---|
-| toml | 19,500 / 1,486 | **6** — calls, uses, exports, extends, implements, instantiates |
-| css | 773,735 / 1,228 | **3** — calls, implements, instantiates |
-| bash | 60,454 / 4,224 | **3** — extends, implements, instantiates |
-| sql | 13,979 / 1,964 | **3** — exports, extends, implements |
-| xml | 590,892 / 11,562 | **3** — exports, implements, instantiates |
-| graphql | 141 / 1,911 | **2** — calls, instantiates |
-| scss | 74,468 / 4,433 | **2** — implements, instantiates |
-| hcl | 35,627 / 4,047 | **1 FALSIFIED** — extends (44 attested sites) |
-| protobuf | 193 / 847 | 0 |
-| clean | 2,309 / 312 | 0 |
-| r | 809 / 2,184 | 0 (emits all ten) |
-| powershell | 22,824 / 1,181 | 0 (emits all ten) |
-| markdown | **0** / 17,460 | 0 (no attribute-key syntax at all — the clean control) |
-
-**22 rows across 7 lanes** moved out of `RULED-SOUND`, and 5 surveyed lanes were unaffected — the
-check discriminates rather than failing everything. Markdown is the sharpest control: its corpus
-writes **zero** key/value bindings, so its six spec-sourced rulings stay `RULED-SOUND` — the check
-fires on the observation, not on the fact that a ruling exists. Every flipped lane needs one of two
-things: an attestation that its probe really did enumerate the key space, or a real re-measurement.
-(The `json` walk is the heaviest of the batch and was still running when this page was committed; its
-row is not reported here rather than reported as zero. It was killed for budget after 20 minutes and
-is reported as NOT COMPLETED, never as a zero.)
-
-### 6.1 The same walk hid a SECOND false `RULED-SOUND`, and that one is now a refusal
-
-Surveying the fleet exposed the defect the Lead then made the next task: on a **history-trusted
-checkpoint** the gate's `EMITTED` column covers only the files it re-walked, because the checkpoint
-stores per-file OUTCOMES and not per-file relationship types — so a settled file contributes **no
-edges**. Measured on hcl: a default run re-measured 5 of 4,047 files and printed
-
-```
-calls      RULED-SOUND   NOT EMITTED; the construct occurs 0x on the parse tree. …
-overrides  RULED-SOUND   NOT EMITTED; …
-```
-
-while a fresh walk of the same corpus carries **4 `calls` edges and 68 `overrides` edges**. A false
-`RULED-SOUND` in the default invocation, with no signal in the row.
-
-**Fix.** The walk's population is now computed once, printed, and attached to every row it affects:
-`walk: emitted population 0/4,047 files measured by the analyzer THIS run (4,047 settled by an
-earlier walk and contributing NO edges …) — PARTIAL, so absence is NOT certifiable`. A row that would
-have been `RULED-SOUND` while any offered file was settled, degraded or abandoned now reads
-**`RULED-UNKNOWN`** — a refusal, not a failure, and never a certification. `FALSIFIED` and
-`RULED-UNJUSTIFIED` pass through unchanged: both are findings about the ruling and neither depends on
-the `EMITTED` column. Three control arms cover it (I: a partial walk refuses to certify; J: the same
-ruling on a complete walk still certifies; K: a partial walk does not soften a key-space
-`RULED-UNJUSTIFIED`).
-
-The rule is strict on purpose, and the strictness is visible: on hcl's fresh run **one file of 4,047
-is degraded** by the regex fallback, so `implements` and `instantiates` — attested and verified, 0
-sites in the key space — read `RULED-UNKNOWN` rather than `RULED-SOUND`. Absence is not established
-about a file the analyzer never read, and withholding the certificate is the honest answer.
-
-## 7. What this page does NOT settle
-
-1. **My census did not measure edges.** Its edge pass was off (it is opt-in and the machine is
-   shared). The 4 `calls` and 68 `overrides` edges come from the ontology gate's fresh walk today and
-   the prior whole-corpus census; the construct counts (44/53/8, 3,932/444/0, 162/50) are mine.
-2. **The fleet survey is partial by budget, not by intent.** Thirteen lanes were re-walked fresh (the
-   table in §6); `json` was killed for budget after 20 minutes holding the heavy lock — reported as
-   NOT COMPLETED, not as a zero — and `dart`, `fsharp`, `nim`, `zig`, `php`, `yaml`, `julia` and `lua`
-   still need a run. The survey also predates §6.1's population gate: the flips it reports
-   (`RULED-SOUND → RULED-UNJUSTIFIED`) are unaffected, but rows that stayed `RULED-SOUND` there would
-   now additionally need a complete emitted population, so some of them would read `RULED-UNKNOWN`
-   today. Every flipped lane still needs its own owner to attest or re-measure.
-3. **`errorFiles 244` / `missingNodes 6`** in the spec's `corpus` block are the previous census's
-   figures and were not re-measured; only `files`, `repos`, `nodes`, and the 63-of-64 grammar-type
-   observation were (the last re-confirmed corpus-wide: `template_else_intro` still unobserved, and
-   `ERROR` still the one runtime node).
-4. **Recall / precision 0.999931 / 1.000000** belong to the previous 9,079-file population and were
-   not re-measured on this one.
-5. **`extends` is emitted, and its label is a judgment the Lead may overrule.** HCL-D10 publishes 53
-   `extends` edges for docker-bake `inherits`; the relation is a MERGE (16 of 44 children re-declare an
-   inherited key), labelled `extends` on the yaml merge-key precedent. If a reviewer reads that as an
-   overstatement, the honest alternative is to reopen HCL-G1 and unpublish the edges — the measurement
-   needed for that decision is in HCL-D10 and needs no new run. The `func` spelling of user-defined
-   functions (0 corpus occurrences) and cross-file function resolution (0 sites) remain the analyzer's
-   declared limitations.
-6. **`module` blocks are not `instantiates`.** A `module "x" { source = "./child" }` is published as
-   `imports` (target = the source string). Whether module instantiation should also be an
-   `instantiates` edge is not settled by this census; HCL-G2's falsifier is the test that would
-   decide it, and no corpus file currently declares a type a resource block instantiates.
-
-## 8. The RESIDUAL worklist — the completion bar, and the first cause named
-
-`hcl 8/9` is the coverage answer and it is not the completion answer. The completion bar is that every
-emitted edge of every applicable type resolves to exactly one real declaration, with zero unexplained
-edges. Measured whole-population by `npx tsx script/m14/residual-gate.ts --lane hcl`:
-
-| type | edges | resolved | amb(decl) | unresolved | residual% |
-|---|---|---|---|---|---|
-| contains | 97,550 | 29,040 | 68,299 | 211 | 70.2% |
-| references | 31,228 | 1,031 | 727 | 29,470 | 96.7% |
-| exports | 23,103 | 4,421 | 18,471 | 211 | 80.9% |
-| uses | 1,909 | 0 | 0 | 1,909 | 100.0% |
-| imports | 1,853 | 0 | 12 | 1,841 | 100.0% |
-| **TOTAL** | **155,643** | **34,492** | **87,509** | **33,642** | **77.8%** |
-
-`resolved 22.2%`, `extFAIL 0`, `bindFAIL 0`, `causeFAIL 0` — nothing here is a broken claim; it is all
-unresolved or ambiguous resolution. **Read this table as the PRE-CORRECTION model**: `fa2dc27e8`
-taught the gate that `contains` resolves by its own statement, and the correction is what collapsed
-the 68,299 bucket below. The table is kept because it is the worklist the lane was handed, and the
-store measurement under it is what priced the bucket.
-
-### Cause 1 — `contains` amb(decl) 68,299: an INSTRUMENT artifact, priced against the STORE
-
-The gate's count model classified `contains` by declaration count, so a target whose name occurs twice
-in a repository read ambiguous. Production does not work that way: `contains` is resolved at INSERT
-time by `resolveContainsTargetStmt` — `ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC … LIMIT 1`
-— the edge's OWN FILE first, exactly one row, with no "N candidates" state. xml-lane found it
-(count model 94.1% ambiguous vs store 98.4% bound) and the gate now models it.
-
-Measured here with the store itself
-(`validation/m14/fixtures/hcl/tools/store-binding-truth.mts`, report
-`validation/m14/fixtures/hcl/store-binding-truth.terraform.json`), one project, same files, model and
-store side by side:
-
-| type | store rows | bound | same file | other file | unbound | model resolved | model amb |
-|---|---|---|---|---|---|---|---|
-| contains | 1,046 | **1,042 (99.6%)** | **1,010 (96.6%)** | 32 | 4 | 125 (12.0%) | 503 (48.1%) |
-| exports | 215 | 213 (99.1%) | 169 | 44 | 2 | 35 | 179 |
-| references | 25 | 22 | 20 | 2 | 3 | 5 | 2 |
-| imports | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
-| **total** | **1,287** | **1,277 (99.2%)** | **1,199 (93.2%)** | **78 (6.1%)** | **10 (0.8%)** | **165 (18.9%)** | **684 (78.3%)** |
-
-So the bucket that was 56% of this lane's residual **collapses against the store**: `project.license`,
-`listener.tcp`, `schema_version` are exactly the shape production binds to the edge's own file. THE
-FILE-SCOPING PRICE IS NOT PAID — no public identifier-space change, no fixture churn.
-
-**The cause that remains is the OTHER-FILE rate: 78 edges (6.1%).** Those are edges bound to an
-identically named declaration in a DIFFERENT file — `basic_set_null/main.tf`'s
-`tfcoremock_set.set` binding to `basic_set/main.tf`'s declaration, `.terraform.lock.hcl` files
-binding to another lock file's `registry.terraform.io/...` — which happens when the edge's own module
-does not declare (or the index does not hold) the name it spells. That is a wrong edge a name-space
-change WOULD fix, and it is priced at 78 edges for this project, not 68,299 — a different decision
-from the one the model's number suggested, and one that needs the whole population before it is taken.
-
-### Cause 2 — `exports` amb 18,471: the gate's second count-model artifact, AND a real wrong-binding class under it
-
-The gate's `amb(decl)` for a non-`contains` type is a count model too: production's `resolveTargetStmt`
-is `LIMIT 1` as well, so a row is always written. But the indexer's own comment on that statement is
-decisive about what the row MEANS — it orders by `s.id` alone, which is `${fileId}:${name}:${line}`
-compared as TEXT, so "it is the LEXICOGRAPHICALLY smallest line that wins, NOT the intended symbol",
-with a measured control arm of 37,318 of 49,729 ambiguous edges bound to the WRONG symbol. So the
-honest question is not "resolved or ambiguous" but "bound to the INTENDED declaration or to an
-arbitrary twin".
-
-Measured with the store (terragrunt, even-stride draw of 900 files → **894 indexer-eligible**,
-4,389 symbols, 7,609 relationship rows; report
-`validation/m14/fixtures/hcl/store-binding-truth.terragrunt-900.json`). For `contains` and `exports`
-the analyzer writes the edge on the TARGET SYMBOL's own start line, so OWN FILE + OWN LINE is the
-intent test:
-
-| type | store rows | bound | own file + own line | own file off-line | other file | unbound | model amb |
-|---|---|---|---|---|---|---|---|
-| contains | 5,728 | 5,698 (99.5%) | **5,417 (94.6%)** | 12 | 269 (4.7%) | 30 | 2,632 |
-| exports | 1,273 | 1,272 (99.9%) | **1,075 (84.4%)** | **0** | **197 (15.5%)** | 1 | 1,087 |
-| references | 566 | 503 (88.9%) | 32 (5.7%) | 240 | 231 (40.8%) | 63 | 41 |
-
-Verdict, in two halves:
-
-1. **`exports`' 18,471 "ambiguous" is a count-model artifact in the same way `contains`' 68,299 was** —
-   99.9% of exports rows bind. `fa2dc27e8`'s correction applies to it too; a lane must not rename its
-   identifier space on that number.
-2. **But 15.5% bind to ANOTHER file's identically named declaration, and that is a real wrong edge.**
-   The intent test is exact for exports: **every same-file binding is on its own line (1,075/1,075,
-   0 off-line)**, and 197 rows cross the file boundary — 139 of them landing on a same-line twin in a
-   different file, which is the arbitrary pick the `s.id` ordering produces. `contains` crosses the
-   boundary at 4.7%, `exports` at 15.5%: the store distinguishes them, the gate's single ratio does
-   not. **The gate needs a THIRD outcome** — `bound-to-an-arbitrary-twin` — or the 15.5% hides inside
-   a number that reads as success.
-3. The name-space lever is therefore justified for `exports` (and probably `references`), NOT for
-   `contains`: exports' edge names the DOCUMENT's own export, so a cross-file binding is wrong by
-   construction, while `contains` is resolved by production with its own statement against the edge's
-   own file. Priced from this sample: ~15.5% of 23,103 exports edges ≈ 3,600 rows project-wide, to be
-   confirmed on the whole population before any rename.
-
-`references` in the same sample: the model calls 514 of 566 unresolved, the store binds 503 — so the
-model OVERSTATES unresolved there too (production's I13 pass rebinds a non-dotted target by name
-ranked same-file-first). Its intents are not measurable by line (the edge line is the READ SITE), and
-231 of 503 bound rows cross a file boundary — the next cause to price, and the one where a declared
-external claim (provider types, `var.*` module inputs) is the likely verdict rather than a rename.
-
-### Cause 3 — `references`: the class split whole-population, and why the claim must NOT be written against it
-
-Whole-population gate run (`incoming-gate.ts hcl hcl 0`, 4,047 `.hcl` files — note this is the
-`.hcl` spelling only; the residual gate's 31,228 references admit more spellings, so the two are
-different populations and both are labelled), BINDING INTENT block:
-
-| type | edges | intended | sameFileUnproven | arbitraryTwin | noDeclaration |
-|---|---|---|---|---|---|
-| references | 10,899 | 0 (line test N/A) | 869 | 1,221 | **8,809** |
-| contains | 40,916 | 40,916 | 0 | 0 | 0 |
-| exports | 8,461 | 8,461 | 0 | 0 | 0 |
-| uses | 164 | 0 | 0 | 32 | 132 |
-| TOTAL | 60,754 | 49,377 | 926 | 1,253 | 9,198 |
-
-The model's reading is "80.8% of references name nothing in the project". **The store says that is an
-overstatement by 8×, and the difference is the I13 pass.** Measured on terragrunt-900
-(`store-binding-truth.terragrunt-900.json`): the model calls **514** of 566 references unresolved while
-the store leaves **63** unbound — production rebinds a NON-DOTTED target by name, same-file first, so
-"the model found no declaration" and "no row was written" are different facts.
-
-**And the same row carries the second finding, which must stay separate:** of the store's 503 bound
-references, **487 (96.8%) bind only after LEAF REDUCTION** — the analyzer publishes a chain
-(`dependency.hello_world.outputs.rendered_template`, `data.aws_caller_identity.current.account_id`) and
-the store matches its LAST SEGMENT. So most of that 88.9% bound is a leaf-name coincidence rather than
-a resolution of the reference, and the middle case — bound by leaf reduction, possibly wrong — has no
-column in either instrument.
-
-**Consequence for the claim, and the reason it is not written yet:** the claim set is the
-STORE-UNBOUND class (63 of 566 in the sample, ≈11%; classes: terragrunt `dependency.*.outputs.*` whose
-module is not in the population, provider-backed attribute chains, `values.*`/`local.*` reads, and in
-the other repos `var.*` roots plus `provider.*`/`terraform.*` aliases), NOT the model's 8,809
-`noDeclaration`. A claim emitted against `noDeclaration` would mark ~8,000 edges external that
-production in fact binds, and would leave the 487 leaf-reduced bindings hidden under it — a residual
-number that moves without the graph getting truer. Per the settled rule these are NAMES genuinely
-outside the population, so the marker is the external claim (owner-verified where undeclared) and
-NEVER a file claim, because a miss refutes and `extFAIL` must stay 0. Before/after on the same
-population is the next step, with the leaf-reduction count printed beside it.
-
-### Cause 4 — `uses`: the builtin claim CAN miss, so it is NOT written — 29 of 128 sampled edges refute
-
-The proposal was that `uses` is external BY CONSTRUCTION (its label comes from the analyzer's own
-`BUILTIN_ROOTS = {count, each, self, path, terraform}`), so an external claim on it "cannot miss".
-The claim mechanism's own verifier says otherwise, and the check is one line of measurement: a claim
-is REFUTED when the target's OWNER is a declared symbol, so the question is not whether `count.index`
-is a declaration but whether anything in the project is named `count`.
-
-Measured (600-file stride over the CENSUS 9,329-file population, 16 repos):
-
-| builtin root | `uses` edges | owner declared in the project | verdict |
-|---|---|---|---|
-| `each` | 85 | 0 | safe so far |
-| `path` | 30 | **17 (57%)** | REFUTABLE |
-| `count` | 7 | **7 (100%)** | REFUTABLE |
-| `terraform` | 6 | **5 (83%)** | REFUTABLE |
-| **total** | **128** | **29 (23%)** | a blanket claim would put 29 edges into `extFAIL` |
-
-The refutations are not the verifier misbehaving; they are HCL's own shape. `count = 3` is an
-ATTRIBUTE, and this analyzer publishes attribute keys as symbols, so a project that uses `count`
-declares a symbol named `count`. `include { path = … }` declares `path`. `terraform { … }` declares
-`terraform`. A builtin NAMESPACE and a project DECLARATION can share a spelling, and the owner test
-cannot tell them apart.
-
-So the claim is written for `each` only (zero refutations in the sample) or NOT AT ALL — and the honest
-answer at this size is not at all, because a claim over 128 edges that refutes 29 of them would put
-`extFAIL` above 0 and make the lane's `uses` row look better while adding 29 false externalities to
-the graph. What WOULD justify the full claim is an instrument change, not an analyzer one: a NAMESPACE form of
-the claim, and the Lead has settled its design (authorized as a separate instrument task, deliberately
-NOT landed at the end of a turn and not by this lane alone):
-
-* a NEW claim kind — the target asserts *"my root is a language namespace, not a declaration"* —
-  carrying the analyzer's root list (`count, each, self, path, terraform`) as its evidence;
-* the verifier checks the target's ROOT against THAT LIST, never against the symbol table — which is
-  the only way the collision above stops mattering;
-* it must stay REFUTABLE: a target whose root is not in the declared list is `externalRefuted`, so the
-  kind cannot become a blanket excuse;
-* the list is PART OF THE CLAIM, so widening it is a visible, reviewable act rather than a silent one.
-
-With that kind, all 1,909 `uses` edges claim cleanly and `extFAIL` stays 0 for a structural reason —
-which is what the current mechanism cannot deliver, and what this measurement showed.
-
-### Cause 5 — the WHOLE-POPULATION store-unbound split, and the four-clause answer
-
-Sixteen repositories, each indexed as its OWN scratch project (one store run each, order preserved;
-a pooled scratch would change the per-project key space), **6,838 indexer-eligible files, 2,491 refused
-by the indexer**. Artefact: `validation/m14/fixtures/hcl/store-binding-truth.whole-population.json`.
-
-| type | store rows | bound | unbound | same file | other file | leaf-reduced |
-|---|---|---|---|---|---|---|
-| contains | 208,167 | 207,993 | 174 | 204,823 | 3,170 | 90,543 |
-| references | 35,379 | 33,297 | **2,082** | 18,995 | 14,302 | **30,194** |
-| exports | 24,863 | 24,851 | 12 | 22,993 | 1,858 | 0 |
-| uses | 1,806 | 1,387 | **419** | 288 | 1,099 | 1,355 |
-| imports | 1,366 | 19 | **1,347** | 17 | 2 | 8 |
-| extends | 53 | 53 | 0 | 29 | 24 | 0 |
-| **total** | **271,638** | **267,604** | **4,034** | — | — | — |
-
-**The claim set for `references` is 2,082 rows (5.9%), by named class**: `data` 511 · `module` 434 ·
-`global` 247 · `var` 212 · `provider` 134 · `local` 99 · `random_string` 73 · `aws` 70 ·
-`aws_instance` 27 · `quality` 23 · `build` 17 · `values` 17 — provider types, module outputs,
-cross-module variable reads. Compare the MODEL's `noDeclaration` 8,809 on the `.hcl`-only population:
-the overstatement is ~4x on a wider population, which is the same direction the terragrunt-900 draw
-found (514 vs 63). **And 30,194 of the 33,297 bound references (90.7%) bind only after LEAF
-REDUCTION** — that column travels with the claim, because it is the difference between "resolved" and
-"matched a leaf name".
-
-`imports` is the clean external/file case: **1,347 of 1,366 unbound**, and the unbound spellings are
-module sources (`cloudposse/stack-config/yaml//modules/remote-state` 271, `git::https://github` 170,
-`cloudposse/label/null` 40 …) — names outside the population, no file claim available.
-`uses` unbound 419 with roots `each` 200 · `path` 168 · `count` 44 · `self` 5 · `terraform` 2 — the
-namespace-claim case, still unbuilt.
-
-### Cause 6 — the NAME-SPACE LEVER, PRICED at whole population: 4,725 rows, not 19,330
-
-The lever (a FILE-SCOPED identity published and targeted) is priced on the store by asking, per row,
-whether a declaration in the EDGE'S OWN FILE answers to the target while the store bound elsewhere or
-nowhere — that is what a scoped identity would move. Fifteen of sixteen repositories (one store run
-each; **`terraform-aws-components` was KILLED — `timeout` exit 124 after 900 s, its 1,809 eligible
-files are NOT in these totals and are reported as KILLED, never as a zero**), 5,029 indexer-eligible
-files, 129,941 store rows. Artefact: `validation/m14/fixtures/hcl/store-binding-truth.lever-price.json`.
-
-| type | store rows | other-file | unbound | **PRICE (scoped would move)** | of those leaf-reduced | already bind inside the own file |
-|---|---|---|---|---|---|---|
-| contains | 98,899 | 2,462 | 164 | **2,462** | 843 | 96,273 |
-| references | 17,670 | 8,557 | 1,478 | **678** | 85 | 787 |
-| exports | 12,161 | 1,561 | 10 | **1,561** | 0 | 10,590 |
-| uses | 812 | 608 | 169 | **0** | 0 | 0 |
-| imports | 342 | 0 | 334 | **0** | 0 | 0 |
-| **total** | **129,941** | **15,749** | — | **4,725** | **928** | **107,683** |
-
-READ IT AGAINST THE WRONG-BINDING CLASS: 15,749 rows bind to another file, but only **4,725** have an
-own-file declaration a scoped identity could move them to — **the other ~11,000 name a declaration
-that genuinely lives elsewhere or nowhere**, so no rename touches them. The lever is therefore NOT the
-lane's main cause: it is ~1.7% of the store rows in scope, and `references` — the largest residual —
-would move only **678 of its 8,557 cross-file bindings (8%)**.
-
-WHERE IT DOES PAY, exactly as argued: **`exports` 1,561 of 1,561** — every cross-file export binding
-is wrong by construction and a scoped identity fixes all of them. `contains` shows 2,462, which is a
-QUESTION rather than a gain: production resolves `contains` with its own own-file-first statement, so
-a row that bound elsewhere while the own file answers wants explaining before any rename credits it.
-`uses` and `imports` price at zero: their targets are namespaces and module paths with no own-file
-declaration to move to.
-
-THE OVERLAP COLUMN the Lead asked to travel with the price: of the 4,725 movable rows, **928 (20%)
-currently bind only after LEAF REDUCTION** — those are the rows where "bound" is already a leaf-name
-coincidence that a scoped identity would either fix or break, so the net gain cannot be counted as
-4,725 without them.
-
-Conclusion for sequencing: the identity change is NOT the main event (name-space pricing outranks it
-only in the sense that it is now answered), the namespace claim kind and `imports` remain the named
-work, and the ~11,000 cross-file bindings with no own-file declaration are a THIRD defect that neither
-the lever nor a claim addresses — recorded as an open cause with its count.
-
-### Cause 7 — the ~11,000 cross-file bindings ARE partly a STORE-ORDER artifact (measured)
-
-The ~11,000 rows that bind to another file while NO declaration in their own file answers were priced
-out of the name-space lever and left as the lane's biggest open cause. The question the Lead set is
-whether they are an hcl defect at all, and xml-lane's determinism A/B answers it: the SAME file set,
-indexed in a different ORDER, writes different bindings.
-
-Adapted instrument (`validation/m14/fixtures/hcl/tools/store-determinism.mts`, from xml-lane's; same
-three arms and comparison, only the extension list differs). HCL, terragrunt, 800 files, 10,124
-relationship rows, three arms:
-
-| comparison | rows compared | differing | by type | only-in-X / only-in-Y |
-|---|---|---|---|---|
-| A sorted vs B **reversed** | 10,124 | **113 (1.1%)** | `contains` 113 | 0 / 0 |
-| A sorted vs C **eager** (`BB_TEST_FORCE_EDGE_RESOLVE=1`) | 10,124 | **200 (2.0%)** | `references` 96 · `exports` 99 · `contains` 5 | 0 / 0 |
-| B reversed vs C eager | 10,124 | **312 (3.1%)** | `exports` 99 · `contains` 117 · `references` 96 | 0 / 0 |
-
-The row set is identical in every arm (`onlyInX`/`onlyInY` both 0); what moves is WHICH declaration a
-row binds to. The examples are the exact shape in question — a `contains` row for `s3` under
-`…/step-2-refactoring/live/backend.tf` binds to `…/step-1-starting-the-terralith/live/s3.tf`'s `s3` in
-one order and to `…/step-2-refactoring/live/main.tf`'s `s3` in the other: terragrunt's walkthrough
-fixtures repeat module names across sibling directories, no own-file declaration answers, and the store
-picks a twin — a different twin per order.
-
-**So a measurable share of the ~11,000 is a STORE writing-order artifact, not a lane defect, and the
-churn lands on exactly the three types that carry this lane's residual.** Two limits are stated rather
-than rounded off: the churn rate is 1.1-3.1% of rows while the class is 8.5% of store rows, so order
-explains PART of it and the remainder still needs its own named classes; and only one repository was
-measured, so the rate is a rate and not a fleet total.
-
-### Cause 8 — the TWIN SPLIT: the ~11,000 are NOT mostly order artifacts
-
-The churn measurement said bindings move with index order; the twin split says HOW MUCH of the class
-that can touch. For every row whose own file does not answer, two questions are asked of the store: does
-a declaration exist SOMEWHERE in the project (a twin — order can move this binding), or NOWHERE (not an
-order artifact at all: an external name, or a target no declaration can answer).
-
-Thirteen of sixteen repositories banked when this was written (the resumable per-repo loop was still
-running; one JSON per repo, labelled — see the artifact), 1,575 indexer-eligible files, artefact
-`validation/m14/fixtures/hcl/store-binding-truth.twin-split.json`:
-
-| type | rows | other-file | unbound | **twin exists** | **no candidate anywhere** |
-|---|---|---|---|---|---|
-| contains | 74,517 | 1,091 | 27 | 0 | 0 |
-| references | 15,527 | 7,670 | 1,231 | **1,375** | **11,560** |
-| exports | 7,009 | 589 | 3 | 0 | 0 |
-| uses | 688 | 484 | 169 | 32 | 487 |
-| imports | 288 | 0 | 281 | 0 | 7 |
-| **total** | — | — | — | **1,407** | **12,054** |
-
-**The ~11,000 are therefore NOT predominantly order artifacts.** Only about 1,400 rows have a twin for
-the store's ordering to pick between — the population the measured 113/200/312 churn lives in — while
-~12,000 name a target that NO declaration anywhere answers. Those are two different ruled classes with
-different mechanisms, exactly as the Lead framed the split:
-
-* **twin exists (≈1,400)** — the store's write order decides which foreign declaration wins. A scoped
-  target removes the choice, and this is the class the determinism A/B can move.
-* **no candidate anywhere (≈12,000)** — no rename and no ordering change touches these: they are
-  external names (provider/data/module/variable roots) or attribute chains no analyzer in this
-  population declares. They need a CLAIM or an explicit rule, per class.
-
-LIMITS: thirteen of sixteen repositories (the remaining three were still indexing), and the split is a
-count over that population, not a fleet total.
-
-### Cause 9 — the two churn mechanisms SEPARATE, and the `exports` fix is not as narrow as it looked
-
-**The mechanisms separate in the data already committed**, by reading the churn per ARM rather than in
-total (`store-determinism.terragrunt-800.json`):
-
-| arm comparison | what changes | contains | references | exports |
-|---|---|---|---|---|
-| sorted vs **reversed** | file/insert order only | 113 | **0** | **0** |
-| sorted vs **eager** | when resolution runs | 5 | 96 | **99** |
-| reversed vs eager | both | 117 | 96 | **99** |
-
-`exports` churns **99 under eager-vs-deferred and 0 under file-order reversal**. The
-`file_id`-is-insert-order lead predicts exactly the opposite signature — churn under order reversal —
-so for `exports` the mechanism is table COMPLETENESS (deferred resolution reading a table that is not
-complete yet), not insertion order. `contains` is the one type that churns under order (113/0/117),
-which is what `resolveContainsTargetStmt`'s insert-time resolution predicts. Settled with data, not by
-a new run.
-
-**And a design constraint on the fix, found before landing it:** a scoped `exports` target cannot be
-scoped ALONE. Pass 1 binds `target_external = qualified_name` exactly, so the SYMBOL's qualifiedName
-must carry the same scope for the target to match — which means the "exports-only" change touches the
-qualified name of every exported symbol, i.e. it is a public identifier change (narrower than the
-lane-wide rename, but not free). Alternatively the target may be scoped only where the symbol's qname is
-already unique in the project. Recorded rather than landed: the choice between those two is a
-consumer-visible decision and belongs with the lane owner before the rename is paid at all.
-
-### Cause 10 — the LANE-WIDE qname scoping, PRICED from the store before it is paid (a projection, labelled)
-
-The Lead's decision: scope the SYMBOL qualified name (option A), because an identity that cannot
-distinguish two `s3`s cannot make a target determinate — but price it LANE-WIDE first, since a symbol's
-qname is what EVERY type's target must match. This is that price, computed from the store probe's own
-columns (`store-binding-truth.lever-price.json`, 15 of 16 repositories, labelled — one was KILLED):
-
-| type | store rows | already bound inside the own file | **would move to the own-file declaration** | other-file now | unbound now |
-|---|---|---|---|---|---|
-| contains | 98,899 | 96,273 | **2,462** | 2,462 | 164 |
-| references | 17,670 | 787 | **678** | 8,557 | 1,478 |
-| exports | 12,161 | 10,590 | **1,561** | 1,561 | 10 |
-| uses | 812 | 0 | **0** | 608 | 169 |
-| imports | 342 | 0 | **0** | 0 | 334 |
-| **total** | 129,941 | 107,683 | **4,725** | — | — |
-
-READING IT PER TYPE, which is the point of the price: **no type regresses in this projection** —
-`exports` gains exactly its 1,561, `contains` gains 2,462, `references` gains 678, `uses` and `imports`
-gain nothing (their targets are namespaces and module paths that no symbol qname can match, so scoping
-cannot change them either way).
-
-**WHY IT IS A PROJECTION AND NOT AN AFTER-MEASUREMENT, stated so it is not read as one:** it is derived
-from the store's OWN columns — "does a declaration in the edge's own file answer to the target" against
-"where the row actually bound" — not from a store run made after the rename. The after-run needs the
-analyzer change (scoped qname + targets scoped to match), which is the next item, and until it exists
-the 4,725 is the size of the population the change acts on, not a measured post-change binding count.
-A projection can also be wrong in the direction the Lead named: scoping qnames can change which rows
-pass 2 (unique-name) accepts, and only the after-run can show that.
-
-THE CONSUMER-VISIBLE CONSEQUENCE, named rather than left as a side effect: a scoped qname changes the
-PUBLIC qualified name of every exported symbol, so a consumer holding an old spelling will not match it.
-That is a deliberate trade for determinacy and it should appear in the lane's release note.
-
-AND WHAT THE FIX IS FOR, corrected by the arm data: a scoped target's value here is **exact-match
-determinacy**, NOT tie removal — `exports` churns on table COMPLETENESS (99 under eager-vs-deferred,
-0 under file-order reversal), so it was never riding the tie-break that scoping removes. The monotonicity
-assertion still holds (scoping cannot create a tie), but it is not the mechanism that fixes exports.
-
-### Cause 11 — the rename is AUTHORIZED but NOT LANDED: the falsifier, named before the run, and a cost the price did not include
-
-The lane-wide qname change is authorized and this lane did NOT land it, because the acceptance items
-include a coherent analyzer edit plus a store pair over the same population, and a half-landed rename is
-worse than neither (a scoped target against an unscoped qname binds nothing). What is fixed here, before
-any run, is the falsifier and one cost the store price did not include.
-
-**THE FALSIFIER, named so the run can fail** — the projection says `exports` +1,561, `contains` +2,462,
-`references` +678 and `uses`/`imports` +0 with NO type regressing. It is refuted by any of:
-
-1. a type that was predicted to hold LOSES rows it had — `references` below its 17,670 bound, or
-   `contains` below 207,993;
-2. `contains` moving OFF the own file — its 96,273 own-file bindings are the baseline the change must
-   not disturb, and a drop there is a regression in the type the projection says gains most;
-3. `uses`/`imports` gaining nothing was a prediction too: if either gains, the projection's mechanism is
-   wrong even though the direction is favourable, and the artifact needs correcting;
-4. and the sharpest one: **the after-run showing the 4,725 rows NOT moving**, because their own-file
-   declaration was already reachable and the binding they have now came from a tie-break that a scoped
-   qname does not remove — which the arm data already suggests is possible for `contains` (it churns on
-   insert order, 113/0/117) and not for `exports` (completeness, 99 eager-vs-deferred, 0 on order).
-
-**AND THE COST THE STORE PRICE DID NOT INCLUDE**: the rename moves the lane's own fixtures. Measured:
-**12 expectation files carrying 162 target pins and 107 source pins, every one of them an UNSCOPED path**
-(`aws_instance.web`, `function.double`, `target._common`), so all 269 pins must be re-spelled in the same
-change. The store price answered "how many store rows does this act on" (4,725); it did not answer "how
-much fixture churn does it cost", and that number belongs in the decision too.
-
-RECORDED AS THE HANDOVER SHAPE for whoever lands it: (1) one analyzer edit that scopes the symbol
-qualified name AND the targets that name a symbol's own path (`contains`, `exports`, `extends`) — the
-two must move together; (2) the store pair over the same population, one labelled run each; (3) the
-monotonicity assertion, stated as a SAFETY property rather than the mechanism, because the arms show
-`exports` never rode the tie-break; (4) the falsifier above, fixed before the run.
-
-### Cause 12 — the deciding test answered BY CONSTRUCTION: YES for 100% of the 4,725, and the inference from it needs one correction
-
-The Lead's cheap deciding test: for the 4,725 rows, is the own-file declaration's name IDENTICAL to the
-target as currently spelled? The instrument answers it without a new pass, because the column that
-selects those rows IS that test:
-
-```
-own_file_answers = SELECT COUNT(*) FROM brain_symbol x
-  WHERE x.file_id = <the edge's own file> AND (x.name = target OR x.qualified_name = target)
-```
-
-`scopedWouldMove` counts rows where `own_file_answers > 0` and the store bound elsewhere or nowhere —
-so **for all 4,725 the answer is YES by definition, not by measurement**: an own-file declaration whose
-spelling equals the target EXACTLY already exists. The Lead's branch-1 condition is met at 100%.
-
-**THE INFERENCE FROM IT, corrected.** The Lead read YES as "an exact match was already available and the
-resolver chose elsewhere anyway, so a scoped qname does not remove it". The first half is right; the
-conclusion does not follow. Why the resolver chose elsewhere with an exact own-file match in hand is a
-question about DUPLICATES: store pass 1 binds `target_external = qualified_name` **project-wide with
-LIMIT 1**, ordered by `is_declaration, file_id, language, s.id` — so when several files declare the same
-spelling, the pick is decided by that ordering, not by locality. **Scoping the qname does not remove the
-match that already existed; it removes the DUPLICATE that made the match ambiguous**, which is exactly
-the mechanism that produced the foreign pick. On that reading the rename would help the 4,725 — so the
-test that decides is neither availability nor spelling but the **duplicate count** for those targets.
-
-**AND THE TEST THAT DECIDES IS ONE COLUMN AWAY**: for the 4,725 rows, the distribution of
-`any_file_answers` (the project-wide count of declarations answering to the target) — 1 means the
-own-file declaration was already UNIQUE and pass 1 should have bound it, so those rows come from another
-mechanism (unbound rows, or a later pass); >1 means duplicates exist and the ordering is what picks the
-foreign one, which scoping fixes. The instrument has the column (`any_file_answers`) and the pass is
-cheap; it is the next measurement, not this one.
-
-### Cause 13 — the DUPLICATE SPLIT: 2,079 of the 2,308 movable rows are the rename's case, and per type it is not one fix
-
-The deciding measurement, per row: for the rows a scoped qname would move, does the target spelling have
-EXACTLY ONE declaration in the project (the own-file one — pass 1 should have bound it, scoping changes
-nothing) or SEVERAL (pass 1's ordering `is_declaration, file_id, language, s.id` chose the foreign one —
-scoping removes the duplicate and the ambiguity with it)?
-
-Thirteen of sixteen repositories banked when written (the resumable pass was still running; artefact
-`validation/m14/fixtures/hcl/store-binding-truth.duplicate-split.json`), 1,575 indexer-eligible files:
-
-| type | movable rows | spelling **project-unique** | **DUPLICATES exist** |
-|---|---|---|---|
-| contains | 1,089 | **229** | **860** |
-| references | 606 | **0** | **606** |
-| exports | 589 | **0** | **589** |
-| uses / imports | 0 | 0 | 0 |
-| **total** | **2,308** | **229 (10%)** | **2,079 (90%)** |
-
-**ANSWER: 90% of the movable rows are the rename's case, and the split is not uniform per type** —
-which is exactly why it was asked for per type:
-* **`exports` 589/589 and `references` 606/606 are 100% duplicates**: every one of those rows is an
-  ambiguous match that scoping makes unique. For those two types the rename buys what it was priced at.
-* **`contains` is mixed — 229 unique / 860 duplicate (21/79)**: the 229 rows are the subset where an
-  exact own-file match was already project-unique, pass 1 should have bound it, and a rename changes
-  nothing; those rows come from the other mechanism (unbound rows, or a later pass). This is the subset
-  the Lead's branch-1 conclusion holds for, and it is 10% of the movable class rather than the class.
-So the rename is worth its pins for `exports` and `references` in full and for 79% of `contains`, while
-the fix for the remaining 229 `contains` rows is a different one — the resolver's own behaviour, not the
-identifier's spelling. Two fixes, not one, and the boundary between them is now a number.
-
-LIMITS: thirteen of sixteen repositories (three still indexing; resumable), and the counts are over that
-population rather than a fleet total.
-
-### Cause 14 — the rename is AUTHORIZED for the 2,079 (not landed here), the 229 are handed over, and a FIFTH expectation joins the falsifier
-
-The decision: pay the rename for the rows whose mechanism it addresses — `exports` 589/589,
-`references` 606/606, `contains` 860 of 1,089 — and NOT for the 229, which are the resolver's population
-rather than the identifier's.
-
-**FIFTH EXPECTATION, added to the four-condition falsifier BEFORE the run** (so the run can fail): **the
-229 must NOT move.** They are the rows whose target spelling is already project-unique, where pass 1
-should have bound the own file and did not; a rename must leave them exactly where they are. If they
-move, the rename is doing something other than removing a duplicate and the mechanism measured above is
-refuted — that is a failure of the fix's justification, not a bonus.
-
-**THE 229 ARE HANDED OVER AS THE SHARED FIX'S TEST POPULATION**, isolated by this lane's own probe and
-identified by a predicate anyone can re-run (the instrument already computes both columns):
-
-```
-own-file:   EXISTS symbol x WHERE x.file_id = <edge's own file> AND (x.name = target OR x.qualified_name = target)
-project:    COUNT  symbol x WHERE x.project_id = <project>   AND (x.name = target OR x.qualified_name = target)
-the 229:    own-file EXISTS  AND  project COUNT = 1  AND  (target_symbol_id IS NULL OR target_symbol_id's file <> the edge's file)
-```
-
-That is a clean population for the shared fix because it removes every alternative explanation: the
-declaration exists, it is spelled exactly as the target, it is the ONLY declaration answering to that
-spelling in the project, and the row still bound elsewhere or nowhere. Four sightings of the same
-mechanism now point at it — xml's `calls` 138, this lane's ~12,054 no-candidate-anywhere rows, the
-order/eager churn (113/0/117 and 99), and these 229 — so the Lead takes the fix and this lane's
-contribution is the isolated population and its count.
-
-**STATUS, PLAINLY**: the rename is authorized and NOT landed by this lane in this budget. The acceptance
-items stand unchanged — one coherent edit (qname plus every self-path target together, since a scoped
-target against an unscoped qname binds nothing), the store pair over the same population with one
-labelled run each, monotonicity as a SAFETY property (`exports` never rode the tie-break: 0 under
-file-order reversal, 99 under eager-vs-deferred), the four-condition falsifier plus the fifth above, and
-the 269-pin fixture cost (12 files, 162 target + 107 source pins) paid in the same change. The
-consumer-visible cost is named and accepted: the public qualified name of every exported symbol changes,
-so a consumer holding an old spelling will not match it — a deliberate trade for determinacy, for the
-release note.
-
-### Cause 15 — POST-LANDING BASELINE: the movable class measures ZERO, so the rename's case has evaporated
-
-The precondition this lane waited for — a baseline taken on the indexer AFTER the five landings — now
-exists, and it changes the decision. One labelled run, `nice -n 10`, no lock (phantom-held; a 20-minute
-hold is a fleet stall, not a private cost):
-
-`.tmp-hcl/post-landing/terragrunt.json` → `validation/m14/fixtures/hcl/store-binding-truth.post-landing.terragrunt.json`
-(terragrunt, **3,376 indexer-eligible of 3,399** copied; exclusions `testdata` 17, `test` 4,
-`.terraform.lock.hcl` 2):
-
-| measure | pre-landing | **post-landing** |
-|---|---|---|
-| movable rows (`scopedWouldMove`) | 582 (this repo, earlier pass) | **0** |
-| spelling project-unique (the 229 class) | part of 582 | **0** |
-| duplicates exist (the 2,079 class) | part of 582 | **0** |
-| twin exists somewhere | — | 76 |
-| no candidate anywhere | — | 1,825 |
-
-**The class the rename was priced to fix measures zero on the post-landing indexer** — `12,865 → 0` is
-r-lane's fleet reading and this run reproduces the direction independently on this lane's own instrument,
-unchanged. The duplicates that made pass 1's choice ambiguous, and the unique-spelling rows that should
-have bound the own file, are both gone: the indexer landings (`71286549c`'s `contains` deferral and the
-key-selection changes) addressed the mechanism the rename was aimed at.
-
-**CONSEQUENCE, stated rather than implied: the rename must NOT be paid.** 269 fixture pins, a public
-qualified-name change for every exported symbol, and a store pair would buy a class that now measures 0
-in the repository that carried the largest share of it. Condition (4) of the falsifier — "the 2,079 NOT
-moving" — is no longer testable because there is nothing left to move, and condition (5) is satisfied by
-r-lane's zero independently. What remains is `references`' wrong-file class (6,167 fleet-wide), which is
-a different question:
-
-**`references` other-file is dominated by cross-MODULE reads, and is a RISK, not proven wrongness.** The
-post-landing unbound worklist is `module.ddb.aws_dynamodb_table.asset_metadata` 12,
-`module.iam.aws_iam_policy.lambda_basic_execution` 12, `module.iam.aws_iam_role.lambda_role` 12, and so
-on — chains reaching into modules that are not in the indexed population, which is what a cross-document
-reference IS for a type whose target is not the edge's own file. The intent legend is explicit that
-`"twin"` marks a WRONG EDGE only for `contains`/`exports`; for `references` a foreign declaration is a
-RISK. **So sample before pricing, which is the assignment this run starts.**
-
-### Cause 16 — the claim-kind block for hcl: CONTRADICTED 0, and a MEASURED zero rather than a silent block
-
-Read on a 600-file sample (`incoming-gate.ts hcl hcl 600`, exit 1 — the gate's own FAIL verdict for a lane
-with residual, not an instrument error):
-
-```
-BY CLAIM KIND: of 0 ambiguous edge(s) — 0 claim VERIFIED · 0 NOT verified · 0 REFUTED ·
-               0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a
-(no ambiguous edge on this lane carries any claim — so there is nothing of this shape here,
- and that is a MEASURED zero rather than a block that failed to print.)
-```
-
-**So hcl has no `CONTRADICTED` edges and no `OWN-FILE-SILENT` edges** — the scss 714 does not reproduce
-here, and nothing on this lane needs the open fleet-wide ruling about whether a contradicted claim counts
-as `extFAIL`. Both counts are reported, neither is resolved, and the block's own sentence is the reason
-this is a fact rather than an absence: it always prints, so "0" here cannot be a gate that skipped it.
-
-NOTED WITH IT: the block's denominator is the run's ambiguous count, so the zero is a statement about
-**ambiguous edges carrying claims**, not a claim that the lane has no ambiguity — the same run's TABLE 1
-is where the lane's `amb(decl)` lives, and the two must be quoted together.
-
-### Cause 17 — `collRes` 1,742 NAMED: it is 100% `contains`, and the tie-break is own-file DETERMINATE
-
-`collRes` (`resolvedAmongCollision`) is the class where a row RESOLVED but the target had more than one
-declaration, so production's tie-break chose it — and the indexer's own measurement is that **37,318 of
-49,729 such picks (75%) go to the WRONG symbol.** On this lane it is the largest figure in the table
-(1,742 of 6,100 edges, 28.6%) and had no cause named. Named now, from the same 600-file sample and
-crossed against that run's own BINDING INTENT columns:
-
-| type | edges | resolved | **collRes** | share of the type | intended | sameFileUnproven | arbitraryTwin | nothingAnywhere |
-|---|---|---|---|---|---|---|---|---|
-| contains | 4,338 | 4,338 | **1,742** | **40.2%** | **4,338** | 0 | 0 | 0 |
-| (all other types) | 1,762 | 367 | **0** | 0% | 983 | 79 | 1 | 699 |
-| **run total** | **6,100** | 4,705 | **1,742** | 28.6% | 5,321 | 79 | 1 | 699 |
-
-**(a) WHICH TYPES CARRY IT: one type.** The entire `collRes` on this lane is `contains` — 1,742 of
-`contains`' 4,338 edges (40.2%), and every other type is zero. So `collRes 1,742` is not a lane-wide
-collision risk; it is one type's characteristic, which is what `resolveContainsTargetStmt` predicts: a
-`contains` target is a path like `target._common` that repeats across files by construction (docker-bake
-targets, Terraform nested blocks), so collisions are the NORM for the type rather than an accident.
-
-**(b) IS THE TIE-BREAK DETERMINATE HERE: yes, for the whole class.** The same run's intent table reads
-`contains 4,338 edges → intended 4,338`, i.e. for EVERY `contains` edge a declaration in the edge's own
-file answers ON the edge's own line. A collision is determinate whenever the edge's own file declares
-that name exactly once, because both resolvers put the file preference second in their `ORDER BY` — and
-`resolveContainsTargetStmt` puts it first. So the 75% wrong-pick risk does not apply to this class:
-**the 1,742 are own-file-settled, and the genuinely arbitrary subset is 0 (`arbitraryTwin 0`).**
-`collRes 28.6%` therefore reads much smaller as a risk than as a number, and the honest reading is that
-`contains`' collisions are the type working as designed — which is consistent with the store measurement
-that `contains` other-file bindings are 0 post-landing.
-
-**GAP IN THE INSTRUMENT, stated rather than worked around**: the marker-set breakdown cannot answer
-"per marker set" for `collRes`. That table covers NOT-RESOLVED edges plus bindings — its columns are
-`resolved / amb / unres / extClaim / binding / cause` — so a collision-RESOLVED row has no marker-set row
-at all. The marker keys on this lane are `hclSite`, `hclBuiltin+hclSite`, `hclOverrideKind+hclSite`, and
-`contains` edges carry `hclSite`; a per-marker `collRes` column is what the table would need to answer the
-question as asked.
-
-### Cause 18 — the TWIN TEST ON NIM (cross-lane): the population exists, and the store BINDS almost all of it
-
-This lane's `arbitraryTwin` is 0, so hcl cannot test whether a twin is really WRONG — the question the
-whole `collRes`/`ofWhich`/`twin` machinery rests on, which the indexer's control arm answers statistically
-(37,318 of 49,729 collision-bound picks to the WRONG symbol) and nobody has tested per row on a
-population that has twins. **Nim was chosen because it carries the programme's largest twin population
-(`calls arbitraryTwin 70,223`); nim's files were NOT edited — the measurement is a copy of this lane's
-instrument with the extension list and env names changed (`store-binding-truth.nim.mts`), run once,
-labelled, `nice -n 10`, no lock.**
-
-ONE RUN: nim, **1,499 indexer-eligible of 1,500** files copied (top exclusion `tests` 1), **75,094 store
-rows**. Artefact `validation/m14/fixtures/hcl/store-binding-truth.nim-twin-1500.json`.
-
-| type | rows | bound | unbound | other-file | **twin (own file silent, declaration elsewhere)** | no-candidate | leaf-reduced |
-|---|---|---|---|---|---|---|---|
-| calls | 25,335 | 19,322 | 6,013 | 9,846 | **9,782** | 0 | **0** |
-| references | 14,234 | 9,724 | 4,510 | 3,471 | **3,471** | 0 | 0 |
-| uses | 10,995 | 10,966 | 29 | 1,614 | **1,614** | 0 | 0 |
-| imports | 2,021 | 973 | 1,048 | 973 | **973** | 0 | 0 |
-| contains | 21,486 | 21,477 | 9 | **1** | 1 | 0 | 0 |
-| **total** | **75,094** | 63,425 | 11,669 | 16,306 | **16,242** | **0** | **0** |
-
-THREE THINGS THIS ESTABLISHES BEFORE THE INTENT TEST:
-
-1. **The population exists and is large: 16,242 twin rows, and `noCandidateAnywhere` is 0** — on nim,
-   every own-file-silent row has a declaration somewhere, so the twin class is the whole class there.
-2. **The store BINDS almost all of them** — `calls` 9,782 twins against 9,846 other-file bindings,
-   `references` 3,471/3,471, `imports` 973/973. So "the store refused it" is not what happens; what
-   happens is a foreign declaration is chosen. Whether that foreign declaration is the one the edge MEANT
-   is precisely the untested question, and it is now isolated to 16,242 rows rather than assumed.
-3. **`leafReduced` is 0 on nim, in every type** — unlike hcl, where 96.8% of bound references needed leaf
-   reduction. So nim's bindings are exact-name bindings, which makes it a CLEANER test population than
-   hcl: a wrong twin here cannot be excused as a leaf coincidence, and `contains` shows **1** other-file
-   binding out of 21,486, so the deferral fix holds on this lane too.
-
-THE FALSIFIER FOR "TWINS ARE WRONG", named before the intent run: a twin row whose bound declaration
-lives in a file the SOURCE file can actually reach (nim: the module is imported, or the declaration is in
-the same package path) and whose name matches is a binding that is plausibly the one the edge meant. **If
-most of the 16,242 look like that, "twins are wrong" fails to fire** and the intent legend's scoping — a
-foreign declaration is what a cross-document reference IS, a RISK not proven wrongness — is the stronger
-reading, which would make a large share of the fleet's `twin` columns risk-shaped numbers read as defects.
-The negative control is the other side: twin rows bound to a file the source cannot reach at all, which
-are arbitrary picks whatever else is true. **The intent column this needs (source-file reachability of
-the bound declaration) is the next edit; it is not in the instrument yet, and no number above depends on
-it.**
-
-### Cause 19 — PRE-REGISTRATION for the nim intent run: three buckets, and the numbers that decide
-
-Written BEFORE the intent run, so the run can fail. The question: for the 16,242 twin rows, is the bound
-declaration's file reachable from the source file? (Nim `import`/`include`, which the store already holds
-as `imports` rows — and note that on this very run nim's `imports` are only 973 bound of 2,021, so the
-evidence for reachability is itself half-missing, which is why the third bucket below is mandatory rather
-than tidy.)
-
-BUCKETS, each counted separately and never folded:
-
-| bucket | definition | reading |
-|---|---|---|
-| **REACHABLE** | an `imports` row in the same project whose SOURCE is the twin row's source file and whose bound target symbol's file IS the twin's bound declaration file | plausibly the declaration the edge meant |
-| **UNREACHABLE** | the source file has import rows, NONE of which reaches the bound declaration's file | an arbitrary pick — the negative control, and it carries whatever the REACHABLE share does not |
-| **UNDECIDABLE** | the source file has at least one `imports` row that is itself UNBOUND, so reachability cannot be established either way | a finding about the INSTRUMENT if large; if small, the two outcomes above are clean |
-
-PRE-REGISTERED THRESHOLDS, on the share of the 16,242 that are REACHABLE (UNDECIDABLE excluded from the
-denominator, reported beside it):
-
-* **≥ 70% REACHABLE → "twins are wrong" FAILS TO FIRE.** The indexer's 37,318-of-49,729 control arm does
-  not generalise to binding choice, the intent legend's scoping is the stronger reading, and a large share
-  of the fleet's `twin` columns are risk-shaped numbers that have been read as defects. That is the bigger
-  claim of the two and it needs the UNREACHABLE bucket to carry it.
-* **≤ 40% REACHABLE → "twins are wrong" STANDS.** The twins are arbitrary picks, 37,318/49,729
-  generalises, and `twin` is a defect class everywhere it appears in the fleet.
-* **40-70% → INCONCLUSIVE, and it stays inconclusive**: the result is reported as a split, not rounded to
-  whichever side is nearer, and the next measurement is a second repository rather than a re-reading of
-  the same one.
-
-WHY THE THRESHOLDS ARE THESE AND NOT 50%: the claim under test is not "more likely right than wrong" but
-"a twin is a risk worth a lane's attention". A 50% floor would let a coin flip pass as a repair, and the
-fleet reads `twin` columns as defect columns — so the test must clear a margin, and the margin is set
-before the data rather than after it. The precedent is this lane's own `contains` pair, where the floor
-(50) was pre-registered before the confirming run.
-
-STATUS, PLAINLY: this is the pre-registration only. The intent column is NOT implemented yet (the join
-above needs an `imports`-to-symbol join plus the three-bucket counters) and the nim run has NOT been
-re-taken, so no number exists for any bucket. Nothing in Causes 17-18 depends on this, and the artefact
-will carry the run's label when it exists.
-
-### Cause 20 — the nim TWIN BUCKETS, run against the pre-registration: 0% REACHABLE, and an UNDECIDABLE bucket that did not fire
-
-One labelled run (`nice -n 10`, no lock, nim's files untouched), 1,499 indexer-eligible of 1,500,
-`store-binding-truth.nim-twin-buckets.json`:
-
-| bucket | count |
-|---|---|
-| **REACHABLE** | **0** |
-| **UNREACHABLE** | **16,242** |
-| **UNDECIDABLE** | **0** |
-
-By the pre-registered rule (share = REACHABLE / (REACHABLE + UNREACHABLE), UNDECIDABLE excluded and
-reported beside it): **0.0% ≤ 40% → "twins are wrong" STANDS** — on nim's population, every twin binds to
-a file the source's own imports do not reach, so the twins are arbitrary picks, the indexer's
-37,318-of-49,729 control arm generalises to binding choice, and `twin` is a defect class wherever it
-appears. Per type, and uniform: `calls` 9,782 unreachable / 0 reachable, `references` 3,471/0,
-`uses` 1,614/0, `imports` 973/0.
-
-**BUT THE UNDECIDABLE BUCKET DID NOT FIRE WHERE THE EVIDENCE SAYS IT MUST, and that is reported rather
-than smoothed:** nim's `imports` are **1,048 unbound of 2,021**, so source files demonstrably carry
-import rows whose reachability cannot be established — yet the bucket counted **0**. The cause is in my
-own predicate: the undecidable subquery JOINs `brain_symbol` on the import row's source symbol, so an
-unbound import row with no source symbol is DROPPED before it can be counted. **So `UNDECIDABLE 0` is an
-instrument artifact, not a measurement**, and the pre-registration says exactly what to do with that: if
-UNDECIDABLE is large — or here, if it fails to appear on a population that requires it — that is a finding
-about the instrument.
-
-**WHAT THAT DOES AND DOES NOT DO TO THE VERDICT:** the REACHABLE count of 0 is measured; the share is
-therefore 0% *on the rows the buckets could classify*, and a correct UNDECIDABLE bucket could only move
-rows OUT of UNREACHABLE and INTO undecidable — it cannot create reachable rows, because REACHABLE requires
-a bound reaching import that was not found in any of the 16,242. So the verdict **STANDS on a weaker
-basis than the pre-registration intended**: the direction is measured, the denominator is not yet
-trustworthy, and the next measurement is the fixed bucket (LEFT JOIN, or count import rows by the source
-FILE rather than by a source symbol) before this is quoted fleet-wide.
-
-### Cause 21 — the SECOND population (clean): the verdict holds, the MARGIN does not, and UNDECIDABLE fires
-
-Nim is the CLEANEST population (`leafReduced` 0 in every type) and a verdict there is not yet evidence for
-lanes where leaf reduction does the binding, so the same three pre-registered buckets were run on **clean**
-(the lane carrying `references twin 6,650`), one labelled run per repository, `nice -n 10`, no lock
-(phantom-held), the language's files untouched. Artefact
-`validation/m14/fixtures/hcl/store-binding-truth.clean-twin-buckets.json`.
-
-| repository | eligible | twins | REACHABLE | UNREACHABLE | UNDECIDABLE |
-|---|---|---|---|---|---|
-| Clyde | 109 | 3,033 | **360** | 38 | **2,635** |
-| clean-stdlib | 74 | 1,428 | **160** | 1,268 | 0 |
-| eastwood | 73 | 399 | **105** | 19 | **275** |
-| **total** | **256** | **4,860** | **625** | **1,325** | **2,910** |
-
-**By the pre-registered rule: 625 / (625 + 1,325) = 32.1% ≤ 40% → "twins are wrong" STANDS on clean too.**
-So the DIRECTION survives a second population and a different language — which is what the fleet-wide
-claim needed. **Two things do not survive, and both are reported rather than averaged away:**
-
-1. **THE MARGIN IS NOT 0%, IT IS 32%.** Nim read 0.0% reachable; clean reads 32.1% — the same direction
-   with a materially different size, and `clean-stdlib` alone reads 160 of 1,428 with only 0 undecidable.
-   So "twins are wrong" is not uniformly near-total: on clean, roughly a third of decidable twins bind to
-   a declaration the source could plausibly reach. The claim stands, and the number a fleet reads off its
-   `twin` column should not be treated as 100% defect.
-2. **UNDECIDABLE IS NOW 60% OF THE CLASS (2,910 of 4,860) AND IS WILDLY UNEVEN PER REPOSITORY** — Clyde
-   2,635 undecidable against clean-stdlib **0**. That is the instrument finding the pre-registration
-   anticipated, now with a second population behind it: the bucket depends on whether a project's unbound
-   `imports` rows are anchored to a source symbol at all, which is a property of the LANGUAGE's emission
-   and not of the twins. On nim the bucket could not fire (its unbound imports are not file-anchored,
-   hence `UNDECIDABLE 0` where 1,048 unbound imports exist); on clean it fires massively on two of three
-   repositories. **One bucket, two behaviours — so the bucket must be stated with its anchoring rule
-   wherever it is quoted.**
-
-**FIX NOT YET LANDED, and the choice is recorded rather than implied**: count import rows by the source
-FILE rather than by the source symbol, because the question is "can this source FILE reach that
-declaration's file" and the unit should match the question; a LEFT JOIN would keep the row and mark it
-undecidable but would still need a file anchor the row may not carry, which is exactly the case that
-produced nim's `UNDECIDABLE 0`. Until that lands, every `UNDECIDABLE` figure above is quoted with its
-repository and its anchoring caveat.
-
-**WHAT THIS DOES TO THE FLEET CLAIM**: the direction is now measured on two languages and four
-repositories — twins are predominantly bound to files the source cannot reach — so `twin` is a defect
-class, and the indexer's 37,318/49,729 control arm generalises to binding choice. That is earned. What is
-NOT earned is quoting a per-lane `twin` column as a defect count without the reachable/undecidable split
-beside it, because on clean a third of decidable twins are plausibly right and 60% cannot be decided at
-all.
-
-### Cause 22 — `imports` RULED: a directory is not a file, so the file route has no target — 88 edges, 95.5% naming a directory
-
-toml-lane measured this lane's `imports` residue as part of the fleet ceiling (`558c9828f`, copy
-instrument, **this lane's files untouched**), and the cause is now named rather than left as a
-percentage:
-
-```
-hcl   708/9,329 census files · imports 88 · VERIFY 0 · refute 0 · RESIDUE 88 (100%)
-      THE CAUSE: MODULE SOURCES THAT NAME A DIRECTORY — 84 of 88 (95.5%)
-        ./module 12 · ./child 7 · ../../account-map/modules/iam-role 6 · ./provision-nomad 3
-      0 refute, STRUCTURALLY: a directory is not a file, so the file route has nothing to refute —
-      and nothing to CLAIM, which is why the ceiling is 0.0% rather than "small"
-```
-
-**RULED, and the ruling is on the route rather than on the edges:** these 88 edges are Terraform
-module sources that name a DIRECTORY (`./module`, `../../account-map/modules/iam-role`), which is a
-legitimate and expected shape — a module reference points at a directory, and the directory resolves by
-looking for the manifest inside it. **So the file-claim route has no target here: 0.0% is a ceiling for
-the FILE route specifically, not for these directives generally**, and quoting it as "hcl's imports are
-0% claimable" would be the same class of error as reading a `twin` column as a defect count.
-
-**The mechanism that would reach them is a manifest-in-directory claim** (toml's own manifest shape),
-not a file claim — and it is NOT TAKEN here, for a priced reason: the population is **88 edges across
-9,329 files (0.9%)**, 100% of them one mechanism, and building a second claim route for a class this
-small would add a mechanism to the shared claim machinery to move 88 edges. Recorded as a named cause
-with its count and its route, which is what the class needed; if a lane ever builds the directory route
-for a larger population, this lane's 88 are its first beneficiaries.
-
-**AND THE ORDERING FACT THAT FOLLOWS, recorded because it is not obvious:** this lane's `imports` row is
-**not a file-claim population at all** — the old fleet figure that counted hcl's 334 edges among the
-file-claim lanes was counting directory targets as file targets. The fleet `imports` cause is now four
-file-claim lanes, one shared-rule question, and three named non-file causes, and hcl is one of the three.
-
-### Cause 23 — CORRECTION: the nim bucket is INCONCLUSIVE-ON-INSTRUMENT, and the fleet direction is earned on ONE language
-
-The file-anchored nim run landed (Lead's lease, 400-file draw, `EXIT=0`; the instrument fix is
-`85bf30299`, committed by the Lead so it could not be lost, with the thresholds quoted into the artefact
-before the run):
-
-```
-edges 18,549 · bound 14,589 · sameFile 12,457 · otherFile 2,132
-scopedWouldMove 0 · scopedAlreadyRight 12,457 · noCandidateAnywhere 0
-boundNeedsLeafReduction 5 · sourceUnbound 2,018
-type: calls 1,172 · references 361 · uses 418 · imports 93 · instantiates 80 · extends 4 · exports 4
-TOTAL twins 2,132 · REACHABLE 0 · UNREACHABLE 0 · UNDECIDABLE 2,132
-```
-
-**The share is 0/0 — UNDEFINED — so the reading is INCONCLUSIVE-ON-INSTRUMENT**, which is the branch
-this lane fixed before the number existed.
-
-**THE DIAGNOSIS, which is a finding about the predicate and not about nim: a bucket that reads 0% and then
-100% on the same question has not measured the twins — it has measured its own predicate.**
-* un-anchored predicate → **0%**: an unbound import row with no source symbol was dropped by an INNER JOIN
-  before it could be counted, so the bucket could not fire on a corpus whose evidence for it is
-  half-missing;
-* file-anchored predicate → **100%**: it asks whether the source FILE has ANY unbound `imports` row, and
-  `sourceUnbound` is **2,018**, so it fires for essentially every row.
-Two values, opposite directions, one question — neither is a measurement of reachability.
-
-**CORRECTION TO THIS PAGE'S OWN CLAIM**: the earlier EARNED block said the direction was measured on "two
-languages and four repositories". **That does not survive this run.** The direction is now earned on
-**ONE language (clean, 32.1% ≤ 40% → STANDS)**; **nim is INCONCLUSIVE-ON-INSTRUMENT**, not 0.0% and not
-anything else. The correction came from this lane's own pre-registration rather than from a critic.
-
-**WHAT THE RUN DOES ESTABLISH**: `noCandidateAnywhere 0` and `scopedWouldMove 0` on nim — every
-own-file-silent row has a candidate somewhere, and **no row had an own-file declaration that the store
-passed over for the full spelling**; and **`boundNeedsLeafReduction 5`**, i.e. nim binds twins by FULL
-SPELLING, against hcl's 12,014 — which is exactly why nim was the cleanest population AND exactly why its
-undecidable rate reads 100%.
-
-**THE NEXT MEASUREMENT IS NAMED, and re-running this predicate on a bigger draw is NOT it** (it will read
-100% again): the predicate must ask whether **the file the twin actually BOUND TO** could be reached — a
-**PER-ROW** reachability question, not a per-file one. Until that exists, the reachable/undecidable split
-must not be quoted for nim at all.
-
-**OPERATIONAL FACT, for the handoff**: a teammate's background job dies when the teammate's turn ends —
-two nim runs of this lane died at that boundary (verified: no artefact, log ending mid-store, no surviving
-process), while the same run under the Lead's lease completed. The division is **the Lead holds long jobs,
-lanes hold bounded ones**; a lane with something long should poll in-turn or hand it over with its label
-lines and thresholds. Both deaths were reported KILLED, never as results.
-
-### Cause 24 — the PER-ROW name-text predicate, BUILT and pre-registered (for the Lead's lease)
-
-Built because the per-file predicate measured itself: 0% then 100% on the same question (Cause 23). The
-question is whether the source file holds an import row that could reach **the file the twin actually
-BOUND TO**, and the split is on **the import ROWS and their NAME TEXT**, not on the file as a whole.
-
-| bucket | predicate | why decidable |
-|---|---|---|
-| **REACHABLE** | a BOUND import row whose target file **IS** the twin's bound declaration file (`i_src.file_id = ss.file_id AND i_tgt.file_id = <bound file>`) | the only case that is EVIDENCE of reachability rather than of possibility |
-| **UNDECIDABLE** | no such row, but an import row's **name text** could name that declaration — the leaf segments match | every `imports` edge carries a target name even when unbound, so nim's 1,048 unbound rows are informative rather than obstructive |
-| **UNREACHABLE** | no bound row reaches it and no row's name text can name it | the negative control, decidable from text the store already holds |
-
-**PRE-REGISTERED THRESHOLDS AGAIN, before the run, same 70/40 bands** on REACHABLE / (REACHABLE +
-UNREACHABLE), with UNDECIDABLE excluded from the denominator and reported beside it:
-* **≥ 70% → "twins are wrong" FAILS TO FIRE** for nim;
-* **≤ 40% → STANDS**, and then the direction is earned on TWO languages rather than one (clean 32.1%);
-* **40-70% → INCONCLUSIVE**, reported as a split and never rounded;
-* **and if the split is 0/0 AGAIN, the reading is INCONCLUSIVE-ON-INSTRUMENT and it STANDS THERE** — no
-  fourth predicate. A second instrument that also cannot fire is a result about the population, and this
-  lane already has one of those.
-
-INSTRUMENT, committed and hashed so the run's provenance is checkable:
-`validation/m14/fixtures/hcl/tools/store-binding-truth.nim.mts`
-`sha256 a6688e4f5f12189724b1545a9231f2b0fff53e83898a51dab37f8e021bb093e6`
-`npx tsc --noEmit -p tsconfig.json` **exit 0** · `npm run audit:script-typecheck` **exit 0**
-
-HANDOVER COMMAND (the Lead's lease; 400-file draw, which completed inside one turn for this corpus, and
-the drawn population is stated in the artefact because the rule works on shares):
-
-```
-nice -n 10 env BB_DATA_DIR=$PWD/.tmp-hcl/bb-data BB_NIM_TRUTH_REPOS=nim   BB_NIM_TRUTH_MAX=400 BB_NIM_TRUTH_OUT=.tmp-hcl/nim/nim-perrow.json   npx tsx validation/m14/fixtures/hcl/tools/store-binding-truth.nim.mts
-```
-
-Read `TWIN BUCKETS (pre-registered): REACHABLE … · UNREACHABLE … · UNDECIDABLE …` from the log and quote
-the thresholds above into the artefact's first lines BEFORE the run, as was done for the previous one.
-**What the predicate does NOT measure, stated so it is not read as more than it is**: a leaf-text match is
-possible-evidence, not proof, and a nim import written through a computed path matches nothing — those
-rows land in UNREACHABLE, which is why the negative control is the bucket to read beside the share.
-
-### Cause 25 — the PER-ROW predicate LANDED: 0 of 2,132, so the direction is earned on TWO languages
-
-The Lead ran the per-row name-text predicate under his own lease (400-file nim draw), with the instrument's
-`sha256` verified against the declared `a6688e4f5f12189724b1545a9231f2b0fff53e83898a51dab37f8e021bb093e6`
-BEFORE the run and the thresholds quoted into the artefact's first lines, so the run measured the
-committed instrument and nothing else:
-
-```
-TWIN BUCKETS (pre-registered): REACHABLE 0 · UNREACHABLE 2,132 · UNDECIDABLE 0
-share = 0 / 2,132 = 0.0%      (NOT 0/0 — both sides of the ratio are real numbers)
-```
-
-**0.0% ≤ 40% → "TWINS ARE WRONG" STANDS, and the pre-registered consequence follows: the direction is
-earned on TWO languages — nim 0.0% and clean 32.1%, both under the floor — not one.** The third predicate
-succeeded where the pre-registration said there would be no fourth; it did not need one, and the stop was
-written before it was known whether it would be needed.
-
-**TWO TRUE STATEMENTS, AND THEY ARE NOT THE SAME STATEMENT** (the distinction fixed before the run):
-* **"0 of 2,132 twins bind to a file that a BOUND import reaches"** — REACHABLE required a bound import row
-  whose target file IS the twin's bound file, the only case that is evidence rather than possibility, and
-  it held **0 times**. That is a strong, decidable fact.
-* **"all 2,132 are unreachable"** — bounded by the name-text test, **in the direction that inflates
-  UNREACHABLE**, because a nim import written through a computed path matches nothing.
-
-Also read from the same artefact: `no candidate ANYWHERE 0` · **`NAME-SPACE LEVER PRICE 0`** (no row whose
-own file answers to the target while the store bound elsewhere or nowhere) · `scopedWouldMove 0` from the
-earlier run — **so nim has NO ignored-own-declaration defect at all: its twins are entirely OTHER-FILE
-bindings whose source cannot reach them.** And `boundNeedsLeafReduction 5` against hcl's 12,014 confirms
-why nim was the strongest population for this test — and why its earlier 100% undecidable reading was a
-property of that predicate rather than of the corpus.
-
-**THIS PAGE'S OWN LEDGER, corrected twice by measurement rather than by argument**: the headline claim
-"two languages and four repositories" was retracted when the second predicate returned 0/0 (Cause 23) and
-is now **restored by a better measurement** — nim 0.0% (0 of 2,132) and clean 32.1% (625 of 1,950) — with
-the margin still NOT earned as a fleet statement, `UNDECIDABLE` still not portable, and a bare `twin`
-column still not readable as a defect count anywhere.
-
-### Is hcl COMPLETE under the four clauses? NO — clause 1 fails by 4,034 edges
-
-| clause | verdict |
-|---|---|
-| 1. every emitted edge of every applicable type resolves to exactly one real declaration | **FAILS — 4,034 store-unbound rows** (references 2,082 · imports 1,347 · uses 419 · contains 174 · exports 12), plus the wrong-binding classes that are bound but not intended: references other-file 14,302 · exports 1,858 · contains 3,170 |
-| 2. ambiguity and unresolved classified by NAMED cause with a measured count | PASSES — every bucket above is split by named root class on the store-unbound population, and the model-vs-store gap is itself named (I13 leaf rebinding) |
-| 3. each cause fixed with a before/after over the SAME population, or ruled legitimate with evidence | PARTIAL — `contains` is RULED (97,339/97,550 resolved; the model bucket was an instrument artifact); `exports` is measured (99.9% bind, 15.5% cross-file); `references`, `uses`, `imports` are NAMED and COUNTED but not yet fixed or ruled |
-| 4. `extFAIL` / `bindFAIL` / `causeFAIL` all zero | **HOLDS — 0 / 0 / 0** |
-
-`hcl` is NOT among the analyzers affected by `a82e4134d` (`projectRoot` never passed): the readers of
-that parameter are dart, json, php, toml, typescript and yaml — **hcl is not one of them**, and this
-lane's numbers are unaffected by that defect rather than merely unexamined for it.
-
-### A population finding the comparison forced: the gates classify files the indexer never reads
-
-The probe asked production's OWN discovery (`discoverIndexableFiles`) what it would index, and for
-terraform the answer is **78 of 2,299 HCL files — 2,221 (96.6%) sit under `testdata/`** and are skipped
-by the indexer's built-in ignore for test-data directories, which the `ignore` package matches
-CASE-INSENSITIVELY (measured: that one glob reports `ignored=true` for `testdata/x.tf` AND for
-`a/testData/b.tf`). The ontology and incoming gates build their population from `git ls-files` + the
-language router, so their HCL tables classify edges from files production NEVER INDEXES. Both numbers
-are therefore reported here, and the store comparison above runs over the indexer-eligible set
-(`indexer-eligible 78 of 2299 copied; top exclusions testdata=2221`).
-
-**KILLED, reported as KILLED:** the whole-population `incoming-gate.ts hcl hcl 0` run never started —
-`flock -w 600` returned exit 9 (the heavy lock was held by another lane for the whole window). The
-marker table quoted earlier is SAMPLE scope, labelled; the residual table above is the residual gate's
-own whole-population run.
-
-**The `xml-ruled.ts` question, answered rather than assumed:** HCL has NO ruling table —
-`script/m14/hcl-ruled.ts` does not exist and `RULED_BY_LANG` has no `hcl` entry — so an element-only
-probe cannot be hiding here. Its absence claims come from the spec's HCL-D1a plus
-`validation/m14/fixtures/hcl/ruling-attestation.json`, which attests THREE spaces (node-types,
-block-types, attribute-keys) with pointers the gate verifies, and the key-space check enforces that
-fleet-wide.
-
-## 9. Reproducing every number here
-
-```bash
-# the firing sample (control prints itself; exit 3 means do not trust the SILENT column)
-NFILES=120 bun script/m14/firing-check.mjs HCL
-
-# the whole-corpus construct census (tree pass, ~20 s; control exits 3 if it cannot see a planted case)
-npx tsx validation/m14/fixtures/hcl/tools/construct-census.mts
-# …and the edge pass over every file, when the machine allows it
-BB_HCL_CENSUS_EDGES=1 npx tsx validation/m14/fixtures/hcl/tools/construct-census.mts
-
-# the declaration
-npx tsx script/m14/coverage-block-gate.ts
-BB_BOARD_FIRING=validation/m14/results/firing-laptop-b.current.log bun script/m14/language-board.ts --coverage
-npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh
-
-# the shared gate's space check, and its own control (the control also runs unasked, and exits 3)
-npx tsx script/m14/ontology-coverage-gate.ts --self-test
-
-# the store-level truth (needs a writable data dir; see the probe's header)
-BB_DATA_DIR=$PWD/.tmp-hcl/bb-data npx tsx validation/m14/fixtures/hcl/tools/store-binding-truth.mts
-
-# the residual worklist
-# the fixture lane
-npx tsx script/m14/run-fixtures.ts --lang hcl
-```
-
-Raw artefacts: `validation/m14/fixtures/hcl/construct-census.current.json` (census),
-`validation/m14/results/firing-laptop-b.current.log` (firing sample),
-`docs/analyzers/real-hcl-analyzer.md` (the prior whole-corpus census and the analyzer's contract).
+# HCL / Terraform analyzer
+
+## Language
+
+- Analyzer: `src/ast/real-hcl-analyzer.ts`
+- Parser: `wasm/tree-sitter-hcl.wasm`, loaded as `tree-sitter-hcl`
+- Detection: `.tf`, `.tfvars`, `.tofu`, `.hcl` → `hcl` in
+  `src/ast/language-detection.ts:85`. Three corpus formats that route nowhere are
+  recorded under **Declared limitations**.
+- Grammar pin: `grammars/tree-sitter-hcl/` (vendored source +
+  `src/node-types.json`), gated by `script/m14/verify-grammar-pins.ts`.
+  Upstream `tree-sitter-grammars/tree-sitter-hcl@64ad6278`, package
+  `@tree-sitter-grammars/tree-sitter-hcl@1.2.0` (Apache-2.0), wired wasm
+  sha256 `86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118`
+  (92,478 bytes). Measured agreement: **64 named types / 2 fields (`key`,
+  `val`), 0 missing, 0 extra** in both directions. See `PIN.md`.
+- Wiring: `ASTEngine` → `RealHclAnalyzer`
+
+## What each of the relationship types means IN THIS LANGUAGE
+
+The general taxonomy is not self-explanatory for a configuration language, so
+each entry says what the edge asserts here, and what it is not.
+
+| Type | What the edge asserts in HCL | What it is not |
+| --- | --- | --- |
+| `contains` | lexical containment: document → top-level block → nested block → attribute | not module membership. Terraform merges every `.tf` file in a directory into ONE module, and this analyzer has no cross-file view, so a `contains` edge never spans files |
+| `references` | the enclosing block READS that fully-qualified project address (`var.x`, `local.x`, `module.x`, `data.T.N`, `T.N.attr`) | not a write, and not an override — an override target is `overrides` (below) |
+| `uses` | the enclosing block reads a **language builtin**: `count.index`, `each.k`, `self.a`, `path.k`, `terraform.k` | not a project symbol. No file can declare `count`, so publishing these as `references` asserted a declaration that does not exist |
+| `overrides` | an `override_resource` / `override_data` / `override_module` block REPLACES the values of the declaration its `target` names | not a read and not inheritance. The source is the override block, not its enclosing block |
+| `calls` | the enclosing block calls a **callable this same file declares** (`function "f" {}`) | not a call to a Terraform global. `merge(…)`, `length(…)` and `provider::test::is_true(…)` declare nothing a repository can declare, so they carry no edge |
+| `exports` | the document root publishes a top-level block as part of its surface | not a module export in the JS sense; a Terraform module's outputs are `output` blocks, which are among the exported blocks |
+| `imports` | a `module` block names an external module by its `source` path | not a code import. The target is a filesystem path or a registry coordinate and binds to no symbol |
+| `part_of` | a terragrunt `include` block SPLICES the included file's configuration into this document: terragrunt merges the included blocks into the child, so the included file is a PART of this one | not module inclusion. A `module { source = … }` is a separate unit addressed `module.NAME.*` whose members never become this document's own; it earns `imports`, never `part_of` |
+| `extends` | — (ruled, below) | HCL has no type declaration to extend |
+| `implements` | — (ruled, below) | HCL has no interface to implement |
+| `instantiates` | a `resource` / `data` block constructs an instance of the PROVIDER TYPE its first label names (`resource "aws_instance" "web"` instantiates `aws_instance`); the source is the document root, the target is the type label as written, and `metadata.instanceType`/`instanceKind`/`instanceName` say which instance and which half of the provider schema | not a declaration — a provider type is declared by a provider BINARY, in no repository, so the target resolves externally or not at all, and no symbol is invented for it. IMPLEMENTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 blocks over 444 labels, 0 labels declared as a type |
+| `mixes_in` | — (ruled, below) | no HCL construct composes a MEMBER SET from one declaration into another; `dynamic` repeats a member set the enclosing block itself writes, and `lifecycle`/`provisioner` are already `contains` |
+| `decorates` | — (ruled, below) | no HCL construct applies a CALLABLE to a declaration. `validation` / `precondition` / `postcondition` are assertion blocks whose condition is EVALUATED, and `depends_on` is ordering metadata — both are already `contains`/`references` |
+| `renders` | — (ruled, below) | HCL HAS templates (`quoted_template` 3,710, `heredoc_template` 3,506) and they render STRINGS from text plus values — no construct names a DECLARATION as the rendered target (`templatefile()` 60 sites, 0 literal paths; 0 declaration-target candidates) |
+
+## Relationship ontology — what was changed in this wave
+
+Two of the five types believed missing at handover are emitted now, and both
+were found by measuring the corpus rather than by reading the analyzer:
+
+- **`overrides` was not missing. It was MISLABELLED.** Terraform has a dedicated
+  spelling for replacing a declaration's values — `override_resource` /
+  `override_data` / `override_module`, each with a `target` — and the analyzer
+  read that `target` as an ordinary `references` read, because the reference
+  reader reached the attribute before anything knew the enclosing block was an
+  override. Measured: **71 such blocks across 33 corpus files**, 68 carrying a
+  `target`. The edge is now `overrides` and the `references` edge is SUPPRESSED
+  rather than duplicated, so the retype costs the graph no edge. Pinned by
+  `hcl/override-target-not-reference`, which forbids the `references` label in
+  both the top-level and the nested form.
+- **`calls` was not inapplicable. It was unmeasured.** HCL has no
+  function-declaration production, but the ecosystem layers one on top of the
+  container grammar, and the corpus contains it: **`function "bindir"` at
+  `docker/docker-bake.hcl:56`, called on lines 101, 106, 137 and 151.** A callee
+  becomes an edge only when a `function` block in the same file declares it, so
+  the 12,968 unqualified and 20 namespaced `function_call` nodes elsewhere in the
+  corpus still produce nothing. Pinned by `hcl/declared-function-call`.
+
+**The two measurements were made by two different walkers and agree.**
+`hcl-construct-probe.ts` counts on the parse tree, matching each `function_call`
+callee against the `function` blocks it finds; `parseFile` counts what the
+analyzer's DFS emits after resolving its pending call sites. Both report **4**,
+and the probe names the callee (`bindir x4`) while the census names the file
+(`docker/docker-bake.hcl`, 4 edges). The four non-declared classes in the same
+probe are the collision classes, counted rather than waved through: of the
+12,968 unqualified call nodes, **5,902** match only a block LABEL (`target "list"`
+makes `list()` look declared), **1,383** match only an attribute or object key,
+and **5,679** match no declared name at all.
+
+**Five other emitted types are unchanged**: `contains`, `references`, `uses`,
+`exports`, `imports`.
+
+### The rest of the ontology, unchanged
+
+- `contains` — parent → child block / attribute, qualified.
+- `references` — enclosing block → a **project** Terraform address, from a maximal
+  run of `variable_expr` + `get_attr`. Families: `var.<n>`, `local.<n>`,
+  `module.<n>`, `data.<type>.<name>.<attr>`, `<resource_type>.<name>.<attr>`.
+- `uses` — enclosing block → a **language builtin**: `count.index`, `each.<k>`,
+  `self.<attr>`, `path.<k>`, `terraform.<k>`. These resolve to nothing in the
+  index because no file can declare them, so they are the `uses` class (the
+  global namespace) rather than `references`, following the house precedent at
+  `real-sql-analyzer.ts:1569`. Carries `metadata.evidenceClass: "builtin_qualified"`
+  and `hclBuiltin: true`.
+- `exports` — document root → each top-level block, alongside the `exports` array.
+- `imports` — a `module` block → its `source` path, alongside the `imports` array
+  (the same pairing C uses for its include edges: the array is the declaration
+  list the indexer persists, the edge is what the graph draws).
+
+Every relationship carries **`line_number`**, the 1-based line of the node the
+target name is written on — the reference's own `variable_expr`, an attribute's
+key, a block's header, a module's `source` key, a function callee's identifier,
+an override's `target` key. This is the field the product reads
+(`parallel-indexer.ts:2789,4393` persist only `rel.line_number`;
+`graph.ts:526` surfaces only that), so an edge under any other spelling is stored
+`NULL`. Measured: **216,541 / 216,541 (100 %)**. Dedupe is **per-site**: the key
+includes the line, so one target referenced from two lines is two edges.
+
+`metadata.evidenceClass` follows the M14 honesty taxonomy, as C and C++ use it:
+`structural` (containment, the public surface, and the two new types —
+`overrides` and `calls` are both parser-deterministic), `reference_qualified` (a
+fully-qualified **project** address, never a bare-name guess), `builtin_qualified`
+(a **builtin** address), and `import_based` (a module's `source`). HCL emits
+**no** `usage_contextual` or `inferred` edge at all — every fact is read off the
+AST at confidence 1.0 — so those tiers do not apply and their absence is the
+record, not an omission. `builtin_qualified` is NOT one of the five tiers
+`src/lsp/evidence_tier.ts` declares, so a stored `uses` row falls through to that
+module's derivation and reads `usage_contextual` there; see **Findings for the
+supervisor**.
+
+## Symbol contract
+
+A root `module` symbol named from the file stem is emitted first, so the
+containment graph has a trunk and every non-root symbol has an owner (the
+JSON/YAML/SQL/XML convention).
+
+| Construct | Symbol kind | AST source | Identity |
+| --- | --- | --- | --- |
+| document root | `module` | `config_file` | file stem (`Infrastructure.tf` → `Infrastructure`) |
+| `resource` block | `class` | `block` | `<resource_type>.<name>` (Terraform address) |
+| `data` block | `class` | `block` | `<data_type>.<name>`, or the block type when label-less |
+| `variable` / `output` block | `variable` | `block` | `<name>` (single label) |
+| `module` / `provider` block | `module` | `block` | `<name>` |
+| `terraform` / `locals` | `module` | `block` | block type (no label) |
+| `function` block | `class` + `metadata.hclFunctionDecl` | `block` | `<block_type>.<label>` |
+| `override_*` block | `class` | `block` | block type, or `<block_type>.<label>` |
+| nested block (`lifecycle`, `backend`, `dynamic`, `content`, …) | `class` | `block` | `<block_type>` or `<block_type>.<label>` |
+| attribute / argument | `property` | `attribute` | enclosing-block path plus attribute key |
+
+Every symbol carries an AST-derived range (1-based line/column, byte offsets), a
+`complexity` (its own subtree's node count, memoised so the whole analysis stays
+O(nodes)), `qualifiedName`, a dot-qualified `scope`, and `ownerName`/`ownerKind`.
+
+**`ownerName` is the parent's leaf name; `scope` is the parent's qualified path.**
+They are two different facts and are never the same string except at the top
+level, where the parent is the document.
+
+**Sibling disambiguation.** Terraform repeats `locals` legitimately and
+`moved`/`removed`/`import` one-per-move by design, and the HashiCorp DSLs repeat
+label-less blocks (waypoint's `parameter`). Such siblings get an ordinal suffix —
+`locals`, `locals#2`, `locals#3` — with the unsuffixed Terraform address kept in
+`metadata.hclAddress`, so nothing about the address is lost. The top-level
+sibling map is **seeded with the document root's name**, so `moved.tf` holding
+`moved {}` gives the document the bare name and the blocks `moved#2`…; measured
+at 308 corpus sites that collision would otherwise create. A top-level attribute
+of a flat document is disambiguated the same way (`project = "hello"` in
+`project.hcl`).
+
+The disambiguation is per LEVEL, so two blocks legitimately share a leaf name at
+different depths — `override_resource` at the document root and
+`run.test.override_resource` inside a `run` block are distinct symbols with
+distinct qualified paths. That is why the `overrides` edge source is a qualified
+path and not a leaf name.
+
+A repeated **attribute key inside one block** is deliberately *not*
+disambiguated: Terraform rejects it outright ("Attribute redefined"), so the
+collision is inherited from invalid input. Measured on this corpus: **21 repeated
+`(scope, name)` identities**, and every one is an attribute key rather than a
+block — `terraform.backend.local|path` on two lines, `duplicate|foo` in a file
+named `duplicate.tfvars`, `storage.raft|retry_join` eight times.
+
+Block metadata: `hclBlockType`, `hclLabels`, `hclBlockKind`
+(`resource`/`data`/`variable`/`output`/`module`/`provider`/`terraform`/`locals`
+or `nested`), `hclAddress`, `hclDuplicateIndex`, and `hclFunctionDecl` on a
+`function` block. Attribute metadata: `hclValueKind` (the grammar node type that
+actually describes the value — the `operation` wrapper is unwrapped to
+`binary_operation`/`unary_operation`), `hclAddress`.
+
+**Symbol metadata does not cross the worker boundary.** `pool-worker.ts:960`
+forwards a fixed allowlist of symbol-metadata keys and none of the `hcl*` keys
+are on it, so `hclFunctionDecl` — like `hclBlockType`, `hclAddress` and every
+other key above — is readable from `analyze()` and from the fixture lane but not
+from `parseFile`. Relationship metadata has no such filter and does cross.
+Recorded for the supervisor rather than worked around: the fix is a shared file.
+
+## Verdicts — all ten types
+
+Measured with `validation/m14/measurements/hcl/hcl-corpus-census.ts` (production
+`parseFile` from `src/ast/pool-worker.ts`, never `analyze()`) and
+`validation/m14/measurements/hcl/hcl-construct-probe.ts` (instruments A and B).
+Corpus — **TWO populations, and every count on this page says which one it is.** The **CENSUS** is
+**9,329 tracked files / 16 repositories / 2,035,319 nodes** (root `$HOME/fixtures/repositories`,
+exts `tf,hcl,tfvars,tofu`, files present on disk and ≤1 MiB; the lane's own walk) — every construct count
+below is a CENSUS count. **THE ARM POPULATION IS 11,139 admitted** (the gate's own line, root
+`$PWD/.corpus`, same extensions; 38 width-300 slices, contiguous [0, 11,139), closure exact 307,748) and
+IS the declaration's (`validation/m14/instruments/hcl/incoming-declaration.json`). A count from one
+population is never quoted as the other's.
+
+| Type | Verdict | Edges | Files | Example sites |
+| --- | --- | --- | --- | --- |
+| `calls` | **EMITTED** (ruled inapplicable at handover) | 4 | 1 | `docker/docker-bake.hcl:101,106,137,151` → `function.bindir` |
+| `uses` | EMITTED | 2,073 | 579 | `boundary/enos/enos-scenario-e2e-aws-rdp-base.hcl:29` → `path.root` |
+| `contains` | EMITTED | 138,570 | 8,343 | `terraform/internal/command/testdata/plan-modules-race/mod0/main.tf` |
+| `imports` | EMITTED | 2,041 | 1,403 | `boundary/enos/ci/hcp-resources/main.tf:35` → `../../modules/aws_ssh_keypair` |
+| `references` | EMITTED | 42,122 | 3,807 | `terraform-aws-components/…/context.tf` → `module.this.context` |
+| `exports` | EMITTED | 31,663 | 8,343 | every top-level block of every file |
+| `extends` | **RULED** | 0 | — | instrument A, below |
+| `implements` | **RULED** | 0 | — | instrument A, below |
+| `overrides` | **EMITTED** (ruled inapplicable at handover) | 68 | 33 | `terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl` |
+| `instantiates` | **RULED** | 0 | — | instrument B, below |
+
+Totals for the same census: **147,485 symbols, 216,541 relationships, 2,044
+imports, 40,987 exports**, 84 files carrying syntax errors, 14 files yielding no
+symbol. `SymbolKind` values: `property` 97,883, `class` 19,100, `variable`
+15,496, `module` 15,006 — **0 empty kinds, 0 `unknown` kinds, 0 empty names, 0
+empty qualified names, 0 ownerless properties, 21 repeated `(scope, name)`
+identities** (all attribute keys; see the symbol contract).
+
+### Before and after, same corpus, same commit
+
+Two censuses of the same 9,329 files minutes apart, one with the analyzer at
+`HEAD` and one with this wave's analyzer in place:
+
+| Type | before | after | delta | attributable to this change |
+| --- | --- | --- | --- | --- |
+| `overrides` | 0 | 68 | **+68** | all 68 |
+| `calls` | 0 | 4 | **+4** | all 4 |
+| `references` | 42,195 | 42,122 | −73 | −68 (the retyped override targets); −5 is run noise |
+| `contains` | 138,586 | 138,570 | −16 | 0 — noise |
+| `exports` | 31,667 | 31,663 | −4 | 0 — noise |
+| `imports` | 2,042 | 2,041 | −1 | 0 — noise |
+| `uses` | 2,073 | 2,073 | 0 | 0 |
+| extends / implements / instantiates | 0 | 0 | 0 | 0 |
+| **relationships total** | 216,563 | 216,541 | −22 | **+4** (the `calls` edges); −26 is noise |
+| **symbols total** | 147,504 | 147,485 | −19 | 0 — noise |
+
+**Payload budget.** The graph effect is **+4 edges net**: the 68 `overrides`
+edges are the 68 `references` edges retyped, not duplicated, and the 4 `calls`
+edges are new. Measured against the workstream's stated concern — `bb_graph`'s
+un-narrowed default at 2.5–4.8× a kind-filtered query — 4 edges on 216,541 is
+0.0018 % of HCL relationship volume and no budgeted lane moves. No budget file
+was touched.
+
+**The noise floor, stated rather than hidden.** Two censuses of the SAME analyzer
+commit over the same corpus, minutes apart, gave **147,370 vs 147,485 symbols**
+and **216,284 vs 216,541 relationships** — so the run-to-run spread is ±115
+symbols and ±257 relationships. That is why the per-type deltas above are
+attributed only where they exceed it: `overrides` 0 → 68 and `calls` 0 → 4 are
+unambiguous, `references` −73 against a −68 expectation leaves −5 of noise, and
+the totals carry −26 relationships of noise against a +4 real change. The cause
+is the worker pipeline under load, not the grammar: see **Not reproducible
+byte-for-byte**.
+
+### RULED: `extends`, `implements`
+
+- **Instrument: A — grammar inventory.**
+- **Probe:** enumerate every node type the grammar produces across the whole
+  corpus, and every block type its containers declare, then ask whether any of
+  them expresses a type declaration, a base clause or an interface list.
+- **Measured:** **64 named node types and 37 anonymous token types** over
+  2,035,319 nodes; **455 distinct block types**. Of 18 declaration-shaped node
+  types probed (`class_declaration`, `interface_declaration`,
+  `struct_declaration`, `trait_declaration`, `enum_declaration`,
+  `type_declaration`, `base_clause`, `superclass`, `extends_clause`,
+  `implements_clause`, `interface_specifier`, `inheritance_specifier`,
+  `type_parameter`, `object_type`, `annotation`, `modifiers`, `type_identifier`,
+  `superclass`), **0 are produced**. Of the 455 block types, **0** are named
+  `class`, `interface`, `struct`, `trait`, `enum`, `extends`, `implements`,
+  `base`, `super`, `protocol` or `func`.
+- **The three near-misses, checked rather than waved through.** `type` occurs as
+  a block type **3** times, and all three are waypoint plugin config sections
+  (`plugin "go1" { type { mapper = true } }` in
+  `waypoint/internal/config/testdata/plugins/explicit.hcl`); `method` occurs
+  **60** times and all sixty are vault's `auto_auth { method { … } }` config
+  section; `function` occurs **once** and is a real callable declaration, which
+  is why `calls` is EMITTED above. None of the three is a type declaration.
+- **Overturn condition:** a corpus file containing a `block` whose type is a
+  declaration keyword, or any tree producing one of the 18 probed node types.
+  `hcl-construct-probe.ts` prints both inventories in full, so a new type cannot
+  arrive without appearing in that output.
+
+### RULED: `instantiates`
+
+- **Instrument: B — parse-tree semantic count.** A grammar inventory cannot
+  settle this one: the language *can* express an instantiation
+  (`resource "T" "n" {}` builds an instance of `T`), so the question is whether
+  any file declares the thing being instantiated.
+- **Probe:** count `resource` / `data` blocks whose TYPE LABEL is declared by a
+  declaration form other than `resource` / `data` — i.e. an instantiation whose
+  target the index could bind.
+- **Measured:** **3,931** `resource`/`data` blocks over **439** distinct type
+  labels. **891** match a `mock_resource` / `mock_data` / `mock_provider` label
+  (`aws_instance` 563, `test_resource` 201, `test` 35, `aws_s3_bucket` 60,
+  `aws_availability_zones` 12, `test_data_source` 17). Every other type label is
+  declared by the **provider binary**, which is in no repository. The 891 are
+  Terraform's test-mocking declarations: a `mock_resource "aws_instance"` says
+  "for this aliased provider, instances of `aws_instance` are mocked", and a
+  resource block of that type does take the mock — but a `mock_resource` is a
+  mock, not a type, and publishing `instantiates` against it would assert a type
+  declaration that does not exist and would fire on 3,040 blocks whose type is
+  genuinely external. So no edge is published and the count is recorded instead.
+- **Overturn condition:** a corpus file declaring a named **type** — as opposed
+  to a mock, a data-source label or a resource type — that a `resource` or `data`
+  block instantiates. On the day that appears, this ruling is wrong and
+  `instantiates` becomes EMITTED.
+
+### The construct that was believed absent and was not
+
+`overrides` and `calls` are the reason this wave exists. The handover note listed
+both as missing on the strength of a prose argument, and the prose was wrong in
+the same way for two different reasons:
+
+- **`overrides`** — the argument was "HCL has no redefinition semantics, so no
+  override can exist". The premise is true of the **grammar**: instrument B's
+  redefinition probe finds **858** repeated block addresses (enclosing path +
+  type + labels) and 1,843 repeated attribute keys in a single file, and
+  `hashicorp/hcl` returns every block of a type rather than replacing any. But
+  Terraform does not express an override by repeating a declaration — it has a
+  **dedicated block type for it**, and there are 71 of them. A ruling phrased
+  about the grammar was answering the wrong question.
+- **`calls`** — the argument was "0 of the 64 node types declare a function".
+  Also true, and beside the point: a function declaration in this ecosystem is an
+  ordinary one-label block, so it never needed a node type. There is exactly one
+  in the corpus and it has four call sites.
+
+### The `unknown` endpoint question, stated rather than waved through
+
+Standing rule R7 (`validation/m60/ledger.json`) forbids an analyzer from NAMING
+something with the placeholder literal `unknown`. This corpus produces **33
+relationship endpoints and 18 symbols literally named `unknown`**, across 15
+files. Every one is a real declaration: `variable "unknown" {}` and
+`resource "aws_instance" "unknown" {}` in tflint's inspection fixtures,
+`component "unknown" {}` in terraform's stacks testdata. `unknown` is a legal
+HCL identifier, so the analyzer is reporting the source faithfully and no
+placeholder is being invented. The tension is real and it is recorded under
+**Findings for the supervisor**: a consumer that filters `target != 'unknown'`
+drops 33 true edges.
+
+### Not reproducible byte-for-byte
+
+Two censuses of the same 9,329 files by the SAME analyzer commit, minutes apart,
+differed: **147,370 vs 147,485 symbols**, **216,284 vs 216,541 relationships**,
+and **12 vs 14 files yielding no symbol**. The parser is deterministic — a single
+file parses to the same tree in 4–7 ms in isolation, including the file the pool
+worker reported as `[BB-HANG] … stuck 120s` under six concurrent agents
+(`terraform/internal/configs/testdata/config-diagnostics/unexpected-provider/mod/main.tf`,
+32 bytes, `resource "foo_resource" "a" {}`). The variance is in the worker
+pipeline under load — parse timeouts and truncation — not in the grammar. Every
+number in this document is a single measured run and is labelled as such.
+
+## The six questions, per emitted type
+
+Measured on the same census. "Bound" means bound to a symbol row by the same
+resolution the indexer performs, in the order it performs it:
+`resolveTargetStmt` (`parallel-indexer.ts:2239`, any symbol in the project with
+that NAME) → exact `qualified_name` → unique `name` → the dotted tail after the
+first dot.
+
+| Type | Edges | Target bound | Source bound | Both ends | confidence < 0.7 | `line_number` absent |
+| --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 4 | 4 (100 %) | 4 (100 %) | 4 (100 %) | 0 | 0 |
+| `overrides` | 68 | 50 (73.53 %) | 68 (100 %) | 50 (73.53 %) | 0 | 0 |
+| `uses` | 2,073 | 1,411 (68.07 %) | 2,070 (99.81 %) | 1,409 (68.02 %) | 0 | 0 |
+| `contains` | 138,570 | 138,293 (99.80 %) | 134,166 (96.81 %) | 134,067 (96.61 %) | 0 | 0 |
+| `imports` | 2,041 | 21 (1.03 %) | 1,828 (89.56 %) | 21 (1.03 %) | 0 | 0 |
+| `references` | 42,122 | 29,561 (70.18 %) | 38,352 (91.05 %) | 25,790 (61.25 %) | 0 | 0 |
+| `exports` | 31,663 | 31,430 (99.26 %) | 31,407 (99.28 %) | 31,215 (98.54 %) | 0 | 0 |
+
+**1 — Exists.** All seven are constructed in `real-hcl-analyzer.ts`;
+`RelationshipType.Calls` and `RelationshipType.Overrides` are new in this wave.
+
+**2 — Fires.** All seven produce edges on the corpus; the two smallest classes
+are the two that were believed dead. `calls` fires on **1 file of 9,329** — that
+is the whole population, and it is stated rather than rounded up.
+
+**3 — Correct.** **No independent oracle exists for HCL, and the differential
+refuses to run.** `npx tsx script/m14/differential.ts --lang hcl --repo
+terraform --sample 60` exits with `parsed 60 file(s) and derived ZERO truth
+edges — the parser or the oracle is dead, not clean (a 0/0 row is a fabricated
+pass)`. This is pre-existing, not a consequence of this wave: the identical
+error appears with the analyzer at `HEAD` (verified by reverting the file and
+re-running). `grep 'lang === "hcl"' script/m14/differential.ts` returns nothing,
+so no truth derivation and no label-allowlist entry is registered for this
+language. The consequence is stated plainly: **question 3 is UNANSWERED for every
+HCL type, including the five that were already emitted.** The reference-extraction
+figures this document inherited (recall 0.999931, precision 1.000000 over an
+independent flat-sweep oracle) come from an oracle that no longer runs in this
+tree and are therefore not re-published as current.
+
+**4 — Labelled.** The two new labels are pinned in both directions.
+`overrides`: `hcl/override-target-not-reference` forbids `references` and `uses`
+on the target and forbids `extends`/`implements` into it.
+`calls`: `hcl/declared-function-call` forbids `calls` to `merge`, to `length`,
+to `double` (the call-site spelling rather than the declaration's identity), and
+to a declared-but-uncalled `function.unused`; it forbids `references` to a bare
+single-identifier path. Three mutants per class re-enact the wrong answer and
+are caught: `hcl/override-published-as-reference`,
+`hcl/override-duplicated-as-reference`, `hcl/override-sourced-from-enclosing-block`,
+`hcl/calls-to-every-callee`, `hcl/calls-target-is-the-callee-spelling`,
+`hcl/calls-links-every-declaration`.
+The pre-existing confusion pair (`uses` vs `references`) stays pinned by
+`hcl/builtin-vs-project-reference` and its two mutants.
+
+**5 — Resolved.** The rates above, and the breakdown matters more than the
+headline:
+
+- `imports` at 1.03 % is **correct, not a defect**: the target is a module source
+  path (`./child`, `../../modules/aws_ssh_keypair`,
+  `cloudposse/stack-config/yaml//modules/remote-state`), and the indexer stores
+  it as `target_external`. 21 of 2,041 bind because some symbol happens to share
+  the name.
+- `uses` at 68.07 % is **almost entirely accidental**: 1,397 of its 1,411 bindings
+  come from the dotted-tail strategy matching an unrelated name, and only **14**
+  bind by exact name. This is expected — builtins are declared by nothing — and it
+  is the reason the class is `uses` rather than `references`.
+- `overrides` at 73.53 % splits **21 by exact name** (trustworthy) and **29 by
+  dotted tail** (`aws_instance.second` binding because a symbol named `second`
+  exists), with **18 unbound**. The unbound 18 are concentrated in the corpus's
+  deliberately invalid fixtures — `test_resource.absent_one` (×2),
+  `module.absent_four`, `test_resource.absent_five`,
+  `module.setup.test_resource.absent_three/…_six` in
+  `terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl`,
+  plus `data.aws_instance.test` (×6), `data.aws_subnets.private_subnets` (×2),
+  `aws_launch_template.vm` (×2) and `data.aws_secretsmanager_secret.creds`,
+  where the target module declares nothing under the name the fixture uses. A
+  `bb_impact` answer built on the dotted-tail half could name the wrong symbol;
+  that is a property of the indexer's third strategy, not of this analyzer.
+- `references` at 70.18 % is the largest unbound class in absolute terms
+  (12,561 edges), led by `module.this.context` (761),
+  `module.iam_roles.terraform_role_arn` (236), `module.this.enabled` (233),
+  `step.create_vault_cluster.root_token` (124). These are references into
+  modules declared in *other repositories* of the module tree, so no symbol in
+  this project declares them.
+
+CSS `references` is the workstream's published reference point at 66.8 % of edges
+resolved at both ends; HCL `references` resolves at both ends on **61.25 %**,
+which is 5.55 points below it.
+
+**6 — Confident.** Every edge of every type carries `confidence: 1`, and **0 of
+216,541 relationships are under 0.7**. The heuristic ratio for this lane is
+therefore **0 of 216,541**, and it is countable: the census prints the `<0.7`
+column per type on every run. `evidenceClass` per type, from the same census:
+`structural` 138,570 (`contains`) + 31,663 (`exports`) + 68 (`overrides`) + 4
+(`calls`) = 170,305; `reference_qualified` 42,122 (`references`);
+`builtin_qualified` 2,073 (`uses`); `import_based` 2,041 (`imports`). Sum
+216,541.
+
+## Reference extraction — the three rules that are easy to get wrong
+
+1. **A path is a maximal CONSECUTIVE run of `variable_expr`/`get_attr` read over
+   `child()`, not `namedChild()`.** The grammar wraps arithmetic and comparison
+   operands in `operation → binary_operation`, whose children are the same
+   sibling run — reading only named children walks over the `+` and welds
+   `var.a + var.b` into `var.a.var.b`.
+2. **A node may hold several runs.** A leftover `variable_expr` from a second
+   operand forms no path on its own; the second operand has to be read in its
+   parent's context.
+3. **`index`/`splat` end the run without contributing a segment** — Terraform
+   resolves `aws_instance.web[*].id` and `var.list[0]` against the address
+   accumulated so far — but are still descended into, because
+   `var.map[var.key]` writes a real reference inside the index.
+
+### What is a loop local
+
+| Binds | Named by | Scope |
+| --- | --- | --- |
+| `for` expression | `for_intro` identifiers | the whole for-expression — declaration, result **and** condition |
+| `dynamic` block | the `iterator` attribute, or the block's own **label** when absent | that block's own body, and nothing else |
+
+The `dynamic` scope is per-block, not per-enclosing-subtree: a resource carrying
+`dynamic "assume_role"` and `dynamic "vpc"` must keep publishing its `vpc.*`
+reads. Bindings are counted, so a name is suppressed only while a block that binds
+it is still open.
+
+### What is not a reference
+
+Object-literal keys (read through the grammar's `key` FIELD, so a key that has any
+token before it is still excluded), `for`-intro variables, `dynamic` loop locals,
+function names, and bare single-identifier paths — `type = string` is a
+type-constraint keyword. A real Terraform reference is always qualified.
+
+## Flat documents
+
+A flat attribute map is a legitimate HCL document and a `*.tfvars` file is nothing
+else. Every top-level attribute is a `property` owned by the document root, so
+consul-style agent config, `enos.vars.hcl` and every tfvars file yield symbols
+rather than nothing.
+
+## Syntax errors
+
+Owned by `ASTEngine` (tree-sitter ERROR/MISSING); the analyzer declares none of
+its own. It **descends through** ERROR nodes, so a declaration that survived
+inside a damaged region is still emitted — the swallow class (#907). Measured on
+this corpus: **76 files carry an ERROR or MISSING node** (246 ERROR nodes, 0
+MISSING) and still yield symbols; 84 files arrive at the census carrying a
+reported error of some kind. The one shape that is genuinely unreachable, where
+the grammar emits no `block` node at all under Go-template damage, is ruled in
+`script/m14/spec/hcl-completeness.json` HCL-D4 with a minimal reconstruction in
+`reviews/hcl/master-review.md` § 6.
+
+## Regex inventory
+
+The analyzer contains **zero** regular-expression literals and no
+`RegExp`/`match`/`replace` calls. The only `split` is `content.split("\n")` for a
+line count. Labels come from the `template_literal` grammar field, object values
+from the `val` field, function callees from the `function_call` node's `identifier`
+child, and all reference extraction is node-type and field driven.
+
+## The extended values — what each one was measured against
+
+`part_of` is EMITTED at R3 (HCL-D11): terragrunt `include` SPLICES the included file's configuration
+into the child, so the included file is a PART of the including document. Whole admitted population:
+287 include blocks, 22 literal `path` (all inside the admitted set), 265 computed
+(`find_in_parent_folders(...)` / interpolated templates, refused), and exactly 22 `part_of` edges over
+17 files — 22/22 literal sites, the census's own control. A module `source` is the discriminator, not
+this relation: 2,042 sites, members stay namespaced `module.NAME.*`, so `imports` only.
+
+`instantiates` is EMITTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 `resource`/`data` blocks over 444
+distinct type labels, and **0 of those labels is a declaration of a TYPE** in the corpus — the 42
+address collisions are 14 variables / 12 modules / 6 outputs / 2 providers / 4 label-less resource
+blocks / 1 label-less data block / 3 DSL blocks, i.e. NAMES that happen to spell provider types, and
+997 of the 3,932 sites carry one, so the arm's `resolved` column for this type is an UPPER BOUND on
+correct type binding. Shape pinned by `instantiates-resource-type.tf` (pre-change 13 pass / 1 fail,
+post-change 14 pass / 0 fail).
+
+`decorates` is RULED (HCL-D14): the decoration-shaped constructs are `validation` 1,228 (992 carrying a
+function call inside the CONDITION — evaluated, never applied), `precondition`/`postcondition` 57 (16
+with a call), and `depends_on` 883 (ordering addresses, already `references`); 0 declaration-attached
+callables over the whole population. R1 has no decorator production in the 64-name grammar, R2 would
+have to invent syntax HCL does not have, R3's only decoration-shaped nodes are those measured near
+misses — so the relation would assert an applied callable the vocabulary does not credit.
+
+`renders` is RULED (HCL-D15) — ONTOLOGICAL, NOT GRAMMAR-ABSENCE: the grammar HAS the template
+productions, and `templatefile()` 60 / `templatestring()` 2 / `template_file`·`template_dir` sources 21
+render a STRING from text plus values; 0 of the 60 templatefile paths is literal and 0 names an admitted
+file, and 0 declaration-target candidates exist over the whole population. R1 has no declaration-target
+notion, R2 would have to invent one, R3's template nodes are already read (interpolated references are
+published), so the relation's second half does not exist.
+
+`mixes_in` is RULED (HCL-D12): 374 `dynamic` blocks write their generated members in the source
+`content` block (15 with nested block children, 359 attribute-only) and iterate VALUES (859 `for_each`
+sites: 306 identifier reads / 263 calls / 218 conditionals / 41 for-expressions / 28 collections / 3
+literals), so it is a loop-over-a-block, not member-set composition; `lifecycle` 227 and `provisioner`
+294 are members the enclosing resource itself declares (already `contains`); module `source` 2,042 keeps
+its members namespaced `module.NAME.*` (HCL-D11).
+
+## Complexity envelope
+
+One iterative DFS over the tree plus one recursive expression walk, with
+Set-backed per-site relationship dedupe — O(nodes + emitted facts), no per-symbol
+relationship scan. `complexity` (subtree node count) is memoised on node id so it
+adds no asymptotic cost. The `calls` resolution adds **no** tree pass: call sites
+are recorded during the expression walk that already visits every `function_call`
+node, and joined against the declaration map after the DFS, because a call may
+precede its declaration in the file (`docker/docker-bake.hcl` declares `bindir` on
+line 56 and calls it on 101). A pre-pass would have doubled the node visits this
+envelope is written against.
+
+**No ms-per-file budget is published.** What is published instead is the
+machine-independent shape: ms per 1k AST nodes flat across size quartiles. Per
+source byte the ratio *falls* as fixed per-file overhead amortises, which is the
+opposite of the O(n²) signature.
+
+## Differential ground truth
+
+**There is none that runs.** See question 3 above: the F5 harness exits on
+`derived ZERO truth edges` for `terraform:hcl`, and it did so identically before
+this wave. The inherited numbers (recall 0.999931, precision 1.000000 over
+9,079 files, `M14.0.F5` at 100 % coverage on two corpora) are **not
+reproduced here** and are not published as current.
+
+## Mutation
+
+| Harness | Result |
+| --- | --- |
+| `script/m14/mutate-analyzer.ts` with `BB_MUTANT_ONLY=hcl/` | **12 / 12 caught** (registry is shared; not edited) |
+| `validation/m14/measurements/hcl/hcl-mutants.ts` | **6 / 6 caught** |
+
+The lane-owned runner exists because `script/m14/mutate-analyzer.ts` is shared
+machinery (workstream §8) and already carries twelve `hcl/*` mutants; the
+precedent for a lane-owned module is `script/m14/fsharp-mutants.ts`. Each of the
+six is a revert of one decision in this wave, documented in the file with the
+defect class and the fixture that catches it.
+
+## Verification
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| Ontology coverage | `npx tsx script/m14/ontology-coverage-gate.ts hcl` | **exit 2 — no ruling table for `hcl`**; see Findings 1 |
+| Relationship-type coverage | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=hcl` | 6 DERIVATION findings; checks 2–4 clean |
+| Completeness sections A–H | `bun run script/m14/completeness-inventory.ts --lang hcl` | **4 of 8 sections FAIL** — A, B, E, F; C, D, G, H pass. Three of the four also FAIL with the analyzer at `HEAD` |
+| Fixtures | `npx tsx script/m14/run-fixtures.ts --lang hcl` | **11 / 11 pass** |
+| Mutation (shared registry) | `BB_MUTANT_ONLY=hcl/ npx tsx script/m14/mutate-analyzer.ts` | **12 / 12 caught** |
+| Mutation (lane-owned) | `npx tsx validation/m14/measurements/hcl/hcl-mutants.ts` | **6 / 6 caught** |
+| Grammar audit | `bun run script/m14/audit-analyzer-grammar.ts` | hcl **PASS**, refs=15, unknown=0, unknownFields=0 |
+| Grammar pin | `bun run script/m14/verify-grammar-pins.ts` | hcl pinned, `copies:mirror=IDENTICAL`, 121 ids / 64 named / 57 anon / 2 fields. `PIN FAILURE julia` is another lane's |
+| Analyzer hygiene | `bun run script/m14/verify-analyzer-hygiene.ts` | hcl clean; 3 findings, all in `cpp` / `haskell` / `elixir`, and the gate's `release blocked` line is theirs |
+| m12 contract probe | `npx tsx script/m12/hcl-contract-probe.ts` | **38 / 38 pass** |
+| Differential | `npx tsx script/m14/differential.ts --lang hcl --repo terraform --sample 60` | **hard error, ZERO truth edges** |
+| Parse success | `bun run script/m14/verify-parse-success.ts` | **no hcl row exists** — the lane has no corpus pin (Findings 3). The run exits 2 on `proxicall:dart`'s moved sample, which is not this lane |
+| Probe battery | `bun run script/m14/verify-probe-battery.ts` | 2 failures, `F9-PROBE-M3710-PHP` and `F9-PROBE-CLEAN-HEAD-PATTERN`; no hcl row |
+
+### Which completeness failures this wave caused, and which it did not
+
+| Section | At `HEAD` | After | Cause |
+| --- | --- | --- | --- |
+| A — structural | FAIL | FAIL | unchanged: the census finds 2 runtime node types (`ERROR`, `MISSING`) in no bucket, which spec decision HCL-D7 argues for and the gate's rule 2 rejects |
+| B — relationship kinds | **pass** | **FAIL** | **caused by this wave**: the analyzer now emits `calls` and `overrides`, and `requiredKinds` for hcl (`script/m14/completeness-inventory.ts:772`) names only the five it emitted before. See Findings 9 |
+| E — differential | FAIL | FAIL | unchanged: no baseline floor row for `terraform:hcl`, because the differential cannot run |
+| F — perf budget | FAIL | FAIL | unchanged: no `avgMsPerFile` row for `terraform:hcl`, same cause |
+| C, D, G, H | pass | pass | — |
+
+**An instrument defect this lane introduced and removed.** The four harnesses were
+first written under `validation/m14/fixtures/hcl/`, as the workstream suggests.
+`completeness-inventory.ts`'s `emittedKinds` (line 1074) reads **every non-`.json`
+file in the fixtures directory** and runs `ASTEngine.parseFile` on it — so four
+`.ts` files were detected as TypeScript and their relationships counted as HCL
+emissions, and section-b reported a phantom `instantiates` for a kind this
+analyzer has never emitted. The harnesses now live in
+`validation/m14/measurements/hcl/`, and the phantom is gone. The finding is kept
+because the same trap awaits the next lane that puts a script in its fixtures
+directory.
+
+Fixtures (one per defect class, each with a `forbid` set naming the specific
+wrong answer): `operation-operand-references`, `dynamic-iterator-scope`,
+`dynamic-sibling-scope`, `sibling-identity`, `moved`, `flat-attribute-document`,
+`object-key-not-reference`, `negative-syntax-error`,
+`builtin-vs-project-reference`, and the two added here —
+`override-target-not-reference`, `declared-function-call`.
+
+## Spec
+
+`script/m14/spec/hcl-completeness.json` buckets all 64 grammar named types (57
+`handled_verified`, 7 `internal_silent`). **Its corpus block and its decision
+HCL-D1 are now stale and the file is not this lane's to edit** — see Findings.
+HCL-D1's ruling on `calls` and `overrides` is falsified by the measurements
+above; its rulings on `extends`, `implements` and `instantiates` still hold, with
+the probes now stated in measurable form.
+
+## Review
+
+`reviews/hcl/master-review.md` — 13 defects (12 fixed, 1 filed cross-language),
+4 rejected after probing, 3 instrument defects found in the lane's own oracle and
+recorded rather than quietly corrected.
+
+## Declared limitations
+
+Not a list of hedges; each entry is a construct that exists, or a measurement,
+that this analyzer does not cover.
+
+1. **`func` — Terraform 1.8+ user-defined functions — is not read.** `function`
+   is measured at 1 declaration and 4 call sites in this corpus; `func`, the
+   Terraform spelling of the same construct, occurs **0** times, so it is not in
+   `FUNCTION_DECL_BLOCKS`. It parses as an ordinary one-label block, so a corpus
+   containing `func "add" { … }` plus a call to `add` would find the declaration
+   emitted as a nested block and **no `calls` edge**. Probe: block type `func` in
+   `hcl-construct-probe.ts` output. Deliberate: every emitted `calls` edge in this
+   lane is backed by a measured declaration, and adding an unmeasured spelling
+   would put an unbacked edge class in the graph.
+2. **Function resolution is same-file only.** The analyzer has no cross-file
+   view, so a `func`/`function` declared in one `.tf` file and called in another
+   of the same Terraform module produces no edge. Measured population: 0 sites
+   (the one declaration and its four calls are in one file).
+3. **A namespace-qualified provider function call binds nothing.**
+   `provider::test::is_true(true)` is a `function_call` node whose callee
+   identifier is the whole `provider::test::is_true` (the grammar's identifier
+   production accepts `:`), and the function is implemented in the provider
+   binary. **20 such calls over 9 distinct callees** in this corpus; none emits
+   an edge.
+4. **The `overrides` source is the override block, and the block has no name.**
+   `override_resource {}` carries no label, so its symbol is the shared leaf name
+   `override_resource` and a second one in the same scope becomes
+   `override_resource#2`. The edge source is therefore a qualified path, which is
+   what disambiguates it; a consumer keying on the leaf name alone cannot tell
+   two override blocks in one scope apart.
+5. **`.tfcomponent.hcl` and `.tfmock.hcl` route by their `.hcl` suffix, but
+   `.tfcomponent` and `.tfmock` are not declared extensions.** Terraform Stacks
+   components and mock files reach the analyzer only because they end in `.hcl`.
+   A `foo.tfcomponent` with no `.hcl` in the name would not be routed at all.
+6. **Go-template damage.** A file that is a Go `text/template` named `.hcl` parses
+   as HCL and its `{{- range .x }}` reads as a two-segment path. This is the
+   entire measured reference-recall residual of the inherited differential and is
+   ruled in spec decision HCL-D3; the emission is faithful to the bytes.
+7. **`builtin_qualified` is not a declared evidence tier.** The five tiers in
+   `src/lsp/evidence_tier.ts` are `structural`, `import_based`,
+   `usage_contextual`, `reference_qualified`, `inferred`. HCL's `uses` edges carry
+   a sixth label, `builtin_qualified`, which that module treats as an unclaimed
+   store label and therefore re-derives — so a `uses` row reads `usage_contextual`
+   on the LSP surfaces while the stored metadata says `builtin_qualified`. 2,073
+   corpus edges are affected. Reported, not changed: the label is pinned by an
+   existing fixture and the tier vocabulary is a shared file.
+8. **No HCL symbol metadata reaches the index.** `pool-worker.ts:960` forwards a
+   fixed allowlist of symbol-metadata keys; no `hcl*` key is on it. Every
+   `hclBlockType` / `hclAddress` / `hclFunctionDecl` value is therefore readable
+   from `analyze()` and from the fixture lane but **not** from `parseFile` or from
+   `brain_symbol`. Relationship metadata has no such filter and does cross, so
+   `hclOverrideKind`, `hclCallee`, `hclBuiltin` and `evidenceClass` survive.
+9. **The census is not byte-reproducible under load.** Two runs over the same
+   9,329 files differed by 115 symbols and 2 empty files, and one file was
+   reported `[BB-HANG] parser stuck 120s` under six concurrent agents while
+   parsing in 4–7 ms in isolation. Every number here is one measured run.
+10. **HCL is a configuration language with a provider binary behind it.** No
+    repository declares the resource types, provider functions or backend
+    schemas a `.tf` file uses, so `instantiates` has no bindable target and
+    `imports` has no bindable target by construction. A graph over HCL is a graph
+    over declarations, not over the infrastructure it describes.
+
+## Findings for the supervisor
+
+Each item names the file, the function, what must change, and why. None was
+edited here.
+
+1. **`script/m14/ontology-coverage-gate.ts` has no `RULED_BY_LANG` entry for
+   `hcl`.** `RULED_BY_LANG` (line 192) is `{ bash: BASH_RULED, json: JSON_RULED }`,
+   so `npx tsx script/m14/ontology-coverage-gate.ts hcl` exits 2 with
+   `no RULING TABLE for hcl` and refuses to report on any of the ten types. Add
+   an `HCL_RULED` array with three entries, using the measurements in this
+   document:
+   - `extends`, `implements` — `instrument: "A:grammar-inventory"`,
+     `nodeTypesThatWouldMeanIt`: the 18 declaration-shaped names listed above. All
+     0 in the observed inventory, so the gate reports `RULED-SOUND`.
+   - `instantiates` — needs `instrument: "B:parse-tree-count"` with a
+     `countOnTree` that counts `resource`/`data` blocks whose type label is
+     declared by a non-`resource`/`data` block form. Measured 891 against
+     `mock_resource`/`mock_data`/`mock_provider`; see the ruling above for why
+     that count is not published as an edge. A gate that reports `FALSIFIED` on
+     891 is reporting the mock case, so the probe needs the mock exclusion
+     spelled out in the probe itself.
+   `calls`, `overrides`, `uses`, `contains`, `references`, `exports` and
+   `imports` will then be measured as `EMITTED` by the gate itself.
+2. **`script/m14/spec/hcl-completeness.json` decision HCL-D1 is falsified.**
+   Its text states that `extends`/`implements`/`overrides`/`instantiates` are
+   "not applicable" and that `calls` resolves to nothing across 12,977
+   `function_call` nodes. On this corpus `overrides` occurs 71 times and a
+   declared `function` is called 4 times. The gate's `rulingFor()` reads this
+   file for written rulings, so leaving it uncorrected would let a future gate
+   pass a wrong ruling — which is the exact failure mode this gate exists to
+   catch. Needed edit: split HCL-D1 into HCL-D1a (`extends`/`implements`/
+   `instantiates` ruled, with the probes and counts above) and HCL-D9
+   (`overrides` and `calls` GAP, closed by this wave), and refresh the `corpus`
+   block — it says `files: 9079, repos: 9` and the measured census is 9,329
+   files over 16 repositories with a different repository set.
+3. **`script/m14/differential.ts` has no HCL truth derivation and no label
+   allowlist entry**, so `differential.ts --lang hcl` cannot run at all and every
+   HCL type is a DERIVATION finding. Two edits are needed and the differential's
+   own doctrine requires them together ("truth AND allowance in the same commit"):
+   - a lane-owned `script/m14/oracles/hcl.ts` exporting
+     `deriveHclContainsTruth` / `deriveHclReferencesTruth` /
+     `deriveHclUsesTruth` / `deriveHclExportsTruth` / `deriveHclImportsTruth` /
+     `deriveHclOverridesTruth` / `deriveHclCallsTruth`, each from the parse tree
+     by a rule stated independently of the analyzer's recursive descent — the flat
+     maximal-run sweep with byte-range suppression is the shape the inherited HCL
+     oracle used, and it is reproducible;
+   - an entry in the compared-label filter at `differential.ts:23153`:
+     `...(lang === "hcl" ? ["contains", "references", "uses", "exports", "imports", "overrides", "calls"] : [])`,
+     plus `hcl` in `LANG_REPOS` (the primary corpus measured here is
+     `terraform`, 2,281 admitted files) and a `SECOND_CORPUS` entry
+     (`terraform-aws-components`, 1,809).
+   Until the overrides oracle lands, the 68 `overrides` edges will read as
+   `unexplained` on the F5 run, because `overrides` is already inside the shared
+   filter's head list (`["extends", "implements", "instantiates", "overrides"]`)
+   while no hcl truth derivation produces it. That is a 68-edge harness gap, not
+   68 analyzer defects, and it is cheaper to pay now than to misread later.
+4. **`script/m14/run-fixtures.ts` has no `UNIVERSAL_FORBIDDEN_RELATIONSHIPS`
+   entry for `hcl`.** `docs/analyzers/real-hcl-analyzer.md` claimed before this
+   wave that it did — "run-fixtures.ts's `UNIVERSAL_FORBIDDEN_RELATIONSHIPS` for
+   hcl refuses extends/implements into the reference roots var/local/module/data".
+   The map (line 438) holds `java`, `groovy`, `kotlin`, `scala` only. The claim
+   was false; this lane now enforces the same boundary inside its own fixtures
+   (`hcl/override-target-not-reference` forbids `extends`/`implements`/`uses` on an
+   override target), so the property holds — but it is held by a fixture, not by
+   the universal map. Adding
+   `hcl: [{ type: "extends", target: "var" }, { type: "extends", target: "local" }, { type: "extends", target: "module" }, { type: "extends", target: "data" }, { type: "implements", target: "var" }, { type: "implements", target: "local" }, { type: "implements", target: "module" }, { type: "implements", target: "data" }]`
+   would make it universal, and `matchConstraints` matches `target` by exact
+   string, so `target: "var"` would not catch `var.x` — the rows need
+   `targetStartsWith` or one row per observed target. **This is the one item on
+   the list I could not verify the shape of without editing the file.**
+5. **`pool-worker.ts` symbol-metadata allowlist omits every `hcl*` key**
+   (line 960). Adding the eight keys the analyzer emits would make
+   `hclBlockType`, `hclAddress`, `hclDuplicateIndex`, `hclFunctionDecl` and
+   `hclValueKind` visible to `brain_symbol.annotations`. Read-only today.
+6. **Standing rule R7 collides with a legal HCL identifier.** 33 relationship
+   endpoints and 18 symbols in this corpus are literally named `unknown`, all
+   from real declarations (`variable "unknown"`, `resource "aws_instance"
+   "unknown"`, `component "unknown"`). The analyzer is faithful; the register in
+   `validation/m60/symbol-sentinel-register.json` counts source STATEMENTS rather
+   than runtime values, so the static census does not see this class at all. If
+   R7 is meant to cover emitted values rather than analyzer source, HCL needs a
+   declared exemption keyed on "the name is the source's own", and the exemption
+   belongs in the ledger.
+7. **`.tfcomponent` / `.tfmock` are undeclared extensions** that reach HCL only
+   through the `.hcl` suffix (`EXTENSION_LANGUAGE` in
+   `src/ast/language-detection.ts`). `language-detection.ts` is shared.
+8. **One `[BB-HANG]` observed, not reproducible in isolation** —
+   `terraform/internal/configs/testdata/config-diagnostics/unexpected-provider/mod/main.tf`
+   (32 bytes) was reported stuck for 120 s by the pool worker under six concurrent
+   agents and parses in 4–7 ms alone. Recorded because the census is not
+   byte-reproducible because of it; not attributed to the grammar.
+9. **`script/m14/completeness-inventory.ts` `LANG_CONFIGS.hcl.requiredKinds`
+   (line 772) needs `calls` and `overrides`.** The row is
+   `["contains", "references", "uses", "imports", "exports"]`, and its comment
+   explains the omission of `calls` as "hcl RULES that kind not applicable on
+   measurement (0 of its 64 node types declare a function, and 0 of 12,977
+   corpus function_call nodes resolve to a declared symbol)". Both halves of that
+   comment are now falsified — `docker/docker-bake.hcl:56` declares
+   `function "bindir"` and calls it 4 times — so the row becomes
+   `["contains", "references", "uses", "imports", "exports", "calls", "overrides"]`
+   and the comment should be replaced by the measurement. Section B of that gate
+   reads FAIL on this wave until the row is updated, and that failure is the gate
+   correctly reporting published output its contract row does not account for.

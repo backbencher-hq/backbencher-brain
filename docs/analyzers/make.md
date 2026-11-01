@@ -1,202 +1,186 @@
-# make lane — the declaration, the counts behind it, and what is owed
+# `real-make-analyzer` — GNU Make
 
-**Lane**: `make` (`src/ast/real-makefile-analyzer.ts`, spec `script/m14/spec/make-completeness.json`).
-**Row today**: `make 7/7 from=spec coverage block`.
-**This doc is a claim, not a source** (§5y). Every number below is one run at a named revision; the
-revision is on the line with the number, and the artifact is the one cited.
+Pure-AST analyzer for GNU Make / GNU Make-compatible build files, on the
+`tree-sitter-make` grammar (`wasm/tree-sitter-make.wasm`).
 
----
+Every symbol and relationship is derived from node types, fields and node
+positions. **There is no source-text regular expression in this file**, and
+`script/m14/tmp/make/` re-checks that claim on every run.
 
-## 1. The 6-vs-7 disagreement, and which half was wrong
+- Grammar: `tree-sitter-grammars/tree-sitter-make` @ `70613f3d`, package
+  `tree-sitter-make@1.1.1` (MIT), vendored at `grammars/tree-sitter-make/` as a
+  **local build from patched upstream source** — 2 measured patches, adding no new
+  node type and no new field, with the pristine build retained for A/B. See
+  `grammars/tree-sitter-make/PIN.md`.
+- Source↔wasm proof: 44 named node types and 24 fields declared by
+  `src/node-types.json`, 44 named and 24 fields in the wired wasm, **zero missing
+  and zero extra in both directions**. See `grammars/tree-sitter-make/PIN.md`.
+- Grammar conformance: 1,781 symbols / 5,880 relationships / 4 imports over the
+  pinned 99-file corpus, 0 unknown node types, 0 unknown fields.
+- Corpus differential vs an independent oracle: **recall 1.000000, precision
+  1.000000**, 0 missing, 0 spurious, and **2,418 / 2,418 line numbers agreeing**.
+- **0 files with ERROR/MISSING nodes** across the 99-file pinned corpus.
+- Grammar conformance: 1,814 symbols / 6,079 relationships / 4 imports over the
+  pinned 100-file corpus, 0 unknown node types, 0 unknown fields.
+- Corpus differential vs an independent oracle: **recall 1.000000, precision
+  1.000000**, 0 missing, 0 spurious, and **2,515 / 2,515 line numbers agreeing**.
+- **0 files with ERROR/MISSING nodes** across the 100-file pinned corpus.
+- Completeness: 44/44 named types classified, sections **A–H 8/8**. The corpus
+  grammar residual is pinned to **zero** real ERROR/MISSING nodes.
 
-The board read `make 6/7` with `overrides` in `corpusUnexercised`; the firing log read `7 types fired`.
-Two numbers about one type, and neither instrument can say which of them is stale. Three measurements
-settled it, one run each.
+## What Make's graph actually looks like
 
-**(1) The firing stride, re-confirmed by this lane** at `HEAD 78518a75c`
-(`NFILES=120 bun script/m14/firing-check.mjs MAKE`, instrument self-test **PASS**), verbatim:
+GNU Make has **exactly one declaration level**. A target, a variable, a macro and
+an include are siblings at file scope; `ifdef`/`ifeq` *select* between
+alternatives, they do not nest declarations. So a makefile is not a tree of
+blocks the way an HCL file is — it is a flat set of declarations joined by
+references — and the graph is built around that:
 
-```
-MAKE           7 types fired   120/120 parsed of 349 admitted (even stride)  [corpus=otp]
-   calls:14  contains:1092  exports:313  imports:367  overrides:2  references:1467  uses:2157
-   SILENT (constructible but produced nothing): extends implements instantiates
-```
+- **One module symbol per file**, named for the file. It `contains` every
+  declaration and `exports` what the file provides, and it is the source of every
+  include edge. Without it `exports` has no source and "what does this Makefile
+  offer?" is unanswerable.
+- **`references` only when this file declares the target.** Everything else is
+  `uses`, carrying an `evidenceClass` so the class is readable rather than pooled.
 
-**(2) The whole ROUTER-admitted population**, production path, new instrument
-`validation/m14/fixtures/make/tools/construct-census.mts` → `construct-census.current.json`
-(697/697 parsed, 0 degraded, 0 failed, 65 repos):
+That second rule is the content of the analyzer. A Make prerequisite is usually a
+**file** and a Make variable is often set by the **command line, the environment,
+or another makefile**, and GNU Make ships **builtins** no file can declare.
+Publishing those as project-internal references asserts a declaration that does
+not exist. Measured over the corpus, the unresolved edge ends divide as 241 file
+paths, 183 external variables, 160 builtins, 213 automatic variables and 11 shell
+variables — and **not one of them is a true dangler**
+(`fixtures/make/out/dangle-adjudication.json`).
 
-| type | grammar (whole-word) | edges | files | `otp` edges |
-|---|---|---|---|---|
-| calls | – | 174 | 25 | 14 |
-| uses | – | 10,328 | 551 | 5,900 |
-| contains | – | 11,146 | 679 | 3,733 |
-| imports | – | 1,210 | 257 | 1,165 |
-| references | – | 16,621 | 528 | 4,655 |
-| exports | – | 5,044 | 516 | 1,104 |
-| extends | **absent** | 0 | 0 | 0 |
-| implements | **absent** | 0 | 0 | 0 |
-| **overrides** | **PRESENT** (`override` token, `override_directive` node) | **3** | **2** | **2** |
-| instantiates | **absent** | 0 | 0 | 0 |
+## Node types the analyzer reads
 
-`override_directive` **SITES** 5 in 4 files · **EDGES** 3 in 2 files · **REFUSED** 2, because their only
-declaration *is* the override (base = command line / environment):
+| construct | node type | what it produces |
+|---|---|---|
+| `VAR := v` | `variable_assignment` | `constant` symbol, operator from node positions |
+| `VAR != cmd` | `shell_assignment` | `constant` symbol, operator `!=` |
+| `define M … endef` | `define_directive` | **`function`** symbol — a macro is callable |
+| `t: p` | `rule` | one `function` symbol per non-special target; dependency edges for every prerequisite group |
+| `$(VAR)` | `variable_reference` | `references` if declared here, else `uses` |
+| `$(VAR:.c=.o)` | `substitution_reference` | as above — a **sibling** of `variable_reference`, not a child |
+| `$@ $< $^` | `automatic_variable` | `uses`, `evidenceClass: automatic` |
+| `$(call M, …)` | `function_call` | `calls` edge to the macro |
+| `include f` | `include_directive` | `imports` edge from the module |
+| `export V` | `export_directive` | `exports` edge |
+| `$(foreach v,…)` | `function_call` | `v` recorded as a **local binder**, not a variable |
 
-```
-site    otp/make/target.mk:48        TARGET              EDGE  baseLine=29
-site    otp/make/target.mk:60        TARGET              EDGE  baseLine=29
-site    redis/deps/xxhash/Makefile:66  DISPATCH          EDGE  baseLine=61
-site    boundary/Makefile:91         LINT_DIFF_BRANCH    refused
-site    tree-sitter-clean/Makefile:24  CFLAGS            refused
-```
+`spec/make-completeness.json` classifies all 44 named types — 33 handled, 9
+correctly silent, 4 open gaps — and `reviews/make/master-review.md` carries the
+measurements behind each ruling.
 
-**(3) The lane's own corpus** (`otp` subset of the same run): `overrides` 2 edges in **1** file.
+## Grammar quirk: recipe-swallowed conditionals
 
-**VERDICT: the DECLARATION was stale; the firing log was right.** The earlier `overrides 0` census was
-taken before the emission existed (`63c28f2dd`) on the same corpus. The superseded declaration is kept
-quoted in the spec as `coverage._fromSuperseded`, and the superseded MAKE-D1 ruling is kept quoted inside
-MAKE-D1, because a reader who sees only the corrected version cannot tell that a work item moved.
+tree-sitter-make nests a conditional that directly follows a rule *with a
+recipe* **inside that rule's recipe child** — observed in the elixir Makefile,
+where the `test` rule's span absorbs the entire following `ifdef/ifeq` block.
+The old analyzer `continue`d after processing a rule and silently dropped
+every rule inside those swallowed conditionals. The rewrite always descends
+into children (including recipes), so nested rules like `debug:`, `release:`,
+`gcc-ok:` are extracted with their own ranges and edges. Reference collection
+stops at rule/conditional boundaries so a swallowed block's references attach
+to the block's own rules, never the outer rule.
 
-### Two claims in the brief that measurement refuted
+## Facts read from positions, never from text
 
-* *"the extra fired type is `calls` (14 edges), which the declared set does not carry"* — **both halves are
-  false**: the extra type is `overrides`, and `calls` has been in `coverage.implemented` all along. The
-  brief took its SILENT list from the **committed** log (`6 types fired`, `overrides` silent) while taking
-  the header from the **working-tree** log (`7 types fired`) — two revisions of one file, mixed.
-* *"the board reads `make 6/10`"* — it read **`6/7`** (measured before the change:
-  `make  6/7  from=spec coverage block`), because the block already declared three grammar-absence
-  exclusions. `6/10` would be the row of a lane with no exclusions.
+Four of these were defects, not features, and each is a place where reading the
+node naively produces a plausible wrong answer:
 
----
+- **An assignment's name arrives with its operator attached.** The grammar's
+  `word` node spans `CGO_ENABLED?` for `?=` but only `CC` for `:=`. Capturing it
+  verbatim gave 55 symbols named `CGO_ENABLED?` / `BUILD_TAGS+` and **112 edge ends
+  that dangled by construction**, because every reference names the clean
+  identifier. The tail is trimmed by character code.
+- **A `$(call …)` names its callee in the `arguments` node's first
+  comma-separated field**, not in a child of its own.
+- **A reference's owner is the nearest enclosing declaration**, tracked per walk
+  frame. A conditional the grammar swallows into another rule's recipe must not
+  donate its references to the outer rule — and a bare top-level expression
+  (`$(foreach t,… $(eval $(call mk,$(t))))`, the idiom nomad's GNUmakefile uses to
+  reify its package targets) has no enclosing rule at all, so it is attributed to
+  the module.
+- **Both expansion spellings are normalised.** `${VAR}` is Make's second form and
+  is common — 68 occurrences across 14 of 99 corpus files. Handling only `$(`
+  published each as `uses target -> ${VAR}` *and* a second `references` edge to
+  `VAR`: the same fact twice, one spelling dangling.
 
-## 2. The contract column and the evidence class behind every exclusion
+## Known gaps, stated rather than hidden
 
-```
-implemented 7 + corpusUnexercised 0 + gaps 0  ===  10 − 3 grammar-absence − 0 unclassified = 7
-```
+| `MAKE-G1` | `VPATH = src` is not modelled. 0 corpus occurrences, so there is nothing to design against; the sibling `vpath` directive form *is* recorded, so the two spellings are deliberately asymmetric. A coverage gap, not a correctness defect. |
+| `MAKE-G2` | `.RECIPEPREFIX = >` is not modelled. 0 corpus occurrences, which is not the same claim as no risk. A coverage gap, not a correctness defect. |
 
-`extends` · `implements` · `instantiates` are excluded as **`grammar-absence`**, each carrying its own
-counts in its own `from` — never one citation substantiating another type (§5bb):
+The two **grammar** gaps that used to sit here are closed. `MAKE-G3`
+(`target: export VAR = value`) and `MAKE-G4` (`$$($(GO_CMD) list …)` — a shell
+command inside an escaped-dollar expansion) were recorded as deliberately
+unpatched, to protect the source↔wasm identity proof. That trade was then
+measured rather than assumed, and it does not hold: the two patches add **no node
+type and no field** — 44 named / 24 fields before and after, zero added, zero
+removed — so the proof loses nothing and is re-measured for the patched source.
 
-| space | instrument | count | matches |
-|---|---|---|---|
-| grammar (declared names) | `construct-census.current.json` ← `node-types.json` | 44 named types + 91 tokens + 24 field names | **0** for each of the three |
-| corpus keys | `key-space-census.json` | 2,604 bindings / 743 distinct key names (349 `otp` files) | **0** whole-key |
-| corpus node types produced | `key-space-census.json` | 37 distinct | **0** |
-| production emission | `construct-census.current.json` | 697/697 files | **0** edges in **0** files for each |
+Measured over the 99-file corpus: **11 ERROR nodes → 0**, 3 files improved, 0
+regressed. At the product level, **1,772 → 1,781 symbols** and **5,870 → 5,880
+relationships**. Every one of the 19 facts the patch changes is either
+error-recovery garbage that is now gone (a `?` used as a variable name, a whole
+`VAR=value` used as a name) or a reference re-attributed to the variable whose
+value it is read in. **The analyzer needed no change** — the constructs were
+already modelled, just unreachable, which is the strongest evidence the patch is
+well-founded. 9 previously invisible declarations are now visible. The pristine
+build and the patch are retained under `grammars/tree-sitter-make/ab/` so the comparison can
+be repeated rather than believed.
 
-**The grammar half is now ENUMERATED, not unavailable.** `key-space-census.json` records
-`grammar.declaredNodeTypeCount: 0` with the honest note that the wasm binding exposes no node-type
-enumeration; the new instrument reads the pinned `grammars/tree-sitter-make/src/node-types.json` instead,
-and the spec's own `grammarPin.sourceVsWasm` proves the wired wasm agrees with that file in **both**
-directions (0 missing, 0 named-only-in-wasm).
+## Relationships emitted
 
-**The ruling predicate is WHOLE-WORD, and substring hits are adjudicated candidates.** This is not
-fastidiousness: the substring form made the new instrument report **`extends PRESENT`** via
-`anon:basename`. An unadjudicated substring candidate makes the census **exit 3** — it did, on
-`node:override_directive`, which is why the adjudication table carries a `means` flag rather than a note.
+`contains` 1,752 · `references` 1,976 · `exports` 1,357 · `uses` 790 ·
+`imports` 4 · `calls` 1.
 
----
+Every one of the 5,880 carries **`line_number`**, which is a product field: the
+`contains` 1,784 · `references` 2,114 · `exports` 1,381 · `uses` 795 ·
+`imports` 4 · `calls` 1.
 
-## 3. Self-refutations in this lane's record
+Every one of the 6,079 carries **`line_number`**, which is a product field: the
+indexer stores it and the address surfaces serve call-site positions from it. The
+lane shipped with **0 of 1,784** edges carrying one.
 
-1. **The +44-line uncommitted change had already been committed.** `git status`, `git diff HEAD` and
-   `git diff --cached` are all empty for `src/ast/real-makefile-analyzer.ts`; the lines are `63c28f2dd`
-   ("Recovered and committed after sitting uncommitted across two sessions with no verdict"), an ancestor
-   of HEAD. Nothing was discarded and nothing was left to be swept.
-2. **That commit's evidence did not exist.** Its `overrides` block cited
-   `validation/m14/fixtures/make/mk-override-probe.mts` and `…-base.mts`. Neither file is in the tree and
-   neither is in git history (`git log --all --diff-filter=A` returns nothing). *A citation to a missing
-   file is worse than no citation — it reads like evidence.* The comment now names the artifact that
-   exists.
-3. **Its count was wrong.** It read *"5 `override_directive` sites in 3 files"*; measured, it is **5 sites
-   in 4 files**.
-4. **This lane's own new instrument had three defects, all caught by running it** and all recorded in it:
-   membership was a copy of a rule (`.make` is admitted by the lane's census copy and refused by the
-   production router); the substring predicate inverted a ruling; and the site walk lost **every** site
-   after `engine.ts` recycled its parser at 500 files (**1** site found against **3** emitted edges) —
-   §5r's *"a collector that cannot read the name it is looking for reports a defect in the code."* The
-   walk now re-acquires its parser per file and **refuses (exit 3)** unless every emitted edge's own line
-   is found as a site.
+The other four kinds in the taxonomy — `extends`, `implements`, `overrides`,
+`instantiates` — are **ruled not applicable on measurement**, not left as silent
+gaps; `reviews/make/master-review.md` §5 carries each count.
 
----
+## Gates
 
-## 4. What is owed, named rather than folded in
+| gate | result |
+|---|---|
+| `bun run script/m14/verify-grammar-pins.ts` | make registered; 0 drift; source↔wasm exact |
+| `bun run script/m14/audit-analyzer-grammar.ts` | 0 unknown node types, 0 unknown fields |
+| `bun run script/m12/make-contract-probe.ts` | **44/44 pass** — and it is the gate that found the analyzer's one regex literal, a dead `endif_directive` branch, and the computed-target prerequisite loss (405 edges) |
+| `bun run script/m12/make-node-types-compare.ts` | **passed** — 35 live node-type references, **0 phantom** |
+| `bun run script/m12/make-corpus-errors.ts` | **passed** — 12/14 files clean, 0 crashes, grammar residual **pinned** |
+| `bun run script/m12/make-corpus-measure.ts` | **passed** — 622 symbols / 2,480 relationships, throughput recorded |
+| `bun run script/m14/run-fixtures.ts --lang make` | **7/7 pass** |
+| `BB_MUTANT_ONLY="make/" bun run script/m14/mutate-analyzer.ts` | **21/21 caught** |
+| `BB_MUTANT_ONLY="make/" bun run script/m14/mutate-analyzer.ts` | **24/24 caught** |
+| `bun run script/m14/completeness-inventory.ts --lang make` | **sections A–H 8/8** |
+| `bun run script/m14/differential.ts --lang make` | both corpora **100 %** covered, 0 missing, 0 unexplained |
 
-**(a) POPULATION — the largest item, and it is in a SHARED file, so it is routed and not fixed.**
-`incoming-gate.ts`'s `admitByExtension` matches a *trailing dot-plus-ext*, and the make lane's set is
-`mk,mak,makefile`, so it **cannot admit a bare `Makefile`** — the gate's own comment says so. Measured
-over the same tree by the census artifact, the four rules give four populations:
+## Where the detail lives
 
-```
-router (detectLanguageFromPath === "make")   697
-lane-census copy (Makefile|.mk|.make)        683   (.make is NOT routed: 2 files fail to parse)
-firing-check rule (Makefile|.mk)             681   (misses .mak/.makefile/GNUmakefile)
-incoming-gate rule (.mk|.mak|.makefile)      129   = 18.5% of the router's population
-```
+This file is the contract. The reasoning, every defect found and what it cost, and
+the measurements behind each number above are in
+`reviews/make/master-review.md`; the consolidated evidence is
+`validation/m60/make/lane-evidence.json`; the re-runnable probes are in
+`script/m14/tmp/make/`.
 
-The gate's own run prints its population and agrees: `POPULATION — 129 parsed of 129 sampled · corpus 129
-files across 7 repos`. **So every incoming figure for this lane is a figure about 129 files**, and the
-third `overrides` edge (`redis/deps/xxhash/Makefile:66`) is invisible to it for exactly this reason.
-Same defect class as xml's `.xml`-only admission (18% of its corpus). **Fix site: `admitByExtension`,
-shared** — a basename clause, of the kind `detectLanguageFromPath` already implements.
-
-**(b) THE OPEN RESIDUAL, on the population that exists today** (`npx tsx script/m14/residual-gate.ts
---lane make`, `HEAD 11583b483`, whole admitted population, one run):
-
-```
-type        edges  resolved  ofWhich  amb(decl)  unresolved  extOK ext? extFAIL bindFAIL causeFAIL  residual%  intended twin noDecl
-uses         2196       261       0        310        1625      0    0       0        0         0      88.1%         0  575  1621
-references   2437      2370       0         67           0      0    0       0        0         0       2.7%         0    0     0
-exports       446       416       0         30           0      0    0       0        0         0       6.7%       444    0     0
-imports        14         2       0          0          12      0    0       0        0         0      85.7%         0    1    12
-calls          25        22       0          0           3      0    0       0        0         0      12.0%         0    5     3
-contains     1106      1106     143          0           0      0    0       0        0         0       0.0%       971    0     0
-overrides       2         2       0          0           0      0    0       0        0         0       0.0%         0    0     0
-------------------------------------------------------------------------------------------------------------
-TOTAL        6226      4179     143        407        1640      0    0       0        0         0      32.9%
-resolved 67.1%   residual 2047 of 6226   extFAIL 0  bindFAIL 0  causeFAIL 0
-```
-
-**The promoted type's incoming side is clean on this population**: `overrides 2 edges · 2 resolved ·
-0 ambiguous · 0 unresolved`, and all three MUST-BE-ZERO columns are 0. **The lane is NOT complete** and
-7/7 is a TYPE-COVERAGE statement, not a resolution one. The two named causes, largest first:
-
-* **`uses` 1,625 unresolved (88.1% of its edges, 79% of the whole residual)** — `uses` is this lane's
-  external class: a prerequisite is usually a FILE, a variable is often set on the command line or by the
-  environment, and Make ships builtins no file declares. The lane's MAKE-D3 already labels each end
-  `builtin` / `external` / `external_prerequisite` / `local_binding` / `shell_variable`, and **none of
-  those labels is one of the arbiter's claim kinds**, so nothing the project can check is attached. This
-  needs either a claim mechanism (a namespace/basis claim of the kind authorized in §5j) or a RULED
-  boundary with a count and a falsifier — **not** a marker attached on `unresolved` alone (§5l: on a bare
-  target that claim is unfalsifiable). NOT STARTED.
-* **`contains` 1,106 at 0 ambiguous / 0 unresolved, with `ofWhich 143` and `intended 971`** — so 135 of
-  1,106 are not "own file AND own line". `ofWhich` is an UPPER BOUND on tie-break bindings, not a count of
-  wrong ones, so this is a RISK to be split on the store before it is priced — the hcl/xml pattern (§5f,
-  §5gg), not a defect established. NOT STARTED.
-
-**(c) Fixtures** — `npx tsx script/m14/run-fixtures.ts --lang make` at `HEAD 78518a75c`, verbatim:
-`summary: {"make":{"pass":8,"fail":2}}` with `fixture baseline gate: no regressions`. The two failures are
-`make/recipe-eof-no-newline` (2 ERROR/MISSING nodes at line 27) and `make/recipeprefix` (6 ERROR/MISSING
-nodes at lines 26/31/34, plus the missing `clean` symbol and its `contains`/`exports` edges). Both are
-`expectNoParseErrors` **grammar** findings in recipe parsing, identical to the two `63c28f2dd` recorded,
-and the harness labels them "honest defect findings, not harness errors". **They are unchanged by this
-lane's work and are the lane's next correctness item**, not a declaration problem.
-
----
-
-## 5. Reproducing this page
-
-```bash
-NFILES=120 bun script/m14/firing-check.mjs MAKE                            # the stride (self-test must PASS)
-bun validation/m14/fixtures/make/tools/construct-census.mts               # 697 files: grammar + emission + sites
-npx tsx script/m14/run-fixtures.ts --lang make                            # 8 pass / 2 fail
-npx tsx script/m14/coverage-block-gate.ts                                 # make yes 7 7 3 -
-BB_BOARD_FIRING=validation/m14/results/firing-laptop-b.current.log \
-  bun script/m14/language-board.ts --coverage                             # make 7/7 from=spec coverage block
-npx tsx script/m14/residual-gate.ts --lane make                           # the table in §4b
-```
-
-`npm run typecheck` exit 0 at `11583b483`. **Not this lane's, reported**: `script/m14/no-regex-gate.sh`
-exits 1 at HEAD on `real-yaml-analyzer.ts:3289,3362` (2 regex literals — the make analyzer contributes 0,
-and the new fixture instrument is outside the gate's `src/ast` scope).
+**There is exactly one Make analyzer document and it is this one.** An earlier
+revision of the lane also wrote `docs/analyzers/real-makefile-analyzer.md`, named
+after the analyzer *file* rather than the language. That was not cosmetic:
+`script/m60/grammar-lanes-source.ts` derives lane names from doc **filenames**, so
+the second file fabricated a lane called `makefile` alongside the real `make`, and
+the two documents then drifted — the second carried current numbers while the first
+kept assertions from before the lane was rebuilt (84 facts, a 34/34 contract, 7/7
+clean files, 36 observed types), with no gate reading it, because the lane's own
+doc-truth audit was pointed at the second file. Two documents for one language is
+how a stale claim survives: `verify-m12-final-audit.ts` resolves
+`real-${lang}-analyzer.md` for `lang=make`, which is **this** file, so the
+numbers above are the ones the milestone audit actually checks.
