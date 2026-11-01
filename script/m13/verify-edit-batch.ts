@@ -421,7 +421,7 @@ function leftoverTemps(f: Fixture): string[] {
     const isBun = typeof Bun !== "undefined"
     const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
     const serverArgs = isBun ? ["--dir", f.root] : ["mcp", "--dir", f.root]
-    const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+    const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe", env: { ...process.env } as Record<string, string> })
     const client = new Client({ name: "verify-edit-batch", version: "1.0.0" })
     const call = async (args: Record<string, unknown>): Promise<{ text: string; isError: boolean; json: any }> => {
       const res: any = await client.callTool({ name: "bb_edit", arguments: args })

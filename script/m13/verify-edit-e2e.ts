@@ -99,7 +99,7 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
   const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
   const serverArgs = isBun ? ["--dir", root] : ["mcp", "--dir", root]
-  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe", env: { ...process.env } as Record<string, string> })
   const client = new Client({ name: "verify-edit-e2e", version: "1.0.0" })
   const call = async (args: Record<string, unknown>) => {
     const res: any = await client.callTool({ name: "bb_edit", arguments: args })
@@ -173,12 +173,14 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
           args: [path.resolve("src/mcp/server.ts"), "--dir", freshRoot],
           cwd: process.cwd(),
           stderr: "pipe",
+          env: { ...process.env } as Record<string, string>,
         }
       : {
           command: process.execPath,
           args: ["--import", "tsx", "--input-type=module", "-e", bootstrap, freshRoot],
           cwd: process.cwd(),
           stderr: "pipe",
+          env: { ...process.env } as Record<string, string>,
         },
   )
   const client = new Client({ name: "verify-edit-e2e-noindex", version: "1.0.0" })
@@ -240,7 +242,7 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
   const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
   const serverArgs = isBun ? ["--dir", root] : ["mcp", "--dir", root]
-  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe", env: { ...process.env } as Record<string, string> })
   const client = new Client({ name: "verify-edit-e2e-overwrite", version: "1.0.0" })
   const call = async (args: Record<string, unknown>) => {
     const res: any = await client.callTool({ name: "bb_edit", arguments: args })

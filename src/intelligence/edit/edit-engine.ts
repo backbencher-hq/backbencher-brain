@@ -37,6 +37,7 @@ import { ImportPruner, type ImportPruneReport } from "../../ast/import-pruner"
 import { reindexFilesParallel } from "../../ast/parallel-indexer"
 import { parseForSafety, assertFreshFiles, type DeclaredName, type IdentifierOccurrence, type SafetyParse, type BodyRange } from "../../ast/safety-primitives"
 import { EXTENSION_LANGUAGE } from "../../ast/language-detection"
+import { bbDataDir } from "../../util/bb-data-dir"
 
 export type EditMode = "write" | "update" | "insert" | "delete" | "refactor" | "batch"
 export type InsertPosition = "before" | "after" | "inside-top" | "inside-bottom"
@@ -143,7 +144,11 @@ export interface EditResult {
   /** D5: per-file formatter outcomes — the measured basis of `formatted`. Present
    *  whenever formatting was requested (`format !== false`); each entry names the
    *  formatter, whether it ran, whether it exited 0, and why not when it did not. */
-  formatting?: Array<{ path: string } & FormatOutcome>
+  formatting?: Array<{ path: string } & FormatOutcome & {
+    /** The formatter rewrote the file with LF newlines and the engine restored
+     *  the file's own CRLF ending afterwards. Declared, never silent. */
+    lineEndingRestored?: boolean
+  }>
   validated: boolean
   reindexed: boolean
   /**
@@ -263,9 +268,39 @@ export function resolveSafeEditPath(projectPath: string, requested: string): str
     // that points outside the project must still be refused even though
     // `existing` itself resolved cleanly.
     if (!inside(root, target)) throw new Error(`path escapes project root through symlink: ${requested}`)
+    assertWritableTarget(root, target, requested)
     return target
   }
+  assertWritableTarget(root, realExisting, requested)
   return realExisting
+}
+
+/**
+ * Directories under the project that bb_edit does not write, whatever the caller's
+ * `filePath` says: version-control state, dependency trees, and the index's own
+ * data directory. Containment in the project is the security boundary; this list
+ * is the SAFETY one — a typo'd path must not be able to rewrite a git object or
+ * the database the tool's answers come from. Measured before this guard: a `write`
+ * to `.git/hooks/pre-commit.ts` committed and reindexed, and a path under
+ * `.bb-data/` was created and indexed.
+ */
+const PROTECTED_SEGMENTS: ReadonlySet<string> = new Set([".git", ".hg", ".svn", "node_modules", ".bb-data"])
+
+function assertWritableTarget(root: string, target: string, requested: string): void {
+  const relative = path.relative(root, target)
+  const protectedSegment = relative.split(path.sep).find((segment) => PROTECTED_SEGMENTS.has(segment))
+  if (protectedSegment) {
+    throw new Error(
+      `refused: ${requested} is inside a protected path (${protectedSegment}/) — bb_edit does not write version-control, dependency, or tool-state directories; choose a source path instead`,
+    )
+  }
+  let dataDir: string | null = null
+  try { dataDir = bbDataDir() } catch { dataDir = null }
+  if (dataDir && inside(dataDir, target)) {
+    throw new Error(
+      `refused: ${requested} is inside the index data directory (${dataDir}) — bb_edit never edits index state as source; choose a source path instead`,
+    )
+  }
 }
 
 function replaceRange(text: string, start: number, end: number, replacement: string): string {
@@ -311,6 +346,15 @@ function dominantNewline(text: string): "\n" | "\r\n" {
 /** Rewrite a spliced string so every newline matches the file's own ending. */
 function withNewline(text: string, nl: string): string {
   return nl === "\n" ? text : text.replace(/\r?\n/g, nl)
+}
+
+/** True when the text contains at least one newline that is not preceded by CR. */
+function hasLoneLf(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "\n") continue
+    if (i === 0 || text[i - 1] !== "\r") return true
+  }
+  return false
 }
 
 /**
@@ -1746,18 +1790,38 @@ async function planEditInto(
       const where = [...leftovers.map((l) => `${path.basename(match.fileId)} ${l}`), ...importerLeftovers]
       warnings.push(`delete ${symbolName} (forced): ${totalLeftovers} reference(s) remain — ${where.slice(0, 10).join("; ")}${where.length > 10 ? "; …" : ""}`)
     }
+    // A forced delete may bypass evidence that leaves no textual leftover: a call
+    // reached through a namespace import (`import * as m; m.sym()`) names no
+    // specifier occurrence and no in-file reference, so it is invisible to the
+    // leftover scan and would otherwise disappear without a word. The index still
+    // records those callers, so the forced answer states the count it overrode.
+    if (request.force === true && callers > 0) {
+      warnings.push(`delete ${symbolName} (forced): ${callers} indexed caller(s) were bypassed by force=true — the index still records them; review with bb_graph or bb_impact before relying on this deletion`)
+    }
     const pruneReport = await ImportPruner.pruneWithReport(deleted, match.fileId)
+    const prunedContent = pruneReport.content ?? deleted
     if (pruneReport.removedBindings.length > 0) {
       warnings.push(`delete ${symbolName}: removed ${pruneReport.removedBindings.length} import binding(s) the deletion made dead — ${pruneReport.removedBindings.join(", ")}`)
     }
     if (!pruneReport.attempted && pruneReport.reason) {
       warnings.push(`delete ${symbolName}: import cleanup was not attempted — ${pruneReport.reason}`)
     }
-    return { changes: [{ path: match.fileId, before: original, after: pruneReport.content }], warnings, importPruning: pruneReport }
+    // `content` is the rewritten TEXT the change already carries; it does not
+    // belong in the result (a delete answer would echo the whole file back).
+    const importPruning: ImportPruneReport = pruneReport.attempted
+      ? { attempted: true, language: pruneReport.language, removedBindings: pruneReport.removedBindings }
+      : { attempted: false, language: pruneReport.language, removedBindings: [], reason: pruneReport.reason }
+    return { changes: [{ path: match.fileId, before: original, after: prunedContent }], warnings, importPruning }
   }
 
   const newName = String(request.newName ?? "")
   if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newName)) throw new Error("refactor requires a valid identifier newName")
+  // A rename that targets the name it already has covers one site and changes
+  // nothing; reporting "1 site(s) across 1 file(s)" over identical bytes is a
+  // success message for a no-op. Refused by name before any plan is built.
+  if (newName === symbolName) {
+    throw new Error(`refactor ${symbolName} → ${newName}: the new name is the current name; a rename must change the identifier. No change was made.`)
+  }
   const raw = await BrainDatabase.getRawInstance(projectId)
 
   // ── D2/M71: cross-file coverage that does not depend on a NON-NULL source ───
@@ -1870,6 +1934,7 @@ async function planEditInto(
   const changes: EditPlanChange[] = []
   let renamedFiles = 0
   let renamedSites = 0
+  let declarationRenamed = false
   for (const [file, ranges] of fileRanges) {
     resolveSafeEditPath(projectPath, file)
     const before = readPreImage(file, preImages, preImageBytes).text
@@ -1881,7 +1946,7 @@ async function planEditInto(
       : undefined
 
     // 1. Declaration: rename the symbol's own name identifier exactly once.
-    if (declStart != null) sites.add(declStart)
+    if (declStart != null) { sites.add(declStart); declarationRenamed = true }
 
     // ONE shadow computation for the whole file, used by EVERY step below: a site
     // inside a scope that re-declares the name belongs to the inner binding, no
@@ -2011,6 +2076,25 @@ async function planEditInto(
   // a mapping key or a rule target. A rename that covers nothing is a failure.
   if (renamedSites === 0) {
     throw new Error(`refactor ${symbolName} → ${newName}: resolved 0 rename site(s) in 0 file(s) — the symbol was located but nothing could be renamed (this grammar may expose no identifier node for it, as a YAML key or a Makefile target does not). No change was made.`)
+  }
+  // A rename must not land on a name the file already declares. `refactor target
+  // → existing` used to be accepted when `existing` was another function in the
+  // declaration file: the result reported success and the file then held TWO
+  // declarations of `existing`, which no compiler accepts. The new name is checked
+  // against every file this plan rewrites — one top-level declaration of it is
+  // expected in the declaration file (the renamed one) and zero elsewhere.
+  const collisions: string[] = []
+  for (const change of changes) {
+    const parsedAfter = await parseForSafety(change.path, change.after)
+    const topLevel = parsedAfter.declaredNames.filter((d) => d.text === newName && !insideStatementBody(parsedAfter, d))
+    const expected = change.path === match.fileId && declarationRenamed ? 1 : 0
+    for (const extra of topLevel.slice(expected)) {
+      const line = parsedAfter.content.slice(0, extra.startIndex).split("\n").length
+      collisions.push(`${relativeTo(projectPath, change.path)}:${line} (${extra.declarationType})`)
+    }
+  }
+  if (collisions.length > 0) {
+    throw new Error(`refactor ${symbolName} → ${newName}: the new name is already declared — ${collisions.slice(0, 6).join(", ")}${collisions.length > 6 ? ", …" : ""}; renaming onto an existing declaration would leave two declarations with one name. No change was made.`)
   }
   if (request.mode === "refactor") {
     warnings.push(`refactor ${symbolName} → ${newName}: ${renamedSites} site(s) across ${renamedFiles} file(s)`)
@@ -2162,7 +2246,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
     // formatter failed (exit 3, `warnings: []`). Each outcome is kept per file.
     const formatting = request.format === false
       ? undefined
-      : await Promise.all(changes.map(async (change) => {
+      : await Promise.all(changes.map(async (change): Promise<{ path: string } & FormatOutcome & { lineEndingRestored?: boolean }> => {
           const outcome = await BrainSurgicalPatcher.tryAutoFormat(change.path)
           return { path: relativeTo(projectPath, change.path), ...outcome }
         }))
@@ -2172,11 +2256,40 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
     for (const entry of formatting ?? []) {
       if (entry.ran && !entry.ok) warnings.push(`format: ${entry.path}: ${entry.reason ?? "formatter failed"}`)
     }
+    // The engine's splice keeps the FILE's line ending, and a formatter may then
+    // rewrite the whole file with its own. `gofmt` does exactly that: a CRLF file
+    // edited with the default formatter came back with five lone LFs. The caller
+    // asked for an edit, not for a line-ending migration, so a CRLF file is put
+    // back to CRLF and the repair is declared on that file's formatting entry.
+    if (formatting) {
+      const absoluteByRel = new Map(changes.map((change) => [relativeTo(projectPath, change.path), change.path]))
+      for (const entry of formatting) {
+        if (!entry.ran || !entry.ok) continue
+        const absolute = absoluteByRel.get(entry.path)
+        const preImage = absolute ? snapshots.get(absolute)?.bytes : null
+        if (!absolute || !preImage) continue
+        if (dominantNewline(preImage.toString("utf8")) !== "\r\n") continue
+        const current = readFileSync(absolute, "utf8")
+        if (!hasLoneLf(current)) continue
+        writeFileSync(absolute, withNewline(current, "\r\n"), "utf8")
+        entry.lineEndingRestored = true
+      }
+    }
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
     // M40.A3: the reindex call now applies the bounded post-pass internally
     // (snapshot + repair + scoped enrichment/gravity), so "AI edits a function
     // → seconds later the DB has it with resolved relationships" holds here.
     const reindexResult = await reindexFilesParallel(projectId as any, realpathSync(projectPath), changes.map((change) => ({ path: change.path, type: snapshots.get(change.path)!.existed ? "modified" as const : "added" as const })))
+    // `reindexed` is MEASURED from the reindex result, never asserted. The reindex
+    // reports per-file failures in `errors`/`errorDetail` instead of throwing; the
+    // edit stands (the bytes on disk are correct and validated), but claiming the
+    // index is current would be false, so the failure is named in warnings.
+    const reindexErrors = reindexResult.errors ?? 0
+    const reindexed = reindexErrors === 0
+    if (reindexErrors > 0) {
+      const named = (reindexResult.errorDetail ?? []).slice(0, 5).map((d) => `${relativeTo(projectPath, d.file)} (${d.error})`)
+      warnings.push(`reindex: ${reindexErrors} file(s) failed to reindex — the edit stands but the index is NOT current for them${named.length > 0 ? `: ${named.join("; ")}` : ""}; run bb index --changed`)
+    }
     return {
       mode: request.mode,
       dryRun: false,
@@ -2184,7 +2297,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       formatted: formatting !== undefined && formatting.length > 0 && formatting.every((entry) => entry.ok),
       ...(formatting !== undefined ? { formatting } : {}),
       validated: true,
-      reindexed: true,
+      reindexed,
       // M40.A3: visible derived-data outcome — never a silent deferral.
       derived: reindexResult.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 },
       warnings: warnings.length > 0 ? warnings : undefined,
@@ -2247,9 +2360,23 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
  * batch because the batch's plan recorded every target.
  */
 export async function executeEdit(projectPath: string, projectId: string, request: EditRequest): Promise<EditResult> {
-  const plan = request.mode === "batch"
-    ? await planBatch(projectPath, projectId, request)
-    : await planEdit(projectPath, projectId, request)
+  // A refusal raised while PLANNING wrote nothing at all, and the docs promise a
+  // per-file answer on refusals too. The honest envelope for that state is the
+  // empty one: no file planned, none committed, none restored — a caller (and a
+  // batch caller in particular) can branch on the envelope without having to
+  // special-case "the error object has no envelope because it failed early".
+  let plan: EditPlan
+  try {
+    plan = request.mode === "batch"
+      ? await planBatch(projectPath, projectId, request)
+      : await planEdit(projectPath, projectId, request)
+  } catch (error: any) {
+    if (error && typeof error === "object" && error.envelope === undefined) {
+      error.envelope = { atomic: true, entries: [], committed: 0, restored: 0, failed: [] }
+      error.refusedBeforeWriting = true
+    }
+    throw error
+  }
   if (request.dryRun === true) {
     const { changes, warnings, summary, batch } = plan
     // A preview reports the same set of files the commit would touch, in the same

@@ -63,8 +63,9 @@ export interface ImportPruneReport {
   removedBindings: string[]
   /** Why pruning was not attempted, when it was not. */
   reason?: string
-  /** The rewritten file (identical to the input when nothing was removed). */
-  content: string
+  /** The rewritten file (identical to the input when nothing was removed).
+   *  Internal to the delete path: the public result omits it. */
+  content?: string
 }
 
 export class ImportPruner {
@@ -124,7 +125,7 @@ export class ImportPruner {
 
   /** Remove import bindings that the `delete` made unreferenced. */
   static async prune(fileContent: string, filePath: string): Promise<string> {
-    return (await ImportPruner.pruneWithReport(fileContent, filePath)).content
+    return (await ImportPruner.pruneWithReport(fileContent, filePath)).content ?? fileContent
   }
 
   /** Local names of the bindings no live occurrence refers to. */

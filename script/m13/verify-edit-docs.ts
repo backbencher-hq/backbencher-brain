@@ -196,6 +196,47 @@ if (registry) {
       `engine MAX_BATCH_EDITS=${MAX_BATCH_EDITS}`)
     harness.check("hand page: states that `batch` needs an index while `write` does not",
       flat.includes("`batch` is not exempt the way `write` is"), "")
+    // ── The Phase B contracts: each one is a claim a reader acts on, so the hand
+    // page has to carry it and this gate has to be able to go red when it stops.
+    harness.check("hand page: states the import-cleanup scope and the declared skip",
+      flat.includes("Import cleanup after the deletion is **TypeScript/JavaScript only**")
+        && flat.includes("byte-for-byte unchanged")
+        && flat.includes('"importPruning": {"attempted": false'),
+      "the import-pruning contract is not on the page")
+    harness.check("hand page: states the protected-path refusal",
+      flat.includes("`.git/`, `.hg/`, `.svn/`, `node_modules/`, or the index data directory")
+        && flat.includes("A protected target is refused by name before anything is written"),
+      "the protected-path policy is not on the page")
+    harness.check("hand page: states both rename refusals (existing name, same name)",
+      flat.includes("is ALREADY DECLARED at top level")
+        && flat.includes("`newName` that is the symbol's current name is refused as a no-op"),
+      "the rename refusals are not on the page")
+    harness.check("hand page: a plan-stage refusal carries the EMPTY envelope, declared",
+      flat.includes("A refusal raised while PLANNING carries the EMPTY envelope")
+        && flat.includes("refusedBeforeWriting: true"),
+      "the plan-stage envelope is not on the page")
+    harness.check("hand page: states the formatter line-ending repair and its declared field",
+      flat.includes("restores the file's CRLF ending")
+        && flat.includes("lineEndingRestored: true"),
+      "the line-ending repair is not on the page")
+    harness.check("hand page: states that reindexed is measured, not asserted",
+      flat.includes("`reindexed` reports the reindex result, not the intent to reindex"),
+      "the measured-reindex contract is not on the page")
+    harness.check("hand page: states the measured commit cost and the client timeout ceiling",
+      flat.includes("A commit therefore costs SECONDS")
+        && flat.includes("30 s timeout"),
+      "the measured commit cost is not on the page")
+    // ── The generated page must carry the same Phase B contracts. ───────────
+    harness.check("docs: the generated page carries the import-pruning limitation and its declaration",
+      doc.includes("Import cleanup after `delete` is TypeScript/JavaScript-only")
+        && doc.includes("importPruning.attempted: false"),
+      "the generated page does not state the import-pruning scope")
+    harness.check("docs: the generated page carries the protected-path refusal",
+      doc.includes("Writes are refused inside `.git/`, `.hg/`, `.svn/`, `node_modules/`, and the index data directory"),
+      "the generated page does not state the protected-path policy")
+    harness.check("docs: the generated page carries the measured commit cost",
+      doc.includes("A commit is SECONDS, not milliseconds") && doc.includes("30 s timeout"),
+      "the generated page does not state the measured commit cost")
   }
 }
 
@@ -218,12 +259,17 @@ if (registry) {
 // script/m65/verify-rules-gate-selftest.ts), and only the invocation differs:
 // Bun runs a .ts file directly, Node needs the tsx loader.
 const runningUnderBun = typeof (globalThis as any).Bun !== "undefined"
+// SCOPED to this tool: the generator's unscoped verify also checks every other
+// tool's page, so a stale page elsewhere in the tree turned THIS tool's gate red
+// for a file it does not own (measured: 82/83 with the only failure naming
+// docs/tools/bb_analyze.md). A per-tool release gate must fail on its own
+// artifact, not on the repository's regeneration state.
 const generatorArgs = runningUnderBun
-  ? ["run", "script/verify-tool-docs.ts"]
-  : ["--import", "tsx", "script/verify-tool-docs.ts"]
+  ? ["run", "script/verify-tool-docs.ts", "--only", "bb_edit"]
+  : ["--import", "tsx", "script/verify-tool-docs.ts", "--only", "bb_edit"]
 const gen = spawnSync(process.execPath, generatorArgs, { cwd: root, encoding: "utf8", timeout: 300_000 })
 harness.check(
-  `docs: generator verify mode passes (bb_edit.md byte-fresh) — ${runningUnderBun ? "bun" : "node"}`,
+  `docs: generator verify mode passes for bb_edit (bb_edit.md byte-fresh) — ${runningUnderBun ? "bun" : "node"}`,
   gen.status === 0,
   gen.status === 0 ? "" : `exit ${gen.status}: ${(gen.stderr || gen.stdout || "").slice(0, 200)}`,
 )

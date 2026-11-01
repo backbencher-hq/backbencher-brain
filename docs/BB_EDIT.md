@@ -1,9 +1,25 @@
-# Unified Editing (M9.13)
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the hand-written guide to bb_edit: the safety properties,
+  every mode and option, the failure and rollback semantics, and the measured
+  costs a caller can rely on.
+WHO IT IS FOR — anyone editing source through the MCP tool, and the gates that
+  check this page against the registry and the engine.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_edit/descriptor.ts,
+  src/mcp/tools/bb_edit/handler.ts, src/intelligence/edit/edit-engine.ts,
+  src/ast/import-pruner.ts, script/tool-docs/curation/bb_edit.ts, and
+  script/m13/verify-edit-docs.ts (which checks this page's contract sentences).
+-->
+
+# Unified Editing
 
 `bb_edit` is the canonical mutation tool. Its required discriminator is
-`mode`: `write`, `update`, `insert`, `delete`, `refactor`, or `batch`. The legacy
-`bb_write`, `bb_update`, `bb_insert`, `bb_delete`, and `bb_refactor` names remain
-adapters over the same engine.
+`mode`: `write`, `update`, `insert`, `delete`, `refactor`, or `batch`. The retired
+pre-0.3.0 spellings (`bb_write`, `bb_update`, `bb_insert`, `bb_delete`,
+`bb_refactor`) are not registered tools — they are rejected as unknown — and
+`RETIRED_GHOST_TOOL_NAMES` in `src/cli/onboard.ts` exists so the gates can prove
+they stay gone.
 
 ## Safety
 
@@ -12,8 +28,18 @@ adapters over the same engine.
   are rejected. New nested files are allowed only below the canonical project root.
 - Symbol operations require a unique indexed symbol with byte bounds and a fresh
   indexed file hash. Stale bounds fail before any write.
-- `insert` body positions use code-aware brace matching, preserving nested braces
-  and ignoring strings/comments.
+- `insert` body positions are found from the language's own BODY NODE in the
+  parse (tree-sitter), not by counting braces: nested braces inside strings or
+  comments cannot mislead the insertion point, and a body style that is not
+  brace-delimited is handled by its own node kind. A body the grammar does not
+  expose (an Elixir `do … end`) is REFUSED with that diagnostic, never silently
+  inserted in the wrong place.
+- Every write target is resolved to a real path inside the canonical project
+  root, and the resolved path may not be inside `.git/`, `.hg/`, `.svn/`,
+  `node_modules/`, or the index data directory (`BB_DATA_DIR`, default
+  `~/.bb`). That is a SAFETY list, not the security boundary: containment in the
+  project is enforced separately. A protected target is refused by name before
+  anything is written.
 - `delete` checks active `calls`, `instantiates`, `references`, and `uses` edges
   AND performs an AST-level dangling-reference scan of the post-delete file.
   If any reference to the deleted symbol survives, the delete is refused unless
@@ -85,10 +111,27 @@ Required: `targetSymbolName`, plus `newContent` (or its alias `content`).
 ### `delete`
 
 Required: `symbolName`. Optional `filePath` and `lineStart` disambiguate
-same-name symbols. Import cleanup runs after deletion. Caller protection
-is enabled by default; `force` bypasses the block explicitly. Regardless of
-`force`, any reference sites that survive the deletion (e.g. a `private :name`
-or `alias` line) are reported in `warnings` — never silently left behind.
+same-name symbols. Caller protection is enabled by default; `force` bypasses the
+block explicitly, and a forced delete ALWAYS reports what it bypassed: the
+indexed-caller count it overrode, and any reference sites that survive the
+deletion (e.g. a `private :name` or `alias` line), each in `warnings` — never
+silently left behind. The refusal path and the forced path therefore tell the
+same story, and neither is a success message over unexamined evidence.
+
+Import cleanup after the deletion is **TypeScript/JavaScript only**, and it is
+AST-driven: tree-sitter names the import statements, identifier occurrences decide
+usage, so a dead binding is removed and a binding still used anywhere in live code
+is kept. For every other language the file is left **byte-for-byte unchanged** and
+the answer DECLARES that it did not attempt cleanup:
+
+```json
+"importPruning": {"attempted": false, "language": "haskell", "removedBindings": [], "reason": "import pruning is implemented for TypeScript/JavaScript only; haskell imports were left unchanged rather than pattern-matched"}
+```
+
+That declaration is also a warning (`delete …: import cleanup was not attempted`).
+A leftover import never breaks a build; an import removed on a guess does — so the
+tool leaves imports alone where it cannot prove them dead. On the TS/JS path the
+report names what it removed (`attempted: true`, `removedBindings: [...]`).
 
 ### `refactor`
 
@@ -98,6 +141,17 @@ classifier marks as a reference (not a binding, not a member/property key, not
 inside a same-name shadow scope) is renamed with it. This is independent of
 whether the index recorded an edge for the symbol — completeness does not
 silently degrade when the analyzer missed a relationship.
+
+Two refusals protect the meaning of "renamed", both raised at PLAN time with
+nothing written:
+
+- a `newName` that is the symbol's current name is refused as a no-op — reporting
+  "1 site(s)" over identical bytes is a success message for a rename that did
+  nothing;
+- a `newName` that is ALREADY DECLARED at top level in any file the plan rewrites
+  is refused by file and line. Without that check, `refactor target → existing`
+  leaves TWO declarations with one name — a compile error reported as success,
+  which is the one claim a rename must never make.
 
 ### `batch`
 
@@ -163,21 +217,19 @@ server keeping a second list beside it.
 
 A project the indexer has never run over is therefore editable: `write` creates
 the first file and, reporting `reindexed: true`, leaves rows behind that the next
-call's symbol modes can resolve — the bootstrap path. Before this was true, the
-MCP server refused **every** mode with `No index found … Run: bb index …`
-(measured on all five), and it returned that refusal without `isError`, so a
-client branching on the flag read a write tool's refusal as a success. The
-refusal is now mode-aware and is an error: it names the reindex command and the
-modes that still work.
+call's symbol modes can resolve — the bootstrap path. The MCP server's refusal
+is mode-aware and arrives as an ERROR (`isError: true`): it names the reindex
+command and the modes that still work, so a caller blocked from `update` learns
+that `write` is available rather than only that the call did not run.
 
 On the engine path — the CLI door (`bb tool bb_edit`), which does not gate on
 `requiresIndex`, and any caller of the handler — the two causes are told apart
-instead of sharing one sentence. A name that is genuinely absent from a real
-index is still `symbol <name> not found or has no byte bounds`; an unindexed
-project says so and names the remedy (`this project has no index (0 files
-indexed), so the name cannot be found in it — index it first: bb index …`).
-The old text was the second sentence for both, and on an unindexed project it is
-plainly false: the symbol is on disk, and nothing could have found it.
+rather than sharing one sentence. A name genuinely absent from a real index is
+`symbol <name> not found or has no byte bounds`; a project with NO index says so
+and names the remedy: `this project has no index (0 files indexed), so the name
+cannot be found in it — index it first: bb index …`. On an unindexed project the
+symbol is on disk and nothing could have found it, so the two answers are
+different facts and are reported as such.
 
 ## Per-Mode Arguments
 
@@ -211,7 +263,7 @@ bb_edit update mode does not accept: position (position is accepted for insert) 
 The sets above are not transcribed from the docs: they are
 `EDIT_OPTIONS_BY_MODE` in `src/mcp/tool-validation.ts`, which is what the
 rejection builds its message from, what the generated page renders, and what the
-M13 boundary gate pins in both directions (accepted options never trigger the
+boundary gate pins in both directions (accepted options never trigger the
 rejection; every other schema option always does).
 
 ## Batch: One Plan, One Cycle, One Envelope
@@ -236,7 +288,10 @@ A batch is not N edits run in a row; it is one edit operation over N targets.
 
 Every answer — and every refusal — carries `envelope`, the per-file outcome of the
 call, because "is my working tree back?" is a per-file question that one boolean
-cannot answer:
+cannot answer. A refusal raised while PLANNING carries the EMPTY envelope
+(`entries: []`, `committed: 0`, `restored: 0`) plus `refusedBeforeWriting: true`:
+nothing was planned for write, nothing was committed and nothing needed restoring,
+so the same per-file shape answers the same question for every refusal:
 
 ```json
 {
@@ -331,8 +386,8 @@ reported (see below), not enforced.
 when every changed file was handed to the formatter its extension maps to and that
 process **exited 0**. `format:false`, a dry run, an extension with no mapping, a
 formatter that is not installed, a non-zero exit, and the 1.5s timeout all leave it
-`false` — each of those used to return `true`, because the field restated
-`request.format` and the formatter step's own outcome was discarded.
+`false` — the field is the formatter step's measured outcome, never an echo of
+`request.format`.
 
 Every response that requested formatting carries `formatting`, one entry per
 changed file, so the outcome can be audited rather than assumed:
@@ -353,14 +408,52 @@ also adds a `format: <path>: <reason>` warning. "No mapping" and "not installed"
 are reported in `formatting` only: they are facts about the machine, not anomalies,
 and warning on them would fire on every edit in a repository without a formatter.
 
+Line endings are the file's, not the formatter's. The engine splices with the
+file's own ending, and if the formatter rewrites the file with its own (measured:
+`gofmt -w` turns a CRLF file into LF), the engine restores the file's CRLF ending
+afterwards and DECLARES the repair on that file's `formatting` entry as
+`lineEndingRestored: true`. A formatter that is handed a CRLF file by the prettier
+route is invoked with `--end-of-line crlf`; gofmt/rustfmt/clang-format have no such
+flag, which is why the repair exists.
+
 Mapping: `.ts .tsx .js .jsx .json .html .css .md` → `prettier --write` (with
-`--end-of-line crlf` on a CRLF file, so a formatter never rewrites the file's line
-endings); `.rs` → `rustfmt`; `.go` → `gofmt -w`; `.c .cpp .h .hpp` →
-`clang-format -i`; `.py` → `black`, falling back to `ruff format`. The binary is
+`--end-of-line crlf` on a CRLF file); `.rs` → `rustfmt`; `.go` → `gofmt -w`;
+`.c .cpp .h .hpp` → `clang-format -i`; `.py` → `black`, falling back to
+`ruff format`. The binary is
 resolved from the nearest `node_modules/.bin` walking up from the edited file, then
 from `PATH`, and it is invoked with `execFile` — an argv array, no shell — so a file
-**name** is never interpreted (a name like `inj$(touch pwned).ts` used to execute
-`touch pwned` through the old command string).
+**name** is never interpreted as shell syntax: a file named
+`inj$(touch pwned).ts` is passed as one argv element.
+
+## Reindex State Is Measured
+
+`reindexed` reports the reindex result, not the intent to reindex. The edit's own
+bytes are validated before that point, so the edit stands even when the reindex
+reports per-file failures — and those failures are named:
+`reindexed: false` plus a `reindex: N file(s) failed to reindex … run bb index
+--changed` warning listing the files. The derived-data outcome stays in
+`derived.pass`, so a caller can tell a full pass from a bounded one.
+
+## What a Commit Costs
+
+Planning is the fast path: `dryRun` plans, parses the target and writes nothing.
+Measured on a lane copy of `test/fixtures/polyglot` (5 files) and
+`.perf-fixtures/bb-scale/n100` (100 files), warm, five runs, p50/p95:
+
+| tier | dry run (update) | update commit | write create commit |
+|---|---|---|---|
+| 5-file fixture | 11.5 / 11.8 ms | 1801.5 / 2062.9 ms | 1879.6 / 3070.6 ms |
+| 100-file fixture | 71.0 / 76.8 ms | 4500.7 / 7052.3 ms | 2388.1 / 3723.9 ms |
+
+A commit therefore costs SECONDS, not milliseconds: it runs the formatter, the
+validation pass and the scoped reindex synchronously, and the answer is only
+returned after the index is current (or the failure named). The figures are an
+upper bound measured on a busy shared machine; the useful guarantee is the shape —
+dry runs are tens of ms, commits are seconds — and the ceiling is the MCP client's
+30 s timeout. A large project can approach it, and a timed-out write call is the
+one case where the caller cannot tell committed from restored by the answer alone;
+`envelope` is the field to recover that state from a re-run, which re-plans against
+the current bytes.
 
 ## Permissions and Failure Semantics
 
@@ -382,10 +475,19 @@ not expose partial successful changes. Generated test code is never produced.
 {"mode":"delete","symbolName":"obsoleteHelper","force":false}
 ```
 
-Verification: `script/verify-edit.ts` covers path escapes, sibling prefixes,
-symlink escapes, nested writes, dry-run no-write behavior, nested braces,
-ambiguity, stale bytes, caller protection, rollback, and rename string/comment
-safety. `script/m13/verify-edit-unit.ts` (E7) covers the formatter contract
-measured above — no mapping, success with its own output bytes, a non-zero exit, a
-hang killed at the budget, no formatter installed (PATH-scrubbed), `format:false`,
-dry run, the multi-file aggregate, and a file NAME that must not execute.
+Verification. `script/verify-edit.ts` covers path escapes, sibling prefixes,
+symlink escapes, protected paths, nested writes, dry-run no-write behavior,
+body-node insertion, ambiguity, stale bytes, caller protection, rollback, rename
+string/comment safety, and import pruning (the TS removal, the kept aliased
+binding, and the declared skip with byte-identity on a Haskell fixture).
+`script/m13/verify-edit-unit.ts` covers the formatter contract measured above — no
+mapping, success with its own output bytes, a non-zero exit, a hang killed at the
+budget, no formatter installed (PATH-scrubbed), `format:false`, dry run, the
+multi-file aggregate, and a file NAME that must not execute.
+`script/m15/verify-edit-regex.ts` is an AST census of every regex the edit surface
+executes, matched against `validation/tools/bb_edit/regex-surface.json`; it fails
+on a new, stale or unjustified use and carries a `--selftest` for its own
+detector. `script/m13/verify-edit-atomicity.ts`, `…-batch.ts`, `…-freshness.ts`,
+`…-boundary.ts`, `…-docs.ts`, and `script/m16/verify-edit-real-repo.ts` own the
+rollback, batch atomicity, stale-refresh, boundary, documentation and real-repo
+legs respectively.

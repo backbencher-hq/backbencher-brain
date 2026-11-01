@@ -67,7 +67,7 @@ function existingGoSample(reposDir: string): string | null {
   // its own exit code (2), not a crash and not a silent pass — see the exit at the foot of this
   // file, which also reports the gate's verdict, so a caller reading the exit code can tell
   // VERIFIED from KNOWN-GAP.
-  const REPOS_DIR = resolveOptionalCorpus("repositories")
+  const REPOS_DIR = resolveOptionalCorpus("repositories", "BB_REPOSITORIES_REPO")
   if (REPOS_DIR === null) {
     console.log("  BLOCKED: " + optionalCorpusMissingMessage("repositories"))
     console.log("  This gate's subject is the real repository corpus. Without it there is nothing")
