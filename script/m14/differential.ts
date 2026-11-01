@@ -23514,6 +23514,13 @@ async function main() {
     // Pick up what the children measured, then verify completeness: the parent
     // must never emit evidence from a partial sweep.
     Object.assign(laneJournal, loadJournal())
+    // children hand back their ZERO-TRUTH lanes through the journal (see the child branch); the
+    // parent must add them to its own map so the baseline records them as unmeasured, not as passes.
+    for (const [k, v] of Object.entries<any>(laneJournal)) {
+      if (v && v.unmeasured) {
+        zeroTruthUnmeasured[k] = { repo: v.repo, language: v.language, reason: v.reason, corpusOnBox: true }
+      }
+    }
     const stillMissing = lanes.filter(l => !laneJournal[jKeyOf(l)])
     if (stillMissing.length > 0) {
       throw new Error(`differential: ${stillMissing.length} lane(s) unmeasured after batching (${stillMissing.map(jKeyOf).join(", ")}) — no evidence written`)
@@ -23529,6 +23536,11 @@ async function main() {
     // trusted verbatim.
     const jKey = lane.isSecond ? `${langRepo}:${lang}` : lang
     if (useJournal && laneJournal[jKey]) {
+      if (laneJournal[jKey].unmeasured) {
+        // a zero-truth lane handed back by a child: accounted for, never measured
+        console.log(`[${langRepo}] ${lang}: UNMEASURED from journal — oracle derived zero truth (${String(laneJournal[jKey].reason ?? "").slice(0, 80)})`)
+        continue
+      }
       const jRow = laneJournal[jKey].row
       if (lane.isSecond) reportSecond[jKey] = jRow
       else report[lang] = jRow
@@ -26545,6 +26557,14 @@ async function main() {
     if (labelTruthGaps.length > 0) {
       ;(laneJournal as any).labelTruthGaps = [...((laneJournal as any).labelTruthGaps ?? []), ...labelTruthGaps]
     }
+    // A lane whose oracle derived ZERO truth is ACCOUNTED FOR, not measured: journal it with the
+    // marker so the parent's completeness guard sees the lane was handled and the baseline's
+    // `unmeasured` block can name it. Measured 2026-11-01: without this the opt-in recorded bash and
+    // nim in the CHILD's memory only, and the parent aborted with "3 lane(s) unmeasured after batching".
+    for (const [k, v] of Object.entries(zeroTruthUnmeasured)) {
+      ;(laneJournal as any)[k] = { unmeasured: true, repo: v.repo, language: v.language, reason: v.reason }
+    }
+    if (Object.keys(zeroTruthUnmeasured).length > 0 && useJournal) saveJournal(laneJournal)
     process.exit(0)
   }
 
