@@ -111,7 +111,12 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     writeFileSync(path.join(root, "b.py"), "def py_fn():\n    return 1\n")
     const projectId = await indexProject(root)
     try {
-      const report = await getUnifiedHealth(projectId, root, {})
+      // The per-language breakdown is verbose output by contract (the symbol
+      // census behind it is one row per indexed symbol), so the assertion asks
+      // for the verbose report and separately pins the default omission.
+      const report = await getUnifiedHealth(projectId, root, { verbose: true })
+      const defaultReport = await getUnifiedHealth(projectId, root, {})
+      nk("H3: a default call does NOT collect the per-symbol language census (verbose-only)", defaultReport.languages.length === 0, `languages=${defaultReport.languages.length} on a default call`)
       const langs = report.languages
       ck("H3: per-language breakdown has both languages", langs.some((l) => l.language === "typescript") && langs.some((l) => l.language === "python"), langs.map((l) => l.language + ":" + l.files).join(","))
       const tsLang = langs.find((l) => l.language === "typescript")
@@ -123,7 +128,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       // languages have 1 file — so "python:1f/1s" legitimately comes first and
       // the assertion was order-dependent for a reason that has nothing to do
       // with the thing being checked. Assert each language's own cell instead.
-      const verboseText = formatUnifiedHealth({ ...report, verbose: true })
+      const verboseText = formatUnifiedHealth(report)
       ck("H3: verbose format includes the languages section", /(^|\n)languages: /.test(verboseText), verboseText.split("\n").find((l) => l.startsWith("languages:")) ?? "absent")
       ck("H3: verbose languages section names both languages with their counts", verboseText.includes("typescript:1f/1s") && verboseText.includes("python:1f/1s"), verboseText.split("\n").find((l) => l.startsWith("languages:")) ?? "absent")
     } catch (e: any) {

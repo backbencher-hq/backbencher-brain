@@ -132,7 +132,9 @@ const clean = (root: string, pid: string) => {
     raw.prepare("INSERT OR REPLACE INTO brain_semantic_embedding (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, last_updated) VALUES (?,?,?,?,?,?,?,?,?)")
       .run("emb-foreign", FOREIGN, foreignEntity, "symbol", "test-model", "[]", 0, "h-foreign", 1)
 
-    const foreignOnly = await getUnifiedHealth(pid, root, {})
+    const defaultOnly = await getUnifiedHealth(pid, root, {})
+    harness.check("a default call does NOT run the per-symbol embedding join (verbose-only)", defaultOnly.embeddings.byLanguage.length === 0, `byLanguage length=${defaultOnly.embeddings.byLanguage.length} on a default call`)
+    const foreignOnly = await getUnifiedHealth(pid, root, { verbose: true })
     const langs = foreignOnly.embeddings.byLanguage
     harness.check("byLanguage is populated (the query ran, it did not fall into the catch)", langs.length > 0, `${langs.length} languages — 0 would mean the try/catch swallowed a failure, which reads as 'no coverage data' rather than as an error`)
     const symbolsTotal = langs.reduce((a, l) => a + l.symbols, 0)
@@ -142,7 +144,7 @@ const clean = (root: string, pid: string) => {
     // Now the real row: it must be counted. If the fix over-corrected, this fails.
     raw.prepare("INSERT OR REPLACE INTO brain_semantic_embedding (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, last_updated) VALUES (?,?,?,?,?,?,?,?,?)")
       .run("emb-real", pid, victim.id, "symbol", "test-model", "[]", 0, "h-real", 1)
-    const withReal = await getUnifiedHealth(pid, root, {})
+    const withReal = await getUnifiedHealth(pid, root, { verbose: true })
     const embeddedAfter = withReal.embeddings.byLanguage.reduce((a, l) => a + l.embedded, 0)
     harness.check("OUR OWN embedding IS counted — the fix did not over-correct", embeddedAfter === 1, `embedded=${embeddedAfter}, expected exactly 1`)
     const kinds = (withReal.embeddings as any).kindsWithNoEmbeddings
@@ -198,7 +200,7 @@ const clean = (root: string, pid: string) => {
     harness.check("the plan assertion above is the load-bearing one, and it passed on entity_id", /entity_id=\?/.test(planText), `plan: ${planText.slice(0, 120)} — the ratio is scale-dependent and is recorded, not asserted`)
 
     // And the report itself must still be correct at this scale.
-    const r = await getUnifiedHealth(pid, root, {})
+    const r = await getUnifiedHealth(pid, root, { verbose: true })
     const total = r.embeddings.byLanguage.reduce((a, l) => a + l.symbols, 0)
     harness.check("the report is still correct at that scale", total === symbols.length, `byLanguage symbols total=${total} vs ${symbols.length} indexed — a fast query that returns the wrong number is worse than a slow one`)
   } finally { clean(root, pid) }

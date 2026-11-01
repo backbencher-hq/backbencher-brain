@@ -61,7 +61,14 @@ if (registry) {
   const props = Object.keys((registry.inputSchema as any).properties ?? {})
   const missing = props.filter((p) => !doc.includes(`"${p}"`))
   harness.check("docs: every input property is documented", missing.length === 0, missing.length ? `missing: ${missing.join(",")}` : `${props.length} props`)
-  harness.check("docs: refresh documented as explicit mutation", doc.includes("refresh=true explicitly mutates only index data"))
+  // Assert the CONTRACT, not one frozen sentence: status is read-only, refresh is
+  // an explicit mutation, force is destructive and also a mutation.
+  const safety = doc.split("## Safety")[1]?.split("\n## ")[0] ?? ""
+  harness.check(
+    "docs: refresh documented as explicit mutation",
+    /read-only/i.test(safety) && /refresh=true/.test(safety) && /(mutation|mutates|reindex)/i.test(safety) && /force=true/.test(safety) && /(destructive|WIPES)/i.test(safety),
+    safety.trim().slice(0, 160),
+  )
 }
 
 // Scoped to this tool: the full generator also checks every other owner's page,

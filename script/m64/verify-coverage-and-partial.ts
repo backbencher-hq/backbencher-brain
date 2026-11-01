@@ -361,7 +361,7 @@ const drop = (root: string, pid: string) => {
 
     // And the shape difference is documented where a caller will read it.
     const historyDesc = (PUBLIC_TOOL_DESCRIPTORS.find((d) => d.name === "bb_health")!.inputSchema.properties as any).history.description as string
-    harness.check("the shape change is declared in the schema description", /CHANGES THE OUTPUT SHAPE/.test(historyDesc) && /\{ health, history \}/.test(historyDesc), historyDesc.slice(0, 120))
+    harness.check("the shape change is declared in the schema description", /CHANGES THE OUTPUT SHAPE/.test(historyDesc) && /\{ health, history(?:, healthy)? \}/.test(historyDesc), historyDesc.slice(0, 120))
     harness.check("and the same `healthy` contract is declared there too", /same top-level `healthy` boolean/.test(historyDesc), "")
   } finally { drop(root, pid) }
 }
