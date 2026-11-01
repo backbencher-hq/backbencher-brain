@@ -139,6 +139,12 @@ async function main(): Promise<void> {
   const cross = parse((await call("bb_cross_language", { symbol: "Inventory" })).text)
   check("T1: bb_cross_language returns the stored scala pair", cross?.pairCount >= 1, JSON.stringify(cross?.facts ?? null).slice(0, 200))
   check("T1: bb_cross_language facts carry tier + bridge", (cross?.facts ?? []).every((f: any) => declaredTiers.includes(f.tier) && typeof f.bridge === "string"), JSON.stringify(cross?.facts?.[0] ?? null))
+  // The count fields are a contract, not decoration: factCount must equal the
+  // number of facts actually published (base + member), and pairCount must be
+  // the number of DISTINCT pairs — a count that cannot be recomputed from the
+  // payload is a claim the reader cannot check.
+  check("T1: bb_cross_language factCount equals the published facts + memberFacts", (cross?.factCount ?? -1) === (cross?.facts?.length ?? 0) + (cross?.memberFacts?.length ?? 0), JSON.stringify({ factCount: cross?.factCount, facts: cross?.facts?.length, memberFacts: cross?.memberFacts?.length }))
+  check("T1: bb_cross_language pairCount is DISTINCT pairs over every published fact", cross?.pairCount === new Set([...(cross?.facts ?? []), ...(cross?.memberFacts ?? [])].map((f: any) => f.pair)).size, JSON.stringify({ pairCount: cross?.pairCount, pairs: [...new Set([...(cross?.facts ?? []), ...(cross?.memberFacts ?? [])].map((f: any) => f.pair))] }))
   const crossAbsent = parse((await call("bb_cross_language", { symbol: "Barcode" })).text)
   check("T1: bb_cross_language declares absence honestly when no rows", crossAbsent?.declaredAbsent === true && typeof crossAbsent?.absenceNote === "string", JSON.stringify(crossAbsent ?? null).slice(0, 160))
   const crossMiss = await call("bb_cross_language", { symbol: "definitely-not-a-symbol-xyz" })
