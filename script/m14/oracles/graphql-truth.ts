@@ -120,8 +120,8 @@ const EXTENSION_KINDS = new Set([
 ])
 
 /** (member name, written type name) for every member a definition body declares. */
-function membersOf(block: any): { name: string; type: string; args: { name: string; type: string; defaultText: string }[] }[] {
-  const out: { name: string; type: string; args: { name: string; type: string; defaultText: string }[] }[] = []
+function membersOf(block: any): { name: string; type: string; defaultText: string; directives: string[]; args: { name: string; type: string; defaultText: string }[] }[] {
+  const out: { name: string; type: string; defaultText: string; directives: string[]; args: { name: string; type: string; defaultText: string }[] }[] = []
   const pushField = (n: any) => {
     const nm = ownName(n)
     const t = firstOfType(n, "Type")
@@ -143,7 +143,25 @@ function membersOf(block: any): { name: string; type: string; args: { name: stri
       }
       walkArgs(argsNode)
     }
-    out.push({ name: nm, type: referencedTypeName(t), args })
+    // A DIRECTIVE APPLICATION on a declaration is a `uses` of the directive in this lane's
+    // spelling: `user: User @deprecated` publishes `uses <owner>.<member> -> @deprecated`
+    // (measured on the GitHub SDL: 210 unexplained `uses` rows, every one of them a directive or
+    // an enum default, and this is the directive half).
+    const directives: string[] = []
+    const walkDirectives = (m: any) => {
+      for (const c of children(m)) {
+        if (c.type === "Directive") {
+          const nm2 = ownName(c)
+          if (nm2) directives.push(nm2)
+          continue
+        }
+        if (c.type === "Directives" || c.type === "DirectivesConst") walkDirectives(c)
+      }
+    }
+    walkDirectives(n)
+    // An enum DEFAULT on the member itself: `side: DiffSide = RIGHT` on an INPUT OBJECT field.
+    const ownDefault = firstOfType(n, "DefaultValue")
+    out.push({ name: nm, type: referencedTypeName(t), defaultText: text(ownDefault), directives, args })
   }
   const walk = (n: any) => {
     for (const c of children(n)) {
@@ -152,12 +170,12 @@ function membersOf(block: any): { name: string; type: string; args: { name: stri
         continue
       }
       if (c.type === "EnumValueDefinition") {
-        out.push({ name: ownName(c), type: "", args: [] })
+        out.push({ name: ownName(c), type: "", defaultText: "", directives: [], args: [] })
         continue
       }
       if (c.type === "OperationTypeDefinition") {
         // schema { mutation: Mutation } → the member is the OPERATION TYPE (`schema.mutation`)
-        out.push({ name: text(c).split(":")[0].trim(), type: "", args: [] })
+        out.push({ name: text(c).split(":")[0].trim(), type: "", defaultText: "", directives: [], args: [] })
         continue
       }
       if (c.type === "FieldsDefinition" || c.type === "InputFieldsDefinition" || c.type === "EnumValuesDefinition") {
@@ -207,11 +225,16 @@ export function deriveGraphqlTruth(root: any, filePath: string): GraphqlEdge[] {
     if (members.length) fieldsDeclared.set(owner, [...(fieldsDeclared.get(owner) ?? []), ...members.map((m) => m.name).filter(Boolean)])
     for (const m of members) {
       if (m.type) push("references", `${owner}.${m.name}`, m.type)
+      // member-level enum DEFAULT: `side: DiffSide = RIGHT` on an INPUT OBJECT field
+      const mdv = /^\s*=?\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(m.defaultText ?? "")
+      if (mdv && m.type) push("uses", `${owner}.${m.name}`, `${m.type}.${mdv[1]}`)
+      // DIRECTIVE APPLICATION on a member: `user: User @deprecated` is `uses ... -> @deprecated`
+      for (const d of m.directives ?? []) push("uses", `${owner}.${m.name}`, `@${d}`)
       for (const a of m.args ?? []) {
         if (a.type) push("references", `${owner}.${m.name}`, a.type)
         // A default value that is an enum member reads that member: `side: DiffSide = RIGHT` is a
         // `uses` of `DiffSide.RIGHT`. The analyzer publishes it; the oracle must model it.
-        const m2 = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(a.defaultText ?? "")
+        const m2 = /^\s*=?\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(a.defaultText ?? "")
         if (m2 && a.type) push("uses", `${owner}.${m.name}`, `${a.type}.${m2[1]}`)
       }
     }
