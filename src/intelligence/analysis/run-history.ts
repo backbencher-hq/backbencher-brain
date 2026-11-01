@@ -235,8 +235,19 @@ export async function setFindingState(projectId: string, findingId: string, stat
 }
 
 export async function getAnalysisHistory(projectId: string, kind?: string, limit = 20): Promise<AnalysisHistoryReport> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
-  ensureHistorySchema(raw)
+  // HISTORY IS A READ: it must not run ensureHistorySchema (which creates and
+  // migrates tables) just to answer. The schema is created by the write path
+  // (recordAnalysisRun) that produced the history; a database without it simply
+  // has no history yet, which the empty report states rather than repairs.
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
+  try {
+    return readHistory(raw, projectId, kind, limit)
+  } catch {
+    return { runs: [], findings: [], summary: Object.fromEntries(STATES.map((state) => [state, 0])) as Record<AnalysisFindingState, number> }
+  }
+}
+
+function readHistory(raw: any, projectId: string, kind: string | undefined, limit: number): AnalysisHistoryReport {
   const runs = (kind ? raw.prepare("SELECT * FROM brain_analysis_run WHERE project_id=? AND kind=? ORDER BY started_at DESC LIMIT ?").all(projectId, kind, limit) : raw.prepare("SELECT * FROM brain_analysis_run WHERE project_id=? ORDER BY started_at DESC LIMIT ?").all(projectId, limit)) as any[]
   const findingRows = (kind ? raw.prepare("SELECT * FROM brain_analysis_finding WHERE project_id=? AND kind=?").all(projectId, kind) : raw.prepare("SELECT * FROM brain_analysis_finding WHERE project_id=?").all(projectId)) as any[]
   const findings = orderedFindings(findingRows)

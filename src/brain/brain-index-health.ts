@@ -198,7 +198,10 @@ export interface IndexHealthOptions {
 }
 
 export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHealthOptions = {}): Promise<IndexHealthReport> {
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  // The integrity battery READS the index: a health check must not run the
+  // open-path migrations or move the WAL just by asking. Read-only handle;
+  // write tools (refresh/force) keep their own writable open.
+  const rawDb = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const diskScan = options.diskScan ?? "sample"
   const checks: HealthCheck[] = []
 
@@ -1075,7 +1078,7 @@ export async function preFlightCheck(
   warnings: string[]
   fixes: string[]
 }> {
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const rawDb = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const warnings: string[] = []
   const fixes: string[] = []
 
