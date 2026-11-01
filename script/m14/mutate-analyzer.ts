@@ -1250,14 +1250,14 @@ function dropBashArithmeticReads(r: any) {
   // A read is arithmetic when the SAME name is read on a line that carries no
   // other declaration — the pre-wave analyzer's blind spot was exactly the lines
   // whose only mention of the name is inside `$(( ))` or `(( ))`.
+  //
+  // MEASURED 2026-11-xx (fleet mutation battery): the previous filter body was a TAUTOLOGY —
+  // `if (!lines || lines.size < 2) return true; return lines.size < 2` keeps every row on both
+  // branches, so the mutant changed nothing and SURVIVED as a NO-OP. The defect it names is
+  // "variable reads inside arithmetic are dropped", so it now drops exactly those reads.
   return {
     ...r,
-    relationships: (r.relationships ?? []).filter((x: any) => {
-      if (x.type !== "uses") return true
-      const lines = exprLines.get(x.target)
-      if (!lines || lines.size < 2) return true
-      return lines.size < 2
-    }),
+    relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && declared.has(x.target))),
   }
 }
 
@@ -6975,18 +6975,17 @@ export const MUTANTS: Mutant[] = [
     language: "java",
     defectClass: "relationship-loss",
     description: "JAO1 regression: re-gates overrides behind the @Override annotation (un-annotated DerivedThing.total silently loses its override edge) — implicit-overrides fixture pins DerivedThing.total -> BaseThing.total",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
-      !(x.type === "overrides" && x.target === "BaseThing.total")) }),
+    // MEASURED 2026-11-xx: the target is the BARE member; the base owner lives in metadata.overriddenOwner.
+    // MEASURED 2026-11-xx: the pin is `overrides DerivedThing.total -> total`; the old filter also required a metadata key that the row does not carry.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && ((x.source === "DerivedThing.total" && x.target === "total") || x.target === "total"))) }),
   },
   {
     id: "java/overload-paired-as-override",
     language: "java",
     defectClass: "fabrication",
     description: "JAO2 regression: injects the name-only truth bug class — DerivedThing.find(int, String) pairs against BaseThing.find(int) as an override — implicit-overrides forbid pin",
-    transform: r => ({ ...r, relationships: [
-      ...(r.relationships ?? []),
-      { type: "overrides", source: "DerivedThing.find", target: "BaseThing.find", fromSymbol: "DerivedThing.find", toSymbol: "BaseThing.find", confidence: 1.0, metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode: "exact-in-file", evidenceClass: "structural" } },
-    ] }),
+    // MEASURED 2026-11-xx: implicit-overrides forbids `overrides` with TARGET `find` (bare). The dotted target this mutant added never matched the forbid.
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "DerivedThing.find", target: "find", fromSymbol: "DerivedThing.find", toSymbol: "find", confidence: 1.0, metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode: "exact-in-file", evidenceClass: "structural" } }] }),
   },
   {
     id: "scala/anonymous-body-scope-leak",
@@ -7066,8 +7065,8 @@ export const MUTANTS: Mutant[] = [
     language: "java",
     defectClass: "relationship-loss",
     description: "JD19 regression: reverts the suffix-resolved hierarchy walk — overrides through a non-declaring ancestor (BlackVal.val -> Node.val, BlackBranch.left -> Node.left) drop because hop-2 looks up classHierarchy with the bare name — anonymous-and-multihop-overrides pins catch them",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
-      !(x.type === "overrides" && ((x.source === "BlackVal.val" && x.target === "Node.val") || (x.source === "BlackBranch.left" && x.target === "Node.left") || (x.source === "BlackBranchVal.val" && x.target === "Node.val")))) }),
+    // MEASURED 2026-11-xx: override targets are BARE member names; the dotted targets this filter named never existed.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && ((x.source === "BlackVal.val" && x.target === "val") || (x.source === "BlackBranch.left" && x.target === "left") || (x.source === "BlackBranchVal.val" && x.target === "val")))) }),
   },
   {
     id: "java/return-type-refs-drop",
@@ -9948,8 +9947,8 @@ export const MUTANTS: Mutant[] = [
     language: "groovy",
     defectClass: "relationship-loss",
     description: "G2 regression: reverts to @Override-only override tasks — un-annotated Sub.greet redeclaring Base.greet emits nothing — implicit-override fixture expects Sub.greet->Base.greet at exact-in-file",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
-      !(x.type === "overrides" && x.source === "Sub.greet" && x.target === "Base.greet")) }),
+    // MEASURED 2026-11-xx: an override row spells source `Owner.member` but TARGET BARE (`Sub.greet -> greet`), carrying the base owner in metadata.overriddenOwner; the old dotted target matched nothing.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "Sub.greet" && x.target === "greet" && x.metadata?.overriddenOwner === "Base")) }),
   },
   {
     id: "groovy/ctor-name-revert",
@@ -10609,8 +10608,11 @@ export const MUTANTS: Mutant[] = [
     id: "dart/drop-mixin-uses-edge",
     language: "dart",
     defectClass: "relationship-loss",
-    description: "drops dart mixin uses edges (with RepositoryLogger) — dart section B uses pin",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isMixin && x.type === "uses")) }),
+    // MEASURED 2026-11-xx (fleet battery): a with-clause was relabelled to the canonical `mixes_in` on
+    // 2026-10-18, so the `uses{isMixin:true}` spelling this mutant filtered no longer exists and it survived as a
+    // NO-OP. The defect it names ("a mixin application edge is lost") is now carried by `mixes_in`.
+    description: "drops dart mixin application edges (with RepositoryLogger) — dart section B mixes_in pin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(((x.metadata ?? {}).isMixin || x.type === "mixes_in") && (x.type === "mixes_in" || x.type === "uses"))) }),
   },
   {
     id: "dart/drop-constructor-instantiates",
@@ -10699,8 +10701,10 @@ export const MUTANTS: Mutant[] = [
     id: "dart/mixin-on-heritage-dropped",
     language: "dart",
     defectClass: "relationship-loss",
-    description: "reverts DARTD14: mixin on-clause base never emits extends — expectRelationships extends Flow->Base meta.isMixinOn:true fails",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "extends" && x.source === "Flow" && x.metadata?.isMixinOn)) }),
+    // MEASURED 2026-11-xx: DARTD14 publishes the on-clause base as `references` with isMixinOn (not `extends`;
+    // the fixture expectation says exactly that), so the old filter removed nothing.
+    description: "reverts DARTD14: mixin on-clause base never emits its heritage row — expectRelationships references Flow->Base meta.isMixinOn:true fails",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.type === "references" || x.type === "extends") && x.source === "Flow" && x.metadata?.isMixinOn)) }),
   },
   {
     id: "dart/enum-heritage-dropped",
@@ -10849,9 +10853,16 @@ export const MUTANTS: Mutant[] = [
     language: "dart",
     defectClass: "relationship-loss",
     description: "DT2 regression: bound locals/params stop reading (frames empty) — dart value-reads local pins die (member/global pins survive)",
+    // MEASURED 2026-11-xx: the pins spell scoped targets (`sums\0xs`, `sums\0total`, …) while this filter keyed
+    // bare names (`sums>xs`), so it removed ONE accidental row and survived. Drop the scoped rows too.
     transform: r => {
-      const drop = new Set(["compute>k", "compute>depth", "compute>limit", "compute>total", "helper>x", "shadowed>count", "sums>i", "sums>total", "sums>x", "sums>xs", "guarded>e", "blocks>x", "blocks>xs", "blocks>p", "blocks>q", "inits>b", "inits>p", "constructor>p"]);
-      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && drop.has(`${x.source}>${x.target}`))) };
+      const owners = new Set(["compute", "helper", "shadowed", "sums", "guarded", "blocks", "inits", "constructor"]);
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+        if (x.type !== "uses") return true;
+        if (!owners.has(String(x.source))) return true;
+        const t = String(x.target ?? "");
+        return !(t.startsWith(String(x.source) + "\u0000") || !t.includes("."));
+      }) };
     },
   },
   {
@@ -11083,21 +11094,24 @@ export const MUTANTS: Mutant[] = [
     language: "javascript",
     defectClass: "relationship-loss",
     description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — js external-override pin",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+    // MEASURED 2026-11-xx: the override target is the BARE member (`handle`); the base owner is metadata, not a dotted target.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "handle")) }),
   },
   {
     id: "javascript/override-field-pair",
     language: "javascript",
     defectClass: "fabrication",
     description: "J2 regression: re-pairs methods against same-named base FIELDS (Sub.foo->Base.foo where Base.foo is data) — override-qualification forbid pin catches it",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.foo", target: "Base.foo", confidence: 0.95, metadata: {} }] }),
+    // MEASURED 2026-11-xx: override-qualification forbids `overrides Sub.foo -> foo` (BARE target). The dotted target this mutant added never matched.
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.foo", target: "foo", confidence: 0.95, metadata: {} }] }),
   },
   {
     id: "javascript/override-ctor",
     language: "javascript",
     defectClass: "fabrication",
     description: "J2 regression: re-emits constructor override edges (Sub.constructor->Base.constructor) — override-qualification forbid pin catches it",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.constructor", target: "Base.constructor", confidence: 0.95, metadata: {} }] }),
+    // MEASURED 2026-11-xx: override-qualification forbids `overrides Sub.constructor -> constructor` (BARE target).
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.constructor", target: "constructor", confidence: 0.95, metadata: {} }] }),
   },
   {
     id: "javascript/dup-first-wins",
@@ -18453,10 +18467,13 @@ export const MUTANTS: Mutant[] = [
           if (existing.has(edge)) continue
           existing.add(edge)
           added.push({
+            // The PRE-FIX observable the fixture forbids is `Derived.attr -> attr` (bare target); the earlier
+            // `${owner}.${name}` spelling never matched the forbid and the mutant survived as a fabricated row
+            // the fixture could not see. Reproduce the shape the fix actually removed.
             source: `${derived}.${name}`,
-            target: `${owner}.${name}`,
+            target: name,
             fromSymbol: `${derived}.${name}`,
-            toSymbol: `${owner}.${name}`,
+            toSymbol: name,
             type: "overrides",
             relationshipType: "overrides",
             confidence: 0.95,
@@ -19003,7 +19020,8 @@ export const MUTANTS: Mutant[] = [
     language: "python",
     defectClass: "relationship-loss",
     description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — python external-override pin",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+    // MEASURED 2026-11-xx: the override target is the BARE member (`handle`); the base owner is metadata, not a dotted target.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "handle")) }),
   },
 
   {
