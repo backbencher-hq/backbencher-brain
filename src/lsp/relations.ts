@@ -165,7 +165,12 @@ export const USAGE_COUNT_UNIT_LABEL =
 
 /** Minimal db surface for the independent count (structural: stubbable). */
 export interface UsageCountDb {
-  prepare(sql: string): { get(...params: unknown[]): unknown }
+  prepare(sql: string): {
+    get(...params: unknown[]): unknown
+    /** Optional multi-row read: the census query below needs GROUP BY rows, and a statement object that
+     *  supports get() but not all() is still a valid UsageCountDb for the count-only callers. */
+    all?(...params: unknown[]): unknown[]
+  }
 }
 
 /**
@@ -291,4 +296,70 @@ export function isResolvableUsageSiteRow(
     row.lineStart !== null && row.lineStart !== undefined &&
     row.lineEnd !== null && row.lineEnd !== undefined
   )
+}
+
+
+/**
+ * INBOUND MODEL phase B: rows that NAME a symbol's string but never resolved to an identity.
+ *
+ * The references/usages surface reads stored reverse edges by IDENTITY (`r.target_symbol_id = ?`), which is
+ * right — but it therefore cannot explain an absence: a symbol with zero identity-referencing rows may still
+ * be named by rows whose target is a STRING (`target_symbol_id IS NULL`), and those were the two lies
+ * `script/m14/incoming-check.ts` documents — an unreferenced declaration was indistinguishable from one whose
+ * references never resolved, and a hopeless string looked like a never-indexed target. This counts them by
+ * their stored `target_basis`, so the hover can NAME the absence instead of leaving a bare zero:
+ *
+ *   external    a known-external identity (package/path/builtin): nothing in this project can be its target
+ *   unresolved  a string the store could not resolve: a reference may exist but is not attributed
+ *
+ * A row that names the symbol AND resolved is NOT counted here — it is an identity edge and belongs to the
+ * usage list; this function exists for the remainder.
+ */
+export interface UnresolvedNameMatches {
+  name: string
+  external: number
+  unresolved: number
+  total: number
+}
+
+/** Core query: rows naming `name` as a STRING (no identity), by stored basis. */
+export function countUnresolvedNameMatchesByProjectAndName(
+  db: UsageCountDb,
+  projectId: string,
+  name: string,
+): UnresolvedNameMatches {
+  const out: UnresolvedNameMatches = { name, external: 0, unresolved: 0, total: 0 }
+  if (!name) return out
+  try {
+    const stmt = db.prepare(
+      `SELECT target_basis AS b, COUNT(*) AS c
+         FROM brain_relationship
+        WHERE project_id = ? AND target_external = ? AND target_symbol_id IS NULL
+        GROUP BY target_basis`,
+    )
+    const rows = (stmt.all?.(projectId, name) ?? []) as Array<{ b: string | null; c: number }>
+    for (const r of rows) {
+      const c = Number(r.c ?? 0)
+      if (r.b === "external") out.external += c
+      else out.unresolved += c
+      out.total += c
+    }
+  } catch {
+    // a pre-migration database has no target_basis column; the caller sees zero matches (declared absence),
+    // never a fabricated count. The migration runs at open, so this is a defensive floor only.
+  }
+  return out
+}
+
+/** Symbol-keyed wrapper: resolve the symbol's project and stored NAME, then count its string-only namers. */
+export function countUnresolvedNameMatches(db: UsageCountDb, symbolId: string): UnresolvedNameMatches | null {
+  try {
+    const sym = db.prepare("SELECT project_id AS p, name AS n FROM brain_symbol WHERE id = ?").get(symbolId) as
+      | { p: string; n: string | null }
+      | undefined
+    if (!sym || !sym.n) return null
+    return countUnresolvedNameMatchesByProjectAndName(db, sym.p, sym.n)
+  } catch {
+    return null
+  }
 }

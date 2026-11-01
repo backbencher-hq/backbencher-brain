@@ -61,7 +61,7 @@ import {
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
-import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { countUsageSites, countUnresolvedNameMatches, USAGE_SITE_FILTER_LABEL, type UnresolvedNameMatches } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
 import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
@@ -104,6 +104,14 @@ export interface SymbolHoverData {
    *  absence); an empty array is a callable with zero parameters. */
   parameters: Array<{ name: string; type: string | null; isOptional: boolean; defaultValue: string | null; isRest: boolean }> | null
   usageCount: number
+  /**
+   * INBOUND MODEL phase B: stored rows that NAME this symbol's string but never resolved to an identity,
+   * by their stored resolution basis. The usages list reads identity rows only (correct), so without this a
+   * zero usage count could not distinguish "nothing references this" from "references exist but none
+   * resolved" — the first of the three lies `script/m14/incoming-check.ts` documents. Null when the census
+   * could not be taken (absent schema/read failure): an absence of measurement is not a measured zero.
+   */
+  unresolvedNameMatches: UnresolvedNameMatches | null
   /**
    * How many files this project's index covers — the denominator for
    * `usageCount`. Null when it could not be measured; the renderer then says the
@@ -480,6 +488,17 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.usagesSection && data.usagesSection.length > 0) {
     lines.push(data.usagesSection)
   }
+  // INBOUND MODEL phase B: the usages list is IDENTITY rows only, so a zero there is not the same claim as
+  // "nothing names this". When the store holds string-only rows naming the symbol, say so — and say which of
+  // the two states they are in (`external` = a known-external identity no declaration here can be,
+  // `unresolved` = a reference the store could not attribute). This is the disclosure that turns the three
+  // lies into three named states.
+  if (data.unresolvedNameMatches && data.unresolvedNameMatches.total > 0) {
+    const m = data.unresolvedNameMatches
+    lines.push(
+      `**name matches without identity** — ${m.total} stored row${m.total === 1 ? "" : "s"} name \`${m.name}\` but resolve to no indexed declaration (${m.external} classified external, ${m.unresolved} unresolved); these are not counted as usages.`,
+    )
+  }
   // The declaration-containment block, AFTER the usages section and in its own
   // labelled header. Order matters for the negative test: a reader (and the
   // gate) meets the usages list first, so a `contains` row can only ever be read
@@ -600,6 +619,9 @@ export async function hover(
   // it is applied once here, and the section renders the same filtered array.
   const usageSiteRows = usageSitesOf(sites)
   const usageCount = usageSiteRows.length
+  // Rows that NAME this symbol's string but resolved to no identity: counted by stored basis so the absence
+  // of a usage list can be NAMED rather than left as a bare zero (inbound model, phase B).
+  const unresolvedNameMatches = countUnresolvedNameMatches(raw, symbol.id)
   // M24.L8: THE SCOPE THE COUNT WAS MEASURED OVER. A usage count is only
   // meaningful beside what was searched, and a zero is the case that misleads:
   // the owner hovered `formatAddress` and read "0 usages", which is TRUE of the
@@ -754,6 +776,7 @@ export async function hover(
       }))
     })(),
     usageCount,
+    unresolvedNameMatches,
     indexedFileCount,
     evidenceTiers: tiers,
     // M42.H2: rich sections composed from stored relationship rows.

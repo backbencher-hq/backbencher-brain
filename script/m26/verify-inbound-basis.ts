@@ -137,6 +137,17 @@ async function main() {
   const unresolvedRows = raw.prepare("SELECT target_external t FROM brain_relationship WHERE target_basis='unresolved' LIMIT 5").all() as any[]
   console.log(`  note  external=${byBasis.external ?? 0} unresolved=${byBasis.unresolved ?? 0} symbol=${byBasis.symbol ?? 0} — unresolved names: ${unresolvedRows.map((r) => r.t).join(", ").slice(0, 80) || "none in this fixture"}`)
 
+  // B5 disclosure plumbing: the census the hover renders names the absence instead of leaving a bare zero.
+  const { countUnresolvedNameMatchesByProjectAndName } = await import("../../src/lsp/relations")
+  const resolvedNameCount = countUnresolvedNameMatchesByProjectAndName(raw as any, projectId as any, "BaseThing")
+  check("B5 a symbol whose references resolved reports NO string-only namers", resolvedNameCount.total === 0, JSON.stringify(resolvedNameCount))
+  const unresolvedName = String(unresolvedRows[0]?.t ?? "")
+  const unresolvedCount = unresolvedName ? countUnresolvedNameMatchesByProjectAndName(raw as any, projectId as any, unresolvedName) : null
+  check("B5 an unresolved name is counted as `unresolved` for the disclosure", !!unresolvedCount && unresolvedCount.unresolved >= 1, JSON.stringify(unresolvedCount))
+  const externalName = String(externalRows[0]?.t ?? "")
+  const externalCount = externalName ? countUnresolvedNameMatchesByProjectAndName(raw as any, projectId as any, externalName) : null
+  check("B5 an external name is counted as `external` (not unresolved)", !!externalCount && externalCount.external >= 1 && externalCount.unresolved === 0, JSON.stringify(externalCount))
+
   if (!KEEP) rmSync(SCRATCH, { recursive: true, force: true })
   console.log(failures === 0 ? `\nPASS — the store states the resolution basis and the engine publishes it` : `\nFAIL — ${failures} contract(s) broken`)
   process.exit(failures === 0 ? 0 : 1)
