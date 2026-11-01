@@ -73,14 +73,31 @@ an identity match from a string match, and can refuse to call a string match an 
    table becomes a fourth fleet guard read by `verify-fleet.ts` (a lane with a high ambiguous/unresolved
    rate carries a count and a falsifier, not a pass).
 
-### Adoption of the recovered hover cache
+### Adoption of the recovered hover cache (phase C — integration notes, measured round 4)
 
-`src/lsp/hover_cache.ts` (recovered in `archive/unmerged-pre-merge-2026-11-01/`, 29k+ lines of cache +
-`occurrenceAtPoint`) is a **parse/occurrence cache**, not a reverse-edge cache: it closed hover's 50 ms p95
-contract by replacing three full-tree walks with a targeted `descendantForPosition` lookup (measured
-p50:hover 39.9–2444 ms before per size band; the cache is the fix). Adopting it is orthogonal to the
-inbound model and is the natural companion: hover's new reversed-edge queries must not re-introduce a
-full-file walk, so the cache lands with the hover half.
+`src/lsp/hover_cache.ts` (recovered in `archive/unmerged-pre-merge-2026-11-01/`, **497 lines**, not 29k) is a
+**parse/occurrence cache**, not a reverse-edge cache: it closed hover's p95 contract by replacing three
+full-tree walks with a targeted `descendantForPosition` lookup (its header measures hover p50 39.9–2444 ms
+across size bands before the fix). Adopting it is orthogonal to the inbound model and is the natural
+companion: hover's new disclosure queries must not re-introduce a full-file walk.
+
+Integration facts verified on the current tree (round 4):
+- the file's three dependencies all exist: `ASTEngine.parseTree` (engine.ts:1841),
+  `isCommentNodeType`/`isIdentifierNodeType` (safety-primitives.ts:159/165), `hashFileContent`
+  (brain/freshness.ts:17);
+- the EXPORTED surface is `parseForCursor`, `occurrenceAtPoint`, `allOccurrences`, `cacheStats`,
+  `clearParseCache`, `invalidateContentHash`, `ParseUnavailable`, `CACHE_BYTE_CEILING`,
+  `CACHE_ENTRY_CEILING` — 497 lines total, so the port is a file copy plus a compatibility pass, not a
+  rewrite;
+- hover's CURRENT path is `parseForSafety(filePath, content)` (safety-primitives.ts:556), which parses and
+  runs every full-tree walk (masked ranges, occurrences, body ranges, comment sites, declared names) and then
+  DELETES the tree in `finally`. Phase C must keep the fields hover actually reads (`commentSites` for the
+  doc line, `hasSyntaxError`, occurrence-at-cursor) while sourcing the cursor occurrence from
+  `occurrenceAtPoint` and reusing a cached parse for the doc lookup — the two consumers of ONE parse, which is
+  the cache's own reason to exist;
+- a hint that the adoption was intended and left incomplete: `script/m24/verify-hover-docs.ts:15` already says
+  "Hover parses the file (parseForCursor) for the occurrence lookup", while the module does not exist in
+  `src/`. The doc and the code disagree today; phase C makes the doc true.
 
 ## 4. Work order (phased, each phase gated)
 
