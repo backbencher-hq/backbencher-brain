@@ -12080,21 +12080,26 @@ export const MUTANTS: Mutant[] = [
     language: "php",
     defectClass: "relationship-loss",
     description: "PHP-H regression: static property reads vanish (C/self/static::$total) — php member-value-reads total pin dies",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && x.target === "total")) }),
+    transform: // MUTANT TARGET SPELLING: the emitted edge is the MERGED static read `C.total` (see
+    // validation/m14/fixtures/php/member-value-reads.expectation.json), so the pre-spelling filter removed nothing and
+    // the mutant was a NO-OP (SURVIVED measured 2026-11-xx on the fleet battery). Match the emitted spelling.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && typeof x.target === "string" && (x.target === "C.total" || x.target.endsWith(".total")))) }),
   },
   {
     id: "php/drop-const-fetch-uses",
     language: "php",
     defectClass: "relationship-loss",
     description: "PHP-D regression: constant fetches vanish (Suit::Hearts) — php member-value-reads Hearts pin dies",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && x.target === "Hearts")) }),
+    transform: // Emitted spelling is the qualified `Suit.Hearts` (see the expectation file); exact `Hearts` matched nothing.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && typeof x.target === "string" && (x.target === "Suit.Hearts" || x.target.endsWith(".Hearts")))) }),
   },
   {
     id: "php/const-fetch-scope-leak",
     language: "php",
     defectClass: "relationship-noise",
     description: "PHP-D regression: first-name lookup reads the scope (Suit::Hearts emits uses->Suit) — php member-value-reads Hearts pin dies",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && x.target === "Hearts")).concat([{ type: "uses", source: "useAll", target: "Suit", confidence: 0.9 }]) }),
+    transform: // Same spelling fix as php/drop-const-fetch-uses, and the leaked bare `Suit` row is kept as the second signal.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && typeof x.target === "string" && (x.target === "Suit.Hearts" || x.target.endsWith(".Hearts")))).concat([{ type: "uses", source: "useAll", target: "Suit", confidence: 0.9 }]) }),
   },
   {
     id: "php/tearoff-as-call",
@@ -12108,21 +12113,24 @@ export const MUTANTS: Mutant[] = [
     language: "php",
     defectClass: "relationship-loss",
     description: "PHP-F regression: interpolation reads vanish ($name, {$n}, {$other->count}) — php member-value-reads name/n/other pins die",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && (x.target === "name" || x.target === "n" || x.target === "other"))) }),
+    transform: // Interpolation reads are emitted scoped: `useAll\u0000name`, `useAll\u0000n`, `useAll\u0000other`.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && typeof x.target === "string" && (x.target === "name" || x.target.endsWith("\u0000name") || x.target === "n" || x.target.endsWith("\u0000n") || x.target === "other" || x.target.endsWith("\u0000other")))) }),
   },
   {
     id: "php/drop-subscript-read-uses",
     language: "php",
     defectClass: "relationship-loss",
     description: "PHP-B regression: subscript bases vanish ($xs[0], $m['k']) — php member-value-reads xs/m pins die",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && (x.target === "xs" || x.target === "m"))) }),
+    transform: // Subscript bases are emitted scoped: `useAll\u0000xs` / `useAll\u0000m`.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && typeof x.target === "string" && (x.target === "xs" || x.target.endsWith("\u0000xs") || x.target === "m" || x.target.endsWith("\u0000m")))) }),
   },
   {
     id: "php/drop-capture-read-uses",
     language: "php",
     defectClass: "relationship-loss",
     description: "PHP-C regression: closure captures vanish (use ($cap)) — php member-value-reads cap pin dies",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && x.target === "cap")) }),
+    transform: // Closure captures are emitted scoped: `useAll\u0000cap`.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "useAll" && typeof x.target === "string" && (x.target === "cap" || x.target.endsWith("\u0000cap")))) }),
   },
   {
     id: "php/emit-member-write-as-uses",
@@ -12143,7 +12151,9 @@ export const MUTANTS: Mutant[] = [
     language: "php",
     defectClass: "relationship-loss",
     description: "PHP-O1 companion: trait uses vanish from analyzer output (use_declaration branch) — php member-value-reads trait pin dies (the oracle-side inBody gate is covered by lanes)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "C" && x.target === "T")) }),
+    transform: // R3 relabelled trait composition to `mixes_in` (1:1; the `uses` row this pin used to assert was the ten failing to
+    // spell the construct honestly), so the pre-relabel filter removed nothing. Remove the CURRENT row.
+    r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "mixes_in" && x.source === "C" && x.target === "T")) }),
   },
   {
     id: "php/drop-bare-local-reads",
@@ -12531,7 +12541,9 @@ export const MUTANTS: Mutant[] = [
     language: "php",
     defectClass: "relationship-loss",
     description: "M60 regression, the conservative direction: the brace test over-applies and a STATIC member read is dropped (`$this->plain` treated as dynamic). php/dynamic-member-reads expects `uses touch -> plain` with meta.isMemberRead, so the pin dies — the fix must not silence the static form while removing the dynamic one.",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "touch" && x.target === "plain")) }),
+    // The emitted static read is OWNER-QUALIFIED (`Box.plain`, probed on the current analyzer). The old exact
+    // `plain` spelling matched nothing, which is why this mutant was a NO-OP and survived the fleet battery.
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "touch" && typeof x.target === "string" && (x.target === "Box.plain" || x.target.endsWith(".plain")))) }),
   },
   {
     id: "ruby/file-scope-placeholder-divergence",
