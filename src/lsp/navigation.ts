@@ -633,6 +633,7 @@ export function edgeLocation(
   byteEnd: number | null,
   lineStart: number | null,
   lineEnd: number | null,
+  sourceCache?: EdgeSourceCache,
 ): NavigationLocation | null {
   if (
     path === null || byteStart === null || byteEnd === null ||
@@ -640,7 +641,7 @@ export function edgeLocation(
   ) {
     return null;
   }
-  return edgeLocationDetailed(path, byteStart, byteEnd, lineStart, lineEnd).location;
+  return edgeLocationDetailed(path, byteStart, byteEnd, lineStart, lineEnd, sourceCache).location;
 }
 
 /** The §15.3 law, stated at the only place it can be enforced: "A stored
@@ -663,12 +664,25 @@ export interface EdgeLocationResult {
   absence: NavigationAbsence | null;
 }
 
+/**
+ * A PER-REQUEST source-text cache, threaded through `edgeLocation` by a caller that resolves MANY rows in one
+ * answer (the hover's rich-site collector). Without it, every distinct (path, byte-range) row re-reads and
+ * re-maps the SAME file: measured on the hover gate, a symbol whose usages live in one 475 KiB file paid one
+ * full file read + P1 mapper per distinct row, and the 512 KiB band's warm p95 was 325 ms against a 50 ms
+ * contract. The cache is scoped to ONE request by construction (the caller creates it and drops it), so it
+ * cannot serve bytes the file watcher has not re-read — the §4 staleness argument the lane-6 location memo
+ * already states. `null` records a read FAILURE, so a missing file is not re-attempted per row either, and the
+ * §15.3 declared-absence detail is preserved.
+ */
+export type EdgeSourceCache = Map<string, { text: string; lines: readonly string[]; mapper?: ReturnType<typeof createPositionMapper> } | { readError: string }>
+
 export function edgeLocationDetailed(
   path: string | null,
   byteStart: number | null,
   byteEnd: number | null,
   lineStart: number | null,
   lineEnd: number | null,
+  sourceCache?: EdgeSourceCache,
 ): EdgeLocationResult {
   if (
     path === null || byteStart === null || byteEnd === null ||
@@ -685,24 +699,51 @@ export function edgeLocationDetailed(
     };
   }
   let sourceText: string;
-  try {
-    sourceText = readFileSync(path, "utf8");
-  } catch (error) {
-    // §15.3: the source text could not be read, so there is no mapper and no
-    // honest conversion. A fabricated zero-width range would point the editor
-    // at a line the component cannot vouch for — declared absence instead.
+  let cachedMapper: ReturnType<typeof createPositionMapper> | undefined;
+  let cachedLines: readonly string[] | undefined;
+  const cached = sourceCache?.get(path)
+  if (cached !== undefined && "readError" in cached) {
+    // a cached READ FAILURE: same declared absence, without re-attempting the read per row
     return {
       location: null,
       absence: {
         reason: "unresolvable_location",
         language: languageForPath(path),
-        detail: `source file could not be read (${(error as Error).message}); the stored line is omitted rather than emitted unverified`,
+        detail: `source file could not be read (${cached.readError}); the stored line is omitted rather than emitted unverified`,
         searchedIndex: true,
       },
     };
+  } else if (cached !== undefined) {
+    // A cached READ: reuse its text AND its P1 mapper. The mapper build is whole-file line-index
+    // construction; without this the cache saved the read but paid the mapper once PER ROW — measured on the
+    // hover gate's 475 KiB band: 38 rows x ~4 ms = 163 ms, i.e. the entire 512 KiB band's p95.
+    sourceText = cached.text
+    cachedLines = cached.lines
+    cachedMapper = cached.mapper
+  } else {
+    try {
+      sourceText = readFileSync(path, "utf8");
+      const lines = sourceText.split("\n");
+      sourceCache?.set(path, { text: sourceText, lines })
+    } catch (error) {
+      sourceCache?.set(path, { readError: (error as Error).message })
+      // §15.3: the source text could not be read, so there is no mapper and no
+      // honest conversion. A fabricated zero-width range would point the editor
+      // at a line the component cannot vouch for — declared absence instead.
+      return {
+        location: null,
+        absence: {
+          reason: "unresolvable_location",
+          language: languageForPath(path),
+          detail: `source file could not be read (${(error as Error).message}); the stored line is omitted rather than emitted unverified`,
+          searchedIndex: true,
+        },
+      };
+    }
   }
-  const startCol = resolveRowByteColumns(sourceText, lineStart, byteStart);
-  const endCol = resolveRowByteColumns(sourceText, lineEnd, byteEnd);
+  const lines = cachedLines ?? sourceText.split("\n");
+  const startCol = resolveRowByteColumns(sourceText, lineStart, byteStart, lines);
+  const endCol = resolveRowByteColumns(sourceText, lineEnd, byteEnd, lines);
   if (startCol === null || endCol === null) {
     return {
       location: null,
@@ -714,7 +755,10 @@ export function edgeLocationDetailed(
       },
     };
   }
-  const mapper = createPositionMapper(sourceText);
+  const mapper = cachedMapper ?? createPositionMapper(sourceText);
+  if (cachedMapper === undefined && cached !== undefined && sourceCache !== undefined) {
+    sourceCache.set(path, { text: sourceText, lines, mapper })
+  }
   let range;
   try {
     range = mapper.indexRangeToLsp({

@@ -438,13 +438,17 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
   // a single request the bytes cannot meaningfully change under us, and the
   // staleness marker is computed from a fresh read on the same request.
   const locationMemo = new Map<string, ReturnType<typeof edgeLocation> | undefined>()
+  // ONE source-text read per FILE for this request: a symbol whose usages live in the same large file paid a
+  // full read + mapper PER ROW before this (nearest-location memo only collapsed identical ranges). Scoped to
+  // this call, like the memo above, so no stale bytes can outlive the request.
+  const edgeSourceCache = new Map<string, { text: string; lines: readonly string[]; mapper?: any } | { readError: string }>()
   const locationOf = (p: string, bs: number, be: number, ls: number, le: number): ReturnType<typeof edgeLocation> => {
     const key = `${p}:${bs}:${be}:${ls}:${le}`
     const hit = locationMemo.get(key)
     if (hit !== undefined || locationMemo.has(key)) return hit ?? null
     let loc: ReturnType<typeof edgeLocation>
     try {
-      loc = edgeLocation(p, bs, be, ls, le)
+      loc = edgeLocation(p, bs, be, ls, le, edgeSourceCache)
     } catch (error) {
       if (!(error instanceof PositionError)) throw error
       loc = null

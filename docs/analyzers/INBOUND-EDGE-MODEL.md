@@ -1,9 +1,10 @@
 # Inbound edges: the data model that stops the reverse walk from lying
 
-Status: **phases A and B IMPLEMENTED and gated** (round 4). The store carries the resolution basis, the graph
-engine publishes it on every edge, hover reads stored reverse edges by IDENTITY and NAMES the absence when
-only string-only rows name the symbol, and `script/m26/verify-inbound-basis.ts` passes (14 checks) on a real
-CLI-built index. Phases C–D remain; the plan at the end is the work order. Everything below cites the command, the population
+Status: **phases A, B and C IMPLEMENTED and gated** (rounds 4–5). The store carries the resolution basis, the
+graph engine publishes it on every edge, hover reads stored reverse edges by IDENTITY and NAMES the absence
+when only string-only rows name the symbol, and the recovered `hover_cache.ts` is ADOPTED with a latency +
+equivalence gate that passes on real files. `script/m26/verify-inbound-basis.ts` passes (14 checks) on a real
+CLI-built index; `script/m24/verify-hover-latency.ts` passes all 6 size bands. Phase D remains. Everything below cites the command, the population
 and the scope.
 
 ## 1. The problem, in the store's own words

@@ -64,8 +64,12 @@ import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 import { countUsageSites, countUnresolvedNameMatches, USAGE_SITE_FILTER_LABEL, type UnresolvedNameMatches } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
 import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
-import { parseForSafety } from "../ast/safety-primitives"
-import { docCommentFor } from "./doc_comment"
+// PHASE C (inbound model companion): the parse is shared through ONE bounded, content-addressed cache
+// (`src/lsp/hover_cache.ts`), the cursor occurrence is a targeted tree lookup instead of a linear scan over
+// every identifier in the file, and the doc comment is read at the single point the rule can accept. This
+// replaces `parseForSafety`, whose three full-tree walks accounted for 63% of a 225 KiB hover (measured in
+// the cache module's header): hover used ONE occurrence and ONE comment out of all of them.
+import { ParseUnavailable, docCommentAt, occurrenceAtPoint, parseForCursor, type CursorParse } from "./hover_cache"
 import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
 import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
@@ -365,17 +369,17 @@ export async function resolveOccurrenceSymbol(
     if (e instanceof PositionError) return null
     throw e
   }
-  let safety: Awaited<ReturnType<typeof parseForSafety>>
+  let parsed: CursorParse
   try {
-    safety = await parseForSafety(filePath, content)
-  } catch {
-    // Unparseable/unsupported file: honest degradation to the enclosing-
-    // symbol model — hover must never reject over a parse failure.
-    return null
+    parsed = await parseForCursor(filePath, content)
+  } catch (error) {
+    // Unparseable/unsupported file: honest degradation to the enclosing-symbol model — hover must never
+    // reject over a parse failure. `ParseUnavailable` is the cache owner's named declaration of that case;
+    // anything else is a real defect and is rethrown, never rendered as absence (§11.7).
+    if (error instanceof ParseUnavailable) return null
+    throw error
   }
-  const cursorOcc = safety.occurrences.find(
-    (o) => o.startLine === indexPos.line && o.startColumn <= indexPos.column && indexPos.column < o.endColumn,
-  )
+  const cursorOcc = occurrenceAtPoint(parsed.tree, indexPos.line, indexPos.column)
   if (!cursorOcc) return null
   const sameFile = raw
     .prepare(`SELECT ${SYMBOL_ROW_SELECT} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE f.path = ? AND s.name = ?`)
@@ -401,7 +405,9 @@ export async function resolveOccurrenceSymbol(
     // M24.L9: the declaration's own documentation, read from the comment sites
     // this parse already produced. Attached to the DECLARATION, not to the
     // cursor: a doc describes the symbol, and the cursor is often a use of it.
-    docComment: docCommentFor(safety.commentSites, row.line_start),
+    // Same rule as doc_comment.ts (a comment ending on the line directly above), read from the point that
+    // can satisfy it instead of a whole-file comment walk — equivalence gated line-by-line.
+    docComment: docCommentAt(parsed.tree, row.line_start),
   }
 }
 

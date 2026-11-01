@@ -99,9 +99,18 @@ export function resolveRowByteColumns(
   sourceText: string,
   line: number,
   byte: number,
+  /**
+   * Optional PRE-SPLIT line array for the same `sourceText`.
+   *
+   * `sourceText.split("\n")` allocates one string per line; a caller resolving MANY rows in one file paid that
+   * split PER ROW (the hover's site collector: 2 calls/row × 38 rows on a 475 KiB file = 76 full splits, ~70 ms).
+   * The split is the same for every row of a file, so the caller that already holds the text may hand in the
+   * lines it built once. This is not a second conversion owner: the rules all stay in this function.
+   */
+  linesIn?: readonly string[],
 ): { line: number; column: number } | null {
   if (!Number.isInteger(line) || line < 1 || !Number.isInteger(byte) || byte < 0) return null
-  const lines = sourceText.split("\n")
+  const lines = linesIn ?? sourceText.split("\n")
   if (line > lines.length) return null
   // Byte 0 is unambiguous (see the header): the file's first byte is line 1,
   // column 1. Any other line claiming byte 0 is inconsistent -> declared null.

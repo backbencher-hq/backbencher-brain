@@ -834,8 +834,10 @@ const RICH_HOVER_MUTANTS: Array<{
     // crash, and the suite reported SURVIVED — a mutant that no longer
     // reproduces the defect, which §8.3 makes a gate failure rather than a
     // pass.
-    from: "    try {\n      loc = edgeLocation(p, bs, be, ls, le)\n    } catch (error) {\n      if (!(error instanceof PositionError)) throw error\n      loc = null\n    }",
-    to: "    loc = edgeLocation(p, bs, be, ls, le)",
+    // PHASE C (inbound model): the per-request source cache is threaded into this call, so the anchor carries
+    // the argument as the product now spells it. The defect being planted is unchanged: remove the catch.
+    from: "    try {\n      loc = edgeLocation(p, bs, be, ls, le, edgeSourceCache)\n    } catch (error) {\n      if (!(error instanceof PositionError)) throw error\n      loc = null\n    }",
+    to: "    loc = edgeLocation(p, bs, be, ls, le, edgeSourceCache)",
     // MEASURED, and this is the finding behind this mutant's survival on the
     // merged tree. It was NOT anchor drift: the anchor above is present, and
     // the mutation applied. The mutant survived because the guard was
