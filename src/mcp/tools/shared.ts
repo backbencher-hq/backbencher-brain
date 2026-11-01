@@ -223,7 +223,7 @@ export async function describeUnknownFilters(projectId: string, args: Record<str
   const language = typeof args.language === "string" ? args.language.trim() : ""
   const symbolKind = typeof args.symbolKind === "string" ? args.symbolKind.trim() : ""
   if (!language && !symbolKind) return null
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   if (language) {
     const known = (raw.prepare("SELECT DISTINCT language FROM brain_file WHERE project_id=? ORDER BY language").all(projectId) as any[])
       .map((row) => row.language)

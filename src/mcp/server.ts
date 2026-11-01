@@ -15,7 +15,7 @@ const descriptors = new Map(TOOL_DESCRIPTORS.map((descriptor) => [descriptor.nam
 
 async function ensureIndexed(context: ToolContext): Promise<string | null> {
   try {
-    const raw = await BrainDatabase.getRawInstance(context.projectId)
+    const raw = await BrainDatabase.getRawInstance(context.projectId, { readonly: true })
     const files = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=?").get(context.projectId) as any).c ?? 0
     if (files === 0) {
       return `No index found for ${context.projectPath}. Run: bb index "${context.projectPath}" (or restart bb mcp after indexing).`

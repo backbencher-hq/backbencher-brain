@@ -2732,7 +2732,10 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
   // Helper for tools to find symbols perfectly from the database
   export async function findSymbol(projectId: string, symbolName: string, filePath?: string, lineStart?: number) {
     const { BrainDatabase } = await import("../brain/database")
-    const db = await BrainDatabase.getInstance(projectId as any)
+    // findSymbol is a LOOKUP: it must not run the open-path migrations or move
+    // the WAL. The read-only handle shares the byte-read-only open and refuses
+    // loudly when there is no index instead of creating an empty one.
+    const db = await BrainDatabase.getReadOnlyInstance(projectId as any)
     const { BrainSymbolTable, BrainFileTable } = await import("../brain/brain.sql")
     const { eq, and, like } = await import("drizzle-orm")
 

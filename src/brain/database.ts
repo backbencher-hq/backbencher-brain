@@ -206,6 +206,23 @@ export namespace BrainDatabase {
 
   export const initialize = getInstance
 
+  /**
+   * Read-only drizzle handle. For a caller that queries through the query
+   * builder and must not write: it shares the byte-read-only raw open (no
+   * migrations, no WAL movement, loud error when the index is absent) and
+   * caches its own drizzle wrapper under an `ro:` key, so a read call can never
+   * reuse a read-write connection that already ran the open-path DDL.
+   */
+  export async function getReadOnlyInstance(projectId: string): Promise<any> {
+    const key = `ro:${projectId}`
+    const cached = drizzleInstances.get(key)
+    if (cached) return cached
+    const raw = await getRawInstance(projectId, { readonly: true })
+    const drizzleDb = await buildDrizzle(raw)
+    drizzleInstances.set(key, drizzleDb)
+    return drizzleDb
+  }
+
   /** Raw driver handle (CoreDatabase: prepare/exec/transaction).
    *
    * READ-ONLY OPEN (`{ readonly: true }`) — a read tool must not mutate the index
