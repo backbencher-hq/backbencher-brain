@@ -1,13 +1,20 @@
 {
   "status": "verified",
-  "currentCommit": "c43282e9268414205ca755f485393a8e4535c77f",
+  "currentCommit": "55df89c3e52009b0ee09d50c20103b37ee6cc964",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-p1-impact-unity.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-11-01T17:57:26.202Z",
-  "passed": 28,
+  "generatedAt": "2026-11-01T23:32:04.999Z",
+  "passed": 68,
   "failed": 0,
-  "negativeCases": 3,
+  "negativeCases": 6,
   "failures": [],
-  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service.run + 250 direct callers of leafB (budget truncation)"
+  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service class cascade + 250 direct callers of leafB (budget truncation) + 200 distinct dependents/201 rows (row-cap-not-truncation) + two same-named constructors (file hint)",
+  "checks": {
+    "unity": "bb_impact vs bb_analyze on file sets, totals, truncation flags and declared bounds",
+    "budget": ">200 dependents => truncated true with a measured larger total; 200 dependents/201 rows => truncated false with complete:true",
+    "attribution": "owner-cascade member rows name their member and the composition sums to shownCount",
+    "hint": "ambiguous member resolves through its owning declaration at the hinted file; unusable hint refused",
+    "component": "empty relationshipTypes refused; scan ceiling => declared unknown; refused rule => failed, not zero"
+  }
 }

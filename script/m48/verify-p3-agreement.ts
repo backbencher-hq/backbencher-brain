@@ -95,7 +95,20 @@ async function main() {
       typeof gr.summary?.totalCallers === "number" && gr.summary.totalCallers === ca.summary?.totalCallers,
       `${gr.summary?.totalCallers} vs ${ca.summary?.totalCallers}`,
     )
-    check(`P3: truncation flags agree (${root})`, (gr.summary?.truncated ?? false) === (ca.summary?.truncated ?? false), "")
+    // The two doors declare DIFFERENT depths by default: bb_graph's default
+    // maxDepth is 5 while bb_analyze's caller modes run the engine at maxDepth 3
+    // with their own wall-clock ceiling. Comparing truncation flags across two
+    // different questions is not an agreement test, so the graph door is asked
+    // the SAME question (direction=callers, maxDepth=3) for this one predicate.
+    // Interrogated 2026-11-01: graph@default truncated=false, analyze
+    // truncated=true "caller-depth-cap-reached", identical totalCallers — a
+    // depth mismatch, not a data disagreement.
+    const grSameDepth = await call("bb_graph", { symbol: root, direction: "callers", maxDepth: 3 })
+    check(
+      `P3: truncation flags agree on the same declared question (${root})`,
+      !!grSameDepth && (grSameDepth.summary?.truncated ?? false) === (ca.summary?.truncated ?? false),
+      `graph@depth3=${grSameDepth?.summary?.truncated} (${grSameDepth?.summary?.truncationReason ?? "no reason"}) analyze=${ca.summary?.truncated} (${ca.summary?.truncationReason ?? "no reason"})`,
+    )
     check(`P3: trace resolves ${root}`, !!tr && (tr.summary?.totalCallers ?? tr.callers?.length ?? 0) >= 0, "")
   }
 

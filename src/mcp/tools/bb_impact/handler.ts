@@ -63,7 +63,10 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     // this identity or rejects the hint, so a same-named copy is never silently
     // substituted.
     const memberFile = typeof args.file === "string" && args.file.trim().length > 0 ? args.file : undefined
-    const raw = await BrainDatabase.getRawInstance(projectId as any)
+    // A read tool must not mutate the index just by asking: this door opens the
+    // index BYTE-READ-ONLY (no migrations, no healers, no WAL movement). The
+    // bounded staleness repair, when it runs, is a separate indexer path.
+    const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
     try {
       // ONE list, handed to the component, which hands it to BOTH its walks.
       // The engine's default is every stored kind, so a filter is a real choice

@@ -74,6 +74,23 @@ async function main() {
   writeFileSync(path.join(proj, "src", "aaa-callers.ts"), early.join("\n") + "\n")
   writeFileSync(path.join(proj, "src", "zzz-last.ts"), `import { target200 } from "./a3"\nexport function zz(): void {\n  target200()\n  target200()\n}\n`)
 
+  // A hub whose dependent SET exceeds the declared 200-node budget without any
+  // single query hitting the engine's per-query row cap: 199 direct callers plus
+  // two indirect callers for the first 50 of them (~299 distinct dependents).
+  // This is the only shape in which the tool's own node budget — not the
+  // engine's row cap — is the bound the answer is truncated at.
+  writeFileSync(path.join(proj, "src", "a4.ts"), `export function hubTarget(): void {}\n`)
+  const hubCallers = ["import { hubTarget } from \"./a4\""]
+  for (let i = 0; i < 199; i++) hubCallers.push(`export function hubCaller${i}(): void { hubTarget() }`)
+  writeFileSync(path.join(proj, "src", "hub-callers.ts"), hubCallers.join("\n") + "\n")
+  const indirectImports = Array.from({ length: 50 }, (_, i) => `hubCaller${i}`).join(", ")
+  const indirect = [`import { ${indirectImports} } from "./hub-callers"`]
+  for (let i = 0; i < 50; i++) {
+    indirect.push(`export function hubIndirectA${i}(): void { hubCaller${i}() }`)
+    indirect.push(`export function hubIndirectB${i}(): void { hubCaller${i}() }`)
+  }
+  writeFileSync(path.join(proj, "src", "hub-indirect.ts"), indirect.join("\n") + "\n")
+
   // Two same-named members in different files: the member-resolution path (and
   // the tool's `file` hint) must select the OWNING declaration named by the
   // hint and refuse a hint that does not identify it.
@@ -127,6 +144,19 @@ async function main() {
       check("P1: truncated case still agrees on file set", fileSet(imp.impact).size === fileSet(ana.affectedFiles).size, "")
       check("P1: truncated case totalSymbols == shownCount", ana.totalSymbols === imp.shownCount, `${ana.totalSymbols} vs ${imp.shownCount}`)
     }
+  }
+
+  // The tool's OWN 200-node budget: >200 DISTINCT dependents across levels, so
+  // the budget (not an engine query cap) is what truncates the set, and the
+  // declared total must measure the larger truth.
+  {
+    const imp = await call("bb_impact", { symbol: "hubTarget" })
+    const ana = await call("bb_analyze", { mode: "impact", target: "hubTarget" })
+    check("P1: a >200-dependent hub is capped at the declared node budget", !!imp && imp.shownCount === 200 && imp.budget?.maxNodes === 200, `shown=${imp?.shownCount} budget=${imp?.budget?.maxNodes}`)
+    check("P1: the node budget declares truncation", !!imp && imp.truncated === true, `truncated=${imp?.truncated}`)
+    check("P1: the declared total measures the larger truth beyond the node budget", !!imp && typeof imp.totalCountIfKnown === "number" && imp.totalCountIfKnown > imp.shownCount, `${imp?.totalCountIfKnown} vs ${imp?.shownCount}`)
+    check("P1: the completeness measurement disagrees with a capped set", !!imp && imp.countVerification?.complete === false, JSON.stringify(imp?.countVerification))
+    check("P1: both doors agree on the capped hub", !!imp && !!ana && ana.totalSymbols === imp.shownCount && ana.truncated === imp.truncated, JSON.stringify({ anaShown: ana?.totalSymbols, impShown: imp?.shownCount }))
   }
 
   // Row cap without a missing dependent: the count walk proves the set COMPLETE,
