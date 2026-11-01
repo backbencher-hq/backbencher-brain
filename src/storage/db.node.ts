@@ -29,6 +29,15 @@ export function openDatabase(path: string, options: { readonly?: boolean } = {})
     db.pragma("journal_mode = WAL")
     db.pragma("busy_timeout = 5000")
     db.pragma("synchronous = NORMAL")
+    // OPTIONAL SQLITE TUNING, off by default. Large indexes spend time in temp b-trees and page
+    // misses; both are tunable per connection without changing what is stored. Defaults stay
+    // SQLite's so a small install does not pay memory it does not need; a large deployment can
+    // opt in and measure (docs/indexing/environment-variables.md).
+    const tempStore = String(process.env.BB_SQLITE_TEMP_STORE ?? "").toUpperCase()
+    if (tempStore === "MEMORY" || tempStore === "FILE" || tempStore === "DEFAULT") db.pragma(`temp_store = ${tempStore}`)
+    else if (tempStore === "0" || tempStore === "1" || tempStore === "2") db.pragma(`temp_store = ${tempStore}`)
+    const cacheMb = Number(process.env.BB_SQLITE_CACHE_MB ?? 0)
+    if (Number.isInteger(cacheMb) && cacheMb >= 1 && cacheMb <= 4096) db.pragma(`cache_size = -${cacheMb * 1024}`)
     // M54.P1 (#727): better-sqlite3 enables FK by default; make it EXPLICIT
     // and honor the same BB_FK_ENFORCE=0 escape hatch as db.bun.ts so both
     // runtimes have one policy, not a default they merely happen to share.

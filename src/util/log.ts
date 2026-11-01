@@ -1,6 +1,8 @@
 // Structured logging — all output to stderr (stdout reserved for MCP JSON-RPC)
 // Module-scoped loggers with level filtering
 
+import { colorEnabled, dim, red, yellow } from "../cli/terminal-style"
+
 export enum LogLevel {
   TRACE = 0,
   DEBUG = 1,
@@ -62,7 +64,15 @@ function formatMessage(level: LogLevel, module: string, msg: string, context?: R
   const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`
   const label = LEVEL_LABELS[level]
   const ctx = context && Object.keys(context).length > 0 ? ` ${JSON.stringify(context)}` : ""
-  return `[${label}] [${time}] [${module}] ${msg}${ctx}`
+  const useColor = colorEnabled({ isTTY: process.stderr.isTTY === true })
+  if (!useColor) return `[${label}] [${time}] [${module}] ${msg}${ctx}`
+  // INFO/DEBUG are the background; WARN and ERROR are the lines a user must not miss. Dimming the
+  // routine and colouring the exceptional is what makes the difference visible at a glance.
+  const head = `[${label}] [${time}] [${module}]`
+  const headColored = level === LogLevel.ERROR ? red(head, true) : level === LogLevel.WARN ? yellow(head, true) : dim(head, true)
+  const msgColored = level === LogLevel.ERROR ? red(msg, true) : level === LogLevel.WARN ? yellow(msg, true) : msg
+  const ctxColored = ctx ? dim(ctx, true) : ""
+  return `${headColored} ${msgColored}${ctxColored}`
 }
 
 export function createLogger(module: string): Logger {

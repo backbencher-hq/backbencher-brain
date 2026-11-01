@@ -397,3 +397,31 @@ need to delete it by hand.
 - `website/index-commands.md` — the user-facing command reference, same flags
 - [`docs/EMBEDDINGS.md`](../EMBEDDINGS.md) — what the vector layer is and is not
 - [`docs/TROUBLESHOOTING.md`](../TROUBLESHOOTING.md) — general `bb` troubleshooting
+## Reading the output
+
+`bb index` writes live progress and logs to **stderr** and the final report to **stdout**, so a script can
+capture the report without the live line. What you should see, in order:
+
+1. **The banner** — `indexing <path> (project <id>…)` before any side effect, so the first line says what is
+   being indexed (a `--force` wipe prints its reclaim lines after it, not before).
+2. **The expectation** — `Indexing <n> files — a moment — this is a tiny project` / `this will take a few
+   minutes` / `large project — this takes a while…`. The band scales with the discovered file count, so a
+   small project is never told to grab a coffee.
+3. **Progress + ETA** — on a terminal this is one redrawing bar: percentage, files done, rate, elapsed, and
+   `ETA <time>`. In a pipe or CI log the same information arrives as rate-limited `[index] NN% … eta=<time>`
+   milestone lines (one per 5% plus the final one), never a `\r` smear. The ETA is computed from the recent
+   window, not the lifetime average; it shows `…` until there is enough signal, and `finishing` once all
+   files are processed but the derived phases are still running (it never claims `0s` while work remains).
+4. **Encouragement / slow-run notes** — occasional lines like `halfway there` for long runs only (never on
+   tiny projects); a run slower than its size allows says so and names the support address.
+5. **Embeddings wait** — if the background embedding queue still has work, the run says it is finishing
+   vectors, bounds the wait, and reports how it ended; the counts printed afterwards are read from the
+   database after that wait, so they match `bb stats`.
+6. **The final report** — `✓ indexed …` (or `✓ nothing to index — already up to date`), the authoritative
+   `index health (after embeddings)` verdict, and the run's footprint.
+
+**Noise is opt-in.** Per-file traces (the `[STORE] file: Ns Nr` lines for unusually large stores) are
+debug-level: they appear only with `--verbose` and are silent by default, so the progress/ETA line, the
+warnings and the final verdict are not buried in a wall of same-looking lines. Warnings/errors are visually
+distinct when the destination is a terminal; `NO_COLOR` disables colour, `FORCE_COLOR=1` forces it in a pipe.
+In a non-terminal destination the output is plain text and contains no ANSI escapes by default.

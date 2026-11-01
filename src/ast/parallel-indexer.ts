@@ -3694,8 +3694,13 @@ export async function storeResults(
          // Trace: only log significant files to avoid terminal I/O bottleneck
          const symCount = result.symbols?.length || 0
          const relCount = result.relationships?.length || 0
+         // Verbose diagnostic only. This used to be a raw `[STORE]` line on stderr for every file with
+         // >50 relationships or >20 symbols — on a real repo that is a wall of same-colour lines between
+         // the progress/ETA line and the summary, and it made the messages a user needs (ETA, warnings,
+         // verdict) impossible to pick out. `log.debug` keeps the trace for `--verbose` and is silent by
+         // default. Aggregates (per-file counts) are not user information; the summary owns them.
          if (relCount > 50 || symCount > 20) {
-           process.stderr.write(`[STORE] ${relativePath.split('/').pop()}: ${symCount}s ${relCount}r\n`)
+           log.debug("large file stored", { file: relativePath.split("/").pop(), symbols: symCount, relationships: relCount })
          }         // NO per-file savepoint: a mid-file FK violation rolls back the whole
          // batch (per-batch transaction, skip-and-continue below). The deletes
          // run before every insert and REPLACE precisely so the batch should

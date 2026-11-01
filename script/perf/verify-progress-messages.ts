@@ -25,6 +25,7 @@
 import { spawn } from "node:child_process"
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { colorEnabled } from "../../src/cli/terminal-style"
 import {
   encouragementFor,
   estimateRemainingMs,
@@ -121,6 +122,59 @@ async function main() {
     check("the tiny-project line is what the user sees", out.includes("a moment — this is a tiny project"), visible[0]?.trim() ?? "not printed")
     check("'a few minutes at most' is NOT claimed for 7 files", !out.includes("a few minutes at most"))
     check("no 'quarter of the way in' at 1 of 7 files", !out.includes("a quarter of the way in"))
+  }
+
+  // ── output signal: what the user can actually pick out of the stream ────────────────────────────
+  console.log("\n── output signal (noise, ETA visibility, colour rules)")
+  {
+    const runIndex = async (project: string, env: Record<string, string>, args: string[] = []): Promise<string> =>
+      new Promise<string>((resolve) => {
+        const child = spawn("npx", ["tsx", "src/cli/index.ts", "index", project, "--no-setup", ...args], {
+          cwd: REPO,
+          env: { ...process.env, BB_DATA_DIR: path.join(SCRATCH, "data-signal"), ...env },
+          stdio: ["ignore", "pipe", "pipe"],
+        })
+        let out = ""
+        child.stdout.on("data", (d) => { out += d.toString() })
+        child.stderr.on("data", (d) => { out += d.toString() })
+        child.on("close", () => resolve(out))
+      })
+
+    const tiny = path.join(SCRATCH, "signal")
+    mkdirSync(tiny, { recursive: true })
+    writeFileSync(path.join(tiny, "a.ts"), "export function a(n: number): number { return n }\n")
+    writeFileSync(path.join(tiny, "b.ts"), "export function b(n: number): number { return n + 1 }\n")
+
+    const plain = await runIndex(tiny, { NO_COLOR: "1" })
+    check("default output contains no [STORE] wall", !plain.includes("[STORE]"))
+    check("default output contains no 'large file stored' debug trace", !plain.includes("large file stored"))
+    check("default non-TTY output is free of ANSI escapes", !plain.includes("\x1b["))
+    check("default output shows the ETA on a milestone line", plain.includes("eta="), plain.split("\n").filter((l) => l.includes("[index]")).slice(0, 2).join(" | "))
+    check("default output shows the up-front expectation", plain.includes("Indexing 2 files") && plain.includes("a moment"))
+
+    // Colour is opt-in in a pipe; NO_COLOR beats FORCE_COLOR (a CI log must stay clean when it says so).
+    check("colour is off for a non-TTY with NO_COLOR", colorEnabled({ isTTY: false, env: { NO_COLOR: "1" } }) === false)
+    check("colour is off for a non-TTY by default", colorEnabled({ isTTY: false, env: {} }) === false)
+    check("colour is on for a TTY", colorEnabled({ isTTY: true, env: {} }) === true)
+    check("FORCE_COLOR opts a pipe into colour", colorEnabled({ isTTY: false, env: { FORCE_COLOR: "1" } }) === true)
+    check("NO_COLOR wins over FORCE_COLOR", colorEnabled({ isTTY: false, env: { FORCE_COLOR: "1", NO_COLOR: "1" } }) === false)
+
+    const forcedEnv: Record<string, string> = { FORCE_COLOR: "1" }
+    delete (forcedEnv as any).NO_COLOR
+    const forced = await runIndex(tiny, { ...forcedEnv, NO_COLOR: "" })
+    check("FORCE_COLOR makes the piped output coloured", forced.includes("\x1b["), `ansi=${forced.split("\x1b[").length - 1}`)
+
+    // The store trace still exists for --verbose; it is simply not default noise.
+    const busy = path.join(SCRATCH, "busy")
+    mkdirSync(busy, { recursive: true })
+    const decls = Array.from({ length: 25 }, (_, i) => `export function many${i}(n: number): number { return n + ${i} }`).join("\n") + "\n"
+    writeFileSync(path.join(busy, "many.ts"), decls)
+    const busyDefault = await runIndex(busy, { NO_COLOR: "1" })
+    // --force: the default run above already stored this file, and an unchanged file is skipped (no
+    // store, hence no trace) — the verbose arm must actually re-store it to exercise the line.
+    const busyVerbose = await runIndex(busy, { NO_COLOR: "1" }, ["--verbose", "--force"])
+    check("a 25-symbol file prints no STORE trace by default", !busyDefault.includes("[STORE]") && !busyDefault.includes("large file stored"))
+    check("the same trace IS available with --verbose", busyVerbose.includes("large file stored"), busyVerbose.split("\n").filter((l) => l.includes("large file stored")).slice(0, 1).join(""))
   }
 
   console.log(

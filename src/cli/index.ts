@@ -12,6 +12,7 @@ import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel, ParallelIndexerConfig } from "../ast/parallel-indexer"
 import { IndexProgressRenderer, SUPPORT_EMAIL } from "./index-progress"
+import { bold, colorEnabled, cyan, dim, green, red, yellow } from "./terminal-style"
 import { acquireIndexLock, IndexLockHeldError, type IndexLockHandle } from "../ast/index-lock"
 import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
@@ -73,6 +74,9 @@ async function cmdIndex(
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
   // must index the project you are standing in.
   const abs = dir ? requireDir(dir) : process.cwd()
+  // Colour/emphasis is applied only when stdout is a terminal that wants it (NO_COLOR/FORCE_COLOR
+  // handled in terminal-style.ts); every highlighted line below is plain text in pipes and CI logs.
+  const S = colorEnabled({ isTTY: process.stdout.isTTY })
   // M30.S2: first-run embedding setup. Interactive ONLY on a TTY with no
   // config anywhere; non-TTY never hangs. --no-setup skips entirely.
   const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
@@ -195,6 +199,9 @@ async function cmdIndex(
       }
     }
   }
+  // The banner belongs before every side effect of this run (a --force wipe prints its own reclaim
+  // lines): the first thing on screen should say WHAT is being indexed, not what was reclaimed.
+  console.log(bold(`indexing ${abs} (project ${pid.slice(0, 8)}…)`, S))
   // M43.P1: a --force wipe+index is ONE lock scope — acquire before the wipe
   // so a concurrent indexer can never slip between the wipe and the run.
   // Non-force paths acquire inside indexProjectParallel/runPostProcessing.
@@ -246,8 +253,7 @@ async function cmdIndex(
       console.error(`✗ wipe failed: ${e?.message}`)
     }
   }
-  console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
-  const t = Date.now()
+    const t = Date.now()
   const indexOpts: Parameters<typeof indexProjectParallel>[2] = { onProgress: (s) => {} }
   if (excludeGlobs.length > 0) indexOpts.excludePatterns = excludeGlobs
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
@@ -397,7 +403,7 @@ async function cmdIndex(
   // footprint.
   const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
   const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
-  console.log(`  index space: ${formatEndSpace(endSpace)}`)
+  console.log(dim(`  index space: ${formatEndSpace(endSpace)}`, S))
   // THE AUTHORITATIVE HEALTH LINE, after the drain — the in-run battery deferred Embedding Coverage
   // while vectors were still being written (see runIndexHealthCheck's deferEmbeddingCoverage), so this
   // is the one verdict that grades a complete index. `bb health` runs the same battery later; the two
@@ -408,13 +414,13 @@ async function cmdIndex(
       const finalHealth = await runIndexHealthCheck(pid)
       const problemChecks = finalHealth.checks.filter((c) => c.status === "error" || c.status === "warn")
       if (problemChecks.length === 0) {
-        console.log(`  ✅ index health (after embeddings): ${finalHealth.overallHealth}% — all checks passed`)
+        console.log(green(`  ✅ index health (after embeddings): ${finalHealth.overallHealth}% — all checks passed`, S))
       } else {
         console.log(
-          `  ⚠️  index health (after embeddings): ${finalHealth.overallHealth}% — ${problemChecks.length} warning(s) (run bb health for details)`,
+          yellow(`  ⚠️  index health (after embeddings): ${finalHealth.overallHealth}% — ${problemChecks.length} warning(s) (run bb health for details)`, S),
         )
         for (const c of finalHealth.checks) {
-          if (c.status === "error") console.log(`    ❌ ${c.name}: ${c.description}`)
+          if (c.status === "error") console.log(red(`    ❌ ${c.name}: ${c.description}`, S))
         }
       }
     } catch (healthErr: any) {
@@ -437,28 +443,31 @@ async function cmdIndex(
   const storeFailures = Number(stats.summary?.storeFailures ?? 0)
   if (missing > 0) {
     console.log(
-      `⚠ indexed ${files} files — but ${missing} of the ${stats.totalFiles} discovered file(s) could NOT be stored ` +
-        `(${storeFailures} store batch(es) rolled back). The index is INCOMPLETE.`,
+      yellow(
+        `⚠ indexed ${files} files — but ${missing} of the ${stats.totalFiles} discovered file(s) could NOT be stored ` +
+          `(${storeFailures} store batch(es) rolled back). The index is INCOMPLETE.`,
+        S,
+      ),
     )
     console.log(
-      `  This is a write failure, not a parse failure: check free disk space and that the database is writable, then re-run.`,
+      dim(`  This is a write failure, not a parse failure: check free disk space and that the database is writable, then re-run.`, S),
     )
     process.exitCode = 1
   } else if (parsedNothing) {
     const unchanged = Number(stats.summary?.unchanged ?? 0)
     const skipped = Number(stats.summary?.skipped ?? 0)
     console.log(
-      `✓ nothing to index — already up to date (${unchanged} unchanged, ${skipped} skipped, ${secs}s)`,
+      green(`✓ nothing to index — already up to date (${unchanged} unchanged, ${skipped} skipped, ${secs}s)`, S),
     )
   } else {
-    console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+    console.log(green(bold(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`, S), S))
   }
   if (missing === 0 && storeFailures > 0) {
     // The rollbacks happened but recovery saved every file: the index is complete and
     // the run is a success, yet the user should still know it was not uneventful.
-    console.log(`  note: ${storeFailures} store batch(es) rolled back and were recovered — the index is complete`)
+    console.log(dim(`  note: ${storeFailures} store batch(es) rolled back and were recovered — the index is complete`, S))
   }
-  console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  console.log(dim(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`, S))
   // Embedding outcomes and the models present in the index.
   //
   // Embeddings are produced after parsing, in the background, so a provider

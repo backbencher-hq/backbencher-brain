@@ -21,6 +21,8 @@
  *   - a completion summary, and a support escalation hint when a run is slow
  */
 
+import { bold, colorEnabled, cyan, dim, yellow } from "./terminal-style"
+
 // A file count below this is effectively instant; we say so rather than showing
 // a spinner the user never needed to see.
 const SMALL_PROJECT_FILES = 150
@@ -220,6 +222,8 @@ export class IndexProgressRenderer {
   private lastEncouragementBand = -1
   /** Recent (timestamp, files-done) observations, for the windowed rate. Bounded. */
   private samples: RateSample[] = []
+  /** ANSI allowed for this renderer's stream (TTY, minus NO_COLOR; FORCE_COLOR can opt in). */
+  private readonly color: boolean
 
   /** Keep only what the window needs, so a long run cannot grow this without bound. */
   private recordSample(files: number): void {
@@ -236,6 +240,7 @@ export class IndexProgressRenderer {
     this.startedAt = opts.startedAt
     this.totalFiles = opts.totalFiles
     this.nonTtyIntervalMs = opts.nonTtyIntervalMs ?? 10_000
+    this.color = colorEnabled({ isTTY: opts.isTTY })
   }
 
   get elapsedMs(): number {
@@ -247,7 +252,11 @@ export class IndexProgressRenderer {
     if (this.announcedExpectation) return
     const expected = expectationFor(this.totalFiles)
     this.announcedExpectation = true
-    this.stream.write(`\nIndexing ${countWithCommas(this.totalFiles)} files — ${expected}\n\n`)
+    // The expectation/ETA framing is the first thing a user needs; it is emphasised (bold headline,
+    // cyan expectation) so it does not read like one more log line.
+    this.stream.write(
+      `\n${bold(`Indexing ${countWithCommas(this.totalFiles)} files`, this.color)} — ${cyan(expected, this.color)}\n\n`,
+    )
   }
 
   /**
@@ -291,10 +300,10 @@ export class IndexProgressRenderer {
     this.lastEncouragementBand = band
     if (this.isTTY) {
       // Clear the bar, print the note, and let the next update redraw it.
-      this.stream.write(`\r\x1b[2K  ${line}\n`)
+      this.stream.write(`\r\x1b[2K  ${cyan(line, this.color)}\n`)
       this.lastLineLength = 0
     } else {
-      this.stream.write(`[index] ${line}\n`)
+      this.stream.write(`${dim("[index]", this.color)} ${cyan(line, this.color)}\n`)
     }
   }
 
@@ -314,18 +323,18 @@ export class IndexProgressRenderer {
     const bar = "█".repeat(filled) + "░".repeat(BAR - filled)
 
     const parts = [
-      `  ${bar} ${String(pct).padStart(3)}%`,
+      `  ${bar} ${bold(String(pct).padStart(3) + "%", this.color)}`,
       `${countWithCommas(done)}/${countWithCommas(total)} files`,
       rate,
       `elapsed ${elapsed}`,
-      `ETA ${eta}`,
+      bold(cyan(`ETA ${eta}`, this.color), this.color),
     ]
     if (stats.symbols !== undefined) parts.push(`${countWithCommas(stats.symbols)} symbols`)
     if (stats.relationships !== undefined) parts.push(`${countWithCommas(stats.relationships)} rels`)
     if (stats.embeddings !== undefined) parts.push(`${countWithCommas(stats.embeddings)} embeddings`)
 
     let line = parts.join("  ")
-    if (stats.errorFiles) line += `  ⚠ ${stats.errorFiles} errors`
+    if (stats.errorFiles) line += `  ${yellow(`⚠ ${stats.errorFiles} errors`, this.color)}`
     if (stats.currentFile) {
       // Keep the tail short; long absolute paths would wrap and break the erase.
       const f = stats.currentFile.length > 48 ? "…" + stats.currentFile.slice(-47) : stats.currentFile
@@ -365,9 +374,9 @@ export class IndexProgressRenderer {
     const remaining = estimateRemainingMs(stats, this.startedAt, this.samples)
     const eta = formatEta(remaining, stats.processedFiles >= total)
     this.stream.write(
-      `[index] ${pct}% ${countWithCommas(done)}/${countWithCommas(total)} files` +
-        ` elapsed=${formatDuration(this.elapsedMs)} eta=${eta}` +
-        (stats.errorFiles ? ` errors=${stats.errorFiles}` : "") +
+      `${dim("[index]", this.color)} ${bold(`${pct}%`, this.color)} ${countWithCommas(done)}/${countWithCommas(total)} files` +
+        ` elapsed=${formatDuration(this.elapsedMs)} ${cyan(`eta=${eta}`, this.color)}` +
+        (stats.errorFiles ? ` ${yellow(`errors=${stats.errorFiles}`, this.color)}` : "") +
         `\n`,
     )
   }
@@ -397,13 +406,19 @@ export class IndexProgressRenderer {
     const expectedMs = expectedDurationMs(result.totalFiles)
     if (elapsed >= expectedMs) {
       this.stream.write(
-        `\nThat took ${formatDuration(elapsed)} — longer than we expect for ${countWithCommas(result.totalFiles)} files.\n` +
-          `If it felt like it hung, that is worth reporting: ${SUPPORT_EMAIL}\n`,
+        yellow(
+          `\nThat took ${formatDuration(elapsed)} — longer than we expect for ${countWithCommas(result.totalFiles)} files.\n` +
+            `If it felt like it hung, that is worth reporting: ${SUPPORT_EMAIL}\n`,
+          this.color,
+        ),
       )
     } else if (elapsed >= SLOW_RUN_MS) {
       this.stream.write(
-        `\nTook ${formatDuration(elapsed)}.\n` +
-          `If this is slower than usual for your project, tell us: ${SUPPORT_EMAIL}\n`,
+        yellow(
+          `\nTook ${formatDuration(elapsed)}.\n` +
+            `If this is slower than usual for your project, tell us: ${SUPPORT_EMAIL}\n`,
+          this.color,
+        ),
       )
     }
   }

@@ -70,6 +70,12 @@ export function openDatabase(path: string, options: { readonly?: boolean } = {})
     db.exec("PRAGMA journal_mode = WAL")
     db.exec("PRAGMA busy_timeout = 5000")
     db.exec("PRAGMA synchronous = NORMAL")
+    // Mirrors db.node.ts: optional tuning, off unless explicitly asked for.
+    const tempStore = String(process.env.BB_SQLITE_TEMP_STORE ?? "").toUpperCase()
+    if (tempStore === "MEMORY" || tempStore === "FILE" || tempStore === "DEFAULT") db.exec(`PRAGMA temp_store = ${tempStore}`)
+    else if (tempStore === "0" || tempStore === "1" || tempStore === "2") db.exec(`PRAGMA temp_store = ${tempStore}`)
+    const cacheMb = Number(process.env.BB_SQLITE_CACHE_MB ?? 0)
+    if (Number.isInteger(cacheMb) && cacheMb >= 1 && cacheMb <= 4096) db.exec(`PRAGMA cache_size = -${cacheMb * 1024}`)
     // M54.P1 (#727): enforce declared FKs under Bun, matching better-sqlite3's
     // default (node) — until now the same statement kept data under bun and
     // cascade-deleted it under node (script/m54/probe-fk.ts A1/A3). Historical
