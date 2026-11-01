@@ -421,3 +421,6 @@ validation/tools/**/.npm/
 
 # V8 isolate crash dumps from tool runs are junk.
 isolate-*.log
+
+# Stray command-output file from a misparsed shell flag.
+--out
