@@ -320,6 +320,16 @@ export function sweepWorkRoot(env: string | undefined, fallback: string): string
   const v = (env ?? "").trim()
   return v || fallback
 }
+/**
+ * The directory a lane's corpus repo lives in. A mapping may be ABSOLUTE: the two lanes whose
+ * corpus is a DEDICATED root (matlab, vba — the shared corpus carries no genuine file for either)
+ * cannot be reached through CORPUS_ROOT, and a plain `path.join` would mangle an absolute path
+ * into `CORPUS_ROOT/<absolute>` and report the repo missing. Measured 2026-11-01 on both lanes.
+ */
+function corpusRepoDir(repo: string): string {
+  return path.isAbsolute(repo) ? repo : path.join(CORPUS_ROOT, repo)
+}
+
 const WORK_ROOT = sweepWorkRoot(process.env[M14_WORK_ENV], os.tmpdir())
 const LANE_JOURNAL_PREFIX = path.join(WORK_ROOT, "m14-f5-lane-journal")
 function sweepStateKey(repoPins: Record<string, string>, sampling: string): string {
@@ -723,6 +733,13 @@ export const LANG_REPOS: Record<string, string> = {
   // `reflect-config.json`, and `shadcn-svelte` has 2,369 that are overwhelmingly
   // `package-lock.json` machine output. A lane measured on generated lockfiles
   // learns about generated lockfiles.
+  // matlab / vba (2026-11-01): the DEDICATED corpus root. The shared corpus holds 0 genuine
+  // MATLAB (its three admitted `.m` are Objective-C prose) and 0 genuine VBA (two LaTeX `.cls`),
+  // so both lanes were measured on a root fetched for them and their declarations name it. The
+  // differential reads the same files the declarations do — an absolute mapping rather than a
+  // second corpus root, so the shared CORPUS_ROOT stays exactly what the other 48 lanes measured.
+  matlab: "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab",
+  vba: "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web",
   json: "terraform",
   // M60 #278: powershell's primary corpus is the `powershell` repository. Its
   // test/ tree is deliberately excluded by the draw (parser-error TEST DATA — 166
@@ -23260,12 +23277,17 @@ async function main() {
           : [...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)],
       )]
   for (const rp of activeRepos) {
-    const rd = path.join(CORPUS_ROOT, rp)
+    // A repo mapping may be an ABSOLUTE path. The two lanes whose corpus lives in a DEDICATED
+    // root (matlab, vba — the shared corpus carries 0 genuine files for either) cannot be
+    // reached through CORPUS_ROOT, and a lane that silently falls back to "no corpus mapped"
+    // reads as a vacancy rather than as the deliberate root split it is. Measured 2026-11-01:
+    // both lanes printed "no corpus repo mapped ... declared unrun" for exactly this reason.
+    const rd = corpusRepoDir(rp)
     if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
   }
   const repoPins: Record<string, string> = {}
   for (const rp of activeRepos) {
-    repoPins[rp] = execSync("git rev-parse HEAD", { cwd: path.join(CORPUS_ROOT, rp) }).toString().trim()
+    repoPins[rp] = execSync("git rev-parse HEAD", { cwd: corpusRepoDir(rp) }).toString().trim()
   }
   // M49 W16 (defect 1): a lane-batch child inherits the parent's frozen state,
   // so a corpus commit mid-sweep can no longer split the journal. The parent
@@ -23377,7 +23399,7 @@ async function main() {
   const laneRepoDir = (repo: string): string => {
     const cached = laneDirCache.get(repo)
     if (cached) return cached
-    const live = path.join(CORPUS_ROOT, repo)
+    const live = corpusRepoDir(repo)
     const pin = repoPins[repo]
     if (!pin) throw new Error(`differential: no pin recorded for corpus repo ${repo}`)
     const head = execSync("git rev-parse HEAD", { cwd: live }).toString().trim()
@@ -23725,7 +23747,7 @@ async function main() {
           // ENVIRONMENT (which versions are installed and where), and the environment
           // is not what the pin is asserting. Resolving dependencies from the tree
           // under test would make a clean measurement report zero dependencies.
-          for (const root of dartDependencyRoots(path.join(CORPUS_ROOT, langRepo), depsMode)) {
+          for (const root of dartDependencyRoots(corpusRepoDir(langRepo), depsMode)) {
             for (const f of walkDartFiles(root)) { indexFiles.push(f); depFiles++ }
           }
           console.log(`  [project-index] dart deps=${depsMode}: +${depFiles} dependency files`)
@@ -26048,6 +26070,13 @@ async function main() {
       // empty target (SDJ-11), so dropping such a truth row cannot orphan a real match.
       // It can only remove a phantom obligation.
       truth = (truth as any[]).filter((t: any) => String(t.target ?? "").trim().length > 0)
+      // TRUTH-SHAPE TRACE (2026-11-01): while writing or repairing an oracle, the reader needs to see
+      // what truth the lane actually derived. `BB_DBG_TRUTH=N` prints the first N rows.
+      if (process.env.BB_DBG_TRUTH) {
+        for (const t of (truth as any[]).slice(0, Number(process.env.BB_DBG_TRUTH))) {
+          console.log(`    [truth] ${String(t.label)} | ${String(t.from)} -> ${String(t.target)}  (${relPath})`)
+        }
+      }
 
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
@@ -26110,6 +26139,13 @@ async function main() {
           // counter the report is built from. Different purposes, same site.
           if (process.env.M14_TRACE_FILE && unexplainedInAnalyzer <= 3) {
             console.log(`    [trace] unexplained #${unexplainedInAnalyzer} at ${relPath}`)
+          }
+          // SHAPE TRACE (2026-11-01): when a scoped run is being used to WRITE or REPAIR an oracle,
+          // the path alone is not enough — the reader needs the shape. `BB_DBG_UNEXP=N` prints the
+          // first N unmatched analyzer rows as label|from|target, which is exactly what the oracle
+          // has to model next.
+          if (process.env.BB_DBG_UNEXP && unexplainedInAnalyzer <= Number(process.env.BB_DBG_UNEXP)) {
+            console.log(`    [unexp] ${String(r.label)} | ${String(r.from)} -> ${String(r.target)}  (${relPath})`)
           }
           unexplainedByLabel.set(String(r.label), (unexplainedByLabel.get(String(r.label)) ?? 0) + 1)
           if (samples.length < F5_SAMPLE_CAP) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
@@ -26491,7 +26527,7 @@ async function main() {
   const removeFrozenTrees = (): void => {
     if (frozenTrees.size === 0) return
     for (const [repo, dest] of frozenTrees) {
-      try { execSync(`git worktree remove --force ${JSON.stringify(dest)}`, { cwd: path.join(CORPUS_ROOT, repo), stdio: ["ignore", "pipe", "pipe"] }) } catch { /* leave it; /tmp is scratch */ }
+      try { execSync(`git worktree remove --force ${JSON.stringify(dest)}`, { cwd: corpusRepoDir(repo), stdio: ["ignore", "pipe", "pipe"] }) } catch { /* leave it; /tmp is scratch */ }
     }
     try { fs.rmSync(FROZEN_ROOT, { recursive: true, force: true }) } catch { /* empty dir left behind */ }
     console.log(`[frozen] removed ${frozenTrees.size} pinned-tree worktree(s): ${[...frozenTrees.keys()].join(", ")}`)
