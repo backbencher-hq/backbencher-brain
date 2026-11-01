@@ -129,8 +129,15 @@ export async function calculateGravityScores(
 // ============================================================================
 
 export const ParallelIndexerConfig = {
-  // Concurrency tuning (leave some cores for the OS/DB)
-  concurrency: Math.max(2, Math.min(cpus().length - 1, 12)),
+  // Concurrency tuning (leave some cores for the OS/DB).
+  // BB_INDEX_CONCURRENCY (documented in docs/indexing/environment-variables.md) overrides the plateau;
+  // the CLI's --concurrency flag sets the same number for one run. Bounded 1..64: below 1 cannot make
+  // progress, and "more than 64" is not a tuning decision a laptop can honour.
+  concurrency: (() => {
+    const raw = Number(process.env.BB_INDEX_CONCURRENCY || 0)
+    if (Number.isFinite(raw) && raw >= 1) return Math.max(1, Math.min(Math.floor(raw), 64))
+    return Math.max(2, Math.min(cpus().length - 1, 12))
+  })(),
 
   // Hard timeout per file in ms - worker gets KILLED if exceeded.
   // Env-configurable (BB_FILE_TIMEOUT_MS) so deterministic crash/timeout
@@ -1200,7 +1207,18 @@ async function discoverAndFilterFiles(
   // handle's own. `existingRecords` is empty on the null path, so `staleFiles`
   // is empty too — the `!rawDb` test changes nothing about what runs.
   if (rawDb && !eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
-    const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path))
+    // `--exclude` is non-destructive: a file that exists on disk but was skipped by an exclusion pattern
+    // is not a DELETED file. Without this guard, `bb index --exclude fixtures/**` would remove every
+    // previously indexed fixture row from the index — the user asked for "don't scan these", and the
+    // run would answer "deleted". A genuinely missing file is still purged (path does not exist).
+    const excludeMatcher =
+      excludePatterns && excludePatterns.length > 0 ? ignore({ ignorecase: false }).add(excludePatterns) : null
+    const isExcludedFromRun = (p: string): boolean => {
+      if (!excludeMatcher) return false
+      const rel = path.relative(projectPath, p).split(path.sep).join("/")
+      return excludeMatcher.ignores(rel)
+    }
+    const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path) && !isExcludedFromRun(record.path))
     if (staleFiles.length > 0) {
       log.debug("cleaning up stale files from database", { staleCount: staleFiles.length })
       const tx = rawDb.transaction(() => {
@@ -6420,10 +6438,9 @@ export async function indexProjectParallel(
   options: {
     onProgress?: (stats: ParallelIndexingStats) => void
     files?: string[]
-    // M40.A9: plumbed through to discoverAndFilterFiles but no in-tree caller
-    // passes it today — the discovery default (gitignore + extension filter)
-    // is the contract. Reserved for future external/MCP consumers; marked
-    // internal until one exists.
+    // Glob patterns to skip during discovery (`bb index --exclude`, repeatable/comma-separated).
+    // Non-destructive: a file excluded by an earlier-indexed pattern keeps its rows; a genuinely
+    // MISSING file is still purged. Applied by discoverAndFilterFiles (and by the stale-file pass).
     excludePatterns?: string[]
     isIncremental?: boolean
     skipPostProcessing?: boolean // M19: defer heavy resolution/enrichment for bounded slice timing

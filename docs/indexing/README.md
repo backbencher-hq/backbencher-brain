@@ -102,7 +102,7 @@ output:
 ```
 
 Note the flag names carry their `--` prefix; they are built from the flags you
-actually passed (`src/cli/index.ts:100-101`).
+actually passed (`src/cli/index.ts` legal-combination matrix).
 
 | Flags | Defined behavior |
 | --- | --- |
@@ -116,8 +116,15 @@ actually passed (`src/cli/index.ts:100-101`).
 | `--force` | wipe + full index + full post-processing |
 
 `--no-setup` is **not** part of this matrix. It is orthogonal — it only skips the
-first-run embedding prompt (`src/cli/index.ts:71`) — so it may be combined
-with any of the eight rows above.
+first-run embedding prompt (`src/cli/index.ts`, the `--no-setup` option) — so it may be combined
+with any of the eight rows above. `--exclude` and `--concurrency` are orthogonal too: they change
+which files are discovered and how many parse workers are used, not which mode runs.
+
+`bb index --exclude <globs>` skips files matching comma-separated globs while discovering. It is
+**non-destructive**: a file that an earlier run indexed keeps its rows when it is now excluded
+(only a file that no longer exists is purged), so `--exclude fixtures/**` is a scoping decision,
+not a delete. `bb index --concurrency <n>` (1–64) overrides the worker count for one run; the same
+number can be set for a shell with `BB_INDEX_CONCURRENCY` (see `environment-variables.md`).
 
 ## `bb index` — full
 

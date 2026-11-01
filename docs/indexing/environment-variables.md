@@ -22,6 +22,7 @@ There are three classes, and the class matters more than the name:
 | `BB_EMBEDDING_DRAIN_WAIT_MS` | `300000` | How long `bb index` waits for the background embedding queue after the index itself is complete. The wait is announced before it starts; on timeout the remaining queue count is reported and semantic search is declared partial for those symbols. Raise it for slow providers, lower it for CI. |
 | `BB_INDEX_VACUUM` | unset | `=0` disables the post-wipe `VACUUM` that `reclaimSpace` runs after a `--force` reindex. The index is correct either way; the file keeps the pages the wipe freed. Useful when a very large `--force` must finish quickly on a disk with room to spare. |
 | `BB_DEBUG_DOTTED` | unset | `=1` prints the error when `resolveDottedTargets` (dotted import-path resolution) fails. Off by design: a dotted import that cannot be resolved is a data limitation, not a crash, and must not spam every run. |
+| `BB_INDEX_CONCURRENCY` | unset | Worker count for the parse pool, overriding the built-in plateau `max(2, min(cpus - 1, 12))`. Bounded 1–64; the CLI's `bb index --concurrency <n>` sets the same number for one run. Lower it to keep a machine responsive, raise it only when the index is truly CPU-bound. |
 
 ## Test-only injection (gates only)
 

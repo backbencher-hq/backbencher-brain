@@ -10,7 +10,7 @@ import { fileURLToPath } from "url"
 import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
-import { indexProjectParallel } from "../ast/parallel-indexer"
+import { indexProjectParallel, ParallelIndexerConfig } from "../ast/parallel-indexer"
 import { IndexProgressRenderer, SUPPORT_EMAIL } from "./index-progress"
 import { acquireIndexLock, IndexLockHeldError, type IndexLockHandle } from "../ast/index-lock"
 import { BrainTools } from "../ast/tools"
@@ -30,6 +30,16 @@ import { resolveRowsFreshnessDetailed } from "../brain/freshness"
 export { getProjectId } from "../util/project-id"
 import { getProjectId } from "../util/project-id"
 
+/** Commander collector: `--exclude a,b --exclude c` → ["a","b","c"]. Plain string ops, no regex. */
+function collectList(value: string, previous: string[] | undefined): string[] {
+  const out = previous ? [...previous] : []
+  for (const part of value.split(",")) {
+    const trimmed = part.trim()
+    if (trimmed.length > 0) out.push(trimmed)
+  }
+  return out
+}
+
 function requireDir(p: string): string {
   const abs = path.resolve(p)
   if (!existsSync(abs) || !statSync(abs).isDirectory()) {
@@ -46,7 +56,18 @@ function requireDir(p: string): string {
 
 async function cmdIndex(
   dir: string | undefined,
-  opts: { force?: boolean; skipPostProcessing?: boolean; post?: boolean; file?: string; changed?: boolean; resume?: boolean; import?: string; noSetup?: boolean },
+  opts: {
+    force?: boolean
+    skipPostProcessing?: boolean
+    post?: boolean
+    file?: string
+    changed?: boolean
+    resume?: boolean
+    import?: string
+    noSetup?: boolean
+    exclude?: string[]
+    concurrency?: string
+  },
 ) {
   // M22.C1: default `<dir>` to the current directory like every other command
   // (search/health/mcp all fall back to process.cwd()); `cd proj && bb index`
@@ -90,6 +111,19 @@ async function cmdIndex(
       return
     }
   }
+  // Worker-count override (bb index --concurrency): validated before any side effect; the indexer reads
+  // ParallelIndexerConfig.concurrency when it forks the pool. Same bound as BB_INDEX_CONCURRENCY.
+  if (opts.concurrency !== undefined) {
+    const n = Number(opts.concurrency)
+    if (!Number.isInteger(n) || n < 1 || n > 64) {
+      console.error(`✗ --concurrency expects an integer 1-64 (got ${JSON.stringify(opts.concurrency)})`)
+      process.exitCode = 1
+      return
+    }
+    ParallelIndexerConfig.concurrency = n
+  }
+  const excludeGlobs = Array.isArray(opts.exclude) ? opts.exclude : []
+
   // Resolve a scoped `--file` BEFORE any side effect (no adoption, no lock, no "indexing" banner, no
   // DB write). A refusal must be the first and only thing the user sees.
   let resolvedScopedFile: string | null = null
@@ -215,6 +249,7 @@ async function cmdIndex(
   console.log(`indexing ${abs} (project ${pid.slice(0, 8)}…)`)
   const t = Date.now()
   const indexOpts: Parameters<typeof indexProjectParallel>[2] = { onProgress: (s) => {} }
+  if (excludeGlobs.length > 0) indexOpts.excludePatterns = excludeGlobs
   if (opts.skipPostProcessing) indexOpts.skipPostProcessing = true
   if (opts.file) {
     // Resolved and validated before the run started (see resolvedScopedFile above), so this block
@@ -759,51 +794,88 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
   if (decision && !footer.includes(decision)) console.log(decision)
 }
 
-async function cmdStats(dir: string | undefined) {
+async function cmdStats(dir: string | undefined, opts: { json?: boolean } = {}) {
   // M22.V4: query committed index counts anytime, independent of any run state.
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
   const { composeStatus } = await import("../ast/index-status")
   const s = await composeStatus(pid)
   if (!s.hasIndex) {
-        // Exit non-zero: "there is no index here" is a failure to answer the
-        // question asked, and `bb stats "$d" || fail` must not read this as success.
-        // Matches the `bb health` path (line ~691), which already does this.
-        console.error(`no index for ${abs}. Run: bb index "${abs}"`)
-        process.exitCode = 1
-        return
-      }
+    // Exit non-zero: "there is no index here" is a failure to answer the question asked, and
+    // `bb stats "$d" || fail` must not read this as success.
+    if (opts.json) console.log(JSON.stringify({ dir: abs, projectId: pid, hasIndex: false }, null, 2))
+    else console.error(`no index for ${abs}. Run: bb index "${abs}"`)
+    process.exitCode = 1
+    return
+  }
   let embeddings = 0
   try {
     const r = await BrainDatabase.getRawInstance(pid)
     embeddings = (r.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any)?.c ?? 0
   } catch {}
+  const dbPath = BrainDatabase.getDbPath(pid)
+  if (opts.json) {
+    console.log(
+      JSON.stringify(
+        {
+          dir: abs,
+          projectId: pid,
+          hasIndex: true,
+          files: s.dbStats.files,
+          symbols: s.dbStats.symbols,
+          relationships: s.dbStats.relationships,
+          embeddings,
+          dbPath,
+        },
+        null,
+        2,
+      ),
+    )
+    return
+  }
   console.log(`index stats for ${abs}:`)
   console.log(`  files ${s.dbStats.files} | symbols ${s.dbStats.symbols} | relationships ${s.dbStats.relationships} | embeddings ${embeddings}`)
   // M23.P1: always show where this index lives so users can find/reclaim it.
-  console.log(`  db: ${BrainDatabase.getDbPath(pid)}`)
+  console.log(`  db: ${dbPath}`)
 }
 
-async function cmdProjects(opts: { sort?: string; remove?: string; force?: boolean }) {
+async function cmdProjects(opts: { sort?: string; remove?: string; force?: boolean; json?: boolean }) {
   // M23.P1/P2: registry of every indexed project with DB path + size, and
   // safe removal. Ground truth: without this, users can't see what's indexed,
   // where the DB lives, or reclaim disk (e.g. 1,178 dirs / 16 GB on this box).
   const { listProjects, removeProject, totalProjectsBytes } = await import("../ast/project-registry")
   if (opts.remove) {
     const r = removeProject(opts.remove, opts.force === true)
-    if (r.removed) console.log(`removed project ${opts.remove.slice(0, 8)} (index reclaimed)`)
+    if (opts.json) console.log(JSON.stringify({ removed: r.removed, projectId: opts.remove, reason: r.removed ? null : r.reason }, null, 2))
+    else if (r.removed) console.log(`removed project ${opts.remove.slice(0, 8)} (index reclaimed)`)
     else console.error(`✗ ${r.reason}`)
     process.exitCode = r.removed ? 0 : 1
     return
   }
   const projects = listProjects()
   if (projects.length === 0) {
-    console.log("no indexed projects")
+    if (opts.json) console.log(JSON.stringify({ dataDir: bbProjectsDir(), count: 0, totalBytes: 0, projects: [] }, null, 2))
+    else console.log("no indexed projects")
     return
   }
   const sort = opts.sort ?? "name"
   projects.sort((a, b) => (sort === "size" ? b.dbSizeBytes - a.dbSizeBytes : sort === "time" ? (b.lastIndexed ?? 0) - (a.lastIndexed ?? 0) : a.id.localeCompare(b.id)))
   const mb = (b: number) => `${(b / 1024 / 1024).toFixed(1)}MB`
+  if (opts.json) {
+    console.log(
+      JSON.stringify(
+        {
+          dataDir: bbProjectsDir(),
+          count: projects.length,
+          totalBytes: totalProjectsBytes(projects),
+          projects,
+        },
+        null,
+        2,
+      ),
+    )
+    return
+  }
   const when = (t: number | null) => (t ? new Date(t).toISOString().slice(0, 10) : "n/a")
   for (const p of projects) {
     const where = p.humanPath ?? "(no path recorded)"
@@ -823,20 +895,25 @@ async function cmdProjects(opts: { sort?: string; remove?: string; force?: boole
   }
 }
 
-async function cmdStatus(dir: string | undefined) {
+async function cmdStatus(dir: string | undefined, opts: { json?: boolean } = {}) {
   // M22.V2: `bb status [<dir>]` — in-flight + last-run index state from any shell.
   const abs = dir ? requireDir(dir) : process.cwd()
   const pid = getProjectId(abs)
   const { composeStatus } = await import("../ast/index-status")
   const s = await composeStatus(pid)
   if (!s.hasIndex) {
-        // Exit non-zero: "there is no index here" is a failure to answer the
-        // question asked, and `bb stats "$d" || fail` must not read this as success.
-        // Matches the `bb health` path (line ~691), which already does this.
-        console.error(`no index for ${abs}. Run: bb index "${abs}"`)
-        process.exitCode = 1
-        return
-      }
+    // Exit non-zero: "there is no index here" is a failure to answer the question asked.
+    if (opts.json) console.log(JSON.stringify({ dir: abs, projectId: pid, hasIndex: false }, null, 2))
+    else console.error(`no index for ${abs}. Run: bb index "${abs}"`)
+    process.exitCode = 1
+    return
+  }
+  const dbPath = BrainDatabase.getDbPath(pid)
+  if (opts.json) {
+    // ComposedIndexStatus is already plain JSON-able data; add the identity a script needs.
+    console.log(JSON.stringify({ dir: abs, projectId: pid, dbPath, ...s }, null, 2))
+    return
+  }
   const ms = (v?: number) => (typeof v === "number" ? `${v}ms` : "n/a")
   if (s.isRunning && s.live) {
     const l = s.live
@@ -985,9 +1062,18 @@ export async function runCli(argv: string[]): Promise<void> {
     .command("tool")
     .description("run one of the public tools with JSON arguments")
     .argument("<name>", "public tool name, e.g. bb_search or bb_doc")
+    .argument("[unexpected...]", "rejected: tool arguments are passed with --args '<json>' so a stray positional is an error, not a silent no-op")
     .option("--dir <dir>", "project directory (default: cwd)")
     .option("--args <json>", "tool arguments as a JSON object", "{}")
-    .action(async (name: string, opts: any) => { await cmdTool(name, opts) })
+    .action(async (name: string, unexpected: string[], opts: any) => {
+      if (Array.isArray(unexpected) && unexpected.length > 0) {
+        console.error(`✗ unexpected argument(s): ${unexpected.map((a) => JSON.stringify(a)).join(" ")}`)
+        console.error(`  Tool arguments are a JSON object: bb tool ${name} --args '{"query":"..."}'`)
+        process.exitCode = 1
+        return
+      }
+      await cmdTool(name, opts)
+    })
 
   program
     .command("index")
@@ -1004,6 +1090,13 @@ export async function runCli(argv: string[]): Promise<void> {
     .option("--changed", "reindex only files changed since the last index (runs the bounded derived-data pass for touched files — relationships stay current)")
     .option("--resume", "continue from an interrupted run's checkpoint (incremental: only missing/changed files; runs the bounded derived-data pass)")
     .option("--import <db>", "adopt an existing brain.db file (re-home a moved project's index)")
+    .option(
+      "--exclude <globs>",
+      "skip files matching comma-separated globs during discovery (repeatable); NON-DESTRUCTIVE: files already indexed by an earlier run keep their rows",
+      collectList,
+      [],
+    )
+    .option("--concurrency <n>", "worker count for this run (1-64; default max(2, min(cpus-1, 12)))")
     .addHelpText("after", `
 Examples:
   $ bb index                 # index the current directory
@@ -1208,16 +1301,18 @@ After upgrading, re-index:  $ bb index --changed
     .command("stats")
     .description("query index counts anytime: files/symbols/relationships/embeddings (default: cwd)")
     .argument("[dir]", "project directory (default: current directory)")
-    .action(async (dir: string | undefined) => {
-      await cmdStats(dir)
+    .option("--json", "machine-readable JSON output (stable keys for scripts)")
+    .action(async (dir: string | undefined, opts: any) => {
+      await cmdStats(dir, opts)
     })
 
   program
     .command("status")
     .description("show in-flight/last-run index state and per-phase timings (default: cwd)")
     .argument("[dir]", "project directory (default: current directory)")
-    .action(async (dir: string | undefined) => {
-      await cmdStatus(dir)
+    .option("--json", "machine-readable JSON output (stable keys for scripts)")
+    .action(async (dir: string | undefined, opts: any) => {
+      await cmdStatus(dir, opts)
     })
 
   program
@@ -1226,6 +1321,7 @@ After upgrading, re-index:  $ bb index --changed
     .option("--sort <field>", "sort by name|size|time", "name")
     .option("--remove <id>", "remove one indexed project by id (reclaims its DB + embeddings)")
     .option("--force", "remove even if that project is currently being indexed")
+    .option("--json", "machine-readable JSON output for the project list (stable keys for scripts)")
     .addHelpText("after", `
 Examples:
   $ bb projects                # list all indexed projects with DB path + size
