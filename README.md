@@ -1,243 +1,358 @@
-# backbencher-brain-core — universal code intelligence
+# Backbencher Brain (`bb`)
 
-Standalone, runtime-agnostic (Bun **and** Node) code intelligence core:
-index any project with 40+ Tree-sitter language analyzers, then query it
-from a CLI, an MCP server, or a library.
+**Evidence-first code intelligence, local-first and runtime-agnostic.** `bb` indexes a repository with
+**50 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
+questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
+supported. No telemetry, no server, no account required.
+
+```
+source ──▶ AST index (SQLite) ──▶ graph / search / evidence ──▶ bb CLI · MCP · library
+```
+
+The index stores symbols, relationships (including cross-language edges), complexity, framework and
+security-flow inputs, and optional embeddings. Every answer declares whether it is fresh or stale; a
+missing answer is reported as missing rather than guessed.
+
+- **Docs index:** [`docs/README.md`](docs/README.md)
+- **Indexing guide:** [`docs/indexing/README.md`](docs/indexing/README.md)
+- **Analyzers:** one canonical page per language — [`docs/analyzers/README.md`](docs/analyzers/README.md)
+- **Tools:** [`docs/tools/`](docs/tools/) (generated from the tool registry)
+
+---
+
+## Install
+
+### Linux (primary platform)
+
+Linux x86_64 and arm64 are the primary targets and the platform this repository's gates are developed and
+run on first.
+
+```bash
+curl -fsSL https://backbencher.cc/install.sh | bash
+```
+
+This installs the `bb` binary to `~/.local/bin/bb` and verifies the release SHA-256 when `sha256sum` and the
+published checksums are available. Make sure that directory is on your `PATH`:
+
+```bash
+# ~/.bashrc or ~/.zshrc
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then check it and index your first project:
+
+```bash
+bb version
+bb index ~/my-project
+```
+
+Pin a release if you do not want `latest`:
+
+```bash
+VERSION=1.2.3 curl -fsSL https://backbencher.cc/install.sh | bash
+```
+
+**npm path (Node >= 18).** The CLI is also published as an npm package, which is what `bb upgrade` reports
+the install command for:
+
+```bash
+npm install -g backencher-brain
+bb --help
+man bb            # the manual ships with the package
+```
+
+**From source (contributors).** The compiled `dist/` path runs under Node (better-sqlite3); the source path
+runs under Bun (`bun:sqlite`) and is what the analyzer gates use:
+
+```bash
+git clone https://github.com/backbencher-hq/backbencher-brain.git
+cd backbencher-brain
+npm ci
+npm run build
+node bin/bb --help
+# or, without a build, under Bun:
+bun src/cli/index.ts --help
+```
+
+### macOS
+
+The same installer supports macOS x86_64 and arm64:
+
+```bash
+curl -fsSL https://backbencher.cc/install.sh | bash
+```
+
+The npm and from-source paths are identical to Linux.
+
+### Windows
+
+PowerShell (x86_64 and arm64):
+
+```powershell
+irm https://backbencher.cc/install.ps1 | iex
+```
+
+It installs to `%USERPROFILE%\.local\bin`; add that directory to `Path` if it is not already there. The npm
+path (`npm install -g backencher-brain`) works with Node >= 18 as well.
+
+### Requirements
+
+| | |
+| --- | --- |
+| OS / arch | Linux x64 & arm64, macOS x64 & arm64, Windows x64 & arm64 |
+| CLI (`install.sh` / `install.ps1`) | no runtime needed — a prebuilt `bb` binary |
+| npm / from source | Node.js **>= 18** (better-sqlite3 native module; prebuilt binaries are used automatically) |
+| Build from source | Node >= 18, `npm ci`, `npm run build`; Bun optional for the source/dev path |
+| Network | none for indexing; only the embedding provider you configure and the `bb upgrade` check |
+| Disk | one SQLite database per project under `~/.bb` (see [Linux notes](#linux-notes) and [performance](docs/indexing/performance.md)) |
+
+`bb` is a foreground CLI and a stdio MCP server. There is no daemon, no systemd unit and no background
+service to install.
+
+---
 
 ## Quick start
 
 ```bash
-# Node (compiled dist, better-sqlite3) — the primary path:
-node bin/bb index ~/my-project
-node bin/bb search "calculateTotal" --dir ~/my-project
-node bin/bb health ~/my-project
+# 1. Index a project (runs in parallel; safe to re-run — only changed files are parsed)
+bb index ~/my-project
 
-# Bun (from source, bun:sqlite — the compiled dist is Node-only by design):
-bun run src/cli/index.ts index ~/my-project
-bun run src/cli/index.ts search "calculateTotal" --dir ~/my-project
+# 2. Search the index
+bb search "calculateTotal" --dir ~/my-project
+
+# 3. Index counts, health and freshness
+bb stats ~/my-project
+bb health ~/my-project
+
+# 4. Optional: semantic retrieval over the index (local fallback works without a key)
+bb setup
+bb tool bb_ask --dir ~/my-project --args '{"query":"how does request authentication flow?"}' 
 ```
 
-## CLI commands
+`bb index` reports what it actually did — files parsed, skipped and unchanged, symbols and relationships,
+how long each phase took, and the final index health. The first run on a large repository takes minutes;
+later runs only parse changed files. `bb index --force` rebuilds from scratch, and `bb index --changed`
+does an incremental pass. The complete mode/flag matrix and every failure mode are in the
+[indexing guide](docs/indexing/README.md).
+
+---
+
+## Linux notes
+
+Linux-specific operational details, because this is the platform most installs run on:
+
+- **Where data lives.** `~/.bb/projects/<sha1-of-realpath>/brain.db` (one database per indexed project),
+  with the WASM parser cache under `~/.bb/wasm`. `bb projects` lists every project with its database path,
+  size, counts and last index time; `bb projects --remove <id>` deletes one (`--force` skips the
+  confirmation).
+- **Read-only home, containers, CI.** `BB_DATA_DIR` relocates the whole data directory, which is the
+  supported way to run where `$HOME` is read-only or where you want the index next to the repo:
+
+  ```bash
+  BB_DATA_DIR=/abs/project/.bb-data bb index /abs/project
+  BB_DATA_DIR=/abs/project/.bb-data bb mcp --dir /abs/project
+  ```
+
+- **No root, no service.** Everything runs as your user. Config written by `bb setup` is `0600`; API keys
+  are never printed in full (`bb setup show` shows a last-4 fingerprint only). There is no daemon to start —
+  the MCP server runs over stdio for as long as the host keeps it open.
+- **WAL needs a writable filesystem.** The database uses SQLite WAL mode; it needs a filesystem where
+  `brain.db` and its `-wal`/`-shm` files can be created and renamed. Network filesystems with broken POSIX
+  locking are not a supported data directory.
+- **Headless and SSH.** Indexing and the CLI work without a display or TTY. Live progress is a redrawing
+  line on a TTY and rate-limited milestone lines in a pipe/log (with ETA), so `ssh host bb index … | tee`
+  stays readable.
+- **CPU and memory.** The parse pool uses `min(cpus - 1, 12)` workers; one run per project is enough.
+  `bb index --concurrency <n>` (1–64) or `BB_INDEX_CONCURRENCY` pins the worker count for a machine where
+  you want to leave headroom. Memory scales with the worker count and file size; very large files are
+  capped by the discovery rules described in [`docs/indexing/discovery-matrix.md`](docs/indexing/discovery-matrix.md).
+- **Updating and removing.**
+  - binary install: re-run the installer (or `VERSION=…` for a pin);
+  - npm install: `npm install -g backencher-brain@latest`; `bb upgrade` tells you whether a newer release
+    exists and prints the exact command, but deliberately does not replace its own files;
+  - remove the binary (`rm ~/.local/bin/bb`) or `npm rm -g backencher-brain`; remove `~/.bb` (or your
+    `BB_DATA_DIR`) to delete every index and the embedding config.
+- **WSL.** Use the Linux installer inside the WSL distribution; the index lives on the Linux filesystem, so
+  index projects from inside the distro rather than across `/mnt/c` when you care about speed.
+
+---
+
+## CLI
+
+```bash
+bb --help                 # every command
+bb <command> --help       # per-command options
+bb help <command>         # same, via the help command
+```
 
 | Command | Purpose |
-|---|---|
-| `bb index <dir>` | Build the AST index (parallel, all languages) |
-| `bb index <dir> --force` | Wipe and rebuild |
-| `bb search <query> [--dir] [--limit N] [--language LANG]` | Symbol search with freshness flags |
-| `bb health [dir]` | Index stats + file freshness sample |
-| `bb mcp [--dir DIR]` | Start the MCP server over stdio |
-| `bb setup` | Interactive embedding provider setup — key validated before save, config written 0600 |
-| `bb setup show` | Show the effective embedding config — key as last-4 fingerprint only, never the full key |
-| `bb doctor [--dir] [--fix]` | Diagnose embedding setup/index consistency; `--fix` repairs file permissions to 0600 only |
-| `bb -v` / `bb version` | Print the version (same as `bb --version`) |
+| --- | --- |
+| `bb index [dir]` | Build/refresh the index (modes: full, `--changed`, `--resume`, `--post`, `--skip-post-processing`, `--file`, `--exclude`, `--concurrency`, `--force`) |
+| `bb search [query]` | Search the index: modes `symbols` (default), `content`, `symbol`, `file` |
+| `bb stats [dir]` | Counts only (files/symbols/relationships/embeddings) and the database path |
+| `bb status [dir]` | In-flight/last-run state and per-phase timings (discovery, parse, db flush) |
+| `bb health [dir]` | Index health and file freshness |
+| `bb projects` | Every indexed project: DB path, size, counts, last index (`--remove <id>`, `--force`) |
+| `bb setup` | Interactive embedding-provider setup (key validated before saving, written `0600`) |
+| `bb doctor [dir]` | Read-only diagnosis of embedding setup and index consistency (`--fix` repairs config permissions only) |
+| `bb upgrade` | Report whether a newer `bb` is published and print the install command |
+| `bb onboard [dir]` | Write the generated bb-tools section into `<dir>/AGENTS.md` |
+| `bb tool <name> --args '<json>'` | Run one public tool with JSON arguments (the MCP surface, scriptable) |
+| `bb mcp [--dir]` | Start the MCP server over stdio |
+| `bb version` | Print the version (same as `bb -v` / `bb --version`) |
 
-Indexes live at `~/.bb/projects/<sha1-of-dir>/brain.db` — no opencode, no
-global config required.
+Global flags: `--verbose` (debug logs, per-file worker/WASM lines), `--quiet` (warnings/errors only).
+A mistyped command suggests the closest real one and points to `bb --help`. `bb <command> --help` is
+authoritative for that command's options; the indexing guide covers the flag matrix and what each mode
+does **not** do.
 
-### Indexing guides
+Example outputs are honest by construction: `bb status` shows the actual per-phase timings, `bb health`
+reports a *sample* for freshness (and says so), and a run that stored fewer files than it discovered
+reports the index as incomplete rather than exit 0 in silence.
 
-Longer guides, for the questions the one-line table above cannot answer:
+---
 
-| Guide | Covers |
-|---|---|
-| [Indexing guide](docs/indexing/README.md) | Every `bb index` mode and flag, and what each does **not** do |
-| [Resume](docs/indexing/resume.md) | Interrupting safely, what a checkpoint holds, how to verify a resume |
-| [Performance](docs/indexing/performance.md) | What to expect, why a big repo takes time, how to speed it up |
-| [Troubleshooting](docs/indexing/troubleshooting.md) | "Workers don't start", and every other common failure |
-| [Embeddings](docs/indexing/embeddings.md) | Configuring the embedding provider; env vars and fallbacks |
+## MCP server and agent hosts
 
-### Help and manual
-
-Every command documents itself: `bb --help` lists all commands, and
-`bb <command> --help` (or `bb help <command>`) shows the options of that
-command. `bb -v`, `bb version`, and `bb --version` all print the version.
-A mistyped command suggests the closest real one (`bb docter` suggests
-`doctor`) and points to `bb --help`. After `npm install -g`, the full
-manual is available as `man bb`.
-
-## MCP server (Claude Code, Cursor, VS Code, opencode, …)
+Start the server for a project:
 
 ```bash
-# Node (compiled dist, better-sqlite3) — the primary path:
-node bin/bb mcp --dir ~/my-project
-
-# Bun (from source, bun:sqlite — the compiled dist is Node-only by design):
-bun run src/mcp/server.ts --dir ~/my-project
+bb mcp --dir /abs/path/to/project
 ```
 
-Claude Desktop (`claude_desktop_config.json`) — Node:
+Claude Desktop (`claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "bb-brain": {
-      "command": "node",
-      "args": ["/abs/path/to/backbencher-brain/bin/bb", "mcp", "--dir", "/abs/path/to/project"]
+      "command": "bb",
+      "args": ["mcp", "--dir", "/abs/path/to/project"]
     }
   }
 }
 ```
 
-Claude Desktop — Bun (from source):
-
-```json
-{
-  "mcpServers": {
-    "bb-brain": {
-      "command": "bun",
-      "args": ["run", "/abs/path/to/backbencher-brain/src/mcp/server.ts", "--dir", "/abs/path/to/project"]
-    }
-  }
-}
-```
-
-### Data directory (`BB_DATA_DIR`)
-
-Indexes live under `~/.bb/projects/<sha1-of-dir>/brain.db` (WASM cache at
-`~/.bb/wasm`) by default. Set `BB_DATA_DIR` to relocate both — useful in
-sandboxes/CI or to keep an index inside the repo:
-
-```bash
-BB_DATA_DIR=/abs/path/to/project/.bb-data node bin/bb index /abs/path/to/project
-BB_DATA_DIR=/abs/path/to/project/.bb-data node bin/bb mcp --dir /abs/path/to/project
-```
-
-VS Code workspace MCP (`<project>/.vscode/mcp.json`):
+VS Code workspace (`<project>/.vscode/mcp.json`):
 
 ```json
 {
   "servers": {
     "bb-brain": {
       "type": "stdio",
-      "command": "node",
+      "command": "bb",
       "cwd": "${workspaceFolder}",
-      "args": ["/abs/path/to/backbencher-brain/bin/bb", "mcp", "--dir", "${workspaceFolder}"],
+      "args": ["mcp", "--dir", "${workspaceFolder}"],
       "env": { "BB_DATA_DIR": "${workspaceFolder}/.bb-data" }
     }
   }
 }
 ```
 
-The MCP server advertises exactly sixteen public tools: `bb_search`, `bb_ask`,
-`bb_analyze`, `bb_patterns`, `bb_security`, `bb_doc`, `bb_visualize`,
-`bb_migrate`, `bb_edit`, `bb_health`, `bb_index`, `bb_graph`, `bb_impact`,
-`bb_cross_language`, `bb_annotate`, and `bb_annotations`. The count is deliberately
-not restated anywhere it can drift: [canonical tool metadata](./docs/data/public-tools.json)
-is the contract authority, `script/verify-public-surface.ts` enforces it, and both MCP
-acceptance harnesses derive the expected surface from that file instead of listing names.
-Removed pre-`0.3.0` aliases are documented in the migration guide and changelog. See the
-generated [canonical tool metadata](./docs/data/public-tools.json) and [tool references](./docs/tools/).
+When the CLI is installed globally, `command` is just `bb`. From a source checkout, use the absolute path
+to `bin/bb` (Node) or `bun run src/mcp/server.ts` (Bun) — see the
+[MCP, CLI and Indexer Guide](docs/MCP_CLI_INDEXER_GUIDE.md) for host setup for Claude Code, Cursor, Zed and
+opencode, plus the stdout-safety and stdio lifecycle rules.
 
-For the complete operational lifecycle, including CLI/MCP parity, project identity,
-database storage, indexing stages, host setup, every public tool, evidence semantics,
-and known integration risks, see [MCP, CLI, and Indexer Guide](./docs/MCP_CLI_INDEXER_GUIDE.md).
+`bb onboard <project>` writes a generated “use the bb tools” section into that project's `AGENTS.md` so an
+agent host discovers the tools without being told. The section is generated from the registry (it cannot
+name a tool that does not exist) and is idempotent.
 
-Future intelligence decisions are governed by
-[M10: Intelligence Consolidation and Evidence Governance](./docs/M10-EVIDENCE-GOVERNANCE.md),
-which defines the evidence taxonomy, disposition rules, issue order, and proof required
-before capabilities can be kept, migrated, improved, quarantined, removed, or declared complete.
+### The sixteen public tools
 
-## Semantic embeddings
+`bb_search`, `bb_ask`, `bb_analyze`, `bb_patterns`, `bb_security`, `bb_doc`, `bb_visualize`, `bb_migrate`,
+`bb_edit`, `bb_health`, `bb_index`, `bb_graph`, `bb_impact`, `bb_cross_language`, `bb_annotate`,
+`bb_annotations`.
 
-See [EMBEDDINGS.md](./EMBEDDINGS.md). Real vector embeddings are generated
-when an OpenAI-compatible embeddings API is configured; otherwise a local
-word-vector fallback (`local-word-vectors`) is used — declared weaker, not
-"the same offline". Both are stored separately, labeled by producing model,
-and the vector search never compares across vector spaces.
+Read tools answer from the index and declare staleness; `bb_edit` is the only advertised mutation surface
+and confines itself to the project, validates ASTs, writes atomically and reindexes. Key
+[`docs/data/public-tools.json`](docs/data/public-tools.json) is the machine-readable contract (schemas,
+defaults, examples, returns, errors, limitations, performance, safety and evidence guidance); the generated
+human reference is [`docs/tools/`](docs/tools/). `bb --help` lists exactly these sixteen — the pre-0.3.0
+aliases are gone (see [MCP_TOOL_MIGRATION.md](docs/MCP_TOOL_MIGRATION.md)).
 
-The easiest first step is `bb setup`: it offers prefilled free providers
-(OpenRouter free, NVIDIA NIM free), hides the key while you type, validates
-it with one live `/embeddings` call before saving (bad keys are never saved),
-and writes `~/.bb/config.json` with mode 0600. The first `bb index` run
-without any key shows a one-line honest notice and proceeds with local word
-vectors; add a real model later and re-embed with `bb index --force`.
-The wizard prompts only once — an explicit skip is remembered.
+---
 
-To inspect what is configured, `bb setup show` prints every precedence tier
-(env / global / project), the winning tier, and the key as a last-4
-fingerprint only — never the full key. To diagnose degraded semantic search,
-`bb doctor` reads real local state (config, permissions, stored embedding
-models) and names the exact fix command for each finding; its exit code is 1
-when a hard finding exists. `bb doctor --fix` mutates exactly one thing —
-config file permissions, repaired to 0600 — printing every change and
-refusing everything else. See EMBEDDINGS.md for details.
+## Language support
 
-For manual configuration:
+**50 language analyzers**, all first-class in discovery, parsing, relationship extraction and the
+cross-language graph:
 
-Google Gemini (OpenAI-compatible endpoint) — the fastest way to turn on
-real embeddings:
+Bash, C, C#, C++, Clean, Clojure, CSS, Dart, Elixir, Erlang, F#, Go, GraphQL, Groovy, Haskell, HCL, HTML,
+Java, JavaScript, JSON, Julia, Kotlin, Lua, Make, Markdown, MATLAB, Nim, Objective-C, Perl, PHP, PowerShell,
+Protobuf, Python, R, Ruby, Rust, Scala, SCSS, Solidity, SQL, Svelte, Swift, TOML, TypeScript, VB, VBA, Vue,
+XML, YAML, Zig.
 
-```bash
-export BB_EMBEDDING_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai"
-export BB_EMBEDDING_API_KEY="<your gemini api key>"
-export BB_EMBEDDING_MODEL="gemini-embedding-001"   # 3072-dim
-bb index --force <project>                          # re-embed everything
-```
+Each language has exactly one canonical documentation page — [`docs/analyzers/README.md`](docs/analyzers/README.md)
+indexes all fifty — covering its symbol contract, relationship ontology, supported/unsupported constructs,
+regex inventory, complexity envelope, differential ground truth, corpus validation, mutation evidence and
+declared limitations. That page is measured by `script/m14/verify-analyzer-docs.ts`; the analyzer
+implementation is `src/ast/real-<language>-analyzer.ts`.
 
-**Free option — OpenRouter** (`:free` models, $0, rate-limited but plenty
-for moderate projects; fully verified end-to-end):
+---
 
-```bash
-export BB_EMBEDDING_BASE_URL="https://openrouter.ai/api/v1"
-export BB_EMBEDDING_API_KEY="sk-or-v1-..."           # your openrouter key
-export BB_EMBEDDING_MODEL="nvidia/nemotron-3-embed-1b:free"   # 2048-dim
-```
+## Embeddings (optional)
 
-Or put the same keys in `~/.bb/config.json`:
+The `bb_ask` tool (and semantic search) uses embeddings. Without a configured provider, `bb` falls back to local word
+vectors — weaker by design, and labelled as such. `bb setup` offers prefilled free providers (OpenRouter,
+NVIDIA NIM), validates the key with one `/embeddings` call before saving, and writes the config `0600`.
+Changing the model or dimension requires `bb index --force`; vectors from different models or dimensions
+are never compared. The full guide, precedence rules and every `BB_EMBEDDING_*` variable are in
+[EMBEDDINGS.md](EMBEDDINGS.md) and [`docs/indexing/embeddings.md`](docs/indexing/embeddings.md).
 
-```json
-{
-  "embedding_base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-  "embedding_api_key": "<key>",
-  "embedding_model": "gemini-embedding-001"
-}
-```
+The only network calls the product makes are the embedding provider you configure and the update check in
+`bb upgrade`. Your source code is never uploaded, and there is no telemetry.
 
-Note: the free tier is quota-limited (roughly one 100-doc batch before HTTP
-429) — a paid key is needed for real projects. A 429 or provider blip degrades
-one batch to the local fallback with a bounded backoff; it does not silently
-poison the rest of the run. Vectors are labeled by the model that produced
-them (`gemini-embedding-001` vs `local-word-vectors`), and
-`BB_EMBEDDING_BATCH_LIMIT` controls the max symbols per index batch (default
-50000). Changing model or dimension requires `bb index --force`; vectors from
-different spaces are never mixed.
+---
+
+## Documentation map
+
+| Document | Read it for |
+| --- | --- |
+| [`docs/README.md`](docs/README.md) | the documentation index (start here if not sure) |
+| [`docs/indexing/README.md`](docs/indexing/README.md) | the flag matrix, what each indexing mode does, how to read a run's report |
+| [`docs/indexing/resume.md`](docs/indexing/resume.md) | interrupt/checkpoint/resume and the `skipped-unchanged` trap |
+| [`docs/indexing/performance.md`](docs/indexing/performance.md) | measured timings, why a big repo takes time, what is **not** measured |
+| [`docs/indexing/troubleshooting.md`](docs/indexing/troubleshooting.md) | worker-pool failures and other common errors |
+| [`docs/indexing/environment-variables.md`](docs/indexing/environment-variables.md) | every `BB_*` variable and whether it is a user knob |
+| [`docs/indexing/discovery-matrix.md`](docs/indexing/discovery-matrix.md) | exactly what is scanned (and what is not), case by case |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | module layout, evidence and mutation contracts |
+| [`docs/GRAPH_ENGINE.md`](docs/GRAPH_ENGINE.md) | what each relationship edge means and how it is resolved |
+| [`docs/tools/`](docs/tools/) | the generated per-tool reference (schemas, examples, errors, limits) |
+| [`docs/analyzers/README.md`](docs/analyzers/README.md) | the 50 analyzer pages |
+| [`docs/MCP_CLI_INDEXER_GUIDE.md`](docs/MCP_CLI_INDEXER_GUIDE.md) | the end-to-end operational lifecycle (CLI/MCP parity, host setup, evidence semantics) |
+| [`EMBEDDINGS.md`](EMBEDDINGS.md) | the shipped embedding setup guide |
+| [`CHANGELOG.md`](CHANGELOG.md) | release history and removed aliases |
+| `man bb` | the CLI manual, installed with the npm package |
+
+---
 
 ## Architecture and verification
 
-Tree-sitter analyzers and the SQLite index provide the evidence substrate;
-`src/intelligence/` contains strict domain engines; the MCP server and CLI are
-thin adapters over the shared registry and handlers. Read-only tools never
-refresh implicitly. Mutation goes through `bb_edit`, which protects project-root
-paths, validates ASTs, writes atomically, and reindexes affected files. See the
-[tool registry](./docs/TOOL-REGISTRY.md), [MCP migration](./docs/MCP_TOOL_MIGRATION.md),
-and [canonical documentation](./docs/data/public-tools.json).
+`src/ast/` parses languages into the evidence substrate; `src/storage/` persists canonical `brain_*` tables
+in a per-project SQLite database; `src/intelligence/` contains the search, semantic, graph, analysis,
+pattern, security, documentation, visualization, migration, edit and health engines; `src/mcp/` and
+`src/cli/` are thin adapters over the same registry and handlers. Read-only tools never refresh implicitly.
+`bb_edit` is the only advertised mutation surface. See [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-Run `npm run docs:verify` to detect registry, schema, default, example, or
-curated-reference drift. Embedding setup and evidence limitations are documented
-in [EMBEDDINGS.md](./EMBEDDINGS.md).
-
-## Verification
-
-Every suite runs under Bun and Node:
+The engine and indexer suites run under both runtimes — Node (compiled `dist/`, better-sqlite3) and Bun
+(`src/`, `bun:sqlite`):
 
 ```bash
-bun run script/verify-core.ts && npx tsx script/verify-core.ts   # DB layer
-bun run script/verify-engine.ts && npx tsx script/verify-engine.ts # parser
-bun run script/verify-index.ts && npx tsx script/verify-index.ts   # indexer
-bun run script/verify-embed.ts && npx tsx script/verify-embed.ts   # embeddings
-bun run script/verify-freshness.ts && npx tsx script/verify-freshness.ts # reads
-bun run script/verify-mcp.ts && npx tsx script/verify-mcp.ts       # MCP handshake + core tools
-bun run script/verify-mcp-e2e.ts && npx tsx script/verify-mcp-e2e.ts # public tools plus compatibility calls
+npm run build
+npx tsx script/verify-engine.ts       # parser surface
+npx tsx script/verify-index.ts        # indexer, store, resume, health
+npx tsx script/verify-embed.ts        # embeddings
+npx tsx script/verify-cli-surface.ts  # CLI surface
+npm test                              # engine + schema + tool registry + public surface
+npm run docs:verify                   # generated tool docs and documentation truth
 ```
 
-Note: `verify-mcp-e2e.ts` spawns the real runtime entry — `node bin/bb mcp`
-(compiled dist) under Node and `bun src/mcp/server.ts` (source, bun:sqlite)
-under Bun, exercising the sixteen advertised tools and hidden compatibility calls.
+Documentation numbers are enforced rather than remembered: the indexing pages are gated against `src/`,
+the per-tool references are generated from the registry, each analyzer page is measured against its
+template, and `script/m14/verify-doc-truth-emissions.ts` fails when an analyzer page contradicts the
+analyzer's emitted relationships.
 
-## Public API lifecycle
+---
 
-Version `0.3.0` exposes the sixteen-tool MCP surface above. Removed aliases and their
-replacements are listed in [MCP_TOOL_MIGRATION.md](./docs/MCP_TOOL_MIGRATION.md) and
-[CHANGELOG.md](./CHANGELOG.md).
-The machine-readable artifact is standalone JSON, so website and host integrations
-do not need to import server runtime code or parse prose.
+MIT licensed. Repository: [github.com/backbencher-hq/backbencher-brain](https://github.com/backbencher-hq/backbencher-brain).
