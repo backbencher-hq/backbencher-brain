@@ -450,8 +450,17 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_recipeprefix"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_recipeprefix_tab"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_recipeprefix"
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -466,11 +475,20 @@
           ]
         },
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "PATTERN",
-            "value": "[\\r\\n]+"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "PATTERN",
+                "value": "[\\r\\n]+"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_recipe_eol"
+            }
+          ]
         }
       ]
     },
@@ -690,13 +708,27 @@
           "type": "FIELD",
           "name": "value",
           "content": {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_assignment_text"
-            },
-            "named": true,
-            "value": "text"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_recipeprefix_value"
+                },
+                "named": true,
+                "value": "text"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_assignment_text"
+                },
+                "named": true,
+                "value": "text"
+              }
+            ]
           }
         },
         {
@@ -3165,7 +3197,7 @@
         }
       ]
     },
-    "_recipeprefix": {
+    "_recipeprefix_tab": {
       "type": "STRING",
       "value": "\t"
     },
@@ -4351,7 +4383,20 @@
     ]
   ],
   "precedences": [],
-  "externals": [],
+  "externals": [
+    {
+      "type": "SYMBOL",
+      "name": "_recipeprefix"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_recipeprefix_value"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_recipe_eol"
+    }
+  ],
   "inline": [
     "_targets",
     "_target_pattern",

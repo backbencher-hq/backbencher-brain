@@ -700,6 +700,11 @@ export namespace ASTEngine {
    */
   const PATCHED_GRAMMAR_SHA256: Record<string, string> = {
     "tree-sitter-typescript.wasm": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335",
+    // P3 `.RECIPEPREFIX`: the wired build is regenerated from `grammars/tree-sitter-make/recipeprefix/`
+    // (external scanner + grammar). Without this entry the resolver served the DEPENDENCY build, whose
+    // `_recipeprefix` is the hardcoded tab — so the fixture's `>` recipes parsed as ERROR nodes and the
+    // rule after them (`clean:`) was never published. Measured: `tree-sitter` CLI build, 192,211 bytes.
+    "tree-sitter-make.wasm": "af93a7597fd11dda62f5c4496fff828956c0a78656323785975ab96e3ae900ab",
   }
 
   function resolveWasm(relativePath: string): string {

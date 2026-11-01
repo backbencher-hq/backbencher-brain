@@ -89,6 +89,16 @@ export default grammar({
     [$.variable_reference, $._paren_text],
   ],
 
+  // P3 `.RECIPEPREFIX`: the shipped scanner (src/scanner.c, enum order MUST match) provides the declared
+  // prefix and an end-of-input newline stand-in. The DEFAULT prefix stays the internal `\t` token below,
+  // because a recipe line's terminator is `token.immediate` and the external scanner is never called after
+  // an immediate token (measured: making the tab external regressed recipe_lines to 0 on ordinary files).
+  externals: $ => [
+    $._recipeprefix,
+    $._recipeprefix_value,
+    $._recipe_eol,
+  ],
+
   extras: $ => [
     /\s/,
     alias(token(seq('\\', /\r?\n|\r/)), '\\'),
@@ -220,9 +230,14 @@ export default grammar({
     ),
 
     _prefixed_recipe_line: $ => seq(
-      $._recipeprefix,
+      // EITHER prefix: the default tab (internal `token.immediate`, byte-for-byte upstream's token) OR the
+      // EXTERNAL prefix token, which matches only the character `.RECIPEPREFIX` declared in THIS file and
+      // declines when the tracked prefix is the default tab — so the two can never both match one character.
+      // At end of input the newline is supplied zero-width by the scanner, because a `token.immediate`
+      // terminator can never see EOF and `extras` would skip the newline the prefix must sit behind.
+      choice($._recipeprefix_tab, $._recipeprefix),
       optional($.recipe_line),
-      NL,
+      choice(NL, $._recipe_eol),
     ),
 
     recipe_line: $ => seq(
@@ -254,7 +269,10 @@ export default grammar({
       field('name', '.RECIPEPREFIX'),
       optional(WS),
       field('operator', choice(...DEFINE_OPS)),
-      field('value', alias($._assignment_text, $.text)),
+      field('value', choice(
+        alias($._recipeprefix_value, $.text),
+        alias($._assignment_text, $.text),
+      )),
       NL,
     ),
 
@@ -598,8 +616,9 @@ export default grammar({
     ),
     // }}}
     // Tokens {{{
-    // TODO external parser for .RECIPEPREFIX
-    _recipeprefix: _ => '\t',
+    // (P3) `_recipeprefix` is now an EXTERNAL symbol declared in `externals` above; the default tab lives
+    // in `_recipeprefix_tab` so the two can never match the same character.
+    _recipeprefix_tab: _ => '\t',
 
     // TODO prefixed line in define is recipe
     _rawline: _ => token(/.*[\r\n]+/), // any line

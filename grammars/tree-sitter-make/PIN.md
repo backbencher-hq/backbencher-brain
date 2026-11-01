@@ -11,7 +11,7 @@ upstream's bytes.
 | Upstream package | `tree-sitter-make` 1.1.1 (MIT) |
 | Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12`, 165,855 bytes — **a local build of the patched source below** |
 | Pristine build (retained) | `ab/pristine-make.wasm`, sha256 `e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff`, 148,909 bytes |
-| Patches | `ab/grammar.patch` (in-repo) — 2 patches, both measured (§ "The two patches") |
+| Patches | P1+P2 in `ab/grammar.patch` (in-repo); **P3 `.RECIPEPREFIX`** = `recipeprefix/` grammar edits + `src/scanner.c` (an external scanner cannot be expressed as a patch of a grammar file that has no scanner — it is a new source file) |
 | Gate | `bun run script/m14/verify-grammar-pins.ts` (lane `make`) |
 
 ## Why this is a patch and not a swap
@@ -35,6 +35,21 @@ fields before and after, zero added, zero removed), so there is nothing for the
 proof to lose. The proof is re-established for the patched source in the next
 section, and the pristine build is kept so the comparison stays re-runnable
 forever.
+
+**P3 — `.RECIPEPREFIX` (wired 2026-11-xx).** Upstream hardcodes the recipe prefix to a tab, so a Makefile
+that sets `.RECIPEPREFIX = >` had every `>` recipe line parsed as an ERROR and the rules after a comment block
+were swallowed. The shipped shape is the one the `recipeprefix/README.md` measurements converged on: the
+**external scanner** (`src/scanner.c`, tokens `RECIPE_PREFIX`, `RECIPEPREFIX_VALUE`, zero-width `RECIPE_EOL`)
+learns the single literal character a file declares and nothing else; the grammar accepts the prefix **on
+recipe lines only** (a prefixed rule is input GNU Make rejects — `>build:` is a recipe line, not a target);
+the default tab stays an internal `token.immediate` so ordinary files are byte-for-byte unchanged. Node surface
+is unchanged at **44 named / 24 fields** (the 3 external tokens are anonymous ids: 189 → 192).
+
+MEASURED, this build: `validation/m14/fixtures/make/recipeprefix.expectation.json` parses with 0 ERROR nodes
+and now PINS the `clean` rule the tab-only grammar swallowed (plus forbids the phantom `echo`/`still` rules it
+published); corpus A/B over 400 corpus makefiles: **18 files / 165 ERROR nodes before → 18 files / 156 after**
+(same file set, 9 fewer nodes, no regression); `bun script/m14/verify-grammar-pins.ts` records the new bytes
+and 27 lanes match their records.
 
 ## The two patches
 
