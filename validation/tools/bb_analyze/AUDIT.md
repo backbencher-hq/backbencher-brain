@@ -699,6 +699,8 @@ Closed, with a falsifiable gate where the defect could be gated:
 | §8 headers | added to 8 engine files, 4 guide pages, generated page, 6 gate scripts | `verify-analyze-docs.ts` header check |
 | §9 banned comments | milestone/issue narrative removed from handler and gate scripts | review |
 | §7 regex | 9 escape/normalize regexes converted to string ops; 12 content classifiers are a frozen exported table with a 61-check edge-case suite; 12 allowlist rows added (file+source+reason+testFile) | `script/tools/verify-regex-policy.ts` PASS (14 allowlisted, 73 frozen debt, 0 new) + `validation/tools/bb_analyze/regex-edge-cases.ts` 61/61 |
+| D-20 dependencies dead work | the engine materialised a project-wide symbols→file Map (310,423 rows on the reference index) that nothing read; removed. Warm T2 `dependencies` went from p50 5,119.7 / p95 6,016.2 ms to **635 / 708 ms**, and `limit: 5` to 1,152 / 1,200 ms | T2 legs in LATENCY.json (post-rewrite, post-fix) |
+| D-06 T2 latency | after the shared graph-engine rewrite (collapse identity, bb_graph lane) the graph modes are inside budget on the same loaded host: callers 8.6/9.4 ms, callees 52.6/81.9, trace 51.8/66.6, impact 28.4/31.8 — from 11,220–12,367 ms warm (`callers` was 22,674 ms in one call and could not complete a 5-run leg) | `validation/tools/bb_analyze/LATENCY.json` (post-rewrite T2 legs + before/after snapshot) |
 
 Gate results (final, from the working tree; logs in `validation/tools/bb_analyze/gates/`):
 
@@ -714,8 +716,9 @@ Gate results (final, from the working tree; logs in `validation/tools/bb_analyze
 | test quality | `npx tsx script/verify-test-quality.ts` | 0 — PASS |
 | regex policy | `npx tsx script/tools/verify-regex-policy.ts` | 0 — PASS (14 allowlisted, 73 debt, 0 new) |
 | regex edge cases | `npx tsx validation/tools/bb_analyze/regex-edge-cases.ts` | 0 — 61/61 |
-| impact unity | `npx tsx script/m48/verify-p1-impact-unity.ts` | 1 — 67 passed, 1 failed: `truncated=true reason=traversal: caller-site-limit+caller-budget-exhausted`; this is the shared graph engine/impact lane's semantics (the tool did not change), reported as a cross-lane red |
+| impact unity | `npx tsx script/m48/verify-p1-impact-unity.ts` | 0 — PASS 68/0, 6 negatives. The earlier single red was the shared graph engine's same-site collapse key (fixed in the graph lane, keyed on the row's matchedId); re-verified on HEAD 55df89c3e, including "a row cap that hid no dependent is NOT a set truncation" with the engine's bound still declared |
+| m48 honesty fields | `npx tsx script/m48/verify-p2-honesty-fields.ts` | 0 — PASS 21/0, 7 negatives |
 
 Red-then-green evidence kept in `gates/`: `RED2-docs-citation.log` (planted `fixtures/` citation → exit 1, then An4 VERIFIED), `RED2-modes-page.log` (pageEdgeLimit 24 mutant → callers predicate FAIL, then An1 VERIFIED), `RED-handler-mutant.log` (descriptor missing a mode → registry consistency refusal at import, then An2 VERIFIED), and the regex suite's two real classifier failures (`assertCall` did not match `assert.equal(`, `chainedMatcher` matched no real chained matcher) before their fix.
 
-Open / blocked: D-06 (T2 graph query plans) remains external — profiled evidence in this audit and handed to the Lead for the graph-engine owner; T2 latency must be re-measured after that fix (the fleet load also invalidated a clean T2 baseline). m48 P1's single failure is the same shared-engine lane.
+Resolved since Phase A: D-06's root cause was fixed in the shared graph engine (collapse identity, profiled evidence was handed over and the lanes converged on the same defect); P1 is green; the T2 re-measure after the rewrite and after D-20 now shows **every T2 mode inside the 5 s budget on the loaded shared host** (T0 all inside 250 ms, T1 all inside 1 s, T2 all inside 5 s — LATENCY.json). Remaining open items are the declared blocked legs only (m48 c1-corpus 400 s timeout; m48 P4 red on other lanes' rows), and the T2 numbers remain a loaded-host baseline to be re-taken when fleet activity settles, exactly as the Lead's integration rule states.

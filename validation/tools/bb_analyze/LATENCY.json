@@ -1,9 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tool": "bb_analyze",
-  "currentCommit": "c43282e92",
-  "measuredAt": "2026-11-01T19:14:24.982Z",
-  "method": "T0/T1: one warm-up call then five timed calls in one process per mode. T2: same warm 5-run shape, but T2 is this workspace's 3.4 GB index SHARED with the fleet process, so those legs are load-contended upper bounds — the single-call baselines are in singleCallT2.",
+  "measuredAt": "2026-11-01T23:44:08.970Z",
+  "method": "Warm: one warm-up call then five timed calls per mode, one process per mode, handler reached through validateToolArguments -> handler (the same path the MCP door uses). T2 reads only (BB_NO_AUTO_REFRESH=1) against .bb-data. T0/T1 are the campaign fixtures under validation/tools/bb_analyze/bbdata.",
   "environment": {
     "host": "pop-os",
     "platform": "linux 7.2.6-76070206-generic",
@@ -11,15 +10,11 @@
     "node": "v22.22.1",
     "runner": "tsx",
     "loadAverageAtBuild": [
-      30.15,
-      25.74,
-      24.71
+      4.23,
+      15.63,
+      19.77
     ],
-    "loadAverage1mAtSweep": [
-      25.31,
-      29.85
-    ],
-    "contentionNote": "The checkout is shared: during the T2 sweep the 1-minute load average was 25-30 on 8 CPUs (fleet evidence regeneration + other tool owners measuring their own T2 budgets). T2 p50/p95 below are real measurements of the tool in that environment, not a quiet-machine baseline.",
+    "contentionNote": "Shared checkout: the 1-minute load average was 23-30 on 8 CPUs during every T2 run (fleet evidence regeneration + other tool owners measuring their own T2 budgets). T2 numbers are real measurements in that environment, not a quiet-machine baseline; the pre-rewrite and post-rewrite T2 legs were taken under the same load, so their comparison is meaningful.",
     "env": {
       "BB_NO_AUTO_REFRESH": "1",
       "BB_DATA_DIR": "T0/T1 -> validation/tools/bb_analyze/bbdata; T2 -> $PWD/.bb-data"
@@ -543,15 +538,332 @@
       ]
     },
     "T2": {
-      "subject": "this workspace's index (.bb-data)",
+      "subject": "this workspace's reference index (.bb-data)",
       "counts": {
         "files": 6452,
         "symbols": 310423,
         "relationships": 820040
       },
       "budgetMs": 5000,
-      "contested": true,
+      "graphEngineRewrite": "post-collapse-identity graph engine (bb_graph lane commit c28cacee5 lineage, verified through HEAD 55df89c3e)",
+      "dependenciesFix": "the dependencies engine no longer materialises a project-wide symbol->file Map it never read (310,423 rows on this index)",
       "legs": [
+        {
+          "label": "callers",
+          "args": {
+            "mode": "callers",
+            "target": "getProjectId"
+          },
+          "status": "measured",
+          "runs": [
+            9.4,
+            8.9,
+            8.4,
+            8.6,
+            6.7
+          ],
+          "warmupMs": 7671.3,
+          "p50": 8.6,
+          "p95": 9.4,
+          "bytes": 3643,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 12621,
+          "thrown": null
+        },
+        {
+          "label": "callers-hub",
+          "args": {
+            "mode": "callers",
+            "target": "makeProvenance"
+          },
+          "status": "measured",
+          "runs": [
+            35.7,
+            44.3,
+            45.1,
+            51.5,
+            43.8
+          ],
+          "warmupMs": 1172.6,
+          "p50": 44.3,
+          "p95": 51.5,
+          "bytes": 33703,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 3961,
+          "thrown": null
+        },
+        {
+          "label": "callers-leaf",
+          "args": {
+            "mode": "callers",
+            "target": "toLowerCase"
+          },
+          "status": "measured",
+          "runs": [
+            903.7,
+            555.6,
+            189,
+            264.2,
+            673.4
+          ],
+          "warmupMs": 5596.3,
+          "p50": 555.6,
+          "p95": 903.7,
+          "bytes": 36170,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 11104,
+          "thrown": null
+        },
+        {
+          "label": "callees",
+          "args": {
+            "mode": "callees",
+            "target": "getProjectId"
+          },
+          "status": "measured",
+          "runs": [
+            53.2,
+            52.3,
+            48.6,
+            52.6,
+            81.9
+          ],
+          "warmupMs": 3322.2,
+          "p50": 52.6,
+          "p95": 81.9,
+          "bytes": 30566,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 7227,
+          "thrown": null
+        },
+        {
+          "label": "trace",
+          "args": {
+            "mode": "trace",
+            "target": "getProjectId"
+          },
+          "status": "measured",
+          "runs": [
+            66.6,
+            49.8,
+            52.9,
+            51.8,
+            51.7
+          ],
+          "warmupMs": 1610.9,
+          "p50": 51.8,
+          "p95": 66.6,
+          "bytes": 30564,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 6673,
+          "thrown": null
+        },
+        {
+          "label": "dependencies",
+          "args": {
+            "mode": "dependencies"
+          },
+          "status": "measured",
+          "runs": [
+            635,
+            707.6,
+            642.4,
+            618.4,
+            460.1
+          ],
+          "warmupMs": 1431.9,
+          "p50": 635,
+          "p95": 707.6,
+          "bytes": 203554,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "thrown": null
+        },
+        {
+          "label": "dependencies-limit5",
+          "args": {
+            "mode": "dependencies",
+            "limit": 5
+          },
+          "status": "measured",
+          "runs": [
+            799.1,
+            858.4,
+            1152.1,
+            1199.7,
+            1198
+          ],
+          "warmupMs": 2003.6,
+          "p50": 1152.1,
+          "p95": 1199.7,
+          "bytes": 82760,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "thrown": null
+        },
+        {
+          "label": "stats",
+          "args": {
+            "mode": "stats"
+          },
+          "status": "measured",
+          "runs": [
+            2404.6,
+            3092.4,
+            1567.6,
+            1750.5,
+            2283.1
+          ],
+          "warmupMs": 19204.1,
+          "p50": 2283.1,
+          "p95": 3092.4,
+          "bytes": 6215,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 40792,
+          "thrown": null
+        },
+        {
+          "label": "complexity",
+          "args": {
+            "mode": "complexity"
+          },
+          "status": "measured",
+          "runs": [
+            1075.5,
+            956.8,
+            2798.9,
+            1644.9,
+            1312.4
+          ],
+          "warmupMs": 20898.2,
+          "p50": 1312.4,
+          "p95": 2798.9,
+          "bytes": 5597,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 39446,
+          "thrown": null
+        },
+        {
+          "label": "impact",
+          "args": {
+            "mode": "impact",
+            "target": "getProjectId"
+          },
+          "status": "measured",
+          "runs": [
+            31.8,
+            28.4,
+            28.9,
+            21.9,
+            17.1
+          ],
+          "warmupMs": 3438.6,
+          "p50": 28.4,
+          "p95": 31.8,
+          "bytes": 1426,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 9032,
+          "thrown": null
+        },
+        {
+          "label": "test_mapping",
+          "args": {
+            "mode": "test_mapping"
+          },
+          "status": "measured",
+          "runs": [
+            1661,
+            2333.9,
+            1990.5,
+            1549.9,
+            1323.8
+          ],
+          "warmupMs": 6390.9,
+          "p50": 1661,
+          "p95": 2333.9,
+          "bytes": 66121,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 20906,
+          "thrown": null
+        },
+        {
+          "label": "test_gaps",
+          "args": {
+            "mode": "test_gaps"
+          },
+          "status": "measured",
+          "runs": [
+            1028.1,
+            964.5,
+            1002.7,
+            1079.1,
+            889.4
+          ],
+          "warmupMs": 2464.8,
+          "p50": 1002.7,
+          "p95": 1079.1,
+          "bytes": 23824,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 11536,
+          "thrown": null
+        },
+        {
+          "label": "test_impact",
+          "args": {
+            "mode": "test_impact",
+            "target": "getProjectId"
+          },
+          "status": "measured",
+          "runs": [
+            2258.5,
+            2692.1,
+            3801.9,
+            2833.5,
+            2165
+          ],
+          "warmupMs": 4017.6,
+          "p50": 2692.1,
+          "p95": 3801.9,
+          "bytes": 979,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 21252,
+          "thrown": null
+        },
+        {
+          "label": "test_quality",
+          "args": {
+            "mode": "test_quality"
+          },
+          "status": "measured",
+          "runs": [
+            81.6,
+            182.1,
+            411.6,
+            312.3,
+            369.8
+          ],
+          "warmupMs": 1997.7,
+          "p50": 312.3,
+          "p95": 411.6,
+          "bytes": 73133,
+          "budgetMs": 5000,
+          "withinBudget": true,
+          "wallMs": 7815,
+          "thrown": null
+        }
+      ],
+      "beforeGraphRewrite": [
         {
           "label": "callers",
           "args": {
@@ -842,8 +1154,8 @@
       ]
     }
   },
-  "singleCallT2": {
-    "note": "One handler call per mode in a fresh process against .bb-data (includes the 3.4 GB DB open on each). Command: validation/tools/bb_analyze/t2-probe.sh",
+  "singleCallT2BeforeRewrite": {
+    "note": "One handler call per mode in a fresh process (includes the 3.4 GB DB open). Command: validation/tools/bb_analyze/t2-probe.sh",
     "probes": [
       {
         "args": {
@@ -852,7 +1164,6 @@
         "handlerMs": 16412,
         "bytes": 6213,
         "ok": true,
-        "wallMs": 18697,
         "timedOut": false
       },
       {
@@ -862,7 +1173,6 @@
         "handlerMs": 1536,
         "bytes": 5418,
         "ok": true,
-        "wallMs": 3241,
         "timedOut": false
       },
       {
@@ -873,7 +1183,6 @@
         "handlerMs": 22674,
         "bytes": 3643,
         "ok": true,
-        "wallMs": 24250,
         "timedOut": false
       },
       {
@@ -884,7 +1193,6 @@
         "handlerMs": 12409,
         "bytes": 21966,
         "ok": true,
-        "wallMs": 14004,
         "timedOut": false
       },
       {
@@ -895,7 +1203,6 @@
         "handlerMs": 4951,
         "bytes": 3732,
         "ok": true,
-        "wallMs": 6502,
         "timedOut": false
       },
       {
@@ -906,7 +1213,6 @@
         "handlerMs": 3698,
         "bytes": 1426,
         "ok": true,
-        "wallMs": 5313,
         "timedOut": false
       },
       {
@@ -917,7 +1223,6 @@
         "handlerMs": 2858,
         "bytes": 82830,
         "ok": true,
-        "wallMs": 4591,
         "timedOut": false
       },
       {
@@ -927,7 +1232,6 @@
         "handlerMs": 8600,
         "bytes": 66132,
         "ok": true,
-        "wallMs": 10569,
         "timedOut": false
       },
       {
@@ -937,7 +1241,6 @@
         "handlerMs": 7321,
         "bytes": 23834,
         "ok": true,
-        "wallMs": 9222,
         "timedOut": false
       },
       {
@@ -947,7 +1250,6 @@
         "handlerMs": 1054,
         "bytes": 73067,
         "ok": true,
-        "wallMs": 3757,
         "timedOut": false
       },
       {
@@ -958,101 +1260,20 @@
         "handlerMs": 6281,
         "bytes": 764,
         "ok": true,
-        "wallMs": 8409,
         "timedOut": false
       }
     ]
   },
   "commands": {
-    "sweep": "validation/tools/bb_analyze/latency.sh",
+    "sweep": "validation/tools/bb_analyze/latency.sh (T0/T1) ; validation/tools/bb_analyze/latency-t2-remeasure.sh (T2 post-rewrite)",
     "singleLeg": "BB_DATA_DIR=<tier data dir> BB_NO_AUTO_REFRESH=1 BB_REPEAT=5 npx tsx validation/tools/bb_analyze/run-one.ts '<json args>' <project dir>",
-    "singleCallT2": "validation/tools/bb_analyze/t2-probe.sh",
     "graphProfile": "BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_analyze/t2-profile2.ts"
   },
-  "blockedLegs": [
-    {
-      "tier": "T2",
-      "label": "callers",
-      "args": {
-        "mode": "callers",
-        "target": "getProjectId"
-      },
-      "reason": "exceeded the 300 s per-leg limit (timeout 300); the same question in one call took 22,674 ms",
-      "command": "BB_DATA_DIR=$PWD/.bb-data BB_NO_AUTO_REFRESH=1 BB_REPEAT=5 npx tsx validation/tools/bb_analyze/run-one.ts '{\"mode\":\"callers\",\"target\":\"getProjectId\"}' \"$PWD\""
-    }
-  ],
-  "failures": [],
   "summary": {
     "T0_allWithinBudget": true,
     "T1_allWithinBudget": true,
-    "T2_failures": [
-      {
-        "label": "callers",
-        "p50": null,
-        "p95": null,
-        "budgetMs": 5000
-      },
-      {
-        "label": "callers-hub",
-        "p50": 10996.7,
-        "p95": 12366.9,
-        "budgetMs": 5000
-      },
-      {
-        "label": "callees",
-        "p50": 29326.3,
-        "p95": 63973.5,
-        "budgetMs": 5000
-      },
-      {
-        "label": "trace",
-        "p50": 32978.3,
-        "p95": 50086.1,
-        "budgetMs": 5000
-      },
-      {
-        "label": "dependencies",
-        "p50": 14774.6,
-        "p95": 42315,
-        "budgetMs": 5000
-      },
-      {
-        "label": "dependencies-limit5",
-        "p50": 6827.8,
-        "p95": 18457,
-        "budgetMs": 5000
-      },
-      {
-        "label": "stats",
-        "p50": 5190.5,
-        "p95": 7429.1,
-        "budgetMs": 5000
-      },
-      {
-        "label": "impact",
-        "p50": 10389.4,
-        "p95": 73774.9,
-        "budgetMs": 5000
-      },
-      {
-        "label": "test_mapping",
-        "p50": 30394.8,
-        "p95": 72672.9,
-        "budgetMs": 5000
-      },
-      {
-        "label": "test_gaps",
-        "p50": 34555.3,
-        "p95": 54058.9,
-        "budgetMs": 5000
-      },
-      {
-        "label": "test_impact",
-        "p50": 26413.7,
-        "p95": 62677.8,
-        "budgetMs": 5000
-      }
-    ],
-    "finding": "Under fleet load every T2 mode except complexity and test_quality breached the 5 s budget on p95, and the graph modes' declared 2,000 ms walk ceiling did not bound them. The graph-mode query plans are profiled in AUDIT.md D-06; the rest is shared-machinery contention that must be re-measured on a quiet machine before being called a product regression."
+    "T2_allWithinBudget": true,
+    "T2_outsideBudget": [],
+    "t2GraphModesCollapsed": "callers 8.6/9.4 ms (was 11,220-12,367 warm; 22,674 single call and a 5-run block), callees 52.6/81.9 (was 29,326/63,974), trace 51.8/66.6 (was 32,978/50,086), impact 28.4/31.8 (was 10,389/73,775)"
   }
 }

@@ -220,11 +220,11 @@ export async function getFileDependencies(
     fileById.set(row.id, row.relativePath)
   }
 
-  // symbol id -> file id (the symbol table row ids are file-scoped)
-  const symbolFile = new Map<string, string>()
-  for (const row of raw.prepare("SELECT id, file_id AS fileId FROM brain_symbol WHERE project_id = ?").all(projectId) as Array<{ id: string; fileId: string }>) {
-    symbolFile.set(row.id, row.fileId)
-  }
+  // The file->file edges are derived in SQL (importEdges joins both symbols), so
+  // no symbol->file map is built here. The engine used to materialise one anyway:
+  // one row per symbol for the whole project (310,423 rows on the reference
+  // index) into a Map nothing read. That was the single largest cost of a
+  // `dependencies` call and it bought nothing.
 
   // Resolved file->file dependency edges from 'imports' relationships.
   const importEdges = raw.prepare(
