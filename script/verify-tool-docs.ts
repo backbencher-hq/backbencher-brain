@@ -148,7 +148,7 @@ function stalenessSection(tool: any): string {
   // refreshing it rather than reading around it or refusing. Stated here so the
   // generated page cannot claim it "does not auto-refresh".
   if (tool.name === "bb_edit") {
-    return `No freshness flags are returned — this tool does not summarize OTHER files' staleness, and it does not read stale data: a stale TARGET file is refreshed (that file only) and the symbol re-resolved from the bytes on disk before the edit is planned, and the refresh is named in \`warnings\`. If that change renamed or removed the symbol, the edit is refused by name rather than applied to a stale span. For unrelated files, remediation stays manual: project scope → \`${FRESHNESS_REMEDIATION.dir}\`.`
+    return `No freshness flags are returned — this tool does not summarize OTHER files' staleness, and it does not read stale data: a stale TARGET file is refreshed (that file only) and the symbol re-resolved from the bytes on disk before the edit is planned, and the refresh is named in \`warnings\`. If that change renamed or removed the symbol, the edit is refused by name rather than applied to a stale span. For unrelated files, remediation stays manual: project scope → run \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only).`
   }
   const info = FRESHNESS_TOOLS[tool.name]
   if (!info) {
