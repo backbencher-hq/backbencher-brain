@@ -145,6 +145,7 @@ const DOC_FILES = [
   "docs/indexing/performance.md",
   "docs/indexing/troubleshooting.md",
   "docs/indexing/embeddings.md",
+  "docs/indexing/environment-variables.md",
   "docs/indexing/PERFORMANCE-FINDINGS.md",
 ]
 const docText = new Map<string, string>(DOC_FILES.map((f) => [f, read(f)]))

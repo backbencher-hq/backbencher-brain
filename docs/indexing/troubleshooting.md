@@ -311,7 +311,7 @@ logs `concurrency: 11`.
 still see `workers: 1`, that is a real degradation — go back to Cause 1.
 
 And do not assume more workers is faster. The one controlled comparison in this
-repository (`validation/m19/results/S3.json:37-101`, 100-file disjoint samples)
+repository (`validation/m19/results/S3-controls.json:1-60`, 100-file disjoint samples)
 found 12 workers slightly faster on the throughput control but *slower* on the
 memory control, and the evidence file states plainly that the samples were
 disjoint and sequential, "not a same-input benchmark".
@@ -351,7 +351,8 @@ environment variable cannot stall a real index (`src/ast/pool-worker.ts:1292`,
 | `BB_TEST_INDEX_LOCK_OFF` | `BB_TEST_HOOKS=1` | Disables the single-flight index lock (`src/ast/index-lock.ts:322`). |
 
 If you have `BB_TEST_HOOKS=1` exported, unset it. It also unlocks a freshness
-short-circuit in the MCP tool handlers (`src/mcp/tool-handlers.ts:880`).
+short-circuit in the `bb_analyze` MCP tool handler
+(`src/mcp/tools/bb_analyze/handler.ts:164`).
 
 ## The related lock error
 

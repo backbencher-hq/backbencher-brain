@@ -295,14 +295,20 @@ phase from zero. On the measured anchors:
 
 | Corpus | Files | Symbols | Full index wall time | Evidence |
 | --- | ---: | ---: | ---: | --- |
-| rake | 57 | 779 | 1.9s | `validation/m19/results/S1.json:11-14` |
-| lodash | 36 | 1,048 | 3.4s | `validation/m19/results/S1.json:68-73` |
-| element-plus | 2,580 | 27,751 | 51.6s | `validation/m19/results/S1.json:74-80` |
+| rake | 57 | 779 | 1.9s | `validation/m19/results/S1.superseded-e7c9819f4.json:61-65` |
+| lodash | 36 | 1,048 | 3.4s | `validation/m19/results/S1.superseded-e7c9819f4.json:68-72` |
+| element-plus | 2,580 | 27,751 | 51.6s | `validation/m19/results/S1.superseded-e7c9819f4.json:75-79` |
 | paperclip | 676 | 8,054 | 100.9s | `validation/m19/results/S2-paperclip-timings.json:33` |
 | grails (Groovy) | 7,114 | 64,719 | 494.6s | `reviews/groovy/master-review-2026-09-29.md:436-441` |
 
 All of these were measured on one Intel i7-8650U / 15.5 GiB Linux host. They are
-**that machine's** numbers, not yours and not a promise. See
+**that machine's** numbers, not yours and not a promise.
+
+> The S1 evidence file was superseded when a later run found the corpora absent on
+> its machine: `validation/m19/results/S1.json` now records empty anchors. The
+> measurement above is preserved verbatim in
+> `validation/m19/results/S1.superseded-e7c9819f4.json`, which is what the table
+> cites. See
 [`performance.md`](performance.md).
 
 There is also a real functional cost: the wipe is in place, so a concurrent

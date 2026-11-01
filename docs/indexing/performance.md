@@ -135,7 +135,7 @@ Practical consequences:
   (`src/ast/parallel-indexer.ts:1243`, `:131`). On a 32-core machine you still
   get 12 workers. On a 4-core machine you get 3.
 - **12 workers is not automatically faster than 1.** The one controlled A/B in
-  the repo (`validation/m19/results/S3.json:37-101`, 100-file disjoint samples on
+  the repo (`validation/m19/results/S3-controls.json:1-60`, 100-file disjoint samples on
   intellij) found 12 workers *faster* on the throughput control (20,705ms vs
   22,767ms) but *slower* on the memory control (39,775ms vs 25,482ms). The
   evidence file states these were disjoint sequential samples, "not a
@@ -204,17 +204,17 @@ as large as the derived pass is.
 
 | Corpus | Files | Symbols | Wall | Evidence |
 | --- | ---: | ---: | ---: | --- |
-| rake | 57 | 779 | 1.93s | `validation/m19/results/S1.json:11-14` |
-| lodash | 36 | 1,048 | 3.41s | `validation/m19/results/S1.json:68-73` |
-| element-plus | 2,580 | 27,751 | 51.58s | `validation/m19/results/S1.json:74-80` |
+| rake | 57 | 779 | 1.93s | `validation/m19/results/S1.superseded-e7c9819f4.json:61-65` |
+| lodash | 36 | 1,048 | 3.41s | `validation/m19/results/S1.superseded-e7c9819f4.json:68-72` |
+| element-plus | 2,580 | 27,751 | 51.58s | `validation/m19/results/S1.superseded-e7c9819f4.json:75-79` |
 | paperclip | 676 | 8,054 | 100.9s | `validation/m19/results/S2-paperclip-timings.json:33` |
 
 **Do not read these as a scaling curve.** They are three points on three
 different codebases and the relationship is non-monotonic: lodash (36 files)
 took *longer* than rake (57 files). The evidence file says so itself
-(`validation/m19/results/S1.json:82-101`, `:103-106`): *"Wall-time is
-hardware-bound (machine recorded); not portable"* and *"a scaling curve, not a
-production-wide latency promise"* (`docs/m19/BENCHMARKS.md:14-16`).
+(`validation/m19/results/S1.superseded-e7c9819f4.json:104`): *"Wall-time is
+hardware-bound (machine recorded); not portable"* and, for the second quote,
+`docs/m19/BENCHMARKS.md:14-16`.
 
 The full per-phase breakdown for one complete run, element-plus:
 
@@ -233,7 +233,7 @@ are not additive.)
 | Corpus | Indexed files | Symbols | Wall | Status |
 | --- | ---: | ---: | ---: | --- |
 | ASP.NET Core | 10,431 | 132,744 | 161s + 92s + 77s + 68s, four slices | verified, finalization deferred per slice (`validation/m19/results/S2-timings.json:55,109,163,217`) |
-| IntelliJ Community | 69,509 | 1,071,964 | **not claimed** | counts verified; a single fresh 1,000-file batch took 1,216.9s, so a complete cold run was outside the verification window (`validation/m19/results/S3.json:116`, `:129-131`) |
+| IntelliJ Community | 69,509 | 1,071,964 | **not claimed** | counts verified; a single fresh 1,000-file batch took 1,216.9s, so a complete cold run was outside the verification window (`validation/m19/results/S3.superseded-e7c9819f4.json:116-131`, `validation/m19/results/B1.json:42-43`) |
 | groovy (grails) | 7,114 | 64,719 | 494.6s | single process, all tracked files, 0 failures |
 | ASP.NET Core | 12,177 | 196,030 | 2,207.7s | one cold run at this repository's HEAD, full derived pass: 898.8s of the 2,207.7s (41%) is post-processing — `taint` alone is 440.8s, larger than the 297.2s resolution phase (`validation/m60/results/index-scaling-curve.json`) |
 
