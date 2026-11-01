@@ -546,6 +546,7 @@ export function readCodeInputs(root: string): CodeInputs {
 import { deriveJsonEdges } from "./oracles/json"
 import { deriveGraphqlTruth } from "./oracles/graphql-truth"
 import { deriveProtobufTruth } from "./oracles/protobuf-truth"
+import { deriveRTruth } from "./oracles/r-truth"
 import { deriveXmlTruth } from "./oracles/xml"
 // THE YAML-EXTENDS ORACLE IS LANE-OWNED: `script/m14/oracles/yaml-extends.ts`, written by the yaml
 // lane from YAML's own semantics, sharing no rule table, key set and path helper with
@@ -25083,6 +25084,15 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "r") {
+        // M14 F5 (2026-11-01): r had a full analyzer and NO oracle, so `--lang r` threw "derived ZERO
+        // truth edges". The rule is R's own: file scope contains its assignments and class names; an
+        // R6/S4/R5 class contains the members written in its lists/representation and `setMethod`
+        // declares the class's method name; `inherit =`/`contains =` name the superclass; every call
+        // names its callee; `pkg::` loads a package (imports + references); `library`/`require`/`source`
+        // import; `$`/`@` member reads are uses. See oracles/r-truth.ts for the derived/refused split.
+        for (const e of deriveRTruth(root)) (truth as any[]).push(e)
+      }
       if (lang === "protobuf") {
         // M14 F5 (2026-11-01): protobuf had a full analyzer and NO oracle, so the sweep threw
         // "derived ZERO truth edges" and the lane could never be measured here. The rule is the
@@ -25549,6 +25559,10 @@ async function main() {
           // PROTOBUF (2026-11-01): the oracle derives contains, references, imports and exports and
           // the lane publishes exactly those four (measured on google/iam/admin/v1/iam.proto).
           ...(lang === "protobuf" ? ["contains", "references", "imports", "exports"] : []),
+          // R (2026-11-01): the oracle derives contains, extends, calls, references, imports and uses;
+          // the lane publishes those plus overrides/instantiates/mixes_in — the oracle's set is what is
+          // admitted, and every admitted label has a derivation in the same change (two-sided rule).
+          ...(lang === "r" ? ["contains", "extends", "calls", "references", "imports", "uses", "implements"] : []),
           // C contains/exports (2026-10-18): truth pushed from the lane-owned oracle in the c block; admitted
           // in the same change or the oracle compares nothing — the two-sided rule this file records.
           ...(lang === "c" ? ["contains", "exports"] : []),
