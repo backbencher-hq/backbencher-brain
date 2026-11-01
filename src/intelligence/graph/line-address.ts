@@ -1,4 +1,20 @@
-// src/intelligence/graph/line-address.ts — M62.A1 (issue #875).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the single owner of what a stored call-site line IS and how
+// it may be shown: a stored line becomes a call-site address only when the line
+// is a real position; otherwise the answer is a LABELED declaration substitute or
+// an explicit unknown, never a fabricated position.
+// WHICH TOOL IT SERVES — bb_graph and every graph consumer (edges carry
+// `callSite`), plus the analyze graph modes and the editor's graph panel.
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_graph/AUDIT.md, docs/GRAPH_ENGINE.md,
+// script/verify-graph.ts (source-line and absent-line negative controls).
+// EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/graph/graph-engine.ts (the
+// caller passes the stored line and the declaration), src/intelligence/contracts.ts
+// (CallSiteAddress).
+// CONTRACTS IT MUST NOT BREAK — a position is never fabricated and never reported
+// as line 0; a substitute is always labeled.
+// ─────────────────────────────────────────────────────────────────────────────
 //
 // The SINGLE owner of what a stored call-site line IS and how it may be shown.
 //
@@ -107,7 +123,7 @@ export const ADDRESS_NOTES = {
    *  distinct wording is load-bearing. A reader told "not stored" checks the
    *  index; a reader told "could not be read" checks the walk that quoted the
    *  evidence, and those are different investigations. Collapsing the two is
-   *  how a declared absence starts reading as a store fact (M62.A2, §15.3). */
+   *  how a declared absence starts reading as a store fact. */
   unattributed: "call site not read (no relationship row at this depth could be attributed)",
 } as const
 

@@ -1,3 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the one bounded traversal engine behind every relationship
+// answer: resolve a name to a stored symbol, walk callers and callees with
+// independent fan-out budgets, attribute member relationships to their owner
+// class, filter policy/scope rows, and publish a declaration for every bound and
+// every filter that touched the answer.
+// WHICH TOOL IT SERVES — bb_graph (agent door), bb/graph (editor door),
+// bb_analyze's callers/callees/trace modes, bb_impact's and the test tools'
+// graph reads, and the architecture-flow adapters.
+// WHERE ITS EVIDENCE LIVES — docs/GRAPH_ENGINE.md (options, answer shape, plan
+// before/after), validation/tools/bb_graph/**; gates script/verify-graph.ts,
+// script/m65/verify-graph-plan.ts, script/m65/verify-graph-blindspots.ts,
+// script/m65/verify-edge-kind-scoping.ts, script/m28/verify-union.ts,
+// script/m28/verify-surface-parity.ts.
+// EDIT TOGETHER WHEN THIS CHANGES — docs/GRAPH_ENGINE.md,
+// src/intelligence/contracts.ts (GraphEdge/GraphTraversalResult/options),
+// src/mcp/tools/bb_graph/{handler,descriptor}.ts, the gates above.
+// CONTRACTS IT MUST NOT BREAK — one stored row emits at most one edge per
+// direction with `rowId` set; filters are reported as filters and bounds as
+// bounds; a traversal opens the index read-only; every hint is guarded; the row
+// sets in this file are pinned by a plan-shape gate and a before/after
+// equivalence measurement.
+// ─────────────────────────────────────────────────────────────────────────────
 import { BrainDatabase } from "../../brain/database"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
@@ -14,7 +39,7 @@ type EdgeMetadata = NonNullable<GraphEdge["metadata"]>
  * The old default was `["calls","instantiates","extends","implements"]`, and it
  * was UNDECLARED — the traversal's `reasons` set reported caps and budgets but
  * not this, so a caller could not tell a filtered answer from a complete one.
- * That is the same failure the M59.A12 note above already forbids in a different
+ * That is the same failure the note above already forbids in a different
  * guise ("a bound is fine; an undeclared bound is not"), and the number is not
  * small. Measured on 1,200 real Ruby files, 101,017 emitted relationships:
  *
@@ -60,7 +85,7 @@ const DEFAULT_REL_TYPES = [
  * This used to feed the reason set through `noteReason`, which set
  * `truncated = true` — so asking for a SUBSET marked the answer truncated, and a
  * consumer that wanted to know whether the answer was complete FOR THE SCOPE IT
- * ASKED FOR could not tell a filter from a bound (bb_graph review D5: measured
+ * ASKED FOR could not tell a filter from a bound (measured
  * `relationshipTypes:["calls"]` → 7 edges with `truncated: true, reason="relationshipTypes:calls"`,
  * and `["implements"]` → 0 edges with `truncated: true`, an empty subset
  * announced as a clipped answer). A filter is a REQUEST; a bound is a LIMIT.
@@ -81,7 +106,7 @@ const DEFAULT_BUDGET = 50
  * NODES, and a node is not a unit of work. Measured on backbencher-brain/src
  * (7,196 symbols, 40,557 relationships): the caller query for `push` matches
  * 2,436 stored rows, and the `ORDER BY f.relative_path, r.line_number, r.id`
- * that makes the answer reproducible (M59.A12) costs 85.8 ms of the 87.8 ms —
+ * that makes the answer reproducible costs 85.8 ms of the 87.8 ms —
  * a 43x multiplier over the same query without it. SQLite sorts BEFORE
  * applying the LIMIT, so the per-query `edgeLimit` of 200 does not bound it.
  * At a 50-node budget that is ~4.4 s for one symbol, and the recursion
@@ -89,7 +114,7 @@ const DEFAULT_BUDGET = 50
  * warm cache and over 25 s cold, and `mode=trace target=push` at 613 SECONDS.
  * A 2,000 ms default was added for that, and it stopped those walks.
  *
- * WHY IT IS OFF BY DEFAULT (bb_graph review D7). Measured on this repository's
+ * WHY IT IS OFF BY DEFAULT. Measured on this repository's
  * own index (5,651 files, 257,991 symbols, 631,139 stored relationships), five
  * identical default calls of `{symbol: "push", direction: "both", maxDepth: 3}`
  * interleaved with the same call at `timeBudgetMs: 0`, so the two arms shared
@@ -197,7 +222,7 @@ const KIND_RANK_SQL =
   ` ELSE ${UNRANKED_KIND_ORDER} END AS kindRank `
 
 /**
- * M59.A12 (#888): the per-symbol site limit for one edge query.
+ * The per-symbol site limit for one edge query.
  *
  * This bound always existed (a bare `LIMIT 200`), but it was INVISIBLE: a symbol
  * with 3,437 call sites answered 200 rows with `truncated: false`, so a caller
@@ -545,7 +570,7 @@ function edgeMetadata(meta: string | null): EdgeMetadata | undefined {
     const parsed = JSON.parse(meta) as Record<string, unknown>
     const out: EdgeMetadata = {}
     if (typeof parsed["evidenceClass"] === "string") out.evidenceClass = parsed["evidenceClass"]
-    // M42.H3: pass through the index-computed enrichment fields (the
+    // Pass through the index-computed enrichment fields (the
     // enrichment pass writes them into metadata; the LSP surface only reads
     // what the index stored — no inference here, §12.3). Presence is gated on
     // the `inferredAt` marker the pass always writes.
@@ -619,13 +644,13 @@ export async function traverseGraph(
   nodes: Record<string, GraphNode>
   truncated: boolean
   truncationReason?: string
-  /** The same reasons as DATA (bb_graph review D10). `truncationReason` is a
+  /** The same reasons as DATA. `truncationReason` is a
    *  `+`-joined string: parseable, but a reason that itself contains `+` reads
    *  as two, and every consumer that needs the set has to split a string. This
    *  is the list the string was joined from, in insertion order. */
   truncationReasons: string[]
   /** The caller's `relationshipTypes` filter narrowed the QUESTION — a request,
-   *  not a bound. Kept OUT of `truncated` (bb_graph review D5), so that boolean
+   *  not a bound. Kept OUT of `truncated`, so that boolean
    *  keeps meaning "a declared bound bit" and a consumer can ask the two
    *  questions separately: "is this the whole store?" and "is this the whole of
    *  what I asked for?". `filterReason` names the narrowing; both are absent /
@@ -666,7 +691,7 @@ export async function traverseGraph(
    *  A filter, like `noiseFiltered`, and counted for the same reason: without it
    *  the answer reads as the whole set when it is a subset BY REQUEST. */
   crossLanguageExcluded: { callers: number; callees: number }
-  /** M59.A12 (#888): the declared per-query site limit in force for this run. */
+  /** The declared per-query site limit in force for this run. */
   edgeLimit: number
   /** The total-edge bound in force for this run, and whether it was reached.
    *  Distinct from `edgeLimit`, which bounds ONE query: this bounds the answer. */
@@ -724,9 +749,9 @@ export async function traverseGraph(
    *  that lives in this module and had been widened. A scope field is only
    *  useful if it is true. */
   relationshipTypesUsed: string[]
-  /** M59 (#895): stored rows collapsed at the tool layer before becoming
+  /** Stored rows collapsed at the tool layer before becoming
    *  edges — cascadeRepeatsCollapsed: the same rowId re-fetched by a deeper
-   *  cascade; spellingVariantsCollapsed: reserved for the #854 site-level
+   *  cascade; spellingVariantsCollapsed: reserved for the site-level
    *  collapse (0 until its identity key is pinned from stored data). */
   dedupedAtToolLayer: {
     cascadeRepeatsCollapsed: number
@@ -756,7 +781,7 @@ export async function traverseGraph(
   const callerFiltered = !!options.relationshipTypes?.length
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
-  // HONORED, not raised to `edgeLimit` (bb_graph review D6). This used to be
+  // HONORED, not raised to `edgeLimit`. This used to be
   // `Math.max(edgeLimit, min(requested, MAX_TOTAL_EDGES))`, so any request below
   // the per-query cap was a silent no-op — while the registry description tells
   // callers to "lower it for a quick shape check". Measured at HEAD:
@@ -782,7 +807,7 @@ export async function traverseGraph(
 
   const nodes: Record<string, GraphNode> = {}
   let truncated = false
-  // M59.A12: every bound that fires contributes its own name — a cap AND a budget
+  // Every bound that fires contributes its own name — a cap AND a budget
   // are both true at once, so joining them beats letting the last one win.
   const reasons = new Set<string>()
   const noteReason = (reason: string) => {
@@ -804,7 +829,7 @@ export async function traverseGraph(
   const outOfTime = (): boolean => timeBudgetMs > 0 && Date.now() >= deadline
   // An ACTIVE filter is a declared subset — but a subset BY REQUEST, which is
   // not a bound, so it gets its OWN field rather than a truncation reason
-  // (bb_graph review D5). The two ways this could go wrong are both avoided:
+  // The two ways this could go wrong are both avoided:
   // funnelling it through `noteReason` made `truncated: true` mean "a subset was
   // requested" (so a reader could not ask whether the walk finished), and
   // putting the string in `truncationReason` alone would leave
@@ -840,7 +865,7 @@ export async function traverseGraph(
   // counters above: a filter that leaves no number behind lets an answer read as
   // complete when it is not — `includeCrossLanguage: false` on `parseFile`
   // dropped 29 of 270 edges with nothing in the payload saying so (bb_graph
-  // review D4b).
+  // The second is counted here instead.
   let crossLangExcludedCallers = 0
   let crossLangExcludedCallees = 0
 
@@ -932,14 +957,14 @@ export async function traverseGraph(
     isExternal: false,
   })
 
-  // ---- M59 (#895) edge dedupe -------------------------------------------
+  // ---- edge dedupe -------------------------------------------------------
   // The owner-cascade re-queries the same stored row once per traced symbol
   // whose cascade contains its target (measured: one rowId emitted at depths
   // [0,2,3] — 72 callers built from 31 rows). One stored row must emit at
   // most ONE edge per direction: the FIRST traversal depth to reach it emits;
   // the edge's `depth` stays truthful to that traversal. The set is shared
   // across all depths of the direction; caps/budgets/limits are unaffected.
-  // #854's same-site spelling rows (`Async` vs `cekernel.Async`) are DISTINCT
+  // Same-site spelling rows (`Async` vs `cekernel.Async`) are DISTINCT
   // rowIds, so row-level dedupe cannot see them. They are collapsed by SITE:
   // same relationship type, same source symbol, same resolved target, same
   // file + line. Measured guard (cats-effect, probe-rel-identity): the site
@@ -1021,7 +1046,7 @@ export async function traverseGraph(
       callerCascade.sql + " " +
       "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ")"
     const callerParams = [...(callerCascade.params as any[]), projectId, ...relTypes]
-    // Deterministic order (M59.A12, #888 sibling of #885): a bare LIMIT on an
+    // Deterministic order: a bare LIMIT on an
     // unordered query returned a DIFFERENT 200 rows per run, so two identical
     // questions could disagree. Stable order makes the bound reproducible.
     //
@@ -1032,7 +1057,7 @@ export async function traverseGraph(
     // stored caller rows) was `edgeLimit: 12` returning all 12 rows WITH
     // `truncated: true, truncationReason: "caller-site-limit"` — a traversal
     // that dropped nothing declaring that it had dropped something, which is
-    // the same class of lie the M59.A12 work existed to remove, one row later.
+    // the same class of lie the deterministic-order work existed to remove, one row later.
     // The extra row is never emitted: the first `edgeLimit` rows of a
     // deterministically ordered query are exactly the rows the old query
     // returned, so the visible answer is unchanged for every non-capped call.
@@ -1049,7 +1074,7 @@ export async function traverseGraph(
       // The root's true total is the number an agent actually asks for, and it
       // is countable in one bounded scan. Deeper symbols report the cap itself
       // (cappedQueries) rather than a total nobody could cheaply compute.
-      // bb_graph review D7: the declared-total scan is the most expensive
+      // The declared-total scan is the most expensive
       // remaining work when a cap fires, and it used to start even after the
       // walk was already out of time — spending budget the walk had just
       // declared exhausted. It is now skipped past the deadline and the total is
@@ -1081,7 +1106,7 @@ export async function traverseGraph(
         noteReason("total-edge-limit")
         break
       }
-      // M59 (#895): one stored row must emit at most one edge per direction —
+      // One stored row must emit at most one edge per direction —
       // the cascade re-queries it once per traced ancestor (measured depths
       // [0,2,3]). Row-level dedupe is exact: same rowId = same everything.
       if (emittedCallerRows.has(row.rowId)) {
@@ -1089,7 +1114,7 @@ export async function traverseGraph(
         continue
       }
       emittedCallerRows.add(row.rowId)
-      // M59 (#854, consumer option): same call site + same resolved target,
+      // Same call site + same resolved target,
       // different spelling → one edge, first spelling wins. Line-guarded:
       // a NULL line cannot prove two rows name one site.
       if (row.lineNumber != null && row.lineNumber > 0) {
@@ -1118,7 +1143,7 @@ export async function traverseGraph(
         confidence: row.confidence ?? 0,
         isCrossLanguage: !!row.isCrossLang,
         bridgeMechanism: row.bridge || undefined,
-        // M62.A2 (issue #876): the address owner decides what this position
+        // The address owner decides what this position
         // IS. A stored line of 0 (the indexer's legacy literal) or NULL is
         // NOT a position — the calling symbol's declaration is only ever a
         // LABELED substitute, never silently presented as the call site.
@@ -1313,13 +1338,13 @@ export async function traverseGraph(
         noteReason("total-edge-limit")
         break
       }
-      // M59 (#895): same stored row must not emit once per cascade depth.
+      // The same stored row must not emit once per cascade depth.
       if (emittedCalleeRows.has(row.rowId)) {
         collapsedCascadeRepeats++
         continue
       }
       emittedCalleeRows.add(row.rowId)
-      // M59 (#854, consumer option): same-site spelling collapse, as in callers.
+      // The same-site spelling collapse, as in callers.
       if (row.lineNumber != null && row.lineNumber > 0) {
         // Same rule from the other end: the SOURCE identity is the id the row
         // matched (a member, under the cascade), not the traced owner.
@@ -1342,7 +1367,7 @@ export async function traverseGraph(
         confidence: row.confidence ?? 0,
         isCrossLanguage: !!row.isCrossLang,
         bridgeMechanism: row.bridge || undefined,
-        // M62.A2 (issue #876): same rule as the callers side — the calling
+        // Same rule as the callers side — the calling
         // symbol's declaration (srcLine) is a labeled substitute only.
         callSite: deriveCallSiteAddress({
           storedLine: row.lineNumber,
@@ -1528,7 +1553,7 @@ export async function resolveGraphRootDetailed(
   let param = name
   let rows = raw.prepare(exactStructural + RANK).all(projectId, name) as SymbolRow[]
   if (rows.length === 0) {
-    // M48.C1 (#699) corpus catch: previously the fallback went STRAIGHT to a
+    // Measured corpus catch: the fallback used to go STRAIGHT to a
     // fuzzy substring match, so a real exact-name symbol of a non-structural
     // kind (e.g. #define LANGUAGE_NAME in C) lost to an unrelated symbol
     // merely CONTAINING the string (a Makefile target lib$(LANGUAGE_NAME).a) —
@@ -1651,7 +1676,7 @@ export async function graphTraversal(
       limitations: [
         "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
         // WHY the whole answer is `inferred` while single edges can be
-        // `structural` — stated, not left to convention (bb_graph review D10).
+        // `structural` — stated, not left to convention.
         // The provenance class describes the ANSWER, and the answer is a
         // construction over stored rows: the root is picked by a gravity
         // tie-break (or a containment fallback), the owner cascade attributes
@@ -1708,7 +1733,7 @@ export async function graphTraversal(
       // question it answered was a subset the caller asked for.
       filterNarrowed,
       filterReason,
-      // M59.A12 (#888): `totalCallers`/`totalCallees` above are the RETURNED
+      // `totalCallers`/`totalCallees` above are the RETURNED
       // counts. These fields say so explicitly and add the true root count when
       // a cap was hit and it was computable — a floor can no longer be read as a
       // total by a caller that only looks at the summary.
@@ -1758,7 +1783,7 @@ export async function graphTraversal(
       // Rows present in BOTH callers and callees. `totalCallers + totalCallees`
       // counts each of these twice, and the number above is the correction.
       edgesInBothDirections,
-      // M59 (#895, #854): what the tool layer collapsed before handing edges
+      // What the tool layer collapsed before handing edges
       // to the agent. cascadeRepeatsCollapsed: the same stored row re-fetched
       // by a deeper cascade. spellingVariantsCollapsed: same call site + same
       // resolved target stored under different spellings, emitted once.
