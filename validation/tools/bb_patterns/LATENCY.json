@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_patterns",
+  "status": "partial",
+  "currentCommit": "cf79a38ef0acae2fd1d1daed1fbe9d8ee8e06aa6",
+  "generatedAt": "2026-11-01T23:56:48.256477+00:00",
+  "protocol": "Each tier: own BB_DATA_DIR under validation/tools/bb_patterns/bbdata/ (gitignored), BB_NO_AUTO_REFRESH=1, warm (one excluded warmup per shape), then five measured calls of the SAME default argument object; p50/p95 over the five. Route: source door - createToolHandlers().bb_patterns, the handler src/mcp/server.ts calls. No other lane's index is touched.",
+  "budgets": {
+    "T0_default_ms": 250,
+    "T1_default_ms": 1000,
+    "T2_default_p95_ms": 5000,
+    "client_timeout_ms": 30000
+  },
+  "tiers": [
+    {
+      "tier": "T0",
+      "population": {
+        "files": 5,
+        "symbols": 13,
+        "relationships": 26,
+        "frameworkFiles": 2
+      },
+      "configuration": "test/fixtures/polyglot (ts-js, java-scala), indexed once into the lane data dir",
+      "command": "BB_DATA_DIR=validation/tools/bb_patterns/bbdata/t0 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_patterns/work/latency.mts T0 test/fixtures/polyglot validation/tools/bb_patterns/raw/t0-latency.json",
+      "env": {
+        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t0",
+        "BB_NO_AUTO_REFRESH": "1"
+      },
+      "shapes": [
+        {
+          "shape": "default-all",
+          "args": {},
+          "runsMs": [
+            55.7,
+            68.34,
+            69.59,
+            72.99,
+            112.76
+          ],
+          "p50Ms": 69.59,
+          "p95Ms": 112.76,
+          "maxMs": 112.76,
+          "warmupMs": 272.66,
+          "census": "9",
+          "displayRows": 9,
+          "answerChars": 749
+        },
+        {
+          "shape": "orphaned",
+          "args": {
+            "scope": "orphaned"
+          },
+          "runsMs": [
+            14.04,
+            16.16,
+            23.41,
+            37.16,
+            49.68
+          ],
+          "p50Ms": 23.41,
+          "p95Ms": 49.68,
+          "maxMs": 49.68,
+          "warmupMs": 17.95,
+          "census": "7",
+          "displayRows": 7,
+          "answerChars": 818
+        }
+      ],
+      "readMovedIndex": true
+    },
+    {
+      "tier": "T1",
+      "population": {
+        "files": 97,
+        "symbols": 3512,
+        "relationships": 17068,
+        "frameworkFiles": 64
+      },
+      "configuration": ".perf-fixtures/bb-scale/n100 synthetic scale fixture",
+      "command": "BB_DATA_DIR=validation/tools/bb_patterns/bbdata/t1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_patterns/work/latency.mts T1 .perf-fixtures/bb-scale/n100 validation/tools/bb_patterns/raw/t1-latency.json",
+      "env": {
+        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+        "BB_NO_AUTO_REFRESH": "1"
+      },
+      "shapes": [
+        {
+          "shape": "default-all",
+          "args": {},
+          "runsMs": [
+            796.32,
+            1021.83,
+            1293.74,
+            1432.41,
+            1748.91
+          ],
+          "p50Ms": 1293.74,
+          "p95Ms": 1748.91,
+          "maxMs": 1748.91,
+          "warmupMs": 3050.62,
+          "census": "388",
+          "displayRows": 20,
+          "answerChars": 1497
+        },
+        {
+          "shape": "orphaned",
+          "args": {
+            "scope": "orphaned"
+          },
+          "runsMs": [
+            673.78,
+            731.49,
+            778.29,
+            857.92,
+            864.67
+          ],
+          "p50Ms": 778.29,
+          "p95Ms": 864.67,
+          "maxMs": 864.67,
+          "warmupMs": 744.05,
+          "census": "222",
+          "displayRows": 20,
+          "answerChars": 1733
+        }
+      ],
+      "readMovedIndex": true
+    },
+    {
+      "tier": "T2",
+      "population": {
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "frameworkFiles": 3913,
+        "dbBytes": 3639963648,
+        "dbMtimeSource": "2026-11-01T22:37:46.803Z",
+        "sourceProjectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9"
+      },
+      "configuration": "reference workspace index, measured on a byte-identical SQLite backup copy taken through a byte-read-only source handle (raw/t2-backup.json); the live .bb-data was NOT read by the tool because the current read path opens read-write and writes the index (defect P-01)",
+      "command": "BB_DATA_DIR=validation/tools/bb_patterns/bbdata/t2 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_patterns/work/latency.mts T2 . validation/tools/bb_patterns/raw/t2-latency.json",
+      "env": {
+        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t2",
+        "BB_NO_AUTO_REFRESH": "1"
+      },
+      "shapes": [
+        {
+          "shape": "default-all",
+          "args": {},
+          "runsMs": [
+            17588.86,
+            18073.36,
+            19839.45,
+            50187.77,
+            93078.29
+          ],
+          "p50Ms": 19839.45,
+          "p95Ms": 93078.29,
+          "maxMs": 93078.29,
+          "warmupMs": 18797.74,
+          "census": "13237",
+          "displayRows": 20,
+          "answerChars": 2223
+        },
+        {
+          "shape": "orphaned",
+          "args": {
+            "scope": "orphaned"
+          },
+          "runsMs": [
+            17089.19,
+            17692.99,
+            20423.74,
+            21681.17,
+            21771.11
+          ],
+          "p50Ms": 20423.74,
+          "p95Ms": 21771.11,
+          "maxMs": 21771.11,
+          "warmupMs": 22012.64,
+          "census": "10026",
+          "displayRows": 20,
+          "answerChars": 2311
+        }
+      ],
+      "readMovedIndex": true,
+      "note": "Load average 21-28 on 8 cores during the sweep (concurrent lanes); p50 is the honest figure; the 93s outlier is contention, recorded not removed."
+    }
+  ],
+  "verdicts": [
+    {
+      "tier": "T0",
+      "shape": "default-all",
+      "p50Ms": 69.59,
+      "p95Ms": 112.76,
+      "budgetMs": 250,
+      "pass": true
+    },
+    {
+      "tier": "T1",
+      "shape": "default-all",
+      "p50Ms": 1293.74,
+      "p95Ms": 1748.91,
+      "budgetMs": 1000,
+      "pass": false
+    },
+    {
+      "tier": "T2",
+      "shape": "default-all",
+      "p50Ms": 19839.45,
+      "p95Ms": 93078.29,
+      "budgetMs": 5000,
+      "pass": false
+    }
+  ],
+  "openCostT2": {
+    "readonlyOpenMs": 19.31,
+    "readWriteOpenMs": 12234.02,
+    "deltaOpenMs": 12214.71,
+    "readWriteOpenWroteIndex": true
+  },
+  "engineDecompositionT2File": "raw/t2-calls.jsonl",
+  "blockedLegs": [
+    {
+      "leg": "T2 on the live .bb-data index",
+      "reason": "current read path opens read-write and writes the index; measuring against it would violate the read-only measurement rule. Measured on a byte-identical backup copy instead. Phase B re-measures on .bb-data after the read-only fix (protocol: dbUnchanged true).",
+      "evidence": "raw/t2-open-cost.json, raw/t2-backup.json"
+    },
+    {
+      "leg": "T2 contention-free p95",
+      "reason": "host load average 21-28 from concurrent lanes; the 93s outlier is contention. Not removed; p50 cited.",
+      "evidence": "raw/t2-latency.json"
+    }
+  ]
+}
