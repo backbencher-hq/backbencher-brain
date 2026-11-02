@@ -10,7 +10,7 @@ this lane's own instruments**, one of which had been manufacturing false externa
 the largest bucket in the measurement. It also found that **10 of this lane's scripts
 pinned the main checkout by absolute path, so their gates had never executed.**
 
-Verdicts are unchanged: **9 EMITTED, 1 RULED**, gate exit 0, 0 FALSIFIED (§3.3).
+Verdicts are unchanged: **9 EMITTED, 1 RULED**, gate exit 0, 0 FALSIFIED (§3.3). **REVISED 2026-10-26:** with the extended vocabulary the emitted set is **TEN** (`decorates` implemented at R3, corpus-rare at 1 edge) and **FOUR** values are ruled (`implements` grammar-absence; `part_of`, `renders`, `mixes_in` ontological) — see the canonical Relationship ontology at the top of this page and the spec's `BD-extended`. The §3.1 table below is the pre-extended measurement and is kept as its own record.
 
 **The three waves are interleaved by section, not separated by one.** A `<details>`
 wrapper was tried here and removed: it was never closed, so it swallowed the whole
@@ -41,6 +41,267 @@ point, not `analyze()`, which skips the pool-worker stages.
 deterministic: two runs over a provably identical draw of all 3,252 corpus files
 disagree, and §5 names the 12 files responsible. Every total here is a
 single-run observation with its sibling run beside it.
+
+## Language
+
+- **Analyzer file:** `src/ast/real-lua-analyzer.ts` — one class, `RealLuaAnalyzer`, implementing
+  `ASTEngine.LanguageAnalyzer`; pure AST extraction, no regex fallback (see Regex inventory).
+- **Parser:** `tree-sitter-lua` served as `wasm/tree-sitter-lua.wasm` — sha256
+  `9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a`, 50,917 bytes (the pin in
+  `script/m14/spec/lua-completeness.json`). The engine resolves it through
+  `resolveWasm("tree-sitter-lua/tree-sitter-lua.wasm")` with the `@tree-sitter-grammars/tree-sitter-lua`
+  spec as the fallback spelling (`src/ast/engine.ts:1124-1128`); the grammar package the lane records
+  is `@tree-sitter-grammars/tree-sitter-lua` 0.4.1 (§1).
+- **Served vocabulary:** 137 node-type ids, 54 named slots = **46 unique named types** + 80 anonymous
+  keyword/punctuation literals, measured on the served build's own `Language` object
+  (`validation/m60/lua/grammar-inventory.json`; the served digest rides in
+  `validation/m14/measurements/lua-extended-census.json` as `grammar.servedDigest`). The corpus
+  produces 100 distinct node types across the draw (§1's instrument A).
+- **Parse isolation, and it is Lua-only:** the engine does not use the shared cached parser for this
+  language. Each parse builds a **private `Parser` + `Language` from fresh bytes**
+  (`src/ast/engine.ts:1666-1682`), because lua's WASM binding's external-scanner state otherwise leaks
+  from one file into the next. That is a fixed per-file cost paid for correctness, not an optimization
+  miss.
+- **Language detection:** `.lua` → `lua`, one spelling (`src/ast/language-detection.ts:167`, the
+  ROUTER'S ONE TABLE). The whole-population arm prints its own scope line: `admitted extensions = .lua
+  … (ONE spelling)`. The M12 corpus sweep separately listed `*.luau` in ITS OWN harness selector
+  (`validation/m12/results/lua-corpus-errors.json` `extensions`); the production router admits no
+  `.luau`, and that harness list is not a claims source for admission.
+- **Wired in:** `src/ast/engine.ts getAnalyzer` → `case "lua"` → `RealLuaAnalyzer`
+  (`src/ast/engine.ts:2397`); the wasm branch is `:1124`.
+- **The only transcribed non-AST inputs:** the Lua 5.4 standard-library name lists
+  `LUA54_TABLES` (the eight manual §6.1 tables) and `LUA54_GLOBALS` (the 26 basic-library functions).
+  They are used only to attach an `external` claim, and the claim is never folded into `resolved`.
+- **The corpus this page measures:** **3,255 admitted `*.lua`** under `$PWD/.corpus`, **git-TRACKED
+  only**, **20 repositories** carrying an admitted file, 2 tracked-but-absent paths excluded, 0 over
+  the 1 MiB cap — the whole-population arm of 2026-10-26
+  (`validation/m14/measurements/lua-gate-whole-population-2026-10-26.txt`). Earlier waves drew
+  3,250 / 3,252 from the same predicate and keep their own draw digests in the journal (§1, §5, §7a);
+  a number from those runs is quoted with its draw, never merged with the 3,255 population.
+
+## Symbol contract
+
+Lua has no class or type declaration, so the extraction rules are about **which AST node binds a name**
+and **which does not**. The journal's §10 is the measured census (83,745 symbols over the 3,252-file
+draw: 74,701 `variable`, 4,810 `method`, 4,225 `function`, and 9 with kind `undefined` all from
+pool-worker's regex fallback — 0 from the analyzer; **0 empty names**).
+
+| Field | Supported? | How extracted (AST node/field) |
+| --- | --- | --- |
+| name | ✅ | `function_declaration`'s `name` field: a bare `identifier` is the function's own name; a `dot_index_expression` / `method_index_expression` is a member and the **field** is the name (`function M.foo` → `foo`, LUA-13/LUA-15). `variable_declaration` / `assignment_statement` `variable_list` children that are plain identifiers bind variables. A library-class call (`class("Name", …)`, `Object:extend("Name")`) publishes the string as a `class` symbol. |
+| kind | ✅ | `Function` (`function_declaration`, including `local function`), `Method` (a `dot_index_expression`/`method_index_expression` name — receiver ⇒ method), `Variable` (local, global, table-valued), `Class` (library-class branch only; constructible, corpus-unexercised — the measured census has none, §10). Function-local variables are `Variable`; parameters, closures, field/index mutations and local re-assignments are not declarations. |
+| qualified/container name | ✅ | `qualifiedName` on function/method symbols is the full written path (`M:add_item`, LUA-37), and `metadata.qualifiedName` / `metadata.ownerTable` carry it too. Identity, however, is container + **own name** (LUA-15): an edge target is never the path, so `contains` and `overrides` join on `(M, add_item)`. |
+| ownerName / ownerKind | ✅ | `ownerName` is the **written receiver** of `function a.b` / `function a:b` — a name a consumer can resolve (LUA-37) — or the enclosing function's own symbol name (`frameSelfName`); it is never the scope LABEL (`Buffer:initialize` as a scope is a label, and filing `initialize` under it produced owners that resolved to nothing on 22.6% of `contains` sources). `ownerKind` = `Class` when a receiver was written, `Function` for a declaration scoped to a body. |
+| range (start/end line + column) | ✅ | `nodeToRange` on the declaration node, 1-based. Synthesized `contains` edges carry the symbol's own declaration line rather than inventing one (LUA-01). |
+| parameters | ✅ (limited) | On function/method symbols, `parameters` from the `parameters` node: `identifier` ⇒ `{ name, type: "Any" }`, `vararg_expression` ⇒ `{ name: "...", type: "Any", isVariadic: true }`. Lua has no static types, so `type` is the literal `"Any"`: the field states PRESENCE, not inference. PARAMETERS ARE NOT SYMBOLS — a parameter is a binding, not a declaration (the fleet's negative contract), and the walk records them for scope only. |
+| returnType / type | ⛔ | Lua has no static return types and no declaration types; the analyzer publishes no `returnType`, and the result metadata states `hasTypeInference: false`. A `class(…, Parent)` argument is a RELATIONSHIP (`extends`), never a type field. |
+| documentation/comments | ⛔ | No docstring extraction. The grammar's `comment` / `comment_content` nodes produce no symbols and no doc field. The `---@` forms are COMMENTS, not annotations: the whole-population extended census counted **19,082** annotation comment nodes and 0 `attribute` nodes (`validation/m14/measurements/lua-extended-census.json`), which is why `decorates` could not be built from them (see Relationship ontology). |
+| complexity metrics | ✅ (result-level) | The result's `metadata` carries `complexity` (symbols + relationships), `linesOfCode`, `cyclomaticComplexity` (computed from the tree), `relationshipDensity`, `retainedRowKb`, `coroutineUsage` (counted from the calls the walk actually saw — LUA-02), `architecturalScore`, `codeQuality`. There is no per-symbol cyclomatic number, and the block is dropped at the pool-worker boundary (LUA-03), so read it from `lua-analyzer-direct.ts`, not from `parseFile`. |
+| syntax errors | ✅ | `collectErrors` walks the tree once and pushes every `ERROR`/`MISSING` node into `result.errors` with a range and `severity: "warning"` (`src/ast/real-lua-analyzer.ts:2837`). The M12 corpus sweep read **0 error files / 0 error nodes / 0 crashes** over luvit's 199 files (`validation/m12/results/lua-corpus-errors.json`). |
+| decorators/attributes | ⛔ (as a symbol field) | The language has no annotation syntax, so there is no symbol field to extract. Lua 5.4's `<const>` / `<close>` **`attribute` production** is a compile-time modifier that names a keyword — no decorator value exists and nothing is applied at run time. `decorates` is a RELATIONSHIP emitted from the runtime application idiom (`X = f(X)`); see the ontology row. |
+
+## Relationship ontology
+
+The vocabulary is the fleet's 14 values (`src/ast/types.ts`). Lua's emitted set is **ten**; four values
+are **ruled**, each with a population and an instrument-counted falsifier
+(`script/m14/spec/lua-completeness.json` BD-extended; census artifact
+`validation/m14/measurements/lua-extended-census.json`). Each emitted row names the node/field it reads,
+the confidence and `evidenceClass` it carries, and its whole-population edge count from
+`validation/m14/instruments/lua/incoming-declaration.json`.
+
+| type | emitted? | how resolved | confidence model |
+| --- | --- | --- | --- |
+| `calls` | yes — `function_call`'s `name` field; target is the callee's OWN name (final segment), source is the enclosing function label or `global`; a computed-index callee publishes nothing (LUA-22) | target matched by name against the file's own declaration table; 57,512 edges over the whole population | 1.0 `structural`; pool-worker's regex fallback, when it fires (12 named files, §5), contributes 0.4/0.5 edges with no `evidenceClass` and is counted apart |
+| `uses` | yes — a BARE name read as a value: not a callee, not a member field, not an assignment target (LUA-46/47) | name-based against the file's own symbols; `labelShape` is `{bare}` by construction; 55,031 edges | 0.9 `usage_contextual`, `lua_name_read`: the node proves a READ, the binding it denotes is written nowhere (§6) |
+| `contains` | yes — synthesized from symbol pairs: owner → the declaration's own name; the source is a resolvable name (`ownerName`, else the enclosing function's own name, else `global`), never the scope label (LUA-37) | owner/member identity, so the edge joins the symbol it names; carries the declaration's own line (LUA-01); 55,369 edges | 1.0 `structural` |
+| `imports` | yes — `require("m")` / `module("m")` and `pcall`/`xpcall`-guarded `require`; the target is the module-path STRING, not a declaration | cannot resolve as a symbol by construction; carries `metadata.importProjectFile` when the shared file guard confirms the project carries the file (LUA-55); 6,605 edges | 1.0 `import_based`, `lua_require` |
+| `references` | yes — a member READ: `M.f`, `M:f`, `M["f"]`; a call is not a read and a write is not a read (LUA-46) | target is the member's own name; 40,065 edges | 0.9 `import_based`, `lua_member_read`: the member may be declared in another file |
+| `exports` | yes — a chunk-scope `return` that NAMES something (`return M`, `return { a = 1, ["b"] = 2 }`, `return setmetatable(M, mt)`); the source is the file's global scope | a Lua chunk is not a module, and inventing a module symbol from the filename would fabricate one; four nameless return shapes stay silent as a disclosure (`unpublishedSurface`); 5,171 edges | 1.0 `structural`, `lua_module_return` |
+| `extends` | yes — two conventions, never fused: (a) `setmetatable(D, B)` / `setmetatable(D, {__index = B})` / `D.__index = B`; (b) a factory whose own `parameters` node declares a supertype-role parameter AND whose body folds it into a `__`-prefixed metamethod (LUA-51) | (a) both names are written at the call site; (b) both names written, the ROLE is the convention; self-links and table-constructor bases excluded (LUA-48); 171 edges | (a) 1.0 `structural`, `lua_metatable`; (b) 0.95 `usage_contextual`, `lua_factory_supertype` |
+| `overrides` | yes — two constructs under two labels: `lua_redefinition` (the same name declared twice in one chunk; last wins) and `lua_inherited_member` (a member D declares that D also inherits through an `__index` chain) | redefinition from the declaration sequence; inherited member from the intersection of the two member sets over a supertype link; 67 edges (65 + 2) | redefinition 1.0 `structural`, `lua_redefinition`; inherited member 0.95 `usage_contextual`, `lua_inherited_member` (a convention, so not `structural`) |
+| `instantiates` | yes — `Table:new(…)` / `Table.new(…)` / `Table.constructor(…)` where `Table` is a table this file declares | the constructor table is read from the file's own declaration pre-pass (order-independent); 122 edges | 1.0 `structural` |
+| `implements` | no — RULED, `grammar-absence` (BD-implements): the served grammar produces 100 distinct node types and none of the six that would express a conformance clause (`implements_clause`, `extends_clause`, `superclass`, `interface_implementation`, `interface_declaration`, `trait_declaration`); Lua has no class/interface declaration and conformance is duck typing, written down nowhere | — (0 edges; falsifier: any of those six node types appearing in the inventory) | — |
+| `decorates` | yes — R3, the runtime application idiom: a CHUNK-scope `X = f(X)` where X is a declared function and f is a declared WRAPPER FACTORY (its own body returns a function — the structural discriminator that separates it from 185 value-transform rebindings) | edge is decorated declaration → decorator (`fib -> cache`); 1 edge over the whole population — IMPLEMENTED AND CORPUS-RARE, pinned by `lua/decorator-application` (fire + 6 forbid arms) | 0.95 `usage_contextual`, `lua_decorator_application`: the application is a real call site; that it is a DECORATION is the convention |
+| `renders` | no — RULED, `ontological`: 90 render-named calls measured; the 8 whose argument names a declared table are DATA (`template_env`, `buffer`, `extmarks`, chat/prompt templates), never a component symbol; 0 `html(function()…end)` host sites; no component/template production in the grammar | — (falsifier counted: `renders.renderComponentSites` = 0; a component production = 0) | — |
+| `mixes_in` | no — RULED, `ontological`: 3 `include` method calls measured — 2 bare local helpers and lapis's own `self:include(other_cls.__parent)`; STRUCTURAL mixin sites (receiver class-like AND argument a class-like symbol): 0; no mixin/with/trait production in the grammar | — (falsifier counted: a structural include site = 0). The lapis `Widget:include` convention is the NAMED near miss: R3-expressible, not exercised with named endpoints | — |
+| `part_of` | no — RULED, `ontological`: 6,998 loader sites (require 6,926 · load 32 · loadfile 28 · loadstring 10 · dofile 2) and every loader evaluates into a NEW chunk, so the contract's "shares the library's single scope" fails on every site; no include/splice production in the grammar | — (falsifier counted: a node type whose parse tree makes the included file's declarations children of the including chunk = 0) | — |
+| `lua_require` | yes — the `metadata.relationshipType` label ON the `imports` edge (`addImport`, LUA-55) | same resolution as `imports`; the label is how a consumer tells a module load from any future import kind | inherits `imports`: 1.0 `import_based` |
+| `lua_name_read` | yes — the label ON the `uses` edge (`emitNameRead`) | same resolution as `uses` | inherits `uses`: 0.9 `usage_contextual` |
+| `lua_member_read` | yes — the label ON the `references` edge (`emitMemberRead`) | same resolution as `references` | inherits `references`: 0.9 `import_based` |
+| `lua_module_return` | yes — the label ON the `exports` edge (`extractExport`) | same resolution as `exports` | inherits `exports`: 1.0 `structural` |
+| `lua_metatable` | yes — the label ON the `setmetatable`/`__index` `extends` edge | same resolution as `extends` (a) | inherits: 1.0 `structural` |
+| `lua_factory_supertype` | yes — the label ON the factory-argument `extends` edge (LUA-51) | same resolution as `extends` (b) | inherits: 0.95 `usage_contextual` |
+| `lua_redefinition` | yes — the label ON the same-chunk redefinition `overrides` edge | same resolution as `overrides` shape 1 | inherits: 1.0 `structural` |
+| `lua_inherited_member` | yes — the label ON the inherited-member `overrides` edge (LUA-52) | same resolution as `overrides` shape 2 | inherits: 0.95 `usage_contextual` |
+| `lua_decorator_application` | yes — the label ON the `decorates` edge | same resolution as `decorates` | inherits: 0.95 `usage_contextual` |
+| `externalClaim` | yes — an ADDITIVE claim on a `calls` or `references` edge whose target is a field of one of the eight documented Lua 5.4 tables (`lua54-stdlib`, with `externalReceiver`) or a bare documented global (`lua54-global`), only when this file declares no symbol under that name at or before the edge's line (LUA-54) | the arbiter verifies it against the corpus; a claim is never folded into `resolved` (LUA-54's 3,525 marked edges: 1,081 verified, 0 refuted, 0 unverifiable) | inherits the carrier edge's confidence; the claim is `metadata.external: true` beside `evidenceClass` |
+
+## Supported constructs
+
+Each bullet names the construct and the fixture that pins it (`validation/m14/fixtures/lua/`). All 16
+fixtures run green under the shared runner (`bun script/m14/run-fixtures.ts --lang lua` → 16 pass / 0
+fail).
+
+- **Chunk structure and symbols:** `local`/global variables, table constructors and their fields,
+  `function name`, `function Table.method`, `function Table:method`, `local function`, library-class
+  declarations (`class("Name")`, `Object:extend("Name")`) — `local-declarations`, `read-classes`,
+  `closure-scope`.
+- **Calls and callee shapes:** plain calls, dot and colon member calls, computed-index callees (which
+  publish nothing), `pcall`/`xpcall`-guarded require — `callee-shape`, `edge-lines`.
+- **Reads:** bare-name reads (`uses`) vs member reads (`references`) vs calls, with the write/read and
+  field/bare separations pinned — `read-classes`, `name-reads`.
+- **Modules:** `require`, `module`, the file claim on a module path, and the five named export shapes
+  (identifier, table literal with identifier/string keys, `setmetatable(M, mt)`; the four nameless
+  shapes silent) — `export-edges`, `export-shapes`.
+- **Types by convention:** `setmetatable(D, B)` / `{__index = B}` / `D.__index = B` / factory supertype
+  argument; redefinition and inherited-member overrides — `extends-supertype`, `override-shapes`,
+  `order-independent-ctor`.
+- **Decorator idiom:** a chunk-scope `X = f(X)` where X is a declared function and f a declared wrapper
+  factory — `decorator-application` (fires `fib -> cache`; forbids the value-transform class, the
+  in-function rebinding, a non-self-application, the reversed direction, and a `structural` tier on the
+  0.95 edge).
+- **Scope and bindings:** closures inherit the enclosing locals (LUA-21), for-clause bindings are scoped
+  to the loop and a later assignment is not a declaration (LUA-49), loop variables are deliberately not
+  symbols (limitation 14) — `closure-scope`, `loop-bindings`.
+- **Standard library:** the `external` claim on the eight documented tables and the 26 documented
+  globals, pinned both ways — `stdlib-external`, `stdlib-globals`.
+- **Explicitly NOT constructs** (declared, not silently dropped): `implements` (ruled), annotations (a
+  comment is not an annotation), `<const>`/`<close>` attributes (a compile-time keyword, not a
+  decorator), `for`-loop variables as symbols, aliasing and metaprogramming (limitation 10), and the
+  four nameless export shapes (limitation 9).
+
+## Regex inventory
+
+**Zero regex literals in `real-lua-analyzer.ts`.** Two independent instruments:
+
+| Line | Regex | Receiver category | Classification | Justification |
+| --- | --- | --- | --- | --- |
+| (none) | — | — | — | `real-lua-analyzer.ts` contains no regex literal: every rule reads tree-sitter node types, fields and positions. The only `/…/`-looking text is prose inside comments. |
+
+- `validation/m12/results/regex-census.json`: **50 analyzers scanned, `totalRegexUsages: 0`**, and no
+  per-file entry names `real-lua-analyzer.ts`.
+- `bash script/m14/no-regex-gate.sh` (AST-based census over HEAD blobs): **48 analyzers in scope, 6
+  regex literals fleet-wide, ZERO in `real-lua-analyzer.ts`**.
+- The journal's §9 row records the same reading at its own commit and adds the historical note that
+  the only `/…/`-looking text was inside a comment; on HEAD the census finds no literal at all.
+
+## Complexity envelope
+
+One documented run exists for this analyzer, in `validation/m12/results/lua-corpus-complexity.json`
+(the production `parseFile` path with the isolated Lua parser lifecycle):
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| lua-corpus-tracked — kong @ `94b6c29509f6` | 1,309 | 51,869 | 58,680 | 210,049 | 246.9 | 279.4 | 361,639,936 B (≈345 MiB) |
+
+The M12 artifact records 2 parse errors on that draw and no declared wall budget; it is the one row
+with a stored artifact, and it is a **single-repository** run (kong) rather than the 20-repo population.
+
+The whole-population **arm** of 2026-10-26 is the other measured cost point, from the gate's own
+progress lines: `2000/3255 parsed (0 failed, 0 degraded) 93s` and `parse failures: 0 · degraded (regex
+fallback): 0` (`validation/m14/measurements/lua-gate-whole-population-2026-10-26.txt`). That is the
+gate path (parse + relationship derivation + resolution) and includes the per-file WASM-isolation cost;
+the two figures are different instruments over different populations and are never averaged.
+
+- **Hot-path audit:** one **iterative AST walk** (explicit stack, no recursion over the tree), plus five
+  whole-file **pre-passes** — `collectErrors`, `collectDeclaredTables`, `collectSupertypeLinks`,
+  `collectFactorySupertypeLinks`, `collectDecoratorFacts` — each O(nodes). Relationship identity is a
+  `Set` keyed `(type, source, target)`; owner/member decisions read the current frame plus pre-pass
+  maps. **No per-symbol scan of the symbol or relationship arrays and no O(n²) resolution path.** The
+  two convention readers (`lua_factory_supertype`, `lua_inherited_member`) are map lookups, not scans.
+- **Cost of the parse isolation:** one `Language.load` + `Parser` construction per file
+  (`src/ast/engine.ts:1666-1682`) — a constant per-file overhead, not growing with file size.
+
+## Differential ground truth
+
+Two different instruments are often both called "the differential". Lua is covered by one of them.
+
+- **M12 per-analyzer differential — PRESENT, small and hand-audited.**
+  `validation/m12/ground-truth/lua.json` (`truthSource: "manual_audit"`) over two fixture files
+  (`validation/m12/fixtures/lua/{Module,Negative}.lua`), compared by
+  `validation/m12/results/lua-differential.json`: **41 expected / 41 true positives, 0 FP, 0 FN,
+  0 unknown, 0 unsupported; precision 1.0, recall 1.0**; `passed: true`. Naming note: the identity
+  contract keys relationship facts by `file:type:sourceId:targetId` with `attributes = { type }` only,
+  so this measures extraction, not naming noise.
+- **M14 shared differential — ABSENT for this language, and it is a GAP, not a pass.**
+  `script/m14/differential.ts`'s `LANGS` has **no `lua` entry**, so `npx tsx script/m14/differential.ts
+  --lang lua` measures **0 lanes**. Against that harness every lua type is a DERIVATION finding
+  (spec `BD-no-oracle`). Closing it needs a `LANGS.lua` entry plus a baseline row in the shared file —
+  a Lead-owned instrument, so it is reported here rather than edited.
+- **The lane's own truth oracle — PRESENT, with a stated coverage boundary.**
+  `script/m60/lua-truth-oracle.ts` derives truth from the **parse tree**, not from the analyzer's output,
+  and diffs both directions. It audits **6 of the 10 emitted types** — `calls`, `contains`, `extends`,
+  `instantiates`, `imports`, `exports` — at **0 missing / 0 unexplained** over 4 repositories
+  (603 files, 60,142 truth edges; results in `validation/m60/results/lua-truth-oracle-{kong-400,luvit}.json`,
+  journal §6). The **4 unaudited types are `uses`, `references`, `overrides`** (never derived by the
+  oracle) **and `decorates`** (added after the oracle's last run; corpus-rare at 1 edge, pinned only by
+  its fixture). This is a real limit: both defects the lane found in the read classes (LUA-46/47) sat in
+  the unaudited set, and the oracle reported identical per-label verdicts before and after their fix
+  because the defect was outside its coverage.
+- **Mutation and invariants:** 16 fixtures green; 14 lane mutants across 7 mutation scripts (evidence
+  tier, extends supertype, read classes, bindings, node identity, export shapes) all caught with clean
+  restores; `verify-lua-evidence-tier.ts` reads 0 edges missing a tier and 0 sub-1.0 edges claiming
+  `structural` (journal §9).
+
+## Corpus validation
+
+**Population of record:** the whole-population arm of 2026-10-26, one process over the admitted set
+(`validation/m14/measurements/lua-gate-whole-population-2026-10-26.txt`; declaration derived by
+`script/m14/sliced-declaration.ts` into `validation/m14/instruments/lua/incoming-declaration.json`).
+
+- **Scope:** `3,255 parsed of 3,255 sampled (corpus has 3,255 .lua files across 20 repos)`, git-TRACKED
+  set, 2 tracked-but-absent excluded, 0 over the 1 MiB cap; **parse failures 0 · degraded 0**.
+- **Edges:** **220,114**, closing exactly: **137,508 resolved + 7,101 external + 45,818 ambiguous +
+  29,687 otherUnresolved + 0 unclassed**. `extFAIL` / `bindFAIL` / `causeFAIL` all **0**. The five
+  buckets are a declared coarsening of the eleven-term closure; every row publishes both, and every row
+  closes on both with `unclassed: 0`.
+- **Per-type rows** (from the declaration; `otherUnresolved` coarsens the unresolved/binding/cause
+  terms):
+
+| type | edges | resolved | external | ambiguous | otherUnresolved | unclassed |
+| --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 57,512 | 25,323 | 3,153 | 18,600 | 10,436 | 0 |
+| `uses` | 55,031 | 41,231 | 56 | 10,413 | 3,331 | 0 |
+| `contains` | 55,369 | 55,369 | 0 | 0 | 0 | 0 |
+| `imports` | 6,605 | 720 | 3,851 | 240 | 1,794 | 0 |
+| `references` | 40,065 | 12,283 | 41 | 14,738 | 13,003 | 0 |
+| `exports` | 5,171 | 2,275 | 0 | 1,821 | 1,075 | 0 |
+| `extends` | 171 | 118 | 0 | 5 | 48 | 0 |
+| `implements` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `overrides` | 67 | 66 | 0 | 1 | 0 | 0 |
+| `instantiates` | 122 | 122 | 0 | 0 | 0 | 0 |
+| `decorates` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `renders` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `mixes_in` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `part_of` | 0 | 0 | 0 | 0 | 0 | 0 |
+
+- **Seven wall cause-rulings** are derived with the declaration, each with a population and a
+  `{run, wouldFail}` falsifier (`calls`, `uses`, `imports`, `references`, `exports`, `extends`,
+  `overrides`). The largest single wall is stated rather than waved at: the ambiguity is INSTRUMENT
+  SCOPE over a bare-name key space — the lane's lexical instrument splits its multiSymbol population
+  into B1_lineSettled 94,398 · B2b_fileAbsent 63,881 · B2c_noneVisible 5,111 ·
+  **B3_indistinct 193 (0.12%)**, the only class the published name genuinely cannot separate
+  (journal's appended incoming record; spec `BD-ambiguity-full`).
+- **Fixtures:** `bun script/m14/run-fixtures.ts --lang lua` → **16 pass / 0 fail**, baseline gate: no
+  regressions. The lane's earlier runner (`script/m60/run-lua-fixtures.ts`) is retained in the journal
+  history (§9) where the shared runner's export invariant was still red for Lua.
+- **The M12 corpus sweep** (a different, single-repository instrument): luvit 199 files / 3,724 symbols
+  / 7,025 relationships, **0 error files / 0 error nodes / 0 crashes**
+  (`validation/m12/results/lua-corpus-errors.json`).
+- **Two disclosures, not defects:** 133 files "hold CONTENT AND RETURNED NOTHING" — the gate's own
+  counter cannot tell comments/empty bodies (population complete) from a hole without reading them, and
+  the analyzer's declarations are in the journal's §5; and `parseFile` is not deterministic on 12 named
+  files (§5), so a count from an individual journal run carries its run.
+
+---
+
+**The lane journal follows from here — it is the measured evidence this summary rests on and is kept
+verbatim.** §1 wiring and draw; §2 what each type means in Lua; §3 verdicts (the pre-extended era's
+"9 emitted, 1 ruled" table, superseded by the ten/four count above); §4 LUA-46…LUA-55, the defects
+found by measuring; §5 the 12 nondeterministic files; §6 the six questions and the oracle's blind spot;
+§7 the DERIVATION debt; §8 declared limitations; §9 verification; §10 symbols; and the appended
+incoming-pass record. **Where the journal and the canonical summary disagree, the summary is the
+current measurement and the journal row carries its date.**
 
 ## 1. Language and wiring
 
@@ -1449,7 +1710,7 @@ Instruments, each committed and each independent of the analyzer's rule table:
 | `validation/m60/lua-trace.sh` | the two-run determinism comparison, end to end |
 
 **Complexity.** One iterative AST walk, plus three whole-file pre-passes
-(`collectErrors`, `collectDeclaredTables`, `collectSupertypeLinks`). Relationship
+(`collectErrors`, `collectDeclaredTables`, `collectSupertypeLinks`) — the pre-pass list is now five with `collectFactorySupertypeLinks` (LUA-51) and `collectDecoratorFacts` (see the Complexity envelope section at the top of this page). Relationship
 identity uses a set; declaration, owner and member decisions read the current frame
 and pre-pass maps. No per-symbol scan of the symbol or relationship arrays and no
 O(n²) resolution path. The two fixes added one parent-type test each and no new
