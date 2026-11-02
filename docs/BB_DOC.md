@@ -1,8 +1,17 @@
-# `bb_doc` Design Specification (M9.15)
+<!--
+Author: Muhammad Ishaq Khan
 
-`bb_doc` is a read-only documentation generator over indexed brain evidence.
-It produces cited Markdown or website-consumable JSON. It never writes to a
-repository; generated source changes must use `bb_edit`.
+WHAT THIS DOCUMENT IS — the design specification for `bb_doc`: its request/result contract, per-mode behaviour, evidence and freshness rules, declared bounds, refusals and the gates that prove them.
+WHO IT IS FOR — callers of `bb_doc`, and the maintainer changing `src/intelligence/documentation/doc-engine.ts` or `src/mcp/tools/bb_doc/**`.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_doc/descriptor.ts, src/mcp/tools/bb_doc/handler.ts, src/intelligence/documentation/doc-engine.ts, docs/BB_DOC_REFERENCE.md, docs/BB_DOC_EXAMPLES.md, and the `bb_doc` gates.
+-->
+
+# `bb_doc` design specification
+
+`bb_doc` is a read-only documentation generator over indexed brain evidence. It produces cited
+Markdown or website-consumable JSON. It never writes a repository file; source changes belong to
+`bb_edit`. Its one write is bounded and declared: when the files a document cites are stale, the
+handler reindexes exactly those files (at most 25 files / 2 MiB per call) and regenerates.
 
 ## Contract
 
@@ -11,25 +20,41 @@ repository; generated source changes must use `bb_edit`.
 ```ts
 type DocMode = "symbol" | "file" | "module" | "feature" | "api" | "project" | "coverage"
 type DocFormat = "markdown" | "json"
+type DocAudience = "developer" | "maintainer" | "user" | "website"
+type DocDetail = "brief" | "standard" | "deep"
 
 interface DocRequest {
   mode: DocMode
   target?: string
-  format?: DocFormat // default: markdown
-  audience?: "developer" | "maintainer" | "user" | "website"
-  detail?: "brief" | "standard" | "deep"
-  includeExamples?: boolean
-  includeDiagrams?: boolean
-  includeTests?: boolean
-  limit?: number
-  maxTokens?: number
+  format?: DocFormat                 // default: markdown
+  audience?: DocAudience             // default: developer; selects OPTIONAL sections only
+  detail?: DocDetail                 // default: standard; selects the per-section cap
+  includeExamples?: boolean          // default: false
+  includeDiagrams?: boolean          // default: false; never emits a diagram here
+  includeTests?: boolean             // symbol/feature only; omit for the mode default
+  limit?: number                     // 1..100, default 20
+  maxTokens?: number                 // 1..16000, default 8000
 }
 ```
 
-`target` is required for `symbol`, `file`, `module`, and `feature`. It is
-optional for `api`, `project`, and `coverage`; omitted targets mean the whole
-indexed project. `limit` is bounded by the server and defaults to 20 evidence
-items. `maxTokens` is an output budget, not permission to omit citations.
+The handler additionally accepts `refresh: boolean`. `refresh: false` opts out of the inline
+repair; the decision is still declared in the answer.
+
+`target` is required for `symbol`, `file`, `module` and `feature`. It is optional for `api`,
+`project` and `coverage`; omitted targets mean the whole indexed project. `project` accepts a
+target but uses it as document metadata only — it does not scope the selection.
+
+Requests are refused, never silently adjusted:
+
+| Request | Refusal |
+|---|---|
+| mode not in the seven | `bb_doc requires mode: …` |
+| missing target for a target mode | `bb_doc <mode> mode requires target` |
+| `limit` outside 1–100 | names the accepted range and says it is not clamped |
+| `maxTokens` outside 1–16000 | names the accepted range and the hard ceiling |
+| `includeTests` on `file`/`module`/`api`/`project`/`coverage` | names the two modes that render test evidence |
+| `module` target matching no indexed file | `unknown module`: names the two directory forms tried |
+| invalid `format`/`audience`/`detail`/`mode` enum | registry validator names the accepted set |
 
 ### Output
 
@@ -49,9 +74,9 @@ interface DocResult {
 interface DocSection {
   id: string
   heading: string
-  prose: string
+  prose: string        // orientation only — never the facts joined together
   facts: Fact[]
-  citations: string[] // citation ids used by this section
+  citations: string[]  // citation ids used by this section
 }
 
 interface Fact {
@@ -63,7 +88,7 @@ interface Fact {
 
 interface Citation {
   id: string
-  kind: "symbol" | "file" | "relationship" | "import" | "test" | "finding" | "embedding" | "health"
+  kind: "symbol" | "file" | "relationship" | "import" | "test" | "finding" | "health"
   path?: string
   symbol?: string
   lineStart?: number
@@ -81,393 +106,128 @@ interface UnknownFact {
 }
 ```
 
-Markdown renders citations as stable links such as `[1](src/auth.ts#L12-L28)`.
-JSON retains the complete citation objects and stable IDs for website clients.
-Citation IDs are deterministic for the same project snapshot, query, and
-schema version.
+Markdown renders file-backed citations as stable links such as `[1](src/auth.ts#L12-L28)` and
+index-scoped evidence in a separate `## Index` list. JSON retains the complete citation objects
+and stable IDs. Citation IDs are deterministic for the same project snapshot, query and schema
+version; they are built from repository-relative paths and never contain a machine path.
+`quality.references.stale`/`missing`/`broken` count the citations the answer EMITS, so they can be
+checked against the Sources list; `collectedStale`/`collectedMissing` publish the totals of
+everything the generator gathered, including evidence no fact referred to.
 
 ## Modes
 
 | Mode | Target | Primary evidence | Required sections |
 | --- | --- | --- | --- |
-| `symbol` | symbol name, optionally file/line | signature, bounds, docstring, callers/callees, tests | API, behavior, dependencies, tests, limitations |
-| `file` | repository-relative path | file symbols, imports/exports, syntax state | Overview, public symbols, dependencies, risks |
-| `module` | directory/module name | files, imports/exports, internal relationships | Purpose, entry points, public surface, module graph |
-| `feature` | feature name or semantic target | related symbols/files, graph, patterns, tests | Entry points, flow, components, test coverage |
-| `api` | optional route/controller/API target | symbols with an `api_contract_path`, route-ish symbol types, and exported symbols of files the index marks as an HTTP framework | Endpoints, inputs/outputs, errors, examples |
-| `project` | optional project target | project stats, languages, entry points, health | Architecture, inventory, risks, documentation map |
-| `coverage` | optional path/module | public symbols, docstrings, citations, tests | Documented, undocumented, stale, unsupported |
+| `symbol` | symbol name, qualified name, or its last dotted/`::` segment | signature, bounds, docstring, inbound/outbound relationships, imports, tests | API, Behavior, Dependencies, Tests, Limitations |
+| `file` | exact repository-relative path, absolute path, directory prefix, or bare file name with/without extension | file row, symbols, imports/exports, syntax state, findings | Overview, Public symbols, Dependencies, Risks |
+| `module` | repository-relative directory the index holds | files under the module, its public surface, internal edges | Purpose, Entry points, Public surface, Module graph |
+| `feature` | feature name (lexical match over name, qualified name, docstring) | candidate symbols, their files, edges, tests | Entry points, Flow, Components, Test coverage |
+| `api` | optional path/contract target | symbols with `api_contract_path`, route/endpoint/controller symbol types, callables in files the index attributes to an HTTP framework | Endpoints, Inputs and outputs, Errors, Examples |
+| `project` | optional (metadata only) | project totals, language mix, entry points, findings, documentation coverage | Architecture, Inventory, Risks, Documentation map |
+| `coverage` | optional path/module | documented/undocumented symbols, stale sources, unmeasurable verdicts | Documented, Undocumented, Stale, Unsupported |
 
-`feature` uses lexical and semantic evidence only to discover candidates; every
-included claim must still cite concrete symbols, files, or relationships.
-`api` does not infer undocumented HTTP behavior from a function name alone.
+Evidence rules:
 
-**What `api` mode reads, measured.** It selects a symbol when the index records
-an `api_contract_path`, or gives it a route/endpoint/controller type, or it is a
-**callable** in a file whose `framework_type` is an HTTP framework. The first two
-were
-measured empty on all eight indexed corpora — `api_contract_path` was null in
-every one and no corpus held a single route-ish symbol type — so before the
-framework route existed the mode had **no input at all**: all four of its
-required sections rendered empty on 100% of cases on every corpus and every
-detail level, while the only content it produced, a list of imports, landed in
-the OPTIONAL `dependencies` section the declared set does not mention. The mode
-was advertised as one of seven working modes and had never once had a symbol to
-document.
+- **`module` refuses rather than falls back.** A module target matching no indexed file is an
+  error naming the directory-prefix forms tried. Answering with project-wide inventory would be a
+  document about a different subject.
+- **`api` never invents a route.** A symbol reaches Endpoints on an authoritative route signal (a
+  contract path, or a route/endpoint/controller type), or as a callable in a file the index marks
+  as an HTTP framework. Framework attribution is a property of the FILE, so it places a symbol on
+  an HTTP surface without saying which request it answers; no method or path is recorded, and the
+  document says so. `api_contract_path` and route-ish types have been empty on the indexed corpora
+  measured; the framework route is the one that has produced endpoints.
+- **`api` cannot report two of its four sections, and says so by name.** Errors: the index has no
+  table, column or symbol type recording thrown/raised/returned errors. Examples: none is emitted
+  unless a cited snippet or verified contract supplies one.
+- **`feature` semantic expansion is opt-in.** Candidates are found lexically; `detail: "deep"`
+  additionally asks the semantic index, which measured 19–52 s on a 310k-symbol index. Every
+  other call is lexical and records a `not-observed` unknown saying so.
+- **`coverage` classifies undocumented symbols as `unknown`** with `confidence: null`, and the
+  `unsupported` section names the comment markers this reader cannot see (`#`, `;`, `--`, …)
+  per language, so "undocumented" is never reported as a finding about code the reader could not
+  read.
+- **Docstrings are read from disk and only where a comment is a comment.** The reader recognises
+  `/**`, `*` and `//`; languages whose symbol names are prose (markdown headings, where `*` is the
+  bold delimiter) are excluded by the analyzer-language registry rather than by a second list.
 
-The `net_http` attribution is the index's own vocabulary, not a guess at what
-frameworks exist; a framework absent from the set contributes no endpoint, and
-the document says how many files the index attributed. It is present in **1 of
-the 8 measured corpora** (go_tools, 25 files), so this is a real input on a real
-repository rather than a general one, and the section says which counts it found.
+## Sections, prose and unknowns
 
-Broadening the selection that way introduced a defect a fixture could not see,
-and only go_tools exposed it: selecting *every* exported symbol of an
-HTTP-attributed file made the mode report `module blog()` and `struct Config()`
-as endpoints. Measured on go_tools, those 25 files hold 281 exported symbols, of
-which **121 are property accessors, 25 module declarations, 19 structs, 18
-variables and 3 interfaces** — 186 of 281 are not callable at all. So a symbol
-reaches Endpoints only on an authoritative route signal (a contract path, or a
-route/endpoint/controller type) or as a callable in an HTTP-attributed file, and
-every entry states what the index does and does not record: framework attribution
-is a property of the FILE, so it places a symbol on an HTTP surface without
-saying which request that symbol answers, and no method or path is recorded.
+- **Every mode emits its declared section set**, including a required section with no evidence.
+- **A required section that renders empty must say why, in its own words.** Every required section
+  declares in the source what would have filled it; the generator writes that declaration as a
+  note when the section comes out empty, and refuses to return a required section it cannot
+  explain.
+- **A note names the section it explains.** Notes name a concern (tests, graph, freshness) and are
+  resolved after assembly against the sections the result actually renders. A note that defaulted
+  to the lead section never excuses a section's emptiness; only an aimed note does. A caveat
+  ("this file changed after indexing") is not an explanation.
+- **Prose adds orientation, never a fact restatement.** A populated section says how its claims
+  were obtained (read from the index / inferred / recorded as unknown) and what they rest on (the
+  citation kinds).
+- **A scope with more indexed symbols than `2 × limit`** publishes the selection bound
+  (`selected` of `available`) as an `output-budget` unknown, so a documentation map of 200
+  symbols on a 310,423-symbol index is never presented as the whole set.
 
-`api` also cannot report two of its four sections, and now says so by name:
+## Evidence classes and confidence
 
-- **Errors.** The index has no table, column or symbol type that records a
-  thrown, raised or returned error. That is a limit of what is indexed, not a
-  finding that the code cannot fail, and the section says which.
-- **Examples.** An example requires cited source, so it is emitted only where an
-  endpoint carries a docstring containing a call to itself or an indexed test
-  names one.
+- **Extracted**: directly present in indexed source or tables — names, signatures, line bounds,
+  imports, exports, relationship types, measured complexity, file rows.
+- **Inferred**: a bounded conclusion where the index did not resolve the far end (an edge whose
+  target has no symbol), capped at 0.85.
+- **Generated**: connective prose. It adds no behaviour, guarantee, parameter, error or example
+  that the evidence does not hold.
+- **Unknown**: explicit; says what is unknown and why.
 
-**Every mode emits its declared section set, always** — including a section with
-no evidence, which is then absent from nothing and unexplained by nothing. That
-is what makes the completeness gate meaningful: `expected` is the mode's declared
-section count, and `covered` is how many of them are present. A required section
-is never dropped for `audience` or `detail`; those two inputs select OPTIONAL
-sections and the per-section evidence cap, so a reader can never be handed an
-incomplete document by asking for a smaller one.
+Confidence is DERIVED — the minimum of the classification cap and the freshness cap of the
+citations under the claim. Extracted evidence on fresh files can reach 1.0; stale evidence caps
+at 0.5 and missing at 0.3. A caller cannot assert confidence. Semantic discovery is used to find
+candidates only; every emitted fact cites a concrete symbol, file or edge.
 
-**A required section that renders empty must say why, in its own words.** Every
-required section declares, in the source, what would have filled it — a
-completed search, not "no data available" — and the generator writes that
-declaration as a note when the section comes out empty. A section that cannot
-explain itself is refused, not returned.
+`quality.warnings` carries the measurement notes (stale/missing sources, trimmed sections,
+dropped citations, no-evidence); the gap inventory lives in `unknowns` and is not copied into
+`warnings`, so the payload never carries the same sentences twice.
 
-This is structural, not per-mode, because the alternative was nine sections that
-were empty in 100% of cases on every corpus and every detail level with nothing
-saying why, and a reader cannot tell those apart from a measurement that found
-nothing. Two rules make the explanation real:
+## Freshness and auto-refresh
 
-- **A note names the section it explains.** Notes name a *concern* — tests, the
-  graph, freshness — and the section is resolved once, after assembly, against
-  the sections the result actually renders. Hardcoded ids named sections that
-  exist in only one mode: the test gap said `tests` while `feature` renders
-  `test-coverage`, and the unresolved-edge note said `flow` while `module`
-  renders `module-graph`. A note pointing at a section the reader cannot see is
-  not an explanation, and it left those sections looking unexplained while a
-  message appeared to cover them.
-- **A caveat is not an explanation.** "This file changed after indexing" and
-  "this file did not parse" are true and belong on the section whose facts they
-  qualify. Neither says why that section has no facts, and neither may stand in
-  for saying so: an `api` document with an empty Endpoints section once showed
-  only a freshness note and never said that no endpoint was indexed.
-- **An explanation must be AIMED, not defaulted.** A concern whose section does
-  not exist in the current mode lands on the document's lead, and it was then
-  accepted as that section's explanation. On the 5 382-file typescript index the
-  scope note — "5 282 file(s) were not examined" — was the *only* note the
-  Endpoints section carried, which is not a reason it has no endpoints. The same
-  note in `file` mode, which does render the section `scope` prefers, is aimed and
-  does explain it. So the rule is per resolution, not per concern: a defaulted
-  note never excuses a section, an aimed one may.
+- Freshness is resolved once per generation over exactly the files the generated document cites,
+  using the same batch resolver every other read path uses (mtime+size fast path, content-hash
+  fallback; an edit that preserves both size and mtime is reported fresh without hashing — the
+  accepted trade-off documented in `src/brain/freshness.ts`).
+- When cited files are stale or missing, the handler repairs exactly those files within the shared
+  budget (`BB_AUTO_REFRESH_MAX_FILES` default 25, `BB_AUTO_REFRESH_MAX_BYTES` default 2 MiB),
+  declares the decision in `autoRefresh` (or the answer text), and REGENERATES so the answer is
+  not built from the rows the refresh replaced. A second bounded round catches citations the
+  regenerated document introduced.
+- A decline is always declared with its reason: `disabled` (`refresh:false` or
+  `BB_NO_AUTO_REFRESH=1`), file/byte budget, another live indexer, or an error. The JSON
+  `freshness` envelope always carries `{ fresh, stale, missing, staleRatio, mode, remediation, passed }`,
+  where `passed` is the envelope's own verdict (`stale === 0 && missing === 0`).
+- **Envelope scope follows the document**: a document citing exactly one file gets the registered
+  FILE-scope remediation (`bb index "<file>"`); a document citing several files gets the
+  project-scope one. When the repair was declined because it is disabled, the markdown footer uses
+  the manual-only constants — it never claims an automatic behaviour that did not run, and it
+  names the files as cited files, not as another tool's findings.
+- Stale evidence is a WARNING for the overall verdict, not a failure: the spec makes it a failure
+  for current-behaviour claims, and this result makes no such claim. `freshness.passed` reports
+  the collected citations' freshness separately.
 
-`file` mode accepts a repository-relative path. An exact path, an absolute path,
-a directory prefix, and a bare file name (with or without its extension) all
-resolve. An absent path and an unresolved one are distinguishable, and the
-latter says which of the four forms it tried.
+## Output budget
 
-**What `risks` is built from**, and why it is not "the analysis findings":
-three sources, all read from the index, all cited. Open
-`brain_analysis_finding` rows, files with recorded parser errors, and symbols at
-a measured complexity at or above a stated threshold. A required section that is
-always empty is a placeholder, not a measurement — and it WAS always empty,
-because no read path in this tool produces an analysis finding while the index
-held, on one measured corpus, 1 099 files with recorded parser errors and
-185 477 symbols carrying a measured complexity. When all three sources are
-empty, the section says exactly that, because the absence of evidence is not
-evidence of absence.
+- The budget is enforced on the payload the caller receives, not on the engine's internal object.
+  The handler measures `Math.ceil(payload.length / 4)`, re-runs the engine with the measured
+  decoration overhead subtracted until the payload fits, and reports the measurement in
+  `quality.budget.estimatedTokens` with `maxTokens` echoing the request.
+  `estimatedTokens * 4` is never smaller than the payload sent.
+- When the required sections cannot fit even at the smallest honest rendering, the result is
+  returned with `budget.passed: false` and a shortfall unknown naming that rendering. It is never
+  met by dropping a required section.
+- Two bounds shorten a document and both are published per section:
+  `available = capped + notSelectedByCap` and `capped = droppedByBudget + emitted`, with `emitted`
+  read back off the finished section. The generator throws rather than return a result whose
+  arithmetic does not close.
 
-**`limitations` and `unsupported` are measurements, not disclaimers.** Both were
-literal `facts: []` in the source, empty in 100% of cases on every corpus and
-every detail level, with a reassuring lead and nothing saying why. They are now
-built from the same branch that decides each gap, so a section and its note
-cannot disagree — there is no second measurement to drift, and no limit asserted
-without a citation.
-
-- `limitations` (in `symbol`) carries, per symbol: no docstring, no test
-  evidence, a source that moved or vanished under the index, a file with parser
-  errors, and unresolved edges. The distinction it exists to draw is between
-  "has no documentation" and "this tool cannot see its documentation": when the
-  language's comment marker is one the reader does not read, the fact says the
-  verdict is **unverified**, not absent. Reporting the second as the first is a
-  false negative about the code, produced by a limit of the reader.
-- `unsupported` (in `coverage`) carries what could not be measured about the
-  scope: files the index recorded parser errors for, and symbols in a language
-  whose comment marker the reader does not read and which the analyzer left
-  without a docstring. Both are cited, and both are read with the documented /
-  undocumented verdicts they qualify.
-
-**Docstrings are read from disk, and only where a comment is a comment.** A
-markdown symbol's name is a heading and `*` is the BOLD delimiter, so a
-comment scanner above a heading reads the previous English line as a JSDoc
-block; measured on this repository's own index, 79 of 3 598 markdown symbols
-received a fabricated docstring at `extracted` / `1.0`. Languages whose symbol
-names are prose are therefore excluded by asking
-`language-detection.ts` — the registry that admits a file to an analyzer — so
-the doc lane and the router cannot drift. The remaining limit is stated rather
-than papered over: the scanner knows `/**`, ` * ` and `//`, and not `#`, `;` or
-`--`, so a symbol in Ruby, Python, Perl, shell, Clojure, Lisp, SQL or Lua
-reports "not observed" instead of a guess. Teaching it those belongs to the
-analyzer lane, which knows each grammar. Where it matters for a verdict, the
-`unsupported` section now reports it per language and counts the symbols it
-affects.
-
-## Prose Rules
-
-Prose adds orientation. It never restates the facts, and a gate checks it:
-`no section prose is its facts joined by spaces`.
-
-**A section says what its evidence IS, not how much of it there is.** The prose
-used to be `N cited items from M sources.`, which tells a reader nothing they
-could not count, and the classification on every fact — read directly, inferred
-because the index did not resolve something, recorded as unknown — was never
-surfaced anywhere in the document. It is now, because it is what a reader
-deciding whether to trust a section needs:
-
-```
-API          2 claims, 2 read directly from the index, resting on 1 source (1 symbol).
-Dependencies 20 claims, 17 read directly from the index; 3 inferred because the
-             index did not resolve the target, resting on 20 sources (1 relationship).
-```
-
-**A section that is empty says why, in its own words.** The reason was already
-written, per section, and cited — it just lived in the footer, where a reader
-looking at that section does not look. So an empty section's prose IS its
-explanation:
-
-```
-Tests   No indexed test relationship for ServeHTTP, and no indexed test file names it.
-```
-
-against the previous `No indexed evidence was found for tests.`
-
-That leaves the same sentence in the `Unknowns` appendix, and that overlap is
-accepted rather than engineered away: the appendix is a complete inventory of
-every gap and the section is where a reader arrives looking for one. Removing a
-gap from the appendix because a section already mentions it would make the
-appendix quietly incomplete, which is the failure this document exists to avoid.
-
-**The sweep writes its explanations after assembly, so the prose is rebuilt
-afterwards.** The sweep judges the RENDERED section, which is why it cannot run
-before sections exist — and that ordering left the prose describing a section
-before the very sentence explaining it had been written. Only sections with no
-facts can have changed, so only those are rebuilt.
-
-## Fact And Prose Rules
-
-- **Extracted** facts are directly present in indexed source or tables: names,
-  signatures, line bounds, imports, exports, relationship types, and measured
-  complexity.
-- **A signature reports the arguments the index holds, and claims none it does
-  not.** A signature was rendered `name()` whenever the `parameters` column was
-  empty, which asserts the symbol takes no arguments. Reading the declaration off
-  disk for every sampled callable with an empty column, across six languages:
-  **1 218 of 1 218 have a real parameter list**, excluding declarations whose
-  list is genuinely empty or C's explicit `(void)`. `Malloc(size_t size)` was
-  rendered `Malloc()`; `application(app)` in Ruby was rendered `application()`.
-  14 267 `function` and 2 702 `method` symbols across the eight corpora were
-  affected, and the fixture could not have caught it — it holds one callable with
-  a parameter list and none without.
-  An absent list now renders as an absent list: the parentheses are omitted, and
-  the caveat rides on the signature itself rather than only in `limitations`,
-  because that fact is rendered as this mode's API and as `feature` mode's Entry
-  points and a bare name invites exactly the wrong reading. The caveat is
-  **measured per project, not looked up in a list**: the generator asks the index
-  which symbol kinds it records parameter lists for, and a symbol of such a kind
-  without one is a gap the document names. A hand-written list of "kinds that
-  take arguments" is a guess, and it was wrong in both directions — it excluded
-  `property`, which does carry parameter lists for 343 symbols in the typescript
-  index, and it would have attached a caveat to every field in a project whose
-  index never records them. The measured rule gets `rake` right (209 `method`,
-  3 `function`, so no `property` caveat) and `typescript` right (11 071
-  `function`, 10 856 `method`, 343 `property`, 132 `constructor`), with nothing
-  to maintain as analyzers add symbol kinds.
-
-  **A signature also shows the types the index records.** The `parameters` column
-  holds a JSON list of `{name, type, isOptional}` for **82.8% of the 6 007 entries
-  measured across the eight corpora**, and the renderer read `name` and discarded
-  the rest — so `Join(s S)` was documented as `Join(s)`. A section named Inputs
-  and outputs was reporting the names of the inputs and nothing about their types,
-  from a row it had just read. Discarding evidence you have already loaded is the
-  same defect as asserting something the index does not support, pointed the other
-  way. Three rules, each from what the data holds: a recorded type is shown, an
-  absent one is omitted rather than guessed, and `isOptional` is stated in words
-  because `name?: type` is TypeScript syntax and would be wrong in a Go document
-  (17 entries, so the wording costs nothing and discards nothing).
-
-  **A statement is a sentence about source, not markdown.** Every character
-  markdown would act on is neutralised before rendering, while the citation
-  markers — appended after the statement, and the only links in the document — are
-  left alone. This was already a hazard: a Go return type of `*Server` reached the
-  page unescaped, and a statement quoting `map[string]*Server` would render the
-  middle as italics. Rendering the indexed parameter types multiplied the
-  exposure, since 1 105 of the measured types contain `*`.
-
-  Those kinds cannot be settled by reading source instead, and the attempt is
-  worth recording: scanning one line for a bracket pair after the name reported
-  **100% for every type** — `variable Is(require("./is"))`,
-  `enum_member Key(enum)`, `class Symbol(members/exports/parent)` — because a
-  one-line window cannot tell a declaration's argument list from a call or a cast
-  on the same line. A measurement that returns the same answer for everything is
-  a measurement of nothing.
-- **Inferred** facts are bounded conclusions supported by multiple evidence
-  items, such as “this symbol is an entry point because it is exported and has
-  incoming route-like references.” They include confidence and citations.
-- **Generated** prose is connective explanation. It must not add behavior,
-  guarantees, parameters, errors, or examples absent from evidence.
-- **Unknown** facts are explicit. The generator must say what is unknown and
-  why rather than fill gaps with conventional framework behavior.
-
-Confidence is the minimum of the supporting evidence confidence, freshness
-confidence, and mode-specific inference cap. Extracted source facts may use
-`1.0` when fresh and exact. Inferred claims are capped at `0.85`; semantic-only
-feature discovery is capped at `0.70`; stale or missing evidence cannot support
-a confident claim.
-
-## Freshness And Availability
-
-The provider reports the index snapshot and checks source freshness before
-generation. Fresh evidence may be used normally. Stale evidence is included
-only with a visible `stale` citation and an `unknowns` entry for claims that
-depend on current source. Missing source or unavailable tables produce
-`missing`/`unknown` citations and do not become prose claims. An empty result is
-valid and must explain whether no target was found or the evidence was
-unavailable.
-
-`bb_doc` is a read path and participates in the shared inline auto-refresh
-(M43.A1/A2), like `bb_search` and `bb_analyze`: when the files a document
-cites are stale, the handler reindexes exactly those files within budget and
-**regenerates** the document, so an answer is never built from the rows a
-refresh just replaced. The repair is declared in an `autoRefresh` line, and
-`refresh: false` (or `BB_NO_AUTO_REFRESH=1`) opts out and answers from existing
-data with the staleness block. A decline is always declared with its reason.
-
-The read-only guarantee is unchanged: `bb_doc` never writes source, never
-creates a file, and never calls `bb_edit`. The only write it can cause is a
-reindex of files that already exist, bounded and declared.
-
-## Examples And Diagrams
-
-Examples are emitted only when a cited source snippet or verified API contract
-provides one. The generator labels examples as illustrative when they are
-assembled from multiple facts. It never invents request payloads, return
-values, error codes, or setup commands.
-
-Diagrams are optional. Markdown may contain Mermaid with cited nodes and edges;
-JSON exposes `reference.diagrams` with nodes, links, and citation IDs. A graph
-edge without a resolvable source and target is omitted and recorded as an
-unknown, not rendered as a guessed connection.
-
-## Quality Gates
-
-```ts
-interface QualityReport {
-  passed: boolean
-  factuality: { passed: boolean; uncitedClaims: number; unsupportedClaims: number }
-  references: { passed: boolean; broken: number; stale: number; missing: number }
-  completeness: { passed: boolean; covered: number; expected: number; unknown: number }
-  freshness: { passed: boolean; snapshot: string; staleClaims: number }
-  budget: { passed: boolean; estimatedTokens: number; maxTokens: number }
-  bounds: {
-    perSection: number
-    sections: Array<{
-      id: string
-      available: number
-      capped: number
-      droppedForBudget: number
-      emitted: number
-    }>
-  }
-  warnings: string[]
-}
-```
-
-`passed` is the conjunction of exactly four things, and nothing else:
-
-1. **factuality** — every claim carries a citation, AND the result is not empty.
-   A document with no evidence at all is a factuality failure: there is nothing
-   for it to be factual about. (`citations.every(...)` over an empty array is
-   vacuously true, which is how an empty result once reported `passed: true`.)
-2. **references** — no citation is broken and none points at a missing file.
-3. **budget** — the measured size of the WHOLE returned object is within
-   `maxTokens`. Over budget, the largest sections are trimmed and every drop is
-   declared as an `output-budget` unknown. A budget too small for the required
-   sections is reported as unmet, with the shortfall named; it is never met by
-   dropping a required section. The figure is measured with a same-width
-   placeholder in the field and that measurement is what is reported, so
-   `estimatedTokens * 4` is never smaller than the payload it describes — the
-   figure a caller budgets from must not be an under-count.
-
-   **What that figure measures: the returned object, not the wire bytes.** The
-   shared MCP handler adds a `freshness` envelope to every tool's result and
-   serialises with two-space indentation. Measured on rebar3, `project` mode,
-   `limit` 20: the engine's object is 16 904 characters and the reported figure
-   is 16 908; the handler's compact form is 17 000, and the wire form is 21 925 —
-   **1.30x the object**, and 1.47x on a larger document. So a caller budgeting
-   from `estimatedTokens` is budgeting for the object, and a client counting
-   tokens off the wire will spend about a third more. The transport is shared
-   with every other tool, so its shape is not this tool's decision; the gap is
-   pinned in `verify-doc-truth.ts` (T27) so a change there surfaces as a diff in
-   this gate rather than as a surprise in a client's budget.
-4. **completeness** — every declared section for the mode is present.
-
-Stale evidence is a **warning**, not a failure: the spec makes it a failure for
-current-behavior claims, and this result makes no such claim. Unknowns are
-counted in `completeness.unknown` and are always listed; they do not by
-themselves fail the gate, because declaring a gap is the tool working, not
-failing.
-
-**Two bounds shorten a document, and they compose.** The per-section evidence
-cap (`detail` × `limit`) and the output budget each remove facts, and every
-removed fact is accounted for:
-
-```
-available = notSelectedByCap + capped
-capped    = droppedByBudget + emitted
-```
-
-`bounds` publishes all five numbers per section, and `emitted` is read back off
-the finished section rather than carried forward, so the identity is a
-measurement. The generator refuses to return a result where it does not close.
-
-Two defects lived here, and both were invisible while the bound existed only as
-prose:
-
-- The cap was **announced and never applied**. The section was assembled from the
-  uncapped draft, so the sentence was the sole description of the cap and it was
-  false: measured on rebar3 at `brief`, it claimed "115 of 120 inventory items
-  were not selected" — a claim of keeping 5 — while the document kept more, and
-  the number a reader could count came from the budget's halving instead.
-- Both bounds were announced **from the same list**, so a 12-of-24 documentation
-  map reported "18 more dropped": 36 accounted for out of 24, on every section
-  of a real document.
-
-A count a reader can check and finds wrong is worse than no count, because it
-condemns the whole quality block.
-
-## Website Reference Metadata
+## Website reference metadata
 
 ```ts
 interface ReferenceMetadata {
@@ -486,127 +246,63 @@ interface ReferenceMetadata {
 }
 ```
 
-`snapshotId`, citation IDs, section IDs, and canonical paths are stable keys for
-website ingestion. A website may render `DocResult` directly, cache it by
-`projectId/snapshotId/mode/target`, and link back to the repository using
-`path`, `lineStart`, and `lineEnd`.
+`snapshotId`, citation IDs, section IDs and canonical paths are stable keys for website ingestion.
+A website may render `DocResult` directly, cache it by `projectId/snapshotId/mode/target`, and link
+back to the repository using `path`, `lineStart` and `lineEnd`. `diagrams` is always empty in this
+implementation.
 
-## Operational Limits
+## Measured cost
 
-- Default evidence limit: 20 items per section.
-- Default output budget: 4,000 tokens; hard server maximum: 16,000.
-- Diagrams are not emitted in this implementation: `includeDiagrams=true`
-  records an honest `not-observed` unknown and `reference.diagrams` stays
-  empty. No fabricated mermaid/graph output is produced.
-- Examples are only emitted when source-backed evidence exists; otherwise
-  `includeExamples=true` records an honest `not-observed` unknown.
-- No source writes, network calls, or generated test files. The only write it
-  can cause is the bounded, declared reindex of files it already cites.
-- Errors are structured and identify the mode, target, and unavailable evidence.
+Warm default calls on the reference index (6,452 files / 310,423 symbols / 820,040 relationships),
+five runs each, read-only DB handles, `BB_NO_AUTO_REFRESH=1`:
+symbol 0.24 s, file 0.19 s, module 0.42 s, api 1.03 s, project 0.76 s, coverage 0.07 s,
+feature 1.97 s (p50; p95 at most 3.65 s). **A cold first default call in a fresh process is 3.9 s
+on a cold page cache** (930 ms with a warm cache) and the read-only database open is 2 ms; that
+cold cost is index page-cache warm-up, not query time. It is declared here rather than hidden
+behind the warm figures. The only shape that can approach a client timeout is the explicit
+`detail: "deep"` feature path, measured at 18.0 s and 926 MB on the reference index; it is an
+opt-in and the descriptor and pages say so.
 
-See `docs/BB_DOC_EXAMPLES.md` for representative Markdown and JSON output.
+## Operational limits and refusals
+
+- Default evidence limit: 20 items per section; accepted range 1–100; out-of-range values are
+  refused, not clamped.
+- Default output budget: 8,000 tokens measured on the payload; hard maximum 16,000; out-of-range
+  values are refused. The default clears the measured minimum honest rendering of a project
+  document on the reference index (about 6,700 tokens); a smaller default could not be honoured by
+  its own reference call.
+- Diagrams are not emitted. `includeDiagrams=true` records an honest `not-observed` unknown.
+- Examples are not emitted: `includeExamples=true` records an honest `not-observed` unknown. The
+  engine does not mine code fences or synthesise calls.
+- `project` mode's target is metadata only; `module` mode refuses an unmatched directory.
+- No source writes, network calls, or generated test files. The only write is the bounded,
+  declared reindex of cited files.
+- Errors are structured (a named message with `isError: true`) and identify the mode, the option
+  and the accepted values.
+
+See `docs/BB_DOC_EXAMPLES.md` for real (abridged) output and refusal shapes.
 
 ## Verification
 
-`script/m20/verify-doc-modes.ts` proves the full mode matrix (symbol, file,
-module, feature, api, project, coverage) through the real handler, invalid-mode
-and missing-target rejection, registry agreement, JSON/Markdown parity, and
-honest empty-project semantics. `script/m20/verify-doc-citations.ts` proves
-that every emitted citation resolves to a real file with a valid line span,
-that stale sources yield `freshness=stale` with `quality.freshness.passed`
-false, and that deleted sources yield `freshness=missing` plus a real
-`references.broken` count (no longer hardcoded to zero).
-`script/m20/verify-doc-examples-diagrams.ts` proves examples/diagrams are never
-fabricated (honest `not-observed` unknowns) and that removing a relationship
-from the index removes the corresponding fact (tamper-negative).
+Measured commands and what each proves. A gate that cannot go red is not evidence; these have all
+been observed red on a planted or real regression before being observed green.
 
-`script/m20/verify-doc-truth.ts` is the gate for the class the three above
-cannot see. They build a two-file temporary project and prove that citations
-RESOLVE and that bad input is REFUSED. None of them asks whether a statement is
-true of the source, or whether the result's own metadata is self-consistent — and
-a corpus review over eight indexed upstream repositories found 19 defects in
-exactly that blind spot. Every predicate in this gate is shared with a negative
-twin that proves it can convict, and the gate records a check with no detail as
-a harness error rather than as a pass. A failure detail names EVERY offender: a
-gate that sampled 6 of its 24 findings hid three quarters of the evidence it was
-written to surface.
-
-Three further lanes in that gate exist because an audit found the same defect
-class the `risks` fix belonged to, surviving in eight more sections:
-
-- **No required section is empty without a note naming that section** — checked
-  over 29 declared sections × 3 detail levels × 7 modes, 609 checks.
-- **Every note names a section the result actually renders**, from outside the
-  tool, because an assertion inside the code under test is not evidence about it.
-- **The published bounds are the applied bounds** — `emitted` equals the
-  section's real fact count, and `emitted + droppedByBudget === capped` for
-  every section. The generator throws rather than return a result whose bounds do
-  not close, and the identity caught a miscount on its first run.
-
-The last two guards are also driven directly by the gate with synthetic
-malformed results, so each is shown to reject what it exists to reject: a guard
-exercised only by the code it guards would pass if it were `return`.
-
-**One verifier per evidence file.** This gate and
-`script/m20/verify-doc-examples-diagrams.ts` both wrote
-`validation/m20/results/D3.json`, and the manifest assigns D3 to the
-examples/diagrams verifier. Two verifiers sharing one evidence file is
-last-writer-wins, so the file was evidence of whichever had run most recently —
-which is how a milestone ends up marked `verified` with numbers no verifier
-produced. This gate now records as `DOC-TRUTH` in its own file, and no manifest
-code was taken for it: D1 is the mode and option contract, D2 citation
-resolution and freshness, and D3 examples and diagrams, so none of the three
-covers statement truth and result self-consistency.
-
-**The gates are mutation-audited.** A gate never shown to fail on a broken tool
-is not evidence, so `script/m31/verify-gate-selftest.ts` plants a defect in the
-doc engine or the MCP handler, requires the gate to go red, and removes the
-checkout. One mutation per failure class, all five detected, every control
-passing:
-
-| entry | mutation reintroduced |
+| Command | Proves |
 |---|---|
-| `m20-doc-truth-cap` | the per-section cap measured but not applied |
-| `m20-doc-truth-signature` | `name()` for a symbol with no indexed parameter list |
-| `m20-doc-modes-contract` | the invalid-mode guard removed |
-| `m20-doc-citations-freshness` | every source reporting `fresh` |
-| `m20-doc-examples-honest` | the honest `not-observed` unknown removed |
+| `bun run script/m13/verify-doc-facts.ts` | fact classification exists, every non-unknown fact carries a citation, the handler in `src/mcp/tools/bb_doc/handler.ts` validates mode and target |
+| `bun run script/m13/verify-doc-modes.ts` | all seven modes dispatch through the CLI and refuse bad input |
+| `bun run script/m13/verify-doc-e2e-corpus.ts` | CLI + MCP stdio end-to-end, plus `rake`/`rebar3` corpus documents |
+| `bun run script/m13/verify-doc-docs.ts` | the generated page matches the registry, the generator passes, D1–D3 evidence is verified |
+| `bun run script/m15/verify-doc-deep.ts` | seven subsystem lanes: classification, regex census (must be zero unallowlisted), cross-file citations, measured cost, real-repo e2e, docs honesty (descriptor ↔ page ↔ handler ↔ engine), evidence self-audit, mode coverage |
+| `bun run script/m20/verify-doc-modes.ts` | mode/option contract through the real handler: mode matrix, refusals, JSON/Markdown parity, empty-project semantics |
+| `bun run script/m20/verify-doc-citations.ts` | every emitted citation resolves with a valid span; stale and deleted sources yield `stale`/`missing` and the reference counters move |
+| `bun run script/m20/verify-doc-examples-diagrams.ts` | examples/diagrams are never fabricated; removing a relationship removes the fact |
+| `bun run script/m20/verify-doc-truth.ts` | statement truth and self-consistency: inbound edges name the documented symbol, counts match emitted citations, the payload budget holds, prose is not a fact restatement, bounds close, stale-footer vocabulary |
+| `bun run script/verify-doc.ts` | engine-level smoke over all seven modes, citation resolution, stale labelling, budget failure, no source mutation |
+| `bun run script/verify-doc-design.ts` | this specification still states the required contract sections |
 
-That work also fixed three defects in the audit itself, which are recorded
-because each one manufactured false confidence: it invoked every gate through a
-runtime that was not installed on the machine it ran on, so the whole audit
-could not execute; it counted a gate that CRASHED on startup as a gate that
-DETECTED the mutation; and the subset filter added for convenience could stamp a
-partial run into the file that records the full audit. A mechanism that reports
-success without checking is worse than no mechanism, because it is believed.
-
-The same predicates run against real repositories by
-`fixtures/bb_doc/verify-corpus.ts` (shared corpus, outside this repository):
-**500 checks pass, 0 fail, 0 skip, 80/80 negatives proved able to fail**, over
-`rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`, `perl5`,
-`openssl` and `cpython` — Ruby, Erlang, Clojure, Zig, Lua, Go, TypeScript, Perl, C
-and Python. A corpus that is absent or too small to be meaningful is recorded as
-`skipped` with the reason, never as `passed`.
-
-There were no skips to declare. The gate's one skip was removed rather than
-disclosed: it derives a directory prefix from the file holding the most symbols,
-and on perl5 that file is `proto.h`, which is top-level, so the prefix-resolution
-check was skipped while 4 069 of the corpus's 4 224 files sat nested and unused.
-Nothing about a prefix depends on how symbol-dense a file is, so the check now
-falls back to a nested file from the index and says so — *"perl5's densest file
-proto.h is top-level; the prefix check uses the nested file Porting/config.sh
-instead"* — and skips only when the corpus genuinely holds no nested file. A
-coverage loss dressed as an honest skip is the worst of both.
-
-The two C-family and Python corpora were added because two languages had no
-coverage at all, and they earned their place immediately — they produced the
-slowest measured corpus, and the timing bound this tool's own gate uses had to be
-re-derived from measurement rather than assumed.
-
-**The wall-clock bound is derived, not chosen.** Feature mode over the ten
-corpora runs in 467 ms (clojure) to 6 135 ms (cpython, 189 518 symbols) warm. The
-bound was 10 s, which left 1.67x headroom over the slowest — and the first cpython
-run failed on it while unrelated indexing saturated the machine, which is a
-measurement of the scheduler, not of the tool. It is now 20 s, which still catches
-a 3.3x regression, and every run prints its own headroom so the margin is never
-invisible. The tightest corpus is zig at 4 265 ms.
+The real-repository corpus companion named in older revisions (`fixtures/bb_doc/verify-corpus.ts`,
+ten repositories) is not present in this checkout; the corpus legs that can run here use
+`rake`, `rebar3`, `clojure` and `zig` from `$HOME/fixtures/repositories`. The other six
+repositories (`lua`, `go_tools`, `typescript`, `perl5`, `openssl`, `cpython`) are absent, so that
+leg is recorded as blocked rather than green.

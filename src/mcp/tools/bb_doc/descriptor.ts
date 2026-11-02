@@ -30,7 +30,7 @@ export const descriptor: ToolDescriptor = {
       includeDiagrams: { type: "boolean", description: "include cited diagrams when available. This implementation does not emit diagrams; `reference.diagrams` stays empty and an honest not-observed unknown is recorded" },
       includeTests: { type: "boolean", description: "include indexed test evidence. Accepted for `symbol` and `feature` modes only (their documents render a test section); the other modes REFUSE it because it would do nothing. Absent means the mode default (on); explicit false suppresses the test facts" },
       limit: { type: "number", minimum: 1, maximum: 100, description: "maximum evidence items per section (whole number 1-100, default 20). Out-of-range values are REFUSED, not clamped, so the page returned is the page requested" },
-      maxTokens: { type: "number", minimum: 1, maximum: 16000, description: "output token budget measured on the emitted payload (whole number 1-16000, default 4000). `estimatedTokens` reports that measurement; when the required sections cannot fit, `budget.passed` is false and a shortfall unknown names the smallest honest rendering. Out-of-range values are REFUSED" },
+      maxTokens: { type: "number", minimum: 1, maximum: 16000, description: "output token budget measured on the emitted payload (whole number 1-16000, default 8000; the default clears the measured minimum honest rendering on the reference index, ~6,700 tokens). `estimatedTokens` reports that measurement; when the required sections cannot fit, `budget.passed` is false and a shortfall unknown names the smallest honest rendering. Out-of-range values are REFUSED" },
       refresh: { type: "boolean", description: "false opts out of the inline auto-refresh of the files this document cites (default: auto-refresh those files within the shared budget, then regenerate); the decision is always declared in `autoRefresh` or the answer text" },
     },
     required: ["mode"],
@@ -43,7 +43,7 @@ export const descriptor: ToolDescriptor = {
   documentation: {
     category: "analysis",
     summary: "Cited Markdown or JSON documentation over indexed source and relationships, with declared bounds, emitted-citation freshness counts, and a payload-measured output budget.",
-    defaults: { format: "markdown", audience: "developer", detail: "standard", includeExamples: false, includeDiagrams: false, includeTests: false, limit: 20, maxTokens: 4000 },
+    defaults: { format: "markdown", audience: "developer", detail: "standard", includeExamples: false, includeDiagrams: false, includeTests: false, limit: 20, maxTokens: 8000 },
     examples: [
       { mode: "symbol", target: "handleRequest" },
       { mode: "feature", target: "request handling", format: "json", detail: "deep" },

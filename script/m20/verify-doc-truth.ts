@@ -1,16 +1,29 @@
-// script/m20/verify-doc-truth.ts — M20.D3 (#701-follow): the bb_doc TRUTH gate.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// The three shipped doc verifiers prove that citations RESOLVE and that invalid
-// input is REFUSED. None of them asks whether a statement is true of the
-// source, whether the result's own metadata is self-consistent, or whether the
-// declared per-mode sections exist. This gate closes that class on a fixture,
-// and fixtures/bb_doc/verify-corpus.ts closes it on real corpora.
-//
-// Every check is a predicate over a real `generateDocumentation` result, and
-// every predicate is shared with a negative twin that proves it can convict.
-// A check that carries no detail is a harness bug and throws — a vacuous green
-// gate is the exact failure this file exists to prevent.
-
+// WHAT THIS FILE IS — bb_doc's truth and self-consistency gate. Every check is a
+//   predicate over a real generateDocumentation/handler result, and every predicate
+//   carries a negative twin that proves it can convict. The lanes cover: target
+//   resolution, empty results, relationship statement truth (both ends named,
+//   inbound edges naming the documented symbol), portable citation ids,
+//   completeness/bounds, prose not restating facts, used sources, markdown links,
+//   duplicate statements, local-vs-external imports, findings, project ordering,
+//   snapshot identity, the payload budget, audience/detail, docstrings, required
+//   sections, unknown aim, emitted-reference counts, the stale footer vocabulary,
+//   the declared selection bound, and api/endpoints.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — a gate that only runs on a fresh fixture cannot see
+//   the stale path, and a gate that reuses one symbol name cannot see a swapped
+//   subject/object. Both defects existed here and are now pinned: the stale lanes
+//   pin refresh:false, and the relationship lane uses two DISTINCT names.
+// WHERE ITS EVIDENCE LIVES — validation/m20/results/DOC-TRUTH.json (status
+//   `known-gap` while the split's source tree is dirty; `verified` is stamped by the
+//   settled-tree integration run).
+// EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/documentation/doc-engine.ts,
+//   src/mcp/tools/bb_doc/handler.ts, docs/BB_DOC.md.
+// CONTRACTS IT MUST NOT BREAK — no check may pass without a detail string, and a
+//   predicate without a negative twin is a harness bug.
+// ─────────────────────────────────────────────────────────────────────────────
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
@@ -287,8 +300,9 @@ try {
   }
 
   // ── T5 (D4) + T6 (D5): completeness is over required sections ──────────
+  const MODE_TARGETS: Record<string, string | undefined> = { symbol: "add", feature: "add", file: "src/app.ts", module: "lib", api: undefined, project: undefined, coverage: undefined }
   for (const mode of MODES) {
-    const d = await doc({ mode, target: mode === "symbol" || mode === "feature" ? "add" : undefined, limit: 20 })
+    const d = await doc({ mode, target: MODE_TARGETS[mode], limit: 20 })
     const missing = missingSections(mode, d)
     check(`${mode} mode emits its declared required sections`, missing.length === 0,
       `emitted=${JSON.stringify(d.sections.map((s) => s.heading))} missing=${JSON.stringify(missing)}`)
@@ -432,61 +446,29 @@ try {
     check("the token estimate covers the whole payload", d.quality.budget.estimatedTokens * 4 >= real,
       `estimatedTokens*4=${d.quality.budget.estimatedTokens * 4} actualChars=${real}`)
 
-    // ── the figure's own scope, and the transport's overhead, measured ───────
-    // `estimatedTokens` describes the object `generateDocumentation` returns, and
-    // it covers that object. It does NOT describe the bytes the MCP handler
-    // sends: the shared handler adds a `freshness` envelope to every tool's
-    // result and serialises with two-space indentation, which on a real corpus
-    // is about a third more again. Measured on rebar3, project mode, limit 20:
-    //   engine object 16 904 chars  ->  reported 16 908
-    //   handler compact 17 000     (+96 for the envelope)
-    //   wire (indented) 21 925     (+4 925 for the indentation)
-    //
-    // The transport is shared with every other tool, so changing it is not this
-    // lane's decision — but the gap between the number a caller budgets from and
-    // the bytes it receives is a fact about this tool's contract, and it is
-    // pinned here so a change in the shared handler shows up as a diff in this
-    // gate rather than as a surprise in a client's token budget.
+    // ── the figure's scope: the DECORATED PAYLOAD the caller receives ────────
+    // The handler enforces maxTokens on the payload after the freshness envelope,
+    // the auto-refresh line and the indentation are in it, and reports that
+    // measurement. A caller budgeting from `estimatedTokens` is budgeting for the
+    // bytes it receives — the old object-only figure was the defect, not a
+    // disclosure to pin.
     {
-      // ONE REQUEST, FOUR NUMBERS — and that is a correction, not a detail. This block used to
-      // measure the engine object from `doc({mode:"project", limit:50})` and the transport from
-      // `bb_doc({mode:"project", format:"json", limit:20})`, which are TWO DIFFERENT DOCUMENTS,
-      // so its comparison could fail for a reason that has nothing to do with the transport.
-      // MEASURED in that shape on this fixture: engine object 15,891 (limit 50) against handler
-      // compact 14,240 (limit 20), so the check reported that the handler had REMOVED 1,651
-      // characters — while the same request at ONE limit puts the envelope ON TOP of the object.
-      // Measured on this repository's own project scope, one request each: limit 20 object
-      // 21,600 -> handler compact 21,696 (+96) -> wire 27,217; limit 50 object 43,041 -> handler
-      // 43,138 (+97) -> wire 53,284. The handler does not trim; the old check was measuring its
-      // own mismatched pair. A gate that compares two different documents is not a gate about
-      // the transport.
+      const payloadCovered = (tokens: number, chars: number): boolean => tokens * 4 >= chars
       const req = { mode: "project" as const, limit: 20 }
-      const same = await doc(req)
-      const objectChars = JSON.stringify(same).length
-      const reported = same.quality.budget.estimatedTokens * 4
-      const res = await createToolHandlers().bb_doc({ ...req, format: "json" }, { projectPath: root, projectId } as any)
+      const res: any = await createToolHandlers().bb_doc({ ...req, format: "json" }, { projectPath: root, projectId } as any)
       const wire = (res.content[0].text as string).length
       const carried: any = JSON.parse(res.content[0].text as string)
-      const transported = JSON.stringify(carried).length
-      const covers = (r: { reported: number; object: number; transported: number; wire: number }): boolean =>
-        r.reported >= r.object && r.transported >= r.object && r.wire >= r.transported
-      check("T27: the reported figure covers the object, and the transport's overhead is disclosed",
-        covers({ reported, object: objectChars, transported, wire }),
-        `reported ${reported} >= engine object ${objectChars}; the handler carries that document plus its envelope at ${transported} (+${transported - objectChars}); ` +
-        `the wire form is indented and carries ${wire} (+${wire - transported}), ${(wire / objectChars).toFixed(2)}x the object. A caller budgeting from estimatedTokens is budgeting for the OBJECT, not the wire bytes.`)
-      // The envelope is an ADDITION, not a substitution: the payload still carries the document
-      // the engine produced. Without this, `transported >= objectChars` would also pass for a
-      // handler that padded its answer while dropping the citations a caller asked for.
-      check("T27: and the transport carries that same document rather than a trimmed one",
-        Array.isArray(carried.sections) && carried.sections.length === same.sections.length &&
-          carried.citations.length === same.citations.length && carried.unknowns.length === same.unknowns.length,
-        JSON.stringify({ sections: [same.sections.length, carried.sections?.length], citations: [same.citations.length, carried.citations.length], unknowns: [same.unknowns.length, carried.unknowns.length], envelope: transported - objectChars }))
-      // The negative twin for the SHARED predicate, and it is the exact shape this check
-      // reported before the two requests were aligned: a transport that returns less than the
-      // engine object must be convicted rather than excused by its own indentation.
-      negative("the transport-size predicate convicts a handler that returns LESS than the engine object",
-        !covers({ reported, object: objectChars, transported: objectChars - 1_651, wire }),
-        `transported ${objectChars - 1_651} < object ${objectChars}, the gap the old check reported as a defect`)
+      const reported = carried.quality.budget.estimatedTokens
+      check("T27: estimatedTokens covers the emitted payload", payloadCovered(reported, wire),
+        `estimatedTokens*4=${reported * 4} wireChars=${wire}`)
+      check("T27: budget.passed agrees with the payload measurement", carried.quality.budget.passed === (Math.ceil(wire / 4) <= carried.quality.budget.maxTokens),
+        `passed=${carried.quality.budget.passed} wireTokens=${Math.ceil(wire / 4)} maxTokens=${carried.quality.budget.maxTokens}`)
+      check("T27: the payload still carries the declared section set", carried.sections.length >= 4 && carried.quality.completeness.passed,
+        `sections=${carried.sections.length} completeness=${carried.quality.completeness.passed}`)
+      check("T27: the freshness envelope publishes its own verdict", typeof carried.freshness?.passed === "boolean",
+        JSON.stringify(carried.freshness ?? null).slice(0, 140))
+      negative("T27 the payload predicate convicts a figure that undercounts the payload",
+        !payloadCovered(Math.floor(wire / 4) - 10, wire), `a figure ${Math.floor(wire / 4) - 10} tokens is rejected for ${wire} chars`)
     }
     // The DEFAULT call must fit the DEFAULT budget. It used to overflow it 3x
     // on every real repository measured and return the oversized document.
@@ -1217,10 +1199,89 @@ try {
       "'contains' may name a file; 'calls' may not, and the file-naming predicate flags only the first")
   }
 
+  // ── T29 (D1/D2/D9/D20): the predicates that closed the Audit's top defects ──
+  {
+    // D1: an inbound edge names the DOCUMENTED symbol, and the two ends are
+    // DISTINCT names — the old fixture used one name for both, which is why the
+    // swapped subject/object ("main calls main") could pass T3/T19.
+    const pairRoot = mkdtempSync(path.join(tmpdir(), "bb-doc-truth-pair-"))
+    mkdirSync(path.join(pairRoot, "lib"), { recursive: true })
+    writeFileSync(path.join(pairRoot, "lib", "target.ts"), "export function callee(value: number): number { return value + 1 }\n")
+    writeFileSync(path.join(pairRoot, "lib", "caller.ts"), "import { callee } from './target'\nexport function caller(value: number): number { return callee(value) }\n")
+    const pairId = getProjectId(pairRoot)
+    await indexProjectParallel(pairId, pairRoot, {})
+    try {
+      const calleeDoc = await generateDocumentation(pairId, pairRoot, { mode: "symbol", target: "callee", limit: 20 })
+      const facts = calleeDoc.sections.flatMap((section) => section.facts).map((item) => item.statement)
+      const callsFacts = facts.filter((statement) => statement.includes(" calls "))
+      check("D1: inbound edge names the documented symbol", callsFacts.some((statement) => statement === "caller calls callee."), JSON.stringify(callsFacts))
+      check("D1: no relationship statement names the same symbol twice", callsFacts.every((statement) => {
+        const words = statement.replace(/\.$/, "").split(" ")
+        return words[0] !== words[2]
+      }), JSON.stringify(callsFacts))
+      negative("D1: the pair-name predicate convicts a swapped pair", !callsFacts.every((statement) => {
+        const words = "caller calls caller.".replace(/\.$/, "").split(" ")
+        return words[0] !== words[2]
+      }), "a synthetic duplicated pair is rejected")
+    } finally {
+      rmSync(pairRoot, { recursive: true, force: true })
+      rmSync(path.dirname(BrainDatabase.getDbPath(pairId)), { recursive: true, force: true })
+    }
+
+    // D9: a project document that can only map 2 x limit symbols says so, with
+    // both numbers, instead of implying it mapped the whole set.
+    const boundDoc = await generateDocumentation(projectId, root, { mode: "project", limit: 1, maxTokens: 16000 })
+    const bound = boundDoc.unknowns.find((unknown) => /selected \d+ of \d+ indexed symbol/.test(unknown.statement))
+    check("D9: the symbol-selection bound is declared with both numbers", !!bound, JSON.stringify(boundDoc.unknowns.map((unknown) => unknown.statement.slice(0, 80))))
+    negative("D9: the bound predicate convicts a silent selection", !/selected \d+ of \d+ indexed symbol/.test("this document maps the project"), "a silent claim is rejected")
+
+    // D2 + T17/D3: with the repair declined, the emitted stale count must equal
+    // the stale citations a reader can check in the Sources list, and the footer
+    // must describe this tool's documents, not another tool's findings.
+    const staleRoot = mkdtempSync(path.join(tmpdir(), "bb-doc-truth-stale-"))
+    mkdirSync(path.join(staleRoot, "src"), { recursive: true })
+    writeFileSync(path.join(staleRoot, "src", "math.ts"), "/** Adds two numbers. */\nexport function add(a: number, b: number): number { return a + b }\n")
+    const staleId = getProjectId(staleRoot)
+    await indexProjectParallel(staleId, staleRoot, {})
+    try {
+      writeFileSync(path.join(staleRoot, "src", "math.ts"), "// edited after indexing\n/** Adds two numbers. */\nexport function add(a: number, b: number): number { return a + b }\n")
+      const handler = createToolHandlers().bb_doc
+      const staleRes: any = await handler({ mode: "symbol", target: "add", format: "json", refresh: false }, { projectPath: staleRoot, projectId: staleId } as any)
+      const staleDoc = JSON.parse(staleRes.content[0].text as string)
+      const emittedStale = (staleDoc.citations ?? []).filter((citation: any) => citation.freshness === "stale").length
+      check("D2: emitted stale count equals the stated stale sources", staleDoc.quality.references.stale === emittedStale, `references.stale=${staleDoc.quality.references.stale} emittedStale=${emittedStale}`)
+      check("D2: the collected total is published separately", typeof staleDoc.quality.references.collectedStale === "number" && staleDoc.quality.references.collectedStale >= emittedStale, JSON.stringify(staleDoc.quality.references))
+      negative("D2: the emitted-count predicate convicts a collected count", (() => {
+        const synthetic = { references: { stale: 7 }, citations: [{ freshness: "stale" }] }
+        return !(synthetic.references.stale === synthetic.citations.filter((citation: any) => citation.freshness === "stale").length)
+      })(), "a synthetic collected count is rejected")
+      const mdRes: any = await handler({ mode: "symbol", target: "add", refresh: false }, { projectPath: staleRoot, projectId: staleId } as any)
+      const md = mdRes.content[0].text as string
+      check("D3: stale footer names cited files, not findings", md.includes("cited file(s)") && !md.includes("findings' files"), JSON.stringify(String(md).split("\n---\n").pop()?.slice(0, 120)))
+      check("D3: declined repair is declared with its reason", md.includes("auto-refresh disabled") || md.includes("does NOT auto-refresh"), "decline declared")
+      negative("D3: the footer predicate convicts the old vocabulary", "1 stale, 0 missing of 2 findings' files — reads auto-refresh".includes("findings' files"), "the old sentence is rejected")
+      // D20: the budget is measured on the payload the caller receives, not on
+      // the engine's compact object.
+      const budgetRes: any = await handler({ mode: "project", format: "json", maxTokens: 300 }, { projectPath: root, projectId } as any)
+      const budgetDoc = JSON.parse(budgetRes.content[0].text as string)
+      const payloadTokens = Math.ceil((budgetRes.content[0].text as string).length / 4)
+      const reported = budgetDoc.quality.budget
+      check("D20: the reported budget describes the payload", reported.estimatedTokens * 4 >= (budgetRes.content[0].text as string).length, `estimate=${reported.estimatedTokens} payloadChars=${(budgetRes.content[0].text as string).length}`)
+      check("D20: an over-budget payload is never reported as passing", reported.passed === (payloadTokens <= 300), `passed=${reported.passed} payloadTokens=${payloadTokens} maxTokens=${reported.maxTokens}`)
+      negative("D20: the payload-budget predicate convicts an object-only measurement", (() => {
+        const objectOnly = 260
+        return !(objectOnly * 4 >= (budgetRes.content[0].text as string).length)
+      })(), "a compact-object measurement does not cover the decorated payload")
+    } finally {
+      rmSync(staleRoot, { recursive: true, force: true })
+      rmSync(path.dirname(BrainDatabase.getDbPath(staleId)), { recursive: true, force: true })
+    }
+  }
+
   // ── T17 (D19): the staleness footer describes this tool ────────────────
   {
     const handler = createToolHandlers().bb_doc
-    const res = await handler({ mode: "project", format: "markdown", limit: 20 }, { projectPath: root, projectId } as any)
+    const res = await handler({ mode: "project", format: "markdown", limit: 20, refresh: false }, { projectPath: root, projectId } as any)
     const txt = res.content[0].text as string
     check("staleness footer does not name findings", !txt.includes("findings' files"),
       `footer=${JSON.stringify((txt.split("\n---\n").pop() ?? "").slice(0, 110))}`)

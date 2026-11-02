@@ -48,7 +48,8 @@ harness.check("engine: file exists", engineSrc.length > 0, String(engineSrc.leng
 harness.negative("engine: no code-generation claims", !engineSrc.includes("generate source") && !engineSrc.includes("produce code"), "clean")
 harness.check("engine: has fact classification", ["extracted", "inferred", "generated", "unknown"].every((term) => engineSrc.includes(term)), "classification found")
 harness.check("engine: confidence is derived, not passed in", engineSrc.includes("function deriveConfidence(") && engineSrc.includes("CAP_BY_FRESHNESS"), "deriveConfidence present")
-harness.negative("engine: no caller-supplied confidence field on DocRequest", !/interface DocRequest \{[\s\S]*?confidence/.test(engineSrc), "DocRequest has no confidence field")
+const docRequestBlock = engineSrc.slice(engineSrc.indexOf("interface DocRequest"), engineSrc.indexOf("interface DocCitation"))
+harness.negative("engine: no caller-supplied confidence field on DocRequest", docRequestBlock.length > 0 && !docRequestBlock.includes("confidence"), "DocRequest has no confidence field")
 
 // Handler: the split module is where the validation lives; reading the monolith
 // is what turned this gate green while the checks could not see the handler.
@@ -58,7 +59,7 @@ harness.check("handler: requires target for scoped modes", handlerSrc.includes("
 harness.check("handler: refuses out-of-range limit", handlerSrc.includes("limit must be a whole number between 1 and"), "limit range refusal")
 harness.check("handler: refuses out-of-range maxTokens", handlerSrc.includes("maxTokens must be a whole number between 1 and"), "maxTokens range refusal")
 harness.check("handler: refuses includeTests where the mode cannot honour it", handlerSrc.includes("includeTests is accepted for"), "includeTests refusal")
-harness.negative("handler: refuses an unmatched module target", handlerSrc.includes("DocRequestError") && handlerSrc.includes("no indexed file matches the module"), "module refusal")
+harness.negative("engine/handler: refuses an unmatched module target", handlerSrc.includes("DocRequestError") && engineSrc.includes("no indexed file matches the module"), "exception type handled by the handler, message raised by the engine")
 harness.check("descriptor: declares the option ranges", descriptorSrc.includes("minimum: 1") && descriptorSrc.includes("maximum: 100") && descriptorSrc.includes("maximum: 16000"), "schema ranges present")
 
 harness.emit()

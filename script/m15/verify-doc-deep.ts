@@ -1,8 +1,23 @@
-// script/m15/verify-doc-deep.ts — M15.D1-D8 (bb_doc) GENUINE deep redo.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Real documentation generation with resolvable citations, all 7 modes
-// exercised on a real index, regex census, measured complexity, real-repo e2e,
-// docs honesty, gate + self-audit. No auto-pass assertions.
+// WHAT THIS FILE IS — bb_doc's deep gate, eight lanes: classification with real
+//   citations, the zero-regex census (charter §7), cross-file citation correctness,
+//   measured wall-clock on two fixture sizes, real-repository documents, docs
+//   honesty across descriptor ↔ generated page ↔ handler module ↔ engine, the
+//   evidence self-audit, and feature/api/project mode coverage.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — every lane asserts a predicate that has been observed
+//   red (the split broke D6's descriptor read, and D2 used to REQUIRE regex
+//   literals); the cleanup guard refuses to delete a non-temporary root.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/d1.json … d8.json.
+// EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_doc/{descriptor,handler}.ts,
+//   src/intelligence/documentation/doc-engine.ts, docs/tools/bb_doc.md,
+//   script/lib/corpus-root.ts.
+// CONTRACTS IT MUST NOT BREAK — a green run must mean: real documents with
+//   resolvable citations, zero unallowlisted regex in the engine, and the four
+//   contract surfaces agreeing.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync } from "node:fs"
 import { fileURLToPath } from "node:url"
@@ -105,18 +120,29 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   await reset()
 
   // ═══════════════════════════════════════════════════════════════════
-  // D2: regex census — enumerate and justify every regex literal
+  // D2: regex census — charter §7 default is ZERO regex in tool code.
+  // Enumerated with the TypeScript AST (a text scan counts string paths like
+  // "../../brain/database" as literals, which is the same false-positive class the
+  // repo's policy gate was written to end).
   // ═══════════════════════════════════════════════════════════════════
   {
+    const ts = await import("typescript")
     const src = readFileSync(path.join(ROOT_DIR, "src/intelligence/documentation/doc-engine.ts"), "utf8")
-    const relits = src.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
-    const clean = relits.filter((r: string) => !r.startsWith("import"))
-    // Known set: split(/\r?\n/) line split; strip docstring /^\*\*?.../;
-    // citation-id sanitation /[^a-zA-Z0-9:_./-]/g; docstring whitespace /\s+/g;
-    // canonicalPath strip /^\/+/, ""; slugs split(/[\/.: ]+/).
-    ck("D2: regex-literal calls enumerated", clean.length >= 4, clean.join(" | "))
-    const suspicious = clean.filter((r) => !/split|replace|match|test|exec/.test(r))
-    nk("D2: every regex literal is text normalization, not code classification", suspicious.length === 0, suspicious.join(" | "))
+    const census = (text: string, fileName: string): string[] => {
+      const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS)
+      const found: string[] = []
+      const walk = (node: any): void => {
+        if (node.kind === ts.SyntaxKind.RegularExpressionLiteral) found.push(node.getText(sf))
+        ts.forEachChild(node, walk)
+      }
+      walk(sf)
+      return found
+    }
+    const relits = census(src, "doc-engine.ts")
+    ck("D2: engine carries ZERO regex literals (char scans instead)", relits.length === 0, relits.join(" | "))
+    ck("D2: the char-scan helpers exist", ["function splitLines(", "function stripCommentMarker(", "function splitOnChars(", "function collapse("].every((name) => src.includes(name)), "helpers present")
+    nk("D2: the regex census convicts a planted literal", census("const x = text.split(/\\s+/).join(' ')\n", "planted.ts").length > 0, "AST finds a real literal")
+    nk("D2: the census does not count an import path as a regex", census("import { x } from \"../../brain/database\"\n", "path.ts").length === 0, "import path ignored")
   }
   await emit("D2", "M15.D2", "bb_doc", "regex census", "d2.json")
   await reset()
@@ -263,23 +289,34 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   // D6: docs honesty — registry block ↔ doc ↔ handler ↔ impl agree
   // ═══════════════════════════════════════════════════════════════════
   {
-    const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
+    // Post-split the tool is four surfaces: the registry assembler, the descriptor,
+    // the handler module and the engine. Reading the pre-split monolith for the
+    // handler is what crashed this lane (and is why the old form FATALed).
+    const assembler = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
+    const descriptorFile = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_doc/descriptor.ts"), "utf8")
+    const handlerFile = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_doc/handler.ts"), "utf8")
     const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_doc.md"), "utf8")
-    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
     const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/documentation/doc-engine.ts"), "utf8")
+    const registry = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
 
-    const block = reg.split('name: "bb_doc"')[1].split(/name: "/)[0]
-    ck("D6: registry lists bb_doc", reg.includes("bb_doc"))
-    ck("D6: registry mutability=read", block.includes('mutability: "read"'))
-    ck("D6: registry requiresIndex=true", block.includes("requiresIndex: true"))
+    ck("D6: registry imports the per-tool descriptor", registry.includes('from "./tools/bb_doc/descriptor"') || registry.includes("tools/bb_doc/descriptor"), "split assembly present")
+    ck("D6: registry lists bb_doc", registry.includes("bb_doc"))
+    ck("D6: descriptor mutability=read", descriptorFile.includes('mutability: "read"'))
+    ck("D6: descriptor requiresIndex=true", descriptorFile.includes("requiresIndex: true"))
     for (const mode of ["symbol", "file", "module", "feature", "api", "project", "coverage"]) {
-      ck("D6: registry mode '" + mode + "'", block.includes('"' + mode + '"'))
+      ck("D6: descriptor mode '" + mode + "'", descriptorFile.includes('"' + mode + '"'))
     }
     ck("D6: doc lists all 7 modes", ["symbol", "file", "module", "feature", "api", "project", "coverage"].every((m) => doc.includes(m)))
     ck("D6: doc mentions format/audience/detail", doc.includes("format") && doc.includes("audience") && doc.includes("detail"))
-    ck("D6: handler calls generateDocumentation", hnd.includes("generateDocumentation(projectId"))
-    ck("D6: handler passes mode/target/format/audience/detail", hnd.includes("audience:") && hnd.includes("detail:") && hnd.includes("includeTests:"))
+    ck("D6: handler module exists and is what the assembler registers", handlerFile.length > 400 && assembler.includes("bb_doc"), `handler chars=${handlerFile.length}`)
+    ck("D6: handler calls generateDocumentation", handlerFile.includes("generateDocumentation(projectId"))
+    ck("D6: handler passes mode/target/format/audience/detail", handlerFile.includes("audience:") && handlerFile.includes("detail:") && handlerFile.includes("includeTests:"))
     ck("D6: impl implements citations+quality", impl.includes("DocCitation") && impl.includes("quality"))
+    // The claims this lane exists to keep honest, each one observed false before.
+    nk("D6: generated page does not deny its own auto-refresh", !doc.includes("never refreshes implicitly") && doc.includes("auto-refresh"), "Safety sentence truthful")
+    ck("D6: generated page carries BOTH envelope scopes", doc.includes('bb index --changed') && doc.includes('bb index "<file>"'), "project + file remediation documented")
+    ck("D6: doc states the payload budget rule", doc.includes("payload") && doc.includes("estimatedTokens"), "budget claim present")
+    ck("D6: doc names includeTests' two modes", doc.includes("includeTests") && doc.includes("symbol") && doc.includes("feature"), "includeTests contract present")
   }
   await emit("D6", "M15.D6", "bb_doc", "docs honesty", "d6.json")
   await reset()

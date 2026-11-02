@@ -1,13 +1,18 @@
-// M20.D3 — bb_doc source-backed examples and diagrams.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// 1. includeExamples=true never fabricates examples: it emits an honest
-//    not-observed unknown instead of invented code.
-// 2. includeDiagrams=true never fabricates diagrams: reference.diagrams stays
-//    empty and the unknown documents the unavailable state.
-// 3. Tamper-negative: deleting a relationship from the index removes the
-//    corresponding fact from regenerated docs (no phantom/uncited claims).
-// 4. Persists exact evidence; no auto-pass assertions.
-
+// WHAT THIS FILE IS — bb_doc's honesty gate for the two optional inputs that could
+//   invent content: examples and diagrams. includeExamples/includeDiagrams never
+//   fabricate; reference.diagrams stays empty; a tamper-negative removes an indexed
+//   relationship and proves the corresponding fact disappears.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — the negative re-reads the real result after mutating
+//   the fixture index, so it can fail when a phantom fact is served.
+// WHERE ITS EVIDENCE LIVES — validation/m20/results/D3.json.
+// EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/documentation/doc-engine.ts.
+// CONTRACTS IT MUST NOT BREAK — no example or diagram may be emitted from evidence
+//   the index does not hold.
+// ─────────────────────────────────────────────────────────────────────────────
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"

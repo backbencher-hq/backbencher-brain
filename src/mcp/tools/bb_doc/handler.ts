@@ -126,13 +126,13 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
   // citations the regenerated document introduced.
   const generate = async (engineBudget: number, allowRepair: boolean): Promise<Generated> => {
     let result = await generateDocumentation(projectId, projectPath, { ...request, maxTokens: engineBudget })
-    const rawDb = await BrainDatabase.getRawInstance(projectId as any)
+    const rawDb = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
     let derived = derivedStaleness(rawDb, projectId as any, citedFiles(result))
     let rows = derivedRows(rawDb, projectId as any, citedFiles(result))
     let statuses = derivedStatuses(rawDb, projectId as any, rows)
     const lines: string[] = []
     for (let round = 0; allowRepair && round < MAX_REPAIR_ROUNDS; round++) {
-      const stale = collectStaleFiles(await BrainDatabase.getRawInstance(projectId as any), rows, statuses)
+      const stale = collectStaleFiles(await BrainDatabase.getRawInstance(projectId as any, { readonly: true }), rows, statuses)
       if (stale.length === 0) break
       const decision = await maybeAutoRefresh(projectId, projectPath, stale, { perCallOptOut: args.refresh === false })
       const line = autoRefreshLine(decision)
@@ -151,9 +151,12 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
   // that case, and the generated page documents both branches.
   const envelope = (generated: Generated) => {
     const files = citedFiles(generated.result)
-    return files.length === 1
+    const built = files.length === 1
       ? buildStalenessEnvelope(generated.derived.summary, { kind: "file", path: files[0] })
       : buildStalenessEnvelope(generated.derived.summary, { kind: "dir" })
+    // The envelope publishes its own verdict, not just its counts: a caller that
+    // branches on freshness should not have to re-derive `stale + missing === 0`.
+    return { ...built, passed: built.stale === 0 && built.missing === 0 }
   }
   const stalenessFooter = (generated: Generated): string => {
     const summary = generated.derived.summary

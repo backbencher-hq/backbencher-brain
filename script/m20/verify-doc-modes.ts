@@ -1,11 +1,23 @@
-// M20.D1 — bb_doc mode and option contract.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// 1. Mode matrix: every registry mode executes against a real fixture and the
-//    result echoes the requested mode.
-// 2. Invalid mode and missing required target are rejected by the handler.
-// 3. Empty semantics: a project with no symbols produces an honest
-//    not-indexed unknown, never a crash or fabricated content.
-// 4. Registry agreement: handler-supported modes exactly match the registry.
+// WHAT THIS FILE IS — bb_doc's mode/option contract gate, driven through the REAL
+//   handler: the seven-mode matrix, JSON/Markdown parity, the empty-project
+//   semantics, and every refusal the contract promises (invalid mode, missing
+//   target, unmatched module, out-of-range limit/maxTokens, includeTests on a mode
+//   without test evidence).
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — a silent clamp is the defect this gate exists to
+//   catch, so each out-of-range request is asserted to be an ERROR naming the
+//   accepted range; an accepted-but-ignored option is asserted to refuse.
+// WHERE ITS EVIDENCE LIVES — validation/m20/results/D1.json (status stays
+//   `known-gap` while the split's source tree is dirty; the integration run on the
+//   settled tree is the one that can stamp `verified`).
+// EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_doc/{descriptor,handler}.ts,
+//   src/intelligence/documentation/evidence.ts.
+// CONTRACTS IT MUST NOT BREAK — a green run must mean: all seven modes answer and
+//   every refusal row is a named refusal, not a clamped success.
+// ─────────────────────────────────────────────────────────────────────────────
 // 5. JSON/Markdown parity: both formats carry the same core facts.
 // 6. Persists exact evidence; no auto-pass assertions.
 
@@ -97,6 +109,39 @@ try {
   check("empty: completeness.expected is the mode's declared section count", emptyRes.quality.completeness.expected === 5, JSON.stringify(emptyRes.quality.completeness))
   rmSync(empty, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(emptyPid)), { recursive: true, force: true })
+// ── 6. Refusals: ranges and options are refused by name, never clamped ───────
+{
+  const handler = createToolHandlers().bb_doc
+  const call = async (args: Record<string, unknown>) => {
+    try {
+      const r: any = await handler(args, { projectPath: root, projectId } as any)
+      return { isError: r?.isError === true, text: (r?.content ?? []).map((c: any) => c.text ?? "").join("\n") }
+    } catch (error: any) {
+      return { isError: true, text: String(error?.message ?? error) }
+    }
+  }
+  const refusal = async (label: string, args: Record<string, unknown>, mentions: string) => {
+    const r = await call(args)
+    const ok = r.isError && r.text.includes(mentions)
+    negative(label, ok, r.text.slice(0, 160))
+    return r
+  }
+  await refusal("limit 101 refused with the accepted range", { mode: "project", limit: 101 }, "between 1 and 100")
+  await refusal("limit 0 refused with the accepted range", { mode: "project", limit: 0 }, "between 1 and 100")
+  await refusal("maxTokens 0 refused with the accepted range", { mode: "project", maxTokens: 0 }, "between 1 and 16000")
+  await refusal("maxTokens 20000 refused with the accepted range", { mode: "project", maxTokens: 20000 }, "between 1 and 16000")
+  await refusal("unmatched module refused with the forms tried", { mode: "module", target: "no/such/module" }, "no indexed file matches the module")
+  await refusal("includeTests on project mode refused", { mode: "project", includeTests: true }, "includeTests is accepted for")
+  await refusal("includeTests on file mode refused", { mode: "file", target: "src/app.ts", includeTests: false }, "includeTests is accepted for")
+  // Positive twin: the same option is accepted where the document renders tests.
+  const accepted = await call({ mode: "symbol", target: "add", includeTests: false })
+  check("includeTests accepted on symbol mode", !accepted.isError, accepted.text.slice(0, 120))
+  // The in-range boundaries are accepted, and reported in the result.
+  const atMax = await call({ mode: "project", limit: 100, maxTokens: 16000 })
+  check("in-range bounds accepted", !atMax.isError, atMax.text.slice(0, 120))
+}
+
+
 } finally {
   rmSync(root, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })

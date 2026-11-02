@@ -16,7 +16,7 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
 - Requires index: `true`
 - Modes: `symbol`, `file`, `module`, `feature`, `api`, `project`, `coverage`
 - Planned modes (roadmap, not executable): (none)
-- Defaults: `{"format":"markdown","audience":"developer","detail":"standard","includeExamples":false,"includeDiagrams":false,"includeTests":false,"limit":20,"maxTokens":4000}`
+- Defaults: `{"format":"markdown","audience":"developer","detail":"standard","includeExamples":false,"includeDiagrams":false,"includeTests":false,"limit":20,"maxTokens":8000}`
 
 ## Input Schema
 
@@ -90,7 +90,7 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
       "type": "number",
       "minimum": 1,
       "maximum": 16000,
-      "description": "output token budget measured on the emitted payload (whole number 1-16000, default 4000). `estimatedTokens` reports that measurement; when the required sections cannot fit, `budget.passed` is false and a shortfall unknown names the smallest honest rendering. Out-of-range values are REFUSED"
+      "description": "output token budget measured on the emitted payload (whole number 1-16000, default 8000; the default clears the measured minimum honest rendering on the reference index, ~6,700 tokens). `estimatedTokens` reports that measurement; when the required sections cannot fit, `budget.passed` is false and a shortfall unknown names the smallest honest rendering. Out-of-range values are REFUSED"
     },
     "refresh": {
       "type": "boolean",
@@ -142,7 +142,7 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
 
 ## Performance
 
-Measured warm on the reference index (6,452 files, 310,423 symbols, 820,040 relationships): default calls take symbol 0.42 s, file 0.32 s, project 1.4 s, module 1.0 s, api 1.6 s, coverage 0.17 s (p50; five runs). `feature` with `detail: "deep"` adds a semantic candidate pass and is the only shape that can approach the client timeout; the default feature call is lexical. Work is bounded by the request: the evidence limit bounds the facts, the per-section cap bounds each section, and `maxTokens` bounds the emitted payload.
+Measured warm on the reference index (6,452 files, 310,423 symbols, 820,040 relationships): default calls take symbol 0.24 s, file 0.19 s, module 0.42 s, api 1.03 s, project 0.76 s, coverage 0.07 s, feature 1.97 s (p50; five runs, p95 at most 3.65 s). A COLD first default call in a fresh process is 3.9 s on a cold page cache (930 ms with a warm one) and the read-only database open is 2 ms; the cold cost is index page-cache warm-up, not query time, and it is declared here rather than hidden by the warm figures. `feature` with `detail: "deep"` adds a semantic candidate pass (measured 18.0 s and 926 MB on the reference index) and is the only shape that can approach the client timeout; the default feature call is lexical and 2 s. Work is bounded by the request: the evidence limit bounds the facts, the per-section cap bounds each section, and `maxTokens` bounds the emitted payload. The default budget is 8,000 tokens because the measured minimum honest rendering of a project document on the reference index is about 6,700 tokens; a 4,000-token default could not be honoured by its own reference call.
 
 ## Safety
 

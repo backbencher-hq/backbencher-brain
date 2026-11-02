@@ -1,4 +1,21 @@
-// script/m13/verify-doc-modes.ts — M13.56 (D2).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — bb_doc's seven-mode + refusal gate at the CLI boundary:
+//   every mode produces a DOCUMENT (not a refusal), and each documented refusal
+//   (missing target, unmatched module, out-of-range limit/maxTokens, includeTests
+//   on a mode without test evidence, invalid mode) produces a named error.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — it runs the built CLI (`bin/bb`) rather than the
+//   source modules, so it proves the transport a caller actually uses; a refusal
+//   is asserted POSITIVELY (non-zero exit + the accepted range/mode named).
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/d2.json.
+// EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_doc/{descriptor,handler}.ts,
+//   script/m13/harness.ts. Rebuild with `npm run build` before running: this gate
+//   exercises dist/.
+// CONTRACTS IT MUST NOT BREAK — a green run must mean: all seven modes answer and
+//   every refusal row is a refusal, not a silently clamped success.
+// ─────────────────────────────────────────────────────────────────────────────
 import { execFileSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -10,9 +27,9 @@ import { Harness } from "./harness"
 const harness = new Harness({
   issue: "M13.56", code: "D2", tool: "bb_doc",
   title: "bb_doc: all 7 modes verified with per-mode negatives",
-  layers: ["unit"],
+  layers: ["e2e"],
   decisions: { allModes: "7 modes: symbol,file,module,feature,api,project,coverage" },
-  limitations: ["Small fixture; full coverage in D3."],
+  limitations: ["Small fixture; real-repository coverage in D3."],
 })
 
 const root = mkdtempSync(path.join(tmpdir(), "bb-doc-"))
@@ -23,57 +40,51 @@ writeFileSync(path.join(root, "src", "app.ts"),
   "export function add(a: number, b: number): number { return a + b }\n")
 await indexProjectParallel(pid, root, {})
 
+function cli(args: Record<string, unknown>): { out: string; status: number } {
+  try {
+    const out = execFileSync("node", [path.resolve("bin/bb"), "tool", "bb_doc", "--dir", root, "--args", JSON.stringify(args)], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
+    return { out, status: 0 }
+  } catch (error: any) {
+    const out = `${error?.stdout ?? ""}\n${error?.stderr ?? ""}`
+    return { out: String(out), status: Number(error?.status ?? 1) }
+  }
+}
+
 /** Is this text a bb_doc DOCUMENT, rather than a refusal or a thrown error? */
 function isDocument(text: string): boolean {
-  return text.trimStart().startsWith("# ") && /## Quality/.test(text) && !/^Error:/m.test(text) && !/Traceback/i.test(text)
+  return text.trimStart().startsWith("# ") && text.includes("## Quality") && !/^Error:/m.test(text) && !/Traceback/i.test(text)
+}
+/** A refusal must exit non-zero AND name the thing that was refused. */
+function isRefusal(result: { out: string; status: number }, mentions: string): boolean {
+  return result.status !== 0 && result.out.includes(mentions)
 }
 
-const bb = path.resolve("bin/bb")
-const MODES = ["symbol","file","module","feature","api","project","coverage"]
-const TGT_MODES = ["symbol","file","module","feature"]
-
-for (const mode of TGT_MODES) {
-  try {
-    const out = execFileSync("node", [bb, "tool", "bb_doc", "--dir", root, "--args",
-      JSON.stringify({ mode, target: "greet" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
-    harness.check("mode: "+mode+" returns output", out.length > 10, "len="+String(out.length))
-    // A substring scan for the word "error" is not an error check: bb_doc
-    // documents its gaps in a `## Quality` block whose text legitimately
-    // discusses errors, so a CORRECT document was failing the check.
-    //
-    // The refusal is checked positively below; this asserts the output is a
-    // DOCUMENT. isDocument is shared with its negative twin so the twin
-    // proves the real predicate discriminates.
-    harness.check("mode: "+mode+" output is a document, not a refusal", isDocument(out), "first line: "+JSON.stringify(out.slice(0,60)))
-    harness.negative("mode: "+mode+" the is-a-document predicate convicts a refusal", !isDocument(String({ error: "boom" })) && !isDocument("bb_doc symbol mode requires target"),
-      "a JSON error envelope and a prose refusal are both rejected by isDocument")
-  } catch (error) {
-    harness.check("mode: "+mode+" -- bb_doc did not run", false, "bb_doc exited non-zero: " + (error instanceof Error ? error.message.slice(0, 140) : String(error)))
-  }
+const MODE_TARGETS: Array<[string, Record<string, unknown>]> = [
+  ["symbol", { target: "greet" }],
+  ["file", { target: "src/app.ts" }],
+  ["module", { target: "src" }],
+  ["feature", { target: "greet" }],
+  ["api", {}],
+  ["project", {}],
+  ["coverage", {}],
+]
+for (const [mode, extra] of MODE_TARGETS) {
+  const result = cli({ mode, ...extra })
+  harness.check(`mode: ${mode} exits zero`, result.status === 0, `status=${result.status} ${result.out.slice(0, 100)}`)
+  harness.check(`mode: ${mode} returns a document, not a refusal`, isDocument(result.out), "first line: " + JSON.stringify(result.out.slice(0, 60)))
 }
+harness.negative("the is-a-document predicate convicts a refusal", !isDocument("bb_doc symbol mode requires target"), "a prose refusal is rejected by isDocument")
 
-// No-target modes
-for (const mode of ["api","project","coverage"]) {
-  try {
-    const out = execFileSync("node", [bb, "tool", "bb_doc", "--dir", root, "--args",
-      JSON.stringify({ mode })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
-    harness.check("mode: "+mode+" runs", out.length > 0, "len="+String(out.length))
-  } catch (error) {
-    harness.check("mode: "+mode+" -- bb_doc did not run", false, "bb_doc exited non-zero: " + (error instanceof Error ? error.message.slice(0, 140) : String(error)))
-  }
-}
-
-// Negative: missing target for scoped mode
-harness.negative("neg: symbol mode rejects missing target", (() => {
-  try { execFileSync("node", [bb, "tool", "bb_doc", "--dir", root, "--args", JSON.stringify({ mode: "symbol" })], { cwd: process.cwd(), encoding: "utf8" }); return false }
-  catch { return true }
-})(), "rejected")
-
-// Negative: invalid mode
-harness.negative("neg: invalid mode rejected", (() => {
-  try { execFileSync("node", [bb, "tool", "bb_doc", "--dir", root, "--args", JSON.stringify({ mode: "bogus" })], { cwd: process.cwd(), encoding: "utf8" }); return false }
-  catch { return true }
-})(), "rejected")
+// Refusals: each names the accepted values rather than silently adjusting.
+harness.negative("neg: symbol mode rejects missing target", isRefusal(cli({ mode: "symbol" }), "requires target"), "rejected")
+harness.negative("neg: invalid mode rejected", isRefusal(cli({ mode: "bogus" }), "must be one of:"), "rejected by the registry validator")
+harness.negative("neg: unmatched module target refused with the forms tried", isRefusal(cli({ mode: "module", target: "no/such/module" }), "no indexed file matches the module"), "rejected")
+harness.negative("neg: limit 101 refused, not clamped", isRefusal(cli({ mode: "project", limit: 101 }), "between 1 and 100"), "rejected")
+harness.negative("neg: limit 0 refused", isRefusal(cli({ mode: "project", limit: 0 }), "between 1 and 100"), "rejected")
+harness.negative("neg: maxTokens 0 refused", isRefusal(cli({ mode: "project", maxTokens: 0 }), "between 1 and 16000"), "rejected")
+harness.negative("neg: maxTokens 20000 refused, not clamped", isRefusal(cli({ mode: "project", maxTokens: 20000 }), "between 1 and 16000"), "rejected")
+harness.negative("neg: includeTests on a mode without test evidence refused", isRefusal(cli({ mode: "project", includeTests: true }), "includeTests is accepted for"), "rejected")
+harness.check("pos: includeTests on symbol mode is accepted", cli({ mode: "symbol", target: "greet", includeTests: false }).status === 0, "symbol refuses nothing for includeTests")
 
 rmSync(root, { recursive: true, force: true })
 harness.emit()

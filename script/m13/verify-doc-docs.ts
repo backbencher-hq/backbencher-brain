@@ -1,4 +1,19 @@
-// script/m13/verify-doc-docs.ts — M13.58 (D4).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — bb_doc's documentation gate: the generated page agrees with
+//   the registry (modes, defaults, description), the generator itself passes, and
+//   the D1/D2/D3 evidence this suite emits is present and verified.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — it reads the registry descriptor and the generated
+//   page as data and compares them, rather than restating either; it is a CONSUMER
+//   of D1-D3, which is why a red D1/D3 keeps it red instead of letting it pass.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/d4.json.
+// EDIT TOGETHER WHEN THIS CHANGES — script/m13/harness.ts, script/verify-tool-docs.ts,
+//   docs/tools/bb_doc.md, validation/m13/results/{d1,d2,d3}.json.
+// CONTRACTS IT MUST NOT BREAK — a green run must mean: page == registry and the
+//   three prerequisites are verified, not merely present.
+// ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import path from "node:path"
@@ -26,7 +41,7 @@ if (registry) {
   harness.check("docs: defaults match", doc.includes(JSON.stringify(registry.documentation.defaults)))
 }
 
-const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root, encoding: "utf8", timeout: 120_000 })
+const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts", "--only", "bb_doc"], { cwd: root, encoding: "utf8", timeout: 120_000 })
 harness.check("docs: generator passes", gen.status === 0, "")
 
 for (const code of ["d1","d2","d3"]) {

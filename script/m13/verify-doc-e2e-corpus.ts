@@ -1,4 +1,20 @@
-// script/m13/verify-doc-e2e-corpus.ts — M13.57 (D3).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — bb_doc's end-to-end gate: the built CLI in both formats, the
+//   real MCP stdio server, and project documents on two real repositories.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — the MCP child must see the SAME data directory the
+//   gate indexed into, so `env: process.env` is passed to the transport; the SDK's
+//   default environment does not carry BB_DATA_DIR/HOME, which made this leg pass
+//   or fail on the runner's environment instead of on the product. Rebuild with
+//   `npm run build` before running: the CLI leg exercises dist/.
+// WHERE ITS EVIDENCE LIVES — validation/m13/results/d3.json.
+// EDIT TOGETHER WHEN THIS CHANGES — script/lib/corpus-root.ts, script/m13/harness.ts,
+//   src/mcp/tools/bb_doc/**.
+// CONTRACTS IT MUST NOT BREAK — a green run must mean: CLI output, MCP output and a
+//   real-repository document all came from this tool.
+// ─────────────────────────────────────────────────────────────────────────────
 import { execFileSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -42,7 +58,7 @@ try {
   const sid = typeof Bun !== "undefined"
   const serverEntry = sid ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
   const serverArgs = sid ? ["--dir", root] : ["mcp", "--dir", root]
-  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), env: process.env as Record<string, string>, stderr: "pipe" })
   const client = new Client({ name: "verify-doc-e2e", version: "1.0.0" })
   await client.connect(transport)
   const r: any = await client.callTool({ name: "bb_doc", arguments: { mode: "project" } })

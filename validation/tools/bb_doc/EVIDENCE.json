@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_doc",
+  "currentCommit": "a9e4c1a62446de960214df3a4db16897e0b348ee",
+  "status": "verified-with-declared-blocked",
+  "generatedAt": "2026-11-02T00:13:19.215114+00:00",
+  "verifierCommands": [
+    "bun run script/m13/verify-doc-facts.ts",
+    "bun run script/m13/verify-doc-modes.ts",
+    "bun run script/m13/verify-doc-e2e-corpus.ts",
+    "bun run script/m13/verify-doc-docs.ts",
+    "bun run script/m15/verify-doc-deep.ts",
+    "bun run script/m20/verify-doc-modes.ts",
+    "bun run script/m20/verify-doc-citations.ts",
+    "bun run script/m20/verify-doc-examples-diagrams.ts",
+    "bun run script/m20/verify-doc-truth.ts",
+    "bun run script/verify-doc.ts",
+    "bun run script/verify-doc-design.ts",
+    "npx tsx script/tools/verify-regex-policy.ts",
+    "bun run script/verify-tool-page-claims.ts",
+    "bun run script/verify-tool-docs.ts",
+    "bun run script/m35/verify-docs-staleness.ts",
+    "bun run script/m48/verify-d1-doc-truth.ts",
+    "bun run script/m31/verify-tool-docs-deep.ts",
+    "bun run script/m31/verify-bb-docs-truth.ts",
+    "bun run script/m16/verify-docs-truth.ts",
+    "bun run script/m31/tool-mode-corpus.ts --check",
+    "bun run script/verify-docs-indexing.ts",
+    "bun run script/m56/verify-docs-completeness.ts",
+    "bun run script/m62/verify-docs.ts",
+    "bun run script/m60/markdown-mutants.ts",
+    "bun run script/m41/verify-design.ts"
+  ],
+  "measured": {
+    "laneGatesGreen": 12,
+    "laneGates": 12,
+    "laneChecks": 0,
+    "laneNegatives": 0,
+    "note": "counts are in each gate's evidence JSON; the lane table below is the authoritative list"
+  },
+  "gates": [
+    {
+      "gate": "m13/verify-doc-facts",
+      "command": "bun run script/m13/verify-doc-facts.ts",
+      "exit": 0,
+      "evidence": "validation/m13/results/d1.json",
+      "phaseA": "exit 1 (grepped pre-split monolith)",
+      "proves": "fact classification + handler refusals, split-aware"
+    },
+    {
+      "gate": "m13/verify-doc-modes",
+      "command": "bun run script/m13/verify-doc-modes.ts",
+      "exit": 0,
+      "evidence": "validation/m13/results/d2.json",
+      "phaseA": "exit 0",
+      "proves": "7 modes + 9 refusal negatives via the built CLI"
+    },
+    {
+      "gate": "m13/verify-doc-e2e-corpus",
+      "command": "bun run script/m13/verify-doc-e2e-corpus.ts",
+      "exit": 0,
+      "evidence": "validation/m13/results/d3.json",
+      "phaseA": "exit 1 (MCP child did not inherit BB_DATA_DIR)",
+      "proves": "CLI+MCP stdio+2 real repos"
+    },
+    {
+      "gate": "m13/verify-doc-docs",
+      "command": "bun run script/m13/verify-doc-docs.ts",
+      "exit": 0,
+      "evidence": "validation/m13/results/d4.json",
+      "phaseA": "exit 1 (prerequisite d1/d3 were red)",
+      "proves": "page==registry, generator --only bb_doc, D1-D3 verified"
+    },
+    {
+      "gate": "m15/verify-doc-deep",
+      "command": "bun run script/m15/verify-doc-deep.ts",
+      "exit": 0,
+      "evidence": "validation/m15/results/d1..d8.json",
+      "phaseA": "exit 2 FATAL at D6 (registry split)",
+      "proves": "8 lanes VERIFIED; D2 zero-regex AST census; D6 split-aware docs honesty"
+    },
+    {
+      "gate": "m20/verify-doc-modes",
+      "command": "bun run script/m20/verify-doc-modes.ts",
+      "exit": 0,
+      "evidence": "validation/m20/results/D1.json",
+      "phaseA": "exit 0 (known-gap)",
+      "proves": "mode matrix + refusal matrix + parity; status known-gap"
+    },
+    {
+      "gate": "m20/verify-doc-citations",
+      "command": "bun run script/m20/verify-doc-citations.ts",
+      "exit": 0,
+      "evidence": "validation/m20/results/D2.json",
+      "phaseA": "exit 0 (known-gap)",
+      "proves": "citation resolution + stale/missing counters (emitted)"
+    },
+    {
+      "gate": "m20/verify-doc-examples-diagrams",
+      "command": "bun run script/m20/verify-doc-examples-diagrams.ts",
+      "exit": 0,
+      "evidence": "validation/m20/results/D3.json",
+      "phaseA": "exit 0 (known-gap)",
+      "proves": "no fabricated examples/diagrams + tamper-negative"
+    },
+    {
+      "gate": "m20/verify-doc-truth",
+      "command": "bun run script/m20/verify-doc-truth.ts",
+      "exit": 0,
+      "evidence": "validation/m20/results/DOC-TRUTH.json",
+      "phaseA": "exit 1 (T17 red under BB_NO_AUTO_REFRESH=1)",
+      "proves": "128 checks/29 negatives: D1 pair names, D2 emitted counts, D9 bound, D20 payload budget, T17 footer; status known-gap"
+    },
+    {
+      "gate": "script/verify-doc.ts",
+      "command": "bun run script/verify-doc.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "exit 0",
+      "proves": "7-mode engine smoke"
+    },
+    {
+      "gate": "script/verify-doc-design.ts",
+      "command": "bun run script/verify-doc-design.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "exit 0 (old text checks)",
+      "proves": "spec/reference/examples contract sentences, flattened"
+    },
+    {
+      "gate": "script/tools/verify-regex-policy.ts",
+      "command": "npx tsx script/tools/verify-regex-policy.ts",
+      "exit": 0,
+      "evidence": "validation/tools/regex-policy.json",
+      "phaseA": "PASS with 8 doc-engine baseline rows",
+      "proves": "0 new; doc-engine rows paid to zero (73 frozen debt elsewhere)"
+    }
+  ],
+  "sharedDocGates": [
+    {
+      "gate": "verify-tool-page-claims",
+      "command": "bun run script/verify-tool-page-claims.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "RED: page names freshness.passed but reply had no such field",
+      "verdict": "GREEN after publishing freshness.passed in the envelope"
+    },
+    {
+      "gate": "verify-tool-docs",
+      "command": "bun run script/verify-tool-docs.ts",
+      "exit": 1,
+      "evidence": "stdout",
+      "phaseA": "stale by descriptor change",
+      "verdict": "FAIL only on stale shared generated data: docs/data/public-tools.json + website/src/data/tools.generated.ts; requires Lead's `npm run docs:generate` (full generator is Lead-owned)"
+    },
+    {
+      "gate": "m35/verify-docs-staleness",
+      "command": "bun run script/m35/verify-docs-staleness.ts",
+      "exit": 1,
+      "evidence": "stdout",
+      "phaseA": "green",
+      "verdict": "FAIL only on the same stale shared generated data"
+    },
+    {
+      "gate": "m48/verify-d1-doc-truth",
+      "command": "bun run script/m48/verify-d1-doc-truth.ts",
+      "exit": 1,
+      "evidence": "validation/m48/results/D1.json",
+      "phaseA": "green",
+      "verdict": "FAIL only on the same stale shared generated data"
+    },
+    {
+      "gate": "m31/verify-tool-docs-deep",
+      "command": "bun run script/m31/verify-tool-docs-deep.ts",
+      "exit": 1,
+      "evidence": "stdout",
+      "phaseA": "RED on split",
+      "verdict": "FAIL only on the same stale shared generated data"
+    },
+    {
+      "gate": "m31/verify-bb-docs-truth",
+      "command": "bun run script/m31/verify-bb-docs-truth.ts",
+      "exit": 1,
+      "evidence": "validation/m31/results/D2.json",
+      "phaseA": "PASS",
+      "verdict": "FAIL on other-lane claims (BB_EDIT/BB_HEALTH json fences), not bb_doc"
+    },
+    {
+      "gate": "m16/verify-docs-truth",
+      "command": "bun run script/m16/verify-docs-truth.ts",
+      "exit": 1,
+      "evidence": "validation/m16/results/D1.json",
+      "phaseA": "RED on BB_PATTERNS",
+      "verdict": "FAIL on other-lane claims (BB_EDIT forced-delete, BB_ASK fallback labels)"
+    },
+    {
+      "gate": "m31/tool-mode-corpus --check",
+      "command": "bun run script/m31/tool-mode-corpus.ts --check",
+      "exit": 1,
+      "evidence": "validation/m31/results/tool-mode-corpus.json",
+      "phaseA": "RED drift",
+      "verdict": "FAIL on 25 drifted invocations of other tools; bb_doc is not named"
+    },
+    {
+      "gate": "verify-docs-indexing",
+      "command": "bun run script/verify-docs-indexing.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "RED (12 stale line citations incl. tool-handlers.ts:880)",
+      "verdict": "GREEN after the owning lanes' fixes"
+    },
+    {
+      "gate": "m56/verify-docs-completeness",
+      "command": "bun run script/m56/verify-docs-completeness.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "RED (CLI help empty)",
+      "verdict": "GREEN after the owning lane's fix"
+    },
+    {
+      "gate": "m62/verify-docs",
+      "command": "bun run script/m62/verify-docs.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "PASS",
+      "verdict": "address doc drift gate"
+    },
+    {
+      "gate": "m60/markdown-mutants",
+      "command": "bun run script/m60/markdown-mutants.ts",
+      "exit": 0,
+      "evidence": "stdout",
+      "phaseA": "PASS",
+      "verdict": "markdown mutant battery"
+    },
+    {
+      "gate": "m41/verify-design",
+      "command": "bun run script/m41/verify-design.ts",
+      "exit": 0,
+      "evidence": "validation/m41/results/D1.json",
+      "phaseA": "PASS",
+      "verdict": "rendered design evidence"
+    }
+  ],
+  "redThenGreen": [
+    {
+      "defect": "m13/verify-doc-facts read the pre-split src/mcp/tool-handlers.ts",
+      "red": "exit 1, 3 checks FAIL (logs/gate-m13-verify-doc-facts.log)",
+      "green": "exit 0, D1 VERIFIED 16/16 (logs/final-m13-verify-doc-facts.log)"
+    },
+    {
+      "defect": "m15/verify-doc-deep FATALed splitting the pre-split registry (D6), D2 REQUIRED >=4 regex literals",
+      "red": "exit 2, D1-D5 verified then TypeError at D6 (logs/gate-m15-verify-doc-deep.log)",
+      "green": "exit 0, D1-D8 all VERIFIED; D2 zero-regex AST census 4/4 (logs/final-m15-verify-doc-deep.log)"
+    },
+    {
+      "defect": "D3 stale markdown footer said `findings' files`",
+      "red": "m20/doc-truth exit 1, 111/112, T17 FAIL under BB_NO_AUTO_REFRESH=1 (logs/v2-m20-verify-doc-truth.log earlier state / gate run in Phase A)",
+      "green": "m20/doc-truth exit 0 PASS 128/128 + 29 negatives after the handler footer + T17 refresh:false pin"
+    },
+    {
+      "defect": "D1 inbound relationship facts named the neighbour twice",
+      "red": "probe: `main calls main.` (probes-extra.json F1)",
+      "green": "symbol doc renders `caller calls callee.`; truth gate T29 D1 predicate + negative twin (validation/m20/results/DOC-TRUTH.json)"
+    },
+    {
+      "defect": "D2 reference counters counted collected, not emitted",
+      "red": "56 stale vs 0 emitted in the fixture; 94 vs 7 on T2 (AUDIT.md \u00a76)",
+      "green": "references.stale === emitted stale citations; collectedStale published (truth gate T29 D2)"
+    },
+    {
+      "defect": "D20 budget measured on the engine object",
+      "red": "T27 measured object vs wire; T2 project at maxTokens=16000 was over its ceiling",
+      "green": "estimatedTokens*4 >= payload and budget.passed agrees with the payload measurement (truth gate T27/T29 D20); T2 default project now 6704/8000 passed"
+    },
+    {
+      "defect": "T2 latency: relationship fetch + symbol lookup + feature semantic",
+      "red": "Phase A p50: symbol 3142, file 6774, module 4708, api 6974, project 7033, feature 18982-52063 ms",
+      "green": "T2 p50: symbol 238, file 189, module 417, api 1031, project 756, coverage 71, feature 1967 ms (LATENCY.json v2); detail:deep opt-in 18.0 s declared"
+    }
+  ],
+  "coldOpen": {
+    "readonlyOpenMs": 2,
+    "firstQueryMs": 1,
+    "firstDefaultCallMs": 3900,
+    "warmDefaultCallMs": 1391,
+    "index": {
+      "files": 6452,
+      "symbols": 310423,
+      "relationships": 820040,
+      "bytes": 3639963648,
+      "mtime": "2026-11-01T23:42:08.253Z"
+    },
+    "declaration": "cold first default call on T2 is 3.9 s (cold page cache, load 3.7); a fresh process with a warm page cache measured 930 ms. Warm default calls are 0.07-1.97 s. No default call is hidden: before the default budget cleared the reference rendering the cold first call was 6.8 s, and that measurement stays in logs/latency-t2*.log."
+  },
+  "blockedLegs": [
+    {
+      "leg": "m20 evidence `verified` state",
+      "reason": "src/intelligence/documentation/evidence.ts fingerprints src/mcp/tool-handlers.ts, src/mcp/tool-registry.ts and docs/tools/bb_doc.md; the split + this lane's changes leave them dirty, so all four m20 gates honestly stamp `known-gap` at 0 failed checks. Per Lead ruling, the settled-tree integration run stamps verified."
+    },
+    {
+      "leg": "shared generated data artifacts",
+      "reason": "docs/data/public-tools.json and website/src/data/tools.generated.ts are a full-generator output owned by the Lead; `--only bb_doc` does not write them. verify-tool-docs / m35 / m48 / m31 tool-docs-deep fail ONLY on those two stale artifacts after this lane's descriptor changes; `npm run docs:generate` at integration clears them."
+    },
+    {
+      "leg": "fixtures corpus companion",
+      "reason": "fixtures/ is absent from this checkout; $HOME/fixtures/repositories holds rake, rebar3, clojure, zig but not lua, go_tools, typescript, perl5, openssl, cpython. The 500-check ten-repository companion is recorded blocked, not green."
+    },
+    {
+      "leg": "T2 inline auto-refresh",
+      "reason": "exercising it would write the shared .bb-data index; charter forbids. Repair paths are measured on fixtures (probe-refresh.json)."
+    },
+    {
+      "leg": "m31/verify-gate-selftest mutation run",
+      "reason": "it edits src/ in the shared checkout with the fleet active; Lead owns the integration run."
+    },
+    {
+      "leg": "m31 tool-mode-corpus / m16 / m31 bb-docs-truth",
+      "reason": "red on other owners' in-flight tool behaviour/docs (bb_search, bb_ask, bb_health, bb_patterns, bb_visualize, BB_EDIT, BB_HEALTH); bb_doc is not named in the drift list and its own pages pass the truth/structure checks."
+    }
+  ],
+  "latency": {
+    "file": "validation/tools/bb_doc/LATENCY.json",
+    "verdict": "all default calls inside tier budgets; one declared opt-in exception (feature detail:deep 18.0 s)"
+  },
+  "audit": {
+    "file": "validation/tools/bb_doc/AUDIT.md",
+    "phase": "A audit + recorded Phase B resolution"
+  }
+}

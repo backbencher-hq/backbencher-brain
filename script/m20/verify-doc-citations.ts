@@ -1,15 +1,19 @@
-// M20.D2 — bb_doc citation resolution and freshness.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// 1. Every emitted citation resolves to a real file on disk with a valid line
-//    span (no phantom citations).
-// 2. Stale fixture: a source file changed since indexing yields citations
-//    with freshness=stale and quality.freshness.passed=false.
-// 3. Missing/broken fixture: a source file deleted after indexing yields
-//    freshness=missing AND a broken citation count > 0, and
-//    quality.references.passed=false. (This proves the broken count is real,
-//    not the hardcoded 0 it used to be.)
-// 4. Persists exact evidence; no auto-pass assertions.
-
+// WHAT THIS FILE IS — bb_doc's citation/resolvability matrix: every emitted
+//   citation resolves to an indexed file span; a stale source is labelled; a
+//   deleted source becomes `missing` and moves the reference counters; markdown
+//   links point at the Sources entries.
+// WHICH TOOL IT SERVES — bb_doc.
+// WHY IT IS SHAPED THIS WAY — the counters are asserted against EMITTED citations
+//   (the reader can check those) while `collectedStale` carries the gathered total.
+// WHERE ITS EVIDENCE LIVES — validation/m20/results/D2.json.
+// EDIT TOGETHER WHEN THIS CHANGES — src/intelligence/documentation/doc-engine.ts,
+//   src/mcp/tools/bb_doc/handler.ts.
+// CONTRACTS IT MUST NOT BREAK — a green run must mean every stated source can be
+//   opened at the stated span, and a stale one is labelled as stale.
+// ─────────────────────────────────────────────────────────────────────────────
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"

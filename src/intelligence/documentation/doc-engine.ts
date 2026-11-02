@@ -157,7 +157,7 @@ type Row = Record<string, any>
 // ─────────────────────────────────────────────────────────────────────────────
 export const DEFAULT_EVIDENCE_LIMIT = 20
 export const MAX_EVIDENCE_LIMIT = 100
-export const DEFAULT_TOKEN_BUDGET = 4_000
+export const DEFAULT_TOKEN_BUDGET = 8_000
 export const MAX_TOKEN_BUDGET = 16_000
 /** Relationship/import evidence per symbol, before the per-section cap. */
 const RELATIONSHIP_FETCH_CAP = 40
@@ -1747,7 +1747,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const perSection = factsPerSection(detail, limit)
   const scopeCap = Math.min(limit * 5, SCOPE_FILE_CAP)
 
-  const raw: any = await BrainDatabase.getRawInstance(projectId as never)
+  const raw: any = await BrainDatabase.getRawInstance(projectId as never, { readonly: true })
   // One reader per generation: each source file is read at most once.
   const reader = new SourceReader()
   const scope = targetFiles(raw, projectId, projectPath, request, scopeCap)
@@ -1875,7 +1875,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "module-graph", heading: "Module graph", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts, ...inventory.facts], emptyExplanation: "No import between the files of this module, and no relationship or inventory row, is indexed for it." })
   } else if (mode === "feature") {
     push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: symbolParts.api, emptyExplanation: "No declaration with a return type or parameter list was found among this feature's candidates, so no entry point is described." })
-    push({ id: "flow", heading: "Flow", required: true, audience: "all", facts: relationshipParts.facts, lead: feature ? `Candidates came from ${feature.lexical} lexical and ${feature.semantic} semantic match(es) in ${feature.ms}ms.` : undefined, emptyExplanation: "No indexed relationship connects this feature's candidates, so no flow is described." })
+    push({ id: "flow", heading: "Flow", required: true, audience: "all", facts: relationshipParts.facts, lead: feature ? `Candidates came from ${feature.lexical} lexical and ${feature.semantic} semantic match(es).` : undefined, emptyExplanation: "No indexed relationship connects this feature's candidates, so no flow is described." })
     push({ id: "components", heading: "Components", required: true, audience: "all", facts: [...fileFacts, ...symbolParts.behavior], emptyExplanation: "No indexed file and no described behaviour was resolved for this feature, so no component is listed." })
     push({ id: "test-coverage", heading: "Test coverage", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names a candidate of this feature and no indexed relationship reaches one from a test, so its test coverage is not established." })
   } else if (mode === "api") {
