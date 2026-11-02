@@ -506,6 +506,29 @@ type and the three instances with correct owners but no module→`Target` edge.
 That is the name-keyed `contains`/export dedupe, which is deliberate and pinned by
 `instance-target-name-collision.icl`.
 
+## Relationship ontology
+
+The claim table `script/m14/verify-doc-truth-emissions.ts` grades. `Emitted?` is the production analyzer's own set; a `no` names the ruling rather than leaving a blank. The per-sub-kind detail is in [Relationship contract](#relationship-contract).
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | yes | application head resolved through the scope stack (a local wins over the module binding); qualified `single_quoted_name`/`qualified_identifier` forms resolve as `reference_qualified` | 0.90 (usage_contextual); 0 of 3,798 edges below 0.7 |
+| contains | yes | owner -> member structural edge: module -> members, type -> constructors and fields, class/instance -> methods, local frame -> binders | 1.00 (structural); 0 below 0.7 |
+| exports | yes | one per exported name from the `.dcl` definition list, on the symbol's own line | 1.00 (structural); 0 below 0.7 |
+| extends | no | RULED: Clean has no inheritance clause; instrument B classified 5,567 declarations with 0 UNCLASSIFIED, registered in `script/m14/clean-ruled.ts` | - (ruled absent) |
+| implements | yes | `instance C T` class-name node and `derive g T`; structural, same node's line | 1.00 (structural); 0 below 0.7 |
+| imports | yes | one per imported name, joined against the exporting module's export surface | 1.00 (import_based); 84.2% corpus resolution at PROD |
+| instantiates | yes | only where the application head is declared as a `data_constructor` in this file; the declined population is measured and published | 1.00 (structural); 0 below 0.7 |
+| references | yes | declared type references from signatures, record fields, ADT constructor arguments, type synonyms, class contexts, special blocks | 1.00 / 0.95 (reference_qualified); pass 5 `&`-conjoined references use the same model |
+| uses | yes | `field_access` read, `record_expression` construction, `record_update` write, `constructor_pattern` match against a declaration | 0.90 (structural); 0 below 0.7 |
+| overrides | yes | instance member supplying a class member (`T.m -> C.m`), in-file class graph | 1.00 (reference_qualified); 0 below 0.7 |
+| decorates | no | RULED: Clean macros are values (`name :== expr`); 0 of 583 `macro_definition` carry a declaration | - (ruled absent) |
+| renders | no | RULED: no component element; HTML is built by ordinary functions over values (0 render-ish calls, 4 HTML string literals) | - (ruled absent) |
+| mixes_in | no | RULED: no member-set composition; `with` is a defining scope and `class_context` composes dictionaries (20 `with_block`, 473 `class_context`) | - (ruled absent) |
+| part_of | no | RULED: no textual inclusion; `import` names a module and 0 of 1,328 name a file | - (ruled absent) |
+
+The confidence distribution is measured over the PROD edge population in [Q6](#q6--confident-evidenceclass-and-confidence-are-right); every edge line is part of the dedupe key.
+
 ## Relationship contract
 
 | Type | From → To | When | Corpus |
@@ -584,7 +607,17 @@ wrong rather than quietly edited:
 The table above is what `clean-census.ts` recomputes; the corrections tables in the
 review §6.1 and §12.1 record each one.
 
-## Complexity and metrics
+## Supported constructs
+
+Every construct below is read through a grammar FIELD, not a child scan; the shapes are enumerated in [Grammar tree shape](#grammar-tree-shape-as-pinned-v128).
+
+- **Modules and imports** - declaration (`.dcl`) and implementation (`.icl`) modules, `import_declaration` with repeated module names, aliases, and imported items (identifiers, constructors, operators, class methods, constructor/record subsets, ranges).
+- **Declarations** - type definitions (ADTs, records, synonyms), class declarations with contexts, instance declarations, generic declarations and cases, `derive` declarations, function and operator definitions, macro definitions, type signatures with fixity annotations, foreign exports, special blocks, `where`/`with` local bindings.
+- **Expressions and types** - applications (left-nested; callee read from the `function` field), qualified names (single-quoted and alias forms), record expressions/updates/field access, type applications, strict/unique/unique-var/dotted types, `code` blocks, comprehensions.
+- **Coverage** - 102 handled named types, all fixture-backed and all occurring in corpus code; 30 classified `internal_silent`, 1 `gap`, 8 `design_decision`, measured by `script/m14/clean-completeness-gate.ts`.
+- **Fixtures** - `validation/m14/fixtures/clean/` (8 fixtures, all passing under `bun run script/m14/run-fixtures.ts`); the M12 fixtures are `Service.icl` and `Negative.icl`.
+
+## Complexity envelope
 
 - `metadata.complexity` counts: `case_expression` 131, `case_alternative` 373,
   `guard_equation` 1,594, `guard` 23, `if_expression` 165,
@@ -599,7 +632,25 @@ review §6.1 and §12.1 record each one.
 - `metadata.hasTypeInference: true` — a Clean signature IS its type.
 - `metadata.analysisVersion: "12.0.0-clean-ast-complete"`.
 
-## Corpus results (312 files, 331,079 nodes)
+Measured envelopes - `validation/m12/results/clean-complexity.json`, both runs recorded with load context (`loadQuiet: true`, loadavg 2.9 / 3.22 against a quiet target of 4):
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| fixtures:clean | 2 | 29 | 40 | 357.5 | 81.1 | 111.9 | 259.5 MiB |
+| corpus_subset:clean | 309 | 6,338 | 10,878 | 4,483.3 | 1,413.7 | 2,426.3 | 566.8 MiB |
+
+Declared budget: the lane formula's dimension 9 is ms/Knode, not an absolute wall budget; measured **5.60-6.42 ms/Knode**, flat from Q2 to Q4 (22.9x size range against 24.8x time, within 8% of linear) in [Performance](#performance-lane-formula-dimension-9). No O(n^2) hot path: the two tree walks are single passes and the complexity accumulation is O(1) per frame.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/clean.json` - `truthSource: manual_audit`, source `validation/m12/fixtures/clean/{Service,Negative}.icl`, 134 expected relations.
+- Result: `validation/m12/results/clean-differential.json` - `passed: true`, truePositive 134, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- The M14.0.F5 oracle is **red for `instantiates` by design**: it derives an instantiation from every `constructor`-headed application, while this analyzer emits only applications whose target the file declares as a `data_constructor`. The declined population is measured and published - 24,986 sites, of which 19,566 name nothing the corpus declares - in [The 24,986-site row](#the-24986-site-row), and the corpus count travels in `metadata.declinedInstantiations`.
+
+## Corpus validation
+
+Corpus-validation evidence: target `clean-stdlib@6971a8af309b2d7efd601cd3fa75dc8fcc4856ff` (74 tracked `.icl`/`.dcl`, 74 measured) - 73 clean files, 1 error file (1.4% any-error), 0 crashes, 0 pipeline mismatches, wall 1,699 ms (`validation/m12/results/clean-corpus-errors.json`). The lane's larger evidence sets are the 312-file tracked set (8,285 symbols / 30,689 relationships after the v1.2.8 grammar wave) and the 2,181-file WIDE corpus (3,107,897 AST nodes), stated with their instruments in [Figures that moved](#figures-that-moved-and-why) and [The measured surface](#the-measured-surface-this-analyzer-is-built-against).
+
 
 Round 1's before/after table, retained as its record. The "after" column is what round
 1 measured; the figures that moved since are restated in
@@ -1839,6 +1890,10 @@ faster, it gets more, and the extra output pays for the extra work:
 dominant costs are the two tree walks (one name-collection pass and one emitting
 pass, down from six) and the per-frame O(1) complexity accumulation that replaced a
 per-callable subtree re-walk.
+
+## Regex inventory
+
+**Zero regex literals in this analyzer**, verified by TypeScript's scanner (`RegularExpressionLiteral` count 0), not by a grep. The M49.R2 policy asks that no regex does syntax work; this lane's stronger claim is enforced by `script/m14/clean-completeness-gate.ts`, which fails on a planted regex literal. Every remaining text operation - 22 call sites of `slice`/`split`/`indexOf`/`includes`/`startsWith`/`endsWith` - is classified in [Hygiene](#hygiene-zero-regex-and-what-it-is-checked-against): positional slicing on node text, `Array.includes` dedupe, character predicates on a NAME, and `split("\n").length` for line counting. Nothing inspects source text to decide what a construct IS; where a name is needed it comes from a grammar field.
 
 ## Hygiene: zero regex, and what it is checked against
 
