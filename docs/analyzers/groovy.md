@@ -113,7 +113,9 @@ clean corpus.
 | syntax errors | ✅ | ERROR/MISSING nodes pushed as warning `ParseError` (never silently dropped) |
 | decorators/attributes | ✅ | `annotation` nodes → pattern flags (`@Override`, `@Test`, `@Transactional`, etc.) |
 
-## Relationship ontology — measured verdicts (M60, analyzer/GROOVY)
+## Relationship ontology
+
+Measured verdicts (M60, analyzer/GROOVY); the detailed table follows this canonical heading.
 
 Every row below is a MEASUREMENT through the production entry
 (`src/ast/pool-worker.ts` `parseFile`, which is what `parallel-indexer` stores),

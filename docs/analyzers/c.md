@@ -43,7 +43,9 @@
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
 | decorators/attributes | ✅ | `static`/`inline`/`extern` storage-class metadata on functions/variables |
 
-## Relationship ontology — C_FIX2 wave, measured 2026-10-05
+## Relationship ontology
+
+C_FIX2 wave, measured 2026-10-05; the detailed verdict tables follow this canonical heading.
 
 > **This section replaces two tables that contradicted each other.** The previous version
 > carried the per-type table TWICE — once saying `instantiates` ✅ 5 and once saying ❌ 0,

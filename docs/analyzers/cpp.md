@@ -258,7 +258,9 @@ every published name whether it is a declaration's name *and* not a macro's.
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
 | decorators/attributes | ✅ | M60.P1: the declaration's modifiers as their **source spellings, in source order** (`["static", "constexpr"]`), on BOTH the function branch and the field/variable branch — `static constexpr int kMax = 2;` carries as much modifier information as `virtual double area() const = 0;`, so a field that answers for one and not the other is a field a consumer cannot rely on. The scan matches a child by TEXT and EXCLUDES the declaration's own payload fields (`type`, `declarator`, `default_value`, …), **not** by `isNamed`: the grammar is inconsistent and both forms occur in this lane's own fixtures — `virtual` is an unnamed token on a method, while `static`/`constexpr` are NAMED `storage_class_specifier`/`type_qualifier` wrappers on a field, and an `isNamed`-only rule finds the modifier on the method and misses it on the field. `override`/`final` are `virtual_specifier`s, a level below the declaration, so they need the second lookup. A destructor and an operator overload are deliberately absent: `~File` and `operator==` are part of the NAME, not modifiers applied to it. `isPureVirtual`/`isAbstract`/`isTemplate` remain separate metadata flags. |
 
-## Relationship ontology — the ten verdicts, each with a number
+## Relationship ontology
+
+The ten verdicts, each with a number; the detailed tables follow this canonical heading.
 
 The engine's `RelationshipType` carries **10 distinct values**. This lane emits
 **9** of them as relationships and rules **1**. Every verdict below is a MEASUREMENT
@@ -1184,6 +1186,23 @@ The remaining pure-String helpers are `stripIncludeChars`, `stripAccessSpecifier
 and `joinHeadingLines`, plus the character-class comparisons in
 `isIdentifierChar` and `isPlainIdentifier` (an identifier test is not worth a
 census entry — the project's direction is fewer text rules, not more).
+
+## Complexity envelope
+
+`validation/m12/results/cpp-complexity.json` — two recorded runs:
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| fixtures | 4 | 41 | 51 | 2,426.4 | 16.9 | 21.0 | 200.9 MiB |
+| corpus_subset | 58 | 8,587 | 28,039 | 45,006.4 | 190.8 | 623.0 | 430.7 MiB |
+
+Declared budget: no in-tree M12 budget artifact for cpp; the lane formula scores ms/Knode and the page's own defect sections record where the cost went.
+
+## Corpus validation
+
+- `validation/m12/results/cpp-corpus-errors.json`: corpus `zig`, extensions `*.cpp` / `*.cppm` / `*.hpp` / `*.cc` / `*.hh`; 133 error files, 0 crash files (the artifact records no per-node total, so none is claimed).
+- **The M12 differential artifact did not pass.** `validation/m12/results/cpp-differential.json`: `passed: false`, expected 87, truePositive 87, falsePositive 5, falseNegative 0, precision 0.9457, recall 1. The five false positives are the lane's documented open defect class, not a documentation claim.
+- The 58-file complexity population above is a subset, not the corpus-errors population; both are named with their own artifacts.
 
 ## ALL-OUT-OF-ALL D1 — the applicable set, taken from the PINNED GRAMMAR
 

@@ -38,7 +38,9 @@ each entry says what the edge asserts here, and what it is not.
 | `decorates` | — (ruled, below) | no HCL construct applies a CALLABLE to a declaration. `validation` / `precondition` / `postcondition` are assertion blocks whose condition is EVALUATED, and `depends_on` is ordering metadata — both are already `contains`/`references` |
 | `renders` | — (ruled, below) | HCL HAS templates (`quoted_template` 3,710, `heredoc_template` 3,506) and they render STRINGS from text plus values — no construct names a DECLARATION as the rendered target (`templatefile()` 60 sites, 0 literal paths; 0 declaration-target candidates) |
 
-## Relationship ontology — what was changed in this wave
+## Relationship ontology
+
+What was changed in this wave; the detailed verdicts follow this canonical heading.
 
 Two of the five types believed missing at handover are emitted now, and both
 were found by measuring the corpus rather than by reading the analyzer:
@@ -112,6 +114,14 @@ record, not an omission. `builtin_qualified` is NOT one of the five tiers
 `src/lsp/evidence_tier.ts` declares, so a stored `uses` row falls through to that
 module's derivation and reads `usage_contextual` there; see **Findings for the
 supervisor**.
+
+## Supported constructs
+
+- **Documents and blocks**: `.tf`, `.tfvars`, `.hcl` files; top-level blocks, nested blocks and attributes; the containment edge is lexical (document → top-level block → nested block → attribute).
+- **Address reads**: traversals naming a project address (`var.x`, `local.x`, `module.x`, `data.T.N`, `T.N.attr`) become `references`; language builtins (`count.index`, `each.k`, `self.a`, `path.k`, `terraform.k`) become `uses`.
+- **Declarations**: `resource`, `data`, `module`, `variable`, `locals`, `output`, `provider`, `terraform`, terragrunt `include` and `override_*` blocks, and same-file `function` blocks (the only call targets).
+- **Composition and replacement**: a terragrunt `include` splices the included configuration into this document (`part_of`); an `override_*` block replaces the declaration its `target` names (`overrides`); `dynamic` repeats a member set but is not `mixes_in`.
+- **Ruled-absent constructs** are named with their counts in the verdict section below; fixtures: `validation/m14/fixtures/hcl/`.
 
 ## Symbol contract
 
@@ -563,6 +573,12 @@ opposite of the O(n²) signature.
 this wave. The inherited numbers (recall 0.999931, precision 1.000000 over
 9,079 files, `M14.0.F5` at 100 % coverage on two corpora) are **not
 reproduced here** and are not published as current.
+
+## Corpus validation
+
+- `validation/m12/results/hcl-corpus-errors.json`: corpus `terraform`, extensions `*.tf` / `*.tfvars` / `*.hcl`, 2,361 tracked files, 4 error files / 10 error nodes, 0 crash files.
+- `validation/m12/results/hcl-corpus-complexity.json`: production run over 2,357 acceptance files (the 4 excluded invalid fixtures are named in the artifact), 17,019 symbols / 23,252 relationships / 37,752.3 ms / 450.8 symbols/s / peak 294.4 MiB; `passed: true`, 0 errors, 0 crashes.
+- Differential `validation/m12/results/hcl-differential.json`: `passed: true`, expected 107, truePositive 107, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
 
 ## Mutation
 
