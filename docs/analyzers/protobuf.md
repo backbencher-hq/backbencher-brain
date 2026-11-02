@@ -5,7 +5,7 @@ pinned** grammar.
 
 | | |
 |---|---|
-| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,475 lines) |
+| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,885 lines, re-measured 2026-11-01) |
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
 | Replaced WASM | 72,342 B, sha256 `dbbde8a8f047b6b6…` — **not a stored artifact.** `ensureBaseline()` in `script/m14/tmp/protobuf/paths.mts:93` rebuilds it from `.upstream-revision` and checks the sha. *(This cell previously named `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm`; that directory was deleted, and the header kept naming a path with nothing behind it while the body had already recorded the relocation.)* |
@@ -62,6 +62,33 @@ tree-sitter reports on nearby lines are *recovery* misattributing damage from
 the `any { }` further down, not separate defects. A file using MessageSet loses
 that construct's fields — not the file, and not its neighbours.
 
+## Language
+
+- Analyzer file: `src/ast/real-protobuf-analyzer.ts` (1,885 lines)
+- Parser: `tree-sitter-proto` — `grammars/tree-sitter-proto/`, `amaanq/tree-sitter-proto`
+  @ `e9f6b43f`, plus **eight local patches** (each proven necessary in "The eight patches"
+  below). **No protobuf grammar is published on npm** — `tree-sitter-protobuf`,
+  `tree-sitter-proto` and `tree-sitter-protocolbuffers` are all absent from the registry —
+  so the grammar is vendored and built locally rather than installed.
+- Wired bytes: `wasm/tree-sitter-protobuf.wasm`, 81,735 B, sha256 `4624eb6d4b7830dd…`.
+  The engine's grammar-name map carries `protobuf: "tree-sitter-protobuf"`
+  (`src/ast/engine.ts`). The served build's own node-type inventory is published at
+  `validation/m14/measurements/protobuf-grammar-nodes.json`: **50 named types over 132
+  ids**, served digest `4624eb6d4b78`.
+- Language detection: the bare `proto` extension maps to `protobuf` in
+  `src/ast/language-detection.ts` (the router admits `.proto` for this lane).
+- Wired in: `engine.ts getAnalyzer` → `case "protobuf"` → `RealProtobufAnalyzer`
+  (`src/ast/engine.ts`).
+- Pure AST — symbols and relationships derive from Tree-sitter nodes and fields, never
+  from source-text scanning, and this analyzer carries **zero regular expressions**
+  (see "Regex inventory").
+- Corpus: the m14 whole-population gate admits **907 `.proto` files across 22
+  repositories** — the gate's own line is `admitted files [0, 1) of 907` — walked as a
+  **working tree, not `git ls-files`**: three of the corpora are sparse checkouts where
+  `git ls-files` lists tracked paths that are not on disk. Earlier passes recorded 847
+  files/21 repositories and 821 files/18 repositories as the corpus grew; every count in
+  this page keeps the population it was measured on.
+
 ## Symbol contract
 
 Declaration nodes become symbols; usages become relationships.
@@ -81,6 +108,23 @@ Declaration nodes become symbols; usages become relationships.
 
 Ids are dotted and package-qualified: `demo.v1.User.Address`.
 
+### Symbol fields, field by field
+
+| Field | Supported? | How extracted (AST node/field) |
+| --- | --- | --- |
+| name | yes | `message_name` / `enum_name` / `service_name` / `rpc_name` nodes; a field's `identifier`; a package's `full_ident` |
+| kind | yes | `message`→`class`, `enum`→`enum`, `service`→`interface`, `rpc`→`method`, field / `map_field` / `oneof_field`→`property`, `oneof`→`union`, `enum_field`→`enum_member`, `package`→`namespace` |
+| qualified/container name | yes | dotted, package-qualified ids (`demo.v1.User.Address`); a proto2 group's type and field get `pkg.M.G` and `pkg.M.G#property` (`#` cannot occur in a protobuf identifier, so no real name forges it) |
+| ownerName / ownerKind | yes | enclosing message for nested declarations, the package for top-level ones; an extension member's symbol id stays in its DECLARING scope while its `ownerName` is the EXTENDED type's id |
+| range (start/end line + column) | yes | the declaration node (`nodeToRange`) |
+| parameters | yes (rpc only) | the rpc's request type is its single `parameter`; the response is the `returnType` |
+| returnType / type | yes | rpc response → `returnType`; a field's type text → `metadata.type`, with `metadata.scalar: true` when the `type` node holds no `message_or_enum_type` child |
+| documentation/comments | yes | the comment node directly above a declaration (the `docComments` map) becomes the symbol's `comments` |
+| complexity metrics | n/a | protobuf declarations carry no complexity metric; none is computed |
+| syntax errors | yes | ERROR/MISSING nodes surface through the pipeline's own error list — see "Corpus validation" for the measured counts |
+| decorators/attributes | no | options are descriptor metadata, not applied callables; they are counted and ruled in "Relationship ontology" and never published as a `decorates` edge |
+
+
 ### Relationship ontology
 
 - **`contains`** — declaration → member: message→field, message→nested type,
@@ -93,10 +137,12 @@ Ids are dotted and package-qualified: `demo.v1.User.Address`.
   header was never corrected. Measured now: `amb.v1.Audit -> amb.v1.Audit.source`
   carries `member: "field"` and `amb.v1.Audit -> amb.v1.Audit.body` carries
   `member: "oneof"`; there is no edge from `body` to `source`.)*
-- **`uses`** — declaration → referenced type: a field's declared type, a map
-  *value* type, a `oneof_field` type, and **both** of an rpc's request and
-  response. A **scalar type produces no edge** — `string` and `int32` are
-  keywords, not references.
+- **`references`** — declaration → referenced type: a field's declared type, a map
+  *value* type, a `oneof_field` type, **both** of an rpc's request and response, and a
+  proto2 group's type. A **scalar type produces no edge** — `string` and `int32` are
+  keywords, not references. *(The label was `uses` until 2026-10-27; that label is
+  retired — its 13,275 type-position edges moved 1:1 to `references` and the analyzer
+  no longer emits `uses`. The canonical table is `## Relationship ontology` below.)*
 - **`extends` is deliberately unused.** `extend Foo { … }` does not make the
   block a subclass of `Foo`; it adds *fields* to `Foo`. The honest edge is
   `Foo -contains-> field` with `metadata.member = "field"` and
@@ -123,6 +169,193 @@ disambiguated to `pkg.M.G#property` — `#` cannot occur in a protobuf identifie
 (`[A-Za-z_][A-Za-z0-9_]*`), so no real name can forge it. On the reference
 corpus this is not a theoretical fix: it accounts for all 39 ownership changes
 the A/B below reports.
+
+## Relationship ontology
+
+Every row is a relationship type the engine's enum defines, plus the two Protobuf-specific
+mappings. The verdict class for each ruled type is the coverage block's own class
+(`script/m14/spec/protobuf-completeness.json` → `coverage`), which the coverage-block gate
+reads: **5 implemented / 5 applicable / 9 excluded, 0 problems** — i.e. 5/5 of the
+applicable set. The detailed per-pass reasoning is in "Verdict per type" and the
+rulings `PB-REL-1`…`PB-REL-16` in the spec.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | no | Ruled grammar-absence: protobuf declares `rpc` operations and never invokes one — the language has no call site. 0 edges over the whole admitted population. | n/a — the construct cannot occur |
+| extends | no | Ruled grammar-absence: there is no supertype clause. proto2 `extend Foo { … }` adds FIELDS to an existing message (`contains{viaExtension}`), which is not inheritance; protobuf has no inheritance to invent. | n/a — the construct cannot occur |
+| implements | no | Ruled grammar-absence: no conformance clause exists in the language; a `service` is mapped to `interface` as a symbol KIND only and names no contract. | n/a — the construct cannot occur |
+| instantiates | no | Ruled grammar-absence: a .proto declares types; it constructs nothing. The grammar's 1,909 `block_lit` nodes are every one an option value (`aggregateLiteralsByParentNode = { constant: 1909 }`), so 0 constructions. | n/a — the construct cannot occur |
+| uses | no | RETIRED 2026-10-27 by the 1:1 relabel: the label's 13,275 type-position edges moved to `references` (no edge gained or lost). The construct — a name READ AS A VALUE — has no site in a language with no expression, and the served grammar's 50 named types carry no expression/variable/value-use family. | n/a — the label is retired and the construct cannot occur |
+| imports | yes | the `import` statement, source = the file's own `package` namespace, target = the WRITTEN PATH as a module load. `metadata.moduleOwner` (`package` / `basename`), `modulePath`, `filePath`; `import public` also emits `exports`; `import option` (editions feature import) carries `isFeatureImport`. A path is not a symbol, so no target resolution is attempted. | confidence 1.0, evidenceClass `import_based`; the edge is a parse fact with no resolution step |
+| exports | yes | `import public "x.proto"` — a RE-EXPORT: one `imports` edge and one `exports` edge to the same path, both carrying `metadata.viaPublicImport: true`. 4 measured sites, 4/4 naming an admitted file through the file-claim arm. | confidence 1.0, structural; the claim's price is measured (0 refuted) |
+| overrides | yes | two declarations in ONE message claiming the same `field_number`: the later one states what that slot holds. Direction is DOCUMENT order (read off the range, not visit order); the edge's line is the SOURCE declaration's. 1 measured edge in the whole population — `nvim-treesitter/tests/query/highlights/proto/test.proto`, a file `protoc` rejects, so the edge states a fact about the text, not about a compiling schema. | confidence 1.0, structural; `metadata.role: "fieldSlot"` plus `fieldNumber`; both endpoints are published symbols disambiguated by `uniqueId` |
+| references | yes | the type position: a field's declared message/enum type, a map VALUE type, a `oneof_field` type, an rpc's request and response, and a group's type. Resolution is protobuf's own rule: a leading dot is absolute; otherwise walk the innermost enclosing scope outward; then fall back to `<package>.<name>`. A SCALAR produces no edge, decided structurally (a `type` node with no `message_or_enum_type` child is a keyword). | confidence 1.0, structural; measured over the whole 821-file pass: 13,275 edges, 9,670 target a SAME-file declaration (72.84 %, a parse fact), 3,605 are the qualified derivation (27.16 %); corpus-wide both-ends resolution 96.72 % |
+| contains | yes | declaration → member: package → top-level declaration (7,166 edges at 821 files), message → field / nested type / oneof / rpc, enum → enum_value, service → rpc, and extended type → extension field. `metadata.member` names the member kind (`field`, `nestedType`, `oneof`, `rpc`, `enumValue`, `groupType`) and `viaExtension` marks an extension member on BOTH the edge and the symbol. The package is a member-producing namespace; 11 of 821 files declare no package and their 46 top-level declarations get no ownership edge (declared, not smoothed). | confidence 1.0, structural; ids are unique (`uniqueId`) and direction is owner → member |
+| decorates | no | Ruled ontological: an option application (`[deprecated = true]`, a custom `[(x.y) = …]`, a message/method-level `option`) is PASSIVE DESCRIPTOR METADATA. MEASURED: 8,536 applications over 790 of 907 files (3,399 custom, 5,137 builtin) and **0 of 8,536 names a callable declared in its file**; what a custom name resolves to is an `extend google.protobuf.*Options` FIELD (84 same-file), i.e. the passive metadata slot itself. The csharp attribute precedent. | n/a — an option is a metadata KEY, not an applied callable |
+| renders | no | Ruled grammar-absence: the language declares types and operations; it has no component, element or output construct. The counted near miss is the `google.api.*` annotation family — 1,220 applications over 81 of 907 files, of which 314 are `google.api.http` with 445 HTTP binding keys — but an HTTP route is a TRANSPORT binding, not a rendered component; 0 components rendered. | n/a — the construct cannot occur |
+| mixes_in | no | Ruled (adjudication — grammar-absence does NOT apply): the proto2 `extend` block composes FIELDS into an existing message with no conformance, which is the fleet's near miss. MEASURED: 218 extend blocks in 64 of 907 files (89 same-file targets, 124 `google.protobuf.*` runtime options — all 218 targets symbol-shaped). Not the contract because it composes into a FIELD-NUMBER RANGE, not a supertype chain (protobuf has none: PB-REL-1's intersection is 0), the extended message's own declaration never names the extension, and the block emits no symbol by design — so the composer side cannot be populated without inventing a source. | n/a — the near miss is counted, the relation cannot be asserted |
+| part_of | no | Ruled ontological: `import "x.proto"` is a MODULE LOAD in its own namespace. MEASURED: 1,708 import sites in 611 of 907 files; 1,659 (97.1 %) name an admitted file — but each .proto keeps its own `package` scope and is compiled separately (no shared scope), and the only thing an import names is a PATH. The fleet's measured rule is that a `part_of`/`mixes_in` TARGET must be symbol-shaped (cpp: 0 of 4,612 path targets resolved), and no file/module symbol exists to receive it — minting one is the fabricated-symbol defect PB-REL-12 refuses. | n/a — a path target resolves 0 rows and the scope is not shared |
+| extension-membership (proto2 `extend`) | yes, as `contains` + `references` | the extended type → each extension field: `contains` with `metadata.member = "field"` and `metadata.viaExtension = true`; the field's symbol id lives in its DECLARING scope (`idOwner` = `ctx.scope` when `viaExtension`), while `ownerName` is the extended type. The block emits no symbol of its own (a second declaration of the extended type would be a phantom). A type written INSIDE the block resolves from where it is WRITTEN — `extend` opens no scope. | confidence 1.0, structural; direction extended type → member, consistent with every other `contains` row |
+| proto2 `group` | yes, as `contains` + `references` | `optional group G = 4 { … }` declares a nested TYPE `G` AND a field `G` of it: the type takes `pkg.M.G`, the field `pkg.M.G#property`, the message contains the type with `metadata.member = "groupType"` and the field references it with `metadata.role = "groupType"`. Only the field claims a slot. | confidence 1.0, structural; the `#<kind>` suffix keeps the pair from colliding into a self-loop |
+
+## Supported constructs
+
+Everything below is exercised by a fixture pair (`<name>.proto` + `<name>.expectation.json`)
+under `validation/m14/fixtures/protobuf/`; the suite is **14 pass / 0 fail**
+(`bun script/m14/run-fixtures.ts --lang protobuf`).
+
+- **messages** — top-level, nested (two levels in `message-tree-contains`), dotted names,
+  empty bodies; the message OWNS its fields and nested messages (`contains{member:
+  "nestedType"}`), and the tree is exactly parent-to-child (`payload-and-ontology`,
+  `message-tree-contains`).
+- **fields** — proto3 and proto2 labels (`optional` / `required` / `repeated`), negative
+  field numbers, `json_name`-style options, defaulted fields; a scalar type produces no
+  reference edge (`declaration-lines`, `payload-and-ontology`).
+- **map fields** — `map<key, value>`: the value type is a reference, the key type is
+  never one (`payload-and-ontology`).
+- **oneofs** — a `union` symbol owned by the message; its fields stay members of the
+  MESSAGE and carry `metadata.oneof` (the oneof's RESOLVED id); no oneof→field edge
+  (`payload-and-ontology`, `slot-and-grouping`).
+- **enums and enum values** — `enum` symbols, `enum_member` values, `allow_alias`
+  (`payload-and-ontology`, `declaration-lines`).
+- **services and rpcs** — unary and all four streaming shapes (`rpc`, `rpc … returns`,
+  `stream`), request = `parameter`, response = `returnType` (`streaming-and-forward-refs`,
+  `payload-and-ontology`).
+- **proto2 `group`** — nested type + field with two ids, including a group declared
+  inside an `extend` block (`extend-and-group`, `group-in-extend-scope`).
+- **proto2 `extend` blocks** — top-level and nested, the extended type resolved through
+  the scope it is written in, `metadata.viaExtension` on edge and symbol
+  (`extend-and-group`, `nested-extend-scope`).
+- **imports** — plain, `import public` (also an `exports`), `import weak`, and the
+  editions `import option` feature import (`imports-and-editions`).
+- **packages** — dotted packages, sibling packages, a file with NO package
+  (`module-edge-source-fallback`), and the package as the module-edge source
+  (`dotted-relative-sibling-package`, `ancestor-scope-resolution`).
+- **name resolution** — leading-dot absolute names, the innermost-scope walk, the
+  ancestor-package climb from imported directories, and the deliberate decline when no
+  scope satisfies a name (`absolute-and-scope-resolution`, `ancestor-scope-resolution`,
+  `unqualified-ancestor-scope`).
+- **forward references** — a field naming a message declared later in the file; the
+  two-pass walk makes resolution independent of visit order (`streaming-and-forward-refs`).
+- **editions** — `edition = "2023"` instead of `syntax`, the aggregate option form, and
+  the `local` declaration modifier (the eight patches below).
+- **options and reserved ranges** — file/message/enum/service/method `option`
+  statements, field option lists, `reserved` names and ranges, `extensions` ranges with
+  option lists (`extend-and-group`, `payload-and-ontology`).
+- **documentation comments** — a comment directly above a declaration is attached to
+  the symbol's `comments`.
+
+One construct is ruled OUT rather than parsed, with its consequence measured: the proto2
+MessageSet `any { … }` form — see "One ruled construct" above (9 ERROR nodes in 1 file of
+293, a deliberate reference-implementation torture test).
+
+## Regex inventory
+
+The analyzer is **regex-free**: `src/ast/real-protobuf-analyzer.ts` contains no regular
+expression, and the repository's regex census carries **0 rows** for this lane.
+
+| Line | Regex | Receiver category | Classification | Justification |
+| --- | --- | --- | --- | --- |
+| — | (none) | — | — | the analyzer has no regex usage; `npx tsx script/m12/verify-regex-census.ts \| grep -c protobuf` → **0 rows**, and `validation/m12/results/regex-census.json` carries no protobuf entry (0 regex usages, 0 unclassified) |
+
+Two regular expressions belonged to this lane's own INSTRUMENTS and are recorded, with
+their removal, in "The lane's last two regular expressions": `protobuf-adversarial.mts:375`
+(testing a relationship-type name against a closed four-value set) and
+`protobuf-ruling-table-proof.mts:118` (filtering the harness's own log lines). Neither
+matched `.proto` source, and both were replaced with a `Set` membership test and with
+`startsWith` / `includes` — the lane's rule is that the ban covers census scripts and
+oracles too, because a pattern over text breaks silently when the text changes.
+
+## Complexity envelope
+
+**UNMEASURED as a template row — declared, not fabricated.** The template's artifact
+`validation/m12/results/protobuf-complexity.json` does **not exist** for this analyzer,
+and no wall-clock / symbols-per-second / peak-RSS row was ever produced for this lane.
+What IS measured is the whole-corpus size at 821 files, through the production entry
+point (`parseFile` in `src/ast/pool-worker.ts`, pass 2):
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| whole-corpus pass 2 | 821 ok / 0 fail | 41,956 analyzer-direct (41,938 through `parseFile`) | 55,941 analyzer-direct (54,939 through `parseFile`) | not recorded | not recorded | not recorded | not recorded |
+
+Hot-path audit (read from source; NOT a benchmark): the walk is an explicit LIFO worklist,
+never recursive descent — a previous recursive version overflowed Node's stack on a
+5,000-level message nest and took the process down, and the iterative form is the fix for
+that measured crash. The analyzer makes **two passes over the same declaration list**
+(declarations first, facts second) so name resolution does not depend on visit order, and
+its lookup structures are Maps/Sets (`declaredIds`, `usedIds`, `metaOf`, `docComments`,
+`slotClaims`). There is no O(n²) scan and no per-symbol scan of the corpus: a parse is
+per-file, and the only corpus-scale traversal is the arm's own file walk.
+
+## Differential ground truth
+
+**There is NO in-tree differential oracle for protobuf, and that absence is measured, not
+assumed.** `protobuf` is not a key of `LANGS` in `script/m14/differential.ts`, and
+`script/m14/oracles/` carries no `protobuf-*.ts` oracle — recorded in "Coverage, reported
+as applicable" and "Declared limitations". Consequently there is no
+`validation/m12/results/protobuf-differential.json`, and no precision/recall/FP/FN row is
+quoted: those rates are **UNMEASURED for this lane** and must not be borrowed from another
+language.
+
+The independent implementation this lane uses instead is **`protoc`, the reference
+compiler**: `script/m14/tmp/protobuf/probe/protoc-oracle.py` adjudicates every `uses`
+target against it. Pass 8 measured **11,250 edges judged, 11,208 agree — 99.627 %** — with
+all 42 disagreements named and all 42 traced to ONE defect (the dotted-name fallback that
+prefixed the package to an absolute name; fixed in pass 8, and the target-relabel work
+keeps the same adjudication). The protoc oracle is an authority for TARGET correctness
+only: it cannot confirm the analyzer's symbol shapes or its containment facts.
+
+The behavioural instruments that stand in for a differential are:
+
+- **fixtures** — 14 fixture pairs, **14 pass / 0 fail**, each authored BEFORE the run it
+  judges, with fire rows AND forbid rows (a forbid row pins an absence the analyzer must
+  not widen);
+- **mutants** — `bun script/m14/mutate-analyzer.ts --lang protobuf` → **35 caught / 0
+  survived**. The battery is re-pointed whenever a label moves: a mutant keyed on a label
+  the analyzer no longer emits is inert, so a relabel that does not re-point its mutants
+  reads live edges as dead ones (measured once: 10 inert survivors after the
+  `uses`→`references` relabel, then 35/0 after re-pointing).
+
+## Corpus validation
+
+- **Population, current** — the m14 whole-population gate admits **907 `.proto` files
+  across 22 repositories** (`admitted files [0, 1) of 907`), walked as a working tree. The
+  run behind that line was a width-1 chunk (1 of 907 measured), so any statement about the
+  WHOLE 907-file set must come from the arm (`incoming-gate.ts protobuf 0`), not from the
+  chunk.
+- **Population, pass 2/8** — 821 files in 18 repositories, the whole corpus walked rather
+  than sampled; revisions in `script/m14/tmp/protobuf/corpus-manifest.json`. Corpus
+  composition: kubernetes 135, pb-googleapis 128, docker 109, pb-reference 108, pb-grpc 45,
+  kong 39, consul 33, vault 24, waypoint 21, dart-sdk 18, terraform 17, nomad 10, gh-cli 3,
+  plus five single-file repositories.
+- **Files / symbols / relationships / errors / timeouts, pass 2 at 821 files** —
+  821 ok / 0 fail; **41,956** symbols analyzer-direct (**41,938** through `parseFile`);
+  **55,941** relationships analyzer-direct (**54,939** through `parseFile`); 0 symbols with
+  an empty name; 0 unknown `SymbolKind` values; 0 relationship endpoints equal to the
+  literal `unknown`; 0 self-looping relationships; 0 duplicate analyzer symbol ids;
+  `imports[]` 1,561 entries in 557 files. 1,002 edges are produced by the analyzer and not
+  kept by production, in the same two `pb-reference` files
+  (`test_protos/tctable_long_name_test.proto` and its companion). Timeouts: none recorded
+  — the corpus-error artifact records `crashFiles: 0`.
+- **Per-type firing at 821 files** (all five implemented in the pre-relabel label set):
+  `contains` 40,098 · `references` 13,275 (emitted as `uses` then; relabeled 1:1 on
+  2026-10-27) · `imports` 1,561 · `exports` 4 · `overrides` 1.
+- **The persistent error class** — the ruled MessageSet `any { … }` form: **9 ERROR nodes
+  in 1 file of 293** (`src/google/protobuf/unittest_custom_options.proto`, the reference
+  implementation's deliberate parser-breaking torture test); the pipeline reports **13
+  error entries** for the same file because recovery reports one span more than once. Every
+  other construct in that file parses correctly in isolation, so nearby errors are recovery
+  misattributing damage from the `any { }` further down, not separate defects.
+- **Corpus-error artifact** — `validation/m12/results/protobuf-corpus-errors.json`,
+  corpus `pb-reference` @ `1eafbdec535cec3ef74a35e5900204895f1eb9b8`: 108 files measured,
+  7,744 symbols, 9,073 relationships, **1 error file** (9 nodes / 13 entries), 0 crash
+  files. The grammar's own inventory over the same walk: **94 distinct node types across
+  821 files, 13 ERROR and 2 MISSING nodes in 1 file**.
+- **Tracked vs on-disk** — the lane's rule is the working-tree walk: the historical
+  file-claim work recorded **821 on disk of 8,524 tracked** (7,703 tracked-but-absent,
+  0 over the 1 MB cap), and an earlier arm recorded **847 admitted / 21 repositories**.
+  Each number keeps the basis it was measured on, because `git ls-files` and the working
+  tree disagree on these sparse checkouts.
 
 ## Measured results
 
