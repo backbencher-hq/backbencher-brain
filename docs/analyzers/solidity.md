@@ -46,6 +46,41 @@ work queued.
 
 ---
 
+## Language
+
+- Analyzer file: `src/ast/real-solidity-analyzer.ts`
+- Parser: `tree-sitter-solidity@1.2.13`, vendored at `grammars/tree-sitter-solidity/`, with the generated `grammar.json` and `node-types.json` checked in alongside `grammar.js`
+- Language detection: extensions `.sol`
+- Wired in: `engine.ts` `getAnalyzer` → `RealSolidityAnalyzer`
+
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | declaration node's name text |
+| kind | yes | `contract` → `contract`; `function` → `function`; `event` → `event`; `modifier` → `modifier`; `struct` → `struct`; `enum` → `enum`; `variable` → `variable` |
+| qualified/container name | yes | contract-scoped declarations carry the contract as container |
+| ownerName / ownerKind | yes | members owned by their declaring contract/function |
+| range (start/end line + column) | yes | node positions |
+| parameters | yes | function parameters from the parameter list |
+| returnType / type | yes | return types from the function signature |
+| documentation/comments | no | comments are not attached as documentation |
+| complexity metrics | no | no separate complexity metric published |
+| syntax errors | yes | syntax errors are engine-owned |
+| decorators/attributes | no | Solidity has no decorator syntax |
+
+## Relationship ontology
+
+Solidity emits `contains` (contract → members), `calls` (function calls within the same contract), `references` (type/variable references), `uses`, `imports` (file imports), `exports` (contract-exported symbols), `overrides` (function overrides), `instantiates` (contract instantiation via `new`). `extends`, `implements`, `mixes_in`, `part_of`, `renders`, `decorates` are ruled absent on measurement (no inheritance, interfaces, mixins, parts, rendering, or decorators in Solidity's object model as analyzed).
+
+## Differential ground truth
+
+- No M12 ground-truth or differential artifact exists for solidity in-tree, so precision/recall cannot be claimed and are declared unknown rather than fabricated.
+
+## Corpus validation
+
+- No M12 corpus-validation artifact exists for solidity in-tree, so corpus error/counts cannot be claimed and are declared unknown rather than fabricated.
+
 ## Contract
 
 Each concern, its ruling, and the measurement or grammar line that forced it. The

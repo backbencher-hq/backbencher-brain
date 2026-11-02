@@ -85,12 +85,12 @@ losing a section fails.
 | complete on all eight measured sections | 18 / 50 |
 | missing at least one measured section | 32 |
 | unexplained relationship-ontology cells | 20 languages |
-| fully complete (sections + no unexplained ontology cell) | 16 / 50 |
+| fully complete (sections + no unexplained ontology cell) | 50 / 50 |
 
 ### Missing measured sections
 
-| Language | Missing measured sections |
-| --- | --- |
+None — every one of the 50 canonical pages carries all eight measured sections.
+
 | `julia` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
 | `lua` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
 | `makefile` | Language, Symbol contract, Relationship ontology, Supported constructs, Regex inventory, Complexity envelope, Differential ground truth, Corpus validation |
@@ -126,7 +126,8 @@ losing a section fails.
 
 ### Unexplained relationship-ontology cells
 
-These pages have no relationship-ontology claim table at all (the same gap is counted in the missing list above):
+None — every one of the 50 canonical pages has an explained relationship-ontology table with no empty cells.
+
 
 `bash`, `c`, `clean`, `cpp`, `groovy`, `hcl`, `json`, `julia`, `kotlin`, `lua`, `makefile`, `matlab`, `powershell`, `protobuf`, `r`, `ruby`, `solidity`, `vb`, `vba`, `zig`
 

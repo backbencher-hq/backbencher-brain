@@ -93,7 +93,9 @@
   `StructFields` for one module, which the F3 export-uniqueness invariant
   rejects.
 
-## Complexity model (live, verified against emitted shapes)
+## Complexity model
+
+(live, verified against emitted shapes)
 
 Cyclomatic complexity counts decision points from the pinned grammar's actual
 emitted node types:
@@ -110,7 +112,7 @@ The dead baseline entries (`try`, `rescue`, `catch`, `after`, `do_block`,
 `function_clause`, `case_clause`/`cond_clause`/`receive_clause`/`try_clause`)
 were removed — those node types are never emitted.
 
-## Regex census
+## Regex inventory
 
 Baseline at M12.01: **4 usages**. After M12.23 (pure-AST rewrite): **0
 usages** — all four eliminated with pure char scans:
@@ -177,7 +179,7 @@ nothing.
   remaining (`ERROR`, `MISSING`) are the tree-sitter error-path checks that
   only fire when syntax errors occur (0 on this corpus, essential defensively).
 
-## Supported / unsupported constructs
+## Supported constructs
 
 Supported: modules (nested, and OWNED by the parent since EX-A10), parenthesized
 operator definitions (`defmacro (..)`, EX-A15 — the operator token is a name), functions
@@ -220,6 +222,11 @@ sha256 so a stale artifact cannot read as current:
 | `validation/m14/elixir/elixir-mutants.ts` | 17 SOURCE-level mutants, real fixture runner, subject restored by hash |
 | `validation/m14/elixir/elixir-payload-latency.ts` | latency and serialized payload, before and after, same seam |
 | `validation/m14/elixir/elixir-no-regex.ts` | regex literals across every file this lane owns, with the population declared |
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/elixir.json` — `truthSource: manual_audit`, source the lane's fixtures, 69 expected facts.
+- Result `validation/m12/results/elixir-differential.json`: `passed: true`, expected 69, truePositive 69, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
 
 ## 1. The ten verdicts
 

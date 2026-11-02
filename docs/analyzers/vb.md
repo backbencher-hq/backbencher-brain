@@ -53,7 +53,42 @@ minimal repro under `grammars/_vendored/vbnet/repro-cases/`:
 `autoImplemented` for a property with no accessor block, and the P/Invoke
 `library`/`entryPoint`/`kind`.
 
-## Relationship contract
+## Language
+
+- Analyzer file: `src/ast/real-vb-analyzer.ts`
+- Parser: `tree-sitter-vb` (VB.NET) / `tree-sitter-vba` (VBA)
+- Language detection: extensions `.vb` / `.vba`
+- Wired in: `engine.ts` `getAnalyzer` → `RealVbAnalyzer`
+
+## Supported constructs
+
+| construct | what it produces |
+| --- | --- |
+| module / class | `class` symbol |
+| function / sub | `function` symbol |
+| property | `property` symbol |
+| variable / field | `variable` symbol |
+| import / namespace | `imports` edge |
+| call | `calls` edge |
+| reference | `references` edge |
+
+## Regex inventory
+
+**Zero.** No source-text regex doing syntax work.
+
+## Complexity envelope
+
+No in-tree `vb-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here.
+
+## Differential ground truth
+
+- No M12 ground-truth or differential artifact exists for vb in-tree, so precision/recall cannot be claimed; declared unknown rather than fabricated.
+
+## Corpus validation
+
+- No M12 corpus-validation artifact exists for vb in-tree, so corpus error/counts cannot be claimed; declared unknown rather than fabricated.
+
+## Relationship ontology
 
 | Type | Source → Target | Confidence | Line stamped on |
 | --- | --- | --- | --- |

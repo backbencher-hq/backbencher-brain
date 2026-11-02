@@ -99,7 +99,7 @@ emitted node types:
 The dead baseline entries (`if`, `guard_equation`, `case_expression`,
 `pattern_match`) were removed — those node types are never emitted.
 
-## Regex census
+## Regex inventory
 
 Baseline at M12.01: **9 usages**. After M12.25 (pure-AST rewrite): **0
 usages** — all nine eliminated:
@@ -164,7 +164,7 @@ Measured by `script/m12/measure-analyzer.ts` (results in
   parse error, 0 ERROR/MISSING nodes** — a strictly better profile, on a
   different and smaller file set.*
 
-## Supported / unsupported constructs
+## Supported constructs
 
 Supported: modules (dotted names), data/newtype declarations, ADT
 constructors (prefix + record), record fields, typeclasses (with superclasses),
@@ -177,6 +177,12 @@ Not modeled (deliberately): TemplateHaskell quasiquotes (grammar limitation),
 imported/Prelude function call sites (unresolvable without a module graph —
 the FP-family rule), where/let-local function bodies (scoped noise), operator
 uses (syntax, not calls), record-field selector calls (field reads).
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/haskell.json` — `truthSource: manual_audit`.
+- Result `validation/m12/results/haskell-differential.json`: `passed: false`, expected 75, truePositive 75, falsePositive 2, falseNegative 0, unknown 0, precision 0.9740, recall 1 — 2 false positives are the lane's open defect class, not a documentation claim.
+- (The lane's `## Verification state` section records the deeper re-review history; the canonical gate row above is the one that counts.)
 
 ## 2026-09-03 re-review wave (HSD11–HSD19, corpus-expanded)
 

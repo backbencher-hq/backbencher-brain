@@ -49,6 +49,47 @@ by a consistency check. So the pin record and the wasm are verified together, an
 "Provenance" row above is deliberately split into *what upstream is* and *what we ship*:
 they stopped being the same file, and saying otherwise in either direction is the bug.
 
+## Language
+
+- Analyzer file: `src/ast/real-powershell-analyzer.ts`
+- Parser: `tree-sitter-powershell` — a local rebuild from vendored upstream 0.26.4 source with 8 patches (WASM at `wasm/tree-sitter-powershell.wasm`); the shipped artifact is byte-identical to upstream `tree-sitter-powershell@0.25.10`'s prebuilt wasm
+- Language detection: extensions `.ps1` / `.psm1` / `.psd1`
+- Wired in: `engine.ts` `getAnalyzer` → `RealPowerShellAnalyzer`
+
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | declaration node's name text |
+| kind | yes | `function_statement` → `function`; `class_statement` → `class`; `class_method_definition` → `method`/`constructor` |
+| qualified/container name | yes | class members carry `ownerName`; top-level declarations are unowned |
+| ownerName / ownerKind | yes | class members and function locals carry `ownerName` = enclosing class/function |
+| range (start/end line + column) | yes | node positions |
+| parameters | yes | typed from `type_literal → type_spec` |
+| returnType / type | no | PowerShell is untyped at the grammar layer |
+| documentation/comments | no | comments are not attached as documentation |
+| complexity metrics | no | no separate complexity metric published |
+| syntax errors | yes | syntax errors are engine-owned |
+| decorators/attributes | no | PowerShell has no decorator syntax |
+
+## Supported constructs
+
+PowerShell's supported constructs map to the ontology: cmdlets and functions emit `calls`; modules and classes are contained; imports load external modules; exports publish cmdlets/functions; overrides re-declare functions. `extends`, `implements`, `instantiates`, `mixes_in`, `part_of`, `renders`, `decorates` are ruled absent on measurement (no inheritance, interfaces, mixins, parts, rendering, or decorators in PowerShell's object model as analyzed).
+
+## Relationship ontology
+
+PowerShell emits `calls` (cmdlets and functions, source = enclosing owner or `global`), `contains`, `uses`, `imports` (module loading), `exports`, `overrides` (re-declared functions), `references`; `extends`, `implements`, `instantiates` are ruled absent on measurement. Every emitted relationship carries a line number.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/powershell.json` — manual audit of the lane's fixtures.
+- Result `validation/m12/results/powershell-differential.json`: `passed: false`, expected 79, truePositive 78, falsePositive 0, falseNegative 1, unknown 1, precision 1, recall 0.9873 — 1 false negative is the lane's open defect class.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/powershell-corpus-errors.json`: corpus `powershell`, extensions `*.ps1` / `.psm1` / `.psd1`, 553 tracked files, 182 error files / 1387 error nodes, 0 crash files.
+- Differential `validation/m12/results/powershell-differential.json`: `passed: false`, expected 79, truePositive 78, falsePositive 0, falseNegative 1, unknown 1, precision 1, recall 0.9873.
+
 ## Contract
 
 | Concern | Contract |

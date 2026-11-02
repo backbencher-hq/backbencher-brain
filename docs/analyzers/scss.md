@@ -67,6 +67,34 @@ their nesting chains and nothing for any SCSS statement, because `mixin_statemen
 `include_statement`, `use_statement` and the rest are different **node types** and its
 `at_rule` dispatch never sees them.
 
+## Language
+
+- Analyzer file: `src/ast/real-scss-analyzer.ts`
+- Parser: `tree-sitter-scss`; delegates to the CSS analyzer
+- Language detection: extensions `.scss`
+- Wired in: `engine.ts` `getAnalyzer` → `RealScssAnalyzer`
+
+## Supported constructs
+
+SCSS delegates to the CSS analyzer; see its supported-constructs table for the construct inventory. SCSS-specific nesting and variable rules are handled by the CSS lane's parser.
+
+## Regex inventory
+
+**Zero.** No source-text regex doing syntax work; names come from grammar fields and node positions.
+
+## Complexity envelope
+
+No in-tree `scss-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here.
+
+## Differential ground truth
+
+- Result `validation/m12/results/scss-differential.json`: `passed: true`, expected 9, truePositive 9, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/scss-corpus-errors.json`: corpus `element-plus`, extensions `*.scss`, 72 error files, 0 crash files.
+- Differential `validation/m12/results/scss-differential.json`: `passed: true`, expected 9, truePositive 9, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
 ## Symbol contract
 
 | Field | Supported? | How extracted |
@@ -87,6 +115,8 @@ rather than incidental: a Sass variable is assigned in several places **by desig
 ONE symbol. `variables-flags-and-identity` pins `$brand` at exactly 1.
 
 ## Relationship ontology
+
+SCSS delegates its relationship emission to the CSS analyzer for shared types and adds Sass-specific rules for `@use`/`@forward`/`@import` and `@extend`. The table below is the lane's own census over the element-plus corpus.
 
 ### What each of the ontology's ten types means IN SASS
 

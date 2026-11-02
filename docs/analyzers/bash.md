@@ -13,6 +13,39 @@ at all.
 > analyzer is worse than no doc, so the table below is regenerated from
 > measurement rather than edited.
 
+## Language
+
+- Analyzer file: `src/ast/real-bash-analyzer.ts`
+- Parser: `tree-sitter-bash`, vendored at `grammars/tree-sitter-bash/`
+- Language detection: extensions `.sh` / `.bash`, basenames `.bashrc` / `.bash_profile`, and — since the M60 routing change — any extensionless file whose shebang is a shell
+- Wired in: `engine.ts` `getAnalyzer` → `RealBashAnalyzer`
+
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | declaration node's name text |
+| kind | yes | `function_definition` → `function`; `variable_assignment`/`local`/`declare`/`typeset` → `variable` |
+| qualified/container name | yes | the script is the module, named for its basename |
+| ownerName / ownerKind | yes | declarations owned by the script module; reassignments deduplicate per scope |
+| range (start/end line + column) | yes | node positions |
+| parameters | yes | positional `$1..$9` and `$@`/`$*` populate `parameters` |
+| returnType / type | no | Bash is untyped; variables hold strings |
+| documentation/comments | no | comments are not attached as documentation |
+| complexity metrics | no | no separate complexity metric published |
+| syntax errors | yes | syntax errors are engine-owned; damaged regions are not blanket-refused |
+| decorators/attributes | no | Bash has no decorator syntax |
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/bash.json` — manual audit of the lane's fixtures.
+- Result `validation/m12/results/bash-differential.json`: `passed: true`, expected 55, truePositive 55, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/bash-corpus-errors.json`: corpus `fsharp`, extensions `*.sh` / `*.bash`, 32 tracked files, 2 error files / 2 error nodes, 0 crash files.
+- Differential `validation/m12/results/bash-differential.json`: `passed: true`, expected 55, truePositive 55, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
 ## Contract
 
 | Concern | Contract |
@@ -32,7 +65,7 @@ at all.
 | Errors | Syntax errors are engine-owned (`engine.ts` merges `treeErrors`). **No blanket refusal of a damaged region** — the guard that would have done that was measured and deleted; see [What the corpus refused](#what-the-corpus-refused). The refusals that remain are all structural and none keys on the file: a name that is not a plain `word`, a name that is a **reserved word**, an **arithmetic operand** in command position, and a **`case` arm pattern** — the last two added in rounds 2 and 3, each with its own A/B. |
 | Regex | **zero** regex usages, and the M12 contract probe enforces it. Round 2 broke this and round 3 restored it; see [Regex inventory](#regex-inventory) |
 
-## Relationship ontology — verdict per type, with the number behind it
+## Relationship ontology
 
 Two measurements, two denominators, both reproducible. The **census** sample is
 400 files taken in **hash order** (ascending sha256 of `repo/relpath`, admitted

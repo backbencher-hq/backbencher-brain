@@ -9,6 +9,72 @@ Tree-sitter extraction for `*.json`, `*.jsonc` and `*.json5`, verified under the
 > made on a grammar inventory, and a grammar has no node type for a keyword. Nine are
 > emitted. Every number below was re-measured; the ones that moved are named as moved.
 
+## Language
+
+- Analyzer file: `src/ast/real-json-analyzer.ts`
+- Parser: `tree-sitter-json`
+- Language detection: extensions `.json`, basenames such as `package.json`, `tsconfig.json`
+- Wired in: `engine.ts` `getAnalyzer` → `RealJsonAnalyzer`
+
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | the JSON key text |
+| kind | yes | object/array/string/number/boolean/null literals mapped to symbol kinds |
+| qualified/container name | yes | the enclosing object key path |
+| ownerName / ownerKind | yes | the owning object or the document root |
+| range (start/end line + column) | yes | token positions from the tree-sitter node |
+| parameters | no | JSON has no callable parameters |
+| returnType / type | yes | the JSON value type inferred from the literal |
+| documentation/comments | no | JSON has no comment syntax |
+| complexity metrics | no | no separate complexity metric |
+| syntax errors | yes | syntax errors are engine-owned |
+| decorators/attributes | no | JSON has no decorator syntax |
+
+## Supported constructs
+
+| construct | how produced |
+| --- | --- |
+| object literal | object node → symbols for each key |
+| array literal | array node → symbols for each element |
+| string literal | string symbol |
+| number literal | number symbol |
+| boolean literal | boolean symbol |
+| null literal | null symbol |
+
+## Relationship ontology
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | no | RULED: JSON has no callable invocation | - (ruled absent) |
+| contains | yes | document root → top-level keys; object → member keys | 1.00 (structural) |
+| exports | no | RULED: JSON has no export concept | - (ruled absent) |
+| imports | no | RULED: JSON has no import concept | - (ruled absent) |
+| references | no | RULED: JSON literals are values, not references to declarations | - (ruled absent) |
+| uses | no | RULED: JSON has no identifier references | - (ruled absent) |
+| overrides | no | RULED: JSON has no overriding | - (ruled absent) |
+| instantiates | no | RULED: JSON has no instantiation | - (ruled absent) |
+| extends | no | RULED: JSON has no inheritance | - (ruled absent) |
+| implements | no | RULED: JSON has no implementation | - (ruled absent) |
+
+## Regex inventory
+
+**Zero.** The analyzer contains no source-text regex doing syntax work; names and structure come from grammar fields and node positions.
+
+## Complexity envelope
+
+No in-tree `json-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here. The lane's symbol and relationship counts are small (JSON is a shallow, data-only grammar).
+
+## Differential ground truth
+
+- Result `validation/m12/results/json-differential.json`: `passed: true`, expected 119, truePositive 119, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/json-corpus-errors.json`: corpus `roslyn`, extensions `.json`, 3 error files, 0 crash files.
+- Differential `validation/m12/results/json-differential.json`: `passed: true`, expected 119, truePositive 119, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
 ## Grammar pin
 
 `wasm/tree-sitter-json.wasm` — sha256 `fdb5219abe058369…`, **5,961 B**, **26 ids /

@@ -137,6 +137,24 @@ markers), and the two edges carry distinct metadata (`isModuleDependency` +
 `module` + `submodulePath` + `isScopedImport` versus `importModule`), so a
 consumer can tell them apart.
 
+## Supported constructs
+
+Swift's supported constructs map to the ontology in `## Per-type verdict table — all ten, with the number behind each`: calls, contains, exports, imports, references and uses are emitted; extends/implements/overrides/instantiates are ruled absent on measurement. No separate constructs table exists; the verdict table is the contract.
+
+## Regex inventory
+
+The analyzer contains no source-text regex doing syntax work; names come from grammar fields and node positions.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/swift.json` — manual audit of Swift fixtures.
+- Result `validation/m12/results/swift-differential.json`: `passed: true`, expected 85, truePositive 82, falsePositive 0, falseNegative 0, unknown 3, precision 1, recall 1 — 3 unknown are the lane's open defect class.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/swift-corpus-errors.json`: corpus `alamofire`, extensions `*.swift`, 10 error files, 0 crash files.
+- Complexity `validation/m12/results/swift-complexity.json`: fixtures 2 files / 37 symbols / 43 relationships / 320.2 ms; corpus subset 400 files / 13,464 symbols / 31,189 relationships / 28,414.1 ms / peak 374.3 MiB.
+
 ## Per-type verdict table — all ten, with the number behind each
 
 `bun script/m14/swift-ontology-census.ts`, production `parseFile`, 1,256 files,
@@ -782,6 +800,16 @@ shortfall in this lane, measured rather than asserted. Fixing it means writing
 a reason code on the majority of the lane's edges, which changes every stored
 `calls` row and is not this wave's work; it is declared in Known limitations
 instead.
+
+## Complexity envelope
+
+- Complexity `validation/m12/results/swift-complexity.json`: fixtures 2 files / 37 symbols / 43 relationships / 320.2 ms; corpus subset 400 files / 13,464 symbols / 31,189 relationships / 28,414.1 ms / peak 374.3 MiB.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/swift-corpus-errors.json`: corpus `alamofire`, extensions `*.swift`, 10 error files, 0 crash files.
+- Differential `validation/m12/results/swift-differential.json`: `passed: true`, expected 85, truePositive 82, falsePositive 0, falseNegative 0, unknown 3, precision 1, recall 1 — 3 unknown are the lane's open defect class.
+- Complexity `validation/m12/results/swift-complexity.json`: fixtures 2 files / 37 symbols / 43 relationships / 320.2 ms; corpus subset 400 files / 13,464 symbols / 31,189 relationships / 28,414.1 ms / peak 374.3 MiB.
 
 ## Payload and latency
 

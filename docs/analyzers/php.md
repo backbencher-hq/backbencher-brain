@@ -197,7 +197,7 @@ and it never reached the graph — it bought no real cross-file override while
 manufacturing a majority-false unverified bucket. Restoring cross-file
 coverage honestly means populating the companion index, not guessing.
 
-## Supported AST shapes
+## Supported constructs
 
 - Namespaces, classes (abstract/final/static), interfaces, traits, enums
 - Methods and functions with typed parameters (simple, variadic, promoted)
@@ -207,6 +207,20 @@ coverage honestly means populating the companion index, not guessing.
 - Function/member/scoped/nullsafe calls, object creation, anonymous functions
 - Control-flow nodes for cyclomatic complexity (if/elseif/for/foreach/while/
   do/switch/match/try/catch/conditional/`&&`/`||`/`and`/`or`)
+
+## Regex inventory
+
+**Zero.** The analyzer contains no source-text regex doing syntax work; names come from grammar fields and node positions.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/php.json` — manual audit of PHP fixtures.
+- Result `validation/m12/results/php-differential.json`: `passed: true`, expected 66, truePositive 66, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/php-corpus-errors.json`: corpus `phpunit`, extensions `*.php`, 0 error files, 0 crash files.
+- Differential `validation/m12/results/php-differential.json`: `passed: true`, expected 66, truePositive 66, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
 
 ## Verification evidence
 
@@ -1090,7 +1104,7 @@ does not own one; `bb_graph`'s default expansion was **not** re-measured, so the
 figure — measuring that needs a budgeted lane's harness and a quiet machine, and
 guessing it from an edge count would be the dishonest direction.
 
-## Complexity and limitations
+## Complexity envelope
 
 The extraction walk is iterative and linear in AST nodes; contains edges are a
 single post-pass and overrides use maps/sets. There is no O(n²) symbol or

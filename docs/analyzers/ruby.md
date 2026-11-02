@@ -75,7 +75,7 @@ module. Visibility is lexical (`public` / `protected` / `private`) and captured 
 nested class cannot leak its visibility state into a sibling declaration. Per-symbol cyclomatic complexity
 mirrors the file-level node set, including the postfix `*_modifier` forms.
 
-## Relationship ontology — all 11 enum values
+## Relationship ontology
 
 The enum has 11 distinct values. This is what the analyzer does with **each** of them.
 
@@ -357,6 +357,34 @@ than patched from this lane.
 
 The extraction walk is iterative and linear in AST nodes; overrides use maps and sets; contains edges are a
 single post-pass. No nested symbol/relationship scan is used for ordinary extraction.
+
+## Supported constructs
+
+| construct | node type | what it produces |
+| --- | --- | --- |
+| method definition | `def` | `function` symbol |
+| method call | `call` | `calls` edge |
+| constant assignment | `const_op_declare` / `const_decl` | `constant` symbol |
+| class definition | `class` | `class` symbol |
+| module definition | `module` | `module` symbol |
+| `require` | `call` to `require` | `imports` edge |
+
+## Regex inventory
+
+**Zero.** The analyzer contains no source-text regex doing syntax work; names come from grammar fields and node positions.
+
+## Differential ground truth
+
+- Result `validation/m12/results/r-differential.json`: `passed: true`, expected 46, truePositive 46, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/ruby-corpus-errors.json`: corpus `rake`, extensions `*.rb`, 0 error files, 0 crash files.
+- Differential `validation/m12/results/ruby-differential.json`: `passed: true`, expected 37, truePositive 37, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Complexity envelope
+
+No in-tree `ruby-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here.
 
 ## Known limitations, stated rather than implied
 

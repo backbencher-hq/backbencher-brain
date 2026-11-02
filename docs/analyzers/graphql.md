@@ -1623,7 +1623,7 @@ empty file, whitespace only, comment only, no trailing newline, a UTF-8 **BOM**,
 — possibly zero symbols — and never an exception; every symbol's range must be
 1-based and its offsets must slice out its own source text.
 
-## Regex and text-scan inventory
+## Regex inventory
 
 **0 regex usages.** `validation/m12/results/regex-census.json` has no
 `real-graphql-analyzer.ts` row, and the committed analyzer at `HEAD` was already
@@ -1641,6 +1641,10 @@ block-string escape.
 > 2 remaining *replaceable* entries". That was already untrue at `HEAD` and is
 > left as written, because rewriting a dated milestone record to match today's
 > counts falsifies it. The current truth is the census plus this section.
+
+## Supported constructs
+
+GraphQL documents have no `import`/`export` statement surface; the analyzer reads operation and fragment definitions directly from the document. See `## Imports and exports` below for how document roots and named definitions are surfaced.
 
 ## Imports and exports
 
@@ -1664,6 +1668,16 @@ GitHub public schema yields 540 exports from its 540 top-level declarations, and
 1,472 across the corpus. The rule is pinned by the differential, whose truth lists
 `schema`, `@auth` and `@tag` as expected exports of `01-sdl-core.graphql`, so
 narrowing the rule to object types would fail rather than pass quietly.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/graphql.json` — manual audit of GraphQL documents.
+- Result `validation/m12/results/graphql-differential.json`: `passed: true`, expected 97, truePositive 97, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/graphql-corpus-errors.json`: corpus `graphql_js`, extensions `*.graphql`, 0 error files, 0 crash files.
+- Complexity: no in-tree `graphql-complexity.json` artifact exists; the lane does not claim a wall-clock envelope, and none is fabricated here.
 
 ## The metadata surface
 

@@ -1,6 +1,6 @@
 # r.md
 
-## Language and wiring
+## Language
 
 - Analyzer: `src/ast/real-r-analyzer.ts`
 - Grammar: `grammars/tree-sitter-r/grammar.js` (vendored), built to
@@ -155,7 +155,7 @@ populated with the default expression, and `isOptional` is its presence. A rest
 parameter (`...`) arrives as a `parameter` whose `name` field is a `dots` node and
 is marked `isRest`.
 
-## Relationship ontology — all ten types, measured
+## Relationship ontology
 
 Every number in this section comes from **production `parseFile`**
 (`src/ast/pool-worker.ts`), never from `analyze()`. `analyze()` is a per-file
@@ -1646,6 +1646,29 @@ sub-structure for it:
 tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 `::` and `:::` behave identically.
 
+## Supported constructs
+
+| construct | node type | what it produces |
+| --- | --- | --- |
+| assignment `<-` | `assignment` | `variable` symbol |
+| function definition | `function_definition` | `function` symbol |
+| function call | `call` | `calls` edge |
+| library call | `library_call` | `imports` edge |
+| index access | `[` | `references`/`uses` edge |
+
+## Regex inventory
+
+**Zero.** The analyzer contains no source-text regex doing syntax work; names come from grammar fields and node positions.
+
+## Differential ground truth
+
+- Result `validation/m12/results/r-differential.json`: `passed: true`, expected 46, truePositive 46, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/r-corpus-errors.json`: no per-file totals declared by the artifact; 0 crash files.
+- Differential `validation/m12/results/r-differential.json`: `passed: true`, expected 46, truePositive 46, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
 ## Verification evidence
 
 Regenerate with `bun run script/m12/r-evidence.ts`; every record is sealed and
@@ -1726,7 +1749,7 @@ refuses a hand edit.
   published as packages, 263 edges whose old *source* was an expression
   (`domain$onEnded`) that no symbol ever carried.
 
-## Complexity
+## Complexity envelope
 
 `fixtures/corpus/complexity.mts`. The extraction walk carries the chain of
 enclosing `function_definitions` on an explicit stack, so attributing a call to

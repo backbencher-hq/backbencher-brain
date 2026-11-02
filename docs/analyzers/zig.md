@@ -23,6 +23,68 @@ analyzers.
   web-tree-sitter 0.27.0 migration: this is one of the lanes whose wasm cannot simply be rebuilt
   from what we have, only re-sourced and re-admitted.
 
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | declaration node name text |
+| kind | yes | struct/enum/union/interface → struct; fn → function; var → variable; const → constant |
+| qualified/container name | yes | scoped within struct/enum/union |
+| ownerName / ownerKind | yes | declarations owned by their enclosing struct/enum/union |
+| range (start/end line + column) | yes | node positions |
+| parameters | yes | function parameters from the parameter list |
+| returnType / type | yes | return type annotation |
+| documentation/comments | no | comments are not attached as documentation |
+| complexity metrics | no | no separate complexity metric |
+| syntax errors | yes | syntax errors are engine-owned |
+| decorators/attributes | no | Zig has no decorator syntax |
+
+## Supported constructs
+
+| construct | node type | what it produces |
+| --- | --- | --- |
+| struct/enum/union | `struct`/`enum`/`union` | `struct` symbol |
+| fn | `fn` | `function` symbol |
+| var/const | `var`/`const` | `variable` symbol |
+| import | `import`/`using` | `imports` edge |
+| call | call expression | `calls` edge |
+
+## Relationship ontology
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | yes | fn call → target declaration | measured |
+| contains | yes | struct/enum/union → members | measured |
+| exports | yes | public symbol export | measured |
+| imports | yes | `import` / `using` declaration | measured |
+| references | yes | symbol references | measured |
+| uses | yes | field/method uses | measured |
+| overrides | no | RULED: Zig has no overriding | - (ruled absent) |
+| instantiates | yes | type construction | measured |
+| extends | no | RULED: Zig has no inheritance | - (ruled absent) |
+| implements | no | RULED: Zig has no interface implementation | - (ruled absent) |
+| mixes_in | no | RULED: Zig has no mixin composition | - (ruled absent) |
+| part_of | yes | struct/enum/union containment | measured |
+| renders | no | RULED: Zig has no rendering | - (ruled absent) |
+| decorates | no | RULED: Zig has no decorators | - (ruled absent) |
+
+## Regex inventory
+
+**Zero.** No source-text regex doing syntax work.
+
+## Complexity envelope
+
+- Result `validation/m12/results/zig-complexity.json`: fixtures 3 files / 39 symbols / 24 relationships / 682.9 ms; corpus subset 398 files / 29,771 symbols / 16,559 relationships / 22,854.9 ms / peak 453.6 MiB.
+
+## Differential ground truth
+
+- Result `validation/m12/results/zig-differential.json`: `passed: false`, expected 63, truePositive 63, falsePositive 44, falseNegative 0, unknown 0, precision 0.5888, recall 1. The 44 false positives are the lane's documented open defect class; not a documentation claim.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/zig-corpus-errors.json`: corpus `zig`, extensions `*.zig`, 8 error files, 0 crash files.
+- Differential `validation/m12/results/zig-differential.json`: `passed: false`, expected 63, truePositive 63, falsePositive 44, falseNegative 0, unknown 0, precision 0.5888, recall 1.
+
 ## Declaration surface (grounded in tree-sitter-zig, probe-verified 2026-08-29)
 
 Everything below is stated against the **pinned `tree-sitter-zig` wasm** and

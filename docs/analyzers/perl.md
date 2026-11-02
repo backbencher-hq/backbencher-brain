@@ -212,6 +212,20 @@ threshold, so they are counted as suspicion rather than as a claim. The other
 6,111 are withdrawn outright and 1,627 are confirmed at 0.95 by a base that is
 actually in the project.
 
+## Supported constructs
+
+Perl's supported constructs map to the ontology in `## The six questions, per already-emitted type` and `## Relationship ontology`: calls, contains, exports, imports, references and uses are emitted; extends/implements/overrides/instantiates are ruled absent on measurement. No separate constructs table exists; the verdict section is the contract.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/perl.json` — `truthSource: manual_audit`, source the lane's fixtures.
+- Result `validation/m12/results/perl-differential.json`: `passed: true`, expected 32, truePositive 32, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
+## Corpus validation
+
+- Corpus `validation/m12/results/perl-corpus-errors.json`: corpus `mojo`, extensions `*.pl` / `*.pm` / `*.t`, 4 error files, 0 crash files.
+- Differential `validation/m12/results/perl-differential.json`: `passed: true`, expected 32, truePositive 32, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+
 ## The six questions, per already-emitted type
 
 Part 1 of the workstream requires these for a type the analyzer already emits,

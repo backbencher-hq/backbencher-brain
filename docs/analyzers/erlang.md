@@ -1125,14 +1125,14 @@ point` (`metadata.complexity`).
 | one per extra clause of a (name, arity) | | the grammar emits a `fun_decl` per clause (ER-D26) |
 | | macro-body branches | a template's branches are not this function's |
 
-## Regex census
+## Regex inventory
 
 **0 regexes.** No `RegExp`, no `.match(`, `.replace(`, `.test(`, `.search(` in
 the file. The four regexes the pre-rewrite analyzer used (record-paren strip,
 arity strip, function-name strip, parse-type strip) are pure char scans:
 `stripQuotes`, `keepDigits`, `stripFirstParen`, `digitsOf`.
 
-## Measured envelope
+## Complexity envelope
 
 Measured over EVERY file in the corpus — otp@de741b7, rebar3@3c1b417,
 cowboy@c965d1a, 4,326 `.erl` files — not a sample.
@@ -1372,7 +1372,7 @@ EXACT target matching (not just the harness's leaf-normalized rule). Two
 identical post runs agreed on every total, class and form, so the deltas are
 code and not machine noise.
 
-## Supported / unsupported constructs
+## Supported constructs
 
 The dominant parse-error cause is **not** a defect in anyone's file: OTP's own
 compiler backend writes `-record #name{…}` without parentheses (36 of the 132),
@@ -1392,6 +1392,12 @@ missing, 0 line-contract mismatches, 0 symbol mismatches**.
 Not modeled (deliberately): `!` send (parses as `binary_op_expr` — no symbol
 edge), macro expansion CONTENTS (unparseable by design — recorded as grammar
 limitations), pattern-position record literals and member reads.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/erlang.json` — `truthSource: manual_audit`, source `Service.erl` (positive) + `Negative.erl` (negative), inputs digest `d9f612f17026`, 62 files.
+- Result `validation/m12/results/erlang-differential.json`: `passed: true`, expected 69, truePositive 69, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- 86/86 facts on the live corpus, precision 1.000 recall 1.000 (69 pre-ER2; the 17 added facts are justified from Erlang semantics in the truth's own `source` prose — `uses` for record member reads/updates, references for `?MACRO` uses, fun values and applied type names — never copied from the analyzer's output).
 
 ## Restoration record (ER1 + ER2, 2026-09-25)
 

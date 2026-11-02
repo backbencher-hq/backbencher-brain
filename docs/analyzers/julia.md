@@ -5,6 +5,84 @@
 > `MISSING_DOC real-julia-analyzer.ts` while `julia.md` sat beside it). One reference to the old path
 > belongs to a shared file — `script/m14/completeness-inventory.ts:733` — and is reported, not edited.
 
+## Language
+
+- Analyzer file: `src/ast/real-julia-analyzer.ts`
+- Parser: `tree-sitter-julia`
+- Language detection: extensions `.jl`
+- Wired in: `engine.ts` `getAnalyzer` → `RealJuliaAnalyzer`
+
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | node name text |
+| kind | yes | module → module; struct/class → class; abstract type → interface; function → function; macro → macro; struct field → property; const binding → constant; local binding → variable |
+| qualified/container name | yes | module-scoped names are container-qualified |
+| ownerName / ownerKind | yes | declarations owned by their enclosing module/function |
+| range (start/end line + column) | yes | node positions |
+| parameters | yes | function/macro parameters from the parameter list |
+| returnType / type | yes | type annotation from the signature |
+| documentation/comments | no | comments are not attached as documentation |
+| complexity metrics | no | no separate complexity metric published |
+| syntax errors | yes | syntax errors are engine-owned |
+| decorators/attributes | no | Julia has no decorator syntax |
+
+## Supported constructs
+
+| construct | node type | what it produces |
+| --- | --- | --- |
+| module | module declaration | `module` symbol |
+| struct / abstract type | `struct`/`abstract type` | `class`/`interface` symbol |
+| function / macro | `function`/`macro` | `function`/`macro` symbol |
+| struct field | field access | `property` symbol |
+| const binding | `const` binding | `constant` symbol |
+| local binding | local assignment | `variable` symbol |
+| function call | call expression | `calls` edge |
+| `import`/`using` | import statement | `imports` edge |
+| type reference | type annotation | `references` edge |
+| type construction | constructor call | `instantiates` edge |
+| `extends`/`<:` | subtype declaration | `extends` edge |
+| method override | method redefinition | `overrides` edge |
+| module containment | module → member | `contains` edge |
+| module export | exported name | `exports` edge |
+
+## Relationship ontology
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | yes | function/macro call → target declaration | measured; `evidenceClass` on each row |
+| contains | yes | module → member declarations | measured |
+| exports | yes | `ImportInfo[]` channel, filled from the same walk | measured |
+| imports | yes | `ExportInfo[]` channel, filled from the same walk | measured |
+| references | yes | type/variable references | measured |
+| uses | yes | field reads and other uses | measured |
+| overrides | yes | method redefinition | measured |
+| instantiates | yes | type construction | measured |
+| extends | yes | subtype construction | measured |
+| implements | no | RULED: grammar has no `implements` construct; 149 node types across the corpus and none expresses it | - (ruled absent) |
+| mixes_in | no | not part of the Julia object model as analyzed | - (ruled absent) |
+| part_of | yes | module containment | measured |
+| renders | no | RULED: ladder walked, 0 sites | - (ruled absent) |
+| decorates | yes | 2,394 rows over the whole population | measured |
+
+## Regex inventory
+
+**Zero.** Line 2129 of this file: "No regex in this lane." No `RegExp` doing syntax work.
+
+## Complexity envelope
+
+No in-tree `julia-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here. The lane's census covers 1,985 files and the firing-check reports 9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded.
+
+## Differential ground truth
+
+- Result `validation/m12/results/julia-differential.json`: this is a grammar-validity oracle (`Meta.parseall`) against Julia's own parser, NOT a symbol/relationship differential. verdictsReturned 949, filesCompared 949, unparsedChildLines 0. The analyzer is compared against the census via `doc-tables-check.ts` (all 308 cells hold) and `arbiter-census-diff.ts` (census vs arbiter, edge for edge).
+
+## Corpus validation
+
+- Corpus census: 1,985 `.jl` files, 4+ repositories (Aqua.jl, DataFrames.jl, julia/Compiler, julia/test/...), 0 degraded on the firing-check run (`firing-check --files 2000 julia`: 9/10 fired, 235,878 edges, 1,985/1,985 files).
+- The `julia-ruled.ts` instrument exports `JULIA_RULED`, wired into `ontology-coverage-gate.ts`; `npx tsx script/m14/ontology-coverage-gate.ts julia` exits 0 on a first run with no checkpoint.
+
 ## What it extracts
 - **Symbols**: modules, structs (`class`), `abstract type` (`interface`), functions, macros, struct
   fields (`property`), `const` bindings (`constant`), local bindings (`variable`)
