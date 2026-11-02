@@ -28,6 +28,93 @@ positions. **There is no source-text regular expression in this file**, and
 - Completeness: 44/44 named types classified, sections **A–H 8/8**. The corpus
   grammar residual is pinned to **zero** real ERROR/MISSING nodes.
 
+## Language
+
+- Analyzer file: `src/ast/real-makefile-analyzer.ts`
+- Parser: `tree-sitter-make` @ `70613f3d`, package `tree-sitter-make@1.1.1`, vendored at `grammars/tree-sitter-make/` as a local build from patched upstream source (2 measured patches, adding no node type and no field); wired wasm `wasm/tree-sitter-make.wasm`
+- Source-to-wasm identity: 44 named node types and 24 fields declared by the pinned source, 44 named and 24 fields in the wired wasm, zero missing and zero extra in both directions (`grammars/tree-sitter-make/PIN.md`)
+- Language detection: extensions `mk`/`mak`, basenames `makefile`, `gnumakefile`, `.makefile`, `.gnumakefile` (`src/ast/language-detection.ts`)
+- Wired in: `engine.ts` `getAnalyzer` → `RealMakefileAnalyzer`
+
+## Symbol contract
+
+| Field | Supported? | How extracted |
+| --- | --- | --- |
+| name | yes | the declaration node's name/word text; the assignment operator attached by the grammar is trimmed by character code |
+| kind | yes | `variable_assignment`/`shell_assignment` → `constant`; `define_directive` → `function` (a macro is callable); each non-special `rule` target → `function`; one module symbol per file |
+| qualified/container name | yes | the file's module symbol is the container; Make has exactly one declaration level, so there are no dotted qualified names |
+| ownerName / ownerKind | yes | declarations are owned by the file module; a reference is owned by its nearest enclosing declaration, and a bare top-level expression is attributed to the module |
+| range (start/end line + column) | yes | node positions (`range.startLine/startColumn/endLine/endColumn`) |
+| parameters | no | a Make macro's arguments are `$(1)`-style positional references; they are not modelled as parameters on the signature |
+| returnType / type | no | Make is untyped text substitution; variables hold strings |
+| documentation/comments | no | comments are not attached as documentation |
+| complexity metrics | yes | `metadata.complexity` = declared targets + conditionals, published as a relative count, not a cost |
+| syntax errors | yes | ERROR/MISSING nodes are recorded and counted per file (0 across the pinned corpus) |
+| decorators/attributes | no | Make has no attribute/decorator syntax |
+
+## Relationship ontology
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | yes | `$(call M, ...)` names its callee in the `arguments` node's first comma-separated field; resolved to the macro (`define`) the file declares | 1.0; `evidenceClass` records the evidence tier |
+| contains | yes | the file module symbol contains every declaration (targets, variables, macros, includes) | 1.0 (structural) |
+| exports | yes | every buildable target is public (an including makefile invokes it by name), plus `export V` directives | 1.0; `evidenceClass: export_target` for targets |
+| imports | yes | `include f` publishes an edge from the file's module symbol to `f` | 1.0 (structural) |
+| references | yes | only when THIS file declares the target; a prerequisite that names an undeclared file is `uses`, not a fabricated reference | 1.0; `evidenceClass` distinguishes a declared target |
+| uses | yes | prerequisites, external variables, builtins and automatic variables; the unresolved ends are measured, not pooled | 1.0; `evidenceClass` is one of declared/builtin/external-file/external-variable/automatic and the corpus split is published |
+| extends | no | RULED not applicable on measurement (`reviews/make/master-review.md` §5) | — (ruled absent) |
+| implements | no | RULED not applicable on measurement (`reviews/make/master-review.md` §5) | — (ruled absent) |
+| overrides | no | RULED not applicable on measurement (`reviews/make/master-review.md` §5) | — (ruled absent) |
+| instantiates | no | RULED not applicable on measurement (`reviews/make/master-review.md` §5) | — (ruled absent) |
+
+Every one of the 5,880 relationships carries a 1-based `line_number` on the name-bearing node.
+
+## Supported constructs
+
+| construct | node type | what it produces |
+| --- | --- | --- |
+| `VAR := v` | `variable_assignment` | `constant` symbol, operator from node positions |
+| `VAR != cmd` | `shell_assignment` | `constant` symbol, operator `!=` |
+| `define M ... endef` | `define_directive` | `function` symbol (a macro is callable) |
+| `t: p` | `rule` | one `function` symbol per non-special target; dependency edges per prerequisite group |
+| `$(VAR)` | `variable_reference` | `references` when this file declares it, else `uses` |
+| `$(VAR:.c=.o)` | `substitution_reference` | as above (a sibling node, not a child) |
+| `$@ $< $^` | `automatic_variable` | `uses`, `evidenceClass: automatic` |
+| `$(call M, ...)` | `function_call` | `calls` edge to the macro |
+| `include f` | `include_directive` | `imports` edge from the module symbol |
+| `export V` | `export_directive` | `exports` edge |
+| `$(foreach v, ...)` | `function_call` | `v` recorded as a local binder, not a variable |
+
+`spec/make-completeness.json` classifies all 44 named types: 33 handled, 9 correctly silent, 4 open gaps (each named in "Known gaps" below). Fixtures: `validation/m14/fixtures/make/`.
+
+## Regex inventory
+
+**Zero source-text regular expressions in the analyzer**, re-checked by `script/m14/tmp/make/` on every run. The lane's one historical regex literal was found by `script/m12/make-contract-probe.ts` and removed; the contract probe now fails on a reintroduced literal. There is no regex doing syntax work: names come from grammar fields and node text positions, never from source scanning.
+
+## Complexity envelope
+
+`validation/m12/results/make-corpus-complexity.json` — pinned 14-file corpus, production path:
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| make-corpus-production | 14 | 630 | 2,490 | 2,341.0 | 269.1 | 1,063.6 | 231.0 MiB |
+
+Declared budget: none in-tree (no M12 budget artifact exists for make); the lane formula measures ms/Knode, and the analyzer's own `metadata.complexity` is a relative count (targets + conditionals), recorded as a count and not a cost. The larger pinned 99-file corpus reports 1,781 symbols / 5,880 relationships; the 100-file corpus 1,814 / 6,079, with throughput recorded per run.
+
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/make.json` — `truthSource: manual_audit`, source `validation/m12/fixtures/make/{Build.mk,Library.mk,Negative.mk}`, expected 84 relations.
+- Result: `validation/m12/results/make-differential.json` — `passed: true`, truePositive 84, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Independent corpus differential: recall 1.000000, precision 1.000000, 0 missing, 0 spurious, and 2,418 / 2,418 line numbers agreeing over the pinned 99-file corpus (2,515 / 2,515 over the 100-file corpus).
+- `validation/m12/results/make-contract.json` — 44 / 44 contract checks pass.
+
+## Corpus validation
+
+- Corpus: union of 13 pinned repositories (terraform, tf-aws-components, consul, boundary, luvit, kong, vault, nomad, waypoint, packer, terragrunt, Matrix, torrentinim); six probed repositories contributed no tracked Makefiles and are named as absent rather than silently dropped.
+- Extensions: `Makefile`, `GNUmakefile`, `makefile`, `*.mk`.
+- `validation/m12/results/make-corpus-errors.json`: 14 tracked files, 0 error files, 0 error nodes, 0 crash files.
+- Wider conformance: 1,781 symbols / 5,880 relationships / 4 imports over the pinned 99-file corpus and 1,814 / 6,079 / 4 over the 100-file corpus — 0 unknown node types, 0 unknown fields in both.
+
 ## What Make's graph actually looks like
 
 GNU Make has **exactly one declaration level**. A target, a variable, a macro and
