@@ -1,10 +1,26 @@
-// src/lsp/evidence_tier.ts — M55.T5 (issue #774, §14 Truth Rule 1: one
-// surface, one answer).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the single owner of the evidence-tier vocabulary and the tier
+//   derivation rule on the server side: one surface, one answer (§14 Truth Rule 1).
+// WHICH TOOL IT SERVES — bb_graph, bb_impact, bb_analyze, bb_cross_language and the IDE
+//   hover/navigation twins; every surface classifies stored relationship rows here.
+// WHY SHAPED THIS WAY — before this module the same stored row was classified in three
+//   places with three different answers, so one surface could read "indexed" while
+//   another rendered "structural" and the legend declared a vocabulary without that word.
+// WHERE ITS EVIDENCE LIVES — validation/m55/results (tiers), validation/m63 (cross-language
+//   and wiring), validation/m28/results (union and surface parity).
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/hover.ts, src/lsp/cross_language_hover.ts,
+//   src/intelligence/graph/graph-engine.ts, script/m26/graph-core.ts.
+// CONTRACTS IT MUST NOT BREAK — the emitted vocabulary is EXACTLY the declared set;
+//   derivation is one pure function; an unknown stored label never collapses silently.
+// ─────────────────────────────────────────────────────────────────────────────
+// one surface, one answer: the vocabulary and the derivation rule live here.
 //
 // The SINGLE owner of the evidence-tier vocabulary and the tier derivation
 // rule on the server side. Before this module the same stored row was
-// classified in three places with three different answers (found live by the
-// M55.T5 step-zero wire probe):
+// classified in three places with three different answers (found by a
+// wire probe):
 //
 //   src/lsp/hover.ts               `imports` -> "indexed"   (legacy bucket)
 //   src/lsp/cross_language_hover.ts `imports` -> "import_based" (W4 rule)
@@ -22,14 +38,14 @@
 //   evidenceClass is a tier CLAIM only when it is one of those five; the
 //   legacy labels the index still carries (`indexed`, `semantic_candidate`)
 //   are then not claims at all, so the row's own kind decides (which is more
-//   informative, and is what M29.R5's STRICT fixture expectation already
+//   informative, and is what the strict fixture expectation already
 //   declares). The pre-T5 hover emitted `indexed` for a stored legacy label,
 //   which is a tier the legend does not contain — a badge vocabulary that
 //   cannot be rendered is not a vocabulary. `unknown` is the declared answer
 //   when a symbol carries no rows at all: a surface that cannot determine a
 //   tier says so; it never guesses one.
 //
-//   RULE (one derivation, one place). The W4/M29.R5 rule — the SAME rule the
+//   RULE (one derivation, one place). The W4 rule — the SAME rule the
 //   webview legend is built from:
 //     1. a STORED legend-tier evidenceClass wins (the analyzer's own
 //        classification; never re-derived, never re-upgraded);
@@ -51,7 +67,7 @@
 //   primary can never disagree with the list. The pre-T5 code sorted
 //   alphabetically and took `tiers[0]`, which made `indexed` (alphabetically
 //   first) the reported primary of a symbol whose only real evidence was
-//   `structural` — the defect issue #774 names.
+//   `structural` — the defect this module fixes.
 //
 // The webview core is import-pure by contract (script/m26/verify-webview-core
 // P1: zero imports), so it cannot import this module; it mirrors the rule and
@@ -74,7 +90,7 @@ export const EVIDENCE_TIERS = [
 
 export type LegendTier = (typeof EVIDENCE_TIERS)[number]
 
-/** Declared UNCLAIMED store labels (M55.T5): labels the index can still
+/** Declared UNCLAIMED store labels: labels the index can still
  *  carry that are NOT tier claims — an analyzer that stored one declined to
  *  classify the row, so the row's kind decides (see the header). Declared
  *  here so the decision is visible and so script/m55/verify-tiers.ts can
@@ -96,7 +112,7 @@ const TIER_RANK: Record<EvidenceTier, number> = {
 
 /** Relationship kinds that are parser-deterministic structure. The union of
  *  the W4 legend set and the containment/exports/instantiates facts the
- *  analyzers stamp structural (M29.R5). */
+ *  analyzers stamp structural. */
 const STRUCTURAL_KINDS: ReadonlySet<string> = new Set([
   "call",
   "calls",
