@@ -141,7 +141,7 @@ export const RELATIONS: Record<string, string> = {
  * wording, so the staleness check passed against text the generator no longer
  * produces.
  */
-export const CUSTOM_STALENESS_TOOLS = new Set(["bb_edit"])
+export const CUSTOM_STALENESS_TOOLS = new Set(["bb_edit", "bb_patterns"])
 
 function stalenessSection(tool: any): string {
   // M59.A11 (#890): bb_edit is the one tool that CONSUMES a stale target by
@@ -193,6 +193,9 @@ function stalenessSection(tool: any): string {
   // the project scope for every scope, while this page promised the file one).
   if (tool.name === "bb_visualize") {
     return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does NOT auto-refresh: the flags and the envelope DESCRIBE the index as it stands, nothing is reindexed to make them stale or fresh, and there is no \`refresh\` option to opt out with. Project scope → run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only). File scope → run: \`bb index "<file>"\` for the one file named in the answer. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+  }
+  if (tool.name === "bb_patterns") {
+    return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does NOT auto-refresh: the per-finding flags DESCRIBE the index as it stands, nothing is reindexed to make them stale or fresh, and there is no \`refresh\` option to opt out with. When findings name stale or missing files, repair them with the manual interface: run: \`bb index --changed\` (or the \`bb_index\` tool with the project path — incremental, changed files only). Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
   }
   return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
 }
