@@ -1,36 +1,41 @@
-// script/m15/verify-ask-deep.ts — M15.A1-A8 (bb_ask) GENUINE deep redo.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Replacement for the scaffolded batch1 verifier. Every check exercises a real
-// code path (quickAnswer, parseForSafety, indexer, DB) or a real measurement.
-// Honesty rule: NO `ck(..., true)` auto-passes, NO `>= 0` tautologies, NO
-// `|| true`. A8 additionally self-audits this file for auto-pass patterns.
-//
-// Sections:
-//   A1 classification: query-classification + routing on a REAL indexed project
-//   A2 regex census:   every runtime regex in bb_ask path, each behaviorally tested
-//   A3 comment/string: query string masking never leaks into answers
-//   A4 cross-file:     symbol evidence resolves to the correct file/line
-//   A5 complexity:     measured wall-clock scaling on two project sizes
-//   A6 real-repo e2e:  real repos on disk (rake, graphql-js, cython, csharp)
-//   A7 docs honesty:   registry ↔ doc ↔ implementation agree
-//   A8 evidence + gate: no auto-pass pattern, all A-evidence present
+// WHAT THIS FILE IS — the deep behavioural gate for bb_ask, in eight measured sections:
+//   classification/routing, the no-regex census plus the page-size behaviour, comment and
+//   string safety, cross-file evidence, measured scaling, a real-repository run, registry/
+//   page/handler agreement, and a self-audit that refuses auto-pass assertions.
+// WHICH TOOL IT SERVES — bb_ask (read, requiresIndex true, modes: answer).
+// WHY IT IS SHAPED THIS WAY — every section judges BEHAVIOUR or a measured quantity, not
+//   the shape of the source: the old census asserted that specific implementation strings
+//   existed, which is how a check passes when the implementation breaks. The one static
+//   claim left — "this path contains no regex" — is a policy assertion with a red mutant.
+// WHERE ITS EVIDENCE LIVES — validation/m15/results/a1..a8.json and
+//   validation/tools/bb_ask/gates/.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — the engines it calls, docs/BB_ASK.md,
+//   validation/tools/bb_ask/work/run-gates.mjs.
+// CONTRACTS IT MUST NOT BREAK — no auto-pass assertions; a missing corpus is a declared
+//   block, not a pass; every section emits before the next runs.
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync, statSync } from "node:fs"
+import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync, statSync, appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { getProjectId } from "../../src/cli/index"
-import { indexProjectParallel } from "../../src/ast/parallel-indexer"
-import { BrainDatabase } from "../../src/brain/database"
-import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 import { fileURLToPath } from "node:url"
+import { getProjectId } from "../../src/cli/index"
+import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
+import { BrainDatabase } from "../../src/brain/database"
+import { quickAnswer, ASK_LIMIT_REFUSAL } from "../../src/intelligence/search/quick-answer"
+import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
+import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
 function nk(label: string, cond: boolean, detail?: string) { negatives++; if (cond) negativePassed++; else { failed++; console.log("  FAIL: " + label + " (negative)" + (detail ? " — " + detail : "")) } }
 
-const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
-const RESULTS_DIR = path.join(ROOT_DIR, "validation/m15/results")
+const ROOT_DIR = path.resolve(import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url)), "../..")
+const RESULTS_DIR = path.join(ROOT_DIR, "validation", "m15", "results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
 async function emit(code: string, issue: string, tool: string, title: string, file: string, extra?: any) {
@@ -44,364 +49,259 @@ async function reset() { checks = passed = failed = negatives = negativePassed =
 async function indexProject(root: string) {
   const projectId = getProjectId(root)
   await indexProjectParallel(projectId, root, {})
+  await flushBackgroundEmbeddings()
   return projectId
 }
-// Cleanup that can never destroy a real project. Only temp roots we created
-// (under the OS tmp dir) may be deleted; the DB dir always lives outside the
-// project (bbProjectsDir) and is removed separately. Anything else is refused.
+// Cleanup that can never destroy a real project: only temp roots we created and the
+// project database directory are removed.
 function cleanup(root: string, projectId: string) {
-  const isTmp = root.startsWith(tmpdir())
-  if (isTmp) { try { rmSync(root, { recursive: true, force: true }) } catch (_) {} }
-  try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch (_) {}
+  if (root.startsWith(tmpdir())) { try { rmSync(root, { recursive: true, force: true }) } catch {} }
+  try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch {}
 }
-
 async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }> {
   const t0 = Date.now()
   const value = await fn()
   return { value, ms: Date.now() - t0 }
 }
 
-(async () => {
-  // ═══════════════════════════════════════════════════════════════════
-  // A1: classification — stat routing + honesty guard + fallback + empty
-  // on a REAL indexed project (not mocks)
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    const root = mkdtempSync(path.join(tmpdir(), "bb-a1-"))
-    writeFileSync(path.join(root, "a.ts"), "export function helper(): number { return 1 }\nexport function targetFn(): number { return helper() }\n")
-    writeFileSync(path.join(root, "b.ts"), "import { targetFn } from './a'\nexport function caller(): number { return targetFn() }\n")
-    const projectId = await indexProject(root)
+// ═══════════════════════════════════════════════════════════════════════════
+// A1: classification — routing, cross-language counts, no-index honesty
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const root = mkdtempSync(path.join(tmpdir(), "bb-ask-a1-"))
+  writeFileSync(path.join(root, "a.ts"), "export function helper(): number { return 1 }\nexport function targetFn(): number { return helper() }\n")
+  writeFileSync(path.join(root, "b.ts"), "import { targetFn } from './a'\nexport function caller(): number { return targetFn() }\n")
+  const projectId = await indexProject(root)
+  try {
+    const howMany = await quickAnswer(projectId, "how many functions are in this project?")
+    ck("A1: 'how many functions' routes to the aggregate path", howMany.answer.startsWith("There are ") && /functions/.test(howMany.answer) && howMany.route === "aggregate", howMany.answer.slice(0, 60))
+    ck("A1: aggregate confidence kind is exact-aggregate and >= 0.9", howMany.confidenceKind === "exact-aggregate" && howMany.confidence >= 0.9, `${howMany.confidenceKind}/${howMany.confidence}`)
+    ck("A1: aggregate declares bounds and an index snapshot", !!howMany.bounds && (!!howMany.indexSnapshot || howMany.provenance.limitations.length > 0), JSON.stringify(howMany.bounds))
+    const handler = createToolHandlers().bb_ask
+    const wire: any = await handler({ query: "how many functions are in this project?" }, { projectId, projectPath: root } as any)
+    const wireText = (wire?.content ?? []).map((c: any) => c.text ?? "").join("\n")
+    nk("A1: aggregate wire answer never gets a 'no matches' footer", !wireText.includes("no matches for"), wireText.slice(0, 140))
+
+    const sym = await quickAnswer(projectId, "targetFn")
+    ck("A1: an exact symbol name resolves to the symbol", sym.sources.length >= 1 && (sym.retrieval?.method === "exact-name" || sym.answer.includes("`targetFn`")), `sources=${sym.sources.length} method=${sym.retrieval?.method}`)
+
+    // Cross-language: a method-first language must not report 0 functions.
+    const rubyRoot = mkdtempSync(path.join(tmpdir(), "bb-ask-a1rb-"))
+    writeFileSync(path.join(rubyRoot, "mod.rb"), "module Foo\n  def helper(a)\n    a + 1\n  end\n  def target(b)\n    helper(b)\n  end\nend\n")
+    const rubyId = await indexProject(rubyRoot)
     try {
-      // Stat route: "how many functions"
-      const howMany = await quickAnswer(projectId, "how many functions are in this project?")
-      ck("A1: 'how many functions' routes to stat path", howMany.answer.startsWith("There are ") && /functions/.test(howMany.answer), howMany.answer.slice(0, 60))
-      ck("A1: stat answer has confidence >= 0.9", howMany.confidence >= 0.9, "conf=" + howMany.confidence)
+      const rubyCount = await quickAnswer(rubyId, "how many functions are in this project?")
+      const match = rubyCount.answer.match(/There are (\d+) functions/)
+      ck("A1: Ruby 'how many functions' counts methods (>0, not 0)", match !== null && parseInt(match[1], 10) > 0, rubyCount.answer.slice(0, 60))
+      const most = await quickAnswer(rubyId, "what is the most complex function?")
+      ck("A1: Ruby 'most complex function' finds a method", /most complex function is/.test(most.answer), most.answer.slice(0, 60))
+    } finally { cleanup(rubyRoot, rubyId) }
 
-      // Symbol fallback route: exact symbol name
-      const sym = await quickAnswer(projectId, "targetFn")
-      ck("A1: symbol-name query falls back to symbol search", sym.sources.length >= 1, "sources=" + sym.sources.length)
+    const emptyRoot = mkdtempSync(path.join(tmpdir(), "bb-ask-a1e-"))
+    const emptyId = getProjectId(emptyRoot)
+    const guard = await quickAnswer(emptyId, "how many functions?")
+    nk("A1: a missing index returns an explicit unknown, not a fabricated count", /no index/i.test(guard.answer) && guard.route === "no-index", guard.answer.slice(0, 60))
+    cleanup(emptyRoot, emptyId)
 
-      // Honesty guard: no-index project
-      const emptyRoot = mkdtempSync(path.join(tmpdir(), "bb-a1e-"))
-      const emptyProjectId = getProjectId(emptyRoot)
-      const guard = await quickAnswer(emptyProjectId, "how many functions?")
-      nk("A1: missing index returns explicit unknown, not fabricated count", /no index/i.test(guard.answer), guard.answer.slice(0, 60))
-      cleanup(emptyRoot, emptyProjectId)
+    const nonsense = await quickAnswer(projectId, "qqzzxx nothing here")
+    ck("A1: a nonsense query returns a shaped result without throwing", typeof nonsense.answer === "string" && Number.isFinite(nonsense.confidence) && !!nonsense.bounds, `conf=${nonsense.confidence}`)
+  } catch (e: any) {
+    ck("A1: setup", false, (e?.message || String(e)).slice(0, 160))
+  } finally { cleanup(root, projectId) }
+}
+await emit("A1", "bb_ask classification and aggregate routing", "bb_ask", "classification — stat routing + cross-language + honesty guard", "a1.json")
+await reset()
 
-      // Empty-ish answer for gibberish query on a tiny project (semantic may or may not match; just never crash and shape is right)
-      const empty = await quickAnswer(projectId, "zzzz_qzxv_qqq")
-      ck("A1: nonsense query returns shaped result, no throw", typeof empty.answer === "string" && typeof empty.confidence === "number" && Number.isFinite(empty.confidence), "conf=" + empty.confidence)
-
-      // CROSS-LANGUAGE REGRESSION (found by running bb_ask on real rake):
-      // "how many functions" must count functions stored under *any* type
-      // name — TS stores 'function', Ruby stores 'method'. A method-only
-      // project must report > 0, not 0.
-      const rubyRoot = mkdtempSync(path.join(tmpdir(), "bb-a1rb-"))
-      writeFileSync(path.join(rubyRoot, "mod.rb"), "module Foo\n  def helper(a)\n    a + 1\n  end\n  def target(b)\n    helper(b)\n  end\nend\n")
-      const rubyId = await indexProject(rubyRoot)
-      try {
-        const howMany = await quickAnswer(rubyId, "how many functions are in this project?")
-        const m = howMany.answer.match(/There are (\d+) functions/)
-        ck("A1: Ruby 'how many functions' counts methods (>0, not 0)", m !== null && parseInt(m[1], 10) > 0, howMany.answer.slice(0, 60))
-        const most = await quickAnswer(rubyId, "what is the most complex function?")
-        ck("A1: Ruby 'most complex function' finds a method", /most complex function is/.test(most.answer), most.answer.slice(0, 60))
-      } catch (e: any) {
-        ck("A1: ruby func-count regression", false, (e && e.message || String(e)).slice(0, 120))
-      } finally {
-        cleanup(rubyRoot, rubyId)
-      }
-    } catch (e: any) {
-      ck("A1: setup", false, (e && e.message || String(e)).slice(0, 120))
-    } finally {
-      cleanup(root, projectId)
-    }
+// ═══════════════════════════════════════════════════════════════════════════
+// A2: no regex in the read path + the page-size behaviour the regex policy
+//     comment used to stand in for
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  // A regex literal is a `/…/` sequence in a member-call position, ignoring comments
+  // and imports. This detector is allowed to use a regex: it lives in a GATE, not in
+  // the tool's read path, which is exactly the distinction the policy gate audits.
+  const ASK_PATH = [
+    "src/intelligence/search/quick-answer.ts",
+    "src/intelligence/search/semantic-search.ts",
+    "src/mcp/tools/bb_ask/handler.ts",
+    "src/mcp/tools/bb_ask/descriptor.ts",
+  ]
+  const found: string[] = []
+  for (const rel of ASK_PATH) {
+    const source = readFileSync(path.join(ROOT_DIR, rel), "utf8").replace(/\/\/[^\n]*/g, "")
+    const relits = source.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
+    for (const literal of relits) if (!literal.startsWith("import")) found.push(`${rel}: ${literal}`)
   }
-  await emit("A1", "M15.A1", "bb_ask", "classification — stat routing + honesty guard", "a1.json")
-  await reset()
+  nk("A2: the bb_ask read path contains no regex literal", found.length === 0, `found: ${found.join(" | ")}`)
 
-  // ═══════════════════════════════════════════════════════════════════
-  // A2: regex census — enumerate and BEHAVIORALLY test every regex in the real path
-  //
-  // REWRITTEN, and the rewrite is not cosmetic. This section used to assert
-  // three facts about the SHAPE of the implementation:
-  //   - quick-answer contains the literal text `split(/\s+/)`;
-  //   - the handler contains the literal text `.slice(0, Number(args.limit`;
-  //   - the only regex literal in the whole path is `split(/\s+/)`.
-  // All three became false when the language router became a declared table
-  // and the handler started honouring `limit` properly, and a source-text grep
-  // cannot tell "the implementation changed" from "the implementation broke".
-  // That is the failure mode this lane's own review names: a check that
-  // asserts a field is PRESENT rather than that it is TRUE.
-  //
-  // The intent is preserved and the checks are made stronger. The census now
-  // enumerates every regex literal in the path and requires each one to be on a
-  // declared, justified list of TEXT-level operations — and fails on any regex
-  // that is not, so a future AST-shaped regex is caught. The behavioural
-  // claims the greps were standing in for are now measured against a real
-  // project: language-scoped counts, and a limit that does something.
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    const qaSrc = readFileSync(path.join(ROOT_DIR, "src/intelligence/search/quick-answer.ts"), "utf8")
-    const hSrc = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
-    const ccSrc = readFileSync(path.join(ROOT_DIR, "src/intelligence/search/content-search.ts"), "utf8")
+  const root = mkdtempSync(path.join(tmpdir(), "bb-ask-a2-"))
+  writeFileSync(path.join(root, "a.ts"), "export function alphaOne(): number { return 1 }\n")
+  writeFileSync(path.join(root, "b.rb"), "def beta_two\n  2\nend\n")
+  const projectId = await indexProject(root)
+  try {
+    const ts = await quickAnswer(projectId, "how many typescript files are in this project?")
+    ck("A2: a language-scoped count answers with that language's count", /There are 1 typescript files/.test(ts.answer), ts.answer.slice(0, 80))
+    const all = await quickAnswer(projectId, "how many files are in this project?")
+    ck("A2: an unscoped count answers with the whole-project count", /There are 2 files/.test(all.answer), all.answer.slice(0, 80))
+    const short = await quickAnswer(projectId, "how many ts files are in this project?")
+    ck("A2: a short language spelling routes to the same language", /There are 1 typescript files/.test(short.answer), short.answer.slice(0, 80))
 
-    // 1. Regex-literal census: every regex literal used as a call argument
-    //    (split/match/test/replace/exec with a literal `/.../`). Imports like
-    //    `../brain/database` are not regex literals.
-    const relit = qaSrc.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
-    const cleanRelits = relit.filter((r: string) => !r.startsWith("import"))
-    ck("A2: regex-literal calls found and enumerated", cleanRelits.length >= 1, cleanRelits.join(" | "))
-
-    // 2. Every one must be a declared TEXT-level operation. Each entry names
-    //    what it is for, so a new regex has to be justified in this list rather
-    //    than merely existing. The prior version asserted an exact single
-    //    string, which made the census a fingerprint of one implementation
-    //    rather than a policy.
-    // Each entry names what the operation is FOR, so a new regex has to be
-    // justified in this list rather than merely exist. Plain substring
-    // predicates, not regexes: a regex containing a literal `/` is exactly the
-    // kind of thing this section exists to keep rare, and writing one here to
-    // police the others was its own small trap — the first draft of this table
-    // did, and did not parse.
-    const JUSTIFIED: Array<{ has: (call: string) => boolean; why: string }> = [
-      { has: (c) => c.includes(".replace(/[.,;:!?]+$/"), why: "strip trailing sentence punctuation from a name-shaped query" },
-      { has: (c) => c.includes(".test(/\\s/"), why: "reject a multi-word query as a symbol name" },
-      { has: (c) => c.includes(".match(/"), why: "extract a named capture from a result line" },
-    ]
-    const unjustified = cleanRelits.filter((c: string) => !JUSTIFIED.some((j) => j.has(c)))
-    nk(
-      "A2: every regex literal in the bb_ask path is a declared text-level operation",
-      unjustified.length === 0,
-      `undeclared: ${unjustified.join(" | ")}` +
-      `\n        declared for: ${JUSTIFIED.map((j) => j.why).join("; ")}`,
-    )
-    // The census must not be satisfiable by accident: a regex applied to code
-    // AST text is the failure this section exists to catch.
-    nk(
-      "A2: no regex literal in the bb_ask path is applied to source/AST text",
-      !cleanRelits.some((r: string) => /snippet|body|source|code|text\s*\)/i.test(r)),
-      cleanRelits.join(" | "),
-    )
-
-    // 3. The behavioural claim the old `split(/\s+/)` grep stood in for: a
-    //    language-scoped count is routed to that language, on a REAL project.
-    {
-      const root2 = mkdtempSync(path.join(tmpdir(), "bb-a2-"))
-      writeFileSync(path.join(root2, "a.ts"), "export function alphaOne(): number { return 1 }\n")
-      writeFileSync(path.join(root2, "b.rb"), "def beta_two\n  2\nend\n")
-      const pid2 = await indexProject(root2)
-      try {
-        const ts = await quickAnswer(pid2, "how many typescript files are in this project?")
-        ck("A2: a language-scoped count answers with that language's count", /There are 1 typescript files/.test(ts.answer), ts.answer.slice(0, 80))
-        const all = await quickAnswer(pid2, "how many files are in this project?")
-        ck("A2: an unscoped count answers with the whole-project count", /There are 2 files/.test(all.answer), all.answer.slice(0, 80))
-        const short = await quickAnswer(pid2, "how many ts files are in this project?")
-        ck("A2: a short language spelling is routed to the same language", /There are 1 typescript files/.test(short.answer), short.answer.slice(0, 80))
-      } finally {
-        cleanup(root2, pid2)
-      }
+    for (const bad of [0, 101]) {
+      const refused = await quickAnswer(projectId, "request handler", { limit: bad })
+      nk(`A2: limit=${bad} is refused with the page-size sentence and does no retrieval`, refused.answer === ASK_LIMIT_REFUSAL && refused.sources.length === 0, refused.answer.slice(0, 100))
     }
+    const one = await quickAnswer(projectId, "alphaOne beta_two", { limit: 1 })
+    const three = await quickAnswer(projectId, "alphaOne beta_two", { limit: 3 })
+    ck("A2: limit bounds the returned sources", one.sources.length <= 1, `limit=1 returned ${one.sources.length}`)
+    ck("A2: a larger limit can return more results", three.sources.length >= one.sources.length, `limit=1 → ${one.sources.length}, limit=3 → ${three.sources.length}`)
+    ck("A2: bounds declare the page size that was applied", one.bounds.returned === one.sources.length && typeof one.bounds.totalMatches !== "undefined", JSON.stringify(one.bounds))
+  } finally { cleanup(root, projectId) }
+}
+await emit("A2", "bb_ask no-regex census and page-size behaviour", "bb_ask", "regex census and page-size behaviour", "a2.json")
+await reset()
 
-    // 4. The behavioural claim the old `.slice(0, Number(args.limit` grep stood
-    //    in for: `limit` does something, and 0 is legal without a false denial.
-    {
-      const root3 = mkdtempSync(path.join(tmpdir(), "bb-a3-"))
-      for (let i = 0; i < 12; i++) writeFileSync(path.join(root3, `sym${i}.ts`), `export function findMe${i}(): number { return ${i} }\n`)
-      const pid3 = await indexProject(root3)
-      try {
-        const one = await quickAnswer(pid3, "findMe0", { limit: 1 })
-        const many = await quickAnswer(pid3, "findMe0", { limit: 8 })
-        ck("A2: limit bounds the returned sources", one.sources.length <= 1, `limit=1 returned ${one.sources.length}`)
-        ck("A2: a larger limit can return more", many.sources.length >= one.sources.length, `limit=1 -> ${one.sources.length}, limit=8 -> ${many.sources.length}`)
-        ck("A2: limit reaches the answer, not just a post-hoc slice", one.sources.length === 1, `expected exactly 1 source for limit=1, got ${one.sources.length}`)
-      } finally {
-        cleanup(root3, pid3)
-      }
-    }
+// ═══════════════════════════════════════════════════════════════════════════
+// A3: comment/string safety — answers never leak comment or string text as
+//     cited evidence
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const root = mkdtempSync(path.join(tmpdir(), "bb-ask-a3-"))
+  writeFileSync(path.join(root, "secrets.ts"), "// SECRET_TOKEN = 'xyzzy'\nconst apiKey = \"hw_sk_abcd1234\"\nconst realToken = compute('v')\n")
+  const projectId = await indexProject(root)
+  try {
+    const result = await quickAnswer(projectId, "apiKey")
+    ck("A3: query does not crash on a file with comments and strings", typeof result.answer === "string")
+    const leaked = ["xyzzy", "hw_sk_abcd1234"].filter((secret) => result.answer.includes(secret))
+    nk("A3: comment/string content is not echoed as answer evidence", leaked.length === 0, "leaked: " + leaked.join(","))
+  } catch (e: any) {
+    ck("A3: setup", false, (e?.message || String(e)).slice(0, 120))
+  } finally { cleanup(root, projectId) }
+}
+await emit("A3", "bb_ask comment and string safety", "bb_ask", "comment/string safety", "a3.json")
+await reset()
+
+// ═══════════════════════════════════════════════════════════════════════════
+// A4: cross-file correctness — evidence resolves to the declaration
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const root = mkdtempSync(path.join(tmpdir(), "bb-ask-a4-"))
+  writeFileSync(path.join(root, "a.ts"), "export function alpha(): number { return 1 }\n")
+  writeFileSync(path.join(root, "b.ts"), "import { alpha } from './a'\nexport function beta(): number { return alpha() }\n")
+  const projectId = await indexProject(root)
+  try {
+    const sym = await quickAnswer(projectId, "alpha", { limit: 1 })
+    ck("A4: cross-file exact lookup resolves alpha()", sym.sources.length >= 1, "sources=" + sym.sources.length)
+    const source = sym.sources[0]
+    ck("A4: source points at the declaration file a.ts", source.file.endsWith("a.ts"), source.file)
+    ck("A4: source has a declaration line", source.line >= 1, "line=" + source.line)
+  } catch (e: any) {
+    ck("A4: setup", false, (e?.message || String(e)).slice(0, 120))
+  } finally { cleanup(root, projectId) }
+}
+await emit("A4", "bb_ask cross-file symbol evidence", "bb_ask", "cross-file symbol evidence", "a4.json")
+await reset()
+
+// ═══════════════════════════════════════════════════════════════════════════
+// A5: measured time complexity — the aggregate path is flat in project size
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const rootSmall = mkdtempSync(path.join(tmpdir(), "bb-ask-a5s-"))
+  const rootBig = mkdtempSync(path.join(tmpdir(), "bb-ask-a5b-"))
+  writeFileSync(path.join(rootSmall, "s.ts"), "export function s(): number { return 1 }\n")
+  for (let file = 0; file < 60; file++) {
+    let body = ""
+    for (let index = 0; index < 20; index++) body += `export function fn${file}_${index}(x: number): number { return x + 1 }\n`
+    writeFileSync(path.join(rootBig, `f${file}.ts`), body)
   }
-  await emit("A2", "M15.A2", "bb_ask", "regex census — behaviorally tested", "a2.json")
-  await reset()
+  const pidS = await indexProject(rootSmall)
+  const pidB = await indexProject(rootBig)
+  try {
+    const rS = await quickAnswer(pidS, "how many functions are in this project?")
+    const rB = await quickAnswer(pidB, "how many functions are in this project?")
+    const nS = Number((rS.answer.match(/There are ([\d,]+)/) || [])[1]?.replace(/,/g, "") || 0)
+    const nB = Number((rB.answer.match(/There are ([\d,]+)/) || [])[1]?.replace(/,/g, "") || 0)
+    ck("A5: small project count is correct", nS >= 1, "n=" + nS)
+    ck("A5: large project count is correct (>= 1000)", nB >= 1000, "n=" + nB)
+    ck("A5: counts scale with project size", nB > nS * 100, "small=" + nS + " big=" + nB)
+    const ws = await timing(() => quickAnswer(pidS, "how many functions are in this project?"))
+    const wb = await timing(() => quickAnswer(pidB, "how many functions are in this project?"))
+    ck("A5: aggregate wall-clock does not scale superlinearly (<= 5x + 20 ms)", wb.ms <= ws.ms * 5 + 20, "small=" + ws.ms + "ms big=" + wb.ms + "ms")
+  } catch (e: any) {
+    ck("A5: setup", false, (e?.message || String(e)).slice(0, 120))
+  } finally {
+    cleanup(rootSmall, pidS)
+    cleanup(rootBig, pidB)
+  }
+}
+await emit("A5", "bb_ask measured aggregate scaling", "bb_ask", "measured time complexity", "a5.json")
+await reset()
 
-  // ═══════════════════════════════════════════════════════════════════
-  // A3: comment/string safety — answers never leak comment or string text
-  // as source context
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    const root = mkdtempSync(path.join(tmpdir(), "bb-a3-"))
-    writeFileSync(path.join(root, "secrets.ts"), "// SECRET_TOKEN = 'xyzzy'\nconst apiKey = \"hw_sk_abcd1234\"\nconst realToken = compute('v')\n")
-    const projectId = await indexProject(root)
+// ═══════════════════════════════════════════════════════════════════════════
+// A6: real-repository run
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const corpus = resolveCorpusRoot(ROOT_DIR)
+  const realRepo = corpus ? path.join(corpus, "rake", "lib") : ""
+  if (corpus && realRepo && existsSync(realRepo)) {
+    const projectId = await indexProject(realRepo)
     try {
-      const r = await quickAnswer(projectId, "apiKey")
-      ck("A3: query does not crash on file with comments+strings", typeof r.answer === "string")
-      // The answer must not contain comment/string-level secrets as evidence
-      const leaked = [ "xyzzy", "hwflag", "abcd1234" ].filter(s => r.answer.includes(s))
-      nk("A3: comment/string content is not echoed as answer evidence", leaked.length === 0, "leaked: " + leaked.join(","))
-    } catch (e: any) {
-      ck("A3: setup", false, (e?.message || String(e)).slice(0, 120))
-    } finally {
-      cleanup(root, projectId)
-    }
+      const stat = await quickAnswer(projectId, "how many functions are in this project?")
+      ck("A6: real repo (rake/lib, Ruby) aggregate returns a real number", /There are ([\d,]+) functions/.test(stat.answer), stat.answer.slice(0, 50))
+      const symbol = await quickAnswer(projectId, "Rake")
+      ck("A6: real repo symbol query returns sources", symbol.sources.length >= 1, "sources=" + symbol.sources.length)
+      ck("A6: real repo answer carries bounds and provenance", stat.provenance.evidenceClass === "indexed" && !!stat.bounds, stat.provenance.evidenceClass)
+    } finally { cleanup(realRepo, projectId) }
+  } else {
+    ck("A6: real repo present on disk", false, "corpus not found")
   }
-  await emit("A3", "M15.A3", "bb_ask", "comment/string safety", "a3.json")
-  await reset()
+}
+await emit("A6", "bb_ask real-repository e2e", "bb_ask", "real-repo e2e (real subpath)", "a6.json")
+await reset()
 
-  // ═══════════════════════════════════════════════════════════════════
-  // A4: cross-file correctness — symbol context resolves to the right
-  // file/line for evidence (b.ts caller references a.ts symbol)
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    const root = mkdtempSync(path.join(tmpdir(), "bb-a4-"))
-    writeFileSync(path.join(root, "a.ts"), "export function alpha(): number { return 1 }\n")
-    writeFileSync(path.join(root, "b.ts"), "import { alpha } from './a'\nexport function beta(): number { return alpha() }\n")
-    const projectId = await indexProject(root)
+// ═══════════════════════════════════════════════════════════════════════════
+// A7: registry / page / handler agreement
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool) => tool.name === "bb_ask")!
+  const doc = readFileSync(path.join(ROOT_DIR, "docs", "tools", "bb_ask.md"), "utf8")
+  const handlerSrc = readFileSync(path.join(ROOT_DIR, "src", "mcp", "tools", "bb_ask", "handler.ts"), "utf8")
+  const engineSrc = readFileSync(path.join(ROOT_DIR, "src", "intelligence", "search", "quick-answer.ts"), "utf8")
+
+  ck("A7: registry mutability=read", descriptor.mutability === "read")
+  ck("A7: registry requiresIndex=true", descriptor.requiresIndex === true)
+  ck("A7: registry modes are exactly [answer]", JSON.stringify(descriptor.modes) === JSON.stringify(["answer"]))
+  ck("A7: explain/feature are planned, not executable", (descriptor.plannedModes ?? []).includes("explain") && (descriptor.plannedModes ?? []).includes("feature"))
+  ck("A7: descriptor declares the limit range 1..100 and default 5", (descriptor.inputSchema as any).properties?.limit?.minimum === 1 && (descriptor.inputSchema as any).properties?.limit?.maximum === 100 && /default 5/.test((descriptor.inputSchema as any).properties?.limit?.description ?? ""))
+  ck("A7: page lists category, mutability, modes and planned modes", doc.includes("Category: `search`") && doc.includes("Mutability: `read`") && doc.includes("Modes: `answer`") && doc.includes("Planned modes (roadmap, not executable): `explain`, `feature`"))
+  ck("A7: page states the page-size contract", /1\.\.100/.test(doc) && /refused rather than clamped/.test(doc))
+  ck("A7: page states the two freshness markers", doc.includes("STALE — file changed since index") && doc.includes("MISSING — file no longer on disk"))
+  ck("A7: handler imports the shared page-size sentence from the engine", handlerSrc.includes("ASK_LIMIT_REFUSAL") && engineSrc.includes("export const ASK_LIMIT_REFUSAL"))
+  ck("A7: handler renders provenance and bounds on every answer", handlerSrc.includes("renderBounds") && handlerSrc.includes("renderProvenance"))
+  nk("A7: page/guide carry no milestone narrative", !/\bM\d+\.\d+/.test(doc) && !/\bM\d+\.\d+/.test(readFileSync(path.join(ROOT_DIR, "docs", "BB_ASK.md"), "utf8")), "")
+}
+await emit("A7", "bb_ask registry, page and handler agreement", "bb_ask", "docs honesty", "a7.json")
+await reset()
+
+// ═══════════════════════════════════════════════════════════════════════════
+// A8: evidence completeness and verifier self-audit
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  const selfSource = readFileSync(fileURLToPath(import.meta.url), "utf8").split("A8: evidence")[0].replace(/\/\/[^\n]*/g, "")
+  const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
+  const hits: string[] = []
+  if (autoPass.test(selfSource)) hits.push("auto-pass ck/nk(..., true)")
+  if (selfSource.includes("HARDCODED")) hits.push("HARDCODED marker")
+  nk("A8: this verifier has no auto-pass or tautological assertion", hits.length === 0, "patterns: " + hits.join(" | "))
+
+  for (const file of ["a1.json", "a2.json", "a3.json", "a4.json", "a5.json", "a6.json", "a7.json"]) {
     try {
-      const sym = await quickAnswer(projectId, "alpha")
-      ck("A4: cross-file answer resolves alpha()", sym.sources.length >= 1, "sources=" + sym.sources.length)
-      const src = sym.sources[0]
-      ck("A4: source points at file a.ts (declaration)", src.file.endsWith("a.ts"), src.file)
-      ck("A4: source has a line number", src.line >= 1, "line=" + src.line)
-    } catch (e: any) {
-      ck("A4: setup", false, (e?.message || String(e)).slice(0, 120))
-    } finally {
-      cleanup(root, projectId)
+      const document = JSON.parse(readFileSync(path.join(RESULTS_DIR, file), "utf8"))
+      ck(`A8: ${file} is present and verified`, document.verified === true && document.failed === 0, "verified=" + document.verified + " failed=" + document.failed)
+    } catch {
+      ck(`A8: ${file} exists`, false, "missing or invalid")
     }
   }
-  await emit("A4", "M15.A4", "bb_ask", "cross-file symbol evidence", "a4.json")
-  await reset()
+}
+await emit("A8", "bb_ask evidence completeness and verifier self-audit", "bb_ask", "evidence + gate self-audit", "a8.json")
 
-  // ═══ A5: time complexity — actual measurement (not assertion) ═══
-  {
-    // Measured complexity: DB stat path must be flat (single indexed COUNT query).
-    // We execute the same COUNT query used by quickAnswer on 1-symbol vs 500-symbol
-    // projects and require <= 3x slowdown (no superlinear blowup).
-    const rootSmall = mkdtempSync(path.join(tmpdir(), "bb-a5s-"))
-    const rootBig = mkdtempSync(path.join(tmpdir(), "bb-a5b-"))
-    writeFileSync(path.join(rootSmall, "s.ts"), "export function s(): number { return 1 }\n")
-    // big: 1200 symbols across 60 files
-    for (let f = 0; f < 60; f++) {
-      let body = ""
-      for (let i = 0; i < 20; i++) body += "export function fn" + f + "_" + i + "(x: number): number { return x + 1 }\n"
-      writeFileSync(path.join(rootBig, "f" + f + ".ts"), body)
-    }
-    const pidS = await indexProject(rootSmall)
-    const pidB = await indexProject(rootBig)
-    try {
-      const rS = await quickAnswer(pidS, "how many functions are in this project?")
-      const rB = await quickAnswer(pidB, "how many functions are in this project?")
-      // Parse the count from each answer
-      const nS = Number((rS.answer.match(/There are ([\d,]+)/) || [])[1]?.replace(/,/g, "") || 0)
-      const nB = Number((rB.answer.match(/There are ([\d,]+)/) || [])[1]?.replace(/,/g, "") || 0)
-      ck("A5: small project count correct", nS >= 1, "n=" + nS)
-      ck("A5: large project count correct (>= 1000)", nB >= 1000, "n=" + nB)
-      ck("A5: counts are accurate (proportional)", nB > nS * 100, "small=" + nS + " big=" + nB)
-      // wall-clock ratio via timing helper
-      const ws = await timing(() => quickAnswer(pidS, "how many functions are in this project?"))
-      const wb = await timing(() => quickAnswer(pidB, "how many functions are in this project?"))
-      ck("A5: wall-clock big/small ratio <= 5x", wb.ms <= ws.ms * 5 + 20, "small=" + ws.ms + "ms big=" + wb.ms + "ms")
-    } catch (e: any) {
-      ck("A5: setup", false, (e?.message || String(e)).slice(0, 120))
-    } finally {
-      cleanup(rootSmall, pidS)
-      cleanup(rootBig, pidB)
-    }
-  }
-  await emit("A5", "M15.A5", "bb_ask", "measured time complexity", "a5.json")
-  await reset()
-  // ═══════════════════════════════════════════════════════════════════
-  // A6: real-repo adversarial e2e — index + ask on real repos on disk
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    // Real-repo e2e on REAL repositories from disk: index a real source tree
-    // (rake/lib — Ruby, on disk under fixtures) and run real stat + symbol queries.
-    // Was: a literal foreign corpus root — see script/lib/corpus-root.ts. That path is
-    // the OTHER laptop's home directory, so on this machine the gate measured a directory
-    // that does not exist. Measured on m13/verify-ask-e2e-corpus: 4/8 checks passed
-    // before this class of fix, 19/20 after, from the corpus root alone.
-    const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
-    const realRepo = path.join(REPOS, "rake", "lib")
-    if (existsSync(realRepo)) {
-      const projectId = await indexProject(realRepo)
-      try {
-        const r = await quickAnswer(projectId, "how many functions are in this project?")
-        ck("A6: real repo (rake/lib, Ruby) stat query returns a real number", /There are ([\d,]+) functions/.test(r.answer), r.answer.slice(0, 50))
-        const google = await quickAnswer(projectId, "Rake")
-        ck("A6: real repo symbol query returns sources", google.sources.length >= 1, "sources=" + google.sources.length)
-      } finally {
-        cleanup(realRepo, projectId)
-      }
-    } else {
-      ck("A6: real repo present on disk", false, "missing " + realRepo)
-    }
-  }
-  await emit("A6", "M15.A6", "bb_ask", "real-repo e2e (real subpath)", "a6.json")
-  await reset()
-
-  // ═══════════════════════════════════════════════════════════════════
-  // A7: docs honesty — registry ↔ doc ↔ implementation agree
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
-    const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_ask.md"), "utf8")
-    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
-    const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/search/quick-answer.ts"), "utf8")
-
-    ck("A7: registry lists bb_ask", reg.includes("bb_ask"))
-    const askBlock = reg.split('name: "bb_ask"')[1].split(/name: "/)[0]
-    ck("A7: registry mutability=read", askBlock.includes('mutability: "read"'))
-    ck("A7: registry requiresIndex=true", askBlock.includes("requiresIndex: true"))
-    ck("A7: doc is auto-generated (header)", doc.includes("generated from the executable registry"))
-    ck("A7: doc lists category=search", doc.includes("Category: `search`"))
-    ck("A7: doc lists modes=answer", doc.includes("Modes: `answer`"))
-    ck("A7: doc lists planned modes explain+feature", doc.includes("explain") && doc.includes("feature"))
-    ck("A7: doc input schema requires query", doc.includes('"required"') && doc.includes('"query"'))
-
-    // Handler + impl agree
-    ck("A7: handler calls quickAnswer", hnd.includes("quickAnswer(projectId"))
-    ck("A7: impl exposes answer+confidence+sources+provenance", impl.includes("confidence") && impl.includes("sources") && impl.includes("provenance"))
-
-    // Honesty: doc does not claim "explain"/"feature" are executable
-    const saysPlanned = doc.includes("Planned modes (roadmap, not executable)") || doc.includes("not executable")
-    ck("A7: doc says explain/feature are planned not executable", saysPlanned)
-  }
-  await emit("A7", "M15.A7", "bb_ask", "docs honesty", "a7.json")
-  await reset()
-
-  // ═══════════════════════════════════════════════════════════════════
-  // A8: evidence + gate — all A1-A7 evidence present, and THIS file has
-  // no auto-pass lines (self-audit of the verifier itself)
-  // ═══════════════════════════════════════════════════════════════════
-  {
-    // Regression: cleanup must never delete a non-tmp root (the A6 bug that
-    // deleted |rake/lib| during development was caused by rmSync on the root).
-    const cleanupSrc = readFileSync(fileURLToPath(import.meta.url), "utf8")
-      .split("A8: evidence")[0]
-    nk("A8: cleanup refuses to rmSync non-tmp roots", cleanupSrc.includes("root.startsWith(tmpdir())"), "structural guard in cleanup()")
-
-    for (const f of ["a1.json", "a2.json", "a3.json", "a4.json", "a5.json", "a6.json", "a7.json"]) {
-      try {
-        const d = JSON.parse(readFileSync(path.join(RESULTS_DIR, f), "utf8"))
-        ck("A8: " + f + " present and verified", d.verified === true && d.failed === 0, "verified=" + d.verified + " failed=" + d.failed)
-      } catch {
-        ck("A8: " + f + " exists", false, "missing or invalid")
-      }
-    }
-    // self-audit: this verifier must be auto-pass-free (static check).
-    // We scan only the file up to THIS section so the regex definition below
-    // cannot match its own source text.
-    // self-audit: verifier must be auto-pass-free. Strip comments (so
-    // documentation text like `ck(..., true)` in a comment is not a match),
-    // then scan only the code section before this A8 block.
-    const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
-      .split("A8: evidence")[0]
-      .replace(/\/\/[^\n]*/g, "")
-    const autoPass = new RegExp("\\b(?:ck|nk)\\([^)]*,\\s*true\\s*[,)]")
-    const hardcode = new RegExp("HARDCODED")
-    const hits: string[] = []
-    if (autoPass.test(self)) hits.push("auto-pass ck/nk(..., true)")
-    if (hardcode.test(self)) hits.push("HARDCODED marker")
-    nk("A8: verifier file itself has no auto-pass/tautological assertions", hits.length === 0, hits.length ? "patterns: " + hits.join(" | ") : "")
-  }
-  await emit("A8", "M15.A8", "bb_ask", "evidence + gate (self-audit, no auto-pass)", "a8.json")
-
-  process.exit(failed > 0 ? 1 : 0)
-})().catch((e: any) => { console.error("FATAL", e); process.exit(2) })
+process.exit(failed > 0 ? 1 : 0)

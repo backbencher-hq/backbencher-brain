@@ -1,0 +1,405 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_ask",
+  "title": "real-corpus MCP stdio proof (provider + local embeddings)",
+  "generatedAt": "2026-11-02T04:11:17.070Z",
+  "currentCommit": "81771412ee8ce06e91c9f5f35b04970553d89cd1",
+  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/real-corpus",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "runtime": "node v22.22.1 + tsx",
+  "commands": {
+    "indexOne": "BB_DATA_DIR=<isolated> [BB_EMBEDDING_DISABLED=1] npx tsx validation/tools/bb_ask/work/real-corpus.mts",
+    "door": "node node_modules/tsx/dist/cli.mjs src/mcp/server.ts --dir <corpus> (MCP stdio, env forwarded)"
+  },
+  "corpora": [
+    {
+      "name": "rake/lib (Ruby, provider-embedded)",
+      "projectDir": "$HOME/fixtures/repositories/rake/lib",
+      "embedding": "provider",
+      "index": {
+        "ms": 36851,
+        "outcome": "complete",
+        "files": 44,
+        "facts": {
+          "symbols": 497,
+          "files": 44,
+          "embeddings": [
+            {
+              "m": "nvidia/nemotron-3-embed-1b",
+              "d": 2048,
+              "c": 353
+            }
+          ]
+        }
+      },
+      "door": {
+        "embeddingMode": "provider",
+        "calls": [
+          {
+            "label": "semantic question (provider space)",
+            "args": {
+              "query": "how does a task get executed in this project"
+            },
+            "ms": 1356.4,
+            "isError": false,
+            "text": "answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best. The confidence figure is capped for the same reason.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: rake/file_utils.rb (Line 131) ---\n[method] split_all — similarity 0.693\n```\n  def split_all(path)\n    head, tail = File.split(path)\n    return [tail] if head == \".\" || tail == \"/\"\n    return [head, tail] if head == \"/\"\n    return split_all(head) + [tail]\n  end\n```\n\n--- File: rake/scope.rb (Line 11) ---\n[method] path_with_task_name — similarity 0.691\n```\n    def path_with_task_name(task_name)\n      \"#{path}:#{task_name}\"\n    end\n```\n\n--- File: rake/task.rb (Line 15) ---\n[class] Task — similarity 0.688\n```\n  class Task\n    # List of prerequisites for a task.\n    attr_reader :prerequisites\n    alias prereqs prerequisites\n\n    # List of order only prerequisites for a task.\n    attr_reader :order_only_prerequisites\n\n    # List of actions attached to a task.\n    attr_reader :actions\n\n    # Application owning this task.\n    attr_accessor :application\n\n    # Array of nested namespaces names used for task lookup by this task.\n    attr_reader :scope\n\n    # File/Line locations of each of the task definitions for this\n    # task (only valid if the task was defined with the detect\n    # location option set).\n    attr_reader :locations\n\n    # Has this task already been invoked?  Already invoked tasks\n    # will be skipped unless you reenable them.\n    attr_reader :already_invoked\n\n    # Return task name\n    def to_s\n      name\n    end\n```\n\n--- File: rake/application.rb (Line 229) ---\n[method] display_error_message — similarity 0.686\n```\n    def display_error_message(ex) # :nodoc:\n      trace \"#{name} aborted!\"\n      display_exception_details(ex)\n      trace \"Tasks: #{ex.chain}\" if has_chain?(ex)\n      trace \"(See full trace by running task with --trace)\" unless\n         options.backtrace\n    end\n```\n\n--- File: rake/task.rb (Line 270) ---\n[method] execute — similarity 0.684\n```\n    def execute(args=nil)\n      args ||= EMPTY_TASK_ARGS\n      if application.options.dryrun\n        application.trace \"** Execute (dry run) #{name}\"\n        return\n      end\n      application.trace \"** Execute #{name}\" if application.opti…[+1382]",
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "bounds": "[bounds: returned=5, totalMatches=351, truncated=true, truncationReason=limit 5 of 351 candidates above the similarity floor]",
+            "coverage": "71% (353/497 symbols embedded in this model space), libraryCoverage=71% (353/497 across all models), scanned=353/20000, filtered=353, candidates=351, ranking=no",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "exact symbol name",
+            "args": {
+              "query": "Rake",
+              "limit": 3
+            },
+            "ms": 232.9,
+            "isError": false,
+            "text": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n`Rake` is a symbol in this project (module). Matched by NAME, not by similarity — this is an exact lookup, so what follows is its neighbours, not better matches.\n\n--- rake/application.rb:418 — method sort_options\n--- rake/task.rb:15 — class Task\n\n\nconfidence: 0.9 (exact name lookup, not a similarity claim)\n\n1. rake.rb:24\n   Rake\n2. rake/application.rb:418\n   sort_options\n3. rake/task.rb:15\n   Task\n\n[retrieval: method=exact-name, queryModel=name-lookup, indexModel=name-lookup, embeddingCoverage=71% (353/497 symbols embedded in this model space), libraryCoverage=71% (353/497 across all models), scanned=353/20000, filtered=353, candidates=351, ranking=non-discriminative (29 within the margin of the best)]\n\n[bounds: returned=3, totalMatches=3, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (retrieval)]",
+            "method": "exact-name",
+            "queryModel": "name-lookup",
+            "bounds": "[bounds: returned=3, totalMatches=3, truncated=false]",
+            "coverage": "71% (353/497 symbols embedded in this model space), libraryCoverage=71% (353/497 across all models), scanned=353/20000, filtered=353, candidates=351, ranking=no",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "fallback: nonsense term",
+            "args": {
+              "query": "xyzzyplugh"
+            },
+            "ms": 210.5,
+            "isError": false,
+            "text": "answer: Note: this ranking does not distinguish its top results — 25 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best. The confidence figure is capped for the same reason.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: rake/ext/string.rb (Line 14) ---\n[method] ext — similarity 0.723\n```\n    def ext(newext=\"\")\n      return self.dup if [\".\", \"..\"].include? self\n      if newext != \"\"\n        newext = \".\" + newext unless newext =~ /^\\./\n      end\n      self.chomp(File.extname(self)) << newext\n    end\n```\n\n--- File: rake/thread_pool.rb (Line 44) ---\n[method] join — similarity 0.710\n```\n    def join\n      @threads_mon.synchronize do\n        begin\n          stat :joining\n          @join_cond.wait unless @threads.empty?\n          stat :joined\n        rescue Exception => e\n          stat :joined\n          $stderr.puts e\n          $stderr.print \"Queue contains #{@queue.size} items. \" +\n            \"Thread pool contains #{@threads.count} threads\\n\"\n          $stderr.print \"Current Thread #{Thread.current} status = \" +\n            \"#{Thread.current.status}\\n\"\n          $stderr.puts e.backtrace.join(\"\\n\")\n          @threads.each do |t|\n            $stderr.print \"Thread #{t} status = #{t.status}\\n\"\n            $stderr.puts t.backtrace.join(\"\\n\")\n          end\n          raise e\n        end\n      end\n    end\n```\n\n--- File: rake/thread_pool.rb (Line 8) ---\n[class] ThreadPool — similarity 0.709\n```\n  class ThreadPool # :nodoc: all\n\n    # Creates a ThreadPool object.  The +thread_count+ parameter is the size\n    # of the pool.\n    def initialize(thread_count)\n      @max_active_threads = [thread_count, 0].max\n      @threads = Set.new\n      @threads_mon = Monitor.new\n      @queue = Queue.new\n      @join_cond = @threads_mon.new_cond\n\n      @history_start_time = nil\n      @history = []\n      @history_mon = Monitor.new\n      @total_threads_in_play = 0\n    end\n\n    # Creates a future executed by the +ThreadPool+.\n    #\n    # The args are passed to the block when executing (similarly to\n    # Thread#new) The return value is an object representing\n    # a future which has been created and added to the queue in the\n    # pool. Sending #value to the object will sleep the\n    # current thread until the future is finished and will return the\n …[+3729]",
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "bounds": "[bounds: returned=5, totalMatches=350, truncated=true, truncationReason=limit 5 of 350 candidates above the similarity floor]",
+            "coverage": "71% (353/497 symbols embedded in this model space), libraryCoverage=71% (353/497 across all models), scanned=353/20000, filtered=353, candidates=350, ranking=no",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "aggregate count",
+            "args": {
+              "query": "how many functions are in this project"
+            },
+            "ms": 41,
+            "isError": false,
+            "text": "answer: There are 321 functions in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-02T04:11:52.000Z (27 s ago); these counts describe the indexed snapshot, not the working tree]\n\n[bounds: returned=0, totalMatches=unknown, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (aggregate)]",
+            "method": null,
+            "queryModel": null,
+            "bounds": "[bounds: returned=0, totalMatches=unknown, truncated=false]",
+            "coverage": null,
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          }
+        ],
+        "error": null,
+        "indexFiles": {
+          "before": {
+            "db": {
+              "size": 8310784,
+              "mtimeMs": 1793592712934
+            },
+            "wal": {
+              "size": 6015232,
+              "mtimeMs": 1793592714014
+            }
+          },
+          "after": {
+            "db": {
+              "size": 8310784,
+              "mtimeMs": 1793592712934
+            },
+            "wal": {
+              "size": 6015232,
+              "mtimeMs": 1793592714014
+            }
+          },
+          "dbUnchanged": true
+        }
+      },
+      "mismatchDoor": {
+        "embeddingMode": "local",
+        "calls": [
+          {
+            "label": "model-mismatch: local question against provider-embedded index",
+            "args": {
+              "query": "how does a task get executed in this project"
+            },
+            "ms": 436.1,
+            "isError": false,
+            "text": "answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from embeddings.\nNote: these came from a KEYWORD match on 2 of 4 words (task, get) of your query, not from understanding it. The result does not mention executed, project at all, so the code you asked about may simply not be here — this codebase may not do that. Treat the list below as places that happen to contain those words, not as an answer.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: rake/packagetask.rb (Line 45) ---\n[class] PackageTask\n```\nclass PackageTask < TaskLib\n```\n\n--- File: rake/task_manager.rb (Line 23) ---\n[method] define_task\n```\ndef define_task(task_class, *args, &block) # :nodoc:\n```\n\n--- File: rake/task.rb (Line 15) ---\n[class] Task\n```\nclass Task\n```\n\n--- File: rake/application.rb (Line 186) ---\n[method] parse_task_string\n```\ndef parse_task_string(string) # :nodoc:\n```\n\n--- File: rake/application.rb (Line 774) ---\n[method] collect_command_line_tasks\n```\ndef collect_command_line_tasks(args) # :nodoc:\n```\n\n\n— Use bb_search for precise symbol lookup: \"bb_search(query='how does a task get executed in this project')\".\n— Use bb_search with mode=\"file\" to read any indexed file.\n\nconfidence: 0.2 (declared floor; no score was computed on that path)\n\n1. rake/packagetask.rb:45\n   PackageTask\n2. rake/task_manager.rb:23\n   define_task\n3. rake/task.rb:15\n   Task\n4. rake/application.rb:186\n   parse_task_string\n5. rake/application.rb:774\n   collect_command_line_tasks\n\n[retrieval: method=keyword-fallback, queryModel=none, indexModel=none, embeddingCoverage=0% (0/497 symbols embedded in this model space), libraryCoverage=71% (353/497 across all models), reason=no-matching-model-embeddings, scanned=0/20000, candidates=0]\n\n[bounds: returned=5, totalMatches=0, truncated=false]\n\n[provenance: semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-matching-model-embeddings]",
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "bounds": "[bounds: returned=5, totalMatches=0, truncated=false]",
+            "coverage": "0% (0/497 symbols embedded in this model space), libraryCoverage=71% (353/497 across all models), reason=no-matching-model-embeddings, scanned=0/20000, candidat",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "exact symbol still answers without embeddings",
+            "args": {
+              "query": "Rake",
+              "limit": 1
+            },
+            "ms": 22.1,
+            "isError": false,
+            "text": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n`Rake` is a symbol in this project (module). Matched by NAME, not by similarity — this is an exact lookup, and you asked for one result, so no neighbour scan ran.\n\n\n\nconfidence: 0.9 (exact name lookup, not a similarity claim)\n\n1. rake.rb:24\n   Rake\n\n[retrieval: method=exact-name, queryModel=name-lookup, indexModel=name-lookup]\n\n[bounds: returned=1, totalMatches=1, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (retrieval)]",
+            "method": "exact-name",
+            "queryModel": "name-lookup",
+            "bounds": "[bounds: returned=1, totalMatches=1, truncated=false]",
+            "coverage": null,
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          }
+        ],
+        "error": null,
+        "indexFiles": {
+          "before": {
+            "db": {
+              "size": 8310784,
+              "mtimeMs": 1793592712934
+            },
+            "wal": {
+              "size": 6015232,
+              "mtimeMs": 1793592714014
+            }
+          },
+          "after": {
+            "db": {
+              "size": 8310784,
+              "mtimeMs": 1793592712934
+            },
+            "wal": {
+              "size": 6015232,
+              "mtimeMs": 1793592714014
+            }
+          },
+          "dbUnchanged": true
+        }
+      }
+    },
+    {
+      "name": "graphql-js/src (TypeScript, local-embedded)",
+      "projectDir": "$HOME/fixtures/repositories/graphql-js/src",
+      "embedding": "local",
+      "index": {
+        "ms": 89053,
+        "outcome": "complete",
+        "files": 375,
+        "facts": {
+          "symbols": 8057,
+          "files": 375,
+          "embeddings": [
+            {
+              "m": "local-word-vectors-v3",
+              "d": 50,
+              "c": 1991
+            }
+          ]
+        }
+      },
+      "door": {
+        "embeddingMode": "local",
+        "calls": [
+          {
+            "label": "semantic question (local space)",
+            "args": {
+              "query": "how are schema types validated"
+            },
+            "ms": 151.1,
+            "isError": false,
+            "text": "answer: Note: this ranking does not distinguish its top results — 5 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best. The confidence figure is capped for the same reason.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: utilities/getIntrospectionQuery.ts (Line 229) ---\n[interface] IntrospectionQuery — similarity 0.583\n```\nexport interface IntrospectionQuery {\n  /** The  schema. */\n  readonly __schema: IntrospectionSchema;\n}\n```\n\n--- File: utilities/findSchemaChanges.ts (Line 243) ---\n[function] findSchemaChanges — similarity 0.573\n```\nexport function findSchemaChanges(\n  oldSchema: GraphQLSchema,\n  newSchema: GraphQLSchema,\n): Array<SchemaChange> {\n  return [\n    ...findTypeChanges(oldSchema, newSchema),\n    ...findDirectiveChanges(oldSchema, newSchema),\n  ];\n}\n```\n\n--- File: utilities/resolveSchemaCoordinate.ts (Line 140) ---\n[function] resolveSchemaCoordinate — similarity 0.537\n```\nexport function resolveSchemaCoordinate(\n  schema: GraphQLSchema,\n  schemaCoordinate: string | Source,\n): ResolvedSchemaElement | undefined {\n  return resolveASTSchemaCoordinate(\n    schema,\n    parseSchemaCoordinate(schemaCoordinate),\n  );\n}\n```\n\n--- File: type/schema.ts (Line 84) ---\n[function] assertSchema — similarity 0.535\n```\nexport function assertSchema(schema: unknown): GraphQLSchema {\n  if (!isSchema(schema)) {\n    throw new Error(`Expected ${inspect(schema)} to be a GraphQL schema.`);\n  }\n  return schema;\n}\n```\n\n--- File: language/parser.ts (Line 307) ---\n[function] parseSchemaCoordinate — similarity 0.502\n```\nexport function parseSchemaCoordinate(\n  source: string | Source,\n): SchemaCoordinateNode {\n  const sourceObj = isSource(source) ? source : new Source(source);\n  const lexer = new SchemaCoordinateLexer(sourceObj);\n  const parser = new Parser(source, { lexer });\n  parser.expectToken(TokenKind.SOF);\n  const coordinate = parser.parseSchemaCoordinate();\n  parser.expectToken(TokenKind.EOF);\n  return coordinate;\n}\n```\n\n\n— Use bb_search for precise symbol lookup: \"bb_search(query='how are schema types validated')\".\n— Use bb_search with mode=\"file\" to read any indexed file.\n\nconfidence: not a measurement (capped, because the ranking cannot separate its top results)\n\n1. utilities/getIntrospectionQuery.ts:229\n   IntrospectionQuer…[+849]",
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "bounds": "[bounds: returned=5, totalMatches=8, truncated=true, truncationReason=limit 5 of 8 candidates above the similarity floor]",
+            "coverage": "25% (1991/8057 symbols embedded in this model space), libraryCoverage=25% (1991/8057 across all models), scanned=1991/20000, filtered=1991, candidates=8, rankin",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "exact symbol name",
+            "args": {
+              "query": "GraphQLSchema",
+              "limit": 2
+            },
+            "ms": 44.7,
+            "isError": false,
+            "text": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n`GraphQLSchema` is a symbol in this project (class). Matched by NAME, not by similarity — this is an exact lookup, so what follows is its neighbours, not better matches.\n\n--- type/schema.ts:906 — interface GraphQLSchemaNormalizedConfig\n\n\nconfidence: 0.9 (exact name lookup, not a similarity claim)\n\n1. type/schema.ts:189\n   GraphQLSchema\n2. type/schema.ts:906\n   GraphQLSchemaNormalizedConfig\n\n[retrieval: method=exact-name, queryModel=name-lookup, indexModel=name-lookup, embeddingCoverage=25% (1991/8057 symbols embedded in this model space), libraryCoverage=25% (1991/8057 across all models), scanned=1991/20000, filtered=1991, candidates=102, ranking=non-discriminative (3 within the margin of the best)]\n\n[bounds: returned=2, totalMatches=2, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (retrieval)]",
+            "method": "exact-name",
+            "queryModel": "name-lookup",
+            "bounds": "[bounds: returned=2, totalMatches=2, truncated=false]",
+            "coverage": "25% (1991/8057 symbols embedded in this model space), libraryCoverage=25% (1991/8057 across all models), scanned=1991/20000, filtered=1991, candidates=102, rank",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "fallback: identifier absent from vocabulary",
+            "args": {
+              "query": "zzqxwv unknownToken"
+            },
+            "ms": 79.9,
+            "isError": false,
+            "text": "answer: Note: only 1,991 of 8,057 indexed symbols (25%) have embeddings in the space this query was compared in, so a symbol matching your question may be absent from this list entirely.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: language/lexer.ts (Line 141) ---\n[function] isPunctuatorTokenKind — similarity 0.989\n```\nexport function isPunctuatorTokenKind(kind: TokenKind): boolean {\n  return (\n    kind === TokenKind.BANG ||\n    kind === TokenKind.DOLLAR ||\n    kind === TokenKind.AMP ||\n    kind === TokenKind.PAREN_L ||\n    kind === TokenKind.PAREN_R ||\n    kind === TokenKind.DOT ||\n    kind === TokenKind.SPREAD ||\n    kind === TokenKind.COLON ||\n    kind === TokenKind.EQUALS ||\n    kind === TokenKind.AT ||\n    kind === TokenKind.BRACKET_L ||\n    kind === TokenKind.BRACKET_R ||\n    kind === TokenKind.BRACE_L ||\n    kind === TokenKind.PIPE ||\n    kind === TokenKind.BRACE_R\n  );\n}\n```\n\n--- File: language/parser.ts (Line 1826) ---\n[method] expectToken — similarity 0.939\n```\n  expectToken(kind: TokenKind): Token {\n    const token = this._lexer.token;\n    if (token.kind === kind) {\n      this.advanceLexer();\n      return token;\n    }\n\n    throw syntaxError(\n      this._lexer.source,\n      token.start,\n      `Expected ${getTokenKindDesc(kind)}, found ${getTokenDesc(token)}.`,\n    );\n  }\n```\n\n--- File: language/lexer.ts (Line 35) ---\n[class] Lexer — similarity 0.922\n```\nexport class Lexer implements LexerInterface {\n  /** Source document used to derive error locations. */\n  source: Source;\n\n  /** Most recent non-ignored token returned by the lexer. */\n  lastToken: Token;\n\n  /** Current non-ignored token at the lexer cursor. */\n  token: Token;\n\n  /** The (1-indexed) line containing the current token. */\n  line: number;\n\n  /** Character offset where the current line starts. */\n  lineStart: number;\n\n  /**\n   * Creates a Lexer instance.\n   * @param source - Source document used to derive error locations.\n   * @example\n   * ```ts\n   * import { Lexer, Source, TokenKind } from 'graphql/language';\n   *\n   * const lexer = new Lexer(new Source('{ hello }'));\n   *\n   * lexer.token.kind; // => TokenKind.SOF\n   * lexer.advance().kind; // => TokenKind.BRACE_L\n   * lexer.advance().value; // => 'hello'\n   * lexer.advance().kind; // => TokenKind.BRACE_R\n   * ```\n```\n\n--- File: language/schemaCoordinateLexer.ts (Line 20) ---\n[class] SchemaCoordinateLexer — similarity 0.913\n```\nexport class SchemaCoordinateLexer implements L…[+1931]",
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "bounds": "[bounds: returned=5, totalMatches=30, truncated=true, truncationReason=limit 5 of 30 candidates above the similarity floor]",
+            "coverage": "25% (1991/8057 symbols embedded in this model space), libraryCoverage=25% (1991/8057 across all models), scanned=1991/20000, filtered=1991, candidates=30]",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "aggregate count",
+            "args": {
+              "query": "how many classes are in this project"
+            },
+            "ms": 4.8,
+            "isError": false,
+            "text": "answer: There are 68 classes in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-02T04:14:02.000Z (5 s ago); these counts describe the indexed snapshot, not the working tree]\n\n[bounds: returned=0, totalMatches=unknown, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (aggregate)]",
+            "method": null,
+            "queryModel": null,
+            "bounds": "[bounds: returned=0, totalMatches=unknown, truncated=false]",
+            "coverage": null,
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          }
+        ],
+        "error": null,
+        "indexFiles": {
+          "before": {
+            "db": {
+              "size": 94392320,
+              "mtimeMs": 1793592841337
+            },
+            "wal": {
+              "size": 36153032,
+              "mtimeMs": 1793592842104
+            }
+          },
+          "after": {
+            "db": {
+              "size": 94392320,
+              "mtimeMs": 1793592841337
+            },
+            "wal": {
+              "size": 36153032,
+              "mtimeMs": 1793592842104
+            }
+          },
+          "dbUnchanged": true
+        }
+      },
+      "mismatchDoor": null
+    },
+    {
+      "name": "rebar3/apps (Erlang, local-embedded)",
+      "projectDir": "$HOME/fixtures/repositories/rebar3/apps",
+      "embedding": "local",
+      "index": {
+        "ms": 30041,
+        "outcome": "complete",
+        "files": 271,
+        "facts": {
+          "symbols": 4832,
+          "files": 203,
+          "embeddings": [
+            {
+              "m": "local-word-vectors-v3",
+              "d": 50,
+              "c": 3996
+            }
+          ]
+        }
+      },
+      "door": {
+        "embeddingMode": "local",
+        "calls": [
+          {
+            "label": "semantic question (local space)",
+            "args": {
+              "query": "how is a release built"
+            },
+            "ms": 182.2,
+            "isError": false,
+            "text": "answer: Note: this ranking does not distinguish its top results — 3 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best. The confidence figure is capped for the same reason.\n\nClosest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: rebar/src/rebar_string.erl (Line 28) ---\n[function] chr — similarity 0.735\n```\nchr(S, C) when is_integer(C) -> chr(S, C, 1).\n```\n\n--- File: rebar/src/rebar_log.erl (Line 165) ---\n[function] take_bytes — similarity 0.729\n```\ntake_bytes(0, _) -> [];\ntake_bytes(N, Bin) when is_binary(Bin), byte_size(Bin) > N ->\n    <<B:N/binary, _>> = Bin,\n    binary:copy(B); % avoid holding on to large refs\ntake_bytes(_, Bin) when is_binary(Bin) ->\n    Bin;\ntake_bytes(_, []) -> [];\ntake_bytes(N, [H|T]) when is_integer(H) ->\n    [H | take_bytes(N-1, T)];\ntake_bytes(N, [H|T]) when is_binary(H); is_list(H) ->\n    Res = take_bytes(N, H),\n    [Res | take_bytes(N-byte_size(Res), T)].\n```\n\n--- File: rebar/src/vendored/r3_hex_erl_tar.erl (Line 1549) ---\n[function] is_ascii1 — similarity 0.696\n```\nis_ascii1(<<>>) ->\n    true;\nis_ascii1(<<C,_Rest/binary>>) when C >= 16#80 ->\n    false;\nis_ascii1(<<_, Rest/binary>>) ->\n    is_ascii1(Rest).\n```\n\n--- File: rebar/src/vendored/r3_hex_erl_tar.erl (Line 984) ---\n[function] sizeof — similarity 0.696\n```\nsizeof(Bin) when is_binary(Bin) ->\n    byte_size(Bin);\nsizeof(List) when is_list(List) ->\n    length(List);\nsizeof(N) when is_integer(N) ->\n    byte_size(integer_to_binary(N));\nsizeof(N) when is_float(N) ->\n    byte_size(float_to_binary(N)).\n```\n\n--- File: rebar/src/vendored/r3_hex_erl_tar.erl (Line 1544) ---\n[function] is_ascii — similarity 0.672\n```\nis_ascii(Str) when is_list(Str) ->\n    not lists:any(fun (Char) -> Char >= 16#80 end, Str);\nis_ascii(Bin) when is_binary(Bin) ->\n    is_ascii1(Bin).\n```\n\n\n— Use bb_search for precise symbol lookup: \"bb_search(query='how is a release built')\".\n— Use bb_search with mode=\"file\" to read any indexed file.\n\nconfidence: not a measurement (capped, because the ranking cannot separate its top results)\n\n1. rebar/src/rebar_string.erl:28\n   chr\n2. rebar/src/rebar_log.erl:165\n   take_bytes\n3. rebar/src/vendored/r3_hex_erl_tar.erl:1549\n   is_ascii1\n4. rebar/src/vendored/r3_hex_erl_tar.erl:984\n   sizeof\n5. rebar/src/vendored/r3_hex_erl_tar.erl:1544\n   is_…[+638]",
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "bounds": "[bounds: returned=5, totalMatches=24, truncated=true, truncationReason=limit 5 of 24 candidates above the similarity floor]",
+            "coverage": "83% (3996/4832 symbols embedded in this model space), libraryCoverage=83% (3996/4832 across all models), scanned=3996/20000, filtered=3996, candidates=24, ranki",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "exact symbol name",
+            "args": {
+              "query": "rebar3",
+              "limit": 2
+            },
+            "ms": 57.6,
+            "isError": false,
+            "text": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n`rebar3` is a symbol in this project (module). Matched by NAME, not by similarity — this is an exact lookup, so what follows is its neighbours, not better matches.\n\n--- rebar/src/rebar_completion_bash.erl:122 — function complete\n\n\nconfidence: 0.9 (exact name lookup, not a similarity claim)\n\n1. rebar/src/rebar3.erl:37\n   rebar3\n2. rebar/src/rebar_completion_bash.erl:122\n   complete\n\n[retrieval: method=exact-name, queryModel=name-lookup, indexModel=name-lookup, embeddingCoverage=83% (3996/4832 symbols embedded in this model space), libraryCoverage=83% (3996/4832 across all models), scanned=3996/20000, filtered=3996, candidates=14]\n\n[bounds: returned=2, totalMatches=2, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (retrieval)]",
+            "method": "exact-name",
+            "queryModel": "name-lookup",
+            "bounds": "[bounds: returned=2, totalMatches=2, truncated=false]",
+            "coverage": "83% (3996/4832 symbols embedded in this model space), libraryCoverage=83% (3996/4832 across all models), scanned=3996/20000, filtered=3996, candidates=14]",
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          },
+          {
+            "label": "aggregate count",
+            "args": {
+              "query": "how many files are in this project"
+            },
+            "ms": 33.9,
+            "isError": false,
+            "text": "answer: There are 203 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-02T04:14:36.000Z (5 s ago); these counts describe the indexed snapshot, not the working tree]\n\n[bounds: returned=0, totalMatches=0, truncated=false]\n\n[provenance: indexed via quick-answer@intelligence (aggregate)]",
+            "method": null,
+            "queryModel": null,
+            "bounds": "[bounds: returned=0, totalMatches=0, truncated=false]",
+            "coverage": null,
+            "staleMarkers": 0,
+            "missingMarkers": 0
+          }
+        ],
+        "error": null,
+        "indexFiles": {
+          "before": {
+            "db": {
+              "size": 81555456,
+              "mtimeMs": 1793592877106
+            },
+            "wal": {
+              "size": 25288592,
+              "mtimeMs": 1793592877181
+            }
+          },
+          "after": {
+            "db": {
+              "size": 81555456,
+              "mtimeMs": 1793592877106
+            },
+            "wal": {
+              "size": 25288592,
+              "mtimeMs": 1793592877181
+            }
+          },
+          "dbUnchanged": true
+        }
+      },
+      "mismatchDoor": null
+    }
+  ],
+  "limitations": [
+    "Provider-embedding indexing cost is paid once per corpus; the 2048-dim space is filled by the configured provider, not by the local model.",
+    "Latency is measured through the MCP stdio door including SDK transport overhead, on this machine, with other fleet work possibly running."
+  ],
+  "totals": {
+    "corpora": 3,
+    "doorCalls": 13,
+    "allDbUnchanged": true
+  }
+}

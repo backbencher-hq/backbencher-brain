@@ -1,529 +1,1011 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tool": "bb_ask",
-  "status": "partial",
-  "currentCommit": "b76d8b370239211dc16c87930eda549d8d7299cc",
-  "generatedAt": "2026-11-01T22:24:54.697Z",
-  "protocol": "warm, five distinct natural-language queries per tier, one warmup excluded; BB_NO_AUTO_REFRESH=1 on every read; the in-process embedding cache is keyed by query text, so distinct queries are required to avoid measuring a cache hit",
-  "tiers": [
-    {
-      "tier": "T0",
-      "population": {
-        "fixture": "test/fixtures/polyglot",
-        "files": 5,
-        "symbols": 13,
-        "embeddingRows": 9
+  "title": "measured latency (Phase B: read-only answer path, declared bounds, provider ceiling)",
+  "generatedAt": "2026-11-02T04:23:01.898Z",
+  "currentCommit": "3cd2fb7d0eea372b02d2e6adadfaf63d15be693c",
+  "phaseA": {
+    "schemaVersion": 1,
+    "tool": "bb_ask",
+    "status": "partial",
+    "currentCommit": "b76d8b370239211dc16c87930eda549d8d7299cc",
+    "generatedAt": "2026-11-01T22:24:54.697Z",
+    "protocol": "warm, five distinct natural-language queries per tier, one warmup excluded; BB_NO_AUTO_REFRESH=1 on every read; the in-process embedding cache is keyed by query text, so distinct queries are required to avoid measuring a cache hit",
+    "tiers": [
+      {
+        "tier": "T0",
+        "population": {
+          "fixture": "test/fixtures/polyglot",
+          "files": 5,
+          "symbols": 13,
+          "embeddingRows": 9
+        },
+        "configuration": "local word vectors only (BB_EMBEDDING_DISABLED=1)",
+        "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0 test/fixtures/polyglot validation/tools/bb_ask/t0-latency-local.json",
+        "env": {
+          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+          "BB_NO_AUTO_REFRESH": "1",
+          "BB_EMBEDDING_DISABLED": "1",
+          "BB_VECTOR_SCAN_CAP": null
+        },
+        "argv": [
+          "T0",
+          "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-local.json"
+        ],
+        "median_of_runs_ms": [
+          17.42,
+          15.99,
+          16,
+          24.4,
+          28.91
+        ],
+        "p50Ms": 17.42,
+        "p95Ms": 28.91,
+        "maxMs": 28.91,
+        "warmupMs": 92.95,
+        "answerChars": [
+          524,
+          524,
+          522,
+          524,
+          522
+        ],
+        "routes": [
+          {
+            "method": "keyword-fallback",
+            "reason": "no-vector-above-threshold",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-vector-above-threshold",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "degenerate-query-vector",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-vector-above-threshold",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "degenerate-query-vector",
+            "confidence": "0.1"
+          }
+        ]
       },
-      "configuration": "local word vectors only (BB_EMBEDDING_DISABLED=1)",
-      "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0 test/fixtures/polyglot validation/tools/bb_ask/t0-latency-local.json",
-      "env": {
-        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
-        "BB_NO_AUTO_REFRESH": "1",
-        "BB_EMBEDDING_DISABLED": "1",
-        "BB_VECTOR_SCAN_CAP": null
+      {
+        "tier": "T0",
+        "population": {
+          "fixture": "test/fixtures/polyglot",
+          "files": 5,
+          "symbols": 13,
+          "embeddingRows": 9
+        },
+        "configuration": "provider configured in bb.json, index embedded locally → fallback path (no-matching-model-embeddings)",
+        "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0-remote-query test/fixtures/polyglot validation/tools/bb_ask/t0-latency-remote-query.json",
+        "env": {
+          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
+          "BB_NO_AUTO_REFRESH": "1",
+          "BB_EMBEDDING_DISABLED": null,
+          "BB_VECTOR_SCAN_CAP": null
+        },
+        "argv": [
+          "T0-remote-query",
+          "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-remote-query.json"
+        ],
+        "median_of_runs_ms": [
+          175.22,
+          169.58,
+          189.59,
+          180.35,
+          166.1
+        ],
+        "p50Ms": 175.22,
+        "p95Ms": 189.59,
+        "maxMs": 189.59,
+        "warmupMs": 479.14,
+        "answerChars": [
+          527,
+          527,
+          527,
+          527,
+          527
+        ],
+        "routes": [
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.1"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.1"
+          }
+        ],
+        "qualification": "this row is the network-cost row: the query embedding is an HTTP call even though the index has no vectors in that space"
       },
-      "argv": [
-        "T0",
-        "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
-        "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-local.json"
-      ],
-      "median_of_runs_ms": [
-        17.42,
-        15.99,
-        16,
-        24.4,
-        28.91
-      ],
-      "p50Ms": 17.42,
-      "p95Ms": 28.91,
-      "maxMs": 28.91,
-      "warmupMs": 92.95,
-      "answerChars": [
-        524,
-        524,
-        522,
-        524,
-        522
-      ],
-      "routes": [
-        {
-          "method": "keyword-fallback",
-          "reason": "no-vector-above-threshold",
-          "confidence": "0.1"
+      {
+        "tier": "T0",
+        "population": {
+          "fixture": "test/fixtures/polyglot",
+          "files": 5,
+          "symbols": 13,
+          "embeddingRows": 9
         },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-vector-above-threshold",
-          "confidence": "0.1"
+        "configuration": "provider configured (nvidia/nemotron-3-embed-1b), index embedded through the provider → true remote vector path",
+        "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0api BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0-api-vector test/fixtures/polyglot validation/tools/bb_ask/t0-latency-api.json",
+        "env": {
+          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
+          "BB_NO_AUTO_REFRESH": "1",
+          "BB_EMBEDDING_DISABLED": null,
+          "BB_VECTOR_SCAN_CAP": null
         },
-        {
-          "method": "keyword-fallback",
-          "reason": "degenerate-query-vector",
-          "confidence": "0.1"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-vector-above-threshold",
-          "confidence": "0.1"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "degenerate-query-vector",
-          "confidence": "0.1"
-        }
-      ]
-    },
-    {
-      "tier": "T0",
-      "population": {
-        "fixture": "test/fixtures/polyglot",
-        "files": 5,
-        "symbols": 13,
-        "embeddingRows": 9
+        "argv": [
+          "T0-api-vector",
+          "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-api.json"
+        ],
+        "median_of_runs_ms": [
+          110.5,
+          105.84,
+          108.28,
+          131.62,
+          105.59
+        ],
+        "p50Ms": 108.28,
+        "p95Ms": 131.62,
+        "maxMs": 131.62,
+        "warmupMs": 296.42,
+        "answerChars": [
+          2480,
+          2343,
+          2468,
+          2466,
+          2435
+        ],
+        "routes": [
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.58"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.56"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.57"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.5"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.49"
+          }
+        ]
       },
-      "configuration": "provider configured in bb.json, index embedded locally → fallback path (no-matching-model-embeddings)",
-      "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0-remote-query test/fixtures/polyglot validation/tools/bb_ask/t0-latency-remote-query.json",
-      "env": {
-        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0",
-        "BB_NO_AUTO_REFRESH": "1",
-        "BB_EMBEDDING_DISABLED": null,
-        "BB_VECTOR_SCAN_CAP": null
+      {
+        "tier": "T1",
+        "population": {
+          "fixture": ".perf-fixtures/bb-scale/n100",
+          "files": 97,
+          "symbols": 3512,
+          "embeddingRows": 1185
+        },
+        "configuration": "local word vectors only",
+        "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T1 .perf-fixtures/bb-scale/n100 validation/tools/bb_ask/t1-latency-local.json",
+        "env": {
+          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+          "BB_NO_AUTO_REFRESH": "1",
+          "BB_EMBEDDING_DISABLED": "1",
+          "BB_VECTOR_SCAN_CAP": null
+        },
+        "argv": [
+          "T1",
+          "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-local.json"
+        ],
+        "median_of_runs_ms": [
+          231.97,
+          21.71,
+          101.82,
+          32.08,
+          199.91
+        ],
+        "p50Ms": 101.82,
+        "p95Ms": 231.97,
+        "maxMs": 231.97,
+        "warmupMs": 163.16,
+        "answerChars": [
+          1989,
+          5815,
+          2169,
+          8456,
+          1957
+        ],
+        "routes": [
+          {
+            "method": "keyword-fallback",
+            "reason": "no-vector-above-threshold",
+            "confidence": "0.2"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.62"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-vector-above-threshold",
+            "confidence": "0.2"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.66"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-vector-above-threshold",
+            "confidence": "0.2"
+          }
+        ]
       },
-      "argv": [
-        "T0-remote-query",
-        "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
-        "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-remote-query.json"
-      ],
-      "median_of_runs_ms": [
-        175.22,
-        169.58,
-        189.59,
-        180.35,
-        166.1
-      ],
-      "p50Ms": 175.22,
-      "p95Ms": 189.59,
-      "maxMs": 189.59,
-      "warmupMs": 479.14,
-      "answerChars": [
-        527,
-        527,
-        527,
-        527,
-        527
-      ],
-      "routes": [
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.1"
+      {
+        "tier": "T1",
+        "population": {
+          "fixture": ".perf-fixtures/bb-scale/n100",
+          "files": 97,
+          "symbols": 3512,
+          "embeddingRows": 1185
         },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.1"
+        "configuration": "provider configured, index embedded locally → fallback path",
+        "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T1-remote-query .perf-fixtures/bb-scale/n100 validation/tools/bb_ask/t1-latency-remote-query.json",
+        "env": {
+          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
+          "BB_NO_AUTO_REFRESH": "1",
+          "BB_EMBEDDING_DISABLED": null,
+          "BB_VECTOR_SCAN_CAP": null
         },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.1"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.1"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.1"
-        }
-      ],
-      "qualification": "this row is the network-cost row: the query embedding is an HTTP call even though the index has no vectors in that space"
-    },
-    {
-      "tier": "T0",
-      "population": {
-        "fixture": "test/fixtures/polyglot",
-        "files": 5,
-        "symbols": 13,
-        "embeddingRows": 9
+        "argv": [
+          "T1-remote-query",
+          "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+          "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-remote-query.json"
+        ],
+        "median_of_runs_ms": [
+          255.79,
+          277.31,
+          186.02,
+          297.4,
+          331.71
+        ],
+        "p50Ms": 277.31,
+        "p95Ms": 331.71,
+        "maxMs": 331.71,
+        "warmupMs": 576.22,
+        "answerChars": [
+          1995,
+          2085,
+          2175,
+          2159,
+          1963
+        ],
+        "routes": [
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.2"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.2"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.2"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.2"
+          },
+          {
+            "method": "keyword-fallback",
+            "reason": "no-matching-model-embeddings",
+            "confidence": "0.2"
+          }
+        ]
       },
-      "configuration": "provider configured (nvidia/nemotron-3-embed-1b), index embedded through the provider → true remote vector path",
-      "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0api BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0-api-vector test/fixtures/polyglot validation/tools/bb_ask/t0-latency-api.json",
-      "env": {
-        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
-        "BB_NO_AUTO_REFRESH": "1",
-        "BB_EMBEDDING_DISABLED": null,
-        "BB_VECTOR_SCAN_CAP": null
-      },
-      "argv": [
-        "T0-api-vector",
-        "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
-        "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t0-latency-api.json"
-      ],
-      "median_of_runs_ms": [
-        110.5,
-        105.84,
-        108.28,
-        131.62,
-        105.59
-      ],
-      "p50Ms": 108.28,
-      "p95Ms": 131.62,
-      "maxMs": 131.62,
-      "warmupMs": 296.42,
-      "answerChars": [
-        2480,
-        2343,
-        2468,
-        2466,
-        2435
-      ],
-      "routes": [
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.58"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.56"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.57"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.5"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.49"
-        }
-      ]
-    },
-    {
-      "tier": "T1",
-      "population": {
-        "fixture": ".perf-fixtures/bb-scale/n100",
-        "files": 97,
-        "symbols": 3512,
-        "embeddingRows": 1185
-      },
-      "configuration": "local word vectors only",
-      "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T1 .perf-fixtures/bb-scale/n100 validation/tools/bb_ask/t1-latency-local.json",
-      "env": {
-        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
-        "BB_NO_AUTO_REFRESH": "1",
-        "BB_EMBEDDING_DISABLED": "1",
-        "BB_VECTOR_SCAN_CAP": null
-      },
-      "argv": [
-        "T1",
-        "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
-        "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-local.json"
-      ],
-      "median_of_runs_ms": [
-        231.97,
-        21.71,
-        101.82,
-        32.08,
-        199.91
-      ],
-      "p50Ms": 101.82,
-      "p95Ms": 231.97,
-      "maxMs": 231.97,
-      "warmupMs": 163.16,
-      "answerChars": [
-        1989,
-        5815,
-        2169,
-        8456,
-        1957
-      ],
-      "routes": [
-        {
-          "method": "keyword-fallback",
-          "reason": "no-vector-above-threshold",
-          "confidence": "0.2"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.62"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-vector-above-threshold",
-          "confidence": "0.2"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.66"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-vector-above-threshold",
-          "confidence": "0.2"
-        }
-      ]
-    },
-    {
-      "tier": "T1",
-      "population": {
-        "fixture": ".perf-fixtures/bb-scale/n100",
-        "files": 97,
-        "symbols": 3512,
-        "embeddingRows": 1185
-      },
-      "configuration": "provider configured, index embedded locally → fallback path",
-      "command": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T1-remote-query .perf-fixtures/bb-scale/n100 validation/tools/bb_ask/t1-latency-remote-query.json",
-      "env": {
-        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t1",
-        "BB_NO_AUTO_REFRESH": "1",
-        "BB_EMBEDDING_DISABLED": null,
-        "BB_VECTOR_SCAN_CAP": null
-      },
-      "argv": [
-        "T1-remote-query",
-        "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
-        "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t1-latency-remote-query.json"
-      ],
-      "median_of_runs_ms": [
-        255.79,
-        277.31,
-        186.02,
-        297.4,
-        331.71
-      ],
-      "p50Ms": 277.31,
-      "p95Ms": 331.71,
-      "maxMs": 331.71,
-      "warmupMs": 576.22,
-      "answerChars": [
-        1995,
-        2085,
-        2175,
-        2159,
-        1963
-      ],
-      "routes": [
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.2"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.2"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.2"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.2"
-        },
-        {
-          "method": "keyword-fallback",
-          "reason": "no-matching-model-embeddings",
-          "confidence": "0.2"
-        }
-      ]
-    },
-    {
-      "tier": "T2",
-      "population": {
-        "subject": "read-only backup copy of the reference index (validation/tools/bb_ask/t2-copy, gitignored)",
-        "files": 6452,
-        "symbols": 310423,
-        "relationships": 820040,
-        "embeddingRows": 32837,
-        "dbBytes": 3639963648,
-        "dbMtime": "2026-11-01T22:22:22.313Z",
-        "sourceIndex": {
+      {
+        "tier": "T2",
+        "population": {
+          "subject": "read-only backup copy of the reference index (validation/tools/bb_ask/t2-copy, gitignored)",
           "files": 6452,
           "symbols": 310423,
           "relationships": 820040,
           "embeddingRows": 32837,
           "dbBytes": 3639963648,
-          "dbMtime": "2026-11-01T22:09:34.843Z",
-          "dbUnchanged": true
+          "dbMtime": "2026-11-01T22:22:22.313Z",
+          "sourceIndex": {
+            "files": 6452,
+            "symbols": 310423,
+            "relationships": 820040,
+            "embeddingRows": 32837,
+            "dbBytes": 3639963648,
+            "dbMtime": "2026-11-01T22:09:34.843Z",
+            "dbUnchanged": true
+          },
+          "backup": {
+            "ms": 11781,
+            "sourceUnchanged": false,
+            "method": "SQLite backup API through a byte-read-only source handle"
+          }
         },
-        "backup": {
-          "ms": 11781,
-          "sourceUnchanged": false,
-          "method": "SQLite backup API through a byte-read-only source handle"
-        }
-      },
-      "configuration": "provider configured as bb.json ships (nvidia/nemotron-3-embed-1b); live-index end-to-end is blocked by the read-write path (audit C1)",
-      "command": "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T2-copy \"$PWD\" validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json",
-      "env": {
-        "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
-        "BB_NO_AUTO_REFRESH": "1",
-        "BB_EMBEDDING_DISABLED": null,
-        "BB_VECTOR_SCAN_CAP": null
-      },
-      "argv": [
-        "T2-copy",
-        "$HOME/mcp/backbencher-brain",
-        "validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json"
-      ],
-      "median_of_runs_ms": [
-        1980.68,
-        1708.57,
-        1682.35,
-        2095.62,
-        1789.9
-      ],
-      "p50Ms": 1789.9,
-      "p95Ms": 2095.62,
-      "maxMs": 2095.62,
-      "warmupMs": 10172.57,
-      "answerChars": [
-        7687,
-        4759,
-        4094,
-        3864,
-        3366
-      ],
-      "routes": [
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.74"
+        "configuration": "provider configured as bb.json ships (nvidia/nemotron-3-embed-1b); live-index end-to-end is blocked by the read-write path (audit C1)",
+        "command": "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T2-copy \"$PWD\" validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json",
+        "env": {
+          "BB_DATA_DIR": "$HOME/mcp/backbencher-brain/validation/tools/bb_ask/t2-copy",
+          "BB_NO_AUTO_REFRESH": "1",
+          "BB_EMBEDDING_DISABLED": null,
+          "BB_VECTOR_SCAN_CAP": null
         },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.7"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.73"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.66"
-        },
-        {
-          "method": "vector",
-          "reason": null,
-          "confidence": "0.62"
-        }
-      ],
-      "qualification": "warm: the first default call in a cold process took 9,215–10,173 ms (page-cache cold, 164 MB scan). p50/p95 above are warm runs."
-    }
-  ],
-  "componentDecomposition": {
-    "commands": [
-      "BB_DATA_DIR=validation/tools/bb_ask/t2-copy npx tsx validation/tools/bb_ask/work/t2-components.mts \"$PWD\" validation/tools/bb_ask/t2-components-remote.json",
-      "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_EMBEDDING_DISABLED=1 npx tsx validation/tools/bb_ask/work/t2-components.mts \"$PWD\" validation/tools/bb_ask/t2-components-local.json"
+        "argv": [
+          "T2-copy",
+          "$HOME/mcp/backbencher-brain",
+          "validation/tools/bb_ask/t2-latency-end-to-end-phaseA.json"
+        ],
+        "median_of_runs_ms": [
+          1980.68,
+          1708.57,
+          1682.35,
+          2095.62,
+          1789.9
+        ],
+        "p50Ms": 1789.9,
+        "p95Ms": 2095.62,
+        "maxMs": 2095.62,
+        "warmupMs": 10172.57,
+        "answerChars": [
+          7687,
+          4759,
+          4094,
+          3864,
+          3366
+        ],
+        "routes": [
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.74"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.7"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.73"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.66"
+          },
+          {
+            "method": "vector",
+            "reason": null,
+            "confidence": "0.62"
+          }
+        ],
+        "qualification": "warm: the first default call in a cold process took 9,215–10,173 ms (page-cache cold, 164 MB scan). p50/p95 above are warm runs."
+      }
     ],
-    "remoteEmbeddings": {
-      "queryEmbeddingMs": [
-        279,
-        208,
-        95,
-        94,
-        110
+    "componentDecomposition": {
+      "commands": [
+        "BB_DATA_DIR=validation/tools/bb_ask/t2-copy npx tsx validation/tools/bb_ask/work/t2-components.mts \"$PWD\" validation/tools/bb_ask/t2-components-remote.json",
+        "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_EMBEDDING_DISABLED=1 npx tsx validation/tools/bb_ask/work/t2-components.mts \"$PWD\" validation/tools/bb_ask/t2-components-local.json"
       ],
-      "indexStateMs": 1.87,
-      "coverageAggregateMs": 146.37,
-      "scanLoadMs": [
-        3952.15,
-        1822.77,
-        1410.85
-      ],
-      "cosineScoreMs": [
-        217.19,
-        202.67,
-        207.04
-      ],
-      "scannedRows": [
-        20000,
-        20000,
-        20000
-      ],
-      "keptAboveFloor": [
-        19980,
-        19957,
-        19973
-      ],
-      "exactNameMs": 1.17,
-      "dbUnchanged": true
+      "remoteEmbeddings": {
+        "queryEmbeddingMs": [
+          279,
+          208,
+          95,
+          94,
+          110
+        ],
+        "indexStateMs": 1.87,
+        "coverageAggregateMs": 146.37,
+        "scanLoadMs": [
+          3952.15,
+          1822.77,
+          1410.85
+        ],
+        "cosineScoreMs": [
+          217.19,
+          202.67,
+          207.04
+        ],
+        "scannedRows": [
+          20000,
+          20000,
+          20000
+        ],
+        "keptAboveFloor": [
+          19980,
+          19957,
+          19973
+        ],
+        "exactNameMs": 1.17,
+        "dbUnchanged": true
+      },
+      "localEmbeddings": {
+        "queryEmbeddingMs": [
+          3530,
+          3,
+          2,
+          4,
+          3
+        ],
+        "scanLoadMs": [
+          134.35,
+          15.7,
+          15.12
+        ],
+        "scannedRows": [
+          1931,
+          1931,
+          1931
+        ],
+        "keptAboveFloor": [
+          52,
+          44,
+          26
+        ],
+        "dbUnchanged": false,
+        "note": "dbUnchanged:false here is the local query-embedding path opening a read-write handle through engine.localVocabulary (audit C1)"
+      },
+      "scanCap": {
+        "env": "BB_VECTOR_SCAN_CAP",
+        "defaultRows": 20000,
+        "observedRows": 20000,
+        "declared": false
+      }
     },
-    "localEmbeddings": {
-      "queryEmbeddingMs": [
-        3530,
-        3,
-        2,
-        4,
-        3
-      ],
-      "scanLoadMs": [
-        134.35,
-        15.7,
-        15.12
-      ],
-      "scannedRows": [
-        1931,
-        1931,
-        1931
-      ],
-      "keptAboveFloor": [
-        52,
-        44,
-        26
-      ],
-      "dbUnchanged": false,
-      "note": "dbUnchanged:false here is the local query-embedding path opening a read-write handle through engine.localVocabulary (audit C1)"
+    "budgets": {
+      "t2DefaultP95BudgetMs": 5000,
+      "t2MeasuredP95Ms": 2095.62,
+      "withinBudget": true,
+      "t0BudgetMs": 250,
+      "t0MeasuredP95Ms": 28.91,
+      "withinBudgetT0": true,
+      "t1BudgetMs": 1000,
+      "t1MeasuredP95Ms": 231.97,
+      "withinBudgetT1": true,
+      "clientTimeoutMs": 30000,
+      "risk": "the ask-time query embedding is an HTTP call bounded by BB_EMBEDDING_TIMEOUT_MS (default 30,000 ms); a stalling provider blocks the call for the full bound before local fallback (measured 3,024 ms at a 3,000 ms bound) — audit C16"
     },
-    "scanCap": {
-      "env": "BB_VECTOR_SCAN_CAP",
-      "defaultRows": 20000,
-      "observedRows": 20000,
-      "declared": false
-    }
+    "blockedLegs": [
+      {
+        "leg": "T2 end-to-end on the live shared index",
+        "reason": "the current read path writes the index (audit C1); the backup-copy measurement is used instead and its population is recorded above"
+      },
+      {
+        "leg": "T2 end-to-end after the read-only switch",
+        "reason": "Phase B, re-measured after the fix on the same copy"
+      },
+      {
+        "leg": "compiled-CLI transport latency",
+        "reason": "dist/ stale; source door only until the Lead integration rebuild"
+      }
+    ]
   },
-  "budgets": {
-    "t2DefaultP95BudgetMs": 5000,
-    "t2MeasuredP95Ms": 2095.62,
-    "withinBudget": true,
-    "t0BudgetMs": 250,
-    "t0MeasuredP95Ms": 28.91,
-    "withinBudgetT0": true,
-    "t1BudgetMs": 1000,
-    "t1MeasuredP95Ms": 231.97,
-    "withinBudgetT1": true,
-    "clientTimeoutMs": 30000,
-    "risk": "the ask-time query embedding is an HTTP call bounded by BB_EMBEDDING_TIMEOUT_MS (default 30,000 ms); a stalling provider blocks the call for the full bound before local fallback (measured 3,024 ms at a 3,000 ms bound) — audit C16"
+  "phaseB": {
+    "commands": {
+      "T0": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t0 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T0 <fixture> validation/tools/bb_ask/t0-latency-local.json",
+      "T1": "BB_DATA_DIR=validation/tools/bb_ask/bbdata/t1 BB_EMBEDDING_DISABLED=1 npx tsx validation/tools/bb_ask/work/latency.mts T1 <fixture> validation/tools/bb_ask/t1-latency-local.json",
+      "T2copy": "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_NO_AUTO_REFRESH=1 BB_ASK_EXACT_QUERY=<symbol> npx tsx validation/tools/bb_ask/work/latency.mts T2-copy <repo> validation/tools/bb_ask/t2-latency-end-to-end.json",
+      "T2local": "BB_DATA_DIR=validation/tools/bb_ask/t2-copy BB_EMBEDDING_DISABLED=1 BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_ask/work/latency.mts T2-local <repo> validation/tools/bb_ask/t2-latency-local.json",
+      "T2live": "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 BB_ASK_EXACT_QUERY=buildStalenessEnvelope npx tsx validation/tools/bb_ask/work/latency.mts T2-live <repo> validation/tools/bb_ask/t2-latency-live.json"
+    },
+    "tiers": {
+      "T0-local": {
+        "projectDir": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+        "warmupMs": 47.26,
+        "p50": 2.26,
+        "p95": 4.16,
+        "max": 4.16,
+        "runs": [
+          {
+            "ms": 4.16,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 2.13,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 2.24,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 2.26,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 2.3,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          }
+        ],
+        "exactNameLimit1": null,
+        "indexFiles": {
+          "dbUnchanged": true,
+          "before": {
+            "db": {
+              "size": 524288,
+              "mtimeMs": 1793571693257
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571695047
+            }
+          },
+          "after": {
+            "db": {
+              "size": 524288,
+              "mtimeMs": 1793571693257
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571695047
+            }
+          }
+        }
+      },
+      "T0-provider": {
+        "projectDir": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+        "warmupMs": 2052.77,
+        "p50": 1710.73,
+        "p95": 2005.49,
+        "max": 2005.49,
+        "runs": [
+          {
+            "ms": 2005.49,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 2004.35,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 1710.73,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "9",
+            "truncated": null
+          },
+          {
+            "ms": 185.68,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "9",
+            "truncated": null
+          },
+          {
+            "ms": 224.76,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "9",
+            "truncated": null
+          }
+        ],
+        "exactNameLimit1": null,
+        "indexFiles": {
+          "dbUnchanged": true,
+          "before": {
+            "db": {
+              "size": 598016,
+              "mtimeMs": 1793571700242
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571781357
+            }
+          },
+          "after": {
+            "db": {
+              "size": 598016,
+              "mtimeMs": 1793571700242
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571781357
+            }
+          }
+        }
+      },
+      "T1-local": {
+        "projectDir": "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+        "warmupMs": 112.44,
+        "p50": 72.59,
+        "p95": 200.79,
+        "max": 200.79,
+        "runs": [
+          {
+            "ms": 200.79,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 12.29,
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "candidates": "6",
+            "truncated": null
+          },
+          {
+            "ms": 72.59,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 14.68,
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "candidates": "27",
+            "truncated": null
+          },
+          {
+            "ms": 164.23,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          }
+        ],
+        "exactNameLimit1": null,
+        "indexFiles": {
+          "dbUnchanged": true,
+          "before": {
+            "db": {
+              "size": 42835968,
+              "mtimeMs": 1793572109267
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793572395205
+            }
+          },
+          "after": {
+            "db": {
+              "size": 42835968,
+              "mtimeMs": 1793572109267
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793572395205
+            }
+          }
+        }
+      },
+      "T2-provider-copy": {
+        "projectDir": "$HOME/mcp/backbencher-brain",
+        "warmupMs": 2504.73,
+        "p50": 1778.68,
+        "p95": 2186.8,
+        "max": 2186.8,
+        "runs": [
+          {
+            "ms": 1813.67,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19980",
+            "truncated": null
+          },
+          {
+            "ms": 1723.46,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19957",
+            "truncated": null
+          },
+          {
+            "ms": 1778.68,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19973",
+            "truncated": null
+          },
+          {
+            "ms": 1752.17,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19923",
+            "truncated": null
+          },
+          {
+            "ms": 2186.8,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19907",
+            "truncated": null
+          }
+        ],
+        "exactNameLimit1": {
+          "query": "buildStalenessEnvelope",
+          "p50": 0.93,
+          "p95": 1.26,
+          "runs": [
+            1.26,
+            0.93,
+            0.87,
+            0.72,
+            0.95
+          ]
+        },
+        "indexFiles": {
+          "dbUnchanged": true,
+          "before": {
+            "db": {
+              "size": 3639963648,
+              "mtimeMs": 1793571742313
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571786023
+            }
+          },
+          "after": {
+            "db": {
+              "size": 3639963648,
+              "mtimeMs": 1793571742313
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571786023
+            }
+          }
+        }
+      },
+      "T2-local-copy": {
+        "projectDir": "$HOME/mcp/backbencher-brain",
+        "warmupMs": 1289.25,
+        "p50": 176.4,
+        "p95": 8035.75,
+        "max": 8035.75,
+        "runs": [
+          {
+            "ms": 70.63,
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "candidates": "2",
+            "truncated": null
+          },
+          {
+            "ms": 8035.75,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          },
+          {
+            "ms": 168.27,
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "candidates": "2",
+            "truncated": null
+          },
+          {
+            "ms": 176.4,
+            "method": "vector",
+            "queryModel": "local-word-vectors-v3",
+            "candidates": "19",
+            "truncated": null
+          },
+          {
+            "ms": 3109.85,
+            "method": "keyword-fallback",
+            "queryModel": "none",
+            "candidates": "0",
+            "truncated": null
+          }
+        ],
+        "exactNameLimit1": {
+          "query": "buildStalenessEnvelope",
+          "p50": 0.97,
+          "p95": 2.03,
+          "runs": [
+            2.03,
+            1.81,
+            0.97,
+            0.63,
+            0.76
+          ]
+        },
+        "indexFiles": {
+          "dbUnchanged": true,
+          "before": {
+            "db": {
+              "size": 3639963648,
+              "mtimeMs": 1793571742313
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571786023
+            }
+          },
+          "after": {
+            "db": {
+              "size": 3639963648,
+              "mtimeMs": 1793571742313
+            },
+            "wal": {
+              "size": 0,
+              "mtimeMs": 1793571786023
+            }
+          }
+        }
+      },
+      "T2-live-shared": {
+        "projectDir": "$HOME/mcp/backbencher-brain",
+        "warmupMs": 16808.15,
+        "p50": 5145.58,
+        "p95": 13306.96,
+        "max": 13306.96,
+        "runs": [
+          {
+            "ms": 5145.58,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19980",
+            "truncated": null
+          },
+          {
+            "ms": 3129.76,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19957",
+            "truncated": null
+          },
+          {
+            "ms": 5125.77,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19973",
+            "truncated": null
+          },
+          {
+            "ms": 9322.51,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19923",
+            "truncated": null
+          },
+          {
+            "ms": 13306.96,
+            "method": "vector",
+            "queryModel": "nvidia/nemotron-3-embed-1b",
+            "candidates": "19907",
+            "truncated": null
+          }
+        ],
+        "exactNameLimit1": {
+          "query": "buildStalenessEnvelope",
+          "p50": 11.75,
+          "p95": 29.78,
+          "runs": [
+            29.78,
+            13.1,
+            11.29,
+            11.61,
+            11.75
+          ]
+        },
+        "indexFiles": {
+          "dbUnchanged": true,
+          "before": {
+            "db": {
+              "size": 3639963648,
+              "mtimeMs": 1793592892697
+            },
+            "wal": {
+              "size": 4120032,
+              "mtimeMs": 1793592908382
+            }
+          },
+          "after": {
+            "db": {
+              "size": 3639963648,
+              "mtimeMs": 1793592892697
+            },
+            "wal": {
+              "size": 4120032,
+              "mtimeMs": 1793592908382
+            }
+          }
+        }
+      }
+    },
+    "providerEmbeddingProbe": {
+      "note": "raw SemanticEngine.embed() calls with the configured provider, five distinct questions, same machine",
+      "measurementsMs": [
+        631,
+        2380,
+        393,
+        320,
+        228
+      ],
+      "model": "nvidia/nemotron-3-embed-1b",
+      "dimension": 2048,
+      "implication": "provider latency varies from ~0.2 s to >2 s; the tool bounds its ask-time wait at min(2000 ms, BB_EMBEDDING_TIMEOUT_MS) and declares the fallback, so a slow provider cannot stretch one call by 30 s"
+    },
+    "findings": [
+      "T2 isolated copy (provider): all five calls answered from the vector path, p50 1.78 s / p95 2.19 s; the first call in a cold process paid 2.5-11.3 s to fill page cache over the 3.6 GB index.",
+      "T2 isolated copy (local word vectors): p50 0.18 s but p95 8.0 s — two of five questions failed the 0.50 local floor and took the lexical fallback, whose SQL path is the slow route on a 310k-symbol index. The provider configuration avoids that route because its vectors clear the floor.",
+      "T2 live shared index while other work was writing: p50 5.1 s / p95 13.3 s (WAL held 4.1 MB of frames); these are wall-clock numbers under I/O contention, not tool time. The read-only proof still holds: brain.db bytes and WAL frames were unchanged before/after every call.",
+      "Exact symbol name with limit 1 skips the dense scan: p50 0.93 ms on the isolated copy, 11.75 ms on the live shared index."
+    ]
   },
-  "blockedLegs": [
-    {
-      "leg": "T2 end-to-end on the live shared index",
-      "reason": "the current read path writes the index (audit C1); the backup-copy measurement is used instead and its population is recorded above"
-    },
-    {
-      "leg": "T2 end-to-end after the read-only switch",
-      "reason": "Phase B, re-measured after the fix on the same copy"
-    },
-    {
-      "leg": "compiled-CLI transport latency",
-      "reason": "dist/ stale; source door only until the Lead integration rebuild"
-    }
+  "limitations": [
+    "Latency figures are machine-specific measurements, not guarantees; the dominant costs are page-cache warmth and provider round-trip time.",
+    "Live shared-index numbers include wall-clock contention from other fleet processes and are reported separately from the isolated-copy tool time."
   ]
 }

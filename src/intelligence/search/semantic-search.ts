@@ -1,67 +1,160 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — vector retrieval for bb_ask: it embeds a question, compares
+//   only stored vectors from the same model and width, and returns ranked candidates
+//   with the provenance, freshness and comparison facts the answer needs.
+// WHICH TOOL IT SERVES — bb_ask (mutability read, requiresIndex true, modes: answer).
+// WHY IT IS SHAPED THIS WAY — three constraints force the design:
+//   1. a READ must not write. Every open is byte-read-only, the legacy-blob
+//      promotion that used to be scheduled for read rows is gone (that belongs to
+//      indexing), and the fallback engines are the only remaining shared readers.
+//   2. a similarity is only meaningful in ONE vector space, so the query model and
+//      width are authoritative and rows from any other space are excluded.
+//   3. a number's meaning must be declared with it: the comparison coverage is
+//      measured for the model that was ACTUALLY compared (after the query vector
+//      exists), the scan cap is published, and a provider that does not answer in
+//      time is reported instead of hiding as slow retrieval.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_ask.md, docs/BB_ASK.md,
+//   validation/tools/bb_ask/**, gates: npx tsx script/m13/verify-ask-honesty.ts,
+//   npx tsx script/verify-semantic.ts, npx tsx script/m13/verify-ask-integration.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/search/quick-answer.ts,
+//   src/mcp/tools/bb_ask/{handler,descriptor}.ts, docs/BB_ASK.md, those gates.
+// CONTRACTS IT MUST NOT BREAK — read-only access to the index; model/width
+//   consistency; similarity null (never 0) on the lexical path; declared absence
+//   via fallbackReason; declared coverage, scan bounds and embedding-timeout facts.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { checkResultsFreshness } from "../../brain/freshness"
 import { SemanticEngine } from "../../brain/semantic/engine"
 import { cosineFloat32, readRowVector } from "../../brain/semantic/vector-binary"
-import { promoteMissingBlobsInBackground } from "../../brain/semantic/vector-promote"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { SemanticResult, SemanticSearchOptions, SemanticSearchResults } from "../contracts"
 import { readSymbolSnippet } from "../source-utils"
 import { makeProvenance } from "../evidence"
+import { embedLocal, projectVocabulary } from "../../brain/semantic/local-embed"
 
-// Hard cap on candidate vectors loaded into memory for the dense scan. This
-// bounds memory and CPU; when exceeded the scan is truncated deterministically
-// (highest-priority rows first via the ORDER BY in the query).
-const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
+declare module "../contracts" {
+  interface SemanticResult {
+    /**
+     * True when the indexed file no longer exists on disk. Distinct from
+     * `stale` (the file changed): a deleted file is not "changed", and a reader
+     * deciding whether to trust a citation needs to know which one it is.
+     */
+    missing?: boolean
+  }
+}
+
+/** Hard cap on candidate vectors loaded for the dense scan. Bounds memory and CPU;
+ *  when it is reached the scan is a deterministic prefix of the embedding table
+ *  (ordered by entity_id) and that fact is published in `scan.capped`. */
+export const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
+
+/** How much a query embedding may block the tool before the local fallback runs.
+ *  The provider bound is 30 s by default; a read tool that answers in ~2 s cannot
+ *  wait for it. The answer declares the bound that fired. */
+export const EMBEDDING_WAIT_CEILING_MS = 2000
 
 /**
  * How close two scores must be for the ranking to be treated as unable to tell
- * them apart.
- *
- * 0.05 on a cosine is roughly the resolution of a 50-dimensional hashed space:
- * one extra vocabulary word out of a typical body moves the score by about this
- * much, so two results within it differ by a word of vocabulary rather than by
- * anything about the question. The exact value is a judgement; what matters is
- * that the tool declares which way it went, so a reader can discount the score
- * instead of being handed a number with no scale.
+ * them apart. 0.05 on a cosine is roughly the resolution of a 50-dimensional
+ * hashed space: one extra vocabulary word in a typical body moves the score by
+ * about this much, so results within it differ by vocabulary rather than by
+ * anything about the question.
  */
 const NON_DISCRIMINATIVE_MARGIN = 0.05
 
 /**
  * Minimum cosine for a LOCAL (offline, 50-dimensional hashed) match to be
- * returned at all. Derived from measurement, not taste — see the comment at the
- * threshold site for the two populations and the trade-off table.
- *
- * Overridable per call through `options.similarityThreshold`, which is what a
- * caller raising or lowering its own bar should use; this constant is the
- * default that a caller who has expressed no opinion gets.
+ * returned at all. The old floor (0.15) sat below the false-positive median:
+ * measured over two populations known apart without human judgement, a 0.50
+ * floor kept 61% of true matches and 0% of false ones, while the dense matches it
+ * gives up are symbol-name queries the exact-name route answers before retrieval
+ * is consulted.
  */
 export const LOCAL_VECTOR_FLOOR = 0.5
+
+/** Minimum cosine for a non-local (API embedding model) match. */
+export const DENSE_MODEL_FLOOR = 0.35
 
 // Sparse/incompatible model labels that must never be fed to dense cosine.
 const NON_DENSE_MODELS = new Set(["tfidf-v1"])
 
-/** Stored embeddings vs indexable symbols, read with one query. Returns 1/1
- *  when there is nothing to cover, so a fully-unembedded index never renders
- *  as "0% covered" (which reads as total failure rather than total absence). */
-function measureCoverage(raw: any, projectId: ProjectID): { indexSymbolCount: number; embeddedSymbolCount: number; embeddingCoverage: number } {
+/** Facts about the vector space that was compared. `comparable*` counts are for the
+ *  query model and width; `library*` counts describe every stored embedding, which
+ *  is a different number and is labelled as such. */
+export interface SemanticComparison {
+  queryModel: string
+  dimension: number
+  comparableSymbols: number
+  comparableEmbeddings: number
+  comparableCoverage: number
+  librarySymbols: number
+  libraryEmbeddings: number
+  libraryCoverage: number
+}
+
+/** Bounds on the scan that produced the results, so a prefix is never read as a
+ *  complete match set. */
+export interface SemanticScan {
+  cap: number
+  scannedRows: number
+  filteredRows: number
+  rankedCandidates: number
+  capped: boolean
+}
+
+/** What the ask-time embedding did: whether the provider answered inside the tool's
+ *  ceiling, and which vector space answered when it did not. */
+export interface SemanticEmbeddingBound {
+  waitCeilingMs: number
+  timedOut: boolean
+  fellBackTo: string | null
+}
+
+export type SemanticSearchFacts = {
+  comparison: SemanticComparison
+  scan: SemanticScan
+  embeddingBound?: SemanticEmbeddingBound
+}
+
+export type SemanticSearchResultsWithFacts = SemanticSearchResults & SemanticSearchFacts
+
+/** Stored embedding rows and indexable symbols, read through a byte-read-only
+ *  handle. Two queries rather than one subquery pair so the model filter applies
+ *  to the embedding count: a project can hold several models at once. */
+async function measureCounts(
+  raw: any,
+  projectId: ProjectID,
+  model: string | null,
+  dimension: number,
+): Promise<SemanticComparison> {
+  let librarySymbols = 0
+  let libraryEmbeddings = 0
+  let comparableEmbeddings = 0
   try {
-    // TWO placeholders, TWO bindings — binding one leaves the second subquery
-    // NULL, which SQLite reports as 0, and coverage then reads "0 of 0" on
-    // every project instead of the real ratio.
-    const row = raw.prepare(
-      "SELECT (SELECT COUNT(*) FROM brain_symbol WHERE project_id = ?) AS symbols, " +
-        "(SELECT COUNT(DISTINCT entity_id) FROM brain_semantic_embedding WHERE project_id = ?) AS embedded",
-    ).get(projectId, projectId) as { symbols: number; embedded: number } | undefined
-    const indexSymbolCount = row?.symbols ?? 0
-    const embeddedSymbolCount = row?.embedded ?? 0
-    return {
-      indexSymbolCount,
-      embeddedSymbolCount,
-      embeddingCoverage: indexSymbolCount > 0 ? embeddedSymbolCount / indexSymbolCount : 1,
+    librarySymbols = ((raw.prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE project_id = ?").get(projectId) as any)?.c ?? 0)
+    libraryEmbeddings = ((raw.prepare("SELECT COUNT(DISTINCT entity_id) AS c FROM brain_semantic_embedding WHERE project_id = ?").get(projectId) as any)?.c ?? 0)
+    if (model !== null) {
+      comparableEmbeddings = ((raw
+        .prepare("SELECT COUNT(DISTINCT entity_id) AS c FROM brain_semantic_embedding WHERE project_id = ? AND embedding_model = ? AND vector_dimension = ?")
+        .get(projectId, model, dimension) as any)?.c ?? 0)
     }
   } catch {
-    return { indexSymbolCount: 0, embeddedSymbolCount: 0, embeddingCoverage: 1 }
+    // A count that cannot be read is reported as zero coverage with the call's
+    // limitations, never as a full index.
+  }
+  return {
+    queryModel: model ?? "none",
+    dimension,
+    comparableSymbols: librarySymbols,
+    comparableEmbeddings,
+    comparableCoverage: librarySymbols > 0 ? comparableEmbeddings / librarySymbols : 0,
+    librarySymbols,
+    libraryEmbeddings,
+    libraryCoverage: librarySymbols > 0 ? libraryEmbeddings / librarySymbols : 0,
   }
 }
 
@@ -69,14 +162,15 @@ type EmbeddingRow = {
   rowid?: number
   entityId: string
   vector: string
-  /** M50.A2 (#764): little-endian float32 accelerator; null on legacy rows. */
+  /** Little-endian float32 accelerator; null on legacy rows. */
   blob?: Uint8Array | null
   model: string
 }
 
-// The accelerator column is added at open (ensureSchemaIfNew). A readonly open
-// (doctor/inspection paths) skips that migration, so the column may be absent —
-// detected once per handle and answered from JSON only, never by failing.
+// The accelerator column is added at open (ensureSchemaIfNew). A byte-read-only
+// open deliberately skips migrations, so the column may be absent on an index
+// that has not been opened read-write since the column landed — detected once per
+// handle and answered from JSON only, never by failing.
 const blobColumnByHandle = new WeakMap<object, boolean>()
 function hasBlobColumn(raw: any): boolean {
   const cached = blobColumnByHandle.get(raw)
@@ -103,103 +197,148 @@ type SymbolRow = {
   language: string
 }
 
-// NOTE (M50.A2 #764): the old `isDenseNumericVector(JSON.parse(...))` guard is
-// gone on purpose. `readRowVector` (vector-binary.ts) is now the single
-// admission test: it accepts a blob only at the exact byte length and a JSON
-// row only when it scans to exactly `vector_dimension` finite numbers, then
-// `Number.isFinite(similarity)` rejects overflowed/invalid vectors. Same
-// guarantees, without allocating an array per row.
+/** Resolve a promise, or report that the wait ceiling fired. The underlying
+ *  promise keeps its own rejection handler, so a late provider answer cannot
+ *  become an unhandled rejection after the tool has moved on. */
+async function boundedWait<T>(
+  promise: Promise<T>,
+  waitMs: number,
+): Promise<{ timedOut: false; value: T } | { timedOut: true }> {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const timeout = new Promise<{ timedOut: true }>((resolve) => {
+    timer = setTimeout(() => resolve({ timedOut: true }), waitMs)
+    if (typeof (timer as any).unref === "function") (timer as any).unref()
+  })
+  const settled = promise.then(
+    (value) => ({ timedOut: false as const, value }),
+    () => ({ timedOut: true as const }),
+  )
+  const winner = await Promise.race([settled, timeout])
+  if (timer) clearTimeout(timer)
+  return winner
+}
+
+/** The project's vocabulary in the local vector space, read-only. Used only when a
+ *  provider timeout forces the local model after `SemanticEngine.embed` has
+ *  already been abandoned. */
+function localQueryVector(raw: any, projectId: ProjectID, query: string): number[] {
+  try {
+    const vectors = embedLocal([query], projectVocabulary(raw, projectId))
+    return vectors[0] ?? []
+  } catch {
+    return []
+  }
+}
 
 // Vector-backed semantic retrieval with strict model consistency.
 //
 // Rules enforced here:
-// - The query vector's producing model (getLastEmbeddingModel) is authoritative.
-//   Only stored embeddings from that same model are compared. Cross-model
-//   comparison is prohibited because different models occupy different vector
-//   spaces even at equal dimensions.
-// - tfidf-v1 and any non-finite/non-numeric vectors are excluded from the dense
-//   cosine path.
-// - Every response carries explicit metadata: query model, index model,
-//   method, dimension, scan counts, and a fallback reason when applicable.
+// - The query vector's producing model (SemanticEngine.getLastEmbeddingModel, or the
+//   local label when a provider timeout forced the local fallback) is authoritative.
+//   Only stored embeddings from that same model AND dimension are compared.
+// - tfidf-v1 and any non-finite/non-numeric vectors are excluded from the dense path.
+// - Every response carries metadata: query model, index model, method, dimension,
+//   scan counts, fallback reason, and the comparison/scan/embedding facts.
+// - Access is read-only: no schema creation, no healing, no blob promotion.
 export async function semanticVectorSearch(
   projectId: ProjectID,
   query: string,
   options: SemanticSearchOptions = {},
-): Promise<SemanticSearchResults> {
-  const maxResults = options.maxResults || 50
-  const raw = await BrainDatabase.getRawInstance(projectId)
+): Promise<SemanticSearchResultsWithFacts> {
+  // Page size is a work budget. The tool refuses <1 and >100 at its door; the
+  // engine clamps so a direct caller cannot turn it into an unbounded job.
+  const maxResults = Math.max(1, Math.min(100, Math.floor(options.maxResults ?? 50)))
 
-  // Coverage is measured, not assumed, and read once per call. Every response
-  // carries it, including the fallback ones: a caller asking "why did I get
-  // these results" needs the ratio, and at 22% coverage the vector path
-  // succeeds while most of the index is simply absent from the comparison.
-  const coverage = measureCoverage(raw, projectId)
-
-  const emptyMeta = (method: "vector" | "keyword-fallback", reason: string, model = "unknown", dimension = 0): SemanticSearchResults => ({
-    results: [],
-    provenance: makeProvenance({ evidenceClass: method === "vector" ? "unknown" : "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: method === "vector" ? "no-result" : "content-search-fallback", limitations: ["Semantic retrieval is candidate discovery, not behavioral proof."], unknowns: [reason] }),
-    metadata: { queryModel: model, indexModel: model, method, dimension, scannedRows: 0, filteredRows: 0, fallbackReason: reason, ...coverage },
-  })
-
-  let queryVector: number[]
+  let raw: any
   try {
-    // The project id is passed so the query is embedded in the SAME local
-    // vector space the index used. Without it the query falls back to the
-    // 190-word base vocabulary while the index used the project's, so a symbol
-    // name could not be represented at all — the query vector was all zeros.
-    queryVector = await SemanticEngine.embed(query, projectId as any)
-  } catch {
-    return await keywordFallback(projectId, query, options, "embedding-error")
-  }
-  if (!queryVector || queryVector.length === 0) {
-    return await keywordFallback(projectId, query, options, "no-query-vector")
-  }
-  // A vector of the right SHAPE but no magnitude is a different failure from an
-  // empty one, and it must not be reported as "we compared vectors and none
-  // were close enough".
-  //
-  // The local word-vector model returns a 50-element array of zeros whenever
-  // every token in the query is out of vocabulary — which is every
-  // identifier-shaped query, because the vocabulary is built by splitting
-  // camelCase and snake_case while the query tokenizer splits on whitespace
-  // only. Measured over 9 real repositories: 99 of 99 symbol names and 81 of
-  // 180 ordinary questions produce exactly this vector. Cosine against the zero
-  // vector is 0 for EVERY row, so the old code fell through to
-  // `no-vector-above-threshold` — a reason that blames the index for a problem
-  // that is entirely in the query, and points remediation at re-embedding a
-  // corpus that was embedded correctly.
-  if (queryVector.every((component) => component === 0)) {
-    return await keywordFallback(projectId, query, options, "degenerate-query-vector")
+    raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
+  } catch (error: any) {
+    return unreadableResult(projectId, error?.message ?? String(error))
   }
 
-  // Authoritative model = the one that actually produced this query vector.
-  const queryModel = SemanticEngine.getLastEmbeddingModel()
-  if (NON_DENSE_MODELS.has(queryModel)) {
-    return await keywordFallback(projectId, query, options, "non-dense-query-model")
+  const waitCeilingMs = (() => {
+    const fromEnv = Number(process.env.BB_EMBEDDING_TIMEOUT_MS)
+    const providerBound = Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : 30_000
+    return Math.min(providerBound, EMBEDDING_WAIT_CEILING_MS)
+  })()
+
+  let queryVector: number[] = []
+  let queryModel = "unknown"
+  let embeddingBound: SemanticEmbeddingBound | undefined
+  try {
+    const raced = await boundedWait(SemanticEngine.embed(query, projectId as any), waitCeilingMs)
+    if (raced.timedOut) {
+      // The provider did not answer inside the tool's ceiling. Compute the local
+      // vector directly instead of waiting for the engine's own 30 s failure path;
+      // the answer then compares in the 50-dimension space and says so.
+      queryVector = localQueryVector(raw, projectId, query)
+      queryModel = SemanticEngine.LOCAL_MODEL_LABEL
+      embeddingBound = { waitCeilingMs, timedOut: true, fellBackTo: queryVector.length > 0 ? SemanticEngine.LOCAL_MODEL_LABEL : null }
+    } else {
+      queryVector = raced.value
+      queryModel = SemanticEngine.getLastEmbeddingModel()
+    }
+  } catch {
+    return await keywordFallback(projectId, query, options, maxResults, "embedding-error", {
+      comparison: await measureCounts(raw, projectId, null, 0),
+      scan: emptyScan(),
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
   }
+
+  if (!queryVector || queryVector.length === 0) {
+    return await keywordFallback(projectId, query, options, maxResults, "no-query-vector", {
+      comparison: await measureCounts(raw, projectId, null, 0),
+      scan: emptyScan(),
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
+  }
+  const dimension = queryVector.length
+  // A vector of the right SHAPE but no magnitude is a different failure from an
+  // empty one: the local word-vector model returns a 50-element zero vector when
+  // every token in the query is out of vocabulary, and cosine against it is 0 for
+  // every row, so NOTHING was compared. Reported as such, with the cause in the
+  // query rather than in the index.
+  if (queryVector.every((component) => component === 0)) {
+    return await keywordFallback(projectId, query, options, maxResults, "degenerate-query-vector", {
+      comparison: await measureCounts(raw, projectId, queryModel, dimension),
+      scan: emptyScan(),
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
+  }
+  if (NON_DENSE_MODELS.has(queryModel)) {
+    return await keywordFallback(projectId, query, options, maxResults, "non-dense-query-model", {
+      comparison: await measureCounts(raw, projectId, null, 0),
+      scan: emptyScan(),
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
+  }
+
+  // Coverage is measured AFTER the query vector exists, for the model and width
+  // that will actually be compared — not for the whole library. The two numbers
+  // differ on a mixed-model index (measured: 32,837 stored embeddings library-wide,
+  // 1,931 comparable in the local 50-dimension space).
+  const comparison = await measureCounts(raw, projectId, queryModel, dimension)
 
   // Retrieve only same-model, same-dimension embeddings. Deterministic order so
   // truncation at the cap is stable, not arbitrary. The blob column is selected
-  // when present so dense rows skip JSON parsing entirely (M50.A2: measured
-  // 1.75s of JSON.parse+cosine per bb_ask at 10.5k x 2048-dim).
-  const columnsBase =
-    "SELECT rowid AS rowid, entity_id AS entityId, embedding_vector AS vector, "
+  // when present so dense rows skip JSON parsing entirely.
+  const columnsBase = "SELECT rowid AS rowid, entity_id AS entityId, embedding_vector AS vector, "
   const columnsBlob = columnsBase + "embedding_blob AS blob, embedding_model AS model "
   const columnsJson = columnsBase + "embedding_model AS model "
   const fromWhere =
     "FROM brain_semantic_embedding " +
     "WHERE project_id = ? AND embedding_model = ? AND vector_dimension = ? " +
     "ORDER BY entity_id LIMIT ?"
-  const args = [projectId, queryModel, queryVector.length, VECTOR_SCAN_CAP] as const
+  const args = [projectId, queryModel, dimension, VECTOR_SCAN_CAP] as const
   let rows: EmbeddingRow[]
   const withBlobColumn = hasBlobColumn(raw)
   if (withBlobColumn) {
     try {
       rows = raw.prepare(columnsBlob + fromWhere).all(...args) as EmbeddingRow[]
     } catch {
-      // The column vanished under a cached handle (manual surgery, a DB
-      // swapped on disk): degrade to the JSON column instead of failing the
-      // query, and remember the answer for this handle.
+      // The column vanished under a cached handle: degrade to the JSON column
+      // instead of failing the query, and remember the answer for this handle.
       blobColumnByHandle.set(raw, false)
       rows = raw.prepare(columnsJson + fromWhere).all(...args) as EmbeddingRow[]
     }
@@ -208,114 +347,135 @@ export async function semanticVectorSearch(
   }
 
   if (rows.length === 0) {
-    return await keywordFallback(projectId, query, options, "no-matching-model-embeddings")
+    return await keywordFallback(projectId, query, options, maxResults, "no-matching-model-embeddings", {
+      comparison,
+      scan: emptyScan(),
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
   }
 
   // Same scoring math as before, on float32 buffers: the blob path becomes a
-  // zero-copy view, and the legacy path fills a reused scratch buffer with the
-  // measured fast scanner (bit-faithful to float32, max abs delta 2.9e-8).
-  const dim = queryVector.length
-  const queryF32 = new Float32Array(dim)
-  for (let i = 0; i < dim; i++) queryF32[i] = queryVector[i]
-  const scratch = new Float32Array(dim)
+  // zero-copy view, and the legacy path fills a reused scratch buffer.
+  const queryF32 = new Float32Array(dimension)
+  for (let i = 0; i < dimension; i++) queryF32[i] = queryVector[i]
+  const scratch = new Float32Array(dimension)
   const scored: Array<{ entityId: string; similarity: number }> = []
-  // M50.A2 (#764): rows read from JSON that lack the accelerator are promoted
-  // in the background AFTER this call returns — a user with a pre-existing
-  // index gets the faster path without re-indexing anything.
-  const needsPromotion: number[] = []
   for (const row of rows) {
-    const vec = readRowVector(row.blob ?? null, row.vector, dim, scratch)
+    const vec = readRowVector(row.blob ?? null, row.vector, dimension, scratch)
     if (!vec) continue // tfidf/sparse/malformed or dimension mismatch
-    if (withBlobColumn && row.blob == null && typeof row.rowid === "number") needsPromotion.push(row.rowid)
-    const similarity = cosineFloat32(queryF32, vec, dim)
+    const similarity = cosineFloat32(queryF32, vec, dimension)
     if (Number.isFinite(similarity)) scored.push({ entityId: row.entityId, similarity })
   }
-  if (needsPromotion.length > 0) {
-    promoteMissingBlobsInBackground(raw, String(projectId), queryModel, needsPromotion)
+
+  const isLocalVectors = dimension < 200
+  const threshold = options.similarityThreshold ?? (isLocalVectors ? LOCAL_VECTOR_FLOOR : DENSE_MODEL_FLOOR)
+  const aboveThreshold = scored.filter((s) => s.similarity >= threshold)
+  const ranked = aboveThreshold.sort((a, b) => b.similarity - a.similarity).slice(0, Math.min(maxResults * 10, 500))
+  const scan: SemanticScan = {
+    cap: VECTOR_SCAN_CAP,
+    scannedRows: rows.length,
+    filteredRows: scored.length,
+    rankedCandidates: aboveThreshold.length,
+    capped: rows.length >= VECTOR_SCAN_CAP,
   }
 
-  const isLocalVectors = queryVector.length < 200
-  // The LOCAL floor was 0.15, which sits far below the noise. Measured on rake
-  // with the production scorer, over two populations known apart WITHOUT a
-  // human judging them:
-  //
-  //   GOOD — a symbol scored against a query that NAMES it. The answer is known
-  //          to exist, so the score is a true positive.
-  //   BAD  — the top-scoring symbol for an ordinary question about a capability
-  //          this corpus does not have ("how does authentication work" in a
-  //          build tool). Every hit is a false positive BY CONSTRUCTION, because
-  //          the honest answer is "nothing found".
-  //
-  //          GOOD: n=120  min -0.262  p10 0.185  p50 0.576  p90 1.000
-  //          BAD:  n= 10  min  0.312  p10 0.346  p50 0.443  p90 0.547
-  //
-  // 0.15 is below the false-positive MEDIAN, so the old floor admitted
-  // essentially every wrong answer. What a floor buys:
-  //
-  //   floor 0.45   keeps 69% of true matches, 40% of false ones
-  //   floor 0.50   keeps 61% of true matches,  0% of false ones
-  //   floor 0.55   keeps 53% of true matches,  0% of false ones
-  //
-  // 0.50 is the knee. The dense matches it gives up are symbol-name queries,
-  // and those are resolved EXACTLY by the name route before retrieval is
-  // consulted at all — so nothing reachable by a user is lost, while every
-  // question this corpus cannot answer becomes an explicit "no semantic match"
-  // instead of a confident `matrix` at similarity 0.387.
-  //
-  // The API-embedding floor stays at 0.35: it was chosen for a different model
-  // in a different space, and there is no measurement here to move it.
-  const threshold = options.similarityThreshold ?? (isLocalVectors ? LOCAL_VECTOR_FLOOR : 0.35)
-  const ranked = scored
-    .filter((s) => s.similarity >= threshold)
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, Math.min(maxResults * 10, 500))
-
   if (ranked.length === 0) {
-    return await keywordFallback(projectId, query, options, "no-vector-above-threshold")
+    return await keywordFallback(projectId, query, options, maxResults, "no-vector-above-threshold", {
+      comparison,
+      scan,
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
   }
 
   const results = await resolveEntities(projectId, ranked, options, maxResults)
   if (results.length === 0) {
-    return await keywordFallback(projectId, query, options, "no-resolvable-entities")
+    return await keywordFallback(projectId, query, options, maxResults, "no-resolvable-entities", {
+      comparison,
+      scan,
+      ...(embeddingBound ? { embeddingBound } : {}),
+    })
   }
 
   // ── is this ranking discriminative, or noise with a decimal point? ───────
-  // The local model is a bag of words with NO inverse-document-frequency
-  // weighting, and cosine normalises by length, so a two-word body that happens
-  // to contain any word of the query can outrank a 200-word function that is
-  // actually about the question. Measured on rake, ten ordinary questions:
-  //
-  //   "how are errors reported to the user" -> top result `future`  (0.367)
-  //   "where is the request handled"        -> top result `matrix` (0.387)
-  //   "how does authentication work"        -> top result `glob`   (0.361)
-  //   "what validates the user input"       -> top result `item_4` (0.435)
-  //
-  // and nine of those ten had NO word in common with the question anywhere in
-  // the result's name, file or body. Those scores are not weak evidence, they
-  // are not evidence — but they are printed as a similarity, which makes noise
-  // look measured.
-  //
-  // So a score is qualified by whether the ranking can DISTINGUISH its top
-  // results from one another. When it cannot, the answer says so, and the
-  // number stops reading as a finding.
   const rankedScores = ranked.map((r) => r.similarity)
   const topScore = rankedScores[0]
   const competitors = rankedScores.filter((s) => s >= topScore - NON_DISCRIMINATIVE_MARGIN).length - 1
 
   return {
     results,
-    provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "brain_semantic_embedding", limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."], truncated: rows.length >= VECTOR_SCAN_CAP }),
+    provenance: makeProvenance({
+      evidenceClass: "semantic_candidate",
+      engine: "semantic-search@intelligence",
+      engineVersion: "m10.03",
+      projectId,
+      source: "brain_semantic_embedding",
+      limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."],
+      truncated: scan.capped,
+      unknowns: embeddingBound?.timedOut
+        ? [`The embedding provider did not answer within ${waitCeilingMs} ms; the question was embedded with the local word-vector model (${SemanticEngine.LOCAL_MODEL_LABEL}).`]
+        : [],
+    }),
     metadata: {
       queryModel,
       indexModel: queryModel,
       method: "vector",
-      dimension: queryVector.length,
-      scannedRows: rows.length,
-      filteredRows: scored.length,
+      dimension,
+      scannedRows: scan.scannedRows,
+      filteredRows: scan.filteredRows,
       discriminative: competitors === 0,
       nonDiscriminativeCompetitors: competitors,
-      ...coverage,
+      indexSymbolCount: comparison.librarySymbols,
+      embeddedSymbolCount: comparison.comparableEmbeddings,
+      embeddingCoverage: comparison.comparableCoverage,
     },
+    comparison,
+    scan,
+    ...(embeddingBound ? { embeddingBound } : {}),
+  }
+}
+
+function emptyScan(): SemanticScan {
+  return { cap: VECTOR_SCAN_CAP, scannedRows: 0, filteredRows: 0, rankedCandidates: 0, capped: false }
+}
+
+/** The index cannot be read at all. A read must not create a database to answer a
+ *  question about one, so this is answered from nothing and says so. */
+function unreadableResult(projectId: ProjectID, error: string): SemanticSearchResultsWithFacts {
+  const comparison: SemanticComparison = {
+    queryModel: "none",
+    dimension: 0,
+    comparableSymbols: 0,
+    comparableEmbeddings: 0,
+    comparableCoverage: 0,
+    librarySymbols: 0,
+    libraryEmbeddings: 0,
+    libraryCoverage: 0,
+  }
+  return {
+    results: [],
+    provenance: makeProvenance({
+      evidenceClass: "unknown",
+      engine: "semantic-search@intelligence",
+      engineVersion: "m10.03",
+      projectId,
+      source: "index-not-readable",
+      limitations: ["The index could not be opened read-only, so nothing could be compared."],
+      unknowns: [`Index read failed: ${error}`],
+    }),
+    metadata: {
+      queryModel: "none",
+      indexModel: "none",
+      method: "keyword-fallback",
+      dimension: 0,
+      scannedRows: 0,
+      filteredRows: 0,
+      fallbackReason: "index-not-readable",
+      indexSymbolCount: 0,
+      embeddedSymbolCount: 0,
+      embeddingCoverage: 0,
+    },
+    comparison,
+    scan: emptyScan(),
   }
 }
 
@@ -325,8 +485,7 @@ async function resolveEntities(
   options: SemanticSearchOptions,
   maxResults: number,
 ): Promise<SemanticResult[]> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
-  const byId = new Map(ranked.map((r) => [r.entityId, r.similarity]))
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const ids = ranked.map((r) => r.entityId)
   if (ids.length === 0) return []
 
@@ -340,8 +499,9 @@ async function resolveEntities(
   ).all(projectId, ...ids) as SymbolRow[]
 
   const symbolMap = new Map(symbols.map((s) => [s.id, s]))
-  // Freshness truthfulness: a source whose file changed on disk since indexing
-  // must be flagged stale — never presented as current.
+  // Freshness truthfulness: a source whose file changed on disk since indexing is
+  // flagged stale; a source whose file is gone is flagged missing. They are two
+  // different facts and the answer renders them differently.
   const freshness = checkResultsFreshness(raw, symbols.map((s) => ({ fileId: s.fileId })))
   const results: SemanticResult[] = []
 
@@ -355,6 +515,7 @@ async function resolveEntities(
     if (options.symbolKind && symbol.symbolType !== options.symbolKind) continue
 
     const snippet = (await readSymbolSnippet(symbol.filePath, symbol.line, symbol.lineEnd, 30)) || symbol.name
+    const status = freshness.get(symbol.fileId)
     results.push({
       entityId: entry.entityId,
       symbolName: symbol.name,
@@ -364,29 +525,38 @@ async function resolveEntities(
       snippet,
       similarity: entry.similarity,
       language: symbol.language,
-      stale: ["stale", "missing"].includes(freshness.get(symbol.fileId) ?? "") || undefined,
+      stale: status === "stale" || status === "missing" || undefined,
+      missing: status === "missing" || undefined,
       fileId: symbol.fileId,
     })
   }
   return results
 }
 
+/** Lexical fallback: content search, with `similarity: null` (not 0 — a zero is a
+ *  number and every consumer treated it as one). Carries the comparison/scan facts
+ *  that were measured before the fallback, so a reader can see what was compared
+ *  even when the lexical path answered. */
 async function keywordFallback(
   projectId: ProjectID,
   query: string,
   options: SemanticSearchOptions,
+  maxResults: number,
   reason: string,
-): Promise<SemanticSearchResults> {
+  facts: SemanticSearchFacts,
+): Promise<SemanticSearchResultsWithFacts> {
   const { searchContent } = await import("./content-search")
-  const raw = await BrainDatabase.getRawInstance(projectId)
-  const content = await searchContent(projectId, query, {
-    maxResults: options.maxResults || 50,
-    languages: options.languages,
-    symbolKind: options.symbolKind,
-  })
-  // `similarity: null`, not 0 — see SemanticResult.similarity. A zero is a
-  // NUMBER, and every consumer treated it as one.
-  const results: SemanticResult[] = content.map((row) => ({
+  let content: any[] = []
+  try {
+    content = await searchContent(projectId, query, {
+      maxResults,
+      languages: options.languages,
+      symbolKind: options.symbolKind,
+    })
+  } catch {
+    content = []
+  }
+  const results: SemanticResult[] = content.map((row: any) => ({
     entityId: row.fileId,
     symbolName: row.symbolName || row.context,
     symbolType: row.symbolType || "symbol",
@@ -395,26 +565,39 @@ async function keywordFallback(
     snippet: row.snippet,
     similarity: null,
     language: row.language,
-    stale: (row as any).stale === true || undefined,
+    stale: row.stale === true || undefined,
     fileId: row.fileId,
   }))
   return {
     results,
-    provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "content-search-fallback", limitations: ["Keyword fallback is not vector-ranked and similarity is not meaningful; results are candidate discovery, not behavioral proof."], unknowns: [reason] }),
+    provenance: makeProvenance({
+      evidenceClass: "semantic_candidate",
+      engine: "semantic-search@intelligence",
+      engineVersion: "m10.03",
+      projectId,
+      source: "content-search-fallback",
+      limitations: ["Keyword fallback is not vector-ranked and similarity is not meaningful; results are candidate discovery, not behavioral proof."],
+      truncated: facts.scan.capped,
+      unknowns: [reason],
+    }),
     metadata: {
       queryModel: "none",
       indexModel: "none",
       method: "keyword-fallback",
       dimension: 0,
-      scannedRows: content.length,
-      filteredRows: content.length,
+      scannedRows: facts.scan.scannedRows,
+      filteredRows: facts.scan.filteredRows,
       fallbackReason: reason,
-      // Carried so the ANSWER can say which query words produced these results.
-      // A terms-route match on one of three words is a coincidence with any
-      // query sharing that word, and an answer that lists five code blocks
-      // without saying so reads as a finding.
-      ...(content.termMatch ? { termMatch: content.termMatch } : {}),
-      ...measureCoverage(raw, projectId),
+      // The terms route reports which query words produced these rows; a match on
+      // ONE common word is a coincidence with any query sharing that word, and an
+      // answer that lists code blocks without saying so reads as a finding.
+      ...((content as any).termMatch ? { termMatch: (content as any).termMatch } : {}),
+      indexSymbolCount: facts.comparison.librarySymbols,
+      embeddedSymbolCount: facts.comparison.libraryEmbeddings,
+      embeddingCoverage: facts.comparison.libraryCoverage,
     },
+    comparison: facts.comparison,
+    scan: facts.scan,
+    ...(facts.embeddingBound ? { embeddingBound: facts.embeddingBound } : {}),
   }
 }

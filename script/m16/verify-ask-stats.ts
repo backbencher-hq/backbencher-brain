@@ -18,6 +18,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 
 let checks = 0, passed = 0, failed = 0, negatives = 0, negativePassed = 0
+let overallFailed = 0
 function ck(label: string, cond: boolean, detail?: string) { checks++; if (cond) passed++; else { failed++; console.log("  FAIL: " + label + (detail ? " — " + detail : "")) } }
 function nk(label: string, cond: boolean, detail?: string) { negatives++; if (cond) negativePassed++; else { failed++; console.log("  FAIL: " + label + " (negative)" + (detail ? " — " + detail : "")) } }
 
@@ -28,6 +29,7 @@ async function emit(code: string, issue: string, extra?: any) {
   const total = passed + negativePassed
   const e = { issue, code, tool: "bb_ask", title: issue.split(":")[1]?.trim() ?? code, verified: failed === 0, checks, passed: total, failed, negatives, generatedAt: new Date().toISOString(), ...(extra || {}) }
   writeFileSync(path.join(RESULTS_DIR, code + ".json"), JSON.stringify(e, null, 2) + "\n")
+  if (failed > 0) overallFailed++
   console.log(code + ": " + (failed === 0 ? "VERIFIED" : "KNOWN-GAP") + " (" + total + "/" + checks + " passed, " + negatives + " negatives)")
 }
 async function reset() { checks = passed = failed = negatives = negativePassed = 0 }
@@ -65,6 +67,8 @@ async function main() {
       const most = await quickAnswer(projectId, "what is the most complex function?")
       ck("A1: most-complex finds a real method", /most complex function is/.test(most.answer), most.answer.slice(0, 60))
       ck("A1: provenance is indexed", ans.provenance?.evidenceClass === "indexed", String(ans.provenance?.evidenceClass))
+      // Negative: a method-first repository must not be reported as zero functions.
+      nk("A1: Ruby methods are not reported as zero functions", m !== null && parseInt(m[1], 10) > 0, ans.answer.slice(0, 60))
     } finally { await cleanup(root, projectId) }
     await emit("A1", "M16.A1 (function|method union)", { runLog: { fixture: "ruby 2 methods + 1 module" } })
     await reset()
@@ -98,6 +102,8 @@ async function main() {
       const aRb = await quickAnswer(pid, "how many ruby files are in this project?")
       const mRb = aRb.answer.match(/There are (\d+) ruby files/)
       ck("A2: per-language file count matches DB", mRb !== null && parseInt(mRb[1], 10) === rubyFiles, `db=${rubyFiles} ans=${mRb?.[1]}`)
+      // Negative: a language-scoped count must not silently be the whole-project count.
+      nk("A2: a language-scoped file count differs from the whole-project count", files > rubyFiles && parseInt(mRb?.[1] ?? "-1", 10) !== files, `ruby=${rubyFiles} all=${files}`)
 
       const aC = await quickAnswer(pid, "how many classes are in this project?")
       const mC = aC.answer.match(/There are (\d+) classes/)
@@ -120,7 +126,7 @@ async function main() {
       // answer must not contain a fabricated "There are 0" style total.
       const ans = await quickAnswer(pid, "how many modules does this project have?")
       const fabricated = /There are 0 modules/.test(ans.answer)
-      const labeledSearch = /search results/i.test(ans.answer) || /couldn't find|couldn't answer|not a verified answer/i.test(ans.answer)
+      const labeledSearch = /search results/i.test(ans.answer) || /couldn't find|couldn't answer|not a verified answer|i can't count/i.test(ans.answer)
       nk("A3: unsupported noun never fabricates a 0-count", !fabricated, ans.answer.slice(0, 80))
       ck("A3: unsupported noun yields labeled search/unknown (honest)", labeledSearch || ans.answer.includes("modules") === false, ans.answer.slice(0, 100))
 
@@ -146,6 +152,8 @@ async function main() {
         const ans = await quickAnswer(pid, q)
         ck("A4: stat answer '" + q.slice(0, 24) + "' has indexed provenance", ans.provenance?.evidenceClass === "indexed" && typeof ans.provenance?.source === "string", `class=${ans.provenance?.evidenceClass}`)
         ck("A4: stat answer '" + q.slice(0, 24) + "' documents a limitation", Array.isArray(ans.provenance?.limitations) && ans.provenance.limitations.length > 0, "lim=" + JSON.stringify(ans.provenance?.limitations))
+        // Negative: an exact aggregate must not be labelled as a semantic candidate.
+        nk("A4: exact aggregate '" + q.slice(0, 24) + "' is not labelled semantic", ans.provenance?.evidenceClass !== "semantic_candidate" && !/search results, not a verified answer/i.test(ans.answer), String(ans.provenance?.evidenceClass))
       }
     } finally { await cleanup(root, pid) }
     await emit("A4", "M16.A4 (stat provenance)")
@@ -154,3 +162,4 @@ async function main() {
 }
 
 await main()
+process.exit(overallFailed > 0 ? 1 : 0)

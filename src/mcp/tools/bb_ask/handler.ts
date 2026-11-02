@@ -1,107 +1,139 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Author: Muhammad Ishaq Khan
 //
-// WHAT THIS FILE IS — the handler for bb_ask — the adapter that parses arguments, calls the owning engine, and shapes the tool result.
-// WHICH TOOL IT SERVES — bb_ask (see src/mcp/tools/bb_ask/descriptor.ts for mutability, modes and schema).
-// WHERE ITS EVIDENCE LIVES — docs/tools/bb_ask.md, docs/BB_*.md for its guide page, validation/tools/bb_ask/**, and the gate scripts named in its task.
-// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_ask/descriptor.ts (schema/defaults), the owning engine modules it calls, docs/tools/bb_ask.md, and its gate scripts.
-// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
-//   read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// WHAT THIS FILE IS — the bb_ask door: it validates the page size, calls the answer
+//   engine, and renders one text answer whose route, confidence kind, bounds,
+//   comparison model and freshness markers are all stated.
+// WHICH TOOL IT SERVES — bb_ask (mutability read, requiresIndex true, modes: answer).
+// WHY IT IS SHAPED THIS WAY — the answer is the only surface an MCP caller sees, so
+//   every qualified number must be qualified HERE:
+//   • a page size outside 1..100 is refused with the door's own words (one rule,
+//     two doors, same sentence) instead of being clamped into a different answer;
+//   • an exact aggregate is not a match set and never gets a "no matches" footer;
+//   • a keyword-fallback answer prints no similarity, because none was computed;
+//   • a non-discriminative ranking prints no confidence NUMBER — the answer itself
+//     says the scores do not separate candidates, so publishing their mean as
+//     measured confidence would contradict the sentence beside it;
+//   • `[bounds:]` states how many matches exist versus how many are shown, and
+//     whether a scan or the page size cut the set;
+//   • `[retrieval:]` names the model space the coverage number describes, plus the
+//     library-wide coverage, the scan cap and any embedding-provider timeout.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_ask.md, docs/BB_ASK.md,
+//   validation/tools/bb_ask/**, gates: npx tsx script/m13/verify-ask-honesty.ts,
+//   npx tsx script/m13/verify-ask-contract.ts, npx tsx script/m13/verify-ask-docs.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_ask/descriptor.ts, the
+//   answer engine src/intelligence/search/quick-answer.ts, script/tool-docs/curation/bb_ask.ts,
+//   docs/tools/bb_ask.md, docs/BB_ASK.md, and those gates.
+// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, stale vs missing
+//   freshness markers, read-only access, and the limit contract (1..100).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { ToolHandler, ToolContext, ToolResult, ToolArguments } from "../shared"
-import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
-import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
-import path from "node:path"
-import { BrainDatabase } from "../../../brain/database"
-import { annotationId, annotationReachability, canonicalFilePath } from "../../../brain/annotation-store"
-import { BrainTools, PatternBrainTools } from "../../../ast/tools"
-import { quickAnswer } from "../../../intelligence/search/quick-answer"
-import { detectOrphans } from "../../../intelligence/patterns/orphans"
-import { ASTEngine } from "../../../ast/engine"
-import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION, FRESHNESS_REMEDIATION_MANUAL_ONLY, type FreshnessSummary } from "../../../brain/freshness"
-import { CrossLanguageSecurityAnalysis } from "../../../security/cross-language-security"
-import { DependencyGraphVisualizer } from "../../../ast/dependency-graph-visualizer"
-import { CrossLanguageIntelligence } from "../../../ast/cross-language-intelligence"
-import { CrossLanguageMigrationAssistant } from "../../../ast/cross-language-migration-assistant"
-import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../../../ast/parallel-indexer"
-import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../../../ast/auto-refresh"
-import { TOOL_DESCRIPTORS } from "../../tool-registry"
-import { testQuality } from "../../../intelligence/testing/quality"
-import { executeEdit, type EditRequest } from "../../../intelligence/edit/edit-engine"
-import { getUnifiedHealth, formatUnifiedHealth } from "../../../intelligence/health/health-provider"
-import { getAnalysisHistory, executeAnalysis } from "../../../intelligence/analysis/run-history"
-import { generateDocumentation, formatDocumentation, type DocRequest } from "../../../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../../../intelligence/visualization/visualization-engine"
-import { generateMigrationPlans, formatMigrationPlans } from "../../../intelligence/migration/migration-engine"
-import { graphTraversal } from "../../../intelligence/graph/graph-engine"
-// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
-// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
-// (computeImpact + its declared budget) so the two doors cannot disagree.
-import { computeImpact, IMPACT_BUDGET } from "../../../lsp/impact"
-// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
-// The agent door CALLS it. It used to carry a drifted copy of the rule — see the
-// `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
-// defect a copy-projection is.
-import { classifyTier } from "../../../lsp/evidence_tier"
-import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../../../lsp/cross_language_hover"
-import { getProjectStats } from "../../../intelligence/analysis/project-stats"
-import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../../../intelligence/analysis/dependencies"
-import { analyzeComplexity } from "../../../intelligence/analysis/complexity"
-import { testMapping, testGaps, testImpact } from "../../../intelligence/testing/test-intel"
-import { makeProvenance } from "../../../intelligence/evidence"
-import type { AnalysisFindingInput } from "../../../intelligence/contracts"
+import type { ToolHandler } from "../shared"
+import { textResult } from "../shared"
+import { quickAnswer, ASK_LIMIT_DEFAULT, ASK_LIMIT_MAX, ASK_LIMIT_MIN, ASK_LIMIT_REFUSAL, type ConfidenceKind, type QuickAnswerResult } from "../../../intelligence/search/quick-answer"
+
+const CONFIDENCE_LABEL: Record<ConfidenceKind, string> = {
+  "exact-aggregate": "exact aggregate over the index",
+  "exact-symbol": "exact name lookup, not a similarity claim",
+  "similarity-mean": "mean of the returned similarities, bounded 0.2–0.85",
+  "non-discriminative": "capped, because the ranking cannot separate its top results",
+  "declared-floor": "declared floor; no score was computed on that path",
+  heuristic: "name-match heuristic",
+  none: "no answer was derived",
+}
+
+function renderRetrieval(result: QuickAnswerResult): string | null {
+  const facts = result.retrieval
+  if (!facts) return null
+  const bits: string[] = [`method=${facts.method}`, `queryModel=${facts.queryModel}`, `indexModel=${facts.indexModel}`]
+  if (facts.dimension > 0) bits.push(`dimension=${facts.dimension}`)
+  const coverage = facts.embeddingCoverage
+  if (coverage && (coverage.symbols > 0 || coverage.embedded > 0)) {
+    bits.push(
+      `embeddingCoverage=${Math.round(coverage.ratio * 100)}% (${coverage.embedded}/${coverage.symbols} symbols embedded in this model space)`,
+    )
+  }
+  const library = facts.libraryCoverage
+  if (library && (library.symbols > 0 || library.embedded > 0)) {
+    bits.push(`libraryCoverage=${Math.round(library.ratio * 100)}% (${library.embedded}/${library.symbols} across all models)`)
+  }
+  // A fallback reason belongs to the route that used the fallback; on the
+  // exact-name route it describes only the neighbour scan, so it is labelled.
+  if (facts.fallbackReason) {
+    bits.push(facts.method === "exact-name" ? `neighbourScanReason=${facts.fallbackReason}` : `reason=${facts.fallbackReason}`)
+  }
+  if (facts.scannedRows != null) {
+    const cap = facts.scanCap != null ? `/${facts.scanCap}` : ""
+    bits.push(`scanned=${facts.scannedRows}${cap}${facts.scanCapped ? " (cap reached)" : ""}`)
+  }
+  if (facts.filteredRows != null && facts.filteredRows > 0) bits.push(`filtered=${facts.filteredRows}`)
+  if (facts.rankedCandidates != null) bits.push(`candidates=${facts.rankedCandidates}`)
+  if (facts.embeddingTimedOut) {
+    bits.push(`embeddingTimeout=${facts.embeddingWaitCeilingMs ?? "?"}ms${facts.embeddingFellBackTo ? ` (fell back to ${facts.embeddingFellBackTo})` : " (no local fallback available)"}`)
+  }
+  if (facts.discriminative === false) {
+    bits.push(`ranking=non-discriminative (${facts.nonDiscriminativeCompetitors ?? 0} within the margin of the best)`)
+  }
+  return `[retrieval: ${bits.join(", ")}]`
+}
+
+function renderBounds(result: QuickAnswerResult): string {
+  const bounds = result.bounds
+  const total = bounds.totalMatches == null ? "unknown" : String(bounds.totalMatches)
+  const reason = bounds.truncated && bounds.truncationReason ? `, truncationReason=${bounds.truncationReason}` : ""
+  return `[bounds: returned=${bounds.returned}, totalMatches=${total}, truncated=${bounds.truncated}${reason}]`
+}
+
+function renderIndexSnapshot(result: QuickAnswerResult): string | null {
+  if (result.route !== "aggregate") return null
+  const snapshot = result.indexSnapshot
+  if (!snapshot || snapshot.updatedAt == null) {
+    return "[index: snapshot time unavailable — the age of these counts is unknown]"
+  }
+  const age = snapshot.ageMs == null ? "age unknown" : `${Math.round(snapshot.ageMs / 1000)} s ago`
+  return `[index: snapshot ${new Date(snapshot.updatedAt).toISOString()} (${age}); these counts describe the indexed snapshot, not the working tree]`
+}
+
+function renderProvenance(result: QuickAnswerResult): string {
+  const prov = result.provenance
+  const unknowns = prov.unknowns.length ? `; unknowns: ${prov.unknowns.join("; ")}` : ""
+  const truncated = prov.truncated ? "; truncated: the candidate scan was capped" : ""
+  return `[provenance: ${prov.evidenceClass} via ${prov.engine} (${result.route})${truncated}${unknowns}]`
+}
 
 export const handler: ToolHandler = async (args, { projectId }) => {
-    const limit = Number(args.limit ?? 5)
-    const result = await quickAnswer(projectId, String(args.query), { limit })
+  // The page size is a work budget with an advertised range. Refused with the
+  // door's own sentence (the shared validator refuses the same values with the
+  // same words), never clamped into a different answer.
+  const requested = args.limit === undefined ? ASK_LIMIT_DEFAULT : Number(args.limit)
+  if (!Number.isInteger(requested) || requested < ASK_LIMIT_MIN || requested > ASK_LIMIT_MAX) {
+    return textResult(ASK_LIMIT_REFUSAL, true)
+  }
+  const limit = requested
+  const result = await quickAnswer(projectId, String(args.query), { limit })
 
-    // HONESTY FIX (critical; measured on 9 real repositories). This handler
-    // appended `no semantic matches for "<query>"` whenever `sources` was empty
-    // — and `sources` is empty BY DESIGN on every verified-aggregate path, so
-    // the tool printed a correct count and then denied it two lines later:
-    //
-    //   answer: There are 786 symbols in this project
-    //   no semantic matches for "how many symbols are in this project?"
-    //
-    // "No matches" is a true statement only about a RETRIEVAL answer that found
-    // nothing. It is false about an exact aggregate, and also false for
-    // `limit: 0`, where the caller explicitly asked for no rows. The route is
-    // what makes the difference, and quickAnswer declares it.
-    const retrievalAnswer = result.route === "retrieval" || result.route === "symbol-name"
-    const parts: string[] = []
-    if (result.answer) parts.push(`answer: ${result.answer}`)
+  const parts: string[] = []
+  if (result.answer) parts.push(`answer: ${result.answer}`)
 
-    // Confidence was computed on every path and thrown away. Surface it: an
-    // aggregate is exact, a retrieval answer is bounded well below certainty,
-    // an unknown is 0.1. A reader can now tell them apart.
-    parts.push(`confidence: ${result.confidence}`)
+  // A number the answer calls unreliable is not published as a measurement.
+  if (result.confidenceKind === "non-discriminative") {
+    parts.push(`confidence: not a measurement (${CONFIDENCE_LABEL["non-discriminative"]})`)
+  } else {
+    parts.push(`confidence: ${result.confidence} (${CONFIDENCE_LABEL[result.confidenceKind]})`)
+  }
 
-    const shown = result.sources.slice(0, limit)
-    if (shown.length) {
-      parts.push(shown.map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`).join("\n"))
-    } else if (retrievalAnswer) {
-      parts.push(limit > 0
-        ? `no matches for "${args.query}" in the index`
-        : `limit was 0, so no matches were requested or returned`)
-    }
+  const shown = result.sources.slice(0, limit)
+  if (shown.length) {
+    parts.push(shown.map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`).join("\n"))
+  } else if (result.route === "retrieval" || result.route === "symbol-name") {
+    parts.push(`no matches for "${args.query}" in the index`)
+  }
 
-    // Retrieval facts the engine already computed. Without these the caller
-    // cannot tell a production embedding's cosine from the offline
-    // 50-dimension word-vector one — the difference between "semantic" and
-    // "lexical with a decimal point".
-    if (result.retrieval) {
-      const r = result.retrieval
-      const bits = [`method=${r.method}`, `queryModel=${r.queryModel}`, `indexModel=${r.indexModel}`]
-      if (r.dimension > 0) bits.push(`dimension=${r.dimension}`)
-      bits.push(`embeddingCoverage=${Math.round(r.embeddingCoverage.ratio * 100)}% (${r.embeddingCoverage.embedded}/${r.embeddingCoverage.symbols} symbols embedded)`)
-      if (r.fallbackReason) bits.push(`reason=${r.fallbackReason}`)
-      if (r.discriminative === false) bits.push(`ranking=non-discriminative (${r.nonDiscriminativeCompetitors ?? 0} within the margin of the best)`)
-      parts.push(`[retrieval: ${bits.join(", ")}]`)
-    }
-
-    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine} (${result.route})${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
-    parts.push(prov)
-    return textResult(parts.join("\n\n"))
+  const indexLine = renderIndexSnapshot(result)
+  if (indexLine) parts.push(indexLine)
+  const retrieval = renderRetrieval(result)
+  if (retrieval) parts.push(retrieval)
+  parts.push(renderBounds(result))
+  parts.push(renderProvenance(result))
+  return textResult(parts.join("\n\n"))
 }
