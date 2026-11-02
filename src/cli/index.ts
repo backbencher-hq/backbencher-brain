@@ -979,6 +979,23 @@ async function cmdTool(name: string, opts: { dir?: string; args?: string }): Pro
   try { args = opts.args ? JSON.parse(opts.args) : {} } catch { throw new Error("--args must be a JSON object") }
   if (!args || Array.isArray(args) || typeof args !== "object") throw new Error("--args must be a JSON object")
   const validated = validateToolArguments(descriptor, args)
+  // The MCP door refuses to answer from a missing or uninitialised index; the CLI
+  // door must be the same door. Without this a tool can print a clean zero for an
+  // unindexed project (the MCP door already refuses). Index-free modes are exempt,
+  // read from the descriptor's own declaration.
+  if (descriptor.requiresIndex) {
+    const validatedArgs = validated as Record<string, unknown>
+    const mode = typeof validatedArgs.mode === "string" ? validatedArgs.mode : undefined
+    const indexFree = mode !== undefined && (descriptor.indexFreeModes ?? []).includes(mode)
+    if (!indexFree) {
+      const { BrainDatabase } = await import("../brain/database")
+      try {
+        await BrainDatabase.getRawInstance(getProjectId(projectPath), { readonly: true })
+      } catch {
+        throw new Error(`No index found for ${projectPath}. Run: bb index "${projectPath}" (or restart bb mcp after indexing).`)
+      }
+    }
+  }
   const handler = createToolHandlers()[name]
   const result = await handler(validated, { projectPath, projectId: getProjectId(projectPath) })
   console.log(result.content.map((item) => item.text).join("\n"))

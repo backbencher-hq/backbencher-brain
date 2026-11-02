@@ -529,20 +529,44 @@ export function ensureAnnotationTable(raw: any): void {
   // stored form and the constant. What matters is the body, so that is what is
   // compared.
   const wantsGuard = ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL
-  const guardBody = wantsGuard.slice(wantsGuard.indexOf("BEFORE")).replace(/\s+/g, " ").trim()
-  let installedGuard = ""
-  try {
-    const row = raw.prepare("SELECT sql FROM sqlite_master WHERE type='trigger' AND name='brain_annotation_author_class_guard'").get() as { sql?: string } | undefined
-    installedGuard = String(row?.sql ?? "")
-  } catch {
-    installedGuard = "" // unreadable: fall through and let the exec decide
+  // The guard constant holds TWO triggers (INSERT and UPDATE). The previous
+  // comparison sliced the constant at the FIRST "BEFORE" — so the wanted body
+  // contained both triggers — while `sqlite_master` was read for only the INSERT
+  // trigger, so the two could never be equal and `guardIsStale` was permanently
+  // true. Every read-write open then dropped and recreated both triggers, which
+  // bumped schema_version and moved the WAL on every open (measured: 32–107 KB
+  // of WAL for a single visually-read tool call, and an annotation trigger churn
+  // on every write tool's open). The comparison is now per trigger, comparing
+  // each wanted statement with the trigger SQLITE actually stores.
+  const updateMarker = "CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard_update"
+  const updateIndex = wantsGuard.indexOf(updateMarker)
+  const wantedStatements: Array<{ name: string; sql: string }> = [
+    { name: "brain_annotation_author_class_guard", sql: wantsGuard.slice(0, updateIndex) },
+    { name: "brain_annotation_author_class_guard_update", sql: wantsGuard.slice(updateIndex) },
+  ]
+  const normalise = (sql: string): string => {
+    const before = sql.indexOf("BEFORE")
+    if (before < 0) return ""
+    return sql.slice(before).replace(/\s+/g, " ").trim()
   }
-  const installedBody = installedGuard.slice(installedGuard.indexOf("BEFORE")).replace(/\s+/g, " ").trim()
-  const guardIsStale = installedBody !== guardBody
-
-  if (guardIsStale && installedGuard !== "") {
-    // A pre-fix trigger is present. Drop it BEFORE creating the current one, or
-    // IF NOT EXISTS would leave the old body in place — which is the whole defect.
+  let guardIsStale = false
+  for (const wanted of wantedStatements) {
+    let installed = ""
+    try {
+      const row = raw.prepare("SELECT sql FROM sqlite_master WHERE type='trigger' AND name=?").get(wanted.name) as { sql?: string } | undefined
+      installed = String(row?.sql ?? "")
+    } catch {
+      installed = "" // unreadable: fall through and let the exec decide
+    }
+    if (installed === "" || normalise(installed) !== normalise(wanted.sql)) {
+      guardIsStale = true
+      break
+    }
+  }
+  if (guardIsStale) {
+    // A pre-fix trigger is present (or one of the two is missing). Drop both
+    // BEFORE creating the current pair, or IF NOT EXISTS would leave the old
+    // body in place — which is the whole defect.
     try {
       raw.exec("DROP TRIGGER IF EXISTS brain_annotation_author_class_guard_update; DROP TRIGGER IF EXISTS brain_annotation_author_class_guard;")
     } catch {

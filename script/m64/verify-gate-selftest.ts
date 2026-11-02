@@ -29,6 +29,14 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
 
+/** Run a TypeScript gate under whichever runtime is running us: Bun executes TS
+ *  natively, Node needs the tsx loader. The canonical `bun run` battery and the
+ *  Node direct run must both see the same result — a selftest that only works on
+ *  one runtime is a selftest with a blind spot. */
+const tsRun = (script: string): [string, string[]] =>
+  process.versions.bun ? [process.execPath, [script]] : [process.execPath, ["--import", "tsx", script]]
+
+
 // `process.cwd()`, not `process.resolve` — there is no such function on the
 // process object, and the first run died on that line before executing a single
 // check, which is a worse failure than a red gate because it looks like a crash
@@ -138,7 +146,7 @@ console.log("M64.P2 — each mutation must turn script/m64/verify-patterns-evide
 {
   let green = false
   try {
-    execFileSync(process.execPath, ["--import", "tsx", path.join(REPO, "script/m64/verify-patterns-evidence-gate.ts")], {
+    execFileSync(...tsRun(path.join(REPO, "script/m64/verify-patterns-evidence-gate.ts")), {
       cwd: REPO, encoding: "utf8", stdio: "pipe", timeout: 600_000,
     })
     green = true
@@ -197,7 +205,7 @@ for (const m of MUTATIONS) {
     let exitCode = 0
     let out = ""
     try {
-      out = execFileSync(process.execPath, ["--import", "tsx", path.join(mirror, "script/m64/verify-patterns-evidence-gate.ts")], {
+      out = execFileSync(...tsRun(path.join(mirror, "script/m64/verify-patterns-evidence-gate.ts")), {
         cwd: mirror, encoding: "utf8", stdio: "pipe", timeout: 600_000,
       })
     } catch (e: any) {
