@@ -815,6 +815,16 @@ the evidence: `uses`, `references` and `imports` all reach `parseFile`'s return 
 The note was removed rather than reworded because it described behaviour the code no
 longer has.
 
+## Complexity envelope
+
+`validation/m12/results/css-complexity.json` — corpus `svelte` manifest 185 `.css` files (`setDigest 99486ef6e98c226a`); both runs recorded `loadQuiet: false` (loadavg 33.9 / 31.76), so the lane formula marks their wall times unscorable rather than evidence:
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| fixtures | 2 | 24 | 19 | 1,446.6 | 16.6 | 13.1 | 202.1 MiB |
+| corpus_subset | 185 | 788 | 125 | 6,037.8 | 130.5 | 20.7 | 245.9 MiB |
+
+Declared budget: none in-tree for css; ms/Knode is the lane-formula score and these rows are disclosed as load-affected.
+
 ## PASS 3 — every ontology number re-measured, the analyzer's last 11 regexes deleted, and the DERIVATION debt paid
 
 This section is the current state. The pass-1 and pass-2 sections below it are kept as

@@ -297,6 +297,17 @@ recorded `loadAvgStart 4.85`, and the M60 complexity gate already refuses to
 score a row with no `loadRule` and no `corpusManifest` for exactly this reason
 (#871, #909). A throughput number without a load context is not a measurement.
 
+## Differential ground truth
+
+- Ground truth: `validation/m12/ground-truth/markdown.json` (manual audit of the lane's fixtures).
+- Result `validation/m12/results/markdown-differential.json`: `passed: true`, expected 59, truePositive 59, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Contract `validation/m12/results/markdown-contract.json`; the shape-safety and corpus-shape artifacts sit beside it.
+
+## Corpus validation
+
+- `validation/m12/results/markdown-corpus-errors.json`: corpus `scala3`, `*.md`, 738 tracked files, 4 error files / 12 error nodes, 0 crash files.
+- Complexity `validation/m12/results/markdown-corpus-complexity.json`: 734 files / 8,595 symbols / 11,369 relationships / 70,026.1 ms / 122.7 symbols/s / peak 271.9 MiB. **Do not compare this row with the corpus manifest's 55.13 files/s figure** — the row carries no `loadRule` and no `corpusManifest`, so the lane formula refuses to score it, as the page's own note says.
+
 ## M60 ontology census — all ten relationship types
 
 Added 2026-10-03; **whole-corpus figures added 2026-10-04**. Every number below comes from

@@ -345,6 +345,10 @@ The last regex (`/line/i.test(k)`) was removed in favour of
 
 ## Complexity envelope
 
+Per-symbol `complexity` is the depth of the symbol's own subtree in the emitted graph and
+`cyclomaticComplexity` is a real branch count, not a constant; the envelope and its
+load context are in the performance table below.
+
 ### The metric itself
 
 Per-symbol `complexity` is the depth of the symbol's own subtree in the emitted

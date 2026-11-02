@@ -471,6 +471,12 @@ so a grammar defect both the auditor and the analyzer accept would be invisible 
 construct probe and the capability battery cover that gap by measuring the grammar's own
 vocabulary rather than agreeing about it.
 
+## Corpus validation
+
+- Corpus `validation/m12/results/sql-corpus-errors.json`: corpus `ProxiCall`, 256 error files / 5,544 error nodes recorded; the artifact does not declare crash or extension counts, so none are claimed here. The complexity run on the 207-file `sql-corpus-production` population reports 148 error files — a different population, stated as such.
+- Differential `validation/m12/results/sql-differential.json`: `passed: true`, expected 89, truePositive 89, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Complexity `validation/m12/results/sql-corpus-complexity.json`: 207 files / 3,039 symbols / 4,181 relationships / 6,869.97 ms / peak 294.9 MiB.
+
 ## PASS 16 — an independent `contains` oracle, and the FABRICATION it found (2026-10-05)
 
 Everything above on this page measured SQL through `parseFile` and through probes the lane

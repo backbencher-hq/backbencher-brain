@@ -230,6 +230,12 @@ third is the one worth remembering: it neither added nor removed an edge, it poi
 comparison can see. That is the whole argument for having built the instrument: a reviewer reading
 `basesByClass.get(s.ownerName)` would have seen a Map lookup and called it correct.
 
+## Corpus validation
+
+- Corpus `validation/m12/results/python-corpus-errors.json`: `proxicall`, extension `*.py`, 0 error files, 0 crash files (no per-node totals are claimed by the artifact).
+- Differential `validation/m12/results/python-differential.json`: `passed: true`, expected 108, truePositive 108, falsePositive 0, falseNegative 0, unknown 5, precision 1, recall 1.
+- Complexity `validation/m12/results/python-corpus-complexity.json`: tracked corpus `cython@51a460b7d704eb11b6f47abe7983c816d0b77129`, 243 files / 15,558 symbols / 30,901 relationships / 41,630.4 ms / 373.7 symbols/s / peak 485.6 MiB.
+
 ## Evidence pointers
 
 | Claim | Artefact |
@@ -241,6 +247,11 @@ comparison can see. That is the whole argument for having built the instrument: 
 | independent truth + comparator | `script/m14/oracles/python-truth.ts`, `python-truth-diff.ts` |
 | the measurements and the defects | `reviews/python/master-review.md` |
 | lane contract | `docs/analyzers/history/python-lane-notes.md` |
+
+## Regex inventory
+
+- Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`; after M12.27: 0 (project census 69 → 64). Re-measured 2026-10-05 through the TypeScript AST: the analyzer contributes 0 regex literals and the whole-tree census reports 4, all in `real-svelte-analyzer.ts`; 0 regex constructs across the 6 lane files.
+- No regex does syntax work, so the census row is empty for this analyzer rather than unclassified.
 
 ## Relationship ontology — verdicts with numbers (branch `analyzer/PY_INSTRUMENTS`, 2026-10-05)
 

@@ -25,7 +25,9 @@
 | modifiers | ✅ | `modifiers` node children (`data`, `sealed`, `abstract`, `override`, `suspend`, `companion`, …). A visibility keyword is an ANONYMOUS child of `visibility_modifier`, so reading named children only misses it |
 | extension receivers | ✅ | leading `user_type` child of `function_declaration` / `property_declaration` before the name |
 
-## Relationship ontology — the ten types, with a verdict and a number each
+## Relationship ontology
+
+The ten engine types, each with a verdict and a number; the detailed verdict table follows.
 
 Verdicts are from `script/m14/kotlin-ontology-census.ts` over a **stratified
 deterministic draw** of `fixtures/repositories/kotlin@9b80c8ff99f3a63fcf578010bb2712697f4886aa`
@@ -528,7 +530,13 @@ them.
   unexplained rows appear in the prior lane's committed before/after artifact at
   sample 400.
 - M12 ground truth for the fixture corpus: `validation/m12/ground-truth/kotlin.json`,
-  precision 1.000 / recall 1.000 over 77 facts (`validation/m12/results/kotlin-differential.json`).
+  the artifact records `passed: false` (see Corpus validation below), so the earlier 1.000/1.000 sentence was stale and is corrected here.
+
+## Corpus validation
+
+- Corpus artifact `validation/m12/results/kotlin-corpus-errors.json`: `intellij-community`, `*.kt`, 8 error files, 0 crash files (the artifact predates per-node totals, so no node count is claimed).
+- **The M12 differential artifact did not pass.** `validation/m12/results/kotlin-differential.json`: `passed: false`, expected 77, observedResolved 141, truePositive 66, falsePositive 75, falseNegative 11, precision 0.4681, recall 0.8571, `earliestFailingLayer: ast_extraction`. Ground truth: `validation/m12/ground-truth/kotlin.json` (manual audit of Models.kt/UserService.kt/Extensions.kt). This is an open ast_extraction defect, not a documentation claim.
+- Complexity `validation/m12/results/kotlin-complexity.json`: fixtures 3 files / 34 symbols / 45 relationships / 179.9 ms; corpus subset 300 files / 11,286 symbols / 43,364 relationships / 8,865.9 ms (peak 383.0 MiB).
 
 ## Grammar conformance
 
