@@ -79,10 +79,21 @@ try {
   }
 
   // ── 3. Invalid mode / missing target rejection ──────────────────────
-  const badMode = await handler({ mode: "nonsense" }, { projectPath: root, projectId } as any)
-  check("invalid mode is rejected", badMode.isError === true && badMode.content[0].text.includes("requires mode"), badMode.content[0].text.slice(0, 120))
-  const noTarget = await handler({ mode: "symbol" }, { projectPath: root, projectId } as any)
-  check("symbol mode without target is rejected", noTarget.isError === true && noTarget.content[0].text.includes("requires target"), noTarget.content[0].text.slice(0, 120))
+  // A refusal that arrives as a THROWN exception is not a refusal; the gate
+  // catches it so the assertion reports a named failure instead of aborting the
+  // run (a crash also exits non-zero, which makes mutation detection ambiguous).
+  const refusalOf = async (args: Record<string, unknown>): Promise<{ isError: boolean; text: string }> => {
+    try {
+      const res = await handler(args, { projectPath: root, projectId } as any)
+      return { isError: res.isError === true, text: String(res.content[0]?.text ?? "") }
+    } catch (error: any) {
+      return { isError: true, text: `threw: ${String(error?.message ?? error)}` }
+    }
+  }
+  const badMode = await refusalOf({ mode: "nonsense" })
+  check("invalid mode is rejected", badMode.isError === true && badMode.text.includes("requires mode"), badMode.text.slice(0, 160))
+  const noTarget = await refusalOf({ mode: "symbol" })
+  check("symbol mode without target is rejected", noTarget.isError === true && noTarget.text.includes("requires target"), noTarget.text.slice(0, 160))
 
   // ── 4. JSON/Markdown parity ────────────────────────────────────────────────
   const json = await generateDocumentation(projectId, root, { mode: "symbol", target: "add", format: "json", limit: 10 })

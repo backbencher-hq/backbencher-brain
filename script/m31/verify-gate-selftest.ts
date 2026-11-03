@@ -222,26 +222,33 @@ const GATES: GateSpec[] = [
     surfaces: [{ from: "src/intelligence/documentation/doc-engine.ts", to: "src/intelligence/documentation/doc-engine.ts" }, { from: "script/m20/verify-doc-truth.ts", to: "script/m20/verify-doc-truth.ts" }],
     mutate: () => {},
     // Reintroduce `name()` for a symbol with no indexed parameter list — the
-    // fabricated signature. T30 plants a callable without a list and requires
-    // that it carry the caveat and never an empty bracket pair.
+    // fabricated signature. The engine now delegates rendering to the LSP owner,
+    // so the equivalent regression is bracketing the owner's unknown-list marker
+    // into an empty pair. T30 plants a callable without a list and requires that
+    // the rendering never carry `()` — the caveat beside it does not undo the
+    // claim (the mutation test caught the old predicate accepting the pair when
+    // the caveat was present).
     mutateIsolated: {
       file: "src/intelligence/documentation/doc-engine.ts",
-      from: 'return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`',
-      to: 'return `${kind} ${name}()`',
+      from: "  return renderOwnerSignature({ name, symbol_type: kind, parameters: storedParameters(rawParameters) }, language)",
+      to: '  return renderOwnerSignature({ name, symbol_type: kind, parameters: storedParameters(rawParameters) }, language).replace("(…)", "()")',
       expect: "a signature claims an empty argument list again",
     },
   },
   {
     name: "m20-doc-modes-contract",
     script: "script/m20/verify-doc-modes.ts",
-    surfaces: [{ from: "src/mcp/tool-handlers.ts", to: "src/mcp/tool-handlers.ts" }, { from: "script/m20/verify-doc-modes.ts", to: "script/m20/verify-doc-modes.ts" }],
+    // The guard moved with the tool-split: it lives in the bb_doc handler module,
+    // not in the shared assembler. The anchored mutation is the same one — drop
+    // the mode guard — pointed at the surface that carries it.
+    surfaces: [{ from: "src/mcp/tools/bb_doc/handler.ts", to: "src/mcp/tools/bb_doc/handler.ts" }, { from: "script/m20/verify-doc-modes.ts", to: "script/m20/verify-doc-modes.ts" }],
     mutate: () => {},
     // Drop the mode guard. `verify-doc-modes` asserts that an invalid mode is
     // REFUSED, so accepting one has to fail it.
     mutateIsolated: {
-      file: "src/mcp/tool-handlers.ts",
-      from: 'if (!["symbol", "file", "module", "feature", "api", "project", "coverage"].includes(mode)) return textResult("bb_doc requires mode',
-      to: 'if (false) return textResult("bb_doc requires mode',
+      file: "src/mcp/tools/bb_doc/handler.ts",
+      from: "if (!(MODES as readonly string[]).includes(mode)) return textResult(",
+      to: "if (false) return textResult(",
       expect: "an invalid mode is accepted again",
     },
   },

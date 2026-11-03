@@ -876,9 +876,16 @@ try {
   // `application()`. 14 267 `function` and 2 702 `method` symbols across the
   // eight corpora were affected.
   {
-    /** An empty pair of brackets with no caveat is a claim the symbol takes nothing. */
-    const claimsNoArguments = (statement: string): boolean =>
-      statement.includes("()") && !statement.includes("no parameter list")
+    /**
+     * An empty pair of brackets ALWAYS claims the symbol takes nothing — the
+     * caveat beside it does not undo the claim, it contradicts it ("()" says the
+     * list is empty, "no parameter list is recorded" says it is unknown). The
+     * old predicate exempted a statement that also carried the caveat, which is
+     * exactly the fabricated-signature defect wearing the fix's wording: this
+     * gate passed on `function withoutArgs(): void …; the index records no
+     * parameter list for it.` until the m31 mutation test planted it.
+     */
+    const claimsNoArguments = (statement: string): boolean => statement.includes("()")
 
     // One callable WITH a parameter list, one callable WITHOUT, one property
     // that legitimately has none. All three matter: the second is the defect and
@@ -915,9 +922,10 @@ try {
     negative("T30 the false-signature predicate convicts both defect shapes",
       claimsNoArguments("function Malloc() is defined in a/b.h at lines 1-9.") === true
         && claimsNoArguments("method application() is defined in a.rb at lines 8-10.") === true
+        && claimsNoArguments("function Malloc(): void is defined in a/b.h; the index records no parameter list for it.") === true
         && claimsNoArguments("function Malloc is defined in a/b.h at lines 1-9; the index records no parameter list for it, so its arguments are not described here.") === false
         && claimsNoArguments("property p is defined in a/b.h at line 3.") === false,
-      "an empty bracket pair is a false claim whether the symbol is a function or a method; the same rendering with the caveat, and a property that never took arguments, are both accepted")
+      "an empty bracket pair is a false claim whether or not the caveat sits beside it — the caveat says the list is unknown, the brackets say it is empty; a bare name with the caveat, and a property that never took arguments, are both accepted")
     for (const symId of ["gate-sig-args", "gate-sig-noargs", "gate-sig-prop"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
   }
 
