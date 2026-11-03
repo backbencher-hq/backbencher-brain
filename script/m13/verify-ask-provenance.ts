@@ -31,7 +31,7 @@ import { Harness } from "./harness"
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const harness = new Harness({
-  issue: "bb_ask provenance and confidence honesty across every answer route",
+  issue: "M13.24",
   code: "A2",
   tool: "bb_ask",
   title: "bb_ask: provenance, confidence kind and declared bounds per route",

@@ -32,7 +32,7 @@ import { validateToolArguments } from "../../src/mcp/tool-validation"
 import { Harness, noNanSimilarity } from "./harness"
 
 const harness = new Harness({
-  issue: "bb_ask adversarial inputs: absent index, absent embeddings, foreign models, corrupt vectors, page-size abuse",
+  issue: "M13.25",
   code: "A3",
   tool: "bb_ask",
   title: "bb_ask: adversarial unit coverage",

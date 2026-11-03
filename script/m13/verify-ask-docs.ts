@@ -34,7 +34,7 @@ const TSX_CLI = path.join(REPO_ROOT, "node_modules", "tsx", "dist", "cli.mjs")
 const isBun = typeof (globalThis as any).Bun !== "undefined"
 
 const harness = new Harness({
-  issue: "bb_ask docs, lane evidence and release-gate integrity",
+  issue: "M13.28",
   code: "A6",
   tool: "bb_ask",
   title: "bb_ask: documentation truth, lane gate evidence and release gate",

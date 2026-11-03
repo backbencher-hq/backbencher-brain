@@ -38,7 +38,7 @@ const TSX_CLI = path.join(REPO_ROOT, "node_modules", "tsx", "dist", "cli.mjs")
 const isBun = typeof (globalThis as any).Bun !== "undefined"
 
 const harness = new Harness({
-  issue: "bb_ask answer contract: modes, query boundary, page-size bound, two doors",
+  issue: "M13.23",
   code: "A1",
   tool: "bb_ask",
   title: "bb_ask: contract (answer vs explain/feature) + empty-query and limit boundaries",

@@ -30,7 +30,7 @@ import { semanticVectorSearch } from "../../src/intelligence/search/semantic-sea
 import { Harness, noNanSimilarity } from "./harness"
 
 const harness = new Harness({
-  issue: "bb_ask integration: index join, freshness (stale vs missing), refresh loop and read-only access",
+  issue: "M13.26",
   code: "A4",
   tool: "bb_ask",
   title: "bb_ask: integration (index + embeddings + freshness + read-only)",

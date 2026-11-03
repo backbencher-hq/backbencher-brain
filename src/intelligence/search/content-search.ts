@@ -390,6 +390,19 @@ async function searchContentClassic(
  * Phases now run whenever they are needed to fill the requested page, with a
  * cap that scales with the page, and reaching a cap is reported.
  */
+// MEASURED on the 3.64 GB reference index (310,423 symbols): one substring needle
+// (`name/qualified_name/docstring/source_text LIKE '%term%'`) is a full corpus scan of
+// ~0.18–0.32 s when the term is rare, and the terms route runs one needle per content
+// word. A six-word question therefore spent 2–4.5 s in this phase alone and the lexical
+// fallback reached 8 s end to end. The terms route now probes at most this many content
+// words on a giant corpus and reports the cap through the existing `truncated` flag and
+// the probed `termMatch.queryTerms`, so the answer declares what it searched. The
+// whole-phrase needle is deferred until the terms route comes back empty (see below): on
+// a natural-language question it almost never matches, and deferring it removes one full
+// corpus scan from the common path.
+// Author: Muhammad Ishaq Khan (bb_ask lane, cross-lane latency fix requested by Lead).
+const GIANT_TERM_BUDGET = 2
+
 async function searchContentBounded(
   raw: any,
   projectId: ProjectID,
@@ -434,6 +447,12 @@ async function searchContentBounded(
     if (ids.length >= cap) truncated = true
     return ids
   }
+
+  // A multi-word question is answered by the terms route below; the whole-phrase
+  // substring needle is one extra full-corpus scan for a phrase that rarely matches.
+  // Skip the phrase needle when the question has content words, and run it after the
+  // terms route only if every term probe came back empty.
+  const deferPhrase = contentQueryTerms(trimmed).length > 0
 
   // Phases 1-3 are NOT gated on the page already being full: recall must not be
   // a function of the page size. `cap` bounds the work of each phase and hitting
@@ -488,7 +507,7 @@ async function searchContentBounded(
     // a row — the trigram tokenizer can miss camelCase/partial tokens that the
     // substring rule matches, and a silent miss here is an under-answered set.
     const ftsCameBackEmpty = contentFtsReady && trimmed.length >= 3 && broadIds.length === 0 && byId.size === 0
-    if (!contentFtsReady || trimmed.length < 3 || ftsCameBackEmpty) {
+    if (!deferPhrase && (!contentFtsReady || trimmed.length < 3 || ftsCameBackEmpty)) {
       push(fetchByIds(raw, projectId, sqlNeedleIds(trimmed), idFilterSql, idFilterParams))
     }
   }
@@ -504,8 +523,12 @@ async function searchContentBounded(
     const terms = contentQueryTerms(trimmed)
     if (terms.length > 0 && hasWhitespace(trimmed)) {
       matchMode = "terms"
+      const probedTerms = terms.slice(0, GIANT_TERM_BUDGET)
+      // A capped probe is declared, never silent: the flag rides the existing
+      // `truncated` wire field and `termMatch.queryTerms` names the words used.
+      if (probedTerms.length < terms.length) truncated = true
       const scored = new Map<string, { row: CorpusRow; score: number; hits: string[] }>()
-      for (const term of terms) {
+      for (const term of probedTerms) {
         for (const row of fetchByIds(raw, projectId, sqlNeedleIds(term), idFilterSql, idFilterParams)) {
           const weight = bestFieldTermScore(row, term)
           if (weight === 0) continue
@@ -526,7 +549,15 @@ async function searchContentBounded(
           compareCodeUnits(a.row.relativePath, b.row.relativePath),
       )
       for (const entry of ordered) byId.set(entry.row.id, { row: entry.row, score: entry.score })
-      if (ordered.length > 0) termMatch = { queryTerms: terms, topMatched: ordered[0]!.hits }
+      if (ordered.length > 0) termMatch = { queryTerms: probedTerms, topMatched: ordered[0]!.hits }
+    }
+  }
+
+  // The deferred whole-phrase needle: only now, and only when nothing else matched.
+  if (deferPhrase && byId.size === 0) {
+    for (const row of fetchByIds(raw, projectId, sqlNeedleIds(trimmed), idFilterSql, idFilterParams)) {
+      const score = contentScore(row, trimmed.toLowerCase())
+      if (score > 0) byId.set(row.id, { row, score })
     }
   }
 
@@ -536,7 +567,11 @@ async function searchContentBounded(
   const coverage = raw
     .prepare(
       "SELECT COUNT(*) AS symbols, " +
-        "SUM(CASE WHEN source_text IS NOT NULL AND length(source_text) > 0 THEN 1 ELSE 0 END) AS withBody " +
+        // `IS NOT NULL` is resolved from the row header's serial type; asking for
+        // `length(source_text)` forces SQLite to read every body payload, which is the
+        // expensive part of this COUNT on a large corpus (the two predicates return the
+        // same count on the reference index — measured, see coverage-cost.mts).
+        "SUM(CASE WHEN source_text IS NOT NULL THEN 1 ELSE 0 END) AS withBody " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND COALESCE(s.line_start, 0) > 0 AND s.name NOT LIKE '/%/%'" +
         idFilterSql,

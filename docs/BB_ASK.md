@@ -225,7 +225,7 @@ an isolated copy of that index so other work cannot colour the number:
 | configuration | p50 | p95 |
 | --- | --- | --- |
 | configured provider embeddings, warm process, `limit: 5` | 1.78 s | 2.19 s |
-| local word vectors (offline), `limit: 5` | 0.18 s | **8.0 s** |
+| local word vectors (offline), `limit: 5` | 0.08–0.10 s | 1.33 s |
 | exact symbol name with `limit: 1` (no dense scan) | 0.93 ms | 1.26 ms |
 | first call in a cold process, provider configuration | 2.5–11.3 s | — |
 
@@ -233,9 +233,13 @@ Two qualifications the table cannot show:
 
 - **The local-vector p95 is the lexical fallback, not the vector path.** With local word
   vectors only 1,931 of 310,423 symbols (0.6%) are comparable, so questions that fail the
-  0.50 floor take the lexical route, whose SQL path is slow on a 310k-symbol index (3–8 s).
-  With provider embeddings configured, every measured question cleared the floor and used
-  the vector path.
+  0.50 floor take the lexical route. That route is bounded: on a giant corpus it probes at
+  most two content words and defers the whole-phrase needle until those come back empty
+  (one substring needle is a full 310k-row scan of ≈0.30 s); the cap is declared through
+  `truncated` and `termMatch.queryTerms`. Measured on the reference index, a fallback
+  answer is 0.86–1.33 s end to end; before the bound it was 3–8 s. With provider
+  embeddings configured, every measured question cleared the floor and used the vector
+  path.
 - **Provider latency is the floor, not a constant.** Raw provider calls measured
   0.23–2.38 s on the same machine; the tool bounds its ask-time wait at
   min(2 s, `BB_EMBEDDING_TIMEOUT_MS`) and declares the local fallback, so a slow provider

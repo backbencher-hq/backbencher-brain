@@ -35,7 +35,7 @@ import { Harness, noNanSimilarity } from "./harness"
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const harness = new Harness({
-  issue: "bb_ask honesty: similarity semantics, confidence, coverage per comparison space, bounds, page-size refusals, read-only access",
+  issue: "M13.28",
   code: "A7",
   tool: "bb_ask",
   title: "bb_ask: honesty gate (no fake numbers, declared bounds, read-only read path)",

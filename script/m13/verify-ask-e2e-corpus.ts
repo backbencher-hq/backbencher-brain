@@ -35,7 +35,7 @@ const TSX_CLI = path.join(REPO_ROOT, "node_modules", "tsx", "dist", "cli.mjs")
 const isBun = typeof (globalThis as any).Bun !== "undefined"
 
 const harness = new Harness({
-  issue: "bb_ask end-to-end: both source transports plus the real-repository corpus",
+  issue: "M13.27",
   code: "A5",
   tool: "bb_ask",
   title: "bb_ask: e2e (source MCP + source CLI) and real-repo corpus",

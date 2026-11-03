@@ -827,41 +827,41 @@
       },
       "T2-local-copy": {
         "projectDir": "$HOME/mcp/backbencher-brain",
-        "warmupMs": 1362.68,
-        "p50": 98.63,
-        "p95": 2113.97,
-        "max": 2113.97,
+        "warmupMs": 444.24,
+        "p50": 95.28,
+        "p95": 1325.37,
+        "max": 1325.37,
         "runs": [
           {
-            "ms": 73.04,
+            "ms": 70.47,
             "method": "vector",
             "queryModel": "local-word-vectors-v3",
             "candidates": "2",
             "truncated": null
           },
           {
-            "ms": 1973.19,
+            "ms": 1325.37,
             "method": "keyword-fallback",
             "queryModel": "none",
             "candidates": "0",
             "truncated": null
           },
           {
-            "ms": 80.68,
+            "ms": 95.28,
             "method": "vector",
             "queryModel": "local-word-vectors-v3",
             "candidates": "2",
             "truncated": null
           },
           {
-            "ms": 98.63,
+            "ms": 84.56,
             "method": "vector",
             "queryModel": "local-word-vectors-v3",
             "candidates": "19",
             "truncated": null
           },
           {
-            "ms": 2113.97,
+            "ms": 1070.59,
             "method": "keyword-fallback",
             "queryModel": "none",
             "candidates": "0",
@@ -870,14 +870,14 @@
         ],
         "exactNameLimit1": {
           "query": "buildStalenessEnvelope",
-          "p50": 0.94,
-          "p95": 10.87,
+          "p50": 0.79,
+          "p95": 1.12,
           "runs": [
-            10.87,
-            1.03,
-            0.87,
-            0.69,
-            0.94
+            1.12,
+            0.67,
+            0.79,
+            0.64,
+            0.83
           ]
         },
         "indexFiles": {
@@ -999,63 +999,64 @@
     },
     "findings": [
       "T2 isolated copy (provider): all five calls answered from the vector path, p50 1.78 s / p95 2.19 s; the first call in a cold process paid 2.5-11.3 s to fill page cache over the 3.6 GB index.",
-      "T2 isolated copy (local word vectors): p50 0.10 s / p95 2.11 s (max 2.11 s) — within the 5 s default-call budget. Two of five questions failed the 0.50 local floor and took the lexical fallback; that route now probes at most four content words on a giant corpus (one needle is a full 310k-row scan of ~0.30 s) and declares the cap, which took the worst fallback answer from 8.0 s to 2.1 s end to end.",
+      "T2 isolated copy (local word vectors): two independent final runs gave p50 0.08-0.10 s / p95 1.32-1.33 s (max 1.33 s) — inside the 5 s default-call budget. Two of five questions fail the 0.50 local floor and take the lexical fallback; that route probes at most two content words on a giant corpus, defers the whole-phrase needle until the terms route is empty, and declares the cap. Worst fallback answer went from 8.04 s to 1.33 s end to end.",
+      "Cold page cache can still dominate: one earlier fallback measurement during heavy fleet I/O took 11.3 s before the tightening (3x fewer full scans now). The budget claim is a warm-process claim; a cold first call on a 3.6 GB index pays disk I/O that no SQL change removes, and the answer still declares its route and bounds.",
       "T2 live shared index while other work was writing: p50 5.1 s / p95 13.3 s (WAL held 4.1 MB of frames); these are wall-clock numbers under I/O contention, not tool time. The read-only proof still holds: brain.db bytes and WAL frames were unchanged before/after every call.",
       "Exact symbol name with limit 1 skips the dense scan: p50 0.93 ms on the isolated copy, 11.75 ms on the live shared index."
     ],
     "lexicalFallback": {
       "evidence": "validation/tools/bb_ask/lexical-latency.json",
       "indexSymbols": 310423,
-      "p50": 1782.1,
-      "p95": 2077.6,
-      "max": 2077.6,
+      "p50": 922.6,
+      "p95": 1250.3,
+      "max": 1250.3,
       "budgetMs": 5000,
       "withinBudget": true,
       "runs": [
         {
           "query": "how does request handling work in this codebase",
-          "ms": 1782.1,
+          "ms": 864.1,
           "matchMode": "terms",
-          "probedTerms": 4,
-          "truncated": null
+          "probedTerms": 2,
+          "truncated": true
         },
         {
           "query": "where is the index lock acquired",
-          "ms": 1927.8,
+          "ms": 1250.3,
           "matchMode": "terms",
-          "probedTerms": 3,
-          "truncated": null
+          "probedTerms": 2,
+          "truncated": true
         },
         {
           "query": "how are tool descriptors registered",
-          "ms": 1686.9,
+          "ms": 922.6,
           "matchMode": "terms",
-          "probedTerms": 3,
-          "truncated": null
+          "probedTerms": 2,
+          "truncated": true
         },
         {
           "query": "what parses the configuration file",
-          "ms": 1703.9,
+          "ms": 855.7,
           "matchMode": "terms",
-          "probedTerms": 3,
+          "probedTerms": 2,
           "truncated": true
         },
         {
           "query": "how does the search engine rank results",
-          "ms": 2077.6,
+          "ms": 1018.3,
           "matchMode": "terms",
-          "probedTerms": 4,
-          "truncated": null
+          "probedTerms": 2,
+          "truncated": true
         }
       ],
       "needleProbe": {
         "term": "acquired",
         "columns": 4,
-        "ms": 303.5,
+        "ms": 300.5,
         "matches": 6,
         "note": "one full-corpus substring scan; the giant-corpus terms route probes at most GIANT_TERM_BUDGET=4 words per query"
       },
-      "fix": "Giant-corpus terms route probes at most GIANT_TERM_BUDGET=4 content words (one needle is a full 310k-row scan) and declares the cap through `truncated` and `termMatch.queryTerms`. Before: fallback calls measured 3.1 s and 8.0 s end to end; after: 1.7–2.1 s content search, T2 local default p95 2.11 s."
+      "fix": "Giant-corpus terms route probes at most GIANT_TERM_BUDGET=2 content words (one needle is a full 310k-row scan), defers the whole-phrase needle until the terms route is empty, and uses a header-only coverage predicate. Two independent final runs: T2 local default p50 0.08-0.10 s / p95 1.32-1.33 s (was p95 8.04 s before the fix); lexical content search p50 0.92 s / p95 1.25 s. dbUnchanged true."
     }
   },
   "limitations": [
