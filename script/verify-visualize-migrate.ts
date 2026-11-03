@@ -19,7 +19,7 @@ try {
   await indexProjectParallel(projectId, root, {})
   const project = await visualizeProject(projectId, { scope: "project", maxNodes: 1, maxLinks: 1, format: "json" })
   check("visualization reports explicit truncation", project.truncation.truncated)
-  check("visualization provenance uses canonical engine", project.provenance.source === "canonical-graph-engine")
+  check("visualization provenance names the stored rows it projects", project.provenance.source === "stored-symbol-and-relationship-rows")
   check("visualization has no dangling links", project.links.every((link) => project.nodes.some((node) => node.id === link.source) && project.nodes.some((node) => node.id === link.target)))
   const moduleGraph = await visualizeProject(projectId, { scope: "module", target: "src/api", maxNodes: 20, format: "json" })
   check("module scope filters files", moduleGraph.nodes.every((node) => node.filePath.includes("src/api")))

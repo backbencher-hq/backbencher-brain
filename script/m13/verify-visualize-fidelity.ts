@@ -40,7 +40,9 @@ await indexProjectParallel(projectId, root, {})
   const ids = new Set(r.nodes.map((n: any) => n.id))
   const d = r.links.filter((l: any) => !ids.has(l.source) || !ids.has(l.target))
   harness.check("fidelity: no dangling links", d.length === 0, String(d.length))
-  harness.check("fidelity: provenance = canonical-graph-engine", r.provenance.source === "canonical-graph-engine", r.provenance.source)
+  // The engine projects the stored symbol/relationship rows directly; it is not bb_graph's
+  // graph engine, so provenance names what it is rather than a twin it does not share.
+  harness.check("fidelity: provenance names the stored rows it projects", r.provenance.source === "stored-symbol-and-relationship-rows", r.provenance.source)
   // M13.F9 (#701): the one counter that was called `omittedDanglingLinks` measured the NODE CUT,
   // and the text then blamed `maxLinks` for it. The two reasons an edge can be absent are now
   // counted apart, and the old name is gone rather than kept as an alias — a field whose name
