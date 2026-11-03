@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotate",
+  "generatedAt": "2026-11-03T05:11:27.917Z",
+  "runtime": "v22.22.1",
+  "tree": "working-tree",
+  "root": "$HOME/mcp/backbencher-brain",
+  "protocol": "cold call recorded once; then five warm runs of the same call; p50/p95 over the warm runs",
+  "environment": {
+    "cpus": 8,
+    "loadavg": [
+      11.7,
+      9.62,
+      7.21
+    ],
+    "bbDataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_annotate/bbdata",
+    "bbNoAutoRefresh": "1"
+  },
+  "legs": {
+    "T0": {
+      "tier": "T0 tiny",
+      "subject": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+      "index": {
+        "files": 5,
+        "symbols": 13,
+        "relationships": 26,
+        "annotations": 0,
+        "bytes": 4096,
+        "mtime": "2026-11-03T04:34:26.390Z"
+      },
+      "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+      "projectPath": "$HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+      "symbol": "basePrice",
+      "path": null,
+      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/mcp/backbencher-brain/test/fixtures/polyglot",
+      "warm": {
+        "runs": 5,
+        "min": 8.327465999998822,
+        "p50": 9.80648100000144,
+        "p95": 17.769728000001123,
+        "max": 17.769728000001123,
+        "values": [
+          9.80648100000144,
+          8.327465999998822,
+          9.752976000001581,
+          17.769728000001123,
+          13.726725999998962
+        ]
+      },
+      "coldMs": 53.35,
+      "coldOk": true,
+      "readBackMs": 15.89,
+      "readBackCount": 1,
+      "readBackDeclaredAbsent": false,
+      "stderrTail": "ngs ...` to show where the warning was created)\n(node:344) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:344) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    "T1": {
+      "tier": "T1 synthetic",
+      "subject": "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "index": {
+        "files": 97,
+        "symbols": 3512,
+        "relationships": 17068,
+        "annotations": 0,
+        "bytes": 42921984,
+        "mtime": "2026-11-03T04:35:03.858Z"
+      },
+      "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+      "projectPath": "$HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "symbol": "map",
+      "path": null,
+      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+      "warm": {
+        "runs": 5,
+        "min": 3.374076000000059,
+        "p50": 3.6715820000026724,
+        "p95": 5.720349000002898,
+        "max": 5.720349000002898,
+        "values": [
+          4.075071999999636,
+          3.374076000000059,
+          3.6715820000026724,
+          5.720349000002898,
+          3.5341590000025462
+        ]
+      },
+      "coldMs": 51.04,
+      "coldOk": true,
+      "readBackMs": 3.37,
+      "readBackCount": 1,
+      "readBackDeclaredAbsent": false,
+      "stderrTail": "ngs ...` to show where the warning was created)\n(node:588) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:588) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    "REAL:graphql-js": {
+      "tier": "REAL-CORPUS graphql-js",
+      "subject": "$HOME/fixtures/repositories/graphql-js",
+      "index": {
+        "files": 564,
+        "symbols": 13620,
+        "relationships": 61917,
+        "annotations": 0,
+        "bytes": 155222016,
+        "mtime": "2026-11-03T05:14:42.940Z"
+      },
+      "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+      "projectPath": "$HOME/fixtures/repositories/graphql-js",
+      "symbol": "parse",
+      "path": null,
+      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/graphql-js",
+      "warm": {
+        "runs": 5,
+        "min": 32.35498400000506,
+        "p50": 44.2834589999984,
+        "p95": 51.79250099998899,
+        "max": 51.79250099998899,
+        "values": [
+          51.79250099998899,
+          32.35498400000506,
+          37.98341600000276,
+          44.2834589999984,
+          51.5428130000073
+        ]
+      },
+      "coldMs": 1733.78,
+      "coldOk": true,
+      "readBackMs": 58.92,
+      "readBackCount": 1,
+      "readBackDeclaredAbsent": false,
+      "stderrTail": "ngs ...` to show where the warning was created)\n(node:398) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:398) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+      "qualifiedName": {
+        "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+        "projectPath": "$HOME/fixtures/repositories/graphql-js",
+        "symbol": "GraphQLChannels.parse",
+        "path": null,
+        "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/graphql-js",
+        "warm": {
+          "runs": 3,
+          "min": 13.883333999983734,
+          "p50": 15.952996999985771,
+          "p95": 18.581925000005867,
+          "max": 18.581925000005867,
+          "values": [
+            18.581925000005867,
+            13.883333999983734,
+            15.952996999985771
+          ]
+        },
+        "coldMs": 2162.52,
+        "coldOk": true,
+        "readBackMs": 16,
+        "readBackCount": 1,
+        "readBackDeclaredAbsent": false,
+        "stderrTail": "ngs ...` to show where the warning was created)\n(node:448) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:448) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+      }
+    },
+    "REAL:rake": {
+      "tier": "REAL-CORPUS rake",
+      "subject": "$HOME/fixtures/repositories/rake",
+      "index": {
+        "files": 109,
+        "symbols": 1593,
+        "relationships": 9075,
+        "annotations": 0,
+        "bytes": 22708224,
+        "mtime": "2026-11-03T05:16:59.952Z"
+      },
+      "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+      "projectPath": "$HOME/fixtures/repositories/rake",
+      "symbol": "task",
+      "path": null,
+      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/rake",
+      "warm": {
+        "runs": 5,
+        "min": 11.92808199999854,
+        "p50": 16.311166000028607,
+        "p95": 31.85406199999852,
+        "max": 31.85406199999852,
+        "values": [
+          13.481825999973807,
+          16.311166000028607,
+          11.92808199999854,
+          31.4179390000063,
+          31.85406199999852
+        ]
+      },
+      "coldMs": 173.43,
+      "coldOk": true,
+      "readBackMs": 24.66,
+      "readBackCount": 1,
+      "readBackDeclaredAbsent": false,
+      "stderrTail": "ngs ...` to show where the warning was created)\n(node:711) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:711) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+      "qualifiedName": {
+        "projectId": "132aab0103080d56a8ce5ef28cf2034710b21a80",
+        "projectPath": "$HOME/fixtures/repositories/rake",
+        "symbol": "task",
+        "path": null,
+        "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/fixtures/repositories/rake",
+        "warm": {
+          "runs": 3,
+          "min": 6.022644000011496,
+          "p50": 7.121879999991506,
+          "p95": 7.388684000005014,
+          "max": 7.388684000005014,
+          "values": [
+            7.388684000005014,
+            7.121879999991506,
+            6.022644000011496
+          ]
+        },
+        "coldMs": 61.23,
+        "coldOk": true,
+        "readBackMs": 7.76,
+        "readBackCount": 1,
+        "readBackDeclaredAbsent": false,
+        "stderrTail": "ngs ...` to show where the warning was created)\n(node:756) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:756) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+      }
+    },
+    "T2": {
+      "tier": "T2 reference large (isolated VACUUM INTO snapshot; the shared index is only read for the snapshot)",
+      "subject": "$HOME/mcp/backbencher-brain",
+      "sourceIndex": {
+        "db": "$HOME/mcp/backbencher-brain/.bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+        "populationBefore": {
+          "dbMtime": "2026-11-02T04:29:55.820Z",
+          "dbBytes": 3639963648,
+          "walBytes": 0,
+          "walMtime": "2026-11-02T04:50:35.552Z"
+        },
+        "populationAfter": {
+          "dbMtime": "2026-11-02T04:29:55.820Z",
+          "dbBytes": 3639963648,
+          "walBytes": 0,
+          "walMtime": "2026-11-02T04:50:35.552Z"
+        },
+        "snapshotBytes": 3385905152,
+        "snapshotMs": 244860
+      },
+      "sharedIndexUntouched": true,
+      "index": {
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "annotations": 0,
+        "bytes": 3385905152,
+        "mtime": "2026-11-03T05:21:37.869Z"
+      },
+      "sourceSymbolPopulation": {
+        "files": 6452,
+        "symbols": 310423,
+        "relationships": 820040,
+        "sampledAt": "2026-11-02T04:29:55.820Z"
+      },
+      "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "projectPath": "$HOME/mcp/backbencher-brain",
+      "symbol": "OrderService",
+      "path": null,
+      "door": "npx tsx $HOME/mcp/backbencher-brain/src/mcp/server.ts --dir $HOME/mcp/backbencher-brain",
+      "warm": {
+        "runs": 5,
+        "min": 18.951962999999523,
+        "p50": 29.930649999994785,
+        "p95": 38.00375499995425,
+        "max": 38.00375499995425,
+        "values": [
+          38.00375499995425,
+          27.287566000013612,
+          30.43426700006239,
+          29.930649999994785,
+          18.951962999999523
+        ]
+      },
+      "coldMs": 8190.76,
+      "coldOk": true,
+      "readBackMs": 21.76,
+      "readBackCount": 1,
+      "readBackDeclaredAbsent": false,
+      "stderrTail": "ngs ...` to show where the warning was created)\n(node:794) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:794) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    }
+  },
+  "gateSummary": {
+    "T0WarmUnder250ms": true,
+    "T1WarmUnder1000ms": true,
+    "T2WarmUnder5000ms": true,
+    "T2ColdUnder30000ms": true
+  }
+}

@@ -2,7 +2,7 @@
 // Author: Muhammad Ishaq Khan
 //
 // WHAT THIS FILE IS — the annotations UI verifier: proves an agent annotation renders author-labeled in the editor hover and rides the bb/graph payload, and that the suite can fail.
-// WHICH TOOL IT SERVES — bb_annotate (its twin surface is the Lead-owned editor rendering: src/lsp/annotation_ui.ts, hover.ts, graph_request.ts).
+// WHICH TOOL IT SERVES — bb_annotate (its twin surface is the shared editor rendering: src/lsp/annotation_ui.ts, hover.ts, graph_request.ts).
 // WHY IT IS SHAPED THIS WAY — an annotation is an opinion layered on evidence, so
 //   every rendering path must label the author class and escape every interpolated
 //   field; the proof runs the REAL component over a REAL db and a REAL headless
