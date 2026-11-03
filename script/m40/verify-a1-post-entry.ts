@@ -19,6 +19,7 @@ import { spawnSync, execFileSync } from "node:child_process"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m40/results")
 const MUTATE_NOOP = process.env.BB_M40_MUTATE_A1_NOOP_POST === "1"
+const MUTATE_PATH = process.env.BB_M40_MUTATE_A1_POST_PATH_UNGUARDED === "1"
 
 let passed = 0, failed = 0, negatives = 0
 const failures: string[] = []
@@ -134,15 +135,37 @@ try {
   {
     const { createToolHandlers } = await import("../../src/mcp/tool-handlers")
     const handlers = createToolHandlers()
-    const res = await handlers.bb_index({ path: "post", mode: "post" } as any, { projectId: pid as any, projectPath: proj })
+    const res = await handlers.bb_index({ path: proj, mode: "post" } as any, { projectId: pid as any, projectPath: proj })
     const parsed = JSON.parse(res.content[0].text)
     check("A1: MCP mode=post returns phase array", Array.isArray(parsed.phases) && parsed.phases.length >= 5, JSON.stringify(parsed).slice(0, 160))
     check("A1: MCP mode=post phases all ok", parsed.phases.every((p: any) => p.outcome === "ok"), JSON.stringify(parsed.phases))
     check("A1: MCP mode=post reports integrityHealth", typeof parsed.integrityHealth === "number", String(parsed.integrityHealth))
     // Unindexed project → error result.
+    mkdirSync(path.join(root, "empty2"), { recursive: true })
     const emptyPid = getProjectId(path.join(root, "empty2")) as any
-    const res2 = await handlers.bb_index({ path: "post", mode: "post" } as any, { projectId: emptyPid, projectPath: path.join(root, "empty2") })
+    const res2 = await handlers.bb_index({ path: path.join(root, "empty2"), mode: "post" } as any, { projectId: emptyPid, projectPath: path.join(root, "empty2") })
     check("A1: MCP mode=post on unindexed project errors honestly", /failed|no index/i.test(res2.content[0].text), res2.content[0].text.slice(0, 160))
+  }
+
+  // 6b. The path policy applies to mode=post too. The post pass re-derives
+  // PROJECT-WIDE phases, so `path` must resolve inside the project and name a
+  // directory; an out-of-tree path and a file path are both refused with a named
+  // error instead of silently re-deriving this project from an unrelated path.
+  // The mutation world drops the containment check and this gate must notice.
+  {
+    const { createToolHandlers } = await import("../../src/mcp/tool-handlers")
+    const handlers = createToolHandlers()
+    const outside = await handlers.bb_index({ path: "/etc", mode: "post" } as any, { projectId: pid as any, projectPath: proj })
+    const filePath = await handlers.bb_index({ path: path.join(proj, "src", "lib.ts"), mode: "post" } as any, { projectId: pid as any, projectPath: proj })
+    if (MUTATE_PATH) {
+      check("MUTATION: mode=post accepts an out-of-tree path (gate must fail)", outside.isError !== true, "containment is still enforced")
+      check("MUTATION: mode=post accepts a file path (gate must fail)", filePath.isError !== true, "the file path is still refused")
+    } else {
+      check("A1: mode=post refuses a path outside the project", outside.isError === true, outside.content[0].text.slice(0, 120))
+      check("A1: outside refusal names the project boundary", /not inside|outside the project/.test(outside.content[0].text), outside.content[0].text.slice(0, 160), true)
+      check("A1: mode=post refuses a FILE path (phases are project-wide)", filePath.isError === true && /is a file/.test(filePath.content[0].text), filePath.content[0].text.slice(0, 160))
+      check("A1: file-path refusal names the accepted form", /project root or a directory inside it/.test(filePath.content[0].text), filePath.content[0].text.slice(0, 160), true)
+    }
   }
 
   // 7. Per-phase timing visible and sane (from the MCP report we already have).
@@ -171,17 +194,17 @@ const evidence = {
   passed,
   failed,
   negativeCases: negatives,
-  mutation: MUTATE_NOOP ? "A1_NOOP_POST (gate-fail proof run)" : "not-run (control)",
+  mutation: MUTATE_NOOP ? "A1_NOOP_POST (gate-fail proof run)" : MUTATE_PATH ? "A1_POST_PATH_UNGUARDED (gate-fail proof run)" : "not-run (control)",
   failures,
 }
 mkdirSync(RESULTS_DIR, { recursive: true })
 // Evidence is stamped ONLY by a green, non-mutation, non-control,
 // non-read-only run (X1 lesson: closure's read-only probes must never
 // overwrite real evidence).
-if (failed === 0 && !MUTATE_NOOP && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") {
+if (failed === 0 && !MUTATE_NOOP && !MUTATE_PATH && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") {
   writeFileSync(path.join(RESULTS_DIR, "A1.json"), JSON.stringify(evidence, null, 2) + "\n")
 }
 
-console.log(`A1 post-entry: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE_NOOP ? " [MUTATION RUN]" : ""}`)
+console.log(`A1 post-entry: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE_NOOP || MUTATE_PATH ? " [MUTATION RUN]" : ""}`)
 if (failures.length) for (const f of failures) console.log(`  FAIL: ${f}`)
 if (failed > 0) process.exit(1)

@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot",
+  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "startedAt": "2026-11-03T05:08:52.821Z",
+  "cases": [
+    {
+      "label": "file: unchanged file is an honest no-op",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 0,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"indexed\",\n  \"walCheckpointed\": true,\n  \"derived\": {\n    \"pass\": \"bounded\",\n    \"phases\": [\n      {\n        \"name\": \"relationships\",\n        \"ms\": 1,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 2,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 14,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"enrichment\",\n        \"ms\": 21,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"gravity\",\n        \"ms\": 5,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"taint\",\n        \"ms\": 5,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"health\",\n        \"ms\": 22,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"integrity\",\n        \"ms\": 3,\n        \"outcome\": \"ok\"\n      }\n    ],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 2,\n    \"resolvedStoredEdges\": 4,\n    \"stillUnresolvedInEdges\": 0,\n    \"healedZeroLines\": 0,\n    \"importResolvedInEdges\": 0\n  }\n}",
+      "ms": 4922
+    },
+    {
+      "label": "file: changed file parses and checkpoints the WAL",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 0,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"indexed\",\n  \"walCheckpointed\": true,\n  \"derived\": {\n    \"pass\": \"bounded\",\n    \"phases\": [\n      {\n        \"name\": \"relationships\",\n        \"ms\": 8,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 1,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"relationships\",\n        \"ms\": 10,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"enrichment\",\n        \"ms\": 4,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"gravity\",\n        \"ms\": 4,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"taint\",\n        \"ms\": 5,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"health\",\n        \"ms\": 9,\n        \"outcome\": \"ok\"\n      },\n      {\n        \"name\": \"integrity\",\n        \"ms\": 14,\n        \"outcome\": \"ok\"\n      }\n    ],\n    \"repairedInEdges\": 1,\n    \"touchedSymbols\": 2,\n    \"resolvedStoredEdges\": 3,\n    \"stillUnresolvedInEdges\": 1,\n    \"healedZeroLines\": 0,\n    \"importResolvedInEdges\": 0\n  }\n}",
+      "ms": 5218
+    },
+    {
+      "label": "file: unsupported extension is declined, not called unchanged",
+      "arguments": {
+        "path": "assets/data.bin"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"assets/data.bin\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 0,\n  \"declined\": 1,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"1 file(s) hold nothing the indexer extracts (the extension is not one this indexer parses)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 2
+    },
+    {
+      "label": "REFUSE: mode=post path outside project",
+      "arguments": {
+        "path": "/etc",
+        "mode": "post"
+      },
+      "isError": true,
+      "text": "bb_index mode=post: refusing a path outside the project. \"/etc\" resolves to /etc, which is not inside $HOME/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot. bb_index indexes THIS project's files; an out-of-tree path would be stored with a \"project-relative\" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.",
+      "ms": 3
+    },
+    {
+      "label": "REFUSE: mode=post with a file path",
+      "arguments": {
+        "path": "README.md",
+        "mode": "post"
+      },
+      "isError": true,
+      "text": "bb_index mode=post: $HOME/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot/README.md is a file — mode=post re-derives the phases of the PROJECT, so `path` must be the project root or a directory inside it (pass the project path or \".\").",
+      "ms": 3
+    },
+    {
+      "label": "post: documented project-path form (.）",
+      "arguments": {
+        "path": ".",
+        "mode": "post"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"post\",\n  \"path\": \".\",\n  \"phases\": [\n    {\n      \"name\": \"relationships\",\n      \"ms\": 17,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"enrichment\",\n      \"ms\": 4,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"gravity\",\n      \"ms\": 5,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"taint\",\n      \"ms\": 5,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"health\",\n      \"ms\": 5,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"integrity\",\n      \"ms\": 12,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"vectorBlobs\",\n      \"ms\": 3,\n      \"outcome\": \"ok\"\n    },\n    {\n      \"name\": \"analyze\",\n      \"ms\": 1,\n      \"outcome\": \"ok\"\n    }\n  ],\n  \"totalMs\": 105,\n  \"integrityHealth\": 100\n}",
+      "ms": 115
+    }
+  ],
+  "stderr": "(node:49) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:62) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:74) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:74) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n[INFO] [00:09:14] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:09:16] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:09:16] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":2,\"totalRelationships\":2}\n[INFO] [00:09:16] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n[INFO] [00:09:18] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:09:21] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:09:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":3,\"totalRelationships\":3}\n[INFO] [00:09:21] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n[WARN] [00:09:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5b24984e\",\"danglingSources\":3,\"totalRelationships\":3}\n[INFO] [00:09:21] [project-health] project health computed {\"projectId\":\"5b24984edb9d207fe3f85c20bd067af0533796a9\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1654,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project root or a directory inside it whose derived phases should be re-run (a file path is refused). REQUIRED in every mode and checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T05:09:22.889Z"
+}

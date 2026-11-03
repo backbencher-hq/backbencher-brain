@@ -22,6 +22,7 @@ import { readFileSync, readdirSync } from "node:fs"
 import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
 import { writeFileSync } from "node:fs"
+import { toolModuleSourceOf, combinedToolSource, readToolSource } from "../lib/tool-sources"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m40/results")
@@ -36,8 +37,12 @@ function check(name: string, ok: boolean, detail = "", isNegative = false) {
 }
 
 const cliSrc = readFileSync(path.join(ROOT, "src/cli/index.ts"), "utf8")
-const registrySrc = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf8")
-const handlersSrc = readFileSync(path.join(ROOT, "src/mcp/tool-handlers.ts"), "utf8")
+// The public surface is split per tool, so the gate reads the modules that own
+// the code instead of the assembler that merely re-exports it.
+const indexDescriptorSrc = readToolSource("src/mcp/tools/bb_index/descriptor.ts")
+const indexHandlerSrc = toolModuleSourceOf("bb_index")
+const analyzeHandlerSrc = toolModuleSourceOf("bb_analyze")
+const allToolSource = combinedToolSource()
 const plan = readFileSync(path.join(ROOT, "docs/m40/PLAN.md"), "utf8")
 
 // ── 1. CLI flag surface ──
@@ -72,14 +77,14 @@ const CLI_FLAGS = ["--force", "--no-setup", "--skip-post-processing", "--post", 
 
 // ── 2. MCP bb_index modes ──
 {
-  const enumMatch = registrySrc.match(/name: "bb_index"[\s\S]*?mode: \{ type: "string", enum: \[([^\]]+)\]/)
+  const enumMatch = indexDescriptorSrc.match(/mode:\s*\{[\s\S]*?enum:\s*\[([^\]]+)\]/)
   check("A9: bb_index registry enum present", !!enumMatch, "")
   const modes = enumMatch ? enumMatch[1].split(",").map((s) => s.trim().replace(/"/g, "")) : []
   check("A9: enum is exactly auto/file/dir/post (no phantom modes)", JSON.stringify(modes) === JSON.stringify(["auto", "file", "dir", "post"]), modes.join(","))
-  check("A9: mode=post branches in handler", /mode === "post"/.test(handlersSrc), "")
-  check("A9: mode=file branches in handler", /effective === "file"/.test(handlersSrc), "")
-  check("A9: mode=dir branches in handler", /effective === "dir"/.test(handlersSrc), "")
-  check("A9: mode=auto resolution in handler", /mode === "auto"/.test(handlersSrc), "")
+  check("A9: mode=post branches in the bb_index handler module", /mode === "post"/.test(indexHandlerSrc), "")
+  check("A9: mode=file branches in the bb_index handler module", /effective === "file"/.test(indexHandlerSrc), "")
+  check("A9: mode=dir branches in the bb_index handler module", /effective === "dir"/.test(indexHandlerSrc), "")
+  check("A9: mode=auto resolution in the bb_index handler module", /mode === "auto"/.test(indexHandlerSrc), "")
 }
 
 // ── 3. Env surface enumeration ──
@@ -114,7 +119,9 @@ const CLI_FLAGS = ["--force", "--no-setup", "--skip-post-processing", "--post", 
 
   // Every remaining BB_* var must be documented in the purge report.
   // Test seams are allowed only when gated behind BB_TEST_HOOKS (A8/A9 rule).
-  const TEST_ONLY = new Set(["BB_TEST_HOOKS", "BB_M35_SKIP_FRESHNESS"])
+  // Test seams are legitimate only when gated behind BB_TEST_HOOKS=1; each name here is
+  // checked against the product source by the quarantine rule below.
+  const TEST_ONLY = new Set(["BB_TEST_HOOKS", "BB_M35_SKIP_FRESHNESS", "BB_TEST_DIR_DELETE_BY_WALK", "BB_TEST_INDEX_REPARSE_NAMED"])
   const undocumented: string[] = []
   for (const v of envVars.keys()) {
     if (MUTATE && v === "BB_DATA_DIR") undocumented.push("BB_SYNTHETIC_PHANTOM_VAR") // mutation artifact below
@@ -123,7 +130,7 @@ const CLI_FLAGS = ["--force", "--no-setup", "--skip-post-processing", "--post", 
   if (MUTATE) undocumented.push("BB_SYNTHETIC_PHANTOM_VAR")
   check("A9: every env var documented in the purge report (MUTATION must fail here)", undocumented.length === 0, `undocumented: ${undocumented.join(", ")}`)
   // Quarantine is real for the M35 seam.
-  check("A9: BB_M35_SKIP_FRESHNESS gated behind BB_TEST_HOOKS in handler", /BB_TEST_HOOKS === "1" && process\.env\.BB_M35_SKIP_FRESHNESS/.test(handlersSrc.replace(/\s+/g, " ")) || /BB_TEST_HOOKS[^]*?BB_M35_SKIP_FRESHNESS/.test(handlersSrc), "")
+  check("A9: BB_M35_SKIP_FRESHNESS gated behind BB_TEST_HOOKS in its handler module", /BB_TEST_HOOKS === "1" && process\.env\.BB_M35_SKIP_FRESHNESS/.test(analyzeHandlerSrc.replace(/\s+/g, " ")) || /BB_TEST_HOOKS[^]*?BB_M35_SKIP_FRESHNESS/.test(analyzeHandlerSrc), "")
 }
 
 // ── 4. Exported lifecycle functions have callers or internal marks ──

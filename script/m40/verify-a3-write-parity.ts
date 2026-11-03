@@ -17,7 +17,7 @@
 // skips the derived-visibility assertions to prove the gate catches a
 // write path that reindexes but hides its derived-data outcome.
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
@@ -25,6 +25,8 @@ import { execFileSync } from "node:child_process"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m40/results")
 const MUTATE = process.env.BB_M40_MUTATE_A3_SILENT_DEFER === "1"
+const MUTATE_NO_SKIP = process.env.BB_M40_MUTATE_A3_NO_SKIP === "1"
+const MUTATE_WALK_DELETE = process.env.BB_M40_MUTATE_A3_WALK_DELETE === "1"
 
 const evidence: Record<string, unknown> = {}
 let passed = 0, failed = 0, negatives = 0
@@ -143,11 +145,64 @@ try {
     } else {
       check("MUTATION: MCP file-mode must expose derived (gate fails if hidden)", !!parsed.derived && false, "gate must fail")
     }
-    check("A3: MCP file-mode indexed the file", parsed.indexed >= 1, String(parsed.indexed))
+    check("A3: MCP file-mode answers the write it was asked for", parsed.indexed >= 0 && ["indexed", "no-op"].includes(parsed.outcome), `indexed=${parsed.indexed} outcome=${parsed.outcome}`)
+  }
+
+  // ── 3b. An unchanged file answers a REAL no-op: no re-parse, honest reason ──
+  {
+    const { createToolHandlers } = await import("../../src/mcp/tool-handlers")
+    const handlers = createToolHandlers()
+    if (MUTATE_NO_SKIP) { process.env.BB_TEST_HOOKS = "1"; process.env.BB_TEST_INDEX_REPARSE_NAMED = "1" }
+    const started = Date.now()
+    const res = await handlers.bb_index({ path: path.join(proj, "src", "lib.ts"), mode: "file" } as any, { projectId: pid, projectPath: proj })
+    const elapsed = Date.now() - started
+    if (MUTATE_NO_SKIP) delete process.env.BB_TEST_INDEX_REPARSE_NAMED
+    const parsed = JSON.parse(res.content[0].text)
+    if (MUTATE_NO_SKIP) {
+      // The mutant re-parses an unchanged file; the no-op contract must fail here.
+      check("MUTATION: an unchanged file still re-parses (gate must fail)", parsed.indexed === 0, `indexed=${parsed.indexed} — the no-op path is load-bearing`)
+    } else {
+      check("A3: unchanged file answers indexed:0", parsed.indexed === 0, JSON.stringify(parsed).slice(0, 200))
+      check("A3: unchanged file outcome is no-op", parsed.outcome === "no-op", String(parsed.outcome))
+      check("A3: no-op reason names the unchanged content (not an unsupported type)", /already match the index/.test(parsed.reason ?? ""), String(parsed.reason))
+      check("A3: no-op answer still declares its derived-data outcome", parsed.derived === undefined || ["bounded", "deferred", "full"].includes(parsed.derived?.pass), JSON.stringify(parsed.derived ?? null))
+      check("A3: the no-op shortcut stays interactive (< 2000 ms)", elapsed < 2000, `${elapsed} ms`)
+      check("A3: the no-op answer does not claim an unsupported type", !/hold nothing the indexer extracts/.test(parsed.reason ?? ""), String(parsed.reason), true)
+    }
+  }
+
+  // ── 3c. A dir reindex may delete a row ONLY when the file is gone from disk ──
+  // The original defect: the walk skipped `vendor` (which discovery indexes) and
+  // inferred deletion from not seeing it, so editing one file purged every stored
+  // vendor file. The guard under test is the existence check; the seam reproduces
+  // the old walk-absence rule so this check can be shown to go red.
+  {
+    const { createToolHandlers } = await import("../../src/mcp/tool-handlers")
+    const handlers = createToolHandlers()
+    mkdirSync(path.join(proj, "vendor", "lib"), { recursive: true })
+    writeFileSync(path.join(proj, "vendor", "lib", "vendored.ts"), "export function VENDORED_KEEP_SYM(x: number): number { return x + 1 }\n")
+    await indexProjectParallel(pid, proj, { skipPostProcessing: true })
+    const vendorPath = path.join(proj, "vendor", "lib", "vendored.ts")
+    const vendorRows = () => (raw.prepare(`SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND path = ?`).get(pid, vendorPath) as any).c
+    check("A3: a vendored source file is indexed by discovery", vendorRows() === 1, `rows=${vendorRows()}`)
+    writeFileSync(path.join(proj, "src", "lib.ts"), "export function libCallee(x: number): number { return x + 11 }\nexport function libExtra(x: number): number { return x * 3 }\n")
+    if (MUTATE_WALK_DELETE) { process.env.BB_TEST_HOOKS = "1"; process.env.BB_TEST_DIR_DELETE_BY_WALK = "1" }
+    const dirRes = await handlers.bb_index({ path: proj, mode: "dir" } as any, { projectId: pid, projectPath: proj })
+    if (MUTATE_WALK_DELETE) delete process.env.BB_TEST_DIR_DELETE_BY_WALK
+    const dirParsed = JSON.parse(dirRes.content[0].text)
+    if (MUTATE_WALK_DELETE) {
+      check("MUTATION: walk absence purges a file that exists on disk (gate must fail)", vendorRows() === 1, `deleted=${dirParsed.deleted} vendorRows=${vendorRows()}`)
+    } else {
+      check("A3: dir reindex never deletes a row whose file still exists", vendorRows() === 1, `deleted=${dirParsed.deleted} vendorRows=${vendorRows()}`)
+      check("A3: the dir answer reports no phantom deletion", dirParsed.deleted === 0, `deleted=${dirParsed.deleted}`, true)
+    }
   }
 
   // ── 4. LSP-parity: the exact call lsp/server.ts makes returns derived ──
   {
+    // The path must be genuinely CHANGED for a parse (and therefore the bounded
+    // derived pass) to run at all: an unchanged file is a declared no-op now.
+    writeFileSync(path.join(proj, "src", "caller.ts"), "import { libCallee } from \"./lib\"\nexport function caller(x: number): number { return libCallee(x) + 1 }\n")
     const r = await reindexFilesParallel(pid, proj, [{ path: path.join(proj, "src", "caller.ts"), type: "modified" }])
     if (!MUTATE) {
       check("A3: reindexFilesParallel (LSP path) returns derived telemetry", !!r.derived, "derived missing")
@@ -197,15 +252,15 @@ Object.assign(evidence, {
   verifierCommand: "bun run script/m40/verify-a3-write-parity.ts",
   generatedAt: new Date().toISOString(),
   passed, failed, negativeCases: negatives,
-  mutation: MUTATE ? "A3_SILENT_DEFER (gate-fail proof run)" : "not-run (control)",
+  mutation: MUTATE ? "A3_SILENT_DEFER (gate-fail proof run)" : MUTATE_NO_SKIP ? "A3_NO_SKIP (gate-fail proof run)" : MUTATE_WALK_DELETE ? "A3_WALK_DELETE (gate-fail proof run)" : "not-run (control)",
   failures,
 })
 mkd(RESULTS_DIR, { recursive: true })
 // M40 lesson (caught by X1): evidence is stamped ONLY by a real, green,
 // non-seam run. Control/mutation probes must never overwrite real evidence —
 // a mutation world's "blocked" output is not the gate's verdict.
-if (failed === 0 && !MUTATE && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") writeSealed(path.join(RESULTS_DIR, "A3.json"), evidence)
+if (failed === 0 && !MUTATE && !MUTATE_NO_SKIP && !MUTATE_WALK_DELETE && process.env.BB_M40_SELFTEST_CONTROL !== "1" && process.env.BB_M40_READ_ONLY !== "1") writeSealed(path.join(RESULTS_DIR, "A3.json"), evidence)
 
-console.log(`A3 write-parity: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE ? " [MUTATION RUN]" : ""}`)
+console.log(`A3 write-parity: ${passed} passed, ${failed} failed, ${negatives} negatives${MUTATE || MUTATE_NO_SKIP || MUTATE_WALK_DELETE ? " [MUTATION RUN]" : ""}`)
 if (failures.length) for (const f of failures) console.log(`  FAIL: ${f}`)
 if (failed > 0) process.exit(1)

@@ -139,7 +139,9 @@ export class IndexLockHeldError extends Error {
     // belonging to a process that did not take the lock at all. Claiming "wait for
     // it to finish" there is a promise about a run that may not exist.
     const remedy =
-      holder.pid === null
+      holder.version > INDEX_LOCK_SCHEMA_VERSION
+        ? `the lock file was written by a newer bb (lock schema v${holder.version}; this build understands v${INDEX_LOCK_SCHEMA_VERSION}), so its holder is not interpreted here and it ages out only after ${Math.round(crossHostExpiryMs() / 3_600_000)}h. If that newer run is gone, remove it by hand: rm ${lockPath}`
+        : holder.pid === null
         ? `the lock file names no process, so nothing can be proven to be running. Remove it by hand: rm ${lockPath}`
         : holder.host && holder.host !== hostname()
           ? `it was written on host ${holder.host}, where pid ${holder.pid} means nothing here, so it is reclaimed only after ${Math.round(crossHostExpiryMs() / 3_600_000)}h. If that run is gone, remove it by hand: rm ${lockPath}`

@@ -1,5 +1,29 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the two safe page-reclamation points for a project DB (WAL
+//   checkpoint after writes, and a whole-file VACUUM after a wipe) plus the report
+//   that says what SQLite actually did.
+// WHICH TOOL IT SERVES — the index write paths bb_index (file/dir reindex) and the
+//   CLI `bb index`/`bb health --refresh`/`--force`; read paths never call it.
+// WHY IT IS SHAPED THIS WAY — a checkpoint can be REFUSED (busy=1) while another
+//   connection holds a read snapshot, and a VACUUM only moves pages through the WAL,
+//   so both the boolean and the byte counts are measured after the operation rather
+//   than assumed. The driver wrapper is CoreDatabase (``native`` plus prepare/exec),
+//   which does not expose ``pragma``; PRAGMA statements are therefore issued through
+//   the driver's own pragma method when present and through a prepared statement
+//   otherwise, so one implementation works under bun:sqlite and better-sqlite3.
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_index/** (WAL checkpoint recorded
+//   per reindex), script/perf/verify-space-reclaim.ts, docs/indexing/PERFORMANCE-FINDINGS.md.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/ast/parallel-indexer.ts
+//   (reindexFilesParallel calls checkpointWal), src/cli/index.ts (reclaimSpace),
+//   docs/indexing/INDEXER-REVIEW.md (the reclamation finding).
+// CONTRACTS IT MUST NOT BREAK — never delete the database file; never report a
+//   checkpoint/vacuum as done when SQLite refused or failed it.
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * index-space.ts — the WAL and the free pages that nothing in bb ever reclaimed.
+ * index-space — the WAL and the free pages that nothing in bb ever reclaimed.
  *
  * MEASURED on this repository, 2026-10-08, after one full index and one forced
  * rebuild of ~944k symbols:
@@ -39,6 +63,30 @@ export interface SpaceReport {
 }
 
 /**
+ * Read a PRAGMA through whichever driver object the caller handed us.
+ *
+ * `CoreDatabase` (the wrapper every caller actually holds) exposes `native` plus
+ * prepare/exec and deliberately no `pragma`, so the first version of this module
+ * threw `rawDb.pragma is not a function` on every runtime — caught by its own
+ * try/catch, which turned a broken checkpoint into a silent `false`. The PRAGMA
+ * therefore goes to the driver's own method when it has one, and to a prepared
+ * statement otherwise. `undefined` means "this driver could not be asked", which
+ * callers must not read as success.
+ */
+function runPragma(rawDb: any, body: string): any {
+  const driver = rawDb?.native ?? rawDb
+  if (typeof driver?.pragma === "function") return driver.pragma(body)
+  if (typeof driver?.prepare === "function") {
+    const stmt = driver.prepare(`PRAGMA ${body}`)
+    if (typeof stmt?.all === "function") {
+      const rows = stmt.all()
+      return Array.isArray(rows) ? rows : [rows]
+    }
+  }
+  return undefined
+}
+
+/**
  * Truncate the WAL, and report whether SQLite ACTUALLY did it.
  *
  * A refused checkpoint does not throw: `PRAGMA wal_checkpoint(TRUNCATE)` returns
@@ -53,7 +101,7 @@ export interface SpaceReport {
  */
 export function checkpointWal(rawDb: any): boolean {
   try {
-    const result = rawDb.pragma("wal_checkpoint(TRUNCATE)")
+    const result = runPragma(rawDb, "wal_checkpoint(TRUNCATE)")
     const row = Array.isArray(result) ? result[0] : result
     if (row && typeof row === "object" && "busy" in row) return Number(row.busy) === 0
     // A driver that returns no row cannot be asked; the caller still gets the
@@ -78,8 +126,11 @@ export function spaceReport(rawDb: any, dbPath: string): SpaceReport {
   let freelistBytes = 0
   let freeRatio = 0
   try {
-    const free = Number((rawDb.pragma("freelist_count", { simple: true }) as number) ?? 0)
-    const pageSize = Number((rawDb.pragma("page_size", { simple: true }) as number) ?? 0)
+    const freeRow: any = runPragma(rawDb, "freelist_count")
+    const pageRow: any = runPragma(rawDb, "page_size")
+    const first = (row: any, key: string): unknown => (Array.isArray(row) ? row[0]?.[key] : row?.[key])
+    const free = Number(first(freeRow, "freelist_count") ?? 0)
+    const pageSize = Number(first(pageRow, "page_size") ?? 0)
     freelistBytes = free * pageSize
     freeRatio = dbBytes > 0 ? freelistBytes / dbBytes : 0
   } catch {}

@@ -35,6 +35,9 @@ process.env.BB_DATA_DIR = BB_DATA_DIR
 const RESULTS_DIR = path.join(ROOT, "validation/m43/results")
 const testHooks = process.env.BB_TEST_HOOKS === "1"
 const lockOff = testHooks && process.env.BB_TEST_INDEX_LOCK_OFF === "1"
+// Mutation world for the TOOL surface: the handler is allowed to run while another
+// live process holds the lock. The normal assertion (refusal) must then fail.
+const MUTATE_HANDLER_ALLOW = process.env.BB_M43_MUTATE_P1_HANDLER_ALLOW === "1"
 
 let passed = 0, failed = 0, negatives = 0
 function check(label: string, ok: boolean, detail = "") {
@@ -151,6 +154,32 @@ async function main() {
     const reacquired = await acquireIndexLock(pidB, { kind: "after-kill" })
     check("5: killed holder's lock reclaimed automatically", reacquired.pid === process.pid)
     await reacquired.release()
+  }
+
+  // ── 3b. The TOOL surface refuses too, not just the module API ──
+  // bb_index is the agent-facing door: a declared refusal (isError true, holder
+  // named) is the contract, because an agent that silently interleaves a reindex
+  // with another process's index run corrupts the very evidence it is about to read.
+  {
+    const { createToolHandlers } = await import(path.join(ROOT, "src/mcp/tool-handlers.ts"))
+    const pidF = getProjectId(fixture + "-f")
+    const filePath = path.join(fixture, "src", "mod0.ts")
+    const holder = spawnHolder(pidF)
+    await holder.locked
+    if (MUTATE_HANDLER_ALLOW) { process.env.BB_TEST_HOOKS = "1"; process.env.BB_TEST_INDEX_LOCK_OFF = "1" }
+    try {
+      const handlers = createToolHandlers()
+      const res: any = await handlers.bb_index({ path: filePath, mode: "file" }, { projectId: pidF as any, projectPath: fixture })
+      const text = String(res?.content?.[0]?.text ?? "")
+      // The mutation world disables the lock for this process; the REFUSAL contract is
+      // unchanged, so this check must fail — that failure is the gate's red proof.
+      check("3b: bb_index file mode is REFUSED while another process holds the lock", res?.isError === true, `isError=${res?.isError}${MUTATE_HANDLER_ALLOW ? " [mutation: lock disabled]" : ""} ${text.slice(0, 160)}`)
+      if (!MUTATE_HANDLER_ALLOW) negative("3b: the refusal names the holder and the tool mode", /already active/.test(text) && /mode=file/.test(text), text.slice(0, 200))
+    } finally {
+      if (MUTATE_HANDLER_ALLOW) { delete process.env.BB_TEST_INDEX_LOCK_OFF; delete process.env.BB_TEST_HOOKS }
+      holder.child.kill("SIGKILL")
+      await waitForExit(holder.child)
+    }
   }
 
   // ── 4. Cross-process refusal (CLI level) ──
@@ -275,9 +304,9 @@ async function main() {
   rmSync(fixture, { recursive: true, force: true })
 
   const ok = failed === 0
-  console.log(`P1 index-lock: ${passed} passed, ${failed} failed, ${negatives} negatives${lockOff ? " [LOCK DISABLED — mutation run]" : ""}`)
+  console.log(`P1 index-lock: ${passed} passed, ${failed} failed, ${negatives} negatives${lockOff || MUTATE_HANDLER_ALLOW ? " [MUTATION RUN]" : ""}`)
   // M43.X1: children of the gate-selftest / closure probe never stamp evidence.
-  if (ok && !lockOff && process.env.BB_M43_READ_ONLY !== "1") {
+  if (ok && !lockOff && !MUTATE_HANDLER_ALLOW && process.env.BB_M43_READ_ONLY !== "1") {
     mkdirSync(RESULTS_DIR, { recursive: true })
     const head = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })()
     writeFileSync(path.join(RESULTS_DIR, "P1.json"), JSON.stringify({
@@ -290,7 +319,8 @@ async function main() {
       passed,
       failed,
       negativeCases: negatives,
-      negativesDescription: "refusal-names-holder, per-project-isolation, release-removes-lockfile",
+      negativesDescription: "refusal-names-holder (module and tool door), per-project-isolation, release-removes-lockfile",
+      mutation: MUTATE_HANDLER_ALLOW ? "P1_HANDLER_ALLOW (gate-fail proof run)" : "not-run (control)",
     }, null, 2) + "\n")
     console.log("evidence stamped: validation/m43/results/P1.json")
   }

@@ -31,6 +31,7 @@ import { CrossLanguageIntelligencePersister } from "./cross-language-intelligenc
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
+import { checkpointWal } from "./index-space"
 import {
   resolveDottedTargets,
   resolveImportTargets,
@@ -8774,17 +8775,40 @@ export async function runBoundedPostProcessing(
   }
 }
 
-// M48.C2 (#700): dir-mode change detection scoped to a subdirectory, computed
-// against the PROJECT ROOT so file keys never move. The old dir path indexed
-// with the subdir itself as projectPath, re-keying every row ("mod.ts" instead
-// of "src/mod.ts") — duplicate rows, lost symbols, and reads that resolved
-// against a corrupted index. Comparison matches the discovery fast path
-// exactly: Math.floor(mtimeMs) + size_bytes; files discovery would skip
-// (>5MB) are skipped here too, and the same heavyweight directories
-// discovery never indexes are excluded, so there is no correctness gap
-// against a full `bb index`.
-const DIR_WALK_SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", "out", "coverage", ".next", "target", "vendor", "__pycache__", ".venv", "venv"])
+// Dir-mode change detection scoped to a subdirectory, always computed against
+// the PROJECT ROOT so stored file keys never move. Driving the walk from a
+// subdirectory used to re-key every row ("mod.ts" instead of "src/mod.ts"),
+// which duplicated files and symbols and corrupted scoped reads.
+//
+// TWO RULES MAKE A DELETE SAFE, and both exist because a directory walk is a
+// PARTIAL view of the corpus, never the whole of it:
+//
+//   1. A row may be marked deleted ONLY when the file is genuinely absent from
+//      disk (stat says ENOENT). Walk absence is not evidence of deletion: a
+//      skip rule, an unreadable directory, a file that grew past the parse
+//      limit or a symlink all produce "not seen" for a file that is still
+//      there. This check used to be absent, and an edit anywhere in a tree
+//      containing vendor/ silently purged every stored vendor file (walk
+//      skipped the directory, deletion was inferred from not seeing it).
+//   2. The walk's skip set must match what DISCOVERY indexes. `vendor` is
+//      deliberately not skipped by discovery — it is first-party source in Go
+//      and in repositories that keep curated code under src/vendor — so it is
+//      not skipped by this walk either. A name that is a build directory in
+//      one ecosystem and source in another cannot be judged by the name alone,
+//      which is why rule 1 is the invariant and the skip list is only a cost
+//      optimisation.
+const DIR_WALK_SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", "out", "coverage", ".next", "target", "__pycache__", ".venv", "venv"])
 const DIR_WALK_SIZE_LIMIT = 5 * 1024 * 1024
+
+/** True unless the path is provably GONE. Unreadable is not gone: only ENOENT deletes a row. */
+async function stillOnDisk(absolutePath: string): Promise<boolean> {
+  try {
+    await stat(absolutePath)
+    return true
+  } catch (e: any) {
+    return e?.code !== "ENOENT"
+  }
+}
 
 export async function collectDirChanges(
   projectId: ProjectID,
@@ -8797,6 +8821,10 @@ export async function collectDirChanges(
     .all(projectId) as { path: string; last_modified: number; size_bytes: number }[]
   const stored = new Map(rows.map((r) => [r.path, r]))
   const changes: FileChange[] = []
+  // Test seam (BB_TEST_HOOKS=1 only) that reproduces the OLD behaviour exactly:
+  // `vendor` skipped by the walk AND deletion inferred from walk absence. The gate
+  // for the deletion guard flips it on to prove the guard is load-bearing.
+  const legacyWalkDelete = process.env.BB_TEST_HOOKS === "1" && process.env.BB_TEST_DIR_DELETE_BY_WALK === "1"
   const seen = new Set<string>()
   const walk = async (d: string): Promise<void> => {
     let entries
@@ -8804,6 +8832,7 @@ export async function collectDirChanges(
     for (const e of entries) {
       if (e.isDirectory()) {
         if (DIR_WALK_SKIP_DIRS.has(e.name)) continue
+        if (legacyWalkDelete && e.name === "vendor") continue
         await walk(path.join(d, e.name))
         continue
       }
@@ -8813,6 +8842,11 @@ export async function collectDirChanges(
       try { st = await stat(p) } catch { continue }
       if (st.size > DIR_WALK_SIZE_LIMIT) continue
       seen.add(p)
+      // A candidate the indexer would DECLINE is not a change: reporting it would
+      // make a settled tree answer `candidates: N, processed: 0` on every call
+      // (measured: 80 such paths on a real 564-file corpus) and an agent would
+      // read that as work found. Eligibility is the indexer's own gate.
+      if (!hasValidExtension(p) || shouldSkip("/" + path.relative(root, p))) continue
       const row = stored.get(p)
       if (!row) changes.push({ path: p, type: "added" })
       else if (Math.floor(row.last_modified) !== Math.floor(st.mtimeMs) || row.size_bytes !== st.size) changes.push({ path: p, type: "modified" })
@@ -8821,7 +8855,12 @@ export async function collectDirChanges(
   const base = path.resolve(dir)
   await walk(base)
   const basePrefix = base.endsWith(path.sep) ? base : base + path.sep
-  for (const p of stored.keys()) if (p.startsWith(basePrefix) && !seen.has(p)) changes.push({ path: p, type: "deleted" })
+  // Rule 1 above: walk absence is NOT deletion. Only the seam above can restore
+  // the old inference, and it is never reachable in a normal run.
+  for (const p of stored.keys()) {
+    if (!p.startsWith(basePrefix) || seen.has(p)) continue
+    if (legacyWalkDelete || !(await stillOnDisk(p))) changes.push({ path: p, type: "deleted" })
+  }
   return changes
 }
 
@@ -8839,7 +8878,10 @@ export async function reindexFilesParallel(
    *  types, and files whose parse produced nothing. It used to be indistinguishable
    *  from a file that was indexed: a binary file answered `indexed: 0, deleted: 0,
    *  errors: 0`, which to a caller is indistinguishable from "already current". */
-  skipped: number; skippedReason?: string; /** WHICH files failed and WHY. The delegated
+  skipped: number; skippedReason?: string; /** Named files that are already current: mtime+size match the stored row AND their sha256 equals the stored file_hash. Counted instead of re-parsed. */
+  unchanged: number; /** Named files the indexer will not take at all (unsupported extension / skip rule). */
+  declined: number; /** True when a WAL checkpoint ran after this write run (best effort; see index-space.ts). */
+  walCheckpointed: boolean; /** WHICH files failed and WHY. The delegated
    *  `indexProjectParallel` has always collected `{ file, error }` per failure and
    *  returned it; reindexFilesParallel counted them and dropped them. A write tool
    *  reporting "3 errors" tells its caller nothing it can act on — not which file,
@@ -8876,7 +8918,7 @@ export async function reindexFilesParallel(
   // only one that realpath'd it, and it was enough to break the whole incremental
   // path for that project.
   const realProjectPath = realpathSync(projectPath)
-  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number; resolvedStoredEdges: number; stillUnresolvedInEdges: number; healedZeroLines: number; importResolvedInEdges: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
+  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; unchanged: number; declined: number; walCheckpointed: boolean; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number; resolvedStoredEdges: number; stillUnresolvedInEdges: number; healedZeroLines: number; importResolvedInEdges: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, unchanged: 0, declined: 0, walCheckpointed: false, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
   // lock scope — a concurrent indexer must never interleave between our
@@ -8921,11 +8963,55 @@ export async function reindexFilesParallel(
     }
   }
 
-  const toIndex = changes
-    .filter((c) => c?.type !== "deleted")
-    .filter((c) => hasValidExtension(c.path))
-    .filter((c) => !shouldSkip("/" + path.relative(realProjectPath, c.path)))
-    .map((c) => c.path)
+  // A NAMED file is not automatically a CHANGED file. `skipDiscovery` below hands
+  // the named list straight to the parser, which bypasses the incremental
+  // mtime+size check that a discovery-driven run applies — so asking
+  // bb_index for an already-current file re-parsed it (measured: 11.8 s for a
+  // one-line file that had not changed, and `outcome: "indexed"` forever, so the
+  // documented no-op answer could never occur). Partition here, with the SAME
+  // fast path discovery uses (floor(mtimeMs) + size_bytes), and confirm with the
+  // stored sha256 because an edit that keeps both size and the millisecond can
+  // otherwise be missed: unchanged only when all three agree.
+  const named = changes.filter((c) => c?.type !== "deleted")
+  const eligible = named.filter((c) => hasValidExtension(c.path) && !shouldSkip("/" + path.relative(realProjectPath, c.path)))
+  result.declined = named.length - eligible.length
+  let toIndex = eligible.map((c) => c.path)
+  // A test seam (reachable only behind BB_TEST_HOOKS=1) restores the old
+  // always-reparse behaviour so the no-op gate can be shown to go red.
+  const testReparseNamed = process.env.BB_TEST_HOOKS === "1" && process.env.BB_TEST_INDEX_REPARSE_NAMED === "1"
+  if (toIndex.length > 0 && !testReparseNamed) {
+    const rawDb = await BrainDatabase.getRawInstance(projectId)
+    const rows = rawDb
+      .prepare(`SELECT path, last_modified, size_bytes, file_hash FROM brain_file WHERE project_id = ? AND path IN (${toIndex.map(() => "?").join(",")})`)
+      .all(projectId, ...toIndex) as Array<{ path: string; last_modified: number; size_bytes: number; file_hash: string | null }>
+    const storedByName = new Map(rows.map((row) => [row.path, row]))
+    const changed: string[] = []
+    for (const candidate of toIndex) {
+      const row = storedByName.get(candidate)
+      let st: { mtimeMs: number; size: number } | null = null
+      try {
+        st = await stat(candidate)
+      } catch {
+        st = null
+      }
+      if (!row || !st) {
+        changed.push(candidate)
+        continue
+      }
+      const metadataMatches = Math.floor(row.last_modified) === Math.floor(st.mtimeMs) && row.size_bytes === st.size
+      if (metadataMatches && st.size <= DIR_WALK_SIZE_LIMIT) {
+        const { createHash } = await import("crypto")
+        const { readFile } = await import("fs/promises")
+        const contentHash = createHash("sha256").update(await readFile(candidate)).digest("hex").slice(0, 16)
+        if (row.file_hash && row.file_hash === contentHash) {
+          result.unchanged++
+          continue
+        }
+      }
+      changed.push(candidate)
+    }
+    toIndex = changed
+  }
 
   if (toIndex.length > 0) {
     try {
@@ -8978,6 +9064,18 @@ export async function reindexFilesParallel(
     } catch (error) {
       log.error("failed to reindex files", { error })
       result.errors++
+    }
+  }
+  // The CLI reclaims the WAL at the end of a run; this path never did, so every
+  // agent-fresh reindex left the write WAL to grow until the next full CLI
+  // index. Best effort: a refused checkpoint (another reader holds a snapshot)
+  // is reported as false, never as success.
+  if (result.indexed > 0 || result.deleted > 0) {
+    try {
+      const rawDb = await BrainDatabase.getRawInstance(projectId)
+      result.walCheckpointed = checkpointWal(rawDb)
+    } catch {
+      result.walCheckpointed = false
     }
   }
   } finally {

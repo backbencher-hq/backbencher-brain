@@ -1,3 +1,11 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the measured review of the indexer's file discovery, storage and derived phases, with each finding's evidence and status.
+WHO IT IS FOR — maintainers of the indexing path and the gates that guard it.
+EDIT TOGETHER WHEN THIS CHANGES — src/ast/parallel-indexer.ts, src/ast/index-space.ts, src/ast/index-lock.ts, and the gate scripts a finding names. A finding marked FIXED names the gate that now holds it.
+-->
+
 # Indexer review — time, space, scope, and the surface a user sees
 
 Scope: `bb index` end to end on this repository. Written 2026-10-09 against
@@ -202,14 +210,20 @@ Findings, all read from the code (the discovery pass additionally executed the r
 13. **MEDIUM — three more walks with divergent skip lists.** `fingerprint.ts:79-80` uses the union
     of `skipPatterns` + `cliSkipPatterns` (which uniquely has `snapshot.json$`), so
     `computeCheckoutFingerprint` can never equal `computeDbFingerprint` for a tree containing
-    such a file — "moved project" adoption never fires. `collectDirChanges` (`:6858`) has a third
-    list, `DIR_WALK_SKIP_DIRS` (`:6853`), which includes `vendor` that discovery deliberately does
-    *not* skip.
-14. **MEDIUM — `bb_index mode=dir` deletes what its own walk does not see.** In
-    `collectDirChanges`, the >5 MB skip (`:6881`) precedes `seen.add` (`:6882`), and every stored
-    path under the prefix not in `seen` becomes `{type:"deleted"}` (`:6891`) → purged
-    (`:6965-6980`). Editing any file in a tree containing `vendor/` therefore silently deletes
-    that vendor code's symbols and reports a normal-looking `deleted: N`.
+    such a file — "moved project" adoption never fires. The third list was `collectDirChanges`'
+    `DIR_WALK_SKIP_DIRS`, which included `vendor` that discovery deliberately does *not* skip;
+    that divergence is removed (see finding 14) and the deletion rule no longer depends on walk
+    absence at all.
+14. **FIXED (was HIGH) — `bb_index mode=dir` deleted what its own walk did not see.** The walk's
+    absence used to be treated as deletion: every stored path under the prefix that the walk did
+    not return became `{type:"deleted"}` and was purged. `vendor` was in the walk's skip set while
+    discovery deliberately indexes it, so editing one file in a tree containing `vendor/` silently
+    purged that code's symbols and reported a normal-looking `deleted: N` — measured on an isolated
+    fixture as files 3→1. Two rules now hold: a row is marked deleted ONLY when the file is
+    provably absent from disk (stat ENOENT), and the walk's skip set matches discovery's (`vendor`
+    walked). Proof: `validation/tools/bb_index/audit/door-vendor.json` (before: deleted 2, files
+    3→1) versus `audit/door-vendor-after-fix.json` (after: deleted 0, files 3→3), and the mutant in
+    `script/m40/verify-a3-write-parity.ts` (`BB_M40_MUTATE_A3_WALK_DELETE=1`) goes red.
 15. **MEDIUM — explicit-file indexing bypasses ignore files.** `:5304-5305` filters only
     `shouldSkipCli` + `hasValidExtension`; `:6993-6994` only `hasValidExtension` + `shouldSkip`.
     A gitignored file added by path enters the index and is purged again by the next full run.
@@ -370,11 +384,14 @@ no index lock** — the background embedding drainer (`:2496-2690`) and annotati
 only through `busy_timeout=5000`, and a lost embedding chunk is counted `failed` and downgraded to
 tf-idf (`:2648-2656`).
 
-**6.6 Reclamation only happens on the CLI path, and only sometimes.** `reclaimSpace` is referenced
-at `cli/index.ts:189` (after a `--force` wipe) and `:308` (end of run) and **nowhere else** — the
-MCP `bb_index` path never checkpoints. An ordinary run passes `vacuum: false`, and the wipe path
-only vacuums when rows were deleted from a file ≥256 MiB, so **858 MiB (27%) of this index is
-never returned by a normal run**.
+**6.6 FIXED — reclamation ran on no path, not just the CLI one.** `index-space.ts` issued its
+PRAGMAs through `rawDb.pragma`, but every caller holds the `CoreDatabase` wrapper, which exposes
+`native`/prepare/exec and no `pragma` — so `checkpointWal` threw inside its own try/catch and
+returned `false` on every runtime, while `spaceReport` read a zero freelist. The MCP `bb_index`
+path additionally never called it at all. Both are fixed: PRAGMAs are issued through the driver's
+own method (or a prepared statement), and a successful reindex now runs a WAL checkpoint and
+reports `walCheckpointed`. Evidence: `validation/tools/bb_index/audit/door-t0-postfix.json`
+(`walCheckpointed: true`) and `script/perf/verify-space-reclaim.ts`.
 
 ---
 

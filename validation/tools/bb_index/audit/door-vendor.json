@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/work/vendor-fixture",
+  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "startedAt": "2026-11-03T00:34:50.264Z",
+  "cases": [
+    {
+      "label": "dir root after edit (vendor tree: walk skips vendor, discovery indexed it)",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 3,\n  \"processed\": 1,\n  \"deleted\": 2,\n  \"errors\": 0,\n  \"skipped\": 0\n}",
+      "ms": 10203
+    },
+    {
+      "label": "dir root again (settled)",
+      "arguments": {
+        "path": ".",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \".\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true\n}",
+      "ms": 11
+    },
+    {
+      "label": "dir src/ subdir after edit in src/vendor (walk skips vendor)",
+      "arguments": {
+        "path": "src",
+        "mode": "dir"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"dir\",\n  \"path\": \"src\",\n  \"candidates\": 0,\n  \"processed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": true\n}",
+      "ms": 7
+    }
+  ],
+  "stderr": "[INFO] [19:35:00] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [19:35:05] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [19:35:06] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"069354f5\",\"danglingSources\":4,\"totalRelationships\":5}\n[INFO] [19:35:06] [project-health] project health computed {\"projectId\":\"069354f5b81f8d1bc3ca023fb4083087b59e40bf\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\nnpm notice\nnpm notice New minor version of npm available! 11.12.1 -> 11.21.1\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.1\nnpm notice To update run: npm install -g npm@11.21.1\nnpm notice\n",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1227,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project whose derived phases should be re-run. REQUIRED in every mode, and for mode=post it is checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T00:35:07.006Z"
+}

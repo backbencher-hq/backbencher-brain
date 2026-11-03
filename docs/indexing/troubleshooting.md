@@ -375,7 +375,7 @@ interpolated, so do not match on them):
 
 This is not a worker problem — the pool never started because the run never
 started. Indexing is single-flight per project
-(`src/ast/index-lock.ts:105-115`). Either another `bb index` / MCP index is
+(`src/ast/index-lock.ts`, `IndexLockHeldError`). Either another `bb index` / MCP index is
 live, or a previous one crashed; the message says which, and a stale lock from a
 crashed process is reclaimed automatically on the next run. Do not delete the
 lock file by hand.

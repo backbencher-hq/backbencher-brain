@@ -1,3 +1,11 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the environment variables that change query-index behaviour: operational knobs, test-only injection, and per-analyzer claim flags.
+WHO IT IS FOR — an operator indexing a real project (or running the gates) who needs to know which knob is safe, which is diagnostics-only, and what each one changes.
+EDIT TOGETHER WHEN THIS CHANGES — the `process.env.BB_*` reads in src/ast/index-lock.ts, src/ast/auto-refresh.ts, src/ast/index-status.ts, src/ast/parallel-indexer.ts and their gates (script/m43/verify-a3-flag-semantics.ts, script/m40/verify-a9-purge.ts).
+-->
+
 # Environment variables that change indexing
 
 This page documents the `BB_*` knobs read by the indexer and by the language analyzers that the other
@@ -24,6 +32,12 @@ There are three classes, and the class matters more than the name:
 | `BB_DEBUG_DOTTED` | unset | `=1` prints the error when `resolveDottedTargets` (dotted import-path resolution) fails. Off by design: a dotted import that cannot be resolved is a data limitation, not a crash, and must not spam every run. |
 | `BB_SQLITE_TEMP_STORE` | unset | Optional SQLite tuning: `MEMORY`/`FILE`/`DEFAULT` (or 0–2) sets the connection's `temp_store`. Off by default so a small install pays no extra memory. Measured on the apollo-server derived pass: temp_store=MEMORY + a 128 MB page cache reduced the pass 2.57 s → 2.46 s (relationships 1,449 → 1,287 ms, −11%); no full-index win was demonstrated at that corpus size, so the default is unchanged and the knob is for large databases. |
 | `BB_SQLITE_CACHE_MB` | unset | Optional per-connection page cache in MiB (1–4096), applied as `cache_size = -<n*1024>` KiB. Same experiment as above; invalid/out-of-range values are ignored rather than guessed (`script/verify-sqlite-tuning.ts`). |
+| `BB_INDEX_LOCK_GRACE_MS` | `10000` | How long an unreadable `.index.lock` (a 0-byte file from a kill between create and write, a corrupt payload, a full disk) is left alone before it is reclaimed. Inside the window nothing can prove a creator finished, so the acquire is refused; after it, no live creator can still be mid-write. |
+| `BB_INDEX_LOCK_CROSS_HOST_TTL_MS` | `86400000` (24 h) | How long a lock written by ANOTHER host is honoured before it is reclaimed. A pid from another machine means nothing locally, so it is judged by age only; lower it only on a shared data directory whose writers are known to be short-lived. |
+| `BB_STATUS_FSYNC` | unset | `=1` makes the live index-status checkpoint durable (fsync before rename) at the cost of a possible blocking fsync on every progress tick. The atomic rename already makes `kill -9` survivable; this is power-loss durability only. |
+| `BB_NO_AUTO_REFRESH` | unset | `=1` disables the inline auto-refresh that a READ path runs when it finds stale files within budget. A measurement must set this so a read never takes the index lock or writes. |
+| `BB_AUTO_REFRESH_MAX_FILES` | `25` | File-count budget for that inline repair; above it the read declines with the reason and answers from existing data with the staleness envelope. |
+| `BB_AUTO_REFRESH_MAX_BYTES` | `2097152` (2 MiB) | Byte budget for the modified files of an inline repair; above it the read declines the repair rather than stalling. |
 | `BB_INDEX_CONCURRENCY` | unset | Worker count for the parse pool, overriding the built-in plateau `max(2, min(cpus - 1, 12))`. Bounded 1–64; the CLI's `bb index --concurrency <n>` sets the same number for one run. Lower it to keep a machine responsive, raise it only when the index is truly CPU-bound. |
 
 ## Test-only injection (gates only)
