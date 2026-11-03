@@ -9,25 +9,20 @@
   "failed": 0,
   "negatives": 5,
   "negativePassed": 5,
-  "generatedAt": "2026-09-12T15:48:17.024Z",
+  "generatedAt": "2026-11-03T17:01:55.214Z",
   "perCorpus": {
     "rake (Ruby)": {
-      "live": 26,
-      "unresolved": 35,
-      "hist": 26,
+      "live": 30,
+      "unresolved": 60,
+      "hist": 30,
       "bad": 0
     },
     "lodash (JS)": {
-      "live": 9,
-      "unresolved": 36,
-      "hist": 9,
+      "live": 27,
+      "unresolved": 37,
+      "hist": 27,
       "bad": 0
     }
   },
-  "negativeLine": "Proves persistence/history equivalence only, not taint-detection accuracy (phantom sinks are an analyzer-domain gap).",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-10-08T00:38:12.237Z",
-    "contentSha256": "b30de31543fad33a269e9454e7ebe6b49339f63b6af51adde1a347245254c985"
-  }
+  "negativeLine": "Proves persistence/history equivalence only, not taint-detection accuracy (phantom sinks are an analyzer-domain gap)."
 }

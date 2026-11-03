@@ -2,8 +2,9 @@
   "schemaVersion": 1,
   "tool": "bb_security",
   "kind": "real-corpus-and-adversarial",
-  "generatedAt": "2026-11-03T00:33:50.232Z",
-  "currentCommit": "0257aaeda635587620382680196b13fc6925ac7a",
+  "codeState": "post-fix (read-only read path, declared bounds, state-aware history identity)",
+  "generatedAt": "2026-11-03T16:35:28.980Z",
+  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
   "corpusRoot": "$HOME/fixtures/repositories",
   "door": "MCP stdio over the SOURCE entry: tsx src/cli/index.ts mcp --dir <project>",
   "commands": {
@@ -133,7 +134,7 @@
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 11463,
+        "durationMs": 4384,
         "payloadBytes": 3382,
         "parsed": {
           "head": "security: 225 critical / 55 high / 0 medium / 0 low / 154 unknown (144 resolved flows, 290 unvalidated sources, 0 mitigated)",
@@ -228,7 +229,7 @@
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 4126,
+        "durationMs": 4280,
         "payloadBytes": 3011,
         "parsed": {
           "head": "security: 19 critical / 17 high / 0 medium / 0 low / 8 unknown (20 resolved flows, 24 unvalidated sources, 0 mitigated)",
@@ -331,7 +332,7 @@
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 6726,
+        "durationMs": 3450,
         "payloadBytes": 3318,
         "parsed": {
           "head": "security: 5 critical / 73 high / 0 medium / 0 low / 109 unknown (25 resolved flows, 162 unvalidated sources, 0 mitigated)",
@@ -446,11 +447,11 @@
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 9546,
-        "payloadBytes": 3224,
+        "durationMs": 4777,
+        "payloadBytes": 3291,
         "parsed": {
           "head": "security: 218 critical / 282 high / 0 medium / 0 low (405 resolved flows, 95 unvalidated sources, 0 mitigated)",
-          "censusLine": "[scan: 1561 taint flow(s) indexed → 1258 finding(s) (758 beyond the cap); showing 20 finding(s) and 5 of 95 unvalidated observation(s)]",
+          "censusLine": "[scan: 1561 taint flow(s) indexed → 1258 finding(s) (758 beyond the cap); showing 20 finding(s) and 5 of 95 unvalidated observation(s)] — CAPPED at 500; 1258 finding(s) exist and 758 were not examined",
           "observationBlock": true,
           "counts": {
             "scannedFlows": 1561,
@@ -500,13 +501,13 @@
           ],
           "staleMarkers": 0
         },
-        "text": "security: 218 critical / 282 high / 0 medium / 0 low (405 resolved flows, 95 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (_ansiballz_main) @ _internal/_ansiballz/_wrapper.py:39 <- file_system -> database_write\n  [critical] SQL injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> database_write\n  [critical] Command injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> shell_execution\n  [critical] Command injection (_launch_ssh_agent) @ _internal/_ssh/_agent_launch.py:25 <- file_system -> shell_execution\n  [critical] Command injection (CLI) @ cli/__init__.py:134 <- file_system -> shell_execution\n  [critical] Command injection (get_password_from_file) @ cli/__init__.py:619 <- file_system -> shell_execution\n  [critical] Command injection (pager_pipe) @ cli/__init__.py:534 <- file_system -> shell_execution\n  [critical] Command injection (pager) @ cli/__init__.py:515 <- file_system -> shell_execution\n  [critical] SQL injection (AdHocCLI) @ cli/adhoc.py:29 <- sensitive_data -> database_write\n  [critical] SQL injection (run) @ cli/adhoc.py:109 <- sensitive_data -> database_write\n  [critical] SQL injection (ConsoleCLI) @ cli/console.py:38 <- sensitive_data -> database_write\n  [critical] SQL injection (default) @ cli/console.py:162 <- sensitive_data -> database_write\n  [critical] SQL injection (GalaxyCLI) @ cli/galaxy.py:181 <- file_system -> database_write\n  [critical] SQL injection (PlaybookCLI) @ cli/playbook.py:31 <- sensitive_data -> database_write\n  [critical] Command injection (PullCLI) @ cli/pull.py:35 <- file_system -> shell_execution\n  [critical] Command injection (run) @ cli/pull.py:161 <- file_system -> shell_execution\n  [critical] SQL injection (become_wrapper.ps1) @ executor/powershell/become_wrapper.ps1:1 <- sensitive_data -> database_write\n  [critical] Command injection (start_connection) @ executor/task_executor.py:1011 <- file_system -> shell_execution\n  [critical] SQL injection (__init__) @ executor/task_queue_manager.py:173 <- sensitive_data -> database_write\n  [critical] SQL injection (TaskQueueManager) @ executor/task_queue_manager.py:152 <- sensitive_data -> database_write\n[scan: 1561 taint flow(s) indexed → 1258 finding(s) (758 beyond the cap); showing 20 finding(s) and 5 of 95 unvalidated observation(s)]\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection alarm_timeout @ _internal/_errors/_alarm_timeout.py:27 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection AnsibleTimeoutError @ _internal/_errors/_alarm_timeout.py:11 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection build_pwsh_cmd_statement @ _internal/_powershell/_script.py:119 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection LocalNotAProcess @ _internal/_rpc_host.py:24 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection init_parser @ cli/adhoc.py:38 (sink found; source endpoint not resolved to an indexed symbol)",
+        "text": "security: 218 critical / 282 high / 0 medium / 0 low (405 resolved flows, 95 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (_ansiballz_main) @ _internal/_ansiballz/_wrapper.py:39 <- file_system -> database_write\n  [critical] SQL injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> database_write\n  [critical] Command injection (_run_secret_input_command) @ _internal/_secret_input.py:71 <- sensitive_data -> shell_execution\n  [critical] Command injection (_launch_ssh_agent) @ _internal/_ssh/_agent_launch.py:25 <- file_system -> shell_execution\n  [critical] Command injection (CLI) @ cli/__init__.py:134 <- file_system -> shell_execution\n  [critical] Command injection (get_password_from_file) @ cli/__init__.py:619 <- file_system -> shell_execution\n  [critical] Command injection (pager_pipe) @ cli/__init__.py:534 <- file_system -> shell_execution\n  [critical] Command injection (pager) @ cli/__init__.py:515 <- file_system -> shell_execution\n  [critical] SQL injection (AdHocCLI) @ cli/adhoc.py:29 <- sensitive_data -> database_write\n  [critical] SQL injection (run) @ cli/adhoc.py:109 <- sensitive_data -> database_write\n  [critical] SQL injection (ConsoleCLI) @ cli/console.py:38 <- sensitive_data -> database_write\n  [critical] SQL injection (default) @ cli/console.py:162 <- sensitive_data -> database_write\n  [critical] SQL injection (GalaxyCLI) @ cli/galaxy.py:181 <- file_system -> database_write\n  [critical] SQL injection (PlaybookCLI) @ cli/playbook.py:31 <- sensitive_data -> database_write\n  [critical] Command injection (PullCLI) @ cli/pull.py:35 <- file_system -> shell_execution\n  [critical] Command injection (run) @ cli/pull.py:161 <- file_system -> shell_execution\n  [critical] SQL injection (become_wrapper.ps1) @ executor/powershell/become_wrapper.ps1:1 <- sensitive_data -> database_write\n  [critical] Command injection (start_connection) @ executor/task_executor.py:1011 <- file_system -> shell_execution\n  [critical] SQL injection (__init__) @ executor/task_queue_manager.py:173 <- sensitive_data -> database_write\n  [critical] SQL injection (TaskQueueManager) @ executor/task_queue_manager.py:152 <- sensitive_data -> database_write\n[scan: 1561 taint flow(s) indexed → 1258 finding(s) (758 beyond the cap); showing 20 finding(s) and 5 of 95 unvalidated observation(s)] — CAPPED at 500; 1258 finding(s) exist and 758 were not examined\n\nunvalidated observations (leads, not confirmed exploitable paths):\n  [critical] unvalidated sink: SQL injection alarm_timeout @ _internal/_errors/_alarm_timeout.py:27 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection AnsibleTimeoutError @ _internal/_errors/_alarm_timeout.py:11 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection build_pwsh_cmd_statement @ _internal/_powershell/_script.py:119 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: Command injection LocalNotAProcess @ _internal/_rpc_host.py:24 (sink found; source endpoint not resolved to an indexed symbol)\n  [critical] unvalidated sink: SQL injection init_parser @ cli/adhoc.py:38 (sink found; source endpoint not resolved to an indexed symbol)",
         "elapsedSinceIndexMs": 0
       },
       "determinism": {
         "identical": true,
-        "firstBytes": 3224,
-        "secondBytes": 3224
+        "firstBytes": 3291,
+        "secondBytes": 3291
       }
     },
     {
@@ -545,7 +546,7 @@
       "answer": {
         "ok": true,
         "isError": false,
-        "durationMs": 5028,
+        "durationMs": 4294,
         "payloadBytes": 2868,
         "parsed": {
           "head": "security: 10 critical / 63 high / 0 medium / 0 low / 200 unknown (31 resolved flows, 242 unvalidated sources, 0 mitigated)",
@@ -766,14 +767,14 @@
       "index": 0,
       "isError": false,
       "staleMarkers": 1,
-      "footer": "1 stale, 0 missing of 1 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)",
+      "footer": null,
       "identicalWithAutoRefresh": true,
       "refreshedRows": {
         "afterCalls": 1
       },
       "pass": true,
       "cleanAnswerBeforeTouch": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/stale.ts:3 <- database_read -> database_write\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]",
-      "text": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/stale.ts:3 <- database_read -> database_write [stale]\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]\n\n1 stale, 0 missing of 1 findings' files — reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
+      "text": "security: 1 critical / 0 high / 0 medium / 0 low (1 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (search) @ src/stale.ts:3 <- database_read -> database_write [stale]\n[scan: 2 taint flow(s) indexed → 1 finding(s); showing 1 finding(s)]\n\n1 stale, 0 missing of 1 finding file(s) — manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)"
     }
   ]
 }
