@@ -85,7 +85,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 
 ## Performance
 
-Measured through the real MCP stdio door on isolated indexes, five warm runs per tier (validation/tools/bb_annotate/LATENCY.json): p50 83.4 / p95 96.1 ms on the 5-file polyglot fixture; p50 5.8 / p95 12.1 ms on the 97-file n100 fixture; p50 5.7 / p95 17.9 ms on the 564-file graphql-js corpus; p50 3.5 / p95 5.1 ms on the 109-file rake corpus; p50 3.8 / p95 5.8 ms on the 6,452-file / 310,423-symbol reference index. The first call in a fresh server process opens the project index read-write and runs its additive migrations, measured at 1.8 s on the reference-index snapshot. The write itself is three indexed lookups (name, qualified name, file row) plus the location upsert.
+Measured through the real MCP stdio door on isolated indexes, five warm runs per tier (validation/tools/bb_annotate/LATENCY.json): p50 83.4 / p95 96.1 ms on the 5-file polyglot fixture; p50 5.8 / p95 12.1 ms on the 97-file n100 fixture; p50 5.7 / p95 17.9 ms on the 564-file graphql-js corpus; p50 3.5 / p95 5.1 ms on the 109-file rake corpus; p50 3.8 / p95 5.8 ms on the 6,452-file / 310,423-symbol reference index. The first call in a fresh server process opens the project index read-write and runs its additive migrations, measured at 1.8 s on the reference-index snapshot. The write itself is two indexed name lookups (name, qualified name), one file-row lookup for the path and — when a path is given — one symbol-in-file lookup for the joint reachability answer, plus the location upsert.
 
 ## Safety
 
