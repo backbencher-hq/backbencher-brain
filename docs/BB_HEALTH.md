@@ -71,16 +71,33 @@ this call: total=211ms (freshness=18ms aggregates=58ms)
 
 ## MCP usage
 
+Each element below is one complete argument object accepted by `bb_health`
+(they were validated against the live registry schema and the runtime
+validator; they are examples of calls, not output):
+
 ```json
-{ "verbose": true }
-{ "freshness": "complete" }
-{ "integrity": true }
-{ "includeAnalysisRuns": true }
-{ "history": true, "limit": 5 }
-{ "paths": ["src/mcp/server.ts"] }
-{ "checkUnindexed": true }
-{ "refresh": true }
-{ "force": true }
+[
+  { "verbose": true },
+  { "freshness": "complete" },
+  { "integrity": true },
+  { "includeAnalysisRuns": true },
+  { "history": true, "limit": 5 },
+  { "paths": ["src/mcp/server.ts"] },
+  { "checkUnindexed": true },
+  { "refresh": true },
+  { "force": true }
+]
+```
+
+Measured default-argument output on the campaign workspace index (6,452 files /
+310,423 symbols / 820,040 relationships / 3.6 GB), recorded in
+`validation/tools/bb_health/LATENCY.json` — a real report, not an invented
+example:
+
+```text
+files=6452 symbols=310423 relationships=820040 imports=25122 syntaxErrors=100
+freshness: 194 fresh / 6 of 200 sampled stale (~194 of 6452 estimated) / 0 missing (200/6452 checked, sampled — SAMPLE, not a census)
+this call: total=381ms (freshness=48ms aggregates=121ms)
 ```
 
 `refresh`/`force` are the only mutations. `force` wipes before rebuilding and
