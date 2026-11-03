@@ -1,3 +1,30 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the canonical orphan-detection engine: it decides which
+// symbols and files have no recorded consumer, derives each finding's confidence
+// from the evidence classes it could actually consult, and accounts for every
+// candidate it suppressed and every usage row it refused to believe.
+// WHICH TOOL IT SERVES — bb_patterns (read, requiresIndex true, modes: orphaned, all);
+//   the `all` scope reaches it through PatternBrainTools.detectPatterns.
+// WHY IT IS SHAPED THIS WAY — the index is the evidence: a finding must name what
+//   the index does and does not record, so confidence is derived (never a per-rule
+//   constant), a rejected edge is counted rather than hidden, and the census is
+//   aggregated separately from the page so a bounded answer still reports the whole.
+//   It opens the database byte-read-only: a read tool must not mutate the index.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_patterns.md, docs/BB_PATTERNS.md,
+//   validation/tools/bb_patterns/**; gates: `bun run script/verify-patterns.ts`,
+//   `bun run script/m13/verify-patterns-orphans.ts`,
+//   `bun run script/m64/verify-patterns-evidence-gate.ts`.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — rules.ts (shares the non-code language
+//   exclusion), src/ast/tools.ts (the all-scope aggregator), the curated guide, and
+//   the gates named above.
+// CONTRACTS IT MUST NOT BREAK — byte-read-only reads, evidence-derived confidence in
+//   [0.30,0.70] for symbols and [0.30,0.55] for files, self-loop/inferred/low-confidence
+//   rows are never usage, every suppression counted in summary.suppressedByReason, and
+//   the census (candidatesTotal) is independent of the page (maxResults).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { AnalysisExclusions, isNonCodeLanguage, NON_CODE_LANGUAGES } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
@@ -13,7 +40,7 @@ const ENGINE = "orphans@intelligence"
 // quality gate below. The previous revision decided on the type alone, which
 // meant an `overrides` row produced by a name guess was accepted as proof.
 //
-// EXTENDED 2026-10-18 with the three new kinds whose TARGET is the depended-on symbol, because an
+// Three kinds in this set have the depended-on symbol as their TARGET, because an
 // unlisted kind is not a conservative omission here — it manufactures dead code. `renders` targets the
 // rendered component, `decorates` targets the decorator (source is the decorated declaration), and
 // `mixes_in` targets the mixin; without them a component used only by JSX, a decorator used only by
@@ -249,10 +276,10 @@ type FileRow = { id: string; relativePath: string; language: string | null; line
 // Confidence is DERIVED FROM EVIDENCE, not a per-rule constant. It used to be a
 // constant (0.6 for symbols, 0.5 for files), which made `minConfidence` a
 // two-valued switch, made the sort degenerate to alphabetical path order, and
-// meant the shipped default of 0.6 silently deleted the entire orphaned_file
+// meant the default of 0.6 silently deleted the entire orphaned_file
 // rule — a rule the documentation describes and no user could reach.
 export async function detectOrphans(projectId: ProjectID, options: OrphanOptions = {}): Promise<PatternReport> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const minConfidence = options.minConfidence ?? 0
   const maxResults = options.maxResults ?? 100
   const rules = new Set(options.rules ?? ["orphaned_function", "orphaned_class", "orphaned_file"])
@@ -289,8 +316,8 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   //
   // This used to be THREE statements over the same rows — the gate's input, the
   // coverage-gap indicator's two inputs — which on a 56,738-symbol index cost
-  // 27.4s of a 27.5s scan. It was then ONE statement that shipped every usage
-  // row into JS, which on `move` (223,880 symbols, 898,806 relationships) shipped
+  // 27.4s of a 27.5s scan. It was then ONE statement that read every usage
+  // row into JS, which on `move` (223,880 symbols, 898,806 relationships) read
   // 710,671 rows and took 187s.
   //
   // The breakdown of that 187s, from probe-l4 on the same database:
@@ -463,15 +490,26 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     }
   }
 
-  // (2) The ID channel: an ANCHORED clean edge says another identified symbol
-  //     consumed this one. Decisive — it clears the candidate outright.
+  // (2) The ID channel and (5) the per-symbol coverage channel are two flags over
+  //     the SAME relationship scan, so they share one GROUP BY instead of reading
+  //     the table twice:
+  //       used      an ANCHORED clean edge consumed this target (clears the candidate)
+  //       incoming  ANY anchored non-self-loop row points here (coverage, gated or not)
+  //     The two predicates are deliberately different and stay different; only the
+  //     scan is shared.
   {
     const rows = raw.prepare(
-      `SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r ` +
-        `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.source_symbol_id IS NOT NULL ` +
-        `AND r.target_symbol_id IS NOT NULL`,
-    ).all(BIND) as Array<{ id: string }>
-    for (const row of rows) usedIds.add(row.id)
+      `SELECT r.target_symbol_id AS id, ` +
+        `MAX(CASE WHEN ${CLEAN_SQL} AND r.source_symbol_id IS NOT NULL THEN 1 ELSE 0 END) AS used, ` +
+        `MAX(CASE WHEN r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NOT NULL ` +
+        `AND r.source_symbol_id <> r.target_symbol_id THEN 1 ELSE 0 END) AS incoming ` +
+        `FROM brain_relationship r WHERE ${usageFilter} AND r.target_symbol_id IS NOT NULL ` +
+        `GROUP BY r.target_symbol_id`,
+    ).all(BIND) as Array<{ id: string; used: number; incoming: number }>
+    for (const row of rows) {
+      if (row.used) usedIds.add(row.id)
+      if (row.incoming) symbolsWithAnyIncoming.add(row.id)
+    }
   }
 
   // (3) The name channel, in two parts. An UNANCHORED clean row is ABOUT this
@@ -510,59 +548,20 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   //     file rather than one row per (file, source) pair, which was 319,201
   //     rows on `move` before this was measured.
   {
-    const edges = raw.prepare(
-      `SELECT t.file_id AS f, COUNT(*) AS n FROM brain_relationship r ` +
-        `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
-        `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL} AND t.file_id IS NOT NULL GROUP BY t.file_id`,
-    ).all(BIND) as Array<{ f: string; n: number }>
-    for (const row of edges) {
-      const entry = fileIncomingUsage.get(row.f) ?? { edges: 0, sources: 0 }
-      entry.edges = row.n
-      fileIncomingUsage.set(row.f, entry)
-    }
-    const sources = raw.prepare(
-      `SELECT t.file_id AS f, COUNT(DISTINCT COALESCE(r.source_symbol_id, '?')) AS n ` +
+    const rows = raw.prepare(
+      `SELECT t.file_id AS f, COUNT(*) AS edges, ` +
+        `COUNT(DISTINCT COALESCE(r.source_symbol_id, '?')) AS sources ` +
         `FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
         `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL} AND t.file_id IS NOT NULL GROUP BY t.file_id`,
-    ).all(BIND) as Array<{ f: string; n: number }>
-    for (const row of sources) {
-      const entry = fileIncomingUsage.get(row.f) ?? { edges: 0, sources: 0 }
-      entry.sources = row.n
-      fileIncomingUsage.set(row.f, entry)
-    }
+    ).all(BIND) as Array<{ f: string; edges: number; sources: number }>
+    for (const row of rows) fileIncomingUsage.set(row.f, { edges: row.edges, sources: row.sources })
   }
 
-  // (5) Per-symbol coverage: does the analyzer have an ANCHORED row about this
-  //     symbol? A symbol with no such row, in a file that has some, is the
-  //     signature of an analyzer that reached the file and not the symbol.
-  //
-  //     ANCHORED ONLY, and that is deliberate and not an oversight. This is the
-  //     asymmetry with statement (4) above, and the two are not the same test:
-  //
-  //       per symbol   an ANCHORED row. "Another identified symbol points here."
-  //       per file     ANY row, anchored or not. "The analyzer produced anything
-  //                     about this file at all."
-  //
-  //     A first draft of this rewrite used `NOT_SELF_LOOP_SQL` here too, on the
-  //     reasonable reading that the file test and the symbol test should agree.
-  //     It silenced 258 COVERAGE GAP INDICATOR disclosures across nine
-  //     repositories, because an unanchored row is a NAME match: `references` is
-  //     97% unanchored on rake and 61% on lodash, so counting those here means
-  //     nearly every symbol has "some incoming row" and the indicator — which
-  //     exists to say the analyzer got to this file and not to this declaration —
-  //     stops firing exactly where it is most wanted. The previous version wrote
-  //     `source_symbol_id <> target_symbol_id`, which in SQL is NULL, not true,
-  //     for an unanchored row and so excluded them. That reads like a mistake and
-  //     behaves correctly; the explicit form below says so on its face.
-  {
-    const rows = raw.prepare(
-      `SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r ` +
-        `WHERE ${usageFilter} AND r.source_symbol_id IS NOT NULL ` +
-        `AND r.target_symbol_id IS NOT NULL AND r.source_symbol_id <> r.target_symbol_id`,
-    ).all(BIND) as Array<{ id: string }>
-    for (const row of rows) symbolsWithAnyIncoming.add(row.id)
-  }
-
+  // (5) Per-symbol coverage is now computed by the shared aggregate in (2): the
+  //     `incoming` flag there is exactly the ANCHORED non-self-loop test this block
+  //     used to run as a separate statement. The asymmetry with (4) is unchanged —
+  //     coverage counters include every target of an anchored row, while the file
+  //     aggregates include unanchored rows too.
   // (6) Cross-file referenced files, for the symbol-level channel. Built from ALL
   //     symbol types, with both endpoints resolvable to files, from the SAME
   //     gated edge set the ID channel used. This replaces a map keyed on six
@@ -580,19 +579,15 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     for (const row of rows) referencedFiles.add(row.f)
   }
 
-  // Ambiguity is computed over the REPORTING scope — the six types, in
-  // non-test, non-noise files — not over every row in brain_symbol. The
-  // previous query had no symbol_type, path, or test filter, so a declaration
-  // in a test file made a same-named production declaration "ambiguous" and
-  // disabled the only channel that could have cleared it.
+  // Ambiguity is computed over the REPORTING scope — the reported symbol types,
+  // exactly the rows already loaded into `symbols` from the same project and file
+  // join. Counting names there is the same decision the separate GROUP BY made, with
+  // one fewer scan of the symbol table.
   const ambiguousNames = new Set<string>()
   {
-    const dupRows = raw.prepare(
-      "SELECT s.name AS name, COUNT(*) AS c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
-        "WHERE s.project_id = ? AND s.symbol_type IN (" + reportedTypes.map(() => "?").join(",") + ") " +
-        "GROUP BY s.name HAVING COUNT(*) > 1",
-    ).all(projectId, ...reportedTypes) as Array<{ name: string }>
-    for (const row of dupRows) ambiguousNames.add(row.name)
+    const nameCounts = new Map<string, number>()
+    for (const symbol of symbols) nameCounts.set(symbol.name, (nameCounts.get(symbol.name) ?? 0) + 1)
+    for (const [name, count] of nameCounts) if (count > 1) ambiguousNames.add(name)
   }
 
   // referencedFiles is built by statement (6) above, in SQL. The previous

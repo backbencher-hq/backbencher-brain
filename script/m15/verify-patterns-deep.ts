@@ -227,21 +227,35 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
   // P6: docs honesty — registry block ↔ doc ↔ handler ↔ impl agree
   // ═══════════════════════════════════════════════════════════════════
   {
-    const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
+    // The registry and handlers are split into one module per tool, so this leg reads
+    // the live registry and the tool's own module through the shared accessor instead of
+    // text-splitting the assembler. A gate that parses a file the code no longer lives in
+    // passes for the wrong reason or crashes; both happened here.
+    const { PUBLIC_TOOL_DESCRIPTORS } = await import("../../src/mcp/tool-registry")
+    const { toolModuleSourceOf } = await import("../lib/tool-sources.ts")
+    const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool) => tool.name === "bb_patterns")
     const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_patterns.md"), "utf8")
-    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
+    const hnd = toolModuleSourceOf("bb_patterns")
     const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/patterns/orphans.ts"), "utf8")
+    const evidenceSrc = readFileSync(path.join(ROOT_DIR, "src/intelligence/patterns/evidence.ts"), "utf8")
 
-    const block = reg.split('name: "bb_patterns"')[1].split(/name: "/)[0]
-    ck("P6: registry lists bb_patterns", reg.includes("bb_patterns"))
-    ck("P6: registry modes orphaned+all", block.includes('"orphaned"') && block.includes('"all"'))
-    ck("P6: registry requiresIndex=true", block.includes("requiresIndex: true"))
+    ck("P6: registry lists bb_patterns", descriptor !== undefined)
+    ck("P6: registry modes orphaned+all", JSON.stringify(descriptor?.modes) === JSON.stringify(["orphaned", "all"]), JSON.stringify(descriptor?.modes))
+    ck("P6: registry requiresIndex=true", descriptor?.requiresIndex === true)
+    ck("P6: registry publishes the limit maximum as a schema fact", (descriptor?.inputSchema?.properties as any)?.limit?.maximum === 500, JSON.stringify((descriptor?.inputSchema?.properties as any)?.limit))
     ck("P6: doc exists and mentions orphaned", doc.includes("orphaned"))
     ck("P6: doc exists and mentions scope", doc.includes("scope"))
     ck("P6: handler calls detectOrphans for scope=orphaned", hnd.includes("detectOrphans(projectId"))
     ck("P6: handler calls detectPatterns for all", hnd.includes("detectPatterns(projectId"))
-    ck("P6: impl warns and excludes tests by default", impl.includes("includeTests") && impl.includes("isTestPath"))
+    ck("P6: handler opens the index byte-read-only on the read path", hnd.includes("{ readonly: true }"))
+    ck("P6: handler bounds the page with a declared maximum", hnd.includes("MAX_LIMIT"))
+    ck("P6: impl excludes tests by default", impl.includes("includeTests"))
     ck("P6: impl excludes entry points", impl.includes("isEntryPointName"))
+    // The evidence fingerprint must cover the code that can change a finding. The list
+    // named the assembler shell after the split, so a changed handler changed nothing.
+    ck("P6: evidence fingerprint names the per-tool handler", evidenceSrc.includes("src/mcp/tools/bb_patterns/handler.ts"))
+    ck("P6: evidence fingerprint names the per-tool descriptor", evidenceSrc.includes("src/mcp/tools/bb_patterns/descriptor.ts"))
+    nk("P6: evidence fingerprint no longer watches the assembler shell", !evidenceSrc.includes('"src/mcp/tool-handlers.ts"'), "stale path still listed")
   }
   await emit("P6", "M15.P6", "bb_patterns", "docs honesty", "p6.json")
   await reset()

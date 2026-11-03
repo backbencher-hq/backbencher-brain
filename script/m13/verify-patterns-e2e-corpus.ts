@@ -117,7 +117,16 @@ async function indexAndRunPatterns(rootDir: string): Promise<string> {
     const isBun = typeof Bun !== "undefined"
     const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
     const serverArgs = isBun ? ["--dir", root] : ["mcp", "--dir", root]
-    const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+    // Forward the parent environment: the SDK's default environment drops BB_DATA_DIR,
+    // so the server child could not see the fixture index (and then two string checks
+    // below passed on the refusal text — a gate passing on its own refusal).
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [serverEntry, ...serverArgs],
+      cwd: process.cwd(),
+      stderr: "pipe",
+      env: { ...process.env } as Record<string, string>,
+    })
     const client = new Client({ name: "verify-patterns-e2e", version: "1.0.0" })
     const call = async (args: Record<string, unknown>) => {
       const res: any = await client.callTool({ name: "bb_patterns", arguments: args })
@@ -128,14 +137,16 @@ async function indexAndRunPatterns(rootDir: string): Promise<string> {
 
       const r = await call({ scope: "orphaned", limit: 20 })
       harness.check("MCP orphaned: not error", !r.isError, r.text.slice(0, 200))
-      harness.check("MCP orphaned: mentions provenance", r.text.includes("[provenance:"), r.text.slice(0, 300))
-      harness.negative("MCP orphaned: called function NOT flagged", !r.text.includes("alive"), r.text.slice(0, 200))
+      // A refusal is not a report: every text assertion below requires the call itself
+      // to have succeeded, so an error string can never satisfy a content check.
+      harness.check("MCP orphaned: mentions provenance", !r.isError && r.text.includes("[provenance:"), r.text.slice(0, 300))
+      harness.negative("MCP orphaned: called function NOT flagged", !r.isError && !r.text.includes("alive"), r.text.slice(0, 200))
 
       const all = await call({ scope: "all", limit: 50 })
-      harness.check("MCP all: output contains patterns", all.text.includes("patterns"), all.text.slice(0, 200))
+      harness.check("MCP all: output contains patterns", !all.isError && all.text.includes("patterns ("), all.text.slice(0, 200))
 
       const hist = await call({ history: true, limit: 5 })
-      harness.check("MCP history: returns JSON object with runs", hist.text.trim().startsWith("{"), hist.text.slice(0, 200))
+      harness.check("MCP history: returns JSON object with runs", !hist.isError && hist.text.trim().startsWith("{"), hist.text.slice(0, 200))
     } finally {
       try { await client.close() } catch {}
     }

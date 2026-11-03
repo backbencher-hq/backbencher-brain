@@ -1,296 +1,242 @@
+<!--
+Author: Muhammad Ishaq Khan
+
+WHAT THIS DOCUMENT IS — the reference guide for bb_patterns: what it answers, how
+orphan confidence is derived from evidence, how the pattern rules decide, what the
+answer's bounds and disclosures are, and what the tool does not know.
+WHO IT IS FOR — a caller deciding whether a reported finding is dead code, and an
+operator reading the verification table before trusting the tool.
+EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_patterns/{handler,descriptor}.ts,
+src/intelligence/patterns/{orphans,rules,evidence}.ts, script/tool-docs/curation/bb_patterns.ts,
+and the gates listed under Verification.
+-->
+
 # bb_patterns Reference
 
-`bb_patterns` reports code-pattern findings. One canonical orphan-detection
-engine (`src/intelligence/patterns/orphans.ts`) and one canonical rule engine
-(`src/intelligence/patterns/rules.ts`) produce every finding. The MCP tool and
-the `PatternBrainTools` façade delegate to them.
+`bb_patterns` reports code-pattern findings from the indexed evidence. One canonical
+orphan-detection engine (`src/intelligence/patterns/orphans.ts`) and one canonical rule
+engine (`src/intelligence/patterns/rules.ts`) produce every finding; the MCP tool and
+the `PatternBrainTools` façade both delegate to them.
 
-Every number here was measured against a real corpus. The harness, the probes
-and the raw outputs are in `fixtures/bb_patterns/`, a separate repository.
-Corpora: `backbencher-brain` (TypeScript), `rake` (Ruby), `ripgrep` (Rust),
-`lodash` (JavaScript), `rebar3` (Erlang), `clojure`, `clyde` (Python),
-`luarocks` (Lua), `mojo` (Perl).
+Two scopes:
 
-`REVIEW-PLAN.md` in that directory holds the first measurement round;
-`RE-VERIFICATION.md` holds the re-measurement after the analyzer work landed,
-including which decisions changed as a result.
+- `orphaned` — symbols and files with no recorded consumer, confidence derived from the
+  evidence channels the scan could actually consult.
+- `all` (default) — the orphan rule plus framework detection and the anti-pattern rules,
+  merged, ranked by confidence, and bounded to one page.
 
-## Finding schema
+## What the answer contains
 
-Every `PatternFinding` carries:
+The MCP answer is text, and it names its own coverage on every call:
 
-| Field | Meaning |
-| --- | --- |
-| `rule` | `orphaned_function` / `orphaned_class` / `orphaned_file` |
-| `engine` | Provenance (which engine produced it) |
-| `severity` | `info` / `warning` / `error` |
-| `confidence` | 0..1, **derived from evidence** (see below) |
-| `location` | `{ file, line, symbol? }` |
-| `linesOfCode` | Exact indexed span for symbols; the file's real `line_count` for files. Never an invented number. |
-| `description` | What was detected |
-| `remediation` | Evidence-aware guidance — never "safe to remove" |
-| `evidence` | Array of `{ kind, description }`, including any **refused** evidence |
-| `limitations` | Known false-positive classes for this finding |
+```
+patterns (13237 found):
+  [warning] high-complexity-function @ src/lsp/impact.ts:210 (90%)
+  ...
+[scan: 13237 finding(s) across orphaned_file=5213 orphaned_function=4720 …; showing 20 — raise `limit` to see more (maximum 500)]
+```
+
+- **The page** is at most `limit` rows (default 20, maximum 500); each row carries the
+  rule/type, `file:line`, the symbol for orphan rules, the confidence, and `[stale]`
+  when that finding's file changed after indexing.
+- **The census** in the `[scan: …]` line is the full finding count plus the per-rule
+  breakdown. The page never reads as the population.
+- **scope=orphaned** additionally prints:
+  - `[suppressed: reason=count …]` — every candidate the scan discarded, by reason, so
+    a zero is distinguishable from a scan that suppressed everything it saw;
+  - `[usage-evidence: refused N row(s) (selfLoop=…, inferred=…, lowConfidence=…); imports: …]`
+    — how much usage evidence was refused and how far the import channel was carried;
+  - `[provenance: static_finding via orphans@intelligence; scanned …]`.
+- **history=true** returns JSON: `runs` bounded by `limit`, and a findings window of 200
+  with `findingsTotal`, `findingsReturned`, `findingsWindow` and `findingsTruncated`
+  declared — the window is a bound, not a silent cut.
+
+The engine report additionally carries a per-finding evidence array, limitations array
+and remediation text. Those are engine fields; the MCP text surface does not inline them.
 
 ## What counts as "used"
 
-Two claims, at different strengths, because the index distinguishes them and the
-distinction is not cosmetic.
+Two channels, at different strengths, because the index distinguishes them:
 
-**ID evidence** — an *anchored* edge (`source_symbol_id` present) from a
-different symbol to this one, structurally published. Decisive: it clears the
-candidate outright.
+**ID evidence** — an *anchored* edge (`source_symbol_id` present) from a different
+symbol to this one. Decisive: it clears the candidate outright.
 
-**Name evidence** — the leaf of `target_external`, or the name of an
-*unanchored* edge's target. Clearing on this requires the name to be unambiguous
-in the reporting scope.
+**Name evidence** — the leaf of `target_external`, or the name of an *unanchored*
+edge's target. Clearing on this requires the name to be unambiguous in the reporting
+scope.
 
-**Nothing** — a row that fails the quality gate contributes nothing, not even its
-name. A guess is not a sighting.
+A row that fails the evidence-quality gate contributes nothing, not even its name. A
+guess is not a sighting.
 
-The split is necessary because the share of edges carrying no source is a
-property of the project, not of the relationship type:
+## The evidence-quality gate
 
-| repo | calls | uses | imports | references |
-| --- | --- | --- | --- | --- |
-| rake | 2% | 0% | 5% | 97% |
-| ripgrep | 2% | 4% | 0% | 0% |
-| rebar3 | 0% | 0% | 0% | 0% |
-| clojure | 0% | 3% | 0% | 0% |
-| lodash | 83% | 31% | 65% | 61% |
-| luarocks | 17% | 14% | 83% | 13% |
+A resolved target is necessary but not sufficient. Every relationship row publishes a
+`confidence` and a `metadata.evidenceClass`, and a meaningful share of rows assert
+something that is not evidence of a consumer. A row counts only when all three hold:
 
-On lodash the 3,775 unanchored `calls` edges are published as
-`{"isFieldAccess":true,"bareRead":true}` — a bare identifier name-matched to a
-symbol. Treating them as proof of consumption produced a 95.1% false-positive
-rate in an earlier revision.
+1. it is not a **self-loop** (`source_symbol_id == target_symbol_id` — a symbol consuming
+   itself asserts nothing);
+2. its `evidenceClass` is not `inferred` (the heuristic tier);
+3. its `confidence` is at least **0.7** (the guess tier sits below).
 
-## The evidence quality gate
-
-A resolved target is necessary but not sufficient. Every relationship row carries
-a `confidence` and a `metadata.evidenceClass`, and a meaningful share of rows
-assert something that is not evidence of a consumer. Measured share of resolved
-edges that are all-clean — not a self-loop, not `inferred`, confidence ≥ 0.7:
-
-| type | rake | ripgrep | lodash | rebar3 |
-| --- | --- | --- | --- | --- |
-| calls | 96.3% | 97.2% | 98.9% | 87.5% |
-| uses | 100% | 98.8% | **9.2%** | 95.4% |
-| references | 0.0% | 99.2% | — | 99.4% |
-| instantiates | 100% | 100% | — | 100% |
-| extends | 100% | 100% | — | 100% |
-| implements | 100% | 99.4% | — | 100% |
-| **overrides** | **2.1%** | **0.0%** | — | — |
-
-`uses` is 98.8% clean on ripgrep and 9.2% on lodash, so **no list of types can be
-right**. The gate is therefore on the row, stated once:
-
-1. a **self-loop** (`source_symbol_id == target_symbol_id`) asserts a symbol is a
-   consumer of itself;
-2. `evidenceClass: "inferred"` is the heuristic tier, which the analyzer
-   documentation discloses has no oracle and is 65.2% wrong on real Kotlin;
-3. `confidence < 0.7` is the guess tier.
-
-The concrete defect, from rake's own rows: `test_files=` and `ruby_version` in
-`lib/rake/testtask.rb` each carried an `overrides` edge to *themselves*,
-`reasonCode: "first-parent-guess"`, `evidenceClass: "inferred"`, confidence 0.5.
-The indexer guessed that a method overrides its own name in the parent class, and
-an earlier revision read that guess as proof of a consumer.
-
-The gate is self-correcting: an analyzer that starts publishing sound
-`overrides` rows contributes them again with no change to the engine.
-
-Rejected rows are **counted, not hidden** — `summary.unverifiedUsageEdges`, by
-reason and by relationship type, at the index's own published values. Measured:
-lodash 5,670 · clojure 6,442 · mojo 3,626 · rebar3 1,507 · ripgrep 401 ·
-clyde 479 · rake 76.
-
-### Refused evidence is disclosed per finding
-
-A candidate whose symbol had rows rejected by the gate carries a
-`REFUSED EVIDENCE` entry in its `evidence` naming the reasons, plus a limitation
-saying that if the analyzer missed a real caller the finding is a coverage gap
-rather than dead code.
-
-This is not decoration. mojo's `listen` in `lib/Mojo/IOLoop/Server.pm` has **no
-incoming call edge at all** — its callers were never recorded — and the only thing
-that had been keeping it out of the report was the self-loop guess above.
-Reporting it is the honest reading of the index; failing to say that a rejected
-guess pointed here is not.
+The gate is stated once, on the row's own evidence, rather than as a per-type exception
+list — a row that a later analyzer publishes with sound evidence is accepted with no
+change to the engine. Refused rows are **counted and rendered**, never hidden: that is
+the `[usage-evidence]` line, and a candidate whose rows were refused carries a
+`REFUSED EVIDENCE` entry in its engine-report evidence naming the reasons.
 
 ## The file-referenced decision
 
-- The map is built over **all** symbol types, not six. The six-type version
-  discarded 76.7% of cross-file edges on one index and 53.7–85.9% across a
-  nine-repository corpus, because a module-level `const`, a class field or a type
-  alias was invisible as evidence.
-- `contains` and `exports` are the indexer's own bookkeeping and are **not**
-  usage. An oracle that counted them reported that 86% of candidates were
-  "provably still used", which is an artifact of counting bookkeeping as a
-  consumer.
-- **Imports are resolved, not name-matched.** An `imports` row now names the file
-  that made it (96 of 96 on ripgrep, 18 of 19 on rake; it was 0 of 3,554 before
-  the analyzer work), so a specifier is joined onto the importer's own directory
-  and matched against the real indexed path set. `./used` from `src/main.ts`
-  clears `src/used.ts` and nothing else. Root-relative specifiers are also tried,
-  which is safe because the result must name a path that **exists**: `node:fs`
-  and `express` match nothing. That is the property the earlier flat stem set
-  lacked, and the reason it cleared a local `node.ts` from Node's own builtins —
-  185 real files were suppressed by such a collision on one index. Rows that
-  still cannot be attributed fall back to a stem match, only where that stem
-  names exactly one file, and `summary.importResolution` reports how often the
-  fallback was needed.
-- **Non-code files contribute no symbol candidates.**
-  `analysis-exclusions.NON_CODE_LANGUAGES` — markdown, yaml, json, toml, xml,
-  css, html and friends — index headings, mapping keys and selectors, which have
-  no callers by construction: 21% of rake's reportable pool, 8.5% of ripgrep's.
-  They are still indexed, still searchable, and still checked as whole files.
-- **Project manifests** (`package.json`, `Cargo.toml`, `pom.xml`, …) are never
-  offered as dead code. Tooling reads them; source does not import them.
-- **Entry points** are excluded by explicit name/suffix rules and by filename
-  (`index`, `main`, `app`, `mod`).
-- **Visibility is not used to filter.** Many analyzers mark everything public.
+- The referenced-file map is built over **all** symbol types: a module-level `const`, a
+  class field or a type alias is still evidence that the file is used.
+- `contains` and `exports` are the indexer's own bookkeeping and are **not** usage.
+- **Imports are resolved, not name-matched.** An `imports` row names the file that made
+  it, so a specifier is joined onto the importer's own directory and matched against the
+  real indexed path set: `./used` from `src/main.ts` clears `src/used.ts` and nothing
+  else. Root-relative specifiers are also tried, which is safe because the result must
+  name a path that **exists** (`node:fs` and `express` match nothing). Rows that cannot
+  be attributed fall back to a stem match only where that stem names exactly one file,
+  and the answer reports how often the fallback was needed.
+- **Non-code files contribute no symbol candidates** (`analysis-exclusions.NON_CODE_LANGUAGES`:
+  markdown, yaml, json, toml, xml, css, html). They are still indexed, searchable and
+  checked as whole files.
+- **Project manifests** (`package.json`, `Cargo.toml`, `pom.xml`, …) are never offered as
+  dead code: tooling reads them, source does not import them.
+- **Entry points** are excluded by explicit name/suffix rules and by filename (`index`,
+  `main`, `app`, `mod`).
+- **Visibility is not used to filter**: many analyzers mark everything public.
 
 ## Confidence is derived from evidence
 
-Each term was assigned from the measured false-positive rate of that class:
+Symbol confidence starts at 0.5 and moves by measured evidence classes: +0.15 for a name
+unique in the reporting scope (−0.15 when ambiguous), +0.05 when the file has no
+cross-file reference (−0.05 when it does), clamped to **[0.30, 0.70]**. File findings
+span 0.30-0.55 depending on whether the import channel could be consulted at all.
 
-| Class | Measured false-positive rate |
-| --- | --- |
-| name unique in the reporting scope | **0.0%** |
-| name ambiguous | 14.4% |
-| file already cross-file referenced | 11.4% |
-| file not cross-file referenced | 3.7% |
+Measured against a source-text oracle over real repositories, name-unique candidates had
+a 0.0% false-positive rate and ambiguous names 14.4%; per-corpus rates ranged to 27.8%
+and are a **lower bound**, because the oracle cannot see reflection or template
+indirection. The 0.70 ceiling is the published cap: name matching cannot reach 1.0.
 
-Symbol confidence is `0.5 ± 0.15` for name uniqueness, `± 0.05` for file
-reachability, clamped to **[0.30, 0.70]**. The ceiling is the cap this tool has
-always published, kept rather than raised: a candidate can move within the band,
-but the band did not move. Nothing can reach 1.0, because name matching cannot
-see dynamic dispatch, reflection, or string lookup.
+Rule findings carry the confidence the rule derives: `high-complexity-function`
+`min(0.9, 0.5 + complexity/100)` (complexity ≥ 15), `long-parameter-list` a fixed 0.7
+(> 7 parameters), `god-class` `min(0.9, 0.5 + members/40)` (> 10 direct members), and
+`framework-detected` a fixed **0.6** — every framework finding carries 0.6, so a
+threshold above 0.6 removes the whole class rather than discriminating within it.
 
-The file-reachability term points opposite to intuition and the measurement is
-what settled it: a file other files already reach is where an unrecorded
-reference is most likely, while a file with no cross-file edge at all is the one
-most likely to be genuinely dead.
+A finding past the display budget carries `truncatedByDisplayLimit: true` in the engine
+report; the text surface does not render that flag per row.
 
-`RuleFinding` confidence is the emitted value (0.6–0.9), filtered by the same
-`confidenceThreshold`. A finding past the display budget carries
-`truncatedByDisplayLimit: true`.
+## Ranking and the requested-class guarantee
 
-## Results, scored against the source text
+Findings are ordered by confidence, then severity, then file. Orphan candidates are
+ranked by confidence, then size, then path — the page is not an alphabetical prefix.
 
-A candidate is a false positive when a **uniquely named** symbol is consumed in
-another file. The instrument cannot see reflection, string lookup or template
-indirection, so every rate is a **lower bound**.
+The page keeps **one slot per requested class**: if the caller asked for framework
+findings (the default), a page filled with higher-ranked anti-patterns still shows one
+framework finding. The handler asks the engine for exactly the caller's `limit`, so the
+guarantee applies to the page the caller actually sees, not to a larger internal page.
 
-| repo | symbol candidates | contradicted | rate | file candidates | rate |
-| --- | --- | --- | --- | --- | --- |
-| rake | 120 | 15 | 12.5% | 19 | 5.3% |
-| ripgrep | 1,835 | 7 | 0.4% | 53 | 7.5% |
-| lodash | 151 | 42 | 27.8% | 24 | 4.2% |
-| rebar3 | 824 | 2 | 0.2% | 67 | 6.0% |
-| luarocks | 179 | 1 | 0.6% | 117 | 2.6% |
-| mojo | 543 | 11 | 2.0% | 207 | 1.9% |
-| clyde | 1,886 | 0 | 0.0% | 41 | 0.0% |
+## Bounds a caller can trust
 
-## Ranking
+- `limit`: whole number 0..**500**; above 500 the request is refused by name. The census
+  line reports the full count, so a bounded page never hides the population.
+- `confidenceThreshold`: 0..1; default 0 (report everything, ranked).
+- `history`: `runs` bounded by `limit`; findings window **200** with the total and the
+  truncation flag declared.
+- `recordRun`: persists the **whole census**, not the displayed page, capped at
+  **50,000** findings with the cap disclosed on the answer when hit. It works in both
+  scopes; the recorded count is printed next to the found count.
 
-Findings are ordered by confidence, then severity, then size, then path. An
-earlier revision ordered by confidence then path with a constant confidence, so
-the page was an alphabetical prefix of the repository: 59 rows of
-`.github/workflows/*.yml`, 39 of `docs/*.md`, 2 of `.vscode/*.json`, and nothing
-under `src/`.
+## The read path does not write
 
-`detectPatterns` ranks the orphan branch and the rule branch as **one** list. The
-earlier code concatenated the orphan page first and then sliced, so on any
-repository with more orphan candidates than `maxResults` the entire anti-pattern
-branch was cut while `includeAntiPatterns` defaulted to true.
+Every read opens the index **byte-read-only**: db and WAL are unchanged by a call (the
+`-shm` read marks may move), no schema is created, and an unindexed project is a named
+refusal (`No index found … run: bb index <project>`) rather than an empty-looking
+report. `recordRun` is the one write, and only when the caller asks for it.
 
-## Counts a caller can trust
-
-- `statistics.totalFound` is the **census**. It was the returned page's length
-  while `byType`, `bySeverity` and `averageConfidence` beside it described the
-  census, and the handler printed the page length under the words "found": with
-  the default limit the tool fetched 100, printed 20, and said 100.
-- `scan.displayed` is the page. `scan.findingsBeforeDisplayLimit` is the census.
-- Both scopes print the census, the page size, and the per-rule census
-  breakdown. `scope=orphaned` also prints `summary.suppressedByReason`, so a
-  report of zero is distinguishable from a scan that suppressed everything it
-  saw.
-- `summary.scannedFiles` describes the file branch's real scope.
-- `confidenceThreshold` defaults to **0**. It previously defaulted to 0.6, which
-  is above most of the derived range and dropped most symbol findings and every
-  file finding.
-
-## recordRun persistence contract
-
-`bb_patterns { recordRun: true }` persists the **whole census**, and the response
-reports `(N found, M recorded)` where `M` equals `N`.
-
-This was previously broken in the direction its own comment warned about: since
-M57.T3 bounded the page inside `detectPatterns`, the array persisted was
-`min(census, max(limit,100))`, so the next run's auto-resolve pass marked live
-findings as resolved. `recordRun` re-scans for the full census, with a 50,000 cap
-that is **disclosed in the response** when hit, because a cap that is not
-reported is silent data loss.
-
-## Latency
-
-The god-class rule's self-join did not use `brain_symbol_owner_idx`, which exists
-for exactly that predicate, so the member count cost
-`|candidate types| × |all symbols in the project|` row visits. A plain
-`bb_patterns {}` took 330s on a 45,018-symbol index. The correlated-`COUNT(*)`
-form returns an identical row set and 104ms on the same index. Every rewrite was
-checked to return identical rows before being considered.
+Staleness is reported, never repaired: a finding whose file changed after indexing is
+marked `[stale]` and the footer counts stale/missing files. The tool does **not**
+auto-refresh and publishes no `refresh` option; the remediation is manual
+(`bb index --changed`, or `bb_index` with the project path).
 
 ## Known false-positive classes
 
-- Dynamic dispatch, reflection, and string-keyed lookups remain unknown; they are
-  never converted into fabricated resolved usage edges.
-- **An index coverage gap is not visible to this tool.** A symbol with no
-  recorded callers will be reported, and when a rejected edge pointed at it the
-  finding says so. Closing this class is the analyzer lane's work; the engine's
-  obligation is to name it rather than paper over it.
-- Framework entry points not covered by the built-in name/suffix rules.
-- Build configs, plugin manifests (XML), and test conventions.
-- Test files are excluded from *candidates* but not from *evidence*: a
-  production symbol called only from a test is not reported, and a production
-  file imported only by a test is not reported as orphaned. `includeTests: true`
-  means "also report test symbols", not "ignore tests when looking for users".
+- Dynamic dispatch, reflection and string-keyed lookups are invisible. The engine never
+  fabricates a resolved edge for them, so a symbol reached only that way is reported.
+- **An index coverage gap is not visible to the tool.** A symbol with no recorded
+  callers is reported; when a rejected edge pointed at it the finding says so. An
+  upstream resolver that collapses a call onto every same-named declaration makes both
+  look consumed, and the engine cannot disambiguate a resolution it was given — that is
+  an upstream coverage property, recorded as such.
+- Each finding's engine-report limitations array names its false-positive classes.
+- **Lifecycle methods** can look unreferenced because a framework invokes them by
+  convention rather than by a recorded call: Ruby `initialize`, constructors in
+  Java/Kotlin/C#/Python, and similar framework entry points. Treat them as entry points
+  when reviewing a report.
+- Framework entry points not covered by the built-in name/suffix rules; build configs and
+  plugin manifests (XML); test conventions.
+- Test files are excluded from *candidates* but not from *evidence*: a production symbol
+  called only from a test is not reported, and a production file imported only by a test
+  is not reported as orphaned. The engine option `includeTests: true` means "also report
+  test symbols"; it is an engine API option, not a bb_patterns parameter.
 
-## Suppression accounting
+## Latency
 
-`summary.suppressedByReason` counts every candidate the scan discarded:
-`testPath`, `hardNoise`, `noiseSymbolName`, `entryPointName`, `nonCodeFile`,
-`manifestFile`, `ruleNotRequested`, `belowMinConfidence`. Seven suppression paths
-existed before and none was counted, so a project with 5,000 real orphans and
-5,000 suppressed entry points looked identical to a clean one.
+Measured on the reference index (6,452 files / 310,423 symbols / 820,040 relationships)
+with the tool's own handler over the source door, warm, five runs:
 
-## Options
+- `{}` (all scope, default limit, page of 20): TODO-MEASURE
+- `{scope:"orphaned"}`: TODO-MEASURE
 
-`detectOrphans(projectId, { rules?, minConfidence?, maxResults?, includeTests? })`.
-`rules` selects which orphan rules to run. Results are ranked by confidence, then
-size, then path; `summary.truncated` is set when `maxResults` is exceeded.
+Tier measurements and the exact commands are in `validation/tools/bb_patterns/LATENCY.json`.
+
+## Options — tool surface versus engine API
+
+Tool parameters: `scope`, `limit`, `includeOrphaned`, `includeFramework`,
+`includeAntiPatterns`, `confidenceThreshold`, `history`, `recordRun` (schema in
+`docs/tools/bb_patterns.md`).
+
+Engine API options (`detectOrphans(projectId, { rules?, minConfidence?, maxResults?,
+includeTests? })`) are broader than the tool surface; `rules` and `includeTests` are not
+exposed by this tool.
 
 ## Verification
 
-- `script/verify-patterns.ts` — positive and negative fixtures across TypeScript
-  and Python; schema, exact LOC, evidence-aware remediation, confidence cap.
-- `script/m13/verify-patterns-orphans.ts` — 22 checks across TypeScript, Python,
-  Ruby, Go and Java, with 5 negative guards, including cross-language
-  false-positive guards and `is_cross_file` honesty.
-- `script/m13/verify-patterns-rules.ts`, `script/m13/verify-patterns-contract.ts`
-  (both transports), `script/m20/verify-patterns-parameter-scan.ts`,
-  `script/m20/verify-patterns-pagination-history.ts`,
-  `script/m57/verify-t3-scope-all.ts` (17 checks, mutation-tested).
-- `fixtures/bb_patterns/` — the corpus suite: nine real repositories, the
-  source-text oracle, the evidence-quality tables, the query-plan measurements,
-  and the design comparisons that chose every fix above.
+Every gate below was run from the working tree and is able to go red:
 
-### Known pre-existing failure
+- `bun run script/verify-patterns.ts` — canonical positive/negative fixtures (TS and Python):
+  used symbols not flagged, orphans flagged, schema/evidence-aware remediation, confidence cap.
+- `bun run script/m13/verify-patterns-orphans.ts` — 22 checks across TypeScript, Python,
+  Ruby, Go and Java, 5 negative guards.
+- `bun run script/m13/verify-patterns-rules.ts` — 29 checks that the rules fire on real
+  indexed evidence and not on stubs.
+- `bun run script/m13/verify-patterns-contract.ts` — scope enum, planned-mode honesty, and
+  both transports (CLI + MCP stdio).
+- `bun run script/m13/verify-patterns-handler-contract.ts` — the tool surface: read path
+  does not write, unindexed refusal, page class representation, `limit` bound, history
+  window, recordRun in both scopes, staleness truth, evidence lines. `--self-test` plants
+  six mutations in tmp copies and requires the gate to go red for each.
+- `bun run script/m13/verify-patterns-e2e-corpus.ts` — CLI + MCP stdio + real-repository
+  corpus sampling.
+- `bun run script/m13/verify-patterns-docs.ts` — generated page freshness and
+  registry/curation agreement.
+- `bun run script/m15/verify-patterns-deep.ts` — deep semantic redo (orphan semantics,
+  rules engine, real repos).
+- `bun run script/m20/verify-patterns-parameter-scan.ts`,
+  `bun run script/m20/verify-patterns-orphan-semantics.ts`,
+  `bun run script/m20/verify-patterns-pagination-history.ts` — parameter/evidence
+  scanning, engine-level ambiguity invariants, pagination and history persistence.
+- `bun run script/m57/verify-t3-scope-all.ts` — the `all`-scope aggregates (census,
+  byType, average confidence) agree with an independent count.
+- `bun run script/m64/verify-patterns-evidence-gate.ts` (45 assertions) and
+  `script/m64/verify-gate-selftest.ts` (mutations) — the evidence-quality gate.
+- `bun run script/m65/verify-rules-budget-and-gates.ts` and
+  `script/m65/verify-rules-gate-selftest.ts` (mutations) — rule budgets, confidence
+  gates, non-code exclusion, owner-index query plan.
+- `bun run script/m69/verify-patterns-page-class-representation.ts` — the engine's
+  one-slot-per-requested-class contract.
 
-`script/m20/verify-patterns-orphan-semantics.ts` fails 2 of its 6 checks. It fails
-them identically on the unmodified engine, so the change did not cause it: the
-indexer resolves one call to **both** same-named declarations, so the ambiguity
-guard is defeated upstream of the pattern engine. The fix belongs to the
-indexer, not here.
+The corpus measurements behind the false-positive and evidence-quality tables were taken
+with a harness that lives outside this checkout; they are recorded here as measured facts,
+not as commands this repository can re-run.

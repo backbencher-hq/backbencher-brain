@@ -1,9 +1,27 @@
-// src/intelligence/patterns/rules.ts — real, index-backed pattern rules for
-// bb_patterns scope=all (M13.36).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Every rule is computed from the indexed brain_* tables with evidence and a
-// confidence derived from the metric. There are no stubs: a finding is only
-// emitted when the indexed data actually matches the rule.
+// WHAT THIS FILE IS — the index-backed framework and anti-pattern rules for
+// bb_patterns scope=all: complexity, long parameter lists, god classes and
+// framework detection, each emitted only when indexed data matches the rule.
+// WHICH TOOL IT SERVES — bb_patterns (read, requiresIndex true, mode: all), through
+//   PatternBrainTools.detectPatterns.
+// WHY IT IS SHAPED THIS WAY — every rule is a decision about the evidence: the
+//   confidence filter is on the confidence the finding carries (not a ratio on an
+//   unrelated scale), maxResults is a per-type display budget while overflow rows are
+//   marked truncatedByDisplayLimit, and non-code languages are shared with the orphan
+//   engine so JSON keys cannot become god classes. It opens the database
+//   byte-read-only: a read tool must not mutate the index.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_patterns.md, docs/BB_PATTERNS.md,
+//   validation/tools/bb_patterns/**; gates: `bun run script/m13/verify-patterns-rules.ts`,
+//   `bun run script/m65/verify-rules-budget-and-gates.ts`.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — orphans.ts (shares the non-code language
+//   exclusion), src/ast/tools.ts (the all-scope aggregator), the curated guide, and
+//   the gates named above.
+// CONTRACTS IT MUST NOT BREAK — byte-read-only reads, confidenceThreshold filters on
+//   the emitted confidence, maxResults is a per-type budget with declared overflow,
+//   framework findings are a fixed 0.6, and non-code files never produce anti-patterns.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { BrainDatabase } from "../../brain/database"
 import { nonCodeLanguageSQL } from "../../ast/analysis-exclusions"
@@ -47,7 +65,7 @@ const GOD_CLASS_MEMBER_THRESHOLD = 10
 
 export async function detectIndexRules(projectId: ProjectID, options: RuleOptions): Promise<RuleFinding[]> {
   const findings: RuleFinding[] = []
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   // `maxResults` was declared on RuleOptions and passed by every caller
   // (tools.ts:154) and read NOWHERE: the three rule queries and the framework
   // loop were all unbounded, so a caller asking for 1 result got 869. The
@@ -76,7 +94,7 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     ).all(projectId, COMPLEXITY_THRESHOLD, ...nonCode.params) as Array<{ name: string; complexity: number; file: string; line: number }>
     let shown = 0
     for (const row of complex) {
-      // M20.P1/the previous gate was `row.complexity / COMPLEXITY_THRESHOLD <
+      // The gate used to be `row.complexity / COMPLEXITY_THRESHOLD <
       // confidenceThreshold`. The SQL above already guarantees
       // complexity >= COMPLEXITY_THRESHOLD, so that ratio is always >= 1.0 and
       // the check could never fire for any legal threshold. The gate is now on
@@ -110,8 +128,8 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     }
 
     // 2. Long parameter lists — counted by SQLite (json_each), not JS.
-    // M57.T3 (#791): the old query shipped every parameter array to JS and
-    // JSON.parsed ~180k rows per call to keep 15 findings. The count now
+    // The parameter query used to parse every parameter array in JS: ~180k rows
+    // per call to keep 15 findings. The count now
     // happens in SQLite on BOTH runtimes (bun:sqlite and node:sqlite bundle
     // JSON1 — probed). Guards preserve the old JS behavior exactly:
     //   - json_valid: an invalid array was a silent skip (try/catch), not a
@@ -182,8 +200,8 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     //
     // A plain `bb_patterns {}` — no arguments, includeAntiPatterns defaulting to
     // true — took 330s on that last index. The correlated form is the fastest of
-    // the rewrites measured and needs no schema migration, so it is the one
-    // shipped. It is equivalent by construction: COUNT(*) over the owner index
+    // the rewrites measured and needs no schema migration, so it is the form used here.
+    // It is equivalent by construction: COUNT(*) over the owner index
     // is the same count the LEFT JOIN produced, and nothing is lost by dropping
     // the redundant `m.project_id` predicate because an owner_symbol_id already
     // names a row in the same project.

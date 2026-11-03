@@ -20,6 +20,7 @@ import path from "node:path"
 import { Harness } from "./harness"
 import { validateEvidence } from "./verify-evidence"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
+import { toolModuleSourceOf } from "../lib/tool-sources.ts"
 
 const harness = new Harness({
   issue: "M13.39",
@@ -76,15 +77,16 @@ if (registry) {
   const props = Object.keys((registry.inputSchema as any).properties ?? {})
   const missing = props.filter((p) => !doc.includes(`"${p}"`))
   harness.check("docs: every input property is documented", missing.length === 0, missing.length ? `missing: ${missing.join(",")}` : `${props.length} props`)
-  harness.check("docs: source marked as read-only", doc.includes("Source is read-only"))
+  harness.check("docs: source marked as read-only", doc.includes("byte-read-only") && /db and WAL are unchanged by a call/.test(doc), "curated Safety must state the byte-read-only contract")
 
   // P2 honesty: description no longer claims framework/anti-pattern "detection"
-  // as a general capability without qualification. The real description says
-  // "Architecture and code-quality analysis are planned, not yet executable."
-  // The doc's first line is a markdown heading. The description text is on line 3.
-  const docLines = doc.split("\n")
-  const descLine = docLines.length > 2 ? docLines[2] : ""
-  harness.check("docs: description matches registry (planned honesty)", descLine === registry.description, `desc mismatch: "${descLine.slice(0, 80)}" vs "${registry.description.slice(0, 80)}"`)
+  // as a general capability without qualification. The generated page opens with
+  // the author header, then the `# \`bb_patterns\`` heading, then the description.
+  // Reading a fixed line number broke when the header was added; find the heading
+  // and take the next non-empty line instead.
+  const headingIndex = doc.split("\n").findIndex((line) => line.trim() === "# `bb_patterns`")
+  const afterHeading = headingIndex >= 0 ? doc.split("\n").slice(headingIndex + 1).find((line) => line.trim().length > 0) ?? "" : ""
+  harness.check("docs: description matches registry (planned honesty)", afterHeading === registry.description, `desc mismatch: "${afterHeading.slice(0, 80)}" vs "${registry.description.slice(0, 80)}"`)
 }
 
 // Generator verify mode: the tool-docs generator must validate bb_patterns.md
@@ -97,9 +99,12 @@ if (registry) {
 // regenerate direction is worse than no freshness check, because the operator's
 // correct response to it — regenerate — changes nothing.
 const runningUnderBun = typeof (globalThis as any).Bun !== "undefined"
+// Per-tool freshness: the generator's `--only` mode verifies this tool's page and
+// nothing else. The full run also checks the shared registry/website artifacts, which
+// are regenerated centrally, so a mid-flight red there says nothing about this page.
 const generatorArgs = runningUnderBun
-  ? ["run", "script/verify-tool-docs.ts"]
-  : ["--import", "tsx", "script/verify-tool-docs.ts"]
+  ? ["run", "script/verify-tool-docs.ts", "--only", "bb_patterns"]
+  : ["--import", "tsx", "script/verify-tool-docs.ts", "--only", "bb_patterns"]
 const gen = spawnSync(process.execPath, generatorArgs, { cwd: root, encoding: "utf8", timeout: 300_000 })
 harness.check(
   `docs: generator verify mode passes (bb_patterns.md byte-fresh) — ${runningUnderBun ? "bun" : "node"}`,
@@ -117,10 +122,11 @@ harness.negative("honesty: no anti_pattern_stub anywhere in source", !toolsSrc.i
 harness.check("honesty: plannedModes includes quality + architecture", (registry?.plannedModes ?? []).includes("quality") && (registry?.plannedModes ?? []).includes("architecture"), `plannedModes=${JSON.stringify(registry?.plannedModes)}`)
 harness.negative("honesty: quality/architecture are NOT in the executable modes list", !(registry?.modes ?? []).includes("quality") && !(registry?.modes ?? []).includes("architecture"), `modes=${JSON.stringify(registry?.modes)}`)
 
-// Handler: modes are only "orphaned" and "all" (no quality/architecture path).
-const handlerSrc = readFileSync(path.join(root, "src", "mcp", "tool-handlers.ts"), "utf8")
-const bbPatternsSection = handlerSrc.slice(handlerSrc.indexOf("bb_patterns:"), handlerSrc.indexOf("bb_security:"))
-harness.check("honesty: handler only routes orphaned + all (no quality/architecture)", bbPatternsSection.includes('scope === "orphaned"') && bbPatternsSection.includes("PatternBrainTools.detectPatterns") && !bbPatternsSection.includes('"quality"') && !bbPatternsSection.includes('"architecture"'), "handler routes")
+// Handler: the tool's own module routes only "orphaned" and "all". Reading the
+// assembler shell after the split found neither branch, so the check could never
+// see the routing it claims to guard.
+const handlerSrc = toolModuleSourceOf("bb_patterns")
+harness.check("honesty: handler only routes orphaned + all (no quality/architecture)", handlerSrc.includes('=== "orphaned"') && handlerSrc.includes("PatternBrainTools.detectPatterns") && !handlerSrc.includes('"quality"') && !handlerSrc.includes('"architecture"'), "handler routes")
 
 // ── 3. Evidence committed and passing (p1..p4) ────────────────────────────
 const P_FILES = ["p1", "p2", "p3", "p4"]

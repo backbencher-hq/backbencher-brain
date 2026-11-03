@@ -78,7 +78,16 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
   const isBun = typeof Bun !== "undefined"
   const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
   const serverArgs = isBun ? ["--dir", root] : ["mcp", "--dir", root]
-  const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+  // Forward the parent environment explicitly: StdioClientTransport otherwise uses the
+  // SDK's safe-list, which does not include BB_DATA_DIR, so the child opened the default
+  // data dir and every MCP call answered "No index found" for an indexed fixture.
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [serverEntry, ...serverArgs],
+    cwd: process.cwd(),
+    stderr: "pipe",
+    env: { ...process.env } as Record<string, string>,
+  })
   const client = new Client({ name: "verify-patterns-contract", version: "1.0.0" })
   const call = async (args: Record<string, unknown>) => {
     const res: any = await client.callTool({ name: "bb_patterns", arguments: args })
