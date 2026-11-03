@@ -1,3 +1,27 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the source fingerprint and working-tree check for the
+// bb_security evidence suite: a content hash over every file whose bytes decide
+// what the tool can honestly claim.
+// WHICH TOOL IT SERVES — bb_security (mutability read, requiresIndex true,
+//   modes: findings; plannedModes flow, summary, hotspots).
+// WHY IT IS SHAPED THIS WAY — a security verdict is only as good as the code that
+//   produced it, so the verifier evidence carries a hash of the detection surface
+//   (engine adapter, contract, run-history), the indexer writers that fill
+//   brain_taint_flow, the per-tool handler/descriptor, the schema that gates the
+//   rows, the two docs pages, and the verifiers themselves. The list is explicit
+//   rather than a directory glob: an unrelated file changing must not invalidate
+//   evidence, and a file moving into a tool module must not silently drop out.
+// WHERE ITS EVIDENCE LIVES — validation/tools/bb_security/**,
+//   validation/m15/results/x*.json, validation/m20/results/S*.json.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — the security gate scripts that call it
+//   and the per-tool modules when they move.
+// CONTRACTS IT MUST NOT BREAK — a fingerprint is a statement about content, not
+//   freshness; it must stay deterministic and must cover the handler that renders
+//   the answer.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
@@ -15,14 +39,19 @@ export const SECURITY_EVIDENCE_PATHS = [
   // identical while the detection surface moved underneath it.
   "src/ast/taint-analyzer.ts",
   "src/ast/parallel-indexer.ts",
+  // The per-tool modules are where the security answer is shaped and where its
+  // contract lives; the assemblers are kept too because a change to the shared
+  // door wiring changes what a caller can reach.
+  "src/mcp/tools/bb_security/handler.ts",
+  "src/mcp/tools/bb_security/descriptor.ts",
   "src/mcp/tool-handlers.ts",
   "src/mcp/tool-registry.ts",
   "src/brain/schema-ddl.ts",
   "docs/BB_SECURITY.md",
   "docs/tools/bb_security.md",
-  // The verifier namespace is `script/m15/` for the M15 X-codes; the old glob
-  // `script/m20/verify-security-` matched three files that this tool's own
-  // contract does not describe, and missed the X1-X8 suite entirely.
+  // The verifier namespace is split across m13 (contract), m15 (deep/precision/
+  // regression) and m20 (flow boundary/adversarial/history); every one of those
+  // files asserts something about this tool and therefore belongs in the hash.
   "script/m15/verify-security-deep.ts",
   "script/m20/verify-security-flow-boundary.ts",
   "script/m20/verify-security-adversarial.ts",

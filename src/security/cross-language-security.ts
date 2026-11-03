@@ -1,7 +1,26 @@
-// Real security scanner over the taint-flow index.
-// Reads brain_taint_flow (written by TaintAnalyzer + parallel-indexer
-// heuristics) and resolves every flow to file/line/symbol so bb_security
-// reports actual vulnerabilities instead of a stub.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the adapter from the strict taint report to the legacy
+// finding shape the bb_security handler consumes, plus the severity/state
+// summaries the tool's headline prints.
+// WHICH TOOL IT SERVES — bb_security (mutability read, requiresIndex true,
+//   modes: findings; plannedModes flow, summary, hotspots).
+// WHY IT IS SHAPED THIS WAY — the strict engine classifies four evidence states;
+//   this adapter is the boundary where that classification becomes an answer:
+//   confirmed and mitigated flows are findings, source-only and unresolved flows
+//   are unvalidated observations, and the summary counts are computed over BOTH
+//   lists in one pass so the five severity buckets always reconcile with
+//   `total`. Confidence, evidence and limitations are carried through, because
+//   the recorded-run path persists exactly these fields.
+// WHERE ITS EVIDENCE LIVES — docs/BB_SECURITY.md, docs/tools/bb_security.md,
+//   validation/tools/bb_security/**; gates: script/m13/verify-security-handler.ts,
+//   script/m20/verify-security-*.ts, script/verify-security.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/intelligence/security/taint.ts,
+//   src/mcp/tools/bb_security/handler.ts, docs/BB_SECURITY.md.
+// CONTRACTS IT MUST NOT BREAK — observations never promoted to findings, the
+//   findings/observations split, summary reconciliation, and provenance pass-through.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { BrainDatabase } from "../brain/database"
 
@@ -11,12 +30,10 @@ export interface SecurityFinding {
   label: string
   severity: string
   /**
-   * `null` when neither flow endpoint resolved to an indexed file. This was
-   * `f.file ?? "?"`, and the `"?"` was then handed to the freshness resolver
-   * (tool-handlers.ts `derivedStaleness`), which issued
-   * `WHERE relative_path IN ('?')` — a query for a file that cannot exist, so
-   * every such finding was counted as `missing` and inflated the staleness
-   * footer with findings that were never stale. Callers render the fallback.
+   * `null` when neither flow endpoint resolved to an indexed file. A sentinel
+   * such as `"?"` must never reach the freshness resolver: it would query a file
+   * that cannot exist, count the finding as `missing`, and inflate the staleness
+   * footer with findings that are not stale. Callers render the fallback.
    */
   file: string | null
   line: number | null
@@ -35,11 +52,10 @@ export interface SecurityFinding {
   /**
    * `taint.ts` calibrates confidence by flow state (0.7 confirmed / 0.4
    * observation / 0.3 mitigated) and builds a per-finding `evidence` and
-   * `limitations` array. The legacy mapping dropped all three, so the
-   * `recordRun` path read `finding.confidence ?? null` and
-   * `finding.evidence ?? []` off a shape that never carried them — every
-   * persisted security finding in history had `confidence = NULL` and
-   * `evidence = '[]'`, i.e. no evidence and no calibration at all.
+   * `limitations` array. This adapter carries all three, because the `recordRun`
+   * path persists exactly these fields: a mapping that drops them would persist
+   * history with `confidence = NULL` and `evidence = '[]'`, i.e. no evidence and
+   * no calibration at all.
    */
   state: string
   confidence: number
@@ -67,10 +83,9 @@ export interface SecuritySummary {
   unresolvedSources: number
   /**
    * source_only only: a taint source with no reachable sink. Split out from
-   * `unresolvedSources` because the handler previously printed the SAME
-   * "(no sink reached)" text for both, which is factually inverted for the
-   * `unresolved` half — those rows DO have a resolved sink and are missing a
-   * source.
+   * `unresolvedSources` because the same "(no sink reached)" text is factually
+   * inverted for the `unresolved` half — those rows DO have a resolved sink and
+   * are missing a source.
    */
   sourceOnly: number
   /** unresolved only: a resolved sink whose source did not resolve. */
@@ -127,17 +142,15 @@ export namespace CrossLanguageSecurityAnalysis {
   }
 
   export async function analyzeSecurityAcrossLanguages(projectId: string, options?: import("../intelligence/contracts").SecurityOptions): Promise<CrossLanguageSecurityFindings> {
-    // Delegate to the strict taint engine (M9.09). It is the primary evidence
-    // source (brain_taint_flow), resolves every node, deduplicates by
-    // flow-equivalence, and classifies state with calibrated confidence. This
-    // adapter maps the strict report back to the legacy shape the MCP handler
-    // consumes; the richer typed report is available via analyzeSecurity().
+    // Delegate to the strict taint engine: brain_taint_flow is the evidence
+    // source; the engine resolves every node, deduplicates by flow-equivalence,
+    // and classifies state with calibrated confidence. This adapter maps the
+    // strict report back to the finding shape the handler consumes; the richer
+    // typed report is available via analyzeSecurity().
     //
-    // The parameter was `_opts` and the body ignored it outright, so every
-    // caller got the engine's defaults — including `maxResults: 500`, which the
-    // `recordRun` path then persisted from. The option is now forwarded, which
-    // is what lets that path ask for a census-sized scan instead of
-    // auto-resolving everything past the default cap.
+    // The scan bound is forwarded, not dropped: the recorded-run path asks for a
+    // census-sized scan so a display cap can never auto-resolve an unexamined
+    // finding, while an ordinary read keeps the engine default.
     const { analyzeTaintFlows } = await import("../intelligence/security/taint")
     const report = await analyzeTaintFlows(projectId, options)
 

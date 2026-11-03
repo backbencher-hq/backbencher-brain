@@ -1,3 +1,36 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the strict taint-flow engine: it reads brain_taint_flow,
+// resolves every endpoint to an indexed symbol/file, deduplicates by
+// flow-equivalence, and classifies each flow by evidence state with calibrated
+// confidence.
+// WHICH TOOL IT SERVES — bb_security (mutability read, requiresIndex true,
+//   modes: findings; plannedModes flow, summary, hotspots). The typed report is
+//   also the engine other intelligence paths import.
+// WHY IT IS SHAPED THIS WAY — the row is an observation, not a verdict:
+//   `confirmed` requires BOTH endpoints to resolve to indexed files, so the
+//   indexer's isolated-source/isolated-sink rows are never promoted to findings;
+//   severity is normalised at the boundary because the column has no CHECK
+//   constraint and an unrecognised grade must not vanish from every count; the
+//   read is opened READ-ONLY because a read must not move the index's WAL; row
+//   order is pinned by `ORDER BY t.id` and the finding sort breaks its final tie
+//   on `id`, because row order is not a SQLite contract and dedup keeps the
+//   first row as the finding's identity; and the pre-cap census is returned next
+//   to the returned window so a capped scan can never read as a complete one.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_security.md, docs/BB_SECURITY.md,
+//   validation/tools/bb_security/**; gates: script/verify-security.ts,
+//   script/m15/verify-security-{deep,precision,regressions}.ts,
+//   script/m20/verify-security-*.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — docs/BB_SECURITY.md,
+//   src/security/cross-language-security.ts (the adapter over this report),
+//   src/mcp/tools/bb_security/handler.ts, and the security gates.
+// CONTRACTS IT MUST NOT BREAK — read-only read, four-state classification
+//   (confirmed / mitigated / unresolved / source_only), endpoint resolution
+//   beating the mitigation flag, the calibration 0.7/0.4/0.3, normalised
+//   severity, declared pre-cap census, and determinism.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import type { FlowNode, SecurityFindingV2, SecurityHotspot, SecurityOptions, SecurityReport } from "../contracts"
 import { makeProvenance } from "../evidence"
@@ -100,7 +133,7 @@ type TaintRow = {
 // flow-equivalence, and classified by state (confirmed / mitigated /
 // unresolved / source_only) with calibrated confidence.
 export async function analyzeTaintFlows(projectId: string, options: SecurityOptions = {}): Promise<SecurityReport> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
   const minConfidence = options.minConfidence ?? 0
   const includeMitigated = options.includeMitigated ?? true
   const includeUnresolved = options.includeUnresolved ?? true
@@ -126,13 +159,12 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
       "ORDER BY t.id",
   ).all(projectId) as TaintRow[]
 
-  // M50.A2 residual: resolution used to load EVERY symbol row of the project
-  // into a Map (168,629 rows / 508ms of a ~568ms engine call on this repo's
-  // own index) to answer lookups for the few thousand ids the taint rows
-  // actually reference (2,692 here). Flow paths are parsed once, the distinct
-  // ids are collected, and only those are fetched — chunked for SQLite's
-  // parameter limit. Output is unchanged by construction (same rows, same
-  // keys); proven by script/m50/probe-security-phases.ts on the real index.
+  // Resolution loads only the ids the taint rows actually reference, not every
+  // symbol row of the project: a whole-table load measured 168,629 rows / 508 ms
+  // of a ~568 ms engine call to answer lookups for 2,692 ids. Flow paths are
+  // parsed once, the distinct ids are collected, and only those are fetched —
+  // chunked for SQLite's parameter limit. Output is unchanged by construction
+  // (same rows, same keys).
   const pathCache: string[][] = new Array(rows.length)
   const neededIds = new Set<string>()
   for (let i = 0; i < rows.length; i++) {
