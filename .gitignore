@@ -400,6 +400,9 @@ local-archive/
 # of MB to multiple GB each. They are working state, never repository content.
 validation/tools/**/bbdata/
 validation/tools/**/t2-copy/
+# Real-corpus checkouts indexed by the tools lanes: multi-GB regenerable working
+# state, reproducible from the corpus root recorded in REAL-CORPUS.json.
+validation/tools/**/corpus/
 validation/tools/**/*.db
 validation/tools/**/*.db-wal
 validation/tools/**/*.db-shm

@@ -221,7 +221,10 @@ const contract = async () => {
     const projectId = await indexFixture(dir)
     writeFileSync(path.join(dir, "src", "stale.ts"), "export function staleCandidate(): number { return 2 }\n")
     const result = await call({ limit: 5 }, projectId, dir)
+    const scoped = await call({ scope: "orphaned", limit: 5 }, projectId, dir)
     check("STALENESS: a stale finding is marked", /\[stale\]/.test(result.text), result.text.slice(-240))
+    check("STALENESS: the orphaned-scope footer is manual-only too",
+      !/auto-refresh stale files/.test(scoped.text) && !/refresh=false/.test(scoped.text) && /does NOT auto-refresh/.test(scoped.text), scoped.text.slice(-240))
     check("STALENESS: the footer counts stale/missing findings' files", /\d+ stale, \d+ missing of \d+ findings' files/.test(result.text), result.text.slice(-240))
     check("STALENESS: the footer does not promise auto-refresh", !/auto-refresh stale files/.test(result.text), result.text.split("\n").filter((line) => /auto-refresh/.test(line)).join(" ").slice(0, 200))
     check("STALENESS: the footer does not name a refresh=false option the schema does not publish", !/refresh=false/.test(result.text), "")
@@ -326,7 +329,7 @@ async function selfTest(): Promise<void> {
       const target = path.join(mirror, mutation.file)
       const source = readFileSync(target, "utf8")
       if (source.includes(mutation.find)) {
-        writeFileSync(target, source.replace(mutation.find, mutation.replace))
+        writeFileSync(target, source.split(mutation.find).join(mutation.replace))
         patched = true
       }
       if (!patched) {
