@@ -1,18 +1,17 @@
-// M20.S2 — security behavioral adversarial verification.
+// script/m20/verify-security-adversarial.ts — security behavioral adversarial verification.
 //
 // 1. Policy matrix: deterministic injected taint rows; every row has an exact
 //    expected state/severity/confidence, derived from the documented model
 //    (docs/BB_SECURITY.md states + confidence calibration).
 // 2. Real behavior: TS SQLi concat -> at least one RESOLVED finding;
 //    clean fixture -> zero findings; parameterized -> zero resolved SQLi.
-// 3. Auto-pass audit: scans ALL ELEVEN security verifiers for structurally
-//    unfalsifiable assertions — an unconditional second argument, a
-//    zero-inclusive bound, or an or-true escape. The detector reads CODE only
-//    (comments/strings/templates stripped) and assembles its own patterns from
-//    parts, so it neither flags a verifier that NAMES the banned shape in a
-//    failure message nor flags itself. The previous version scanned three files
-//    and matched one literal, which is how the two files that actually
-//    contained the banned shape passed it.
+// 3. Auto-pass audit: scans every in-scope security verifier script (the list below is
+//    the whole suite; security-oracle.ts and security-harness.ts are support
+//    modules, not verifiers) for structurally unfalsifiable assertions — an
+//    unconditional second argument, a zero-inclusive bound, or an or-true
+//    escape. The detector reads CODE only (comments/strings/templates
+//    stripped) and assembles its own patterns from parts, so it neither flags a
+//    verifier that NAMES the banned shape in a failure message nor flags itself.
 // 4. Mutation proof: flipping is_mitigated on a resolved flow must change the
 //    verdict; the engine must distinguish the two states. The disproof's
 //    preconditions are asserted, because `before.includes(x) && !after.includes(x)`
@@ -31,12 +30,19 @@ import { analyzeTaintFlows } from "../../src/intelligence/security/taint"
 import { securitySourceFingerprint, securityRelevantWorkingTreeChanges } from "../../src/intelligence/security/evidence"
 import { writeSealed } from "../lib/evidence.ts"
 import { SecurityHarness, auditForAutoPass } from "../m15/security-harness"
+import { fileURLToPath } from "node:url"
 
-// The shared harness. The previous inline `check`/`negative` pair had two
-// defects: `h.nk()` called `h.ck()`, so a disproof was counted as a check
-// as well and the evidence file overstated its coverage; and the failure count
-// was a plain mutable number, so any future reset would silently unbreak the
-// exit code the way it did in verify-security-deep.ts. `SecurityHarness` keeps
+// Self-contained data dir: never inherit the caller's HOME.
+if (!process.env.BB_DATA_DIR) {
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+  process.env.BB_DATA_DIR = path.join(rootDir, "validation", "tools", "bb_security", "bbdata")
+}
+process.env.BB_NO_AUTO_REFRESH = "1"
+
+// The shared harness. An inline `check`/`negative` pair that routes a disproof
+// through `ck()` counts it as a check as well and overstates coverage; and a
+// plain mutable failure count can be reset, which silently unbreaks the exit
+// code. `SecurityHarness` keeps
 // the failure list process-global, counts every assertion exactly once, and
 // separates positives from negatives.
 const h = new SecurityHarness()
@@ -147,28 +153,32 @@ try {
 
   // ── 4. Auto-pass audit across EVERY security verifier ───────────────────
   //
-  // The previous audit scanned three files and matched only a literal
-  // `check(..., true)`. It therefore passed over `script/verify-security.ts`
-  // (which contained `byState.confirmed >= 0 && typeof ... === "number"`) and
-  // `script/m15/verify-security-deep.ts` (which contained
-  // `confidence >= 0 && confidence <= 1`) — the two files that actually had
-  // the banned shape. The list is now every security verifier, and the detector
-  // is `auditForAutoPass`, which rejects the three unfalsifiable shapes
-  // structurally instead of naming one of them.
+  // A file-by-file literal scan for `check(..., true)` passes over the other
+  // unfalsifiable shapes: a zero-inclusive comparison such as
+  // `byState.confirmed >= 0 && typeof ... === "number"` and a threshold such as
+  // `confidence >= 0 && confidence <= 1` are both auto-passes that contain no
+  // literal `true`. `auditForAutoPass` rejects the three shapes structurally
+  // over every in-scope verifier instead of naming one of them.
   const securityVerifiers = [
     "script/verify-security.ts",
-    "script/m15/security-harness.ts",
-    "script/m15/verify-security-deep.ts",
-    "script/m15/verify-security-regressions.ts",
-    "script/m20/verify-security-flow-boundary.ts",
-    "script/m20/verify-security-adversarial.ts",
-    "script/m20/verify-security-history.ts",
     "script/m13/verify-security-adversarial.ts",
     "script/m13/verify-security-contract.ts",
     "script/m13/verify-security-handler.ts",
     "script/m13/verify-security-docs.ts",
+    "script/m15/verify-security-deep.ts",
+    "script/m15/verify-security-precision.ts",
+    "script/m15/verify-security-regressions.ts",
+    "script/m20/verify-security-flow-boundary.ts",
+    "script/m20/verify-security-adversarial.ts",
+    "script/m20/verify-security-history.ts",
+    // NOTE: the m17 corpus pair uses the compiled CLI door and is declared
+    // not-audited here so the denominator is honest rather than silently short.
   ]
-  h.ck("audit: the verifier list covers the whole security suite", securityVerifiers.length >= 10, `n=${securityVerifiers.length}`)
+  const notAudited = ["script/m17/verify-sec-corpus.ts", "script/m17/verify-sec-history.ts"]
+  h.ck("audit: the verifier list covers the whole security suite", securityVerifiers.length + notAudited.length === 13, `audited=${securityVerifiers.length} declared-not-audited=${notAudited.length} suite=13`)
+  for (const skippedPath of notAudited) {
+    h.ck(`audit: declared-not-audited verifier exists (${skippedPath})`, existsSync(path.resolve(skippedPath)), "listed as not-audited but missing from the tree")
+  }
   // Every listed verifier must actually exist, or the audit silently reads fewer
   // files than it claims to cover.
   for (const file of securityVerifiers) {
@@ -197,7 +207,7 @@ const result = {
   generatedAt: new Date().toISOString(),
   limitations: [
     "Policy matrix and real-behavior fixtures cover classification, calibration, dedup, filters, and mutation response; they do not prove real-world taint recall.",
-    "Real-repository security coverage is owned by M20.X2; template-literal XSS and cross-symbol Python CMDi remain analyzer blind spots documented in docs/BB_SECURITY.md.",
+    "Real-repository security coverage is measured by the m15 corpus leg and validation/tools/bb_security/REAL-CORPUS.json; template-literal XSS and cross-symbol Python CMDi remain analyzer blind spots documented in docs/BB_SECURITY.md.",
   ],
 }
 mkdirSync(path.resolve("validation/m20/results"), { recursive: true })

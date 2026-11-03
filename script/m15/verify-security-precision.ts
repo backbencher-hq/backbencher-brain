@@ -2,14 +2,13 @@
 //
 // WHY THIS FILE EXISTS
 //
-// Every precision number previously available for bb_security was a proxy: "is
-// there a sink token near the reported line". A proxy cannot decide whether a
-// change helped. This runs the oracle in ./security-oracle.ts, which uses a
-// REAL FIX as the ground-truth label, and publishes a number that means
-// something: of the findings reported on a known-vulnerable file, how many
-// SURVIVED the security fix that repairs it.
+// A proxy metric such as "is there a sink token near the reported line" cannot
+// decide whether a detection changed for the better. This gate runs the oracle in
+// ./security-oracle.ts, which uses a REAL FIX as the ground-truth label, and
+// publishes a number that means something: of the findings reported on a
+// known-vulnerable file, how many SURVIVED the security fix that repairs it.
 //
-// Measured baseline (2026-09-30, at this commit):
+// Baseline at the recorded commit (the values are minima, not targets):
 //
 //   8/8 vulnerable fixtures detected
 //   1/8 fixtures: every finding disappeared when the vulnerability was fixed
@@ -77,11 +76,16 @@ for (const fx of FIXTURES) {
   h.ck(`oracle: ${fx.id} — both bodies are non-empty`, fx.fixed.trim().length > 0 && fx.vulnerable.trim().length > 0)
   h.ck(`oracle: ${fx.id} — a fixDescription is recorded`, fx.fixDescription.trim().length > 10, `fix="${fx.fixDescription}"`)
   // The fixed body must not contain the parameterization/concatenation smell it
-  // is supposed to have removed. This is the check that keeps the label honest:
-  // if a "fixed" variant still concatenated, the fixture would be labelled with
-  // a vulnerability it does not contain.
+  // is supposed to have removed. This keeps the label honest: a "fixed" variant
+  // that still concatenated would be labelled with a vulnerability it does not
+  // contain.
   if (fx.vuln === "sql_injection" && /['"]\s*\+\s*\w/.test(fx.vulnerable)) {
-    h.nk(`oracle: ${fx.id} — the vulnerable body really concatenates`, true)
+    // The `if` above establishes that this fixture's label is supported; the
+    // assertion that this is a REAL detection exercise is that the "fixed"
+    // variant is a different program. A check that cannot fail (a bare `true`)
+    // is not coverage, so the predicate is the fixture data itself.
+    h.nk(`oracle: ${fx.id} — the fixed body is not the vulnerable body`, fx.fixed !== fx.vulnerable, "fixed and vulnerable bodies are identical")
+    h.nk(`oracle: ${fx.id} — the vulnerable body really concatenates into SQL`, /['"]\s*\+\s*\w/.test(fx.vulnerable), "fixture is labelled SQLi but does not concatenate")
     h.nk(`oracle: ${fx.id} — the fixed body no longer concatenates into SQL`, !/['"]\s*\+\s*\w/.test(fx.fixed), `fixed still concatenates: ${fx.fixed.replace(/\n/g, " ").slice(0, 80)}`)
   }
   if (fx.vuln === "command_injection" && fx.language === "typescript" && fx.fixDescription.includes("execFile")) {

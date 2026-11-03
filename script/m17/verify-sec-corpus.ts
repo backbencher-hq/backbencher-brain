@@ -55,10 +55,15 @@ async function indexAndCheck(tag: string, dir: string, expectSourceOnly: boolean
     runCli(["tool", "bb_security", "--dir", tmp, "--args", JSON.stringify({ recordRun: true })])
     const histOut = runCli(["tool", "bb_security", "--dir", tmp, "--args", JSON.stringify({ history: true, limit: 50 })])
     const hist = JSON.parse(histOut)
-    const bad = hist.findings.filter((f: any) => f.severity === "unknown" || f.rule === "unresolved")
+    // An OBSERVATION (state source_only / unresolved) must never be persisted. A
+    // resolved flow keeps a normalized grade inside the documented union, so
+    // severity=unknown alone is not a violation. The vulnerability-TYPE string is
+    // not the state: the indexer can write the literal type `unresolved` for a
+    // flow whose endpoints both resolved, and that flow is a finding.
+    const bad = hist.findings.filter((f: any) => ["source_only", "unresolved"].includes(f.state) || !["critical", "high", "medium", "low", "unknown"].includes(f.severity))
 
     ck(tag + ": persisted findings == live confirmed+mitigated", hist.findings.length === live, `hist=${hist.findings.length} live=${live}`)
-    nk(tag + ": no severity=unknown / rule=unresolved in history", bad.length === 0, `bad=${bad.length}`)
+    nk(tag + ": no observation-state row and no out-of-union severity in history", bad.length === 0, `bad=${bad.length}`)
     if (expectSourceOnly) nk(tag + ": index genuinely contains source-only rows (test bites)", unresolved > 0, `unresolved=${unresolved}`)
     if (expectSourceOnly) ck(tag + ": persisted history is non-empty when flows exist (bites)", hist.findings.length > 0, `hist=${hist.findings.length}`)
     console.log("    [" + tag + "] live=" + live + " sourceOnly=" + unresolved + " hist=" + hist.findings.length + " bad=" + bad.length)

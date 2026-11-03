@@ -1,10 +1,10 @@
-// script/m15/verify-security-regressions.ts — regression proofs for the
-// bb_security defects found in the 2026-09-30 deep review (A1-A7, B1-B5, C).
+// script/m15/verify-security-regressions.ts — regression proofs for bb_security.
 //
-// Every check here has a named defect it would have FAILED before the fix. The
-// suite is hermetic: it builds its own fixtures in tmpdir and seeds taint rows
-// directly where the indexer cannot produce the shape under test. No hardcoded
-// `/home/...` corpus path, so it runs anywhere with a Node runtime.
+// Every check names the failure mode it pins, so a regression is a red gate rather
+// than a surprising answer. The suite is hermetic: it builds its own fixtures in
+// tmpdir and seeds taint rows directly where the indexer cannot produce the shape
+// under test. There is no hardcoded corpus path, so it runs anywhere with a Node
+// runtime.
 //
 // Run: npx tsx script/m15/verify-security-regressions.ts
 // Emits: validation/m15/results/xr1.json … xr6.json
@@ -37,8 +37,8 @@ const skipped: Array<{ code: string; reason: string }> = []
  * `readEvidence` the single trusted read, and the trusted read REFUSES a record
  * with no `bbSeal` envelope (`kind: "unsealed"`). A bare `writeFileSync` +
  * `JSON.stringify` therefore produces a record the rest of the governance
- * machinery is required to reject. M61.V1 adopted sealed writes across the IDE
- * lane; this lane was never adopted, which is how the defect survived.
+ * machinery is required to reject, so an unsealed write is a record the
+ * governance reader refuses rather than a second, unofficial evidence path.
  */
 const write = (file: string, extra: Record<string, unknown> = {}) =>
   writeSealed(
@@ -47,7 +47,7 @@ const write = (file: string, extra: Record<string, unknown> = {}) =>
   )
 
 /**
- * True when a COMMITTED evidence file still holds the old implementation's
+ * True when a committed evidence file still holds a record written before a
  * numbers.
  *
  * A few checks below read the on-disk `x*.json` rather than re-deriving them,
@@ -363,7 +363,7 @@ write("xr1.json", { title: "severity normalization + hotspot severity", defect: 
       // The handler text, on the UNCAPPED read: 30 confirmed findings, the
       // display window is 20, and the census line must say so. This is the
       // end-to-end proof that a 30-finding project cannot read as "20 findings"
-      // with no indication that 10 were unseen — the old handler sliced to 20
+      // with no indication that 10 were unseen — a handler that slices to 20
       // and printed nothing about the rest.
       const handlers = createToolHandlers()
       const ctx = { projectPath: root, projectId }
@@ -503,7 +503,7 @@ write("xr2.json", { title: "truncation visibility + recordRun census", defect: "
       h.nk(
         "XR3: the phantom file is not counted in a staleness footer",
         !/\bmissing of\b/.test(text),
-        `the old "?" sentinel made every unresolved finding count as missing: ${firstMatch(text, /.*missing.*/) ?? "no-footer"}`,
+        `a "?" sentinel would make every unresolved finding count as missing: ${firstMatch(text, /.*missing.*/) ?? "no-footer"}`,
       )
       h.ck(
         "XR3: the census line reports exactly the one indexed flow",
@@ -758,7 +758,7 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   h.ck(
     "XR6: resetForNextSection does NOT clear the process-global failure count",
     resetProbe.failed === failuresBefore && failuresBefore === 1,
-    `before=${failuresBefore} after=${resetProbe.failed} — the old verifier reset this counter and then exited 0`,
+    `before=${failuresBefore} after=${resetProbe.failed} — a verifier that resets this counter can exit 0 after a failure`,
   )
   h.ck(
     "XR6: resetForNextSection DOES clear the per-section counters",
@@ -777,8 +777,8 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   gated.release()
   h.ck("XR6: releasing the gate clears it", gated.gated === false, `gated=${gated.gated}`)
 
-  // The specific shapes the previous audit missed. Each is a named regression
-  // with the reason it was previously invisible.
+  // The specific assertion shapes an audit can miss. Each is a named regression
+  // with the reason it is easy to overlook.
   const legacyVerifier = readFileSync(path.join(ROOT_DIR, "script/verify-security.ts"), "utf8")
   h.ck(
     "XR6: script/verify-security.ts no longer asserts a zero-inclusive bound on a count",
@@ -819,7 +819,7 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   h.ck(
     "XR6: verify-security-deep.ts uses the shared non-resettable harness",
     /from "\.\/security-harness"/.test(deepVerifier) && /SecurityHarness/.test(deepVerifier),
-    "the old inline ck/nk/reset harness is what made the exit code lie",
+    "an inline ck/nk/reset harness is what makes an exit code lie",
   )
   h.ck(
     "XR6: verify-security-deep.ts no longer zeroes a counter named `failed`",
@@ -842,12 +842,12 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   h.ck(
     "XR6: an absent corpus is recorded as skipped, not failed",
     /skipped\.push\(\{\s*code: "X5"/.test(deepNoComments) && !/ck\("X5: real repo present", false/.test(deepCode),
-    "the old X5 hard-failed on a missing corpus and unsealed x5.json",
+    "an optional-corpus leg must skip with a reason instead of failing",
   )
-  // The evidence files that shipped with impossible ratios. These are the
-  // COMMITTED artifacts, so this is a real check on a real file — not a
-  // re-derivation. A fresh run of the suites overwrites them; until that
-  // happens the committed record still carries the old bug.
+  // The committed evidence files with impossible ratios. These are the real
+  // artifacts, so this is a check on a real file — not a re-derivation. A fresh
+  // run of the suites overwrites them; until that happens the committed record
+  // still carries its previous result.
   for (const f of ["x2.json", "x3.json", "x7.json"]) {
     const { stale, detail } = committedEvidenceStale(f)
     if (stale) {
@@ -866,7 +866,7 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
       h.nk(
         `XR6: ${f} no longer reports passed > checks`,
         rec.passed <= rec.checks,
-        `passed=${rec.passed} checks=${rec.checks} — the old emit() added nk-passes into the passed count while checks counted only ck-calls`,
+        `passed=${rec.passed} checks=${rec.checks} — an emit() that adds nk-passes into the passed count overstates coverage while checks counts only ck-calls`,
       )
     }
   }
@@ -893,7 +893,7 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   const adversarialSrc = readFileSync(path.join(ROOT_DIR, "script/m20/verify-security-adversarial.ts"), "utf8")
   h.ck("XR6: the full-suite audit lists at least ten verifiers", /securityVerifiers = \[[\s\S]{0,700}verify-security-docs\.ts/.test(adversarialSrc), "the audit must cover the whole security suite, not three files")
   h.ck("XR6: the full-suite audit asserts each listed verifier exists", /existsSync\(path\.resolve\(file\)\)/.test(adversarialSrc), "a listed-but-absent file would silently shrink the audit's coverage")
-  h.ck("XR6: the rewritten root verifier has no second local harness", !/let checks = 0/.test(stripStringsAndComments(legacyVerifier)) && !/let failures = 0/.test(stripStringsAndComments(legacyVerifier)), "each file needs ONE harness, or its counters can diverge from its exit code")
+  h.ck("XR6: the root verifier has no second local harness", !/let checks = 0/.test(stripStringsAndComments(legacyVerifier)) && !/let failures = 0/.test(stripStringsAndComments(legacyVerifier)), "each file needs ONE harness, or its counters can diverge from its exit code")
 
   // ── the sealed-write law ─────────────────────────────────────────────────
   //
@@ -901,11 +901,10 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   // readEvidence the ONE trusted read, and the trusted read REFUSES a record
   // with no bbSeal envelope (`kind: "unsealed"`). Every security verifier
   // wrote its evidence with a bare writeFileSync + JSON.stringify — i.e. it
-  // produced exactly the "legacy" record the reader is required to reject. On a
+  // produces exactly the record the reader is required to reject. On a
   // SUCCESSFUL run that silently destroyed the committed seal; on a FAILING run
   // it destroyed the seal AND left `verified: false` behind. That is the
-  // mechanism behind the old X5 "stripping its seal" complaint, and M61.V1's
-  // sealed-write adoption never covered this lane.
+  // mechanism a read of a committed record used to lose: its seal.
   const evidenceLib = readFileSync(path.join(ROOT_DIR, "script/lib/evidence.ts"), "utf8")
   h.ck("XR6: the evidence library declares writeSealed the one write path", /export function writeSealed/.test(evidenceLib), "the sealed write path is the contract these verifiers must use")
   h.ck("XR6: the trusted reader refuses an unsealed record", /kind: "unsealed"/.test(evidenceLib) && /verifySeal/.test(evidenceLib), "a record written without a seal is a hard refusal, not a warning")
@@ -926,7 +925,7 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
     h.nk(
       `XR6: ${w.file} has no remaining bare evidence write`,
       !/writeFileSync\([^)]*JSON\.stringify/.test(code),
-      "a writeFileSync(JSON.stringify(...)) evidence write is the unsealed legacy path",
+      "a writeFileSync(JSON.stringify(...)) evidence write bypasses the seal envelope",
     )
   }
 }

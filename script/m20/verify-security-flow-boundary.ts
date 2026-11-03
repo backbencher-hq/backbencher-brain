@@ -1,7 +1,6 @@
-// M20.S1 — security flow evidence and the endpoint-resolution boundary.
+// script/m20/verify-security-flow-boundary.ts — flow evidence and the endpoint-resolution boundary.
 //
-// REWRITTEN 2026-09-30 onto the shared harness (script/m15/security-harness.ts).
-// Two structural defects in the previous version are fixed here:
+// Two failure modes this suite pins:
 //
 //  1. THE COVERAGE COULD VANISH SILENTLY. All 7 substantive assertions lived
 //     inside `if (symbol) { ... }`, guarded only by the 1 assertion above it. A
@@ -32,6 +31,14 @@ import { analyzeTaintFlows } from "../../src/intelligence/security/taint"
 import { securitySourceFingerprint, securityRelevantWorkingTreeChanges } from "../../src/intelligence/security/evidence"
 import { writeSealed } from "../lib/evidence.ts"
 import { SecurityHarness } from "../m15/security-harness"
+import { fileURLToPath } from "node:url"
+
+// Self-contained data dir: never inherit the caller's HOME.
+if (!process.env.BB_DATA_DIR) {
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+  process.env.BB_DATA_DIR = path.join(rootDir, "validation", "tools", "bb_security", "bbdata")
+}
+process.env.BB_NO_AUTO_REFRESH = "1"
 
 const h = new SecurityHarness()
 const root = mkdtempSync(path.join(tmpdir(), "bb-m20-s1-"))
@@ -131,7 +138,7 @@ const result = {
   generatedAt: new Date().toISOString(),
   limitations: [
     "Fixture-level endpoint-state and evidence coverage; static taint remains heuristic and is not a runtime exploit proof.",
-    "Real-repository security coverage is owned by M20.X2.",
+    "Real-repository security coverage is measured by the m15 corpus leg and validation/tools/bb_security/REAL-CORPUS.json.",
   ],
 }
 mkdirSync(path.resolve("validation/m20/results"), { recursive: true })

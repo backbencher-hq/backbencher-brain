@@ -73,10 +73,15 @@ async function main() {
       const histOut = runCli(["tool", "bb_security", "--dir", tmp, "--args", JSON.stringify({ history: true, limit: 50 })])
       const hist = JSON.parse(histOut)
 
-      const bad = hist.findings.filter((f: any) => f.severity === "unknown" || f.rule === "unresolved")
+      // Persisted rows are findings (state confirmed/mitigated), never
+      // observations (state source_only/unresolved). A resolved flow keeps a
+      // normalized grade inside the union. The vulnerability-TYPE string is not
+      // the state: the indexer can write the literal type `unresolved` for a flow
+      // whose endpoints both resolved.
+      const bad = hist.findings.filter((f: any) => ["source_only", "unresolved"].includes(f.state) || !["critical", "high", "medium", "low", "unknown"].includes(f.severity))
       badHistory = bad.length
       histFindings = hist.findings.length
-      nk("S1: history contains no severity=unknown / rule=unresolved", bad.length === 0, "bad=" + bad.length)
+      nk("S1: history has no observation-state row and no out-of-union severity", bad.length === 0, "bad=" + bad.length)
       ck("S1: history reports a recorded run", (hist.runs || []).length > 0, "runs=" + (hist.runs || []).length)
       ck("S1: persisted history findings count equals live confirmed+mitigated count", hist.findings.length === liveFindings, "hist=" + hist.findings.length + " live=" + liveFindings)
     } finally {

@@ -1,40 +1,25 @@
 // script/verify-security.ts — the strict taint-flow engine, end to end.
 //
-// REWRITTEN 2026-09-30. The previous version carried six auto-passes and two
-// vacuous ones. Each replacement assertion is noted at the old line it replaces:
+// What this verifier proves, on fixtures it builds itself:
+//   * the indexer produced taint evidence and the engine classified every row;
+//   * deduplication is a STRICT reduction on a fixture built to produce
+//     duplicate rows (not a structural `<=` that could never fail);
+//   * a fully-shaped finding (label, evidence, limitation, file, line, symbol,
+//     inspectable path) exists for a real concatenated-SQL shape;
+//   * confidence is the calibration (0.7 confirmed / 0.4 observation /
+//     0.3 mitigated), asserted on findings that exist, not as a threshold on
+//     an empty filter;
+//   * a pinned four-state matrix: byState and bySeverity each sum to total, and
+//     the mitigation flag never outranks endpoint resolution;
+//   * the includeMitigated / includeUnresolved filters are real;
+//   * hotspots carry real content, the true max severity, and the 20-entry cap;
+//   * alias normalization and determinism across repeated scans.
 //
-//   L38  `rawCount > 0`                        kept (already falsifiable)
-//   L43  `deduplicatedFlows <= scannedFlows`   was a structural invariant — one
-//                                               finding per row at most, so it
-//                                               could never fail. Now asserts a
-//                                               strict reduction on a fixture
-//                                               built to produce duplicates.
-//   L58  `confidence >= 0.6`                   was vacuous on an empty filter
-//                                               (the callback never ran) and
-//                                               pinned a threshold rather than
-//                                               the calibration. Now: the
-//                                               calibrated 0.7/0.4/0.3, on
-//                                               findings asserted to exist.
-//   L73  `byState.confirmed >= 0 && typeof …`  textbook auto-pass. Now: the
-//                                               byState counts SUM to total, and
-//                                               each state's exact count is
-//                                               pinned against a matrix.
-//   L80  `Array.isArray(hotspots)`             always true by type. Now: real
-//                                               hotspot content and its cap.
-//   L55  `path.every(n => n.symbolId !== undefined)`  `undefined` on a
-//                                               `string | null` field is not
-//                                               possible, so it could not fail.
-//                                               Now: every node resolves to a
-//                                               name or a location.
-//
-// The two harness defects the M15 review found are also fixed here: the failure
-// count is a single process-global number (there is no reset), and every
-// assertion is counted so `passed` can never exceed `checks`.
-//
-// Run: npx tsx script/verify-security.ts
+// Run: npx tsx script/verify-security.ts   (bun run … also works)
 // Exit: non-zero if any assertion failed.
 
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../src/cli/index"
@@ -42,6 +27,13 @@ import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { analyzeTaintFlows } from "../src/intelligence/security/taint"
 import { SecurityHarness, positiveCount } from "./m15/security-harness"
+
+// Self-contained data dir: never inherit the caller's HOME.
+if (!process.env.BB_DATA_DIR) {
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+  process.env.BB_DATA_DIR = path.join(rootDir, "validation", "tools", "bb_security", "bbdata")
+}
+process.env.BB_NO_AUTO_REFRESH = "1"
 
 const h = new SecurityHarness()
 const root = mkdtempSync(path.join(tmpdir(), "bb-security-"))

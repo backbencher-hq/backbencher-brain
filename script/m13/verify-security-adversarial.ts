@@ -1,16 +1,18 @@
-// script/m13/verify-security-adversarial.ts — M13.42 (Sec3).
+// script/m13/verify-security-adversarial.ts — bb_security adversarial coverage.
 //
-// Adversarial cross-language taint coverage.
+// Positives: SQL injection, command injection, XSS true-positive fixtures.
+// Negatives: clean code produces nothing; a parameterized sink is recorded
+// honestly (the token matcher cannot tell it apart from a concatenated one, and
+// the docs state that); Python cross-symbol command injection is not overclaimed.
+// Boundary: the mitigation flag never outranks endpoint resolution.
+// Doors: the real CLI (source entry) and the real MCP stdio server, plus sampled
+// real repositories. A project with no index must be refused by the CLI, not
+// answered as clean and not silently indexed.
 //
-// Positives: SQL injection, command injection, XSS (true-positive fixtures).
-// Negatives: parameterized query (SQL) — the sink is safe, no taint should flow.
-// Mitigated: is_mitigated flag on a confirmed flow.
-// Cross-language: multi-language fixture (TS imports Python via pyodide).
-// Corpus: sampled from rake (Ruby), graphql-js (TypeScript), rebar3 (Erlang).
-//
-// All findings must carry evidence + confidence. e2e via both CLI and MCP.
+// Run: npx tsx script/m13/verify-security-adversarial.ts   (bun run … also works)
+// Exit: non-zero if any assertion failed.
 
-import { execFileSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -19,6 +21,25 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { Harness } from "./harness"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
+
+import { fileURLToPath } from "node:url"
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+// Self-contained data dir: never inherit a caller's HOME, which is read-only in
+// sandboxes and is the live user index everywhere else.
+if (!process.env.BB_DATA_DIR) process.env.BB_DATA_DIR = path.join(rootDir, "validation", "tools", "bb_security", "bbdata")
+process.env.BB_NO_AUTO_REFRESH = "1"
+
+const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== "undefined"
+const tsxBin = path.join(rootDir, "node_modules", ".bin", "tsx")
+
+/** Run the SOURCE CLI door through the runtime this gate is executing on. */
+function runCli(args: string[]): { status: number; stdout: string; stderr: string } {
+  const result = isBun
+    ? spawnSync("bun", ["run", "src/cli/index.ts", ...args], { cwd: rootDir, encoding: "utf8", timeout: 180_000, env: { ...process.env, BB_NO_AUTO_REFRESH: "1" } })
+    : spawnSync(tsxBin, ["src/cli/index.ts", ...args], { cwd: rootDir, encoding: "utf8", timeout: 180_000, env: { ...process.env, BB_NO_AUTO_REFRESH: "1" } })
+  return { status: result.status ?? -1, stdout: result.stdout ?? "", stderr: result.stderr ?? "" }
+}
 
 const harness = new Harness({
   issue: "M13.42",
@@ -31,7 +52,7 @@ const harness = new Harness({
     negatives: "parameterized SQL sink is NOT a finding; empty fixture produces no false findings",
     mitigated: "is_mitigated flag is preserved and surfaced",
     crossLanguage: "multi-language fixture: TS frontend + Python backend → cross-language flow",
-    transports: "CLI via `node bin/bb tool bb_security` + MCP StdioClientTransport",
+    transports: "CLI via the source entry + MCP StdioClientTransport; unindexed projects must be refused",
     corpus: "sampled from rake (Ruby), graphql-js (TS), rebar3 (Erlang) — pass AND fail recorded",
   },
   limitations: [
@@ -98,7 +119,7 @@ const harness = new Harness({
   const resolvedSqli = result.findings.filter((f) => f.type === "sql_injection")
   harness.check(
     "NEGATIVE: parameterized-SQL blind spot is truthfully documented (analyzer flags it; docs admit it)",
-    readFileSync(path.join(process.cwd(), "docs/BB_SECURITY.md"), "utf8").includes("parameterized or escaped sink can still be"),
+    /parameterized or escaped sink can still be/i.test(readFileSync(path.join(rootDir, "docs", "BB_SECURITY.md"), "utf8")),
     `resolved SQLi=${resolvedSqli.length} (analyzer limitation; docs must state it)`,
   )
 
@@ -247,13 +268,28 @@ const cmdFindings = [...result.findings, ...result.suspiciousSources].filter((f)
   ].join("\n"))
   await indexProjectParallel(getProjectId(root), root, {})
 
-  const bb = path.resolve("bin/bb")
-  const cliOut = execFileSync("node", [bb, "tool", "bb_security", "--dir", root, "--args", JSON.stringify({})], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
-  harness.check("CLI: output includes severity breakdown", cliOut.includes("critical") || cliOut.includes("high") || cliOut.includes("medium") || cliOut.includes("low") || cliOut.includes("clean"), cliOut.slice(0, 200))
-  harness.check("CLI: output is not empty", cliOut.length > 20, `len=${cliOut.length}`)
+  const cli = runCli(["tool", "bb_security", "--dir", root, "--args", JSON.stringify({})])
+  const cliOut = cli.stdout
+  harness.check("CLI: the source door answers", cli.status === 0 && cliOut.length > 20, `exit=${cli.status} stderr=${cli.stderr.slice(0, 200)}`)
+  harness.check("CLI: output includes a severity breakdown", /critical|high|medium|low/.test(cliOut), cliOut.slice(0, 200))
+  harness.check("CLI: output states the census", /\[scan:/.test(cliOut), cliOut.split("\n").find((l) => l.startsWith("[scan:")) ?? "missing census")
 
-  const histOut = execFileSync("node", [bb, "tool", "bb_security", "--dir", root, "--args", JSON.stringify({ history: true, limit: 5 })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
-  harness.check("CLI: history returns JSON", histOut.trim().startsWith("{"), histOut.slice(0, 200))
+  const hist = runCli(["tool", "bb_security", "--dir", root, "--args", JSON.stringify({ history: true, limit: 5 })])
+  harness.check("CLI: history returns JSON", hist.stdout.trim().startsWith("{") && hist.status === 0, hist.stdout.slice(0, 200))
+
+  // FALSE-CLEAN GUARD: a project with no index must be refused, and the read
+  // must not create an index. This was the CLI door's defect: it printed a clean
+  // zero for code that had never been scanned.
+  const unindexed = mkdtempSync(path.join(tmpdir(), "bb-sec-cli-unindexed-"))
+  mkdirSync(path.join(unindexed, "src"), { recursive: true })
+  writeFileSync(path.join(unindexed, "src", "only.ts"), "export const only = 1\n")
+  const unindexedProjectId = getProjectId(unindexed)
+  const unindexedDb = BrainDatabase.getDbPath(unindexedProjectId)
+  const refused = runCli(["tool", "bb_security", "--dir", unindexed, "--args", JSON.stringify({})])
+  harness.check("CLI: an unindexed project is refused by name", refused.status !== 0 && /No index found|no index found/.test(refused.stdout + refused.stderr), `exit=${refused.status} out=${(refused.stdout + refused.stderr).slice(0, 240)}`)
+  harness.negative("CLI: a refused read does not create an index", !existsSync(unindexedDb), `created ${unindexedDb}`)
+  rmSync(unindexed, { recursive: true, force: true })
+  rmSync(path.dirname(unindexedDb), { recursive: true, force: true })
   rmSync(root, { recursive: true, force: true })
 }
 
@@ -275,10 +311,18 @@ const cmdFindings = [...result.findings, ...result.suspiciousSources].filter((f)
   try {
     const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
     const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
-    const isBun = typeof Bun !== "undefined"
-    const serverEntry = isBun ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
-    const serverArgs = isBun ? ["--dir", root] : ["mcp", "--dir", root]
-    const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+    // The child must inherit the fixture's data dir: the MCP server resolves the
+    // index from BB_DATA_DIR, and without it the fixture project is invisible and
+    // the leg fails on the server's (correct) "No index found" refusal.
+    const serverCommand = isBun ? "bun" : tsxBin
+    const serverArgs = isBun ? ["run", "src/cli/index.ts", "mcp", "--dir", root] : ["src/cli/index.ts", "mcp", "--dir", root]
+    const transport = new StdioClientTransport({
+      command: serverCommand,
+      args: serverArgs,
+      cwd: rootDir,
+      env: { ...(Object.fromEntries(Object.entries(process.env).filter(([, v]) => typeof v === "string")) as Record<string, string>), BB_NO_AUTO_REFRESH: "1" },
+      stderr: "pipe",
+    })
     const client = new Client({ name: "verify-sec3", version: "1.0.0" })
     try {
       await client.connect(transport)

@@ -1,45 +1,25 @@
-// script/m15/verify-security-deep.ts — M15.X1-X8 (bb_security) deep audit.
+// script/m15/verify-security-deep.ts — bb_security deep audit (X1-X8).
 //
-// REWRITTEN 2026-09-30. The previous version of this file claimed "no auto-pass
-// assertions" and had at least six, plus a lying exit code. What was actually
-// wrong with it, and what replaced it:
+// Eight sections, each one an axis the security answer can lie on:
+//   X1 classification — real taint detection from a real indexer run
+//   X2 classification-construct census — the security path uses the constructs
+//      it is allowed to use and no others
+//   X3 cross-file deterministic classification — aliases, dedup, state, filters
+//   X4 measured complexity on fixtures that actually contain taint flows
+//   X5 optional real-repository scan — an absent corpus is SKIPPED with a reason,
+//      never counted as a pass and never overwritten as a failure
+//   X6 the handler output contract + registry/doc honesty
+//   X7 non-TypeScript language coverage
+//   X8 entry-point parity, determinism, and anti-vacuity
 //
-//   1. THE EXIT CODE LIED. `reset()` ran after each of X1..X7, zeroing the
-//      failure counter, and `process.exit(failed > 0 ? 1 : 0)` then read only
-//      X8's count. A run in which X1-X7 ALL failed exited 0. → the shared
-//      `SecurityHarness` in ./security-harness.ts has a process-global failure
-//      list that is never reset.
+// The shared SecurityHarness (./security-harness.ts) keeps the failure list
+// process-global and never resets it, counts every assertion once, and turns an
+// absent precondition into a failure instead of silently reducing coverage. Each
+// section writes a sealed record; the exit code is non-zero if ANY assertion in
+// ANY section failed.
 //
-//   2. `ck()` and `nk()` both fed `checks`/`passed`, so every emitted record had
-//      `passed > checks` — x2.json committed 2/1, x7.json 8/6. → the harness
-//      counts `checks` for every assertion and `passed` for every pass, so
-//      `passed + failed === checks` always.
-//
-//   3. X2 asserted `[].every(...)` is true. It found zero regex literals in
-//      the security path and called that a pass. → X2 now asserts the exact
-//      set of classification constructs the path is allowed to use, and fails
-//      on an unexpected one.
-//
-//   4. X4's "big project scans more flows" was `0 >= 0`: both fixtures
-//      (`fn(x) { return x + 1 }`) contain zero taint sources and zero sinks.
-//      → X4 seeds real flows and measures the actual growth.
-//
-//   5. X5 hardcoded `$HOME/TypeScript/src/compiler` and FAILED when
-//      absent, overwriting x5.json with verified:false AND stripping its bbSeal.
-//      → corpora are now OPTIONAL and resolved through `resolveCorpusRoot()`;
-//      an absent corpus records `skipped` with a reason, never a failure.
-//
-//   6. X3's 8 assertions lived inside `if (sinkSym && srcSym)`, so a fixture
-//      that failed to index produced checks:1, verified:true. → the harness's
-//      `require()`/`release()` gate turns an absent precondition into a failure.
-//
-// What is NEW coverage (all previously untested): the MCP handler's output
-// text, the recordRun/history persistence path, determinism across repeated
-// runs, the truncation/cap behaviour, non-TypeScript languages, and the
-// severity/state accounting arithmetic.
-//
-// Run: npx tsx script/m15/verify-security-deep.ts
-// Exit: non-zero if ANY assertion in ANY section failed.
+// Run: npx tsx script/m15/verify-security-deep.ts   (bun run … also works)
+// Exit: non-zero if any assertion failed.
 // Optional env: BB_SECURITY_CORPUS_ROOT (a fixtures/repositories dir, or its
 // parent) — when absent the corpus legs record `skipped`, not `failed`.
 
@@ -59,6 +39,10 @@ import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m15/results")
+// Self-contained data dir: never inherit a caller's HOME (read-only in
+// sandboxes, the live user index elsewhere).
+if (!process.env.BB_DATA_DIR) process.env.BB_DATA_DIR = path.join(ROOT_DIR, "validation", "tools", "bb_security", "bbdata")
+process.env.BB_NO_AUTO_REFRESH = "1"
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
 const h = new SecurityHarness()
@@ -69,11 +53,12 @@ function emit(code: string, issue: string, title: string, file: string, extra: R
   // writeSealed, not writeFileSync. The committed x1-x8.json carry a bbSeal
   // envelope, and the trusted reader (`script/lib/evidence.ts` readEvidence)
   // REFUSES an unsealed record as `unsealed` — a legacy write, i.e. exactly what
-  // a bare writeFileSync produces. The previous version wrote unsealed, so a
+  // a bare writeFileSync produces, so a
   // successful run silently DESTROYED the seal, and a failing run destroyed the
   // seal AND left `verified: false` in its place. (That is the specific mechanism
-  // behind the old X5 complaint about "stripping its seal".) M61.V1 declares
-  // writeSealed the ONE write path; this lane was never adopted, so the defect
+  // a record that keeps its seal.) The suite writes
+  // through the one declared sealed-write path, so a record's seal is a claim
+  // about the bytes rather than a convention; the defect
   // survived. Now it is adopted.
   writeSealed(path.join(RESULTS_DIR, file), rec)
   console.log(`${code}: ${h.failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${h.totalPassed}/${h.checks} passed, ${h.negativePassed}/${h.negatives} negatives${skipped.some((s) => s.code === code) ? ", corpus legs skipped" : ""})`)
@@ -167,7 +152,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       h.ck("X1: the sink node is named", typeof vuln.sink.name === "string" && vuln.sink.name.length > 0, `sink.name=${vuln.sink.name}`)
       h.ck("X1: state is confirmed for a fully-resolved flow", vuln.state === "confirmed", `state=${vuln.state}`)
       // The confidence is a LITERAL 0.7 for confirmed. Asserting `>= 0 && <= 1`
-      // (the old X1:77) is unfalsifiable; assert the calibrated value instead.
+      // is unfalsifiable; assert the calibrated value instead.
       h.ck("X1: confidence is the calibrated 0.7 for a confirmed flow", vuln.confidence === 0.7, `confidence=${vuln.confidence}`)
       h.ck("X1: evidence carries a taint_flow item", vuln.evidence.some((e) => e.kind === "taint_flow"), JSON.stringify(vuln.evidence))
       h.ck("X1: a confirmed finding still declares its heuristic limitation", vuln.limitations.length > 0, JSON.stringify(vuln.limitations))
@@ -219,7 +204,7 @@ emit("X1", "M15.X1", "classification — real taint detection", "x1.json")
   // permitted construct is `parseFlowPath`'s delimiter/JSON handling, which is
   // TEXT parsing, not code classification. So the allowed set is empty and any
   // hit is a real finding — stated as a positive assertion about the set being
-  // empty, which is falsifiable, unlike the old `[].every(...)`.
+  // empty, which is falsifiable, unlike `[].every(...)`.
   h.ck(
     "X2: the security path has zero regex literals (no code classification by pattern)",
     found.length === 0,
@@ -404,7 +389,7 @@ emit("X4", "M15.X4", "measured time complexity", "x4.json")
     "graphql-js", "svelte", "vue-core", "element-plus", "rails", "grails-core",
   ])
   if (!corpus) {
-    // A skip, not a failure. The previous version called
+    // A skip, not a failure. An unguarded corpus call
     // `ck("X5: real repo present", false, ...)` here, which overwrote x5.json
     // with verified:false AND stripped its bbSeal, then let X7 fail on the
     // rewritten file — while the process still exited 0. An absent corpus is
@@ -513,40 +498,29 @@ emit("X5", "M15.X5", "real-repository scan (optional corpus)", "x5.json")
 
   h.release()
 
-  // Registry / doc honesty — the checks the old X6 ran, kept, plus the ones it
-  // missed (it never read docs/BB_SECURITY.md, the file with the false modes).
-  const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
+  // Registry / doc honesty — asserted against the live descriptor object and both
+  // docs pages, because the reference page is where a false mode claim lives.
   const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_security.md"), "utf8")
   const ref = readFileSync(path.join(ROOT_DIR, "docs/BB_SECURITY.md"), "utf8")
-  const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
+  const registryDescriptor = TOOL_DESCRIPTORS.find((candidate) => candidate.name === "bb_security")
+  const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_security/handler.ts"), "utf8")
   const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/security/taint.ts"), "utf8")
 
-  // Isolate the bb_security ENTRY by brace-matching from its own `name:`
-  // field, then assert against that span. A fixed character window after the
-  // name was wrong the moment a comment was added above `description` — the
-  // fields moved past the window and four checks failed for that reason alone.
-  const entryStart = reg.lastIndexOf("{", reg.indexOf('name: "bb_security"'))
-  let entryEnd = reg.length
-  let depth = 0
-  for (let i = entryStart; i < reg.length; i++) {
-    if (reg[i] === "{") depth++
-    else if (reg[i] === "}") {
-      depth--
-      if (depth === 0) { entryEnd = i; break }
-    }
+  // The registry is assembled from per-tool descriptor modules, so the honest
+  // assertion is against the live descriptor object, not the assembler's text.
+  h.ck("X6: the registry declares bb_security", !!registryDescriptor, "missing from TOOL_DESCRIPTORS")
+  if (registryDescriptor) {
+    h.ck("X6: the registry declares mutability read", registryDescriptor.mutability === "read", `mutability=${registryDescriptor.mutability}`)
+    h.ck("X6: the registry declares requiresIndex true", registryDescriptor.requiresIndex === true, `requiresIndex=${String(registryDescriptor.requiresIndex)}`)
+    h.ck("X6: the registry declares findings as the only executable mode", JSON.stringify(registryDescriptor.modes) === JSON.stringify(["findings"]), `modes=${JSON.stringify(registryDescriptor.modes)}`)
+    h.ck("X6: the registry marks flow/summary/hotspots as planned, not executable", JSON.stringify(registryDescriptor.plannedModes) === JSON.stringify(["flow", "summary", "hotspots"]), `plannedModes=${JSON.stringify(registryDescriptor.plannedModes)}`)
+    h.nk("X6: the registry does not declare a planned mode as executable", !(registryDescriptor.modes ?? []).some((mode) => ["flow", "summary", "hotspots"].includes(mode)), `modes=${JSON.stringify(registryDescriptor.modes)}`)
+    h.nk("X6: the description claims no secret detection", !/hardcoded secret/i.test(registryDescriptor.description), "no writer emits any secret vulnerability type")
   }
-  const entry = reg.slice(entryStart, entryEnd)
-  h.ck("X6: the registry still declares bb_security", entry.length > 0 && entry.includes('name: "bb_security"'), `entry span ${entry.length} chars`)
-  h.ck("X6: the registry declares mutability read", /mutability: "read"/.test(entry))
-  h.ck("X6: the registry declares requiresIndex true", /requiresIndex: true/.test(entry))
-  h.ck("X6: the registry declares findings as the only executable mode", /modes: \["findings"\]/.test(entry))
-  h.ck("X6: the registry marks flow/summary/hotspots as planned, not executable", /plannedModes: \["flow", "summary", "hotspots"\]/.test(entry))
-  h.nk("X6: the registry does not declare the planned modes as executable", !/modes: \[[^\]]*"flow"/.test(entry), "flow is planned, not executable")
-  h.nk("X6: the registry no longer claims hardcoded-secret detection", !/name: "bb_security"[\s\S]{0,900}?description: "[^"]*hardcoded secret/.test(reg), "no writer emits any secret vulnerability type")
   h.ck("X6: the generated tool doc exists and describes taint", doc.includes("taint"))
   h.ck("X6: the tool doc marks the planned modes as not executable", doc.includes("not executable"))
   h.ck("X6: the tool doc states the history-only meaning of limit", /history run limit/.test(doc))
-  h.ck("X6: the reference doc corrects the modes claim", /One executable mode/.test(ref), "docs/BB_SECURITY.md previously claimed 4 executable modes and an option the engine never read")
+  h.ck("X6: the reference doc states the one executable mode", /One executable mode/.test(ref), "docs/BB_SECURITY.md must state the single executable mode")
   h.ck("X6: the reference doc names what the tool does NOT detect", /does NOT detect/.test(ref))
   h.ck("X6: the handler still routes through the strict engine adapter", hnd.includes("analyzeSecurityAcrossLanguages"))
   h.ck("X6: the engine reads brain_taint_flow and classifies the four states", impl.includes("brain_taint_flow") && /"source_only"[\s\S]{0,200}?"unresolved"[\s\S]{0,200}?"mitigated"[\s\S]{0,200}?"confirmed"/.test(impl))
@@ -695,6 +669,6 @@ if (skipped.length) {
 console.log("=".repeat(72))
 
 // The exit code reads the PROCESS-GLOBAL failure list, which is never cleared by
-// `resetForNextSection()`. The previous version reset the counter after each of
+// `resetForNextSection()`. A counter reset after each section
 // X1..X7 and then evaluated this, so X1-X7 failures exited 0.
 process.exit(h.failed > 0 ? 1 : 0)
