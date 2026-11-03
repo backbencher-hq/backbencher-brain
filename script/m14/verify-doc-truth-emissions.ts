@@ -179,7 +179,8 @@ const RELATIONSHIP_ALIASES: Record<string, string> = {
   contains: "contains",
   contain: "contains",
   composition: "contains",
-  partof: "contains",
+  partof: "part_of",
+  "part-of": "part_of",
   references: "references",
   reference: "references",
   dependson: "references",
@@ -188,6 +189,13 @@ const RELATIONSHIP_ALIASES: Record<string, string> = {
   override: "overrides",
   instantiates: "instantiates",
   instantiate: "instantiates",
+  decorates: "decorates",
+  decorate: "decorates",
+  renders: "renders",
+  render: "renders",
+  mixesin: "mixes_in",
+  "mixes-in": "mixes_in",
+  mixin: "mixes_in",
 }
 
 /**
@@ -214,16 +222,29 @@ function payloadLabel(kind: string): string {
 
 /** Every serialized relationship kind, in the order the register lists them. */
 const ALL_KINDS = [
+  // THE CANONICAL REGISTER — all fourteen values of `RelationshipType` in src/ast/types.ts, in the
+  // register's own order. This list was TEN kinds long and stopped at `imports`, which made the four
+  // values appended to the vocabulary on 2026-10-17/18 (decorates, renders, mixes_in, part_of)
+  // structurally uncheckable: every doc row naming one of them was graded NON_ENGINE_KIND, so a
+  // true claim and a false claim were both invisible. Measured consequence before this fix:
+  // `renders` 10 · `mixesin` 9 · `decorates` 9 NON_ENGINE_KIND rows fleet-wide, and (worse, because
+  // it accuses) the stale `partof -> contains` alias graded a doc's `part_of | no` cell against
+  // `contains`, which IS live — a FALSE_NEGATIVE on a claim the row never made. Both were found
+  // independently by the ruby and cpp lanes, on their own pages, in one wave.
   "calls",
-  "contains",
-  "exports",
   "extends",
   "implements",
-  "instantiates",
-  "overrides",
-  "references",
   "uses",
   "imports",
+  "exports",
+  "contains",
+  "references",
+  "overrides",
+  "instantiates",
+  "decorates",
+  "renders",
+  "mixes_in",
+  "part_of",
 ]
 
 type Claim = "YES" | "NO" | "NA" | "NO_MARKER"

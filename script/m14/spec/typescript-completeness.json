@@ -84,6 +84,7 @@
       "property_identifier",
       "property_signature",
       "public_field_definition",
+      "reference_directive",
       "regex",
       "rest_pattern",
       "return_statement",
@@ -140,9 +141,6 @@
       "flow_maybe_type",
       "function_type",
       "generator_function",
-      "glimmer_closing_tag",
-      "glimmer_opening_tag",
-      "glimmer_template",
       "hash_bang_line",
       "html_comment",
       "import_attribute",
@@ -307,10 +305,9 @@
       },
       {
         "id": "D4",
-        "node_type": "glimmer_template,glimmer_opening_tag,glimmer_closing_tag",
         "status": "RULED",
         "question": "Glimmer/Ember templates: the grammar declares them but the analyzer ignores them. Recommend: internal_silent (out of scope, consistent with scala XML-literal ruling).",
-        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (scala XML-literal consistency)."
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (scala XML-literal consistency). GRAMMAR DRIFT 2026-11-03: the pinned tree-sitter-typescript wasm no longer declares glimmer_template / glimmer_opening_tag / glimmer_closing_tag, so this decision now classifies nothing in the live grammar \u2014 the row is retained as history, not as a classification, and the previous node_type is removed so the spec cannot claim a node type the wasm does not produce."
       },
       {
         "id": "D5",

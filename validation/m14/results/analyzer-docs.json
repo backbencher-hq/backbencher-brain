@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M14",
   "rule": "analyzer documentation completeness",
-  "generatedAt": "2026-11-01T22:29:30.113Z",
+  "generatedAt": "2026-11-03T04:17:31.724Z",
   "boundary": "A section counts only when it has CONTENT under its heading, not merely the heading: a renamed or empty section is a missing section. Measures the DOCUMENT, not the analyzer: a language can pass all eleven sections here and still have an analyzer defect, and a language can fail here with a correct analyzer. This gate is about a claim being checkable, and it is deliberately weaker than the gates that measure behaviour.",
   "requiredSections": [
     "## Language",
@@ -18,560 +18,57 @@
     "analyzers": 50,
     "present": 50,
     "absent": 0,
-    "sectionComplete": 18,
-    "sectionShort": 32,
-    "ontologyCellGaps": 20,
-    "fullyComplete": 16
+    "sectionComplete": 50,
+    "sectionShort": 0,
+    "ontologyCellGaps": 0,
+    "fullyComplete": 50
   },
   "baseline": {
     "present": 50,
-    "sectionComplete": 18,
-    "ontologyCellGaps": 20,
+    "sectionComplete": 50,
+    "ontologyCellGaps": 0,
     "note": "measured 2026-09-28 at the gate's first run; a language that LOSES ground fails, a language already short does not"
   },
   "worklist": {
     "noDoc": [],
-    "missingSections": [
-      {
-        "lang": "bash",
-        "doc": "docs/analyzers/bash.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "clean",
-        "doc": "docs/analyzers/clean.md",
-        "missing": [
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "clojure",
-        "doc": "docs/analyzers/clojure.md",
-        "missing": [
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "cpp",
-        "doc": "docs/analyzers/cpp.md",
-        "missing": [
-          "## Complexity envelope",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "css",
-        "doc": "docs/analyzers/css.md",
-        "missing": [
-          "## Complexity envelope"
-        ]
-      },
-      {
-        "lang": "elixir",
-        "doc": "docs/analyzers/elixir.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Differential ground truth"
-        ]
-      },
-      {
-        "lang": "erlang",
-        "doc": "docs/analyzers/erlang.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth"
-        ]
-      },
-      {
-        "lang": "graphql",
-        "doc": "docs/analyzers/graphql.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "haskell",
-        "doc": "docs/analyzers/haskell.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Differential ground truth"
-        ]
-      },
-      {
-        "lang": "hcl",
-        "doc": "docs/analyzers/hcl.md",
-        "missing": [
-          "## Supported constructs",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "html",
-        "doc": "docs/analyzers/html.md",
-        "missing": [
-          "## Complexity envelope"
-        ]
-      },
-      {
-        "lang": "json",
-        "doc": "docs/analyzers/json.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "julia",
-        "doc": "docs/analyzers/julia.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "kotlin",
-        "doc": "docs/analyzers/kotlin.md",
-        "missing": [
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "lua",
-        "doc": "docs/analyzers/lua.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "makefile",
-        "doc": "docs/analyzers/make.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "markdown",
-        "doc": "docs/analyzers/markdown.md",
-        "missing": [
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "matlab",
-        "doc": "docs/analyzers/matlab.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "perl",
-        "doc": "docs/analyzers/perl.md",
-        "missing": [
-          "## Supported constructs",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "php",
-        "doc": "docs/analyzers/php.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "powershell",
-        "doc": "docs/analyzers/powershell.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "protobuf",
-        "doc": "docs/analyzers/protobuf.md",
-        "missing": [
-          "## Language",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "python",
-        "doc": "docs/analyzers/python.md",
-        "missing": [
-          "## Regex inventory",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "r",
-        "doc": "docs/analyzers/r.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "ruby",
-        "doc": "docs/analyzers/ruby.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "scss",
-        "doc": "docs/analyzers/scss.md",
-        "missing": [
-          "## Language",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "solidity",
-        "doc": "docs/analyzers/solidity.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "sql",
-        "doc": "docs/analyzers/sql.md",
-        "missing": [
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "swift",
-        "doc": "docs/analyzers/swift.md",
-        "missing": [
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "vb",
-        "doc": "docs/analyzers/vb.md",
-        "missing": [
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "vba",
-        "doc": "docs/analyzers/vba.md",
-        "missing": [
-          "## Language",
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      },
-      {
-        "lang": "zig",
-        "doc": "docs/analyzers/zig.md",
-        "missing": [
-          "## Symbol contract",
-          "## Relationship ontology",
-          "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
-          "## Corpus validation"
-        ]
-      }
-    ],
-    "unexplainedOntologyCells": [
-      {
-        "lang": "bash",
-        "doc": "docs/analyzers/bash.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "c",
-        "doc": "docs/analyzers/c.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "clean",
-        "doc": "docs/analyzers/clean.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "cpp",
-        "doc": "docs/analyzers/cpp.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "groovy",
-        "doc": "docs/analyzers/groovy.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "hcl",
-        "doc": "docs/analyzers/hcl.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "json",
-        "doc": "docs/analyzers/json.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "julia",
-        "doc": "docs/analyzers/julia.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "kotlin",
-        "doc": "docs/analyzers/kotlin.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "lua",
-        "doc": "docs/analyzers/lua.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "makefile",
-        "doc": "docs/analyzers/make.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "matlab",
-        "doc": "docs/analyzers/matlab.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "powershell",
-        "doc": "docs/analyzers/powershell.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "protobuf",
-        "doc": "docs/analyzers/protobuf.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "r",
-        "doc": "docs/analyzers/r.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "ruby",
-        "doc": "docs/analyzers/ruby.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "solidity",
-        "doc": "docs/analyzers/solidity.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "vb",
-        "doc": "docs/analyzers/vb.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "vba",
-        "doc": "docs/analyzers/vba.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      },
-      {
-        "lang": "zig",
-        "doc": "docs/analyzers/zig.md",
-        "gaps": [
-          "(no relationship-ontology section)"
-        ]
-      }
-    ]
+    "missingSections": [],
+    "unexplainedOntologyCells": []
   },
   "rows": [
     {
       "lang": "bash",
       "present": true,
       "doc": "docs/analyzers/bash.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "c",
       "present": true,
       "doc": "docs/analyzers/c.md",
       "missingSections": [],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "ontologyGaps": []
     },
     {
       "lang": "clean",
       "present": true,
       "doc": "docs/analyzers/clean.md",
-      "missingSections": [
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "clojure",
       "present": true,
       "doc": "docs/analyzers/clojure.md",
-      "missingSections": [
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "cpp",
       "present": true,
       "doc": "docs/analyzers/cpp.md",
-      "missingSections": [
-        "## Complexity envelope",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "csharp",
@@ -584,9 +81,7 @@
       "lang": "css",
       "present": true,
       "doc": "docs/analyzers/css.md",
-      "missingSections": [
-        "## Complexity envelope"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -600,23 +95,14 @@
       "lang": "elixir",
       "present": true,
       "doc": "docs/analyzers/elixir.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Differential ground truth"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "erlang",
       "present": true,
       "doc": "docs/analyzers/erlang.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -637,12 +123,7 @@
       "lang": "graphql",
       "present": true,
       "doc": "docs/analyzers/graphql.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -650,40 +131,27 @@
       "present": true,
       "doc": "docs/analyzers/groovy.md",
       "missingSections": [],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "ontologyGaps": []
     },
     {
       "lang": "haskell",
       "present": true,
       "doc": "docs/analyzers/haskell.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Differential ground truth"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "hcl",
       "present": true,
       "doc": "docs/analyzers/hcl.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "html",
       "present": true,
       "doc": "docs/analyzers/html.md",
-      "missingSections": [
-        "## Complexity envelope"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -704,111 +172,50 @@
       "lang": "json",
       "present": true,
       "doc": "docs/analyzers/json.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "julia",
       "present": true,
       "doc": "docs/analyzers/julia.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "kotlin",
       "present": true,
       "doc": "docs/analyzers/kotlin.md",
-      "missingSections": [
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "lua",
       "present": true,
       "doc": "docs/analyzers/lua.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "makefile",
       "present": true,
       "doc": "docs/analyzers/make.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "markdown",
       "present": true,
       "doc": "docs/analyzers/markdown.md",
-      "missingSections": [
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "matlab",
       "present": true,
       "doc": "docs/analyzers/matlab.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "nim",
@@ -828,98 +235,50 @@
       "lang": "perl",
       "present": true,
       "doc": "docs/analyzers/perl.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "php",
       "present": true,
       "doc": "docs/analyzers/php.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "powershell",
       "present": true,
       "doc": "docs/analyzers/powershell.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "protobuf",
       "present": true,
       "doc": "docs/analyzers/protobuf.md",
-      "missingSections": [
-        "## Language",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "python",
       "present": true,
       "doc": "docs/analyzers/python.md",
-      "missingSections": [
-        "## Regex inventory",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "r",
       "present": true,
       "doc": "docs/analyzers/r.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "ruby",
       "present": true,
       "doc": "docs/analyzers/ruby.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "rust",
@@ -939,39 +298,21 @@
       "lang": "scss",
       "present": true,
       "doc": "docs/analyzers/scss.md",
-      "missingSections": [
-        "## Language",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
       "lang": "solidity",
       "present": true,
       "doc": "docs/analyzers/solidity.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "sql",
       "present": true,
       "doc": "docs/analyzers/sql.md",
-      "missingSections": [
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -985,12 +326,7 @@
       "lang": "swift",
       "present": true,
       "doc": "docs/analyzers/swift.md",
-      "missingSections": [
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -1011,35 +347,15 @@
       "lang": "vb",
       "present": true,
       "doc": "docs/analyzers/vb.md",
-      "missingSections": [
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "vba",
       "present": true,
       "doc": "docs/analyzers/vba.md",
-      "missingSections": [
-        "## Language",
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     },
     {
       "lang": "vue",
@@ -1066,18 +382,8 @@
       "lang": "zig",
       "present": true,
       "doc": "docs/analyzers/zig.md",
-      "missingSections": [
-        "## Symbol contract",
-        "## Relationship ontology",
-        "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
-        "## Corpus validation"
-      ],
-      "ontologyGaps": [
-        "(no relationship-ontology section)"
-      ]
+      "missingSections": [],
+      "ontologyGaps": []
     }
   ]
 }

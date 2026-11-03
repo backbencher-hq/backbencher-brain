@@ -140,7 +140,6 @@
    "abstract_function_declarator",
    "abstract_parenthesized_declarator",
    "abstract_pointer_declarator",
-   "alignas_specifier",
    "alignof_expression",
    "argument_list",
    "array_declarator",

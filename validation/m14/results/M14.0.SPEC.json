@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "fd24778cb31303a3bcf41c66d9d0bae66c4dad2a0086447f072bf145627a2949",
-    "sealedAt": "2026-10-28T20:14:26.000Z"
+    "contentSha256": "0591fd9da77c4d3a8a8e91564c65d8181892ee53e960ea0a86ae7adb7c365ddb",
+    "sealedAt": "2026-11-03T22:32:57.000Z"
   },
   "checks": [
     {
@@ -1560,80 +1560,6 @@
       "status": "pass"
     },
     {
-      "description": "elixir: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "elixir: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "elixir: 27 ruled, 0 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (elixir)",
-      "detail": "47 types, 22 handled, 25 silent, 0 gaps, 27 decisions",
-      "id": "section-a-structural",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "9 relationship kinds pinned by elixir fixtures; 9 emitted and all accounted for",
-      "detail": "pinned: calls, contains, exports, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for elixir (2)",
-      "detail": "complexity, parameters",
-      "id": "section-c-payload-matrix",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "5 tier(s) pinned: import_based, reference_qualified, struct_field_read, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "elixir:elixir at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor elixir:elixir: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "elixir avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "elixir:elixir 31.4 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "elixir analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/elixir.md + head comment present",
-      "id": "section-g-docs",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "elixir",
-      "status": "pass"
-    },
-    {
       "description": "xml: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "xml",
@@ -2226,80 +2152,6 @@
       "status": "pass"
     },
     {
-      "description": "cpp: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp: 12 ruled, 14 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (cpp)",
-      "detail": "212 types, 44 handled, 148 silent, 0 gaps, 26 decisions",
-      "id": "section-a-structural",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "10 relationship kinds pinned by cpp fixtures; 10 emitted and all accounted for",
-      "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for cpp (2)",
-      "detail": "complexity, qualified_calls",
-      "id": "section-c-payload-matrix",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "fmt:cpp at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "fmt:cpp 154.1 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cpp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/cpp.md + head comment present",
-      "id": "section-g-docs",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "cpp",
-      "status": "pass"
-    },
-    {
       "description": "toml: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "toml",
@@ -2594,11 +2446,159 @@
       "id": "section-h-cross-language",
       "language": "solidity",
       "status": "pass"
+    },
+    {
+      "description": "elixir: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir: 27 ruled, 0 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (elixir)",
+      "detail": "47 types, 22 handled, 25 silent, 0 gaps, 27 decisions",
+      "id": "section-a-structural",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "10 relationship kinds pinned by elixir fixtures; 10 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, implements, imports, instantiates, mixes_in, overrides, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, mixes_in, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for elixir (2)",
+      "detail": "complexity, parameters",
+      "id": "section-c-payload-matrix",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, reference_qualified, struct_field_read, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir:elixir at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor elixir:elixir: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "elixir:elixir 20.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "elixir analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/elixir.md + head comment present",
+      "id": "section-g-docs",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "elixir",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp: 12 ruled, 14 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (cpp)",
+      "detail": "212 types, 44 handled, 148 silent, 0 gaps, 26 decisions",
+      "id": "section-a-structural",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "11 relationship kinds pinned by cpp fixtures; 11 emitted and all accounted for",
+      "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, part_of, part_of_directive, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, part_of, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for cpp (2)",
+      "detail": "complexity, qualified_calls",
+      "id": "section-c-payload-matrix",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "fmt:cpp at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor fmt:cpp: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "fmt:cpp 154.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cpp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/cpp.md + head comment present",
+      "id": "section-g-docs",
+      "language": "cpp",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "cpp",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "414aa07f7a40e6514731a074be67c4839d75efd1",
-  "committedAt": "2026-10-28T16:14:26-04:00",
+  "commit": "bb21fce0e728f3598f95eff19815d5401a543eb7",
+  "committedAt": "2026-11-03T17:32:57-05:00",
   "data": {
     "languages": {
       "c": {
@@ -2779,7 +2779,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, uses",
+            "detail": "pinned: calls, contains, export_attribute, exports, extends, field_access, implements, imports, include_dependency, instantiates, module_export, overrides, part_of, part_of_directive, references, uses, using_dependency; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, part_of, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -3049,7 +3049,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, exports, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, overrides, references, uses",
+            "detail": "pinned: calls, contains, exports, implements, imports, instantiates, mixes_in, overrides, references, uses; emitted: calls, contains, exports, implements, imports, instantiates, mixes_in, overrides, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -3065,7 +3065,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "elixir:elixir 31.4 ms/file",
+            "detail": "elixir:elixir 20.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -5073,9 +5073,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-10-28T16:14:26-04:00",
-  "regeneratedAtCommit": "414aa07f7a40e6514731a074be67c4839d75efd1",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-11-03T17:32:57-05:00",
+  "regeneratedAtCommit": "bb21fce0e728f3598f95eff19815d5401a543eb7",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

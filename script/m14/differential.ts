@@ -23310,14 +23310,38 @@ async function main() {
           ? scopedLangs.flatMap((l) => [LANG_REPOS[l], SECOND_CORPUS[l]]).filter((r): r is string => Boolean(r))
           : [...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)],
       )]
-  for (const rp of activeRepos) {
-    // A repo mapping may be an ABSOLUTE path. The two lanes whose corpus lives in a DEDICATED
-    // root (matlab, vba — the shared corpus carries 0 genuine files for either) cannot be
-    // reached through CORPUS_ROOT, and a lane that silently falls back to "no corpus mapped"
-    // reads as a vacancy rather than as the deliberate root split it is. Measured 2026-11-01:
-    // both lanes printed "no corpus repo mapped ... declared unrun" for exactly this reason.
-    const rd = corpusRepoDir(rp)
-    if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
+  // A SCOPED RUN MEASURES ITS OWN LANES, SO A MISSING *SECOND* CORPUS IS A HOST FACT, NOT A LIE.
+  //
+  // The throw below is right for a CANONICAL sweep: a missing checkout silently shrinks a claim about
+  // every lane, and that is worth refusing. It was wrong for a lane-scoped probe of a lane whose
+  // PRIMARY corpus is present: measured 2026-11-03, `--lang perl` died on
+  // `corpus repo missing: …/repositories/plack` — perl's SECOND corpus — while `mojo` (its primary,
+  // 600-line oracle, fixtures, floor key) was on disk, so the lane could derive no truth, could not
+  // pin its floor row, and completeness-inventory section E read "no baseline floor row for
+  // mojo:perl" for a lane whose oracle exists. The same shape blocks hcl (second corpus
+  // tf-aws-components) and would block every future lane whose secondary checkout is absent from the
+  // host it is measured on.
+  //
+  // The scoped rule is therefore: a missing PRIMARY is still fatal (it names a lane that cannot be
+  // measured here); a missing SECOND corpus is dropped from the run with a printed note, so the
+  // scoped artifact says which corpora it actually measured rather than pretending it measured all.
+  const scopedForCheckout = scopedLangs
+  const missingRepos = activeRepos.filter((rp) => !fs.existsSync(corpusRepoDir(rp)))
+  if (missingRepos.length > 0) {
+    if (!scopedForCheckout) {
+      for (const rp of missingRepos) throw new Error(`corpus repo missing: ${corpusRepoDir(rp)}`)
+    }
+    const scopedList: string[] = scopedForCheckout ?? []
+    const primaryOf = new Set(scopedList.map((l) => LANG_REPOS[l]).filter((r): r is string => Boolean(r)))
+    const fatal = missingRepos.filter((rp) => primaryOf.has(rp))
+    if (fatal.length > 0) {
+      for (const rp of fatal) throw new Error(`corpus repo missing: ${corpusRepoDir(rp)} (a scoped lane's PRIMARY corpus; it cannot be measured on this host)`)
+    }
+    for (const rp of missingRepos) {
+      const lanes = scopedList.filter((l) => SECOND_CORPUS[l] === rp)
+      console.log(`[corpus] skipping SECOND corpus ${rp} — not checked out at ${corpusRepoDir(rp)}; scoped run measures ${lanes.join(", ")} on its primary corpus only`)
+    }
+    for (let i = activeRepos.length - 1; i >= 0; i--) if (missingRepos.includes(activeRepos[i])) activeRepos.splice(i, 1)
   }
   const repoPins: Record<string, string> = {}
   for (const rp of activeRepos) {
@@ -23397,7 +23421,13 @@ async function main() {
     // at an unrelated repo and defeat the probe's intent.
     if (REPO) continue
     const second = SECOND_CORPUS[lang]
-    if (second && second !== primary) lanes.push({ lang, repo: second, isSecond: true })
+    // A SECOND CORPUS THAT IS NOT CHECKED OUT CANNOT BE MEASURED — and in a SCOPED run it must not
+    // abort the lane either. The check above already refused the canonical case (a sweep may not
+    // silently shrink its claim) and printed a note for a scoped one; this is that decision reaching
+    // the lane list. Measured 2026-11-03: without it, `--lang perl` skipped plack at the checkout
+    // guard and then died in the sweep at `no pin recorded for corpus repo plack`, so the lane still
+    // derived no truth and still could not pin `mojo:perl`.
+    if (second && second !== primary && fs.existsSync(corpusRepoDir(second))) lanes.push({ lang, repo: second, isSecond: true })
   }
 
   // ---------------------------------------------------------------------

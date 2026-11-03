@@ -115,7 +115,10 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "overrides"],
+    // BD16 (lane ruling): `source`/`.` is textual inclusion into the calling shell's scope, so the
+    // relationship is `part_of`, not `imports`. The analyzer emits no `imports` edge and the row must
+    // not name one; `part_of` is pinned by validation/m14/fixtures/bash/part-of-source-inclusion.
+    requiredKinds: ["calls", "uses", "contains", "references", "exports", "overrides", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "bash/payload-and-complexity" },
     },
@@ -134,7 +137,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["uses", "references", "calls", "instantiates", "extends", "overrides", "imports", "contains", "exports", "implements"],
+    requiredKinds: ["uses", "references", "calls", "instantiates", "extends", "overrides", "imports", "contains", "exports", "implements", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "cpp/payload-and-complexity" },
       qualified_calls: { key: "expectQualifiedCalls", pin: "cpp/payload-and-complexity" },
@@ -171,7 +174,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["uses", "references", "exports", "imports", "calls", "contains", "instantiates", "overrides"],
+    requiredKinds: ["uses", "references", "exports", "imports", "calls", "contains", "instantiates", "overrides", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "c/complexity-and-payloads" },
     },
@@ -190,7 +193,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["uses", "references", "exports", "contains", "calls", "extends", "implements", "instantiates", "imports", "overrides"],
+    requiredKinds: ["uses", "references", "exports", "contains", "calls", "extends", "implements", "instantiates", "imports", "overrides", "decorates", "mixes_in", "part_of", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "rust/payload-parity" },
       qualified_calls: { key: "expectQualifiedCalls", pin: "rust/payload-parity" },
@@ -210,7 +213,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports", "exports", "overrides"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "imports", "exports", "overrides", "mixes_in", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "go/complexity-parity" },
       qualified_calls: { key: "expectQualifiedCalls", pin: "go/qualified-calls-payload" },
@@ -240,7 +243,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "uses", "contains", "references", "imports", "exports", "instantiates"],
+    requiredKinds: ["calls", "uses", "contains", "references", "imports", "exports", "instantiates", "mixes_in"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "zig/calls-uses-complexity (symbol complexity)" },
       parameters: { key: "expectParameters", pin: "zig/calls-uses-complexity (parameters payload)" },
@@ -261,7 +264,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "csharp/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "csharp/payload-and-complexity" },
@@ -286,7 +289,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // the 44,181 ambiguous `references` rows were outside every lever table this programme kept,
     // including the receiver-cause pricing that sized the dart residual.
     // swift's row (below) names `references`; the two rows are now consistent.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports", "references", "exports", "mixes_in", "part_of"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "contains", "overrides", "imports", "references", "exports", "mixes_in", "part_of", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "dart/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "dart/payload-and-complexity" },
@@ -366,7 +369,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/clojure.md"],
     differentialCheck: "differential-clojure",
     perfKey: "clj-kondo:clojure",
-    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "clojure/payload-and-complexity" },
       parameters: { key: "expectParameters", pin: "clojure/payload-and-complexity" },
@@ -388,7 +391,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/erlang.md"],
     differentialCheck: "differential-erlang",
     perfKey: "rebar3:erlang",
-    requiredKinds: ["calls", "contains", "exports", "implements", "imports", "instantiates", "references", "uses"],
+    requiredKinds: ["calls", "contains", "exports", "implements", "imports", "instantiates", "references", "uses", "part_of"],
     payloads: { complexity: { key: "expectComplexity", pin: "erlang (function-clause/branch count per declaration; 4 fixtures pin it)" } },
     title: "erlang pass (#419)",
   },
@@ -406,7 +409,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/fsharp.md"],
     differentialCheck: "differential-fsharp",
     perfKey: "fsharp:csharp",
-    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"],
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates", "part_of"],
     payloads: {},
     title: "fsharp wave (#419; E/F green on fsharp:csharp)",
   },
@@ -525,7 +528,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "swift/payload-and-complexity" },
       visibility: { key: "expectVisibility", pin: "swift/payload-and-complexity" },
@@ -603,7 +606,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "instantiates", "contains", "references", "implements", "exports", "imports", "overrides", "uses"],
+    requiredKinds: ["calls", "extends", "instantiates", "contains", "references", "implements", "exports", "imports", "overrides", "uses", "decorates", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "haskell/payload-and-complexity" },
     },
@@ -634,7 +637,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "contains", "extends", "implements", "instantiates", "overrides", "imports", "references", "uses"],
+    requiredKinds: ["calls", "contains", "extends", "implements", "instantiates", "overrides", "imports", "references", "uses", "exports", "mixes_in"],
     // Matrix 1b rows perl actually pins. `complexity` is a FILE-metadata row
     // (expectMetadata/cyclomaticComplexity), not expectComplexity: perl
     // complexity is a whole-file decision count, so a per-symbol value would
@@ -688,7 +691,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["contains", "references", "imports", "calls", "extends", "overrides", "uses"],
+    requiredKinds: ["contains", "references", "imports", "calls", "extends", "overrides", "uses", "mixes_in", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "xml/type-graph" },
     },
@@ -758,7 +761,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports", "mixes_in", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "php/payload-and-complexity" },
     },
@@ -773,7 +776,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/objective-c.md"],
     differentialCheck: "differential-objc",
     perfKey: "sdwebimage:objc",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "exports", "imports", "overrides"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "exports", "imports", "overrides", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "objc/payload-and-complexity" },
     },
@@ -812,7 +815,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports", "decorates"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "groovy/qualified-call-path" },
       docstrings: { key: "expectComments", pin: "groovy/groovydoc-payload" },
@@ -836,7 +839,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports", "exports", "renders"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "kotlin/qualified-calls-builtin-names" },
       docstrings: { key: "expectComments", pin: "kotlin/kdoc-extraction" },
@@ -894,7 +897,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/history/typescript-lane-notes.md", "docs/analyzers/typescript.md"],
     differentialCheck: "differential-typescript",
     perfKey: "vue-core:typescript",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates"],
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "renders", "decorates", "mixes_in", "part_of"],
     payloads: {
       qualified_calls: { key: "expectQualifiedCalls", pin: "typescript/qualified-call-path" },
       docstrings: { key: "expectComments", pin: "typescript/payload-docs (js) / comment pins" },
@@ -952,7 +955,10 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "implements"],
+    // RELABEL 2026-10-24 (Lead-ruled, svelte precedent): the SFC template component-tag emission is
+    // `renders`, not `instantiates` (the host renderer mounts the component; no `new` exists in the
+    // source). `instantiates` is therefore not emitted by this lane and the row must not name it.
+    requiredKinds: ["calls", "extends", "uses", "references", "contains", "overrides", "exports", "imports", "implements", "decorates", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "vue/template-decision-complexity" },
       parameters: { key: "expectParameters", pin: "vue/script-sub-analyzer parameters" },
@@ -996,7 +1002,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // forbidden and three fixtures enforce that with forbidRelationships -- the two statements are not in
     // conflict, they describe different LAYERS of one file. Naming it here is the contract catching up with
     // what the analyzer publishes, which is exactly what the reverse check exists to force.
-    requiredKinds: ["uses", "contains", "calls", "extends", "imports", "instantiates", "overrides", "references", "exports"],
+    requiredKinds: ["uses", "contains", "calls", "extends", "imports", "instantiates", "overrides", "references", "exports", "decorates", "implements", "mixes_in", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "html/framework-and-scores (addressable-subtree size per symbol)" },
       visibility: { key: "expectVisibility", pin: "html/framework-and-scores (document scope — html has no private/package)" },
@@ -1060,7 +1066,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["uses", "references", "contains", "imports", "overrides"],
+    requiredKinds: ["uses", "references", "contains", "imports", "overrides", "calls", "exports", "part_of"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "css (selector combinators, functional pseudos, attributes, nesting depth)" },
     },
@@ -1079,7 +1085,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "implements"],
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "references", "contains", "overrides", "exports", "imports", "implements", "decorates", "renders"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "svelte/payload-pins (script complexity)" },
       parameters: { key: "expectParameters", pin: "svelte/script-sub-analyzer parameters" },
@@ -1109,8 +1115,13 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
       // the stale one carrying pre-rebuild numbers that no gate read.
       docs: ["docs/analyzers/make.md"],
     differentialCheck: "differential-make",
-    perfKey: "tf-aws-components:make",
-    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls"],
+    // The perf/floor key is the corpus the differential ACTUALLY sweeps for this lane:
+    // `LANG_REPOS.make === "redis"` (script/m14/differential.ts) and `redis:make` is the row the
+    // baseline carries (missing 0 / unexplained 0, avgMsPerFile measured). The previous alias
+    // `tf-aws-components:make` names a checkout that is NOT on this host, so sections E/F read
+    // "no floor row" for a lane whose real corpus and real measurement both exist.
+    perfKey: "redis:make",
+    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls", "overrides", "part_of"],
     payloads: {},
     title: "make build wave (M60, 2026-09-27)",
   },
@@ -1147,7 +1158,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["contains", "extends", "calls", "uses", "references", "instantiates", "exports", "imports", "overrides"],
+    requiredKinds: ["contains", "extends", "calls", "uses", "references", "instantiates", "exports", "imports", "overrides", "decorates", "part_of"],
     // Documented-residual floor, the C-D4 mechanism. The residual is ADJUDICATED, not untriaged: the
     // `unexplained` rows are dominated by the oracles' own declared scope limits — they deliberately
     // decline to resolve a callee across files, because a `calls` edge whose target is a name in
@@ -1184,7 +1195,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // while the contract row omits it -- published output no contract row accounted for.
     // Every kind added here is ALREADY pinned by this lane's expectation files, so the
     // forward check (required => pinned) stays green; only the missing names are added.
-    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls", "extends", "overrides"],
+    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls", "extends", "overrides", "instantiates", "part_of"],
     payloads: {},
     title: "hcl/terraform data-config wave (M60, 2026-09-26; config entry restored 2026-09-27)",
   },
@@ -1204,7 +1215,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // which runs this lane over its OWN fixture sources and fails a kind that is emitted
     // while the contract row omits it. Every kind below is ALREADY pinned by this lane's
     // expectation files, so the forward check (required => pinned) stays green.
-    requiredKinds: ["contains", "uses", "imports", "references"],
+    requiredKinds: ["contains", "uses", "imports", "references", "part_of"],
   payloads: {
     // Only channels the fixture runner actually implements. The first draft of
     // this entry named `expectSymbolRange` and `expectSymbolOwner`, neither of
@@ -1316,7 +1327,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     unexplained: 3,
     ruling: "SCSS-D1",
   },
-  requiredKinds: ["uses", "references", "contains", "imports", "calls", "exports", "extends", "overrides"],
+  requiredKinds: ["uses", "references", "contains", "imports", "calls", "exports", "extends", "overrides", "mixes_in", "part_of"],
   payloads: {
     complexity: { key: "expectComplexity", pin: "scss (mixin/function parameters, control-flow conditions, variable expressions)" },
     parameters: { key: "expectParameters", pin: "scss/module-system-and-mixins, functions-return-and-undeclared-uses" },
