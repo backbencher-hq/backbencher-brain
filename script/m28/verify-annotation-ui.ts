@@ -1,20 +1,22 @@
-// script/m28/verify-annotation-ui.ts — M28.A2 verifier + mutation suite (issue #627).
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// Proves agent annotations SURFACE IN THE IDE, author-labeled, through three
-// layers — and that the suite CAN FAIL:
-//
-//   R1 component:  the annotation_ui owner renders the hover section and the
-//                  badge fields with enforced author labels and escaping
-//   R2 real hover: the REAL hover() over a REAL db renders the section for an
-//                  annotated symbol and NOTHING for an unannotated one
-//   R3 real graph: handleGraphRequest carries root annotations with provenance
-//   R4 in-editor:  a REAL headless Neovim session (N1 pattern) asserts the
-//                  rendered hover text and the bb/graph payload (I3 leg)
-//   R5 can-fail:   planted defects (dropped author label, unescaped body,
-//                  badge on the wrong node) are caught
-//
-// Run: npx tsx script/m28/verify-annotation-ui.ts
-// Evidence: validation/m28/results/A2.json (machine-emitted)
+// WHAT THIS FILE IS — the annotations UI verifier: proves an agent annotation renders author-labeled in the editor hover and rides the bb/graph payload, and that the suite can fail.
+// WHICH TOOL IT SERVES — bb_annotate (its twin surface is the Lead-owned editor rendering: src/lsp/annotation_ui.ts, hover.ts, graph_request.ts).
+// WHY IT IS SHAPED THIS WAY — an annotation is an opinion layered on evidence, so
+//   every rendering path must label the author class and escape every interpolated
+//   field; the proof runs the REAL component over a REAL db and a REAL headless
+//   editor when one is installed. The in-editor leg is a declared blocked leg where
+//   no editor binary exists — never silently skipped or reported green.
+// WHERE ITS EVIDENCE LIVES — validation/m28/results/A2.json (machine-emitted),
+//   validation/tools/bb_annotate/**; run: npx tsx script/m28/verify-annotation-ui.ts
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/annotation_ui.ts,
+//   src/lsp/hover.ts, src/lsp/graph_request.ts, script/m28/annotation-driver.lua.
+// CONTRACTS IT MUST NOT BREAK — declared absence (no rows -> no section/badge),
+//   author labeling on every rendered note, escaping of every interpolated field,
+//   and the blocked-leg declaration for an absent editor binary. Regex policy:
+//   this file contains no regex literals.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
@@ -35,6 +37,7 @@ let mutantsTotal = 0
 let mutantsCaught = 0
 const mutantRecords: Array<{ name: string; caught: boolean }> = []
 const failures: string[] = []
+const blockedLegs: Array<{ leg: string; reason: string; command: string; output: string }> = []
 
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
@@ -47,8 +50,10 @@ function check(label: string, condition: boolean, detail = ""): void {
 function negative(label: string, caught: boolean, detail = ""): void {
   mutantsTotal++
   mutantRecords.push({ name: label, caught })
-  if (caught) mutantsCaught++
-  else {
+  if (caught) {
+    mutantsCaught++
+    console.log(`  caught: ${label}`)
+  } else {
     failures.push(detail ? `${label} — ${detail}` : label)
     console.log(`  SURVIVED: ${label}${detail ? ` — ${detail}` : ""}`)
   }
@@ -149,16 +154,31 @@ type DriverResult = { assertions: Array<{ name: string; ok: boolean; detail: str
 function runNvimSession(driverPath: string, outPath: string): { ok: boolean; result: DriverResult | null; stderr: string } {
   let stderr = ""
   if (existsSync(outPath)) rmSync(outPath)
+  // A headless Neovim writes state/data/cache under $HOME. On a sandboxed home
+  // (or any read-only HOME) it dies with E739 before running the driver, which
+  // is an environment failure, not an in-editor failure. Give the session its
+  // own writable HOME/XDG roots so the leg exercises the product instead.
+  const nvimHome = mkdtempSync(path.join(os.tmpdir(), "bb-a2-nvim-"))
+  for (const d of ["state", "data", "cache", "config"]) mkdirSync(path.join(nvimHome, d), { recursive: true })
   try {
     execFileSync(NVIM, ["--headless", "--clean", "-u", "NONE", "-i", "NONE", "-n", "-l", driverPath], {
       cwd: ROOT, encoding: "utf8", timeout: 120_000,
-      env: { ...process.env, BB28_OUT: outPath, BB28_WS: workspaceDir, BB_LSP_ROOT: ROOT },
+      env: {
+        ...process.env, BB28_OUT: outPath, BB28_WS: workspaceDir, BB_LSP_ROOT: ROOT,
+        HOME: nvimHome,
+        XDG_STATE_HOME: path.join(nvimHome, "state"),
+        XDG_DATA_HOME: path.join(nvimHome, "data"),
+        XDG_CACHE_HOME: path.join(nvimHome, "cache"),
+        XDG_CONFIG_HOME: path.join(nvimHome, "config"),
+      },
       stdio: ["ignore", "pipe", "pipe"],
     })
   } catch (error) {
     const err = error as { stderr?: string; message?: string }
     stderr = err.stderr ?? err.message ?? ""
     if (!existsSync(outPath)) return { ok: false, result: null, stderr }
+  } finally {
+    rmSync(nvimHome, { recursive: true, force: true })
   }
   if (!existsSync(outPath)) return { ok: false, result: null, stderr: "no results written" }
   return { ok: true, result: parseSealedRecord(outPath) as DriverResult, stderr }
@@ -172,7 +192,15 @@ if (existsSync(NVIM)) {
     for (const a of inEditor.result.assertions) check(a.name, a.ok, a.detail)
   }
 } else {
-  check("A2: nvim provisioned", false, ".tools/nvim-linux-x86_64/bin/nvim missing")
+  // Declared blocked leg, not a silent skip and not a fabricated pass: this
+  // environment has no headless editor, so the in-editor assertions cannot run.
+  blockedLegs.push({
+    leg: "in-editor (headless Neovim)",
+    reason: ".tools/nvim-linux-x86_64/bin/nvim is absent from this environment",
+    command: "npx tsx script/m28/verify-annotation-ui.ts",
+    output: "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing",
+  })
+  console.log("  blocked: A2 in-editor leg — .tools/nvim-linux-x86_64/bin/nvim missing")
 }
 
 // --- R5: the suite CAN FAIL -----------------------------------------------------
@@ -293,11 +321,11 @@ let currentCommit = "unknown"
 try { currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch {}
 
 const failed = checks - passed
-const status = failed === 0 && mutantsCaught === mutantsTotal ? "verified" : "known-gap"
+const status = failed === 0 && mutantsCaught === mutantsTotal && blockedLegs.length === 0 ? "verified" : "known-gap"
 const result = {
-  issue: "M28.A2",
-  code: "A2",
-  milestone: "M28",
+  schemaVersion: 1,
+  tool: "bb_annotate",
+  gate: "A2",
   status,
   checks,
   passed,
@@ -305,16 +333,20 @@ const result = {
   mutantsCaught,
   mutantsTotal,
   mutantRecords,
+  negativeCases: mutantRecords,
+  blockedLegs,
   currentCommit,
   ...fingerprintFields(["m28.A2"], ROOT),
   verifierCommand: "npx tsx script/m28/verify-annotation-ui.ts",
   evidenceFile: "A2.json",
   generatedAt: new Date().toISOString(),
-  claimLevel: "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
+  claimLevel: "annotations render in the real editor hover (author-labeled) and ride bb/graph — verified for every executable leg; the in-editor leg is a declared blocked leg when no editor binary exists",
   failures,
 }
 
 mkdirSync(path.join(ROOT, "validation/m28/results"), { recursive: true })
 writeSealed(path.join(ROOT, "validation/m28/results/A2.json"), result)
-console.log(`A2: ${status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
+console.log(`A2: ${status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants, ${blockedLegs.length} blocked leg(s))`)
+// An executable failure is red; a declared blocked leg alone is not a failure of
+// the tool, so the gate exits 0 with status known-gap and the leg named.
 if (failed > 0) process.exit(1)
