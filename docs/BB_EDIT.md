@@ -122,10 +122,13 @@ Import cleanup after the deletion is **TypeScript/JavaScript only**, and it is
 AST-driven: tree-sitter names the import statements, identifier occurrences decide
 usage, so a dead binding is removed and a binding still used anywhere in live code
 is kept. For every other language the file is left **byte-for-byte unchanged** and
-the answer DECLARES that it did not attempt cleanup:
+the answer DECLARES that it did not attempt cleanup. These fields are verbatim from
+one measured Haskell delete (the `changes` array is omitted here; it carries the
+file's full before/after text):
 
 ```json
-"importPruning": {"attempted": false, "language": "haskell", "removedBindings": [], "reason": "import pruning is implemented for TypeScript/JavaScript only; haskell imports were left unchanged rather than pattern-matched"}
+{"mode":"delete","validated":true,"reindexed":true,"warnings":["delete target: import cleanup was not attempted — import pruning is implemented for TypeScript/JavaScript only; haskell imports were left unchanged rather than pattern-matched"],
+ "importPruning": {"attempted": false, "language": "haskell", "removedBindings": [], "reason": "import pruning is implemented for TypeScript/JavaScript only; haskell imports were left unchanged rather than pattern-matched"}}
 ```
 
 That declaration is also a warning (`delete …: import cleanup was not attempted`).
