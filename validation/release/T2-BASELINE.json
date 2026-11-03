@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "what": "Campaign T2 baseline — all read tools against the shared 3.6 GB reference index, in-process handler calls, warm runs.",
-  "generatedAt": "2026-11-03T17:53:22.609Z",
+  "generatedAt": "2026-11-03T20:39:00.536Z",
   "head": "ref: re",
   "referenceIndex": {
     "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
@@ -25,9 +25,9 @@
       "wholeRunUnchanged": true
     },
     "loadavg": [
-      3.13,
-      3.75,
-      3.95
+      4.27,
+      5.91,
+      4.17
     ]
   },
   "skippedWriteTools": [
@@ -45,11 +45,11 @@
       "mutability": "read",
       "budgetMs": 2000,
       "runs": [
-        560,
-        564
+        663,
+        650
       ],
-      "p50Ms": 562,
-      "p95Ms": 564,
+      "p50Ms": 657,
+      "p95Ms": 663,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1541
@@ -59,11 +59,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        283,
-        272
+        263,
+        262
       ],
-      "p50Ms": 278,
-      "p95Ms": 283,
+      "p50Ms": 263,
+      "p95Ms": 263,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 277
@@ -73,25 +73,25 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        1710,
-        1696
+        1650,
+        1750
       ],
-      "p50Ms": 1703,
-      "p95Ms": 1710,
+      "p50Ms": 1700,
+      "p95Ms": 1750,
       "withinBudget": true,
       "isError": false,
-      "outputBytes": 2408
+      "outputBytes": 2613
     },
     {
       "tool": "bb_analyze",
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        2881,
-        2857
+        3009,
+        3033
       ],
-      "p50Ms": 2869,
-      "p95Ms": 2881,
+      "p50Ms": 3021,
+      "p95Ms": 3033,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 35118
@@ -101,11 +101,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3594,
-        3503
+        3497,
+        4031
       ],
-      "p50Ms": 3549,
-      "p95Ms": 3594,
+      "p50Ms": 3764,
+      "p95Ms": 4031,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1190
@@ -115,11 +115,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        353,
-        465
+        443,
+        410
       ],
-      "p50Ms": 409,
-      "p95Ms": 465,
+      "p50Ms": 427,
+      "p95Ms": 443,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2897
@@ -129,11 +129,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        228,
-        226
+        339,
+        422
       ],
-      "p50Ms": 227,
-      "p95Ms": 228,
+      "p50Ms": 381,
+      "p95Ms": 422,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1491
@@ -143,11 +143,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        1012,
-        987
+        991,
+        1002
       ],
-      "p50Ms": 1000,
-      "p95Ms": 1012,
+      "p50Ms": 997,
+      "p95Ms": 1002,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2856
@@ -157,11 +157,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        297,
-        288
+        253,
+        267
       ],
-      "p50Ms": 293,
-      "p95Ms": 297,
+      "p50Ms": 260,
+      "p95Ms": 267,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 6827
@@ -171,11 +171,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3748,
-        3709
+        3006,
+        3396
       ],
-      "p50Ms": 3729,
-      "p95Ms": 3748,
+      "p50Ms": 3201,
+      "p95Ms": 3396,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 25928
@@ -185,11 +185,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        2451,
-        2394
+        2201,
+        2274
       ],
-      "p50Ms": 2423,
-      "p95Ms": 2451,
+      "p50Ms": 2238,
+      "p95Ms": 2274,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 164662
@@ -199,11 +199,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        4,
-        3
+        3,
+        6
       ],
-      "p50Ms": 4,
-      "p95Ms": 4,
+      "p50Ms": 5,
+      "p95Ms": 6,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1274

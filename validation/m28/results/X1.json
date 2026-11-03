@@ -2,15 +2,13 @@
   "issue": "629",
   "code": "X1",
   "milestone": "M28",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 31,
-  "passed": 30,
-  "failed": 1,
-  "failures": [
-    "X1: A1 evidence byte-identical (modulo generatedAt/currentCommit)"
-  ],
+  "passed": 31,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 4,
-  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
+  "currentCommit": "2e8ac821c3a109d7fd893a5114f5f85fd874ea42",
   "verifierCommand": "npx tsx script/m28/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -20,10 +18,10 @@
     "A2": [],
     "V1": []
   },
-  "generatedAt": "2026-11-03T16:35:39.970Z",
+  "generatedAt": "2026-11-03T17:55:08.190Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-03T16:35:39.971Z",
-    "contentSha256": "ea56986ce848f152447265183a9a081a9c3717459e36f0eb57ec4cbd12f5adab"
+    "sealedAt": "2026-11-03T17:55:08.191Z",
+    "contentSha256": "b8ea447ba35878555ed6238e17d24aa052172938cab1d12226e3f4032cc491ca"
   }
 }
