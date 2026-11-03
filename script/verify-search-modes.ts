@@ -168,6 +168,12 @@ try {
       /\[match-set\] searchMode=symbols totalMatches=\d+ returned=\d+ truncated=(true|false) staleCount=\d+/.test(declaredText),
       declaredText.slice(-160),
     )
+    // The door (src/mcp/tool-validation.ts) is the authoritative mode-option
+    // matrix; pin the two entries this tool depends on so a future edit cannot
+    // silently re-reject symbol-mode paging or re-admit the unlimited limit.
+    let symbolPagingAccepted = true
+    try { validateToolArguments(searchDescriptor, { mode: "symbol", symbolName: "duplicateName", limit: 1, offset: 1 }) } catch { symbolPagingAccepted = false }
+    harness.check("door accepts limit/offset on symbol mode (paging contract)", symbolPagingAccepted, "door rejected symbol-mode paging")
     let ceilingThrew = false
     try { validateToolArguments(searchDescriptor, { query: "handleRequest", limit: 5000 }) } catch (e: any) { ceilingThrew = String(e).includes("between 0 and 2000") }
     harness.negative("public boundary refuses limit above 2000 with the declared ceiling", ceilingThrew, "no refusal")

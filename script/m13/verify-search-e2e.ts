@@ -50,6 +50,9 @@ const srcDir = path.join(root, "src")
 mkdirSync(srcDir, { recursive: true })
 writeFileSync(path.join(srcDir, "app.ts"), "export function handleRequest(): string { return \"ok\" }\nexport function duplicateName(): number { return 1 }\n")
 writeFileSync(path.join(srcDir, "solo.ts"), "export const soloValue = 9\n")
+// A second declaration of duplicateName so symbol-mode paging is exercised over
+// a real match set of size 2 through the MCP door.
+writeFileSync(path.join(srcDir, "dup.ts"), "export function duplicateName(): number { return 3 }\n")
 await indexProjectParallel(projectId, root, {})
 // A real file that exists on disk but was NOT indexed — must surface the
 // "file is not indexed" guard (a nonexistent file fails earlier as "file not found").
@@ -170,6 +173,17 @@ function cli(args: Record<string, unknown>): { text: string; ok: boolean } {
     harness.negative("MCP refuses exact combined with regex", e6.isError && e6.text.includes("cannot be combined"), e6.text.slice(0, 140))
     const e7 = await call({ query: "handleRequest", limit: 5000 })
     harness.negative("MCP refuses limit above 2000", e7.isError && e7.text.includes("between 0 and 2000"), e7.text.slice(0, 140))
+    const page1 = await call({ mode: "symbol", symbolName: "duplicateName", limit: 1, offset: 0 })
+    const page2 = await call({ mode: "symbol", symbolName: "duplicateName", limit: 1, offset: 1 })
+    let p1: any = null
+    let p2: any = null
+    try { p1 = JSON.parse(page1.text) } catch {}
+    try { p2 = JSON.parse(page2.text) } catch {}
+    harness.check(
+      "MCP symbol mode pages over a complete match set (declared total, distinct pages)",
+      !!p1 && !!p2 && p1.totalMatches === 2 && p1.matches.length === 1 && p1.truncated === true && p2.matches.length === 1 && p1.matches[0].fileId !== p2.matches[0].fileId,
+      `p1=${page1.text.slice(0, 90)} p2=${page2.text.slice(0, 90)}`,
+    )
     const declared = await call({ query: "handleRequest", limit: 1 })
     harness.check("MCP symbols answer declares its match set", /\[match-set\] searchMode=symbols totalMatches=\d+ returned=\d+ truncated=(true|false) staleCount=\d+/.test(declared.text), declared.text.slice(0, 160))
     const contentDeclared = await call({ mode: "content", query: "handleRequest" })
