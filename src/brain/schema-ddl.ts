@@ -123,6 +123,12 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
             ELSE 'unresolved'
           END
         ) VIRTUAL,
+        -- The EVIDENCE CLASS of the edge, extracted once (same generated-column
+        -- rule as target_basis): pattern rules read this per row for every
+        -- relationship in the project, and reading the wide metadata TEXT at
+        -- that rate made a 3.6 GB default scan 100+ s. A covering index over the
+        -- narrow computed column lets the scan run inside the index.
+        evidence_class TEXT GENERATED ALWAYS AS (json_extract(metadata, '$.evidenceClass')) VIRTUAL,
         relationship_type TEXT NOT NULL,
         confidence REAL NOT NULL,
         context TEXT,
@@ -337,6 +343,11 @@ CREATE INDEX IF NOT EXISTS brain_rel_cross_lang_idx ON brain_relationship(is_cro
 -- form answers both probes from the index (measured 477ms -> <1ms at scale).
 CREATE INDEX IF NOT EXISTS brain_rel_target_cross_idx ON brain_relationship(target_symbol_id, is_cross_language);
 CREATE INDEX IF NOT EXISTS brain_rel_source_cross_idx ON brain_relationship(source_symbol_id, is_cross_language);
+-- Pattern engines scan every relationship of a project, group by target, and
+-- compute a per-row evidence gate. This index carries all four columns those
+-- queries read (target/source ids, confidence, evidence class), so the scan never
+-- touches the 3.6 GB table heap or the wide metadata column.
+CREATE INDEX IF NOT EXISTS brain_rel_pattern_cover_idx ON brain_relationship(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class);
 
 CREATE INDEX IF NOT EXISTS brain_import_name_idx ON brain_import(imported_name);
 CREATE INDEX IF NOT EXISTS brain_import_external_idx ON brain_import(is_external);
@@ -770,6 +781,35 @@ export function ensureRelationshipTargetBasisColumn(raw: any): void {
   } catch {}
 }
 
+/**
+ * Additive migration for `brain_relationship.evidence_class` (VIRTUAL GENERATED)
+ * and the pattern covering index, for databases that predate them.
+ *
+ * The generated column is why this is not a backfill: the value is computed from
+ * `metadata` on read, so legacy rows are correct without rewriting 820k rows, and
+ * the index over it is built once per database. Both steps are idempotent and
+ * tolerate a read-only or busy handle (the caller may be a read path).
+ */
+export function ensureRelationshipEvidenceClassColumn(raw: any): void {
+  try {
+    const hidden = (raw.prepare("PRAGMA table_xinfo(brain_relationship)").all() as Array<{ name: string; hidden?: number }>)
+    if (hidden.length === 0) return // table absent (fresh DB handled by the DDL)
+    if (!hidden.some((c) => c.name === "evidence_class")) {
+      try {
+        raw.prepare("SELECT evidence_class FROM brain_relationship LIMIT 1").get()
+      } catch {
+        raw.exec("ALTER TABLE brain_relationship ADD COLUMN evidence_class TEXT GENERATED ALWAYS AS (json_extract(metadata, '$.evidenceClass')) VIRTUAL")
+      }
+    }
+    const indexes = (raw.prepare("PRAGMA index_list(brain_relationship)").all() as Array<{ name: string }>).map((i) => i.name)
+    if (!indexes.includes("brain_rel_pattern_cover_idx")) {
+      raw.exec("CREATE INDEX IF NOT EXISTS brain_rel_pattern_cover_idx ON brain_relationship(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class)")
+    }
+  } catch {
+    // A read-only or busy handle cannot migrate: the next writable open does.
+  }
+}
+
 export function ensureSymbolSourceTextColumn(raw: any): void {
   try {
     const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
@@ -976,6 +1016,8 @@ export function ensureSchema(raw: any): void {
   // INBOUND BASIS: additive relationship column so a reverse walk can state WHY an edge may claim a
   // declaration (identity vs name match). Idempotent; the DDL above carries it for fresh DBs.
   ensureRelationshipTargetBasisColumn(raw)
+  // Pattern scan columns + covering index for databases that predate them.
+  ensureRelationshipEvidenceClassColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}

@@ -303,18 +303,35 @@ try {
     // The fix reads the engine's own SQL. `prepare` is wrapped so every statement
     // the engine issues is recorded, and the one that selects god classes is the
     // one inspected. No comment and no unrelated SQL can satisfy it.
+    // The engine opens its OWN read-only handle now (the read path is byte-read-only),
+    // so patching the gate's read-write handle captures nothing. Instrument the
+    // accessor the engine actually uses, plus the already-cached read-only handle if
+    // one exists, so the captured statement is the engine's and not one the gate wrote.
     const captured: string[] = []
-    const realPrepare = raw.prepare.bind(raw)
-    ;(raw as any).prepare = (sql: string) => {
-      captured.push(sql)
-      return realPrepare(sql)
+    const instrument = (handle: any): () => void => {
+      const original = handle.prepare.bind(handle)
+      handle.prepare = (sql: string) => {
+        captured.push(sql)
+        return original(sql)
+      }
+      return () => { handle.prepare = original }
+    }
+    const restores: Array<() => void> = []
+    const ro = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
+    restores.push(instrument(ro))
+    const originalGet = BrainDatabase.getRawInstance
+    ;(BrainDatabase as any).getRawInstance = async (pid: any, opts?: any) => {
+      const handle = await originalGet.call(BrainDatabase, pid, opts)
+      restores.push(instrument(handle))
+      return handle
     }
     try {
       await detectIndexRules(projectId as any, {
         confidenceThreshold: 0, maxResults: 1000, includeFramework: false, includeAntiPatterns: true,
       })
     } finally {
-      ;(raw as any).prepare = realPrepare
+      ;(BrainDatabase as any).getRawInstance = originalGet
+      for (const restore of restores) restore()
     }
     const godSql = captured.find((s) => /owner_symbol_id/.test(s) && /symbol_type IN/.test(s))
     check("R8 the engine's own god-class query was found to inspect", !!godSql,

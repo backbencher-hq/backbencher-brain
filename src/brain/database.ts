@@ -12,7 +12,7 @@ import * as BrainSchema from "./brain.sql"
 // of the other -- dropping either would leave a column/index unensured at open.
 //   local:  ensureSymbolSupertypesColumn   (symbol.supertypes)
 //   remote: ensureSymbolSourceTextColumn, ensureQueryShapeIndexes
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn, ensureRelationshipEvidenceClassColumn } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -128,6 +128,9 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // fresh-DB creation is a column nobody has. VIRTUAL GENERATED, so the ALTER computes legacy rows on
       // read with no backfill writes and the resolver's own updates keep it correct.
       ensureRelationshipTargetBasisColumn(raw)
+      // Pattern scans: the narrow computed evidence column and the covering index
+      // over the columns every pattern query reads. Additive + idempotent.
+      ensureRelationshipEvidenceClassColumn(raw)
       // Indexes a READ-heavy tool needs, on an already-created database. Wiring this
       // only into the DDL is how an index nobody has gets written: the database every
       // editor opens is a pre-existing one. MEASURED on cargo without it,
