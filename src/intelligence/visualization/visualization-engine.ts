@@ -153,8 +153,8 @@ export interface VisualizationResult {
   /** What the answer actually READ, as opposed to what it returned.
    *
    *  The edge set is COMPLETE for the selected nodes rather than a slice of the
-   *  relationship table, so there is nothing to confess there. MEASURED: the old
-   *  query read `LIMIT maxLinks*3` rows in PRIMARY KEY order and found 0 of the
+   *  relationship table, so there is nothing to disclose beyond the node selection.
+   *  The older query read `LIMIT maxLinks*3` rows in PRIMARY KEY order and found 0 of the
    *  1,142 relationships that actually connected 400 selected symbols — the slice
    *  was uncorrelated with the node set, so the answer was both slow and wrong.
    *  The NODE set is still a selection, and that is what this block declares. */
@@ -277,8 +277,8 @@ export interface VisualizationResult {
   /** Where the picture's numbers came from — and the two DIFFERENT reasons an edge can be
    *  missing from it, counted apart because they describe different events.
    *
-   *  MEASURED: this block used to carry one counter named `omittedDanglingLinks`, and it read
-   *  2 for `maxNodes: 2` on a graph whose SQL had returned every row. The number was always
+   *  The counter named `omittedDanglingLinks` read 2 for `maxNodes: 2` on a graph whose SQL
+   *  had returned every row, so the number was always
    *  about the NODE CUT (a link whose endpoint the node budget removed); `generateGraphData`
    *  cannot emit a link whose endpoints are missing, so "dangling" was never what it
    *  measured, and the text format printed "then cut by maxLinks" from it while `maxLinks`
@@ -567,7 +567,7 @@ export async function visualizeProject(projectId: string, request: Visualization
   // between the selected nodes, which is a complete fact. So the full-table COUNT
   // that existed only to say "we read M of N" is not merely slow (453 ms for a
   // SCAN of 164,767 rows) — it is unnecessary, and deleting it removes the known
-  // primary-key weakness the docs had to confess.
+  // primary-key weakness in the older query.
   //
   // `id` and the stored classification are selected because the projection carries
   // them: an edge with no row id cannot be traced to the stored row that justifies
@@ -942,10 +942,10 @@ export function formatVisualization(result: VisualizationResult): string {
   }
 
   // The DEFAULT format is what every caller gets unless they think to ask for JSON,
-  // so it must carry the same facts the JSON does. It used to be four lines and 153
-  // characters that never mentioned the true symbol total, the declared relationship
-  // slice, the node ordering, or the noise exclusion — so the one reply that could
-  // not be audited was the default one. Brevity was never the defect; silence was.
+  // so it must carry the same facts the JSON does. A four-line answer that never
+  // mentioned the true symbol total, the declared relationship set, the node ordering
+  // or the noise exclusion left the one reply every caller receives as the one reply
+  // that could not be audited. Brevity was never the defect; silence was.
   const lines: string[] = []
   lines.push(`graph: ${result.nodes.length} nodes, ${result.links.length} links`)
   lines.push(`scope: ${result.scope}${result.target ? ` (${result.target})` : ""}`)
