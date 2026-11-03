@@ -18,7 +18,7 @@
 // Run: npx tsx script/verify-security.ts   (bun run … also works)
 // Exit: non-zero if any assertion failed.
 
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs"
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -231,6 +231,27 @@ try {
       JSON.stringify(again.summary) === JSON.stringify(aliased.summary) && JSON.stringify(again.findings) === JSON.stringify(aliased.findings),
       "the read has no ORDER BY and the finding sort has no total order",
     )
+
+    // ── 8. symbol resolution is keyed, not a project scan ──────────────────
+    //
+    // The endpoint-resolution query is on the hot path: it runs once per 500-id
+    // chunk for every taint row. `WHERE s.project_id = ? AND s.id IN (...)` makes
+    // the planner choose `brain_symbol(project_id)` — a covering index over the
+    // whole project — so a 9,000-id lookup scans 310,423 symbols per chunk
+    // (measured 331 ms vs 3.5 ms for a 200-id chunk on the reference index, and
+    // 5.6 s of a 6.9 s default scan). The lookup must be keyed by the primary
+    // key, with project scope enforced on the returned row instead of in the
+    // indexed predicate. This is a source assertion because the defect is a
+    // query PLAN, and a fixture small enough for a gate cannot reproduce the
+    // planner choice that only appears on a 300k-symbol index.
+    const taintSrc = readFileSync(path.resolve(import.meta.dirname ?? ".", "..", "src", "intelligence", "security", "taint.ts"), "utf8")
+    // The explanation of the defect quotes the banned predicate in a comment, so
+    // the assertions read code only.
+    const taintCode = taintSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "")
+    h.ck("symbol resolution queries by primary key", /WHERE s\.id IN \(/.test(taintCode), "the keyed lookup is missing its WHERE s.id IN clause")
+    h.nk("symbol resolution does not filter project_id inside the indexed predicate", !/s\.project_id\s*=\s*\?\s*AND\s*s\.id IN/.test(taintCode), "project_id in the indexed predicate makes the planner scan the whole project per chunk")
+    h.ck("symbol resolution carries project_id as a selected column", /SELECT s\.id,\s*s\.project_id,/.test(taintCode), "the project-scope guard must be preserved in the SELECT")
+    h.ck("symbol resolution enforces project scope on the returned row", /s\.project_id !== projectId/.test(taintCode), "cross-project ids would resolve without the row-level guard")
   }
 } catch (error) {
   h.ck("security session completed without throwing", false, error instanceof Error ? (error.stack ?? error.message).slice(0, 400) : String(error))

@@ -182,11 +182,22 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
   const CHUNK = 500
   for (let i = 0; i < ids.length; i += CHUNK) {
     const chunk = ids.slice(i, i + CHUNK)
+    // Match on the PRIMARY KEY only, and carry `project_id` as a selected column
+    // so project scope is still enforced below.
+    //
+    // `WHERE s.project_id = ? AND s.id IN (...)` is not equivalent in cost: the
+    // planner chooses `brain_symbol(project_id)` — a covering index over the
+    // whole project — and scans all 310,423 symbols once per 500-id chunk. On the
+    // reference index that is 18 scans and 5.6 s for a lookup whose result is at
+    // most 9,000 rows; keyed lookup is ~3.5 ms per chunk. Measured plans:
+    //   project_id filter -> SEARCH s USING INDEX brain_symbol_type_cover_idx (project_id=?)
+    //   key only          -> SEARCH s USING sqlite_autoindex_brain_symbol_1 (id=?)
     const stmt =
-      "SELECT s.id, s.name, s.line_start AS line, f.relative_path AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.id IN (" +
+      "SELECT s.id, s.project_id, s.name, s.line_start AS line, f.relative_path AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.id IN (" +
       chunk.map(() => "?").join(",") +
       ")"
-    for (const s of raw.prepare(stmt).all(projectId, ...chunk) as Array<{ id: string; name: string; line: number; file: string }>) {
+    for (const s of raw.prepare(stmt).all(...chunk) as Array<{ id: string; project_id: string; name: string; line: number; file: string }>) {
+      if (s.project_id !== projectId) continue
       symById.set(s.id, { name: s.name, file: s.file, line: s.line })
     }
   }
