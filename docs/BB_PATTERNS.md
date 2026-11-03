@@ -198,22 +198,18 @@ The p95 wall figures on T1 are inflated by the shared host (load average 18-25 d
 the run); the same calls take 404-607 ms of process CPU. A quiet-load rerun is the
 remaining verification step.
 
-T2 (6,452 files / 310,423 symbols / 820,040 relationships) is **still over budget and is
-reported as such** — but the schema change above it landed and the engine now reads the
-narrow computed column, so the same shape moved from 85.2 s wall / **33.7 s process CPU**
-to **p50 9,343 ms / p95 10,321 ms wall at 8.1-10.6 s process CPU** (3.6x better, 1.9x
-over the 5,000 ms budget), measured warm on a byte-identical copy of the index; reads left
-db+WAL unchanged. Migration and plan evidence: `raw/schema-migration-t2.json`; the
-pre-schema measurement and the blocked live byte-read-only open:
-`raw/t2-live-open-failure.json`. The remaining 13.2 s profile is: DISTINCT
-`target_external` over clean rows 4.58 s (`target_external` is not in the pattern covering
-index, so each row still touches the relationship heap), the 52,903 reported-type symbol
-rows 3.20 s, used/incoming aggregate 1.30 s, referenced-file join 1.03 s, file coverage
-aggregate 0.96 s, long-parameter rule 0.60 s. Closing the last 1.9x needs index coverage
-extensions — `target_external` added to `brain_rel_pattern_cover_idx`, and a narrow
-`(project_id, symbol_type)` symbol index over the columns the scan reads — which is the
-index/schema surface, not this tool's; that is the measured floor and the exact next step,
-not a green claim.
+T2 (6,452 files / 310,423 symbols / 820,040 relationships): after the schema lane extended
+`brain_rel_pattern_cover_idx` with `target_external` and added
+`brain_symbol_type_cover_idx`, the campaign baseline row on the shared reference index
+(`validation/release/T2-BASELINE.json`, in-process handler calls, warm) is **p50 3,504 /
+p95 3,506 ms — inside the 5,000 ms budget**. This tool's own warm confirmation on the same
+index measured **p50 4,535 ms / p95 5,385 ms** at load 4.0-8.0 (p50 inside the budget; p95
+marginal on the shared box), and every call left db+WAL unchanged. Building the two
+indexes costs 28.8 s once per database, at migration time rather than per call. On the
+byte-identical copy, `ANALYZE` made the covering-index plans worse (externals 0.39 s →
+2.90 s) and its statistics were removed; copy measurements are therefore plan evidence,
+and the budget verdict rests on the shared-index rows. T1 remains p50 632/773 ms at
+404-607 ms process CPU.
 
 ## Options — tool surface versus engine API
 

@@ -90,7 +90,7 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
       "SELECT s.name, s.complexity, f.relative_path AS file, COALESCE(s.line_start, 0) AS line " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.complexity IS NOT NULL AND s.complexity >= ?" + nonCodeClause +
-        " ORDER BY s.complexity DESC",
+        " ORDER BY s.complexity DESC, s.id",
     ).all(projectId, COMPLEXITY_THRESHOLD, ...nonCode.params) as Array<{ name: string; complexity: number; file: string; line: number }>
     let shown = 0
     for (const row of complex) {
@@ -211,7 +211,7 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.symbol_type IN ('class','interface','struct','trait','enum') " +
         "AND (SELECT COUNT(*) FROM brain_symbol m WHERE m.owner_symbol_id = s.id) > ?" + nonCodeClause +
-        " ORDER BY members DESC",
+        " ORDER BY members DESC, s.id",
     ).all(projectId, GOD_CLASS_MEMBER_THRESHOLD, ...nonCode.params) as Array<{ name: string; file: string; line: number; members: number }>
     let shownGod = 0
     for (const row of godClasses) {
@@ -243,7 +243,7 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     const frameworks = raw.prepare(
       "SELECT framework_type, COUNT(*) c FROM brain_file " +
         "WHERE project_id = ? AND framework_type IS NOT NULL AND framework_type NOT IN ('', 'unknown') " +
-        "GROUP BY framework_type ORDER BY c DESC",
+        "GROUP BY framework_type ORDER BY c DESC, framework_type",
     ).all(projectId) as Array<{ framework_type: string; c: number }>
     let shownFw = 0
     for (const fw of frameworks) {

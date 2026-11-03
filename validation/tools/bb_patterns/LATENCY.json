@@ -136,9 +136,84 @@
  "generatedAt": "2026-11-03T16:20:00Z",
  "equivalenceProof": {
   "tier": "T1",
-  "evidence": "raw/fingerprint-schemafix-t1.json",
   "baseline": "raw/fingerprint-baseline-t1.json",
-  "result": "EQUIVALENT \u2014 orphans, orphansSummary, rules, scopeAllPatterns and whole are byte-identical after the schema column naming, scan consolidation, dead-map removal and json_array_length rewrite",
-  "crossCheck": "raw/dump-with-index-t1.json vs raw/dump-no-index-t1.json (same bytes, covering index dropped): findings identical; the column-vs-json probe on the same bytes also produced identical findings and summary"
+  "afterRewrite": "raw/fingerprint-extended-t1.json",
+  "indexVsNoIndex": "raw/fingerprint-extended-noindex-t1.json",
+  "result": "orphans and orphansSummary are byte-identical to the pre-Phase-B baseline; rules and scopeAllPatterns have identical finding SETS and now plan-independent order: adding deterministic tie-breaks to the rule SQL made the index-present and index-absent runs produce byte-identical rules and scopeAllPatterns findings (raw/rules-with-newsymidx-t1.json == raw/rules-without-newsymidx-t1.json), which was not true before the tie-breaks.",
+  "extraCrossChecks": [
+   "raw/dump-with-index-t1.json == raw/dump-no-index-t1.json (findings identical when the covering index is dropped)",
+   "the column-vs-json_extract probe remains identical (raw/orphans-compare-t1.json)"
+  ]
+ },
+ "leadBaseline": {
+  "source": "validation/release/T2-BASELINE.json",
+  "generatedAt": "2026-11-03T17:10:27.346Z",
+  "protocol": "in-process handler calls against the shared 3.6 GB reference index (project 1d3d57103be91b8f9716d70199fe28a3f39245d9), 1 warm-up + 3 measured runs, BB_NO_AUTO_REFRESH=1, read-only proof (db bytes/mtime and edge hash unchanged, no tool writers)",
+  "dbBytes": 3885883392,
+  "budgetMs": 5000,
+  "bbPatterns": {
+   "runsMs": [
+    3506,
+    3502
+   ],
+   "p50Ms": 3504,
+   "p95Ms": 3506,
+   "withinBudget": true
+  },
+  "note": "authoritative campaign row: bb_patterns default is inside the 5,000 ms budget on the shared index"
+ },
+ "confirmation": {
+  "index": "same shared reference index, `.bb-data/projects/1d3d57.../brain.db` (3,885,883,392 bytes, both extended indexes present)",
+  "method": "the tool's own handler, in-process warm, one excluded warm-up + five measured runs per sequence, wall clock + process CPU, db+WAL stat'ed before/after each call",
+  "sequences": [
+   {
+    "evidence": "raw/t2-live-latency-final.json",
+    "runsMs": [
+     5915.32,
+     4968.18,
+     4583.32,
+     4242.39,
+     4178.69
+    ],
+    "p50Ms": 4583.32,
+    "p95Ms": 5915.32,
+    "cpuMs": [
+     6096,
+     5090,
+     4688,
+     4445,
+     4335
+    ],
+    "readMovedIndex": false,
+    "note": "first sequence includes the cold first measured run after the process started"
+   },
+   {
+    "evidence": "raw/t2-live-latency-final2.json",
+    "runsMs": [
+     4534.87,
+     4158.86,
+     3901.44,
+     5066.87,
+     5385
+    ],
+    "p50Ms": 4534.87,
+    "p95Ms": 5385,
+    "cpuMs": [
+     4716,
+     4261,
+     3986,
+     5300,
+     5552
+    ],
+    "readMovedIndex": false,
+    "note": "warm sequence: p50 4,535 ms inside the budget; p95 5,385 ms is marginal on the shared box (load 4.0-8.0 during the runs)"
+   }
+  ],
+  "verdict": "p50 inside the 5,000 ms budget and consistent with the Lead baseline (3,504 ms measured under a quieter window); the shared-host p95 stayed marginal (5.4-5.9 s) at load 4-8. db+WAL unchanged by every call.",
+  "copyPreparationEvidence": [
+   "raw/schema-migration-t2-extended.json \u2014 migration built the extended 7-column covering index and brain_symbol_type_cover_idx once (28,847.83 ms on the byte-identical copy)",
+   "raw/prepare-t2b.json \u2014 WAL checkpoint(TRUNCATE) 64.17 ms; ANALYZE 51,179.83 ms",
+   "raw/t2-profile-analyzed.json / raw/t2-profile-final.json \u2014 ANALYZE made the covering-index plans worse on this copy (externals 0.39 s -> 2.90 s, used/incoming 0.65 s -> 2.36 s, referenced files 0.97 s -> 2.16 s); the statistics rows were therefore removed (raw/prepare-t2b-nostats.json) and the copy runs are cited only as plan evidence, never as the budget measurement"
+  ]
  }
 }
