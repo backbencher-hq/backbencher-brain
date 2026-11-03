@@ -260,32 +260,43 @@ every published name whether it is a declaration's name *and* not a macro's.
 
 ## Relationship ontology
 
-The ten verdicts, each with a number; the detailed tables follow this canonical heading.
+**Fourteen canonical values, eleven of them emitted, three ruled with a falsifier each.** Every row below is a MEASUREMENT on the pinned C++ corpora through the PRODUCTION entry (`parseFile`, never `analyze()`), and the emission column is additionally checked against the analyzer's own source: the gate strips comments and string literals and compares the `ASTEngine.RelationshipType.*` references, plus the import-SITE channel (`ImportInfo[]` returned as `imports`), against the `Emitted?` cells of this table.
 
-The engine's `RelationshipType` carries **10 distinct values**. This lane emits
-**9** of them as relationships and rules **1**. Every verdict below is a MEASUREMENT
-on the two pinned C++ corpora through the PRODUCTION entry (`parseFile`, never
-`analyze()`): **162 candidate files, 128 admitted as C++ by
-`language-detection.ts`, 34 excluded as C, 6,060 symbols and 10,339 relationships**.
-The excluded 34 are reported rather than dropped silently — `.h` is routed by
-CONTENT (`EXTENSION_LANGUAGE.h === "c"`), and counting the C lane's rows in the C++
-lane's census would be a fabrication of exactly the kind the census exists to
-prevent. `script/cpp-review/relationship-ontology.ts` asserts that every value the
-engine carries appears below and that the emitted/not claim matches the analyzer's
-push sites; `script/cpp-review/ontology-census.ts` is what produced the counts.
+| Relationship type | Emitted? | How resolved | Confidence model |
+|---|---|---|---|
+| calls | **EMITTED** | `call_expression`'s function node reduced to its callee LEAF (the last `::` segment), so `ns::f()` and `f()` name the SAME target; an unresolved member rides as the bare name and is bound by the arbiter's name strategies, not by the analyzer | `confidence: 1.0`; evidence class `structural` at 1.0, `usage_contextual` at >= 0.85, `inferred` below (`real-cpp-analyzer.ts:6209`) |
+| uses | **EMITTED** | two sites: a bare value READ (`identifier_usage`, 1.0) and a FIELD access (`field.text`, 0.9). Source is the enclosing owner, target the identifier text | `1.0` read / `0.9` field; class `usage_contextual` (`:6213`) |
+| contains | **EMITTED** | owner -> member, emitted POST-LOOP from the completed symbol table, so a member declared before its owner is still contained | `1.0`; class `structural` (`:6198`) |
+| imports | **EMITTED** | `preproc_include` whose written form is ANGLE-BRACKET `<x.h>`: target = the specifier AS WRITTEN (another module's header scope), `metadata.relationshipType="include_dependency"`, `isSystem` from the form. ALSO published on the import-SITE channel as `ImportInfo[]` | `1.0`; class `import_based` (`:6205`) |
+| part_of | **EMITTED** | THE SAME `preproc_include` CONSTRUCT AS `imports`, DISTINGUISHED BY THE WRITTEN FORM: a QUOTED `"x.h"` is the unit's own FRAGMENT (it shares the including unit's single scope, imports nothing, cannot be resolved as a separate module), so it is `part_of`, not `imports`. Source = the including unit (file scope); target = the part's MODULE SYMBOL (its file stem) — NOT the specifier and NOT the path; `metadata.partRole="part"`, `relationshipType="part_of_directive"`, `isImport=false`; the written form is kept as `specifier` and the joined path as `partPath`, both as EVIDENCE, neither as the target | `1.0`; class `structural`. The target is a SYMBOL because the arbiter resolves target strings against symbol NAMES and has no space for a path: MEASURED, a path target resolved 0 of 4,612 `part_of` rows and the symbol target resolved 383 of the same 4,612 |
+| references | **EMITTED** | `using`-dependencies only (the includes moved to `imports` in the ontology round); target = the used name | `0.9`; class `import_based` when `isImport`, else `reference_qualified` (`:6206`) |
+| exports | **EMITTED** | three sites, all `module_export`: an export-marker macro in the function SPECIFIER (`:4307`), the same in a class HEAD (`:3602`), and a file-scope marker (`:5481`) | `1.0`; class `structural` (`:6198`) |
+| extends | **EMITTED** | the `base_class_clause`'s children, which are FLAT (`type_identifier`, `qualified_identifier`, `template_type`), plus the ERROR-node clause of a MACRO-DECORATED head (`:3584`) | `1.0`; class `structural` |
+| implements | **EMITTED** | the derived/base pair when the base declares a PURE VIRTUAL that matches (`= 0`, written in two places by this grammar) — C++ spells an interface as a pure-virtual class | `1.0`; class `structural` (`:6212`) |
+| overrides | **EMITTED** | base-class virtuals, TRANSITIVE up the chain and SIGNATURE-AWARE; the row records the base the match was found at | `hit.confidence`: `1.0` with the `override` keyword, `0.95` when the companion declaration declares the method, `0.9` otherwise |
+| instantiates | **EMITTED** | `new_expression` -> the constructed type node | `0.6` when the type node `hasError`, else `1.0`; class `structural` |
+| decorates | **NO — ruled `ontological`** | not emitted, and there is nothing to emit: a C++ attribute is PASSIVE METADATA that MARKS a declaration, while the value's contract is an APPLIED CALLABLE. MEASURED over 23,237 files: 0 of 3,180 attribute-argument calls name a callable through a path, by a STRUCTURAL discriminator that uses no name list | `n/a` — a RULING with a falsifier, not a confidence. Falsifier: an attribute whose argument invokes a callable that is not the attribute's own marker |
+| renders | **NO — ruled `grammar-remedy-ruled`** | not emitted: 433,450 template sites and 0 calls naming a component as a type argument. No grammar patch can invent a construct the language does not express | `n/a`. Falsifier: a call whose callee names a component as a type argument |
+| mixes_in | **NO — ruled `grammar-remedy-ruled`** | not emitted: 10,007 base clauses of which 8,489 compose SEVERAL bases — that is multiple INHERITANCE, carried as one `extends` per base, not the `class C with M` MIXIN COMPOSITION this value names | `n/a`. Falsifier: a base clause composing a mixin INTO the supertype chain |
+
+The three **NO** rows are not gaps waiting for an implementation: each carries the rung that was unavailable and why, and each carries a falsifier written as a construct that would retire it. `part_of` is the row that MOVED — it was `grammar-remedy-pending` at commit f7c23081c and is now emitted, because the construct it needs (`preproc_include`) was a named node type of the served build all along; the rung was R3 and no grammar change was needed.
+
+### The measured per-type counts (the emission verdicts above, counted)
+
+The table below is the count table the earlier rounds produced; it counts the ten values the engine carried at the time, so `part_of` (added to the vocabulary later) has no column here and its measurement lives in `validation/m14/measurements/cpp-four-types-census-11spelling.json`.
 
 | type | verdict | count | files | distinct (source,target) pairs | where |
 |---|---|---|---|---|---|
-| calls | **EMITTED** | 4,651 | 107 | 2,177 | `call_expression` → callee leaf |
-| contains | **EMITTED** | 3,755 | 98 | 3,535 | owner→member, post-loop |
+| calls | **EMITTED** | 4,651 | 107 | 2,177 | `call_expression` -> callee leaf |
+| contains | **EMITTED** | 3,755 | 98 | 3,535 | owner->member, post-loop |
 | imports | **EMITTED** | 913 | 123 | 169 | `preproc_include` (was `references` until the ontology round) |
 | uses | **EMITTED** | 846 | 81 | 752 | bare value reads + field access |
 | exports | **EMITTED** | 75 | 18 | 61 | export-marker macro in the specifier or a class head |
 | extends | **EMITTED** | 42 | 29 | 26 | `base_class_clause`, plus the ERROR-node clause of a macro-decorated head |
 | references | **EMITTED** | 27 | 7 | 21 | `using`-dependencies only (the includes moved to `imports`) |
-| instantiates | **EMITTED** | 21 | 14 | 20 | `new_expression` → constructed type |
+| instantiates | **EMITTED** | 21 | 14 | 20 | `new_expression` -> constructed type |
 | overrides | **EMITTED** | 9 | 2 | 9 | base-class virtuals, transitive, signature-aware |
-| implements | **RULED** | 0 | 0 | 0 | measured on four legs below |
+| implements | **EMITTED** | 0 | 0 | 0 | measured on four legs below |
 
 Totals after the CPP3 round: **6,060 symbols and 10,339 relationships** over the 128
 admitted files (from 6,197 and 10,636 at the ontology round's HEAD). The delta is

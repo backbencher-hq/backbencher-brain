@@ -3,9 +3,14 @@
 ## Language
 
 - Analyzer file: `src/ast/real-python-analyzer.ts`
-- Parser: `tree-sitter-python` **0.25.0** (npm, latest — upgraded from the stale
-  pre-0.25.0 pin in M12.27; WASM at `wasm/tree-sitter-python.wasm`, loaded by
-  `engine.ts` via `resolveWasm`)
+- Parser: **a VENDORED WASM build, not an installed npm package.** `package.json` carries no
+  `tree-sitter-python` dependency and `node_modules/tree-sitter-python` does not exist, both
+  verified 2026-11-03 — so the "npm 0.25.0 (latest)" provenance that stood here was wrong. The
+  grammar that actually loads is the checked-in `wasm/tree-sitter-python.wasm`: `engine.ts:300`
+  maps `python: "tree-sitter-python"` and `engine.ts:1113` resolves
+  `resolveWasm("tree-sitter-python/tree-sitter-python.wasm")`. Package-version provenance is
+  **unknown** for this artifact — a vendored blob has no package version to state, and the pin
+  that does exist is the byte pin on the next line.
 - Grammar **pinned** (`PY-2`): sha256 `16108b50df4e…`, 457,883 B, with the full enumerable
   surface recorded. The registry copy at `~/.bb/wasm/tree-sitter-python.wasm` (476,105 B, a
   different sha) is recorded as **`differs`** — an attributed fact, not a silent divergence.
@@ -16,7 +21,7 @@
   Which build loads was decided by a path list rather than a hash — the M49 W16 incident
   rather than a near miss of it. 137 of 267 shared types sit at different ids; the analyzer
   makes **0** numeric node-id comparisons, so extraction is unaffected by the shift.
-- Language detection: extensions `.py` / `.pyi` → `language-detection.ts`
+- Language detection: extensions `.py` / `.pyi` / **`.pyw`** → `language-detection.ts:151` (`py: "python", pyw: "python", pyi: "python"`; `.pyx`/`.pxd` were REMOVED by a ruling because Cython is a different language and its files carry ERROR nodes at 85.6 %/95.5 % against `.py` at 2.3 %)
 - Wired in: `engine.ts getAnalyzer` → `RealPythonAnalyzer`
 
 ## Symbol contract
@@ -32,7 +37,7 @@
 | documentation/comments | ✅ | preceding `comment` nodes (`#` and docstrings) via pure-String helpers |
 | complexity metrics | ✅ | branching nodes counted iteratively on the single-pass walk |
 | syntax errors | ✅ | ERROR/missing nodes surfaced by the engine pipeline; reported as `parseErrors` in the differential |
-| decorators/attributes | ✅ | `decorator` nodes captured as metadata (`@logged`); decorator calls are metadata, NEVER call edges |
+| decorators/attributes | ✅ | `decorator` nodes captured **both** ways: as the symbol's `decorators` payload **and** as `decorates` relationship rows (one per decorator per decorated declaration — see the ontology table). A decorator application is NEVER a `calls` edge. |
 
 ## Relationship ontology
 
@@ -40,20 +45,26 @@
 | --- | --- | --- | --- |
 | calls | ✅ | `call` → callee leaf (member expressions reduce to leaf: `self.store.get()` → `get`); source = enclosing function/method leaf name; builtins filtered (full `PYTHON_BUILTINS` set), dunders (`__x__`) filtered; `super()` filtered; nested functions (e.g. `wrapper` inside `logged`) and function locals (`store`, `service`) never change the call source. **PY-11:** an UPPERCASE callee not declared in this file is a `calls` edge, not a dropped one — measured 889 of 1,152 such callees (77.2%, 368 of them explicitly imported) produced NO relationship before the fix, and `module = AnsibleModule(...)` is the shape, once per file, across a corpus | 0.9 |
 | extends | ✅ | `class_definition` → base-class argument list (`Repository[User]` → leaf `Repository`); `Generic[T]` → `Generic`; dotted `a.b` → `b`; `Enum` bases detected for kind | 1.0 |
-| instantiates | ✅ | uppercase-head call with the target in the O(1) `declaredTypes` set (in-file class/enum only — imported classes like `TypeVar` are external, no in-file target); Python has no `new` keyword | 0.9 |
+| implements | ✅ | TWO mechanisms, both real nodes. (i) **BASE-LIST RELABEL** at `real-python-analyzer.ts:2038` — a base the FILE'S OWN IMPORT proves is an interface (`abc.ABC`, `typing.Protocol`) publishes `implements` instead of `extends`: ONE edge per base, the most specific true label (**PY-34**), with the inheritance fact still carried in `metadata.superTypes` for the store's MRO walk. (ii) **REGISTER TIER** at `:1928` — `ABC.register(C)` / `C.register(X)` publishes `implements` with `reasonCode: virtual-registration` and no base-list entry. Proof is the FILE'S OWN IMPORT, never the spelling (`ABC`/`Protocol` are legal class names: 27 `Protocol` base occurrences in the corpus are that, 24 inside CPython's own `typing.py`); `typing.Generic` is EXCLUDED at 291 base occurrences because it is a type-parameter marker, not an interface. Measured 333 edges / 97 files (2026-10-05 era population, 11,488 files): resolved 202, external 104, ambiguous 27, **UNRESOLVED 0** — an `implements` edge never names a target the graph cannot hold. By reasonCode: in-file-interface-base 189, stdlib-interface-marker 141, virtual-registration 3 | 1.0 base-list relabel / 0.9 register |
+| uses | ✅ | member **read** `self.x` → leaf, marked `isMemberRead`; assignment targets, call callees (`self.ping()` — the attribute IS the call) and call receivers (`self.svc.ping()` — `self.svc` is traversal) are excluded, so a read is only ever a read | 0.9 |
 | imports | ✅ | `import_statement` / `import_from_statement` → module leaf → `${modulePath}:${item}`; relative imports (`from .models import User`) → module leaf | 1.0 |
 | exports | ✅ | `__all__` assigned a `list` **or** `tuple` literal → each string item; module-level names. **PY-14:** tuple-only reading left 3 of 16 corpus `__all__` assignments (19%) publishing nothing. Each edge and each `exports` entry records the **declaring form** (`dunderAllForm` / `form`) — provenance, since `list` and `tuple` are one declaration to `from mod import *`. A `NAME` in the literal, a concatenation, and `.extend()` are declared boundaries (pinned as forbids) | 1.0 |
-| overrides | ✅ | resolved against the class's **DECLARATION** (`name@startLine`), never its name — two `class C` declarations in one file are unrelated, and a name-keyed lookup gave a base-less class its namesake's bases. A base spelling the class's own name is excluded from both this derivation and `extends` (#299), so a rebind class overrides nothing and never overrides itself; method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, enum members, record fields. Three boundaries, one rule read three ways, all confirmed against CPython's `vars()`: a class in a **class body** gets `ownerName` and IS a member (`Outer.Inner` resolves); a class in a **method or function body** does not (`Outer.Local` does not resolve); and a name bound inside a **lambda or comprehension** is that function's local, never a member | 1.0 |
-| uses | ✅ | member **read** `self.x` → leaf, marked `isMemberRead`; assignment targets, call callees (`self.ping()` — the attribute IS the call) and call receivers (`self.svc.ping()` — `self.svc` is traversal) are excluded, so a read is only ever a read | 0.9 |
 | references | ✅ | `references` is sourced to whoever WROTE the annotation, not to whoever is mentioned — python keeps type information in annotations, so `x: T` inside a function belongs to that function. `assignment` / `typed_parameter` / `typed_default_parameter` → `declared_type`; `function_definition` → `return_type`; `isinstance(x, T)` / `issubclass(a, B)` → `instanceof_check`. Dedupes per `(source, target, kind)`. Builtin scalars (`str int float complex bool bytes object None Any self cls`) excluded. Measured 21,028 edges over 5,365 corpus files. **This row previously read "— not emitted"; that was wrong and is corrected here** — the code emits it at `extractDeclaredTypeRefs`, the differential has audited it since it was written, and the same file's differential table below already credited 12,280 agreed edges to it | 0.95 |
-| depends | — | not emitted (covered by imports) | — |
+| overrides | ✅ | resolved against the class's **DECLARATION** (`name@startLine`), never its name — two `class C` declarations in one file are unrelated, and a name-keyed lookup gave a base-less class its namesake's bases. A base spelling the class's own name is excluded from both this derivation and `extends` (#299), so a rebind class overrides nothing and never overrides itself; method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
+| instantiates | ✅ | uppercase-head call with the target in the O(1) `declaredTypes` set (in-file class/enum only — imported classes like `TypeVar` are external, no in-file target); Python has no `new` keyword | 0.9 |
+| decorates | ✅ | `decorated_definition` → ONE row per `decorator` per decorated declaration, emitted by `extractDecoratorReferences` at `real-python-analyzer.ts:6112`. **SOURCE = the decorated declaration; TARGET = the decorator expression's name AS WRITTEN** (`@lib.inject("db")` → `lib.inject`, `@pkg.decorator` → `pkg.decorator`, `@login` → `login`) — decorator ARGUMENTS are not rows. The edge's `line_number` is the **DECORATOR's own line**, never the `def`/`class` line. A decorator on a local/nested def emits NOTHING and is never re-attributed to the enclosing symbol (**PY-28**); shadowed (`phantom`) definitions are skipped. Evidence tier `structural`; the target is the raw written name, so a builtin (`@property`) and an imported (`@functools.wraps`) decorator both carry the checked claim kinds (`PY_NAMESPACE_CLAIM_TYPES`, `PY_IMPORT_CLAIM_TYPES`). A decorator application is NOT a `calls` edge and NOT a second `references` row. Measured **32,271 rows** over the whole admitted population (11,559 files, no-index arm) | 1.0 |
+| renders | ❌ | **RULED UNDECIDABLE — not emitted**, and the ruling names the rung. 0 `RelationshipType.Renders` sites in `real-python-analyzer.ts`. The pinned grammar `wasm/tree-sitter-python.wasm` (sha256 `16108b50df4e9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47`, 274 node-type ids / 128 named / 32 fields) holds NO element or component node under any of 15 candidate spellings, and the name markers `jsx`/`element`/`component` hit 0 node types and 0 fields, so **R1** (a newer build of the same grammar) cannot supply the node and **R2** (patching one in) would define syntax the language does not have — a zero that could never hold a site. **R3** is unavailable because python's nearest construct is a template, and a template (Django, Jinja2) is a STRING LITERAL: the rendered tree is not in the AST at all, and the render CALL is already published as `calls`. Near-miss census: 3,334 template sites / 233 files / 5,084 placeholder pairs, published under NO other label. Ruling: `validation/m14/verification/reviews/m60-01-python-extended-values.md:36` | — |
+| mixes_in | ❌ | **RULED UNDECIDABLE — not emitted**, rung named. 0 `RelationshipType.MixesIn` sites. python has ONE superclass clause (`class_definition.superclasses`), so the SOURCE cannot say which base is the mixin; the grammar holds no mixin node and no mixin field (11 candidate spellings absent; `with_statement`, `with_clause` and `with_item` DO exist and are the **CONTEXT-MANAGER statement**, a named decoy, not a mixin clause). **R1/R2** cannot supply a clause python's grammar does not have. **R3** is unavailable because the relation would be FALSE: every python base IS a nominal supertype under the MRO, and `mixes_in` requires a mixin that is deliberately NOT a supertype — the discriminator is the semantics, not the spelling. Near-miss: multiple inheritance, ALREADY published as `extends` — 6,402 sites / 782 files / 8,114 pairs, covered by the 21,004 `extends` edges. Ruling: `reviews/m60-01-python-extended-values.md:52` | — |
+| part_of | ❌ | **RULED UNDECIDABLE — not emitted**, rung named. 0 `RelationshipType.PartOf` sites. python's unit of inclusion is the IMPORT, and the semantics are opposite: a Dart `part` SHARES its library's scope while a python import CREATES a new one, so **R3** would hang the relation on a construct that contradicts it and the edge would assert something the language makes false. **R1/R2** are irrelevant for the same reason `mixes_in`'s are: there is no clause to find or add. Near-miss: `import_statement` / `import_from_statement`, ALREADY published as `imports` — 30,290 sites / 6,798 files, and **all 30,290 are covered** by the 100,237 `imports` edges. Ruling: `reviews/m60-01-python-extended-values.md:68` | — |
+
+`depends` is **not** a `RelationshipType` value — `src/ast/types.ts` has 0 occurrences of `Depends`, three divergent relationship enums notwithstanding — so it is not a register row and this table makes no claim about it. The analyzer emits nothing for it; dependency between modules is carried by `imports`.
 
 ## Supported constructs
 
 - Modules: `import x`, `from x import y`, relative imports (`from .models import ...`) — `__init__.py`
 - Classes: bases (incl. generic subscripts `Repository[User]`), class-body assignments → Property, enum subclasses → Enum + EnumMember, `__init__` → method — `models.py`, `Service.py`
-- Functions: def, async def, nested functions (never symbols), decorators (metadata only) — `service.py`
+- Functions: def, async def, nested functions (never symbols), decorators (payload **and** `decorates` edges) — `service.py`
 - Inheritance: multi-base extends + **MRO-ordered** overrides — `Service.py` (`UserService(BaseService, Repository)`)
 - Exports: `__all__` — `__init__.py`
 - Comprehension helpers: synthetic `_comprehension_helper` module functions are real AST artifacts (tree-sitter synthetic), kept as functions
@@ -134,6 +145,11 @@ Zero O(n²) on the measured corpus. The `instantiates` check is an O(1) `declare
 lookup (it was a per-uppercase-call `symbols.some()` scan); override and extends resolution go
 through maps; the MRO walk is bounded by the base list; the relationship dedup key is a `Set`.
 
+**The line below is a 3,271-file era measurement, not the current population.** The whole admitted
+population re-measured 2026-10-21 is **11,559 files and 1,332,030 relationships** (no-index arm,
+`validation/m14/measurements/python-cell-noindex-2026-10-21.txt`), so read the figures below as the
+complexity envelope of an earlier corpus rather than as this analyzer's present scale.
+
 Measured over the pinned corpus: **3,271 files, 45,560 symbols, 230,420 relationships in 66.7s
 via `ASTEngine.parseFile`.** 821 syntax-error nodes land in 44 files, 776 of them in 29 files
 that are not Python — `otp`'s `asn1_SUITE_data/*.py` holds **ASN.1 notation**
@@ -158,7 +174,16 @@ two axes — **membership** (is the edge present) and **multiplicity** (is it pr
 *number* of times, which a set comparison cannot see and which is where PY-6's defect class
 lives).
 
-**It derives all nine types this analyzer emits**, on two axes, over 3,271 corpus files:
+**It derives all ELEVEN types this analyzer emits** — `script/m14/oracles/python-truth.ts` has a
+derivation for `implements` (`:537` base-list relabel, `:613` virtual registration) and for
+`decorates` (`:1598`), alongside the nine below — **but the comparator grades only NINE of them.**
+`script/m14/oracles/python-truth-diff.ts:46` reads
+`const TYPES = ["contains", "extends", "overrides", "calls", "instantiates", "uses", "references", "imports", "exports"]`,
+so `implements` and `decorates` are DERIVED INDEPENDENTLY AND NEVER COMPARED. That is an instrument
+gap in this lane's own differential, stated here rather than hidden by the word "all": the nine
+types below are graded on both axes, and the two above are **ungraded — unknown, not clean**.
+Coverage of the companion oracle is therefore 9/11, and the numbers below are over a **3,271-file
+era population**, not the whole admitted set:
 
 | Type | Agreed | Missing | Unexplained |
 | --- | --- | --- | --- |
@@ -241,7 +266,7 @@ comparison can see. That is the whole argument for having built the instrument: 
 | Claim | Artefact |
 | --- | --- |
 | grammar bytes, sha256, both-direction drift | `validation/m14/grammar-pins.json` (lane `python`) |
-| 19 fixtures | `validation/m14/fixtures/python/` |
+| **63** fixture pairs (63 `.py` + 63 `.expectation.json`, counted 2026-11-03; the runner reports 65 passing cases because two fixtures carry more than one case) | `validation/m14/fixtures/python/` |
 | 30 mutants, all caught | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
 | node-type classification, 0 unclassified | `script/m14/spec/python-completeness.json` |
 | independent truth + comparator | `script/m14/oracles/python-truth.ts`, `python-truth-diff.ts` |
@@ -250,10 +275,10 @@ comparison can see. That is the whole argument for having built the instrument: 
 
 ## Regex inventory
 
-- Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`; after M12.27: 0 (project census 69 → 64). Re-measured 2026-10-05 through the TypeScript AST: the analyzer contributes 0 regex literals and the whole-tree census reports 4, all in `real-svelte-analyzer.ts`; 0 regex constructs across the 6 lane files.
+- Baseline (M12 issue #166): 5 census regex entries in `real-python-analyzer.ts`; after M12.27: 0 (project census 69 → 64). **Re-measured 2026-11-03**: this analyzer contributes **0** regex literals (0 uses as `test` / `exec` / `replace` / `match` / `split`), and the whole-tree census now reports **0** — `bash script/m14/no-regex-gate.sh` prints `TOTAL 0 in scope  (whole tree: 0)` and `regex census gate PASSED`. The earlier whole-tree figure of 4 (all in `real-svelte-analyzer.ts`) is superseded: those literals have since been retired.
 - No regex does syntax work, so the census row is empty for this analyzer rather than unclassified.
 
-## Relationship ontology — verdicts with numbers (branch `analyzer/PY_INSTRUMENTS`, 2026-10-05)
+## Ontology measurements — verdicts with numbers (branch `analyzer/PY_INSTRUMENTS`, 2026-10-05)
 
 Every one of the ten types carries a measured verdict. The instrument is
 `script/m14/python-ontology-census.ts`, which runs the analyzer through the PRODUCTION
@@ -326,14 +351,16 @@ Three measured boundaries:
   binds it), and one declared AFTER inherits the local class — `__bases__` prints the
   identical `ABC` for both, so only the binding order answers it.
 
-MEASURED, after the change. The population is the whole python surface on this box — the arbiter
-admits **11,488 `.py`/`.pyi` files** and walks them COMPLETE (`bun script/m14/ontology-coverage-gate.ts
+MEASURED, after the change — **2026-10-05 ERA POPULATION, not the current admitted set**: the
+arbiter admitted **11,488 `.py`/`.pyi` files** here, against **11,559** admitted files re-measured
+2026-10-21 (the current figure, and the one the ontology row's 32,271 `decorates` count comes from).
+The numbers below are that earlier population's; and walks them COMPLETE (`bun script/m14/ontology-coverage-gate.ts
 python --fresh`). Edges from the arbiter's own table; the target-resolution split from
 `npx tsx script/m14/python-endpoint-resolution.ts` on the same population:
 
 | | edges | files | resolved | external | ambiguous | UNRESOLVED |
 | --- | --- | --- | --- | --- | --- | --- |
-| `implements` | 333 | 97 | 201 | 104 | 25 | **0** |
+| `implements` | 333 | 97 | 202 | 104 | 27 | **0** | <!-- corrected 2026-11-03: this row read 201 resolved / 25 ambiguous, which sums to 330, not 333. The reasonCode decomposition immediately below sums to 333 (170+31+1 = 202 resolved, 19+6+2 = 27 ambiguous, 104 external), so THIS ROW was the wrong one and is corrected to its decomposition. -->
 
 By reasonCode: `in-file-interface-base` 189 (170 resolved + 19 ambiguous),
 `stdlib-interface-marker` 141 (31 resolved + 6 ambiguous + 104 external — the target is a stdlib

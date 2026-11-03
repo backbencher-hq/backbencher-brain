@@ -1,7 +1,8 @@
 # json analyzer — analyzer documentation
 
-Tree-sitter extraction for `*.json`, `*.jsonc` and `*.json5`, verified under the
-**M14/M60** json lane wave (record: `reviews/json/m60-closure.md`).
+Tree-sitter extraction for JSON documents (the routed spellings and the `.json5`
+caveat are in §Language), verified under the **M14/M60** json lane wave (record:
+`reviews/json/m60-closure.md`).
 
 > Rewritten 2026-10-03 from measurement, in the pass-2 adversarial round. The previous
 > version said **8 of 10** relationship types were emitted and that `implements` was ruled
@@ -11,69 +12,133 @@ Tree-sitter extraction for `*.json`, `*.jsonc` and `*.json5`, verified under the
 
 ## Language
 
-- Analyzer file: `src/ast/real-json-analyzer.ts`
-- Parser: `tree-sitter-json`
-- Language detection: extensions `.json`, basenames such as `package.json`, `tsconfig.json`
-- Wired in: `engine.ts` `getAnalyzer` → `RealJsonAnalyzer`
+- **Analyzer file:** `src/ast/real-json-analyzer.ts` — pure-AST extraction for JSON. It covers **nine** relationship types by name (`calls`, `uses`, `contains`, `imports`, `references`, `exports`, `extends`, `implements`, `overrides`); `instantiates` is ruled absent.
+- **Parser:** `tree-sitter-json`, resolved by `engine.ts:1066-1068` (`case "json": resolveWasm("tree-sitter-json/tree-sitter-json.wasm")`). Wired bytes: `wasm/tree-sitter-json.wasm`, sha256 `fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667`, **5,961 B**, **26 ids / 12 named / 14 anonymous / 2 fields**. The pin is lane `json` in `validation/m14/grammar-pins.json`; the live-parser read-back is `validation/m14/measurements/json-grammar-nodes.json` (served digest `fdb5219abe05`, measured 2026-10-26). The 12 named types are `array`, `comment`, `document`, `escape_sequence`, `false`, `null`, `number`, `object`, `pair`, `string`, `string_content`, `true`.
+- **Pin status, and the two-build hazard:** registered, lane 10 of 10. Two `tree-sitter-json` builds are known to be in circulation — the wired **5,961 B / 26 ids** and the registry copy measured at **5,596 B / 25 ids**. They share the 12 named types and the 2 fields and differ only in anonymous tokens (the wired build leaks `string_content_token1` id 8 and `string_content_repeat1` id 25 where the registry build has `_string_content` id 21), which **shifts every named type's id by one**. The pin therefore records `idOrderDigest` `da249143…`, `typeSetDigest` `a0c126ed…` and `fieldSetDigest` `402f4f3f…`, and records the registry copy as **DIVERGENT — not byte-identical**, never as a match. Provenance is `unnamed-build-sha-only`: there is no vendored grammar source and no reachable published artifact, so the version numbers are **unknown, not unrecorded**. The analyzer matches node type **names**, never numeric ids, so the id shift cannot change its output.
+- **Language detection:** `src/ast/language-detection.ts` `EXTENSION_LANGUAGE` maps `json → json`, `jsonc → json`, `jsonl → json`, `jsonlog → json` (runtime-checked at HEAD: `detectLanguageFromPath` returns `json` for `.jsonl`/`.jsonlog`). **`.json5` is not in that map at HEAD** — `detectLanguageFromPath("x.json5")` returns `null`. This analyzer's module-name rule still strips `.json`/`.jsonc`/`.json5`, and the journal's "all three routed spellings" row is contract intent/history, not current routing. `.jsonl`/`.jsonlog` route to this analyzer but are not in its strip list, so their module symbols keep the extension — **that case has never been measured, and it is recorded as unknown rather than asserted either way**.
+- **Wired in:** `engine.ts` `getAnalyzer` → `case "json"` → `new (await import("./real-json-analyzer")).RealJsonAnalyzer()` (`engine.ts:2371-2372`).
+- **Pure AST:** zero regex literals (§Regex inventory); the analyzer never reads the file as text — every decision comes from node types, `childForFieldName` and `namedChildren`, and the only string work is on values already extracted from nodes (key text with quotes stripped, dotted-path arithmetic).
+- **Shapes read:** `document` → `object`/`pair`/`array`/`string` (+ `string_content`)/`number`/`true`/`false`/`null`/`comment`; `ERROR` and `MISSING` are consulted as damage only. The spec classifies all 14 grammar surface types (12 named + `ERROR` + `MISSING`): 5 `handled_verified` (`object`, `pair`, `array`, `string_content`, `ERROR`) and 9 `internal_silent` (`document`, `string`, `number`, `true`, `false`, `null`, `comment`, `escape_sequence`, `MISSING`), 0 gaps.
+
+Evidence: [§Grammar pin](#grammar-pin) · [§Contract](#contract).
 
 ## Symbol contract
 
-| Field | Supported? | How extracted |
+| Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | yes | the JSON key text |
-| kind | yes | object/array/string/number/boolean/null literals mapped to symbol kinds |
-| qualified/container name | yes | the enclosing object key path |
-| ownerName / ownerKind | yes | the owning object or the document root |
-| range (start/end line + column) | yes | token positions from the tree-sitter node |
-| parameters | no | JSON has no callable parameters |
-| returnType / type | yes | the JSON value type inferred from the literal |
-| documentation/comments | no | JSON has no comment syntax |
-| complexity metrics | no | no separate complexity metric |
-| syntax errors | yes | syntax errors are engine-owned |
-| decorators/attributes | no | JSON has no decorator syntax |
+| name | ✅ | a `pair`'s key text (the `string_content` child, never the quoted text); an array element is `<array>[i]` (the keyed form keeps the key, e.g. `allOf[0]`; an element whose array is itself an element is named from its qualified path, e.g. `rows[0][0]`); a top-level array's element is `[i]`; the module is the document name. |
+| kind | ✅ | exactly three `SymbolKind` values at HEAD: `module` for the document, `class` for an object-valued key (and for an object array element), `property` for everything else — **including an array**, which is not a shell-style `variable`. Measured over the body's 13,951-file census: `property` 2,615,677 · `class` 1,372,877 · `module` 13,950 (one file short; the journal names that file). |
+| qualified/container name | ✅ | `qualifiedName` is the dotted document path `<module>.<key>[.<key>…]`; arrays append `[i]`; `metadata.fullPath` carries the same string. |
+| ownerName / ownerKind | ✅ | `ownerName` is the parent **symbol's name**, never its path; `ownerKind` is `module` at the top level and `class` below it; `scope` carries the parent path. Measured on the 514-file array sample: 85,670 of 85,670 unique-owner children agree with their edge's source (100%), with 32,128 colliding and 2,666 naming an owner the file never publishes under a bare name (metadata binding, not the edge — see the fourth pass in §Ontology measurements). |
+| range (start/end line + column) | ✅ | `nodeToRange`: 1-based `startLine`/`startColumn`/`endLine`/`endColumn` plus `startIndex`/`endIndex` from the tree node. The worker flattens `range` and **drops the column pair** (`docs/analyzers/history/json-lane-notes.md` §7d), so columns are an analyzer-boundary fact, not a store fact. |
+| parameters | ❌ | JSON has no callables and no parameter lists; no parameter or local symbols exist. A pair's value is data carried by its key, not a declaration. |
+| returnType / type | ✅ | the JSON value type of the pair: `object`, `array`, `string`, `number`, `boolean`, `null`. The module symbol has no `returnType`; its metadata carries the document type instead. |
+| documentation/comments | ❌ (no extraction) | JSONC `//` and `/* */` are grammar `comment` nodes: accepted and **silent** — the type names nothing. No docstrings are published. |
+| complexity metrics | ◑ document-level only | `metadata.complexity = symbols.length + relationships.length`, `metadata.linesOfCode = content.split("\n").length`, `cyclomaticComplexity: 1` — all on the analysis result; **no per-symbol complexity**. |
+| syntax errors | ✅ | `collectErrors` walks `ERROR` and `isMissing` nodes iteratively and pushes `{ message, range, severity: "warning" }` for each; the module symbol is still published so a consumer can attribute the failure to a file (fixture `Invalid.json`). The engine also surfaces its own errors; the analyzer does not duplicate them. |
+| decorators/attributes | ❌ | no such construct in a data format; the spec rules `decorates` out with 0 sites over 14,115 admitted files. |
+| visibility | ✅ (always `public`) | JSON has no visibility concept; every symbol publishes `visibility: "public"`. |
+| metadata | ✅ | per key: `jsonSpecific`, `nodeType`, `valueType`, `fullPath`, `isArray`, `isObject`, `isRequired`, `hasValidation`, `isReference`, `refPath`, `isApiEndpoint`, `depth`. On the module: `documentType` (`npm_package` / `composer_package` / `openapi_spec` / `json_schema` / `generic_json`), `hasSchema`, `isApiSpec`, `objectCount`, `propertyCount`, `arrayCount`, `maxDepth`, `hasNullValues`, `hasBooleanValues`. |
+| identity dedupe | ✅ | one symbol per `qualifiedName` (`emittedPaths`, first occurrence wins) — the store's own identity contract; a re-declared key produces one `overrides` edge and one declaration, not N copies. |
+| line_number on edges | ✅ | every one of the ten `RelationshipType.*` emission sites publishes a 1-based `line_number` (the string was absent before the M60 fix; fixture `Lines.json` and the lane mutant `json/edge-lines-dropped` pin it). |
 
 ## Supported constructs
 
-| construct | how produced |
-| --- | --- |
-| object literal | object node → symbols for each key |
-| array literal | array node → symbols for each element |
-| string literal | string symbol |
-| number literal | number symbol |
-| boolean literal | boolean symbol |
-| null literal | null symbol |
+Fixtures: `validation/m14/fixtures/json/` — **19 fixtures, 19 pass / 0 fail at HEAD** (`npx tsx script/m14/run-fixtures.ts --lang json`). Each construct below names the fixture that pins it; the journal's §Contract and §What each type means in JSON carry the rationale.
+
+- **Documents** may hold an object, an array, or **several top-level values** — concatenated JSON is real input (cargo/rustfix compiler-diagnostic fixtures hold 2–5 objects per file); every top-level value is walked and gets a distinct position (`TopLevelSiblings.json`).
+- **Object nesting:** an object-valued key is a `class`; its keys are owned by that symbol and contained by it (`Lines.json`).
+- **Arrays:** scalar elements are positional and unnamed — no symbol, no edge; an object element is a `class` named `<array>[i]` and owns its own keys; a keyed array keeps the key in its element names; an array that is an element of another array is named from its qualified path and gets its own symbol because it owns children (`Arrays.json`, `ArrayInArray.json`).
+- **Top-level arrays and dotted filenames:** the module names the array (`TopLevelArray[0]`, `Dotted.name[0]`), and the bracket is never eaten by the module-prefix strip (`TopLevelArray.json`, `Dotted.name.json`).
+- **JSONC comments** are accepted and silent (grammar `comment` node; no symbol, no edge).
+- **Invalid input** surfaces the grammar's `ERROR`/`MISSING` nodes and still publishes the module symbol (`Invalid.json`).
+- **`$ref` → `references`:** a local JSON Pointer names a LOCATION (decoded per RFC 6901 — `~1` → `/`, `~0` → `~`), `#/definitions/Node` → `<module>.definitions.Node`; a bare `#` names the document root; `$id`/`$anchor` identities resolve to the declaring object's path; a URL names a vocabulary and is declined (`Refs.json`, `DocumentIdentity.json`).
+- **`$ref` to a sibling file → `imports` + `references`:** a `$ref` whose value is a relative document-extension path is both a file dependency and a reference; a local pointer and a URL are neither (`Imports.json`).
+- **JSON-Schema composition → `extends`:** `allOf` means "must satisfy all of these"; the source is the composing schema object, not the `allOf` array; both the intra-document and sibling-file ref forms compose; `anyOf`/`oneOf`/`not` are alternatives/negation and emit only the `references` their `$ref`s already produce (`AllOf.json`; corpus `allOf` 1,445 occurrences / 84 files).
+- **Declared types → `extends` / `implements`:** LSP's meta-model states `"extends": [{"kind":"reference","name":X}]` and `"mixins": [{"kind":"reference","name":X}]`; duckdb's serialization schemas declare `{"class": X, "base": Y}`. `mixins` maps to `implements` (interfaces mixed in), `base` to `extends`; a duckdb member descriptor and a target the document never declares emit nothing (`Inherit.lsp.json`, `Inherit.duckdb.json`).
+- **OpenAPI endpoints → `uses`:** a `/`-prefixed key whose object declares an HTTP method; the `paths` object uses it at 0.8; the `/` root path itself is covered and `/docs` is the negative control (`OpenApi.json`, `OpenApiRootPath.json`).
+- **Manifests:** in `package.json`/`composer.json`, a dependency entry emits `uses` and publishes its version range; `exports`/`main`/`bin` emit `exports`; a `scripts` entry invoking a sibling script emits `calls` (`package.json`, `manifest/package.json`).
+- **Duplicate keys → `overrides`:** a key declared twice in ONE object is a redefinition (the second replaces the first under every mainstream parser), emitted owner → key with `metadata.overridesLine`; the same key in different objects is not a redefinition and emits nothing (`DuplicateKey.json`, `SameKeyDifferentObjects.json`).
+- **Project-scoped document identity:** a module's name is the stem plus the project-relative directory chain when the caller supplies a project root (`src/ast/project-scoped-identity.ts`); without a root it stays the bare stem, which is what every fixture asserts. Pinned by the `json/document-identity-not-project-scoped` mutant.
+- **`line_number` and qualified-path endpoints** are part of the contract, not extras: all ten emission sites carry a site line, and `contains`/`calls`/`uses`/`overrides`/`extends`/`implements` publish qualified paths on both ends (the `imports` target is a file by its own contract; manifest entry points and package names are name-valued by the language's shape).
+- **Declined / explicit-unknown constructs:** `anyOf`/`oneOf`/`not` as relations, URL `$ref`s, tsconfig `"extends": "./base.json"` (48 keys / 36 sibling files exist; declined as a file dependency, which `imports` already carries — a judgement, not a measurement), npm's implicit pre/post hooks, quoted/non-sibling/self script targets, and `instantiates`. Full reasoning and per-construct rulings are in §Declared limitations, §Relationship ontology and `script/m14/spec/json-completeness.json`.
 
 ## Relationship ontology
 
-| Relationship type | Emitted? | How resolved | Confidence model |
+Whole admitted population through production `parseFile` (`validation/m14/fixtures/json/census.ts`), the third-pass 13,951-file census the journal records. Every row's detailed evidence, reason codes and per-pass history are under [§Ontology measurements](#ontology-measurements--the-nine-emitted-types-and-the-one-ruled).
+
+| type | emitted? | how resolved | confidence model |
 | --- | --- | --- | --- |
-| calls | no | RULED: JSON has no callable invocation | - (ruled absent) |
-| contains | yes | document root → top-level keys; object → member keys | 1.00 (structural) |
-| exports | no | RULED: JSON has no export concept | - (ruled absent) |
-| imports | no | RULED: JSON has no import concept | - (ruled absent) |
-| references | no | RULED: JSON literals are values, not references to declarations | - (ruled absent) |
-| uses | no | RULED: JSON has no identifier references | - (ruled absent) |
-| overrides | no | RULED: JSON has no overriding | - (ruled absent) |
-| instantiates | no | RULED: JSON has no instantiation | - (ruled absent) |
-| extends | no | RULED: JSON has no inheritance | - (ruled absent) |
-| implements | no | RULED: JSON has no implementation | - (ruled absent) |
+| calls | yes | an npm `scripts` entry invoking a **sibling** entry by name (`npm run <name>`, and `pnpm`/`yarn`/`bun` with `run`/`run-script`/`run-s`); both endpoints are keys of the same `scripts` object; a tool/binary target, a self-reference, a quoted target and a token that merely contains a runner name are declined; npm's implicit pre/post hooks emit nothing. Census: 263 edges / 99 files. | 0.8, `usage_contextual`, `reasonCode: npm_run_sibling_script` — derived from a string value by a CLI convention, so below structural |
+| extends | yes | two sources: JSON-Schema `allOf` (source = the composing schema object, target = the `$ref` location; intra-document `#/…` and sibling-file `other.json#` forms both compose) and declared supertypes (LSP `extends: [{kind, name}]`; duckdb `"base": "<ClassName>"` beside a `"class"` declaration). `anyOf`/`oneOf`/`not` emit no edge. Census: 1,780 edges / 119 files. | 1.0, `structural`, `reasonCode: json_schema_all_of` / `declared_supertype` |
+| implements | yes | LSP meta-model `"mixins": [{kind:"reference", name}]` — the interfaces a class mixes in; every target is declared in the same document. Census: 113 edges / **1 file** (`dart-sdk/…/lsp_meta_model.json`). | 0.9, `structural`, `reasonCode: declared_interface_mixin` — the `mixins`→`implements` mapping is a naming decision, held below 1.0 for exactly that reason |
+| uses | yes | two sites with different warrant: (1) a manifest entry under `dependencies`/`devDependencies`/`peerDependencies`/`optionalDependencies` in a `package.json`/`composer.json` (filename-gated), publishing the entry's version range; (2) an OpenAPI `/`-prefixed key whose object declares an HTTP method, sourced from the endpoint's scope to `endpoint.qualifiedName`. Census: 9,955 edges / 1,041 files. | 1.0 for dependencies (no `evidenceClass` at 1.0 by design) · 0.8 for endpoints, `usage_contextual`, `reasonCode: openapi_path_entry_declares_http_method` |
+| imports | yes — relationship channel **+ import-site: ImportInfo[]** | a `$ref` naming another FILE (relative document-extension path) emits both `imports` and `references`; `metadata.importForm: json_schema_ref`; the target is a FILE, not a symbol in this document, so 0.00% symbol resolution is **correct by contract**; the file claim is made only where the project carries the file. Census: 82 edges / 28 files. | 1.0, `structural`; the `projectFile` claim is verified by the arbiter (the one dangling vendored rekor schema says `isExternal`, never a false claim) |
+| exports | yes — relationship channel **+ export-site: ExportInfo[]** | manifest pass for `package.json`: subpath keys of `exports`, the field name for `main`, the command name for `bin`; the target is the entry point's own position (`package.main`, `package.exports..`, `package.exports../sub`, `package.bin.<name>`), never a bare key. Census: 1,200 edges / 446 files. | 1.0, `structural` |
+| contains | yes | ownerName pass: one `contains owner → member` per declared member; source = the owner's qualified path (recovered from the child's path) and target = the child's `qualifiedName`; object-valued keys are `class`, everything else `property`. Census: 3,988,554 edges / 13,444 files (99.2% of the lane's graph). | 1.0, `structural`; no `evidenceClass` at 1.0 by design — the contract binds sub-1.0 edges, and adding a string to 3.9M edges would be payload with no evidence behind it |
+| references | yes | a `$ref` names a LOCATION, not a symbol: a JSON Pointer is decoded segment-wise per RFC 6901 (`~1` → `/`, `~0` → `~`) and resolved against the document root (`#/components/schemas/X` → `<module>.components.schemas.X`); `$id`/`$anchor` identities resolve to the declaring object's path. Census: 17,117 edges / 272 files. | 1.0 when the target names a published location; 0.8 with `reasonCode: ref_target_not_declared_in_document` when the document does not declare it (98.59% both-ends resolution) |
+| overrides | yes | a key declared twice in ONE object; edge is owner → repeated key and `metadata.overridesLine` carries the prior declaration's line (both declarations share a name and a qualified path); object-scoped only — the same key in two different objects emits nothing. Census: 22 edges / 12 files. | 1.0, `structural`; 22 of 22 targets are ambiguous at declaration level by construction and a store read shows 6 of 6 bound — "bound but indistinguishable", not a resolution failure |
+| instantiates | no | RULED: construction is an EXPRESSION and a JSON document has no expressions; none of the grammar's 12 named types is an expression/construction node; 274 constructor-spelling keys classify by value role (142 string / 100 array / 22 object / 10 scalar) and none denotes an invocation; measured **0 edges** over the whole admitted population, and 0 hits over the ruling recheck's 12,663 + 522 absent files. | not emitted. The denominator depends on the evidence class the owner reads: the journal body records **9 applicable of 9**; the history notes' corrected declaration reads **9/10** for `zero-sites` (stays in the denominator); the coverage block's `excluded` entry was reclassified to `grammar-absence` on the Lead's 2026-10-14 order, whose stated consequence is **9/9** (subtracted from `applicable`). The edge counts are identical in all three — only the denominator moves, and this page records the divergence rather than silently picking one. Overturn condition: a JSON construct that evaluates/constructs, or any emitted `instantiates` edge. |
+
+Nine of the ten canonical engine types are emitted; the extended vocabulary (`decorates`, `renders`, `mixes_in`, `part_of`) is ruled out for a data format in `script/m14/spec/json-completeness.json` (decorates: `ontological`, 0 sites over 14,115 files; renders/mixes_in/part_of: `grammar-absence` with each rung unavailable). **Every sub-1.0 edge carries a machine-readable `reasonCode`, 0 edges are below the 0.7 threshold, and 0 endpoints equal the literal `unknown`.**
 
 ## Regex inventory
 
-**Zero.** The analyzer contains no source-text regex doing syntax work; names and structure come from grammar fields and node positions.
+**Zero regex literals in `src/ast/real-json-analyzer.ts`** — enforced, not asserted. `script/m12/json-contract-probe.ts` reads the production `parseFile` and includes the check *"analyzer source has NO regex literals"* (`ctor=0 methodUses=0 delimiter=false`), passing in the **28/28** contract run (`validation/m12/results/json-contract.json`). The scanner strips comments and string literals before matching, so a regex inside a comment cannot satisfy it.
+
+`validation/m12/results/regex-census.json` is the fleet census over committed analyzer blobs. Its last generated run records `totalRegexUsages: 0` across `analyzersScanned: 50` with an empty `perFile`, so this lane has **no census entry to classify**: the rule is "zero unclassified regex", and there is no line to classify. (The journal records an earlier `verify-regex-census.ts` PASS with 5 entries and 0 unclassified; those entries do not exist in the current census.)
+
+The regexes that remain in this lane's own **tooling** are over things that are not the analyzed language — listed so a reader does not have to assume they were overlooked. The journal's §Where regex still appears in this lane carries the reasoning.
+
+| File (lane instrument) | Regex | Receiver category | Classification | Justification |
+| --- | --- | --- | --- | --- |
+| `validation/m14/fixtures/json/census.ts` | `repo.replace(/[^A-Za-z0-9._-]/g, "_")` | repository name → temp filename | unavoidable (not source text) | sanitises a **repository name**, not JSON |
+| `validation/m14/fixtures/json/differential.ts` | `relPath.replace(/\.[^.]+$/, "")` | file path → module identity | unavoidable (not source text) | strips a **file extension** off a path |
+| `validation/m14/fixtures/json/edge-ledger.ts` | `l.replace(/^!/, "").trim()` | checkpoint line → resume marker | unavoidable (not source text) | strips the resumer's `!` prefix; the line is instrument state |
+| `validation/m14/fixtures/json/resolution-audit.ts` | `path.basename(d.file).replace(/\.(json\|jsonc\|json5)$/i, "")` | file basename → document stem | unavoidable (not source text) | strips a **document extension** from a file name; two identical sites |
+
+The lane oracle (`script/m14/oracles/json.ts`) is also regex-free and tree-driven — it reads `node.type`, `childForFieldName` and `namedChildren`, touching `.text` only on a leaf value.
 
 ## Complexity envelope
 
-No in-tree `json-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here. The lane's symbol and relationship counts are small (JSON is a shallow, data-only grammar).
+The envelope artifact exists: `validation/m12/results/json-corpus-complexity.json`.
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `json-corpus-production` (`roslyn@73241b4b`, strict acceptance subset) | 119 | 69,512 | 70,074 | 45,160.8 | 1,539.2 | 1,551.7 | 569,995,264 B |
+| whole admitted population (chunked census, 13,951 files) | 13,951 | 4,002,504 | 4,019,086 | not recorded (per-repo children) | — | — | — |
+
+The first row is the only **timed** corpus run this lane has: 2.635 files/s, 0 errors, 0 crash files, 14 explicit exclusions (`json-corpus-errors.json` lists them). The whole-population row is the body's third-pass census — it exists to **count**, not to time, and no single wall time is recorded for it, so those cells are unknown, not zero.
+
+**Declared budget: none.** `validation/m60/analyzer-budget-register.json` registers json as `verdict: "unscorable"`, `severity: 5`, `status: "open"`, `budgetSource: null`, with the reasons "no loadRule (#871: a row without load context is not scored)" and "no corpusManifest (#909: which files were measured is not recorded)". Its compared row is the 119-file / 45,161 ms artifact above. So no green budget can be regressed here, and no budget is claimed: the missing frame is shared-harness work.
+
+**Hot-path audit: one iterative walk, constant-time frame stack, O(nodes), no per-symbol rescan of the symbol list and no O(n²) pass.** The journal's §Performance measured a minimum-of-15 envelope on synthetic documents (200 keys / 3.3 KB → 74.6 ms; 12,800 keys / 253.3 KB → 986.0 ms; depth 5→80 at constant size → 5.8→124.2 ms) **and records that the run-to-run spread on identical input is ×2.6 to ×24**, so no single-sample number is a measurement — a reported 7.6× "superlinear" jump was re-measurement noise. The one real envelope defect was the recovered `ERROR` tree: `namedChild(i)` is O(i) in this binding, so a loop over children is O(k²). Measured over 20,000 children: index loop **60,297 ms** vs one `namedChildren` read **90 ms** (cursor walk 84 ms; `nextNamedSibling` 115,833 ms). Fourteen such loops became one `namedChildren` read each; the corpus pathological file (`n_structure_open_array_object.json`, 50,000 unclosed `[`) went from **349,705 ms / 0 symbols / DEGRADED to 5,558 ms / 1 symbol / not degraded** (`deep-tree-control.ts` PASSes its 10 assertions; `validation/m14/fixtures/json/measurements/deep-tree-*.txt`). The fix is behaviour-preserving — no output-shaped mutant distinguishes the revisions — so the pin is that control, not a mutant.
 
 ## Differential ground truth
 
-- Result `validation/m12/results/json-differential.json`: `passed: true`, expected 119, truePositive 119, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+Three instruments, three populations; they are not interchangeable.
+
+| instrument | ground truth / population | result |
+| --- | --- | --- |
+| **M12 per-analyzer differential** | `validation/m12/ground-truth/json.json`, authority `manual_audit` (hand audit of the 3 fixtures `api-contract.json`, `package.json`, `Negative.json`) | `validation/m12/results/json-differential.json`: expected 119, truePositive 119, falsePositive 0, falseNegative 0, unknown 0 → **precision 1.000, recall 1.000** |
+| **M14 canonical F5 differential** (shared harness, current artifact) | `terraform:json`, 60 files, oracle `script/m14/oracles/json.ts` | `validation/m14/results/M14.0.F5.json` json row: analyzerEdges **6,206**, treeTruthEdges **6,206**, coverage **100.000%**, missingInAnalyzer **0**, unexplainedInAnalyzer **0**, fabricationPct 0, avg 3.4 ms/file; check `differential-json` = **pass** (artifact committed 2026-11-01, commit `f8fc2d718c`). `validation/m14/differential-baseline.json` carries `terraform:json` **pinned** with `missing 0 / unexplained 0 / heuristic 0` and sampleSetHash `a3d0513e0c1e2d44`. |
+| **lane whole-population differential** (lane-owned oracle, `deriveJsonEdges`) | whole admitted population, production `parseFile` on both sides | third pass 13,951 files: truth **4,018,829**, analyzer **4,019,086**, covered **100.00%**, MISSING **0**, UNEXPLAINED **257** — all one class (a bare `"$ref": "#"` in `docker/vendor/github.com/go-openapi/spec/schemas/jsonschema-draft-04.json`), 13,397 files matching exactly. Second pass 12,547 files: truth 3,905,480 / analyzer 3,905,700 / 100% / 0 / 220. The 4-repo inheritance run (1,952 files): 526,510 / 526,510 / 100% / 0 / 65. |
+
+The journal's **DERIVATION** finding (json absent from `script/m14/differential.ts`'s compared-label allowlist, so six emitted types were dropped before comparison and `M14.0.F5.json` read `analyzerEdges: 0`, `missingInAnalyzer: 27,828`, with no `differential-baseline.json` row) is the state the page recorded on 2026-10-04 and it is **closed at HEAD**: `differential.ts:25644` now adds `calls, contains, exports, extends, imports, overrides, references, uses` for `lang === "json"` on top of the unconditional head (`extends`, `implements`, `instantiates`, `overrides`), covering all ten canonical types — and the pinned baseline row above is the result. The journal section is kept as history.
+
+Two limits are declared rather than smoothed. (1) The lane whole-population numbers are the last recorded run at the 13,951-file state; a later census artifact on the same population (`json-census-after-positional-fix.json`) records 4,021,429 relationships / 4,004,847 symbols, and the whole-population oracle differential has not been re-recorded at that artifact's HEAD — so the 257/0 pair is the last measured differential, not a claim about the current aggregate. (2) The F5 row is a 60-file `terraform` sample: it checks the canonical wire, it does not re-derive the whole-population counts.
 
 ## Corpus validation
 
-- Corpus `validation/m12/results/json-corpus-errors.json`: corpus `roslyn`, extensions `.json`, 3 error files, 0 crash files.
-- Differential `validation/m12/results/json-differential.json`: `passed: true`, expected 119, truePositive 119, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- **M12 corpus target:** `validation/m12/corpus-manifest.json` → `roslyn@73241b4b(clean)`. **133** tracked `*.json`, of which **119** are the strict JSON acceptance subset (deterministic lexicographic; 14 JSONC/encoding/BOM files are explicit exclusions listed in `json-corpus-errors.json`). Measured through the production path: **0 errors and 0 crashes on the acceptance subset**; the 3 files that do carry parser errors (16 ERROR nodes total) are reported, not relabelled clean. Shape safety: `json-shape-safety.json` — 122 acceptance files, 8 parse errors all expected/excluded, `unexpectedParseErrors: 0`, **13 observed node types**, `passed: true`. Contract probe: **28/28** (`script/m12/json-contract-probe.ts`, reads production).
+- **M14 whole admitted population:** `validation/m14/fixtures/json/census.ts --chunked --limit 0` — the body's third-pass census: **13,951 of 13,951 admitted files, 0 excluded, 0 repositories without a verdict, 0 parse failures**, 4,002,504 symbols, 4,019,086 relationships, 13,444 files with an edge, **0 empty names, 0 empty/unknown kinds, 0 endpoints equal to `unknown`, 0 edges below 0.7**. Kinds: `property` 2,615,677 / `class` 1,372,877 / `module` 13,950 — one file short, and the journal names it (the 250 KB unclosed-array file; the §10 deep-tree fix makes it parse un-degraded again, so a re-run census should close the gap).
+- **Population movement, measured:** a later whole-population read (`validation/m14/measurements/json-extended-census.json`, 2026-10-24) records **14,158 admitted files across 157 repositories** (its counters: 14,115 files / 156 repositories, 26,654 `$ref` sites, 99,486 `comment` nodes), and `validation/m14/results/json-whole-population-closure.json` records a closure over **14,158 parsed/admitted** files: 5,605,671 edges, 5,605,387 resolved, `collRes 2`, `ambDecl 0`, `unresolved 0`, `extOK 168`, `extPending 116`, `extFAIL 0`, identity sum exact. Per the journal's §8 item 7, ratios **between** different instruments/walks must not be quoted until the admitted-file enumerators are reconciled.
+- **Tracked-but-absent files:** 10 partial clones with 22,861 tracked files absent, **522** of them json-extension; read from git into a temp dir and run through production `parseFile`: **522 admitted, 0 parse failures, 50,947 symbols, 50,741 relationships**, and **no new relationship type** appears in them — so the 9/10 result stands over strictly superset input.
+- **Fixtures:** **19 fixtures, 19 pass / 0 fail at HEAD** (`npx tsx script/m14/run-fixtures.ts --lang json`; `validation/m14/fixture-baseline.json` allowance for json is 0) — including the two manifest-only kinds (`exports`, `calls`) that no fixture exercised before `manifest/package.json`.
+- **Mutants:** the lane registry `validation/m14/results/json-lane-mutants.json` at HEAD reads **20 registered, 20 caught, 0 survivors**. The journal's scoped whole-registry run exercised **25 — the lane file as it stood then (17) plus the 8 inline mutants in the shared `script/m14/mutate-analyzer.ts`** (filtered 1,781 → 25), all caught with `M14.0.F4.json` byte-identical; the lane file has grown since, so the two numbers are different populations rather than a contradiction. The shared harness ignores a positional language argument, so the scoped form (`BB_MUTANT_ONLY="json/"`) is the only safe one (journal §8 item 3).
+- **Firing arbiter / coverage:** the shared firing instrument reads **9/10 at the whole population** (`--files 13000`: 12,478/13,000 sampled, 5,172,561 edges, 66 degraded), **7/10 at 1,200** and **6/10 at 120** — the 120-file draw is a property of the stride, not of the lane (the three rarest types are 0.008–0.16% of the population, with P(missed) ≈ 0.99 / 0.89 / 0.83; the arithmetic is in the journal §Declared limitations 12). The lane declaration (`script/m14/spec/json-completeness.json` → `coverage`) lists **9 implemented**, with `instantiates` excluded. Three numbers describe its denominator and they are not interchangeable: the journal body records **9 applicable of 9**; the history notes' corrected declaration reads **9/10** for the `zero-sites` class (stays in); and the coverage block's `excluded` entry is `grammar-absence` after the Lead's 2026-10-14 order, whose stated consequence is **9/9** (subtracted from `applicable`). The counts are identical in all three; only the denominator moves, and this page records the divergence rather than silently picking one.
+- **Differential:** see §Differential ground truth above — M12 119/119; F5 `terraform:json` pinned; the lane oracle 100% covered with 257 unexplained at the third pass, all one declared `$ref: "#"` class.
+- **Named open items:** `JSON-G3` (a top-level array publishes a duplicate identity for one document in 400 — `FSharp.Data/…/DictionaryInference.json`); `ext? 120` unverifiable external claims (the four-clause record decomposes the 120 as 114 json-schema.org vocabulary URIs, 2 remote (DSC) URIs, 4 document-local pointer paths and 2 sibling-file paths, and marks clause 2 measured-but-unsettled — `validation/m14/verification/FOUR-CLAUSE-json-VERIFIED.md`); and the shared-machinery items in journal §8 (ontology-gate ruling-table wiring, the mutate-analyzer's unscoped hazard, the in-process WASM trap, `git stash` being cross-lane destructive, and the admitted-file-count disagreement).
 
 ## Grammar pin
 
@@ -156,7 +221,7 @@ remain and are listed rather than quietly left for a reader to assume they were 
 §*Ruling table*, and it is a worse instance than the four above because it interpolated a type
 name into a pattern source on the branch that decides whether a RULED verdict is justified.
 
-## Relationship ontology — 9 of 10 emitted, 1 ruled, every verdict measured
+## Ontology measurements — the nine emitted types and the one ruled
 
 Whole admitted population through production `parseFile`
 (`validation/m14/fixtures/json/census.ts`). **Re-measured 2026-10-04, THIRD pass, same

@@ -77,22 +77,55 @@ mirrors the file-level node set, including the postfix `*_modifier` forms.
 
 ## Relationship ontology
 
-The enum has 11 distinct values. This is what the analyzer does with **each** of them.
+**This table is the claim.** The engine's canonical surface is 14 relationship types, and every
+one of them has a row whether or not this analyzer publishes it — a type it does not publish is
+**ruled**, not omitted. `script/m14/verify-doc-truth-emissions.ts` reads THIS table's `Emitted?`
+column against `src/ast/real-ruby-analyzer.ts` (comments and string literals stripped first) and
+`script/m14/verify-analyzer-docs.ts` reads it for unexplained cells, so the cells are checked by
+two instruments and are written to be read, not admired.
 
-| Relationship | Rule |
-| --- | --- |
-| `calls` | non-builtin `call` nodes, plus bare identifiers in expression position that are not locals (marked `bareCall: true`). Source = enclosing method, else owner, else `Global`. Receiver calls keep the leaf target; constructor expressions keep the class target. |
-| `uses` | instance-variable **reads** (marked `memberRead`), and ActiveRecord association macros (marked `activerecordMacro`). Writes — including compound-assignment LHS — stay silent. |
-| `extends` | Ruby superclass (`class Child < Parent`) when the base is a **statically nameable constant path**, plus the factory spelling `K = Class.new(Base)`. **`extend` is NOT here any more** (RUBY-D1): it composes the module into the singleton class, which is mixin composition (`mixes_in`), not inheritance. |
-| `mixes_in` | **CANONICAL mixin composition (RUBY-D1, 2026-10-19)**: `include M` / `prepend M` compose M into the class's ancestor chain, `extend M` into its singleton class — source = the composing class/module, target = the mixin, `metadata.mixinType` records which keyword. Constant targets only: a lowercase or computed arg is a dynamic mixin and correctly emits nothing. The family's previous adaptation (include/prepend -> `implements`, extend -> `extends`) is RELABELLED at the unchanged sites: cap-50 `implements` 17 -> 0, `extends` 48 -> 44, `mixes_in` 0 -> 21 = 17 + 4 exactly, TABLE 1 totals byte-identical. |
-| `implements` | **RULED NOT APPLICABLE for Ruby (RUBY-D1)**: the grammar has no interface/conformance construct — no keyword, no production, no enforcement, and duck typing is not a declared conformance. The value this lane used to publish here was a mixin wearing the wrong name; it now publishes `mixes_in`. 0 edges, measured over the fixture corpus and at whole-population arms. |
-| `instantiates` | `X.new` on a constant receiver. A receiverless `new` names the enclosing class and is marked `resolvedTarget: "enclosing-class"`. Expression receivers and variable receivers correctly emit nothing (RB-A). |
-| `overrides` | 0.95 when the base's method is verifiable from local declarations or the project companion index; 0.5 with `reasonCode: "first-parent-guess"` when the base is external and unverifiable. |
-| `references` | `require` / `require_relative` / `load` / `autoload` string paths, source `Global`. |
-| `contains` | one edge per owned symbol, from `ownerName`. |
-| `imports` | **EMITTED (corrected 2026-10-19; the handover claim below is stale).** `require` / `require_relative` / `load` / `autoload` publish ONE `imports` edge per required path (source = the file unit, `fileLevel: true`, `requireMethod`, `resolution: file-relative` for `require_relative` and `load-path` for a bare `require`), beside the `references` row and the `imports[]` payload record — the same fact in the graph channel, the reference channel and the index channel, which is the family's stated convention for load directives (`pushLoadFacts`). Measured: 64 `imports` edges on the cap-50 stride, one-for-one with the `references` require rows. |
-| `exports` | **EMITTED, with ADAPTED semantics, declared (corrected 2026-10-19; the handover claim below is stale).** Ruby has no export KEYWORD, but a FILE UNIT has a reachable surface: top-level constants/defs are published as `exports` with source = the path-derived file unit (`resolvedTarget: file-unit`) and the measured refusals — singleton-class members, `private_constant` deletions, reopens/duplicates are ONE unit, unnameable symbols. Measured: 59 `exports` edges on the cap-50 stride (35 resolved). |
-| `Dependency` / `Related` | enum aliases of `uses` / `references`, not separate types. |
+Edge counts in the last column are the **whole-population arm** — `BB_CORPUS_ROOT=$PWD/.corpus
+BB_DUMP_LIMIT=2000000 bun run script/m14/incoming-gate.ts ruby rb 0` over **989 admitted `.rb`
+across 15 repositories, 0 parse failures, `index=no` (arm A)** — preserved at
+`validation/m14/measurements/ruby-gate-postownerless-2026-10-22.txt`. They are edges **emitted**,
+which is a different quantity from the same table's resolution classes: `resolved 29,518 +
+amb(decl) 18,986 + unresolved 33,653 + causeOK 2,945 = 85,102` closes exactly over the arm, with
+`amb(kind) 9,695` and `collRes 5,732` reported beside it and never added.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | **yes** — relationship | A `call` node's own method name, published unless the name is in `RUBY_BUILTINS` (the analyzer's suppression list — see the note below the table) or the call is a load directive, which publishes `imports`/`references` instead. Bare identifiers in expression position that are not locally bound are also `calls`, marked `bareCall`. `alias new old` publishes a `calls` edge named by the NEW name whatever the old name's shape — setter and operator aliases included — with `aliasedTo` carrying the old one. Source is the enclosing method, else the owner, else the file unit. | `confidence: 0.9` at every `calls` site — the bare-identifier and alias forms are parse-scope inferences, not token facts. Measured **57,324** edges (resolved 14,450 · amb(decl) 18,133 · unresolved 24,741); resolve-through is low because a Ruby call names a framework DSL method no repository in the corpus declares. |
+| `contains` | **yes** — relationship | One edge per owned symbol, `source = ownerName`, after the single post-pass that drops an `exports` pair which would duplicate a `contains` pair. | `confidence: 1.0` — both sides are declarations this file just produced. Measured **10,209** edges, all 10,209 resolved, of which **5,732** are tie-break picks (`collRes`): the target had more than one declaration and production's tie-break chose one. |
+| `exports` | **yes** — relationship + `ExportInfo[]` | Ruby has no export keyword, so a FILE UNIT is the exporting surface: top-level constants and defs publish `exports` with `source` = the path-derived file unit and `resolvedTarget: file-unit`, beside the `ExportInfo[]` payload. Refusals: singleton-class members, `private_constant` deletions, reopens/duplicates collapse to ONE unit, and unnameable symbols. | `confidence: 1.0` — the surface is the file's own declarations. Measured **1,367** edges, 1,365 resolved (2 ambiguous). The payload channel is live too, so a consumer reading `ExportInfo[]` sees the same fact the edge carries. |
+| `imports` | **yes** — relationship + `ImportInfo[]` | `require` / `require_relative` / `load` / `autoload` publish ONE `imports` edge per required path (source = the file unit, `fileLevel`, `requireMethod`, `resolution: file-relative` for `require_relative` and `load-path` for a bare `require`), beside the `references` row AND the `imports[]` payload record — **the same fact in three channels**, which is this family's convention for load directives (`pushLoadFacts`). | `confidence: 1.0` — a literal path in a `call` node. Measured **1,304** edges, 30 resolved (12 ambiguous, 1,262 unresolved): a require target is a PATH, not a symbol, so the graph channels cannot resolve most of them — see the reachability note further down, which is the same fact measured a second way. |
+| `references` | **yes** — relationship | The same load directives as `imports`, in the reference channel: `require` / `require_relative` / `load` / `autoload` string paths with source `Global` (the file unit). | `confidence: 0.9` — the path is structural but the reference channel does not promise a symbol behind it. Measured **1,304** edges, 30 resolved — one-for-one with `imports`, which is the pairing the next section argues for. |
+| `uses` | **yes** — relationship | Instance-variable **reads**, marked `memberRead`, including a read OUTSIDE any method body (attributed to the file-level owner — a class-body or DSL-scope `@x` is a real read). Writes stay silent, including compound-assignment LHS and multiple-assignment targets. ActiveRecord association macros publish `uses` marked `activerecordMacro`. | `confidence: 0.9` on a member read, **0.8** on an ActiveRecord macro — the macro names a class the string does not prove. Measured **4,760** edges, 14 resolved and 4,746 unresolved **by construction**: a variable is not a declaration, so this is the one type whose near-100% unresolved share is the correct class rather than a defect. |
+| `overrides` | **yes** — relationship | A method in a subclass whose name is also declared in a base the analyzer can see: from local declarations or the project companion index when present. | `confidence: 0.95` when the base method is verified (`isOverride`); **0.5** with `reasonCode: "first-parent-guess"` when the base is external and unverifiable — a declared guess rather than a dropped edge. Measured **3,117** edges: 172 unresolved in scope and **2,945 carrying a DECLARED cause** (`baseBeyondRunScope` — the base is declared in another file, which a per-file scope cannot reach and the arbiter answers with the project). |
+| `extends` | **yes** — relationship | The Ruby superclass (`class Child < Parent`) when the base is a statically nameable constant path, plus the factory spelling `K = Class.new(Base)`. `extend` is NOT here (RUBY-D1): it composes a module into the singleton class and publishes `mixes_in`. | `confidence: 1.0` — the superclass field is a grammar field, and `isRubyStaticSuperclassName` is a character scan exported so the oracle shares it instead of keeping a drifting copy. Measured **1,895** edges = 1,886 nameable superclass clauses + 9 factory superclasses, exactly (see the probe reconciliation in the cell, `validation/m14/verification/RUBY-CELL-2026-10-21.md` §4C). |
+| `implements` | **no** — ruled undecidable | **RULED UNDECIDABLE, rung R1+R2 named and measured.** R1 (bump the grammar package to a build whose inventory has the construct) is **measured unavailable**: npm's newest `tree-sitter-ruby` is 0.23.1 and a build of that source against the wired build has a named-type delta of added 0 / removed 0, so there is no newer inventory to bump to. R2 (clone, patch, `tree-sitter generate`, `tree-sitter build --wasm`) is mechanically available but its fire measurement is **0**: an AST-verified patched conformance rule fires on **0 of the 989 admitted files**, and narrowing to the 11 conformance-shaped node types turns the 69 files that merely contain the TOKEN `implements` into 0 files carrying a conformance NODE. The pinned build declares 0 of 9 candidate conformance node types, with the positive control firing 4/4 in other grammars. | No confidence is claimed, because no edge is emitted. What IS claimed is a **zero over the whole admitted population** (0 rows of 989 files) plus the ruling: Ruby's grammar has no interface/conformance production, duck typing is not declared conformance, and the value this lane used to publish here was a mixin wearing the wrong name — it now publishes `mixes_in`. The rung ladder and its citations are in `validation/m14/verification/RUBY-CELL-2026-10-21.md` §5. |
+| `instantiates` | **yes** — relationship | `X.new` on a constant receiver. A receiverless `new` names the enclosing class and is marked `resolvedTarget: "enclosing-class"`. Expression and variable receivers emit nothing (`X.new(...).new` constructs an anonymous class, and the guard says so). | `confidence: 0.9` — the receiver is a constant path, but whether the class is the caller's enclosing class is an inference. Measured **3,426** edges, 1,831 resolved (235 ambiguous, 1,360 unresolved: the class is usually declared in another file). |
+| `mixes_in` | **yes** — relationship | **Canonical mixin composition (RUBY-D1, 2026-10-19).** `include M` / `prepend M` compose M into the class's ancestor chain, `extend M` into its singleton class; source = the composing class/module, target = the mixin, `metadata.mixinType` keeps the keyword spelling. DECIDED BY THE STATIC SELF-TYPE, NOT BY THE NAME: `def self.x` is a `singleton_method` NODE and `def x` a `method` NODE, so whether `self` is the class or an instance is a node-type question. Refused, with the count: a receivered call (`cls.extend(X)`, `self.extend`), an instance `self`, a top-level `self`, a non-constant target (a lower-case identifier is a local, and in RSpec a `let`), a class-answering a name it defines itself, and a call whose enclosing scope names NO class (`Class.new { }` on a local's RHS — 20 rows). | `confidence: 1.0` — a constant-argument composition inside a class body is a token fact once the self-type is read off the node type. Measured **396** published rows: 322 resolved, 34 ambiguous, 40 unresolved. The count moved 543 (first emission surface) → 416 (after the four impostor classes) → **396** (after the named-owner refusal), each step a measured refusal. Located 396 of 396 in the trees by `script/m14/ruby-mixin-impostor-census.ts`, impostors A/B/C all **0**. |
+| `part_of` (canonical) | **no** — ruled undecidable | **RULED UNDECIDABLE, rung R1+R2 named and measured.** Same grammar finding as `implements`, measured separately: R1 unavailable (no newer inventory), and an AST-verified `part_of` rule fires on **0 of 989 files** — the single file that contains a plausible textual marker carries no containment node, so the token census (1 file) and the AST census (0 files) disagree and the AST is the one that counts. The relations Ruby DOES have here are `contains` (a member is part of its owner) and `mixes_in` (a module joins an ancestor chain), and both are already published under their own labels — 0 new-information rows. | No confidence is claimed, because no edge is emitted. Claimed: **0 rows over the whole admitted population**, plus the near-miss census showing the relation is already published under `contains` and `mixes_in` rather than lost. Rung ladder: cell §5. |
+| `renders` | **no** — ruled undecidable | **RULED UNDECIDABLE, rung R1+R2 named and measured.** Ruby has no template/render production in the grammar and no static binding from a render call to a template: `render :show` / `render json: x` name a SYMBOL or a computed value, so any rule would be a name/call filter, which is the impostor test this fleet has already refuted (a filter on the NAME cannot separate a construct from its impostor). Measured: R1 unavailable, and an AST-verified renders rule fires on **0 of 989 files** (36 files contain the token; 0 carry a render node). | No confidence is claimed, because no edge is emitted. Claimed: **0 rows over the whole admitted population**. A `render` call is still published as a `calls` edge to the method name, which is the fact the analyzer can stand behind — the template relation is the part that is not statically decidable. |
+| `decorates` | **no** — ruled undecidable | **RULED UNDECIDABLE, rung R1+R2 named and measured.** Ruby has no decorator production: the popular decorator gems are `Class.new` wrappers, `SimpleDelegator` subclasses and `def_delegators` macros, which the grammar cannot distinguish from an ordinary class or an ordinary method call without executing the DSL. Measured: R1 unavailable, and an AST-verified decorates rule fires on **0 of 989 files** (0 files even contain the token). | No confidence is claimed, because no edge is emitted. Claimed: **0 rows over the whole admitted population**, and the wrapper classes and `def_delegators` macros are still published as `class` symbols and `calls` edges — the decoration RELATION is what is not statically decidable. |
+
+**Two notes on how to read that table.**
+
+- **`RUBY_BUILTINS` is a suppression list, not a judgement about the language** — adding a name
+  that is not already in it is always wrong, and widening it is the one move this campaign
+  forbids: **a row one does not want is a census entry, not a builtin.** A working-tree experiment
+  that added `"new"` to it suppressed the whole instantiation convention and broke seven fixtures;
+  the episode and its measurement are recorded in the cell §10.
+- **`part_of` carries a `(canonical)` marker**: `verify-doc-truth-emissions`'s alias map keeps a
+  ten-kind surface and maps the underscore-stripped `partof` onto `contains` (an adaptation other
+  lanes legitimately use). Without the marker, this row's *no* would be graded against `contains`
+  — which IS live — and the gate would report a FALSE_NEGATIVE on a true claim. The marker keeps
+  the row's own name from being read as another kind's name; `renders`, `decorates` and `mixes_in`
+  need none, because their stripped spellings name no engine kind. **The gate's ten-kind surface
+  against the fleet's fourteen-kind ontology is a gap in the gate, not in this page** — reported,
+  not worked around anywhere else.
+- `Dependency` / `Related` are enum ALIASES of `uses` / `references`, not separate types, so they
+  are not rows here.
 
 ### CORRECTION 2026-10-19 (ALL-OUT-OF-ALL phase 2) — which rows of the handover state below are STALE
 
@@ -105,7 +138,7 @@ BOTH the edge and the payload exist), but a reader must not take the "silent typ
 Also corrected above: `mixes_in` is the canonical mixin value (RUBY-D1 relabel), `implements` is ruled
 not applicable, and `extends` no longer carries `extend`.
 
-## Relationship ontology — handover state, 2026-10-05, re-measured
+## Handover provenance, 2026-10-05 — re-measured, and still the record
 
 ### Handover baseline: production-path firing check
 
@@ -281,8 +314,13 @@ does when it emits no edge at all.
 - **This grammar wraps the node you want.** `superclass`, `splat_parameter`, `destructured_parameter` and
   `exception_variable` all wrap the interesting child, and reading the field expecting a leaf returns
   nothing — silently, for the entire corpus.
-by nothing. Both are now derived (`reviews/ruby/patches/differential-ruby-oracle-mirrors-2.patch`) and
-audited, which is what made the two identity defects below findable at all: both are *containment* facts.
+**A SECOND READING OF THE SAME QUESTION, KEPT BECAUSE IT WAS TAKEN WITH A DIFFERENT ORACLE BUILD.**
+This block is the staged-oracle-mirrors reading (`reviews/ruby/patches/differential-ruby-oracle-mirrors-2.patch`,
+8 audited labels, full 8,528-file corpus). It is NOT in contradiction with the reading above — the two
+were taken against different mirror sets, and the numbers differ for that reason rather than because
+either is wrong. **The current same-file reading for this campaign is the gap census below the second
+table: 813 files of `rack` + `gql-ruby`, `MISSING 99` / `UNEXPLAINED 176`, in
+`validation/m14/measurements/ruby-differential-gap-2026-10-22.json`.**
 
 **Full corpus, 8,528 `.rb` files, 8 audited labels** (`rb-corpus-census.ts` + the staged oracle mirrors):
 
@@ -375,12 +413,12 @@ single post-pass. No nested symbol/relationship scan is used for ordinary extrac
 
 ## Differential ground truth
 
-- Result `validation/m12/results/r-differential.json`: `passed: true`, expected 46, truePositive 46, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Result `validation/m12/results/ruby-differential.json`: `passed: true`, expected **37**, truePositive 37, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1 — over three fixtures (`Service.rb`, `BaseService.rb`, `Negative.rb`), `kind: per_analyzer_differential:ruby`, `truthSource: manual_audit`. **Corrected 2026-10-22:** this line used to cite `r-differential.json`, which is `kind: per_analyzer_differential:r` — the **R language's** file (expected 46), not Ruby's. The section below had always cited the right one, so the page carried the same fact under two filenames and one of them was another language's.
 
 ## Corpus validation
 
 - Corpus `validation/m12/results/ruby-corpus-errors.json`: corpus `rake`, extensions `*.rb`, 0 error files, 0 crash files.
-- Differential `validation/m12/results/ruby-differential.json`: `passed: true`, expected 37, truePositive 37, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Differential: the same `ruby-differential.json` artifact, cited in full under **Differential ground truth** above rather than restated here — one artifact, one citation.
 
 ## Complexity envelope
 
@@ -416,10 +454,12 @@ No in-tree `ruby-complexity.json` artifact exists, so no wall-clock envelope is 
 
 Re-derived at the commit of `reviews/ruby/m60-deep-round.md`:
 
-- Fixtures: **9/9 pass** (`script/m14/run-fixtures.ts --lang ruby`; 8 pre-existing plus `m60-deep-round`)
-- Mutation: **38/38 caught, 0 survivors** (`BB_MUTANT_ONLY="ruby/"`); four further catalog mutants are
-  **staged, not committed**, in the review §7.1 — the F4 count is 38 and not 42 by decision, because the
-  catalog is a shared file.
+- Fixtures: **13/13 pass, 0 fail** (`bun run script/m14/run-fixtures.ts --lang ruby`, re-run on committed HEAD 2026-10-22; the suite was 9 when this section was written — `mixin-discriminator` and three later pins are the additions). The suite is one of the completion gate's five DONE conditions, so this number is a gate input and not a courtesy.
+- Mutation: **42 of 42 caught, 0 survivors** (`BB_MUTANT_ONLY="ruby/" bun run script/m14/mutate-analyzer.ts`,
+  2026-10-22; the harness filtered 2,056 → 42). The four mutants this line used to call *staged, not
+  committed* are committed now, in the lane's own `script/m14/ruby-mutants.ts` — including
+  `ruby/mixes-in-accept-explicit-receiver` and `ruby/mixes-in-accept-ownerless-factory`, which pin the
+  two `mixes_in` refusals. **A no-op mutant is not a pass**, so each one's defect signature is its own.
 - M12 ground truth: **37 facts, precision 1.000, recall 1.000, 0 FP, 0 FN** (re-derived live; the
   committed sealed artifact is left untouched, because re-running the shared script drops its `bbSeal`
   and adds other lanes' rows — see the review §7.2)
@@ -428,7 +468,11 @@ Re-derived at the commit of `reviews/ruby/m60-deep-round.md`:
   for continuity; the current whole-corpus reading is the table above.
 - Repository-wide relationship-type gate: **ruby 8 emitted, 8 audited, 0 findings** — both of Ruby's
   recorded DERIVATION debts are repaid and removed from the shrink-only baseline. Gate self-test
-  **17/17**.
+  **17/17**. **Read the count against the current emission surface, which is 10:** the `mixes_in`
+  relabel (RUBY-D1) added a type and moved `extend` out of `extends`, and the load-channel pair
+  (`imports`, `exports`) is audited on its own payload channels rather than in that instrument's
+  8. The 14-type truth this page now carries is the ontology table above; the 8 is the instrument's
+  audited set at the time of that run.
 - **Symbol coverage** (`rb-node-coverage.ts`, full corpus): the analyzer names 67 of the 284 grammar node
   types and the unreferenced ones are overwhelmingly literal or lexical nodes (`string_content`,
   `comment`, `pair`, `integer`, heredoc parts) that require no declaration rule. The remaining
@@ -441,8 +485,6 @@ Re-derived at the commit of `reviews/ruby/m60-deep-round.md`:
   so the binding is the ceiling, not the traversal. Budgets are pinned at p95 <= 40 ms, max <= 4 s and
   >= 150 files/s — set from the measurement with ~15% headroom rather than from an aspiration, because a
   budget pinned at the measurement fails on any slower machine and trains its reader to ignore it.
-  0**; mastodon **0 / 79**; rails **20 / 59**. **All** of the residual is oracle-side and is adjudicated in
-  the review §4.2.
 - Stride census, 400 files per corpus: **zero analyzer-side fabrications after this round**; every
   remaining unexplained edge is an `uses` association the read oracle has no truth derivation for, and
   every remaining missing edge is an `overrides` edge the read oracle fabricated through a nested-class
