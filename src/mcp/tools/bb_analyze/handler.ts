@@ -40,9 +40,9 @@ import { graphTraversal } from "../../../intelligence/graph/graph-engine"
 // canonical calculator (computeImpact + its declared budget) as `bb_impact`, so
 // the two doors cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../../../lsp/impact"
-// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
-// The agent door CALLS it. It used to carry a drifted copy of the rule — see the
-// `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
+// The ONE owner of the evidence-tier vocabulary and derivation. The agent
+// door CALLS it. It used to carry a drifted copy of the rule — see the
+// `tierFor` delegation in bb_graph below for the shape of
 // defect a copy-projection is.
 import { classifyTier } from "../../../lsp/evidence_tier"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../../../lsp/cross_language_hover"

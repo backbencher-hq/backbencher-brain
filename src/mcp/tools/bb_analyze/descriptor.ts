@@ -18,7 +18,7 @@ export const descriptor: ToolDescriptor = {
     mutability: "read",
     requiresIndex: true,
     modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
-    // M35.S1: every bb_analyze mode is a read path over the index — all carry
+    // Every bb_analyze mode is a read path over the index — all carry
     // the staleness envelope on their output.
     freshnessModes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
     aliases: [],

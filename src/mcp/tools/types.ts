@@ -68,14 +68,14 @@ export interface ToolDescriptor {
   /** Modes on the roadmap but NOT executable. Never advertised as available. */
   plannedModes?: readonly string[]
   /**
-   * M35.E1: modes whose JSON envelope must carry the registered staleness
+   * Modes whose JSON envelope must carry the registered staleness
    * block ({ fresh, stale, missing, staleRatio, mode, remediation }).
    * Enforced by script/m35/verify-envelope-contract.ts against the real
    * handlers: a registered mode that omits the block fails the gate.
    */
   freshnessModes?: readonly string[]
   /**
-   * M71.D6: modes that do NOT need an index — the per-mode refinement of
+   * Modes that do NOT need an index — the per-mode refinement of
    * `requiresIndex`, the same way `freshnessModes` refines a tool's freshness
    * surface.
    *

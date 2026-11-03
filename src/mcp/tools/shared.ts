@@ -34,14 +34,14 @@ import { generateDocumentation, formatDocumentation, type DocRequest } from "../
 import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../intelligence/migration/migration-engine"
 import { graphTraversal } from "../../intelligence/graph/graph-engine"
-// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
-// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
-// (computeImpact + its declared budget) so the two doors cannot disagree.
+// The agent door reuses the EXACT components the IDE door uses — one truth,
+// two doors, no reimplementation. bb_analyze impact aggregates the SAME
+// canonical calculator (computeImpact + its declared budget) so the two doors
+// cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../../lsp/impact"
-// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
-// The agent door CALLS it. It used to carry a drifted copy of the rule — see the
-// `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
+// The ONE owner of the evidence-tier vocabulary and derivation. The agent
+// door CALLS it. It used to carry a drifted copy of the rule — see the
+// `tierFor` delegation in bb_graph below for the shape of
 // defect a copy-projection is.
 import { classifyTier } from "../../lsp/evidence_tier"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../../lsp/cross_language_hover"
@@ -52,7 +52,7 @@ import { testMapping, testGaps, testImpact } from "../../intelligence/testing/te
 import { makeProvenance } from "../../intelligence/evidence"
 import type { AnalysisFindingInput } from "../../intelligence/contracts"
 
-// M35.S2: staleness for TEXT-mode derived-analysis read paths (bb_patterns,
+// Staleness for TEXT-mode derived-analysis read paths (bb_patterns,
 // bb_security). Resolve the status of every unique finding file through the
 // F1 batch resolver and render per-finding markers + a footer built from the
 // REGISTERED remediation constants — never ad-hoc text. Empty findings → no
@@ -125,7 +125,7 @@ export type ToolResult = {
   content: Array<{ type: "text"; text: string }>
   isError?: boolean
   /**
-   * M64.P2: for tools that REPORT a condition rather than failing at it.
+   * For tools that REPORT a condition rather than failing at it.
    * `false` means the answer contains error-severity findings.
    *
    * bb_health is the first user. It answers "is the index healthy?" — a broken
@@ -244,7 +244,7 @@ export async function describeUnknownFilters(projectId: string, args: Record<str
   return null
 }
 
-// M48.P1 (#696): canonical impact report for bb_analyze mode=impact.
+// Canonical impact report for bb_analyze mode=impact.
 // Numbers (symbol set, truncation, declared total, budget/depth) come from
 // computeImpact — the SAME component bb_impact and the editor use. The
 // aggregation adds only what the report semantics genuinely need: file-level
@@ -280,7 +280,7 @@ export async function canonicalImpactReport(
     // No root, so no match — the same key set in every state.
     root: null,
     notFoundReason: "absent",
-    source: "impact@lsp-canonical (computeImpact, M48.P1) — no walk was performed",
+    source: "impact@lsp-canonical (computeImpact) — no walk was performed",
     provenance: makeProvenance({
       evidenceClass: "unknown",
       engine: "impact@lsp-canonical",
@@ -433,7 +433,7 @@ export async function canonicalImpactReport(
     riskLevel,
     truncated: result.truncated,
     truncationReason: result.truncationReason,
-    // Declared limits (M48.P1): the cap and the depth actually reached are
+    // Declared limits: the cap and the depth actually reached are
     // always stated — a reader never has to guess whether more exists.
     depthCap: IMPACT_BUDGET.maxDepth,
     nodeBudget: IMPACT_BUDGET.maxNodes,
@@ -444,7 +444,7 @@ export async function canonicalImpactReport(
     // for exactly this ("showing X of Y"). It was computed and then dropped,
     // so a truncated set could only ever be read as the whole set.
     totalSymbolsIfKnown: result.totalCountIfKnown,
-    source: "impact@lsp-canonical (computeImpact, M48.P1)",
+    source: "impact@lsp-canonical (computeImpact)",
     provenance: makeProvenance({
       evidenceClass: "inferred",
       engine: "impact@lsp-canonical",
