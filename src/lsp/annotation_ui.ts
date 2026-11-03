@@ -1,18 +1,22 @@
-// src/lsp/annotation_ui.ts — M28.A2 (issue #627): the SINGLE owner of how an
-// agent annotation renders in the IDE.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// An annotation is an opinion layered on evidence (M28 decision D-3/D-6):
-// every rendering path here labels the author class and tool identity so an
-// agent note can NEVER read as index-derived fact. Drift-gated by
-// script/m28/verify-annotation-ui.ts (mutation suite included).
-//
-//   hoverSection:   one string for the hover markdown (empty when no
-//                   annotations — absence declared, nothing rendered, the
-//                   exact contract of the cross-language section in W3)
-//   badge:          the graph-webview badge fields for one symbol
-//   badgeEqualsEdge: defensive rule — a badge element must never disagree
-//                   with the node it sits on (same symbol id); mirrors the
-//                   W4 badge law for edges.
+// WHAT THIS FILE IS — the ONE renderer of a stored annotation for the IDE — the hover section and the graph badge.
+// WHICH TOOL IT SERVES — bb_annotate (write side) and bb_annotations (read
+//   side), consumed by the IDE hover and the graph badge; no other surface
+//   owns how a stored annotation renders to a human.
+// WHY SHAPED THIS WAY — every rendering path labels the author class and tool
+//   identity so an agent note can never read as index-derived fact; absence is
+//   declared (an empty section, nothing rendered) rather than rendered as zero.
+// WHERE EVIDENCE LIVES — validation/tools/bb_annotate/AUDIT.json,
+//   validation/tools/bb_annotations/, script/m28/verify-annotation-store.ts and
+//   script/m28/verify-annotation-ui.ts.
+// EDIT TOGETHER — src/brain/annotation-store.ts (identity), src/lsp/hover.ts
+//   (the section consumers), and the two tool descriptors.
+// CONTRACTS — provenance never spoofable; one note per author per symbol+path;
+//   path canonicalization decides reachability; a hostile body cannot forge a
+//   second note or a human-authored line.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface AnnotationRow {
   symbol_name: string

@@ -116,7 +116,7 @@ function generateSurface(tools: Descriptor[], ledger: { issues: Array<{ code: st
   lines.push("")
   if (t1) {
     lines.push(
-      `The three new read tools reuse their IDE-side components (D-1) — verified ${t1.status} via [T1.json](../../validation/m28/results/${t1.evidence?.evidenceFile ?? "T1.json"}).`,
+      `The three new read tools reuse their IDE-side components (D-1) — ${t1.status} via [T1.json](../../validation/m28/results/${t1.evidence?.evidenceFile ?? "T1.json"}).`,
     )
     lines.push("")
   }

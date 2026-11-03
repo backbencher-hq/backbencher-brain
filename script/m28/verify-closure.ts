@@ -203,7 +203,13 @@ const a2Ev = evidenceFor("A2")
 const u1Ev = evidenceFor("U1")
 const surfaceSrc = existsSync(join(ROOT, "script/m28/verify-mcp-surface.ts")) ? readFileSync(join(ROOT, "script/m28/verify-mcp-surface.ts"), "utf8") : ""
 const storeSrc = existsSync(join(ROOT, "src/brain/schema-ddl.ts")) ? readFileSync(join(ROOT, "src/brain/schema-ddl.ts"), "utf8") : ""
-const annotateSrc = existsSync(join(ROOT, "src/mcp/tool-handlers.ts")) ? readFileSync(join(ROOT, "src/mcp/tool-handlers.ts"), "utf8") : ""
+const annotationModules = [
+  "src/mcp/tools/bb_annotate/handler.ts",
+  "src/mcp/tools/bb_annotate/descriptor.ts",
+  "src/mcp/tools/bb_annotations/handler.ts",
+  "src/mcp/tool-handlers.ts",
+].filter((p) => existsSync(join(ROOT, p)))
+const annotateSrc = annotationModules.map((p) => readFileSync(join(ROOT, p), "utf8")).join("\n")
 
 const barInput: BarInput = {
   ledger: ledgerMap,

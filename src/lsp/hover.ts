@@ -1,52 +1,22 @@
-// src/lsp/hover.ts — M24.L2: hover over the persisted index.
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// The only hover implementation for bb_lsp. Reads brain_symbol +
-// brain_relationship and produces an LSP hover whose content states what the
-// data is, how much to trust it, and whether it is stale — the differentiator
-// claim: "the only hover that states how much to trust itself" (issue #491).
-//
-// Complement stance (IDE Honesty Contract §7): the hover is labeled as coming
-// from the bb index; it never pretends to be compiler-grade semantics.
-//
-// Declared guarantees (gated by script/m24/verify-hover.ts):
-//   G1 content:     hover at an indexed symbol returns name, signature,
-//                   usage count, and evidence tier(s) of its edges
-//   G2 consistency: usage count agrees with a direct count of
-//                   brain_relationship rows for the same symbol
-//   G3 honesty:     symbol not in index → declared "not indexed" hover,
-//                   never a fabricated entry
-//   G4 positions:   position resolution via the P1 component ONLY
-//                   (no inline conversion — contract §5). Lane 6: this claim
-//                   was FALSE at `findSymbolAtPosition` until this wave — the
-//                   line was converted inline in the SQL argument list
-//                   (`position.line + 1`) two lines under this very comment.
-//                   A gate that reads a comment is not a gate; the claim is now
-//                   asserted at the SOURCE level (a planted `line + 1` must
-//                   fail) by script/m24/verify-hover.ts.
-//   G5 freshness:   stale file (hash differs from disk) → stale marker on
-//                   the hover, per the freshness gate (P2)
-//   G6 latency:     p95 warm hover under the 50 ms budget on the fixture
-//                   workspace (contract §3) — measured, machine-recorded, as a
-//                   p95 over the full sample set. The pre-lane check was a p95
-//                   over 100 samples with the fixture double, which is a real
-//                   p95; the M42 sibling gate's MEAN over 40 is not, and it is
-//                   named as such in that gate's own limitations.
-//   G7 absence:     a non-launch language returns a declared-absent envelope
-//                   naming the language AND the launch set, with no data —
-//                   asserted structurally at the component layer (not by a
-//                   substring), because a substring check cannot tell a
-//                   declared absence from prose that happens to say "launch".
-//   G8 resilience:  ONE unresolvable stored row must not fail the whole hover
-//                   (lane 6: measured 71/4000 symbols on a real index throwing
-//                   PositionError out of the collector, which the server turns
-//                   into a rejected LSP request — the editor then silently
-//                   falls back to its native hover and the user sees NOTHING).
-//
-// Declared limitations:
-//   - index-sourced only; no compiler-backed types (complement stance)
-//   - evidence tiers describe relationship data quality, not symbol truth
-//
-// Run: imported by src/lsp/server.ts (registered as textDocument/hover in L2)
+// WHAT THIS FILE IS — {what}
+// WHICH TOOL IT SERVES — the IDE surface of the index: every bb tool whose
+//   evidence appears in a hover (bb_graph, bb_impact, bb_cross_language,
+//   bb_annotate / bb_annotations) plus bb_lsp itself.
+// WHY SHAPED THIS WAY — every rendering path labels the author class and tool
+//   identity so an agent note can never read as index-derived fact; absence is
+//   declared (an empty section, nothing rendered) rather than rendered as zero.
+// WHERE EVIDENCE LIVES — script/m24/verify-hover-docs.ts, script/m55/verify-hover-coverage.ts,
+//   script/m28/verify-annotation-ui.ts, validation/tools/bb_annotate/ and
+//   validation/tools/cross-language/.
+// EDIT TOGETHER — src/lsp/hover_render.ts (section renderers), src/lsp/evidence_tier.ts
+//   (the trust tier), src/brain/annotation-store.ts (annotation identity).
+// CONTRACTS — every content block states what the data is, how much to trust it,
+//   and whether it is stale; a section is empty (nothing rendered) when its
+//   evidence is absent; the trust tier is derived, never asserted.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { readFileSync } from "node:fs"
 import type { CoreDatabase } from "../brain/database"
@@ -74,13 +44,13 @@ import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference
 import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
- *  the single-owner module (M29.R2: one owner; the set was duplicated here
+ *  the single-owner module (one owner; the set was duplicated here
  *  and in server.ts — a drift hazard the wave found). */
 import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_languages"
 export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
 /** Evidence tiers for relationship data, per the evidence class vocabulary.
- *  M55.T5: the hover tier is derived by the SINGLE owner
+ *  the hover tier is derived by the SINGLE owner
  *  (src/lsp/evidence_tier.ts) — the same rule the W4 legend and the hub row
  *  chips use. Before T5 this file carried its own copy of the rule whose
  *  legacy coarse map answered "indexed" for `imports`/`references`/`uses`
@@ -101,7 +71,7 @@ export interface SymbolHoverData {
   qualifiedName: string | null
   symbolType: string
   signature: string
-  /** M55.T4 (§14 Truth Rule 4): the STORED structured parameters, typed and
+  /** (§14 Truth Rule 4): the STORED structured parameters, typed and
    *  unrendered — the wire keeps the machine data while the rendered signature
    *  is human text (a client that wants the structured form reads this, never
    *  the markdown). null when the index stores no structured list (declared
@@ -123,11 +93,11 @@ export interface SymbolHoverData {
    */
   indexedFileCount: number | null
   evidenceTiers: EvidenceTier[]
-  /** M26.W3: pre-rendered cross-language section — empty string when the
+  /** pre-rendered cross-language section — empty string when the
    *  index stores no cross-language rows for this symbol (the hover then
    *  renders NO cross-language text at all: absence declared in docs). */
   crossLanguageSection: string
-  /** M28.A2: pre-rendered annotation section — empty string when the index
+  /** pre-rendered annotation section — empty string when the index
    *  stores no annotations for this symbol (same declared-absence contract
    *  as the cross-language section above). Author-labeled by the
    *  annotation_ui owner; an agent note never reads as index fact (D-6). */
@@ -137,13 +107,13 @@ export interface SymbolHoverData {
   filePath: string
   lineStart: number | null
   lineEnd: number | null
-  /** M42.H2: LSP location of the declaration (definition link); null when
+  /** LSP location of the declaration (definition link); null when
    *  the range is not resolvable — the footnote then stays plain text. */
   definition: { line: number; character: number } | null
-  /** M42.H2: pre-rendered connected-summary line — empty string when no
+  /** pre-rendered connected-summary line — empty string when no
    *  connection facts exist (declared absence, never a placeholder). */
   connectedSection: string
-  /** M42.H2: pre-rendered usages section — empty string when no usage
+  /** pre-rendered usages section — empty string when no usage
    *  sites exist (declared absence). */
   usagesSection: string
   /** Owner-decided ("show all the relationships, not just contains"): the
@@ -153,12 +123,12 @@ export interface SymbolHoverData {
    *  nor is declared by anything (declared absence). It is a separate section
    *  rather than a loosened usage list precisely so the usage law stays intact. */
   containmentSection: string
-  /** M42.H4: pre-rendered hover-actions row (open in graph / impact /
+  /** pre-rendered hover-actions row (open in graph / impact /
    *  call hierarchy) — empty string when the symbol identity (declaration
    *  location) is not resolvable: no actions without a clickable target
    *  (§12.1 nothing unclickable). */
   actionsSection: string
-  /** M55.T6: the type's PROVENANCE, decided by the one owner
+  /** the type's PROVENANCE, decided by the one owner
    *  (src/lsp/type_inference_surface.ts). Exactly one of `stored` /
    *  `inferred` / `unknown` — the pre-T6 hover showed `brain_symbol.return_type`
    *  with no statement of whether the analyzer read it from an explicit
@@ -166,7 +136,7 @@ export interface SymbolHoverData {
    *  from a guess. `confidence` is non-null iff `inferred`; `unknown` is the
    *  declared marker, never a guess (§15.4). */
   typeLine: TypeLine
-  /** M24.L9: the declaration's own doc comment, or "" when none is adjacent. */
+  /** the declaration's own doc comment, or "" when none is adjacent. */
   docComment: string
 }
 
@@ -219,7 +189,7 @@ interface FileRow {
   language: string | null
 }
 
-// M55.T4 (issue #772): the signature renderer moved to its ONE owner,
+// : the signature renderer moved to its ONE owner,
 // src/lsp/signature.ts. The pre-M55 version interpolated the stored
 // `parameters` column verbatim, so the card rendered the analyzer's raw JSON
 // (`method greetAll([{"name":"names","type":"string[]",...}])`). Every
@@ -402,7 +372,7 @@ export async function resolveOccurrenceSymbol(
     // second read. Two P1 mappers over the same bytes would be two answers to
     // the same question, which is the drift §5.1 exists to prevent.
     mapper,
-    // M24.L9: the declaration's own documentation, read from the comment sites
+    // the declaration's own documentation, read from the comment sites
     // this parse already produced. Attached to the DECLARATION, not to the
     // cursor: a doc describes the symbol, and the cursor is often a use of it.
     // Same rule as doc_comment.ts (a comment ending on the line directly above), read from the point that
@@ -411,7 +381,7 @@ export async function resolveOccurrenceSymbol(
   }
 }
 
-/** Count usages of a symbol (M55.T3: the vocabulary's usage-site count).
+/** Count usages of a symbol (the vocabulary's usage-site count).
  *
  * History: this counted EVERY row touching the symbol — both directions,
  * including the owning declaration and callees, undeduplicated by location.
@@ -419,7 +389,7 @@ export async function resolveOccurrenceSymbol(
  * 6 rows (one of them its class) and the graph reported 3 callers; `greetAll`
  * read a usage it did not have while its caller set was empty. The count now
  * comes from src/lsp/relations.ts — the same rule, in SQL (independent of the
- * row materialization the hover list uses; the M55.T3 gate asserts the two
+ * row materialization the hover list uses; the gate asserts the two
  * agree on a real index). */
 export function countUsages(raw: CoreDatabase, symbolId: string): number {
   return countUsageSites(raw, symbolId)
@@ -427,13 +397,13 @@ export function countUsages(raw: CoreDatabase, symbolId: string): number {
 
 /** Collect the symbol's evidence tiers across its stored relationships.
  *
- *  M55.T5: the derivation AND the ordering are the owner's
+ *  the derivation AND the ordering are the owner's
  *  (src/lsp/evidence_tier.ts) — this function only fetches the rows and
  *  hands them over. The pre-T5 version derived locally and returned
  *  `[...tiers].sort()`, an ALPHABETICAL order that made `indexed` the
  *  reported primary of any symbol that also carried structural evidence.
  *
- *  M29.R3 scale fix kept: UNION rewrite (see countUsages) — same tier set,
+ *  scale fix kept: UNION rewrite (see countUsages) — same tier set,
  *  two indexed probes instead of one full scan. */
 export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceTier[] {
   const rows = raw
@@ -448,13 +418,13 @@ export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceT
 export function formatHoverMarkdown(data: SymbolHoverData): string {
   const lines: string[] = []
   lines.push(`\`\`\`\n${data.signature}\n\`\`\``)
-  // M55.T6: the type line, rendered by its single owner. Placed DIRECTLY UNDER
+  // the type line, rendered by its single owner. Placed DIRECTLY UNDER
   // the signature so the two cannot be read as unrelated facts, and it states
   // its own provenance: `inferred` carries the engine's confidence, `stored`
   // declares that the index records no origin, `unknown` is the declared
   // marker with the reason. §15.4 human text is human — this is a sentence, not
   // a serialization.
-  // M24.L9: the author's own words about the symbol, rendered directly UNDER the
+  // the author's own words about the symbol, rendered directly UNDER the
   // signature — the same position IntelliJ and rustdoc put it, so the prose and
   // the declaration read as one fact about one thing rather than as two
   // disconnected blocks.
@@ -469,7 +439,7 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
     lines.push("")
   }
   lines.push(renderTypeLine(data.typeLine))
-  // M55.T3: the count line declares what was counted, so a reader (and the
+  // the count line declares what was counted, so a reader (and the
   // references surface, which legitimately answers a wider question when the
   // client asks for the declaration too) can never read two numbers as a
   // disagreement. Zero is stated, never omitted: a symbol with no stored
@@ -486,7 +456,7 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   } else {
     lines.push("evidence: none (no indexed relationships)")
   }
-  // M42.H2: the rich sections. Empty strings render nothing — declared
+  // the rich sections. Empty strings render nothing — declared
   // absence (no connection facts / no usage sites) is never fabricated.
   if (data.connectedSection && data.connectedSection.length > 0) {
     lines.push(data.connectedSection)
@@ -512,20 +482,20 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.containmentSection && data.containmentSection.length > 0) {
     lines.push(data.containmentSection)
   }
-  // M42.H4: the actions row — the hover is the entry point to the deep
+  // the actions row — the hover is the entry point to the deep
   // surfaces (graph, impact, call hierarchy). Empty row renders nothing
   // (declared absence: no symbol identity, no actions to offer).
   if (data.actionsSection && data.actionsSection.length > 0) {
     lines.push(data.actionsSection)
   }
-  // M26.W3: cross-language facts ONLY from stored rows (is_cross_language = 1).
+  // cross-language facts ONLY from stored rows (is_cross_language = 1).
   // An empty section renders nothing — a pair with no stored rows states
   // nothing cross-language in the UI; absence is declared in docs, not faked
-  // (issue #511; mutation-gated: a fabricated fact fails the W3 suite).
+  // (; mutation-gated: a fabricated fact fails the W3 suite).
   if (data.crossLanguageSection && data.crossLanguageSection.length > 0) {
     lines.push(data.crossLanguageSection)
   }
-  // M28.A2: agent/human annotations, author-labeled. Empty section renders
+  // agent/human annotations, author-labeled. Empty section renders
   // nothing — declared absence, never a placeholder (same law as W3 above).
   if (data.annotationSection && data.annotationSection.length > 0) {
     lines.push(data.annotationSection)
@@ -533,7 +503,7 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.stale) {
     lines.push(`⚠️ **stale** — file changed since indexing (${data.freshnessStatus})`)
   }
-  // M42.H2: the source footnote is the definition link — its target is the
+  // the source footnote is the definition link — its target is the
   // hovered symbol's own indexed location (nothing unclickable, §12.1).
   if (data.definition !== null) {
     lines.push(definitionLink(data.filePath, data.definition.line, data.definition.character))
@@ -614,11 +584,11 @@ export async function hover(
   const stale = freshnessStatus !== "fresh"
 
   const tiers = evidenceTiersFor(raw, symbol.id)
-  // M42.H2: usage sites = the L3 references row set, resolved through the
+  // usage sites = the L3 references row set, resolved through the
   // navigation location owner. Used for the connected summary, the top-3
   // usage links AND the count (one collection, three renderings).
   const sites = richSitesForSymbol(raw, symbol.id)
-  // M55.T3 (§14 Truth Rule 1): the count IS this array's length — the number
+  // (§14 Truth Rule 1): the count IS this array's length — the number
   // of rows the usages list can show (the `+N more` rest included, since the
   // list is capped at MAX_USAGE_LINKS and reports the remainder). The
   // vocabulary filter (declaration/callee exclusion) lives in relations.ts;
@@ -628,7 +598,7 @@ export async function hover(
   // Rows that NAME this symbol's string but resolved to no identity: counted by stored basis so the absence
   // of a usage list can be NAMED rather than left as a bare zero (inbound model, phase B).
   const unresolvedNameMatches = countUnresolvedNameMatches(raw, symbol.id)
-  // M24.L8: THE SCOPE THE COUNT WAS MEASURED OVER. A usage count is only
+  // THE SCOPE THE COUNT WAS MEASURED OVER. A usage count is only
   // meaningful beside what was searched, and a zero is the case that misleads:
   // the owner hovered `formatAddress` and read "0 usages", which is TRUE of the
   // index (201 files, all of `src/`) and FALSE of the repository, where the
@@ -641,9 +611,9 @@ export async function hover(
   // appeared only on the zero would imply the non-zero counts were global, which
   // is the same mistake in the other direction.
   const indexedFileCount = indexedFileCountFor(raw, file.id)
-  // M26.W3: per-pair cross-language facts from stored rows only.
+  // per-pair cross-language facts from stored rows only.
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
-  // M28.A2: annotation rows for this symbol, rendered by the single owner.
+  // annotation rows for this symbol, rendered by the single owner.
   // Project scoped via the symbol's file row (hover has no projectId param).
   //
   // Scoped to THIS FILE's copy of the name, plus name-level notes. It used to
@@ -673,7 +643,7 @@ export async function hover(
   // The definition location (declaration of the hovered symbol) is the hover
   // response RANGE, resolved through the P1 component below; it is computed
   // BEFORE the data object so the footnote can carry it as the definition
-  // link (M42.H2 §12.1: the source footnote must navigate).
+  // link (§12.1: the source footnote must navigate).
   let range: HoverResult["range"] = null
   if (symbol.line_start !== null && symbol.line_end !== null && symbol.byte_start !== null && symbol.byte_end !== null) {
     try {
@@ -724,11 +694,11 @@ export async function hover(
     }
   }
 
-  // M55.T6: the type's provenance, decided by the facade. It runs AFTER the
+  // the type's provenance, decided by the facade. It runs AFTER the
   // freshness check above so the line can carry the file's staleness (§4.3),
   // and it never throws out of the hover: a facade failure degrades to the
   // declared unknown marker, because a hover that rejects over a type is the
-  // M42.H2 defect class all over again (one unresolvable row must not fail the
+  // defect class all over again (one unresolvable row must not fail the
   // whole card).
   let typeLine: TypeLine
   try {
@@ -768,7 +738,7 @@ export async function hover(
     qualifiedName: symbol.qualified_name,
     symbolType: symbol.symbol_type,
     signature: renderSignature(symbol, file.language),
-    // M55.T4: structured data stays structured (see the field's declaration).
+    // structured data stays structured (see the field's declaration).
     parameters: (() => {
       const parsed = parseParameters(symbol.parameters)
       if (parsed.shape === "empty") return []
@@ -785,7 +755,7 @@ export async function hover(
     unresolvedNameMatches,
     indexedFileCount,
     evidenceTiers: tiers,
-    // M42.H2: rich sections composed from stored relationship rows.
+    // rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
     usagesSection: usagesSection(usageSiteRows, usageCount, symbol.name, file.path, request.position.line, request.position.character),
     // The declaration-containment rows come from the SAME collected array the
@@ -796,8 +766,8 @@ export async function hover(
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },
-    // M42.H4: the actions row targets the same resolved declaration (the
-    // actions carry the server-resolved symbol identity — issue #652).
+    // the actions row targets the same resolved declaration (the
+    // actions carry the server-resolved symbol identity — ).
     actionsSection:
       range === null ? "" : actionsSection(symbol.name, file.path, range.start.line, range.start.character),
     crossLanguageSection: crossSection,
@@ -820,7 +790,7 @@ export async function hover(
     data,
     provenance: {
       source: "bb_index",
-      // M55.T5: the primary is the STRONGEST tier the symbol carries, by the
+      // the primary is the STRONGEST tier the symbol carries, by the
       // declared rank — a member of `tiers` by construction, so the primary
       // can never disagree with the tier list it headlines.
       evidenceClass: stale ? "stale" : primaryTier(tiers),

@@ -34,5 +34,5 @@ One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven i
 
 Provenance is schema-enforced (`author_class` NOT NULL; tool writes are hardcoded `agent`): verified via [A1.json](../../validation/m28/results/A1.json). Annotations render where the human reads — hover section + graph badge, author-labeled: known-gap via [A2.json](../../validation/m28/results/A2.json) (includes a real headless-editor leg).
 
-The three new read tools reuse their IDE-side components (D-1) — verified verified via [T1.json](../../validation/m28/results/T1.json).
+The three new read tools reuse their IDE-side components (D-1) — verified via [T1.json](../../validation/m28/results/T1.json).
 
