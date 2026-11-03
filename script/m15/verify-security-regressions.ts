@@ -21,6 +21,14 @@ import { CrossLanguageSecurityAnalysis } from "../../src/security/cross-language
 import { createToolHandlers, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP } from "../../src/mcp/tool-handlers"
 import { getAnalysisHistory } from "../../src/intelligence/analysis/run-history"
 import { SecurityHarness, positiveCount } from "./security-harness"
+
+// Self-contained data dir: never inherit a caller's HOME (read-only in
+// sandboxes, the live user index elsewhere).
+if (!process.env.BB_DATA_DIR) {
+  const laneRoot = path.resolve(import.meta.dirname ?? ".", "..", "..")
+  process.env.BB_DATA_DIR = path.join(laneRoot, "validation", "tools", "bb_security", "bbdata")
+}
+process.env.BB_NO_AUTO_REFRESH = "1"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")

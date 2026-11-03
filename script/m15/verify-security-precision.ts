@@ -37,6 +37,14 @@ import { writeFileSync, mkdirSync, existsSync } from "node:fs"
 import path from "node:path"
 import { runOracle, summarise, FIXTURES } from "./security-oracle"
 import { SecurityHarness } from "./security-harness"
+
+// Self-contained data dir: never inherit a caller's HOME (read-only in
+// sandboxes, the live user index elsewhere).
+if (!process.env.BB_DATA_DIR) {
+  const laneRoot = path.resolve(import.meta.dirname ?? ".", "..", "..")
+  process.env.BB_DATA_DIR = path.join(laneRoot, "validation", "tools", "bb_security", "bbdata")
+}
+process.env.BB_NO_AUTO_REFRESH = "1"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
