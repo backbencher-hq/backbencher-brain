@@ -347,7 +347,10 @@ CREATE INDEX IF NOT EXISTS brain_rel_source_cross_idx ON brain_relationship(sour
 -- compute a per-row evidence gate. This index carries all four columns those
 -- queries read (target/source ids, confidence, evidence class), so the scan never
 -- touches the 3.6 GB table heap or the wide metadata column.
-CREATE INDEX IF NOT EXISTS brain_rel_pattern_cover_idx ON brain_relationship(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class);
+CREATE INDEX IF NOT EXISTS brain_rel_pattern_cover_idx ON brain_relationship(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class, target_external);
+-- The reported-type scan reads symbol columns for every symbol of a set of types;
+-- (project_id, symbol_type) narrows it without a full symbol-table scan.
+CREATE INDEX IF NOT EXISTS brain_symbol_type_cover_idx ON brain_symbol(project_id, symbol_type);
 
 CREATE INDEX IF NOT EXISTS brain_import_name_idx ON brain_import(imported_name);
 CREATE INDEX IF NOT EXISTS brain_import_external_idx ON brain_import(is_external);
@@ -801,9 +804,21 @@ export function ensureRelationshipEvidenceClassColumn(raw: any): void {
         raw.exec("ALTER TABLE brain_relationship ADD COLUMN evidence_class TEXT GENERATED ALWAYS AS (json_extract(metadata, '$.evidenceClass')) VIRTUAL")
       }
     }
+    // The first version of the covering index did not carry target_external, so the
+    // DISTINCT external-target scan still touched the 3.6 GB heap per row (measured
+    // 4.58 s of a 13.2 s profile). Replace the narrower index with the extended one;
+    // both live under one name so there is exactly one covering index to reason about.
     const indexes = (raw.prepare("PRAGMA index_list(brain_relationship)").all() as Array<{ name: string }>).map((i) => i.name)
-    if (!indexes.includes("brain_rel_pattern_cover_idx")) {
-      raw.exec("CREATE INDEX IF NOT EXISTS brain_rel_pattern_cover_idx ON brain_relationship(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class)")
+    if (indexes.includes("brain_rel_pattern_cover_idx")) {
+      const columns = (raw.prepare("PRAGMA index_info(brain_rel_pattern_cover_idx)").all() as Array<{ name: string }>).map((c) => c.name)
+      if (!columns.includes("target_external")) {
+        raw.exec("DROP INDEX IF EXISTS brain_rel_pattern_cover_idx")
+      }
+    }
+    raw.exec("CREATE INDEX IF NOT EXISTS brain_rel_pattern_cover_idx ON brain_relationship(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class, target_external)")
+    const symbolIndexes = (raw.prepare("PRAGMA index_list(brain_symbol)").all() as Array<{ name: string }>).map((i) => i.name)
+    if (!symbolIndexes.includes("brain_symbol_type_cover_idx")) {
+      raw.exec("CREATE INDEX IF NOT EXISTS brain_symbol_type_cover_idx ON brain_symbol(project_id, symbol_type)")
     }
   } catch {
     // A read-only or busy handle cannot migrate: the next writable open does.

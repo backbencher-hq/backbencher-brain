@@ -3,7 +3,8 @@
 //
 // WHAT THIS FILE IS — the shared helpers, constants and types every public MCP tool handler imports.
 // WHICH TOOL IT SERVES — all sixteen public tools (helpers are internal; no tool is dispatched from here).
-// WHERE ITS EVIDENCE LIVES — docs/tools/*.md, validation/tools/<tool>/**, gates script/verify-mcp.ts, script/verify-tool-registry.ts, script/m15/verify-registry-handlers.ts.
+// WHERE ITS EVIDENCE LIVES — docs/tools/*.md, the per-lane evidence dirs under validation/tools/,
+//   gates script/verify-mcp.ts, script/verify-tool-registry.ts, script/m15/verify-registry-handlers.ts.
 // EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tool-handlers.ts (assembler), every src/mcp/tools/<tool>/handler.ts that imports a helper.
 // CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
 //   read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).

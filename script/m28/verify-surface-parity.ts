@@ -107,7 +107,11 @@ const sha256 = (text: string): string => crypto.createHash("sha256").update(text
 const sourceOf = (rel: string): string => readFileSync(path.join(ROOT, rel), "utf8")
 /** Strip line and block comments so a rule named only in a rationale is never
  *  mistaken for a rule the file executes. */
-const codeOnly = (src: string): string => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ")
+// LINE comments first, then block comments. The header convention writes paths like
+// `validation/tools/<tool>/ **` on a `//` line; stripping blocks first makes that
+// `/*` open a block comment that swallows every following line up to the next `*/` —
+// across file boundaries — so the gate could not see the imports it asserts about.
+const codeOnly = (src: string): string => src.replace(/^\s*\/\/.*$/gm, " ").replace(/\/\*[\s\S]*?\*\//g, " ")
 
 /** The ONE tier expectation in this file: the owner, imported from its real
  *  module. A second derivation here is the CL5 anti-pattern. */
