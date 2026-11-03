@@ -1,3 +1,29 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the migration planner's engine: it turns a resolved request
+//   into ordered plans, dependency waves, an effort model built from declared rates,
+//   scope completeness, cohort rollups and explicit truncation/refusal records.
+// WHICH TOOL IT SERVES — bb_migrate (mutability read, requiresIndex true, modes: plan).
+// WHY IT IS SHAPED THIS WAY — every number is either read from the index or declared
+//   as methodology, and the two are labelled. The request is a list of ENTRIES (names
+//   and symbol ids) capped at 100; each entry is resolved to at most one component
+//   BEFORE any relationship is loaded, so a common name cannot expand the load past
+//   the cap. A component is planned once even when named through several selectors,
+//   and `truncation` separates merged duplicates from cap-dropped entries. Cycles are
+//   accounted for as one trailing wave; out-of-scope edges are scope gaps, not
+//   ordering constraints.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_migrate.md, docs/BB_MIGRATE.md,
+//   validation/tools/bb_migrate/**; gates: bun run script/m20/verify-migration-methodology.ts,
+//   bun run script/m20/verify-migration-order.ts, bun run script/m65/verify-migrate-latency.ts,
+//   bun run script/m65/verify-migrate-selectors.ts, bun run script/verify-visualize-migrate.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — migration-source.ts (resolution/load),
+//   cross-language-migration-assistant.ts (planner + shared name rule), the gate suite,
+//   docs/BB_MIGRATE.md and validation/tools/bb_migrate/LATENCY.json.
+// CONTRACTS IT MUST NOT BREAK — 100-component cap, one plan per component, declared
+//   truncation identities (requested = returned + capped; returned = plans + refusals
+//   + deduplicated), no invented mapping, read-only computation, no regex over source.
+// ─────────────────────────────────────────────────────────────────────────────
 import { CrossLanguageMigrationAssistant } from "../../ast/cross-language-migration-assistant"
 import { loadMigrationContextForSymbols, resolveMigrationSymbols } from "./migration-source"
 
@@ -522,18 +548,27 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   const entries = requestedEntries.slice(0, 100)
   const names = entries.map((entry) => entry.name)
   const normalizedTargetLanguage = String(request.targetLanguage ?? "").trim().toLowerCase()
-  // Bounded load: the requested symbols and the relationships that touch them.
-  // The previous call loaded and reconstructed every symbol, relationship and
-  // taint flow in the project on every invocation — measured 2342 ms for ONE
-  // symbol on a 1216-symbol repository, flat in the request size — and supplied
-  // only four of the fourteen relationship columns the index stores.
-  // PHASE 2: the relationship pass, over the ALREADY-CAPED set. This is the
-  // bound the F18 finding asked for, and it has to happen after the cap.
-  const keptSymbolIds = new Set(entries.filter((e) => e.kind === "symbol").map((e) => e.id))
-  const keptNames = new Set(nameEntries.map((entry) => entry.name.toLowerCase()))
-  const loadedSymbols = resolved.symbols.filter(
-    (symbol) => keptSymbolIds.has(symbol.id) || keptNames.has(String(symbol.name).toLowerCase()),
-  )
+
+  // ── selection: every entry to at most one component, BEFORE any load ───────
+  // A name is not an identity: a common name can match hundreds of symbols across
+  // the project. Loading each match's relationships to plan one component is the
+  // unbounded load this stage exists to prevent, and it is also unnecessary — the
+  // planner's single resolution rule decides which component a name means, and an
+  // ambiguous name is refused without opening any plan. The rule lives in the
+  // assistant and is the SAME rule `planMigration` applies, so a component
+  // selected here and a component planned by name cannot disagree.
+  type Selection = { entry: { kind: "name" | "symbol"; name: string; id?: string }; symbolId: string | null; resolutionRefusal: CrossLanguageMigrationAssistant.MigrationRefusal | null }
+  const selections: Selection[] = (entries as Array<{ kind: "name" | "symbol"; name: string; id?: string }>).map((entry) => {
+    if (entry.kind === "symbol") return { entry, symbolId: entry.id ?? null, resolutionRefusal: null }
+    const resolution = CrossLanguageMigrationAssistant.resolveMigrationName(entry.name, resolved.symbols)
+    return resolution.ok
+      ? { entry, symbolId: resolution.symbol.id, resolutionRefusal: null }
+      : { entry, symbolId: null, resolutionRefusal: resolution.refusal }
+  })
+  const selectedSymbolIds = new Set(selections.map((selection) => selection.symbolId).filter((id): id is string => !!id))
+  // PHASE 2: the relationship pass, over the SELECTED components (≤ one per entry,
+  // so ≤ the 100-entry cap).
+  const loadedSymbols = resolved.symbols.filter((symbol) => selectedSymbolIds.has(symbol.id))
   const context = await loadMigrationContextForSymbols(projectId, loadedSymbols, resolved.pathResolution)
   const analysis: CrossLanguageMigrationAssistant.MigrationSource = {
     symbols: context.requestedSymbols,
@@ -543,27 +578,38 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   }
   const plans: any[] = []
   const unsupported: MigrationPlanResult["unsupported"] = []
-  // Refusals come from the planner itself now. The previous code called the
-  // null-returning wrapper and then re-derived the reason from a SECOND,
-  // independent name lookup, so the reason shown and the plan computed could
-  // come from different resolutions of the same name.
-  for (const requested of entries) {
-    const symbolName = requested.name
-    const outcome =
-      requested.kind === "symbol"
-        ? await CrossLanguageMigrationAssistant.planMigrationById(requested.id, request.targetLanguage, analysis)
-        : await CrossLanguageMigrationAssistant.planMigration(symbolName, request.targetLanguage, analysis)
+  // One component, one plan. The request is a list of entries — a name, a symbol id
+  // or a path — and the same component can be named through more than one of them
+  // (`symbolName` plus `symbolNames`, a name plus the id an ambiguity refusal handed
+  // back, a path plus one of its symbols). Those are merged, not planned twice:
+  // a duplicate plan would double the 4-hour base charge and make `truncation` claim
+  // a reduction that did not happen.
+  const refusalSamples: Array<{ reason: string; language: string | null }> = []
+  const symbolById = new Map(resolved.symbols.map((symbol) => [symbol.id, symbol]))
+  const seenPlanned = new Set<string>()
+  const seenRefusals = new Set<string>()
+  let deduplicated = 0
+  const recordRefusal = (entry: { name: string }, refusal: CrossLanguageMigrationAssistant.MigrationRefusal, symbolId: string | null): void => {
+    const key = `${refusal.reason}|${entry.name}`
+    if (seenRefusals.has(key)) { deduplicated++; return }
+    seenRefusals.add(key)
+    const record: MigrationPlanResult["unsupported"][number] = { symbolName: entry.name, reason: refusal.detail, unsupportedReason: refusal.reason }
+    if (refusal.candidates) record.candidates = refusal.candidates
+    unsupported.push(record)
+    const language = symbolId ? symbolById.get(symbolId)?.language ?? null : refusal.candidates?.[0]?.language ?? null
+    refusalSamples.push({ reason: refusal.reason, language })
+  }
+  for (const selection of selections) {
+    if (selection.resolutionRefusal) { recordRefusal(selection.entry, selection.resolutionRefusal, null); continue }
+    if (!selection.symbolId) continue
+    if (seenPlanned.has(selection.symbolId)) { deduplicated++; continue }
+    const outcome = await CrossLanguageMigrationAssistant.planMigrationById(selection.symbolId, request.targetLanguage, analysis)
     if (outcome.ok) {
       plans.push(outcome.plan)
+      seenPlanned.add(selection.symbolId)
       continue
     }
-    const entry: MigrationPlanResult["unsupported"][number] = {
-      symbolName,
-      reason: outcome.refusal.detail,
-      unsupportedReason: outcome.refusal.reason,
-    }
-    if (outcome.refusal.candidates) entry.candidates = outcome.refusal.candidates
-    unsupported.push(entry)
+    recordRefusal(selection.entry, outcome.refusal, selection.symbolId)
   }
   // An id that no indexed symbol carries is a REFUSAL, not an absence. It
   // previously vanished: no entry meant no plan meant no way to see it, so a
@@ -579,9 +625,8 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   }
   const planNames = plans.map((plan) => plan.componentName)
   // `nameById` is the loader's map, which already covers the requested symbols
-  // AND the far endpoints of their relationships. Round 1 rebuilt this with a
-  // linear `crossLanguageSymbols.find(...)` inside the edge loop — O(RxS), which
-  // is 5228 x 1216 comparisons on cobra.
+  // AND the far endpoints of their relationships. Rebuilding it with a linear
+  // lookup inside the edge loop would be O(relationships x symbols).
   const nameById = context.nameById
 
   // Every indexed relationship touching a planned symbol. A planned symbol that
@@ -651,12 +696,12 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   // `requested` becomes the number of distinct symbols the request RESOLVED to,
   // which is the quantity a caller actually asked about — a cohort of 212 and a
   // hand-typed list of 212 are the same request.
-  const distinctExplicitNames = new Set(requestedNames).size
-  const deduplicated = requestedNames.length - distinctExplicitNames
-  // The cap is over ENTRIES, which is what the planner actually iterates: a
-  // symbol-id entry plans exactly one symbol, and a name entry plans one symbol
-  // or refuses. `requested` is therefore the number of distinct components the
-  // request asked about, which is the quantity a caller means by "requested".
+  // The cap is over ENTRIES, one component each: a symbol-id entry names one
+  // component, and a name entry resolves to one component or refuses. `capped`
+  // counts entries the cap dropped; `deduplicated` counts entries that resolved to
+  // a component another entry already planned or refused. The two reductions are
+  // kept apart because a caller can act on a duplicate (it is already planned) and
+  // cannot act on a dropped entry (it is not planned at all).
   const capped = requestedEntries.length - entries.length
   // Counted from the resolution, not by subtraction: a symbol that is BOTH named
   // explicitly and covered by a path is one symbol contributed by the path, and
@@ -715,8 +760,8 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   const waves = cyclicPeers.length ? [...baseWaves, cyclicPeers.slice().sort()] : baseWaves
   for (const name of cyclicPeers) waveOf.set(name, waves.length - 1)
 
-  // A WAVE is a list of names; a PLAN is a symbol. Since round 6 those are
-  // different things: two components in different files can share a name, and one
+  // A WAVE is a list of names; a PLAN is a symbol. Those are different things:
+  // two components in different files can share a name, and one
   // wave entry then stands for two plans. Measured on a one-file cobra cohort:
   // 100 plans, 99 distinct names, `FParseErrWhitelist` planned twice, one wave
   // entry. `byWave` was never wrong — it iterates plans — but the LABEL was: a
@@ -798,25 +843,22 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     return bucket
   }
   for (const symbol of resolved.symbols) bucketFor(symbol.language).symbols++
-  for (const symbol of loadedSymbols) bucketFor(symbol.language).processed++
-  const plannedById = new Set(plans.map((plan) => plan.symbolId))
-  for (const symbol of loadedSymbols) {
-    if (plannedById.has(symbol.id)) bucketFor(symbol.language).planned++
+  // `processed` is the components an entry actually identified (a name that
+  // matched nothing, or several symbols, identified none), so the line reads
+  // "this is what you asked about, this is what we looked at, and this is what
+  // happened" without counting every same-named symbol as work.
+  const identifiedLanguage = new Map<string, string>()
+  for (const selection of selections) {
+    if (!selection.symbolId) continue
+    const language = symbolById.get(selection.symbolId)?.language
+    if (language) identifiedLanguage.set(selection.symbolId, language)
   }
-  for (const entry of unsupported) {
-    // The refusal carries the NAME; find the symbol it refused. A cohort can hold
-    // two same-named symbols, so the file disambiguates when the tool recorded it.
-    const hint = String(entry.reason ?? "")
-    for (const symbol of loadedSymbols) {
-      if (String(symbol.name) !== String(entry.symbolName)) continue
-      // Prefer a symbol whose language the refusal actually names, so a same-named
-      // pair is not counted against the wrong bucket.
-      if (hint.includes(`"${symbol.language}"`) || bucketFor(symbol.language).processed === 1) {
-        bucketFor(symbol.language).refused++
-        break
-      }
-    }
+  for (const language of identifiedLanguage.values()) bucketFor(language).processed++
+  for (const plan of plans) {
+    const language = plan.symbolId ? symbolById.get(plan.symbolId)?.language : null
+    if (language) bucketFor(language).planned++
   }
+  for (const sample of refusalSamples) if (sample.language) bucketFor(sample.language).refused++
   const refusedBuckets = new Map<string, { reason: string; count: number; example: string }>()
   for (const entry of unsupported) {
     const bucket = refusedBuckets.get(entry.unsupportedReason) ?? { reason: entry.unsupportedReason, count: 0, example: String(entry.symbolName) }
@@ -842,7 +884,13 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     refusedByReason: [...refusedBuckets.values()].sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason)),
     statement:
       plans.length === 0 && unsupported.length > 0
-        ? `NO PLANS: all ${unsupported.length} resolved component(s) were refused — ${[...refusedBuckets.values()].map((b) => `${b.count} ${b.reason} (e.g. "${b.example}")`).join(", ")}. The cohort's language mix is ${[...languageBuckets.values()].map((b) => `${b.symbols} ${b.language}`).join(", ")}; the ${loadedSymbols.length} component(s) the cap let through were ${[...languageBuckets.values()].filter((b) => b.processed).map((b) => `${b.processed} ${b.language}`).join(", ") || "none"}, so scope paths to the code you mean.`
+        ? `NO PLANS: all ${unsupported.length} resolved component(s) were refused — ${[...refusedBuckets.values()].map((b) => `${b.count} ${b.reason} (e.g. "${b.example}")`).join(", ")}. The cohort's language mix is ${[...languageBuckets.values()].map((b) => `${b.symbols} ${b.language}`).join(", ") || "empty (no symbols resolved)"}; the ${entries.length} entr${entries.length === 1 ? "y" : "ies"} the cap let through identified ${identifiedLanguage.size} component(s) (${[...languageBuckets.values()].filter((b) => b.processed).map((b) => `${b.processed} ${b.language}`).join(", ") || "none"}).` +
+          // Scoping advice only when scoping is what failed: a target-language
+          // refusal is not fixed by narrowing the paths, and telling the caller it
+          // is would send them to re-run the same request.
+          (resolved.pathResolution.paths.length > 0 || unsupported.some((entry) => entry.unsupportedReason === "unsupported-source")
+            ? " Scope paths to the code you mean."
+            : "")
         : resolved.pathResolution.paths.length > 0
         ? `${resolved.symbols.length} indexed symbol(s) under ${resolved.pathResolution.paths.length} path(s), covering ${new Set(plans.map((p) => p.sourceFile)).size} file(s) in the plans returned${
             capped > 0 ? ` (${capped} of ${requestedEntries.length} resolved components were dropped by the 100-component cap; see truncation.cappedNames)` : ""
@@ -1020,9 +1068,9 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
       `\n${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}  [${plan.sourceFile}]`,
       `effort=${plan.effortEstimateHours}h complexity=${plan.complexityScore}/10 risk=${plan.riskAssessment?.level}`,
     )
-    // F21: the text output used to print `risk=High` and never the reason, so a
-    // reader of the DEFAULT format could not act on the band. The factors are
-    // the explanation and they belong next to the band.
+    // The text output used to print `risk=High` and never the reason, so a reader
+    // of the default format could not act on the band. The factors are the
+    // explanation and they belong next to the band.
     for (const factor of plan.riskAssessment?.factors ?? []) lines.push(`  why: ${factor}`)
     for (const dependency of plan.dependencies ?? []) {
       lines.push(`  ${dependency.source} -> ${dependency.target} (${Math.round((dependency.confidence ?? 0) * 100)}%, indexed import)`)

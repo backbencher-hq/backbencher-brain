@@ -1,144 +1,149 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Author: Muhammad Ishaq Khan
 //
-// WHAT THIS FILE IS — the handler for bb_migrate — the adapter that parses arguments, calls the owning engine, and shapes the tool result.
-// WHICH TOOL IT SERVES — bb_migrate (see src/mcp/tools/bb_migrate/descriptor.ts for mutability, modes and schema).
-// WHERE ITS EVIDENCE LIVES — docs/tools/bb_migrate.md, docs/BB_*.md for its guide page, validation/tools/bb_migrate/**, and the gate scripts named in its task.
-// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_migrate/descriptor.ts (schema/defaults), the owning engine modules it calls, docs/tools/bb_migrate.md, and its gate scripts.
-// CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
-//   read/write boundary, and the no-regex policy (validation/tools/regex-allowlist.json).
+// WHAT THIS FILE IS — the handler for bb_migrate: parses the request (names, symbol
+//   ids, paths, target language), calls the migration engine, and adds the
+//   freshness verdict for every source file a plan cites.
+// WHICH TOOL IT SERVES — bb_migrate (mutability read, requiresIndex true, modes: plan).
+// WHY IT IS SHAPED THIS WAY — a plan is a claim about CURRENT code, so each plan's
+//   own source file is resolved and flagged stale (or missing) up front; the JSON
+//   form carries the registered freshness envelope and the text form carries the
+//   notice and footer. Inputs are validated here so a blank name, a blank path, a
+//   blank target or a legacy alias mixed with its modern spelling cannot silently
+//   narrow the request: every requested component either gets a plan, a typed
+//   refusal, or a named request-level error.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_migrate.md, docs/BB_MIGRATE.md,
+//   validation/tools/bb_migrate/**; gates: npx tsx script/m13/verify-migrate-accuracy.ts,
+//   bun run script/m13/verify-migrate-e2e-corpus.ts, bun run script/m65/verify-migrate-latency.ts,
+//   npx tsx script/tools/verify-regex-policy.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — descriptor.ts (schema/refusal contract),
+//   src/intelligence/migration/** (engine + bounded loader), the gates above,
+//   docs/BB_MIGRATE.md, and the regex/no-regex policy.
+// CONTRACTS IT MUST NOT BREAK — byte-read-only index access, named refusals for
+//   invalid input (isError through the MCP door), declared freshness (stale/missing
+//   plans are visible, never silent), manual-only repair instructions (this tool
+//   never auto-refreshes), and the no-regex policy.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { ToolHandler, ToolContext, ToolResult, ToolArguments } from "../shared"
-import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
-import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
+import type { ToolHandler, ToolResult } from "../shared"
+import { textResult } from "../shared"
+import { FRESHNESS_REMEDIATION_MANUAL_ONLY, buildStalenessEnvelope, resolveRowsFreshnessDetailed } from "../../../brain/freshness"
 import path from "node:path"
 import { BrainDatabase } from "../../../brain/database"
-import { annotationId, annotationReachability, canonicalFilePath } from "../../../brain/annotation-store"
-import { BrainTools, PatternBrainTools } from "../../../ast/tools"
-import { quickAnswer } from "../../../intelligence/search/quick-answer"
-import { detectOrphans } from "../../../intelligence/patterns/orphans"
-import { ASTEngine } from "../../../ast/engine"
-import { checkResultsFreshness, fileUnchangedSince, resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION, FRESHNESS_REMEDIATION_MANUAL_ONLY, type FreshnessSummary } from "../../../brain/freshness"
-import { CrossLanguageSecurityAnalysis } from "../../../security/cross-language-security"
-import { DependencyGraphVisualizer } from "../../../ast/dependency-graph-visualizer"
-import { CrossLanguageIntelligence } from "../../../ast/cross-language-intelligence"
-import { CrossLanguageMigrationAssistant } from "../../../ast/cross-language-migration-assistant"
-import { indexProjectParallel, reindexFilesParallel, wipeProjectData } from "../../../ast/parallel-indexer"
-import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../../../ast/auto-refresh"
-import { TOOL_DESCRIPTORS } from "../../tool-registry"
-import { testQuality } from "../../../intelligence/testing/quality"
-import { executeEdit, type EditRequest } from "../../../intelligence/edit/edit-engine"
-import { getUnifiedHealth, formatUnifiedHealth } from "../../../intelligence/health/health-provider"
-import { getAnalysisHistory, executeAnalysis } from "../../../intelligence/analysis/run-history"
-import { generateDocumentation, formatDocumentation, type DocRequest } from "../../../intelligence/documentation/doc-engine"
-import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout } from "../../../intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../../intelligence/migration/migration-engine"
-import { graphTraversal } from "../../../intelligence/graph/graph-engine"
-// M28.T1 (issue #624): the agent door reuses the EXACT components the IDE
-// door uses — one truth, two doors (M28 decision D-1). No reimplementation.
-// M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
-// (computeImpact + its declared budget) so the two doors cannot disagree.
-import { computeImpact, IMPACT_BUDGET } from "../../../lsp/impact"
-// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
-// The agent door CALLS it. It used to carry a drifted copy of the rule — see the
-// `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
-// defect a copy-projection is.
-import { classifyTier } from "../../../lsp/evidence_tier"
-import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../../../lsp/cross_language_hover"
-import { getProjectStats } from "../../../intelligence/analysis/project-stats"
-import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../../../intelligence/analysis/dependencies"
-import { analyzeComplexity } from "../../../intelligence/analysis/complexity"
-import { testMapping, testGaps, testImpact } from "../../../intelligence/testing/test-intel"
-import { makeProvenance } from "../../../intelligence/evidence"
-import type { AnalysisFindingInput } from "../../../intelligence/contracts"
 
-export const handler: ToolHandler = async (args, { projectId, projectPath }) => {
-    const symbolNames = Array.isArray(args.symbolNames) ? args.symbolNames.map(String) : args.symbolName ? [String(args.symbolName)] : []
-    // A file or directory path joins the request, so a whole module can be
-    // planned in one call. Union with symbolNames, not a replacement: naming a
-    // symbol AND a path that contains it plans it once.
-    // A path inside the project is accepted however the caller spells it. An
-    // agent holding an absolute path is not wrong, and rejecting it taught
-    // nothing except that the tool wants a different string than the one that
-    // works everywhere else. A path OUTSIDE the project is still refused by the
-    // resolver, which is where the project boundary actually lives.
+/** Trimmed, non-empty strings from an array option; blank entries are refused by name. */
+function nonBlankEntries(option: string, value: unknown): string[] {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) throw new Error(`bb_migrate: ${option} must be an array of strings`)
+  const entries = value.map((item) => String(item ?? ""))
+  const blank = entries.map((entry, index) => (entry.trim() ? null : index)).filter((index): index is number => index !== null)
+  if (blank.length > 0) {
+    throw new Error(
+      `bb_migrate: ${option} contains ${blank.length} blank entr${blank.length === 1 ? "y" : "ies"} (position${blank.length === 1 ? "" : "s"} ${blank.join(", ")}) — a blank entry names no component and would silently narrow the request; remove it or pass the component you mean`,
+    )
+  }
+  return entries.map((entry) => entry.trim())
+}
+
+export const handler: ToolHandler = async (args, { projectId, projectPath }): Promise<ToolResult> => {
+  // ── the request ────────────────────────────────────────────────────────────
+  // `symbolName` is the legacy single-symbol spelling of `symbolNames`. Both are
+  // accepted in one call and UNIONED: a caller that passes both asked for both, so
+  // dropping one is a lost component, not a shortcut. The engine de-duplicates by
+  // resolved symbol identity, so naming one component through both spellings still
+  // plans it exactly once.
+  let symbolNames: string[]
+  let symbolIds: string[]
+  let cohortPaths: string[]
+  try {
+    const modern = nonBlankEntries("symbolNames", args.symbolNames)
+    if (args.symbolName !== undefined && typeof args.symbolName !== "string") throw new Error("bb_migrate: symbolName must be a string")
+    const legacy = typeof args.symbolName === "string" && args.symbolName.trim() ? [args.symbolName.trim()] : []
+    if (typeof args.symbolName === "string" && args.symbolName && !args.symbolName.trim()) throw new Error("bb_migrate: symbolName is blank — a blank name names no component")
+    symbolNames = [...new Set([...modern, ...legacy])]
+    symbolIds = nonBlankEntries("symbolIds", args.symbolIds)
+    const paths = nonBlankEntries("paths", args.paths)
+    // A path inside the project is accepted however the caller spells it: an agent
+    // holding an absolute path is not wrong, and the project boundary lives in the
+    // resolver, not in the spelling.
     const projectRoot = path.resolve(String(projectPath ?? "."))
-    const normalizeCohortPath = (raw: string): string => {
-      const value = String(raw ?? "").trim().replace(/\\/g, "/")
+    cohortPaths = paths.map((raw) => {
+      const value = String(raw ?? "").trim().split("\\").join("/")
       if (!value) return value
       const absolute = path.isAbsolute(value) ? path.resolve(value) : path.resolve(projectRoot, value)
-      const relative = path.relative(projectRoot, absolute).replace(/\\/g, "/")
+      const relative = path.relative(projectRoot, absolute).split("\\").join("/")
       return relative === "" ? "." : relative.startsWith("..") ? value : relative
+    })
+  } catch (error) {
+    return textResult(error instanceof Error ? error.message : String(error), true)
+  }
+  const targetLanguage = String(args.targetLanguage ?? "").trim()
+  if (!targetLanguage) {
+    return textResult("bb_migrate: targetLanguage must be a non-empty language name (for example rust, go, python)", true)
+  }
+  if (!symbolNames.length && !symbolIds.length && !cohortPaths.length) {
+    return textResult("bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage", true)
+  }
+
+  const result = await generateMigrationPlans(projectId, { symbolNames, symbolIds, paths: cohortPaths, targetLanguage })
+  const unmatchedIds = (result.unsupported ?? []).filter((entry: any) => entry.unsupportedReason === "missing-symbol").map((entry: any) => entry.symbolName)
+  // ANY unmatched id refuses: a partially-resolved request reads like a complete
+  // answer otherwise, and an id is the only unambiguous selector — a typo must be
+  // named, not absorbed.
+  if (symbolIds.length && unmatchedIds.length > 0) {
+    return textResult(`bb_migrate: no indexed symbol carries the id(s) ${unmatchedIds.map((id: string) => `"${id}"`).join(", ")}. Ids come from an earlier result's plans or from an ambiguity refusal's candidates.`, true)
+  }
+  if (cohortPaths.length && result.cohort?.pathsUnmatched?.length) {
+    return textResult(`bb_migrate: no indexed file matches ${result.cohort.pathsUnmatched.map((file: string) => `"${file}"`).join(", ")}. Paths are project-relative; check the spelling against the project root.`, true)
+  }
+
+  // ── freshness of the plans' OWN source files ──────────────────────────────
+  // A plan is a claim about current code. The file comes from the plan's own
+  // symbol (the planner records it), never from a second name-based lookup that
+  // could resolve elsewhere when two symbols share a name. A plan whose source
+  // file cannot be resolved counts as missing, not fresh.
+  const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
+  const planFiles = new Set<string>()
+  for (const plan of result.plans as any[]) {
+    const file = typeof plan.sourceFile === "string" ? plan.sourceFile : ""
+    if (file && file !== "unknown") planFiles.add(file)
+  }
+  const migrationFiles = [...planFiles]
+  const relativeToId = new Map<string, string>()
+  if (migrationFiles.length) {
+    for (const row of raw
+      .prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migrationFiles.map(() => "?").join(",")})`)
+      .all(projectId, ...migrationFiles) as Array<{ id: string; relative_path: string }>) {
+      relativeToId.set(row.relative_path, row.id)
     }
-    const paths = Array.isArray(args.paths) ? args.paths.map(normalizeCohortPath) : []
-    // An indexed symbol id is the only unambiguous way to name a component, and
-    // it is what the ambiguity refusal points at. Accepting it is what makes
-    // that advice true instead of aspirational.
-    const symbolIds = Array.isArray(args.symbolIds) ? args.symbolIds.map(String).map((id) => id.trim()).filter(Boolean) : []
-    if (!symbolNames.length && !paths.length && !symbolIds.length) return textResult("bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage", true)
-    if (!args.targetLanguage) return textResult("bb_migrate requires targetLanguage", true)
-    const result = await generateMigrationPlans(projectId, { symbolNames, symbolIds, paths, targetLanguage: String(args.targetLanguage) })
-    // A path that matched no indexed file is reported by name. Without this a
-    // typo'd path is indistinguishable from a directory with no symbols in it,
-    // and both look like a clean empty answer.
-    const unmatchedIds = (result.unsupported ?? []).filter((u: any) => u.unsupportedReason === "missing-symbol").map((u: any) => u.symbolName)
-    // ANY unmatched id refuses, matching how an unmatched path behaves: a
-    // partially-resolved request reads like a complete answer otherwise.
-    if (symbolIds.length && unmatchedIds.length > 0) {
-      return textResult(`bb_migrate: no indexed symbol carries the id(s) ${unmatchedIds.map((id: string) => `"${id}"`).join(", ")}. Ids come from an earlier result's plans or from an ambiguity refusal's candidates.`, true)
-    }
-    if (paths.length && result.cohort?.pathsUnmatched?.length) {
-      return textResult(`bb_migrate: no indexed file matches ${result.cohort.pathsUnmatched.map((p: string) => `"${p}"`).join(", ")}. Paths are project-relative; check the spelling against the project root.`, true)
-    }
-    // M35.S3: a migration plan is a claim about CURRENT code. Resolve each
-    // plan's source file and flag plans whose file changed since the index —
-    // a stale plan says so up front instead of silently planning against
-    // outdated symbols.
-    //
-    // M53: the file now comes from the plan's OWN symbol, which the planner
-    // records. The previous code re-queried `brain_symbol` by lower-cased NAME
-    // and kept the first matching row, so when two symbols shared a name the
-    // plan was computed for one symbol while the staleness verdict came from
-    // whichever file that name query happened to hit first.
-    const migRaw = await BrainDatabase.getRawInstance(projectId as any)
-    const planFiles = new Set<string>()
-    for (const p of result.plans as any[]) {
-      const file = typeof p.sourceFile === "string" ? p.sourceFile : ""
-      if (file && file !== "unknown") planFiles.add(file)
-    }
-    const migFiles = [...planFiles]
-    const migRelToId = new Map<string, string>()
-    if (migFiles.length) {
-      for (const r of migRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migFiles.map(() => "?").join(",")})`).all(projectId, ...migFiles) as Array<{ id: string; relative_path: string }>) {
-        migRelToId.set(r.relative_path, r.id)
-      }
-    }
-    const migRows = migFiles.map((p) => ({ fileId: migRelToId.get(p) ?? null }))
-    const migDetail = migRows.length ? resolveRowsFreshnessDetailed(migRaw, projectId as any, migRows) : null
-    const migStatuses = migDetail?.statuses ?? new Map<string, string>()
-    const migStatus = (rel: string | undefined) => (rel ? migStatuses.get(migRelToId.get(rel) ?? "") ?? "missing" : "missing")
-    for (const p of result.plans as any[]) {
-      p.stale = migStatus(typeof p.sourceFile === "string" ? p.sourceFile : undefined) === "stale"
-    }
-    // A plan whose source file could not be resolved counts as `missing`, not
-    // `fresh`. Previously such plans were dropped from the envelope entirely, so
-    // a request whose files were all unresolvable reported a clean 0/0/0.
-    const unresolvedPlans = (result.plans as any[]).filter((p) => !p.sourceFile || p.sourceFile === "unknown").length
-    const migSummary = {
-      fresh: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "fresh").length,
-      stale: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "stale").length,
-      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length + unresolvedPlans,
-    }
-    const migEnvelopeSource = { ...migSummary, staleRatio: migRows.length ? (migSummary.stale + migSummary.missing) / migRows.length : 0, freshnessMode: "complete" as const }
-    const stalePlans = (result.plans as any[]).filter((p) => p.stale).length
-    if (args.format === "json") {
-      const parsed = JSON.parse(formatMigrationPlans(result, "json"))
-      parsed.freshness = buildStalenessEnvelope(migEnvelopeSource, { kind: "dir" })
-      return textResult(JSON.stringify(parsed, null, 2))
-    }
-    const migOut = formatMigrationPlans(result, "text")
-    const migNotice = stalePlans > 0 ? `⚠ ${stalePlans} of ${result.plans.length} plans reference files changed since the last index — reindex before acting on these plans.\n\n` : ""
-    const migFooter = migSummary.stale + migSummary.missing > 0 ? `\n\n${migSummary.stale} stale, ${migSummary.missing} missing of ${migRows.length} plan files — ${FRESHNESS_REMEDIATION.dir}` : ""
-    return textResult(migNotice + migOut + migFooter)
+  }
+  const freshnessRows = migrationFiles.map((file) => ({ fileId: relativeToId.get(file) ?? null }))
+  const freshnessDetail = freshnessRows.length ? resolveRowsFreshnessDetailed(raw, projectId as any, freshnessRows) : null
+  const statuses = freshnessDetail?.statuses ?? new Map<string, string>()
+  const statusOf = (relative: string | undefined) => (relative ? statuses.get(relativeToId.get(relative) ?? "") ?? "missing" : "missing")
+  for (const plan of result.plans as any[]) {
+    plan.stale = statusOf(typeof plan.sourceFile === "string" ? plan.sourceFile : undefined) === "stale"
+  }
+  const unresolvedPlans = (result.plans as any[]).filter((plan) => !plan.sourceFile || plan.sourceFile === "unknown").length
+  const summary = {
+    fresh: freshnessRows.filter((row) => statuses.get(row.fileId ?? "") === "fresh").length,
+    stale: freshnessRows.filter((row) => statuses.get(row.fileId ?? "") === "stale").length,
+    missing: freshnessRows.filter((row) => statuses.get(row.fileId ?? "") !== "fresh" && statuses.get(row.fileId ?? "") !== "stale").length + unresolvedPlans,
+  }
+  const envelopeSource = { ...summary, staleRatio: freshnessRows.length ? (summary.stale + summary.missing) / freshnessRows.length : 0, freshnessMode: "complete" as const }
+  const stalePlans = (result.plans as any[]).filter((plan) => plan.stale).length
+
+  if (args.format === "json") {
+    const parsed = JSON.parse(formatMigrationPlans(result, "json"))
+    // `autoRefresh:false` is the truth for this tool: it never reindexes on a read and
+    // has no `refresh` option, so the repair instruction must be the manual one.
+    parsed.freshness = buildStalenessEnvelope(envelopeSource, { kind: "dir", autoRefresh: false })
+    return textResult(JSON.stringify(parsed, null, 2))
+  }
+  const text = formatMigrationPlans(result, "text")
+  const notice = stalePlans > 0 ? `⚠ ${stalePlans} of ${result.plans.length} plans reference files changed since the last index — reindex before acting on these plans.\n\n` : ""
+  const staleish = summary.stale + summary.missing
+  const footer = staleish > 0 ? `\n\n${summary.stale} stale, ${summary.missing} missing of ${freshnessRows.length} plan files — ${FRESHNESS_REMEDIATION_MANUAL_ONLY.dir}` : ""
+  return textResult(notice + text + footer)
 }

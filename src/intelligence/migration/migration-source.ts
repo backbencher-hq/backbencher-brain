@@ -1,6 +1,31 @@
-// src/intelligence/migration/migration-source.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
 //
-// The migration planner's own view of the index.
+// WHAT THIS FILE IS — the migration planner's bounded view of the index: it resolves
+//   requested names, symbol ids and paths to symbols, then loads only those symbols'
+//   own relationships, imports and far-endpoint names.
+// WHICH TOOL IT SERVES — bb_migrate (mutability read, requiresIndex true, modes: plan).
+// WHY IT IS SHAPED THIS WAY — the planner used to call analyzePolyglotProjectFromDB,
+//   which selects and reconstructs EVERY symbol, relationship and taint flow in the
+//   project and hands the planner four columns per relationship. On a 1,216-symbol /
+//   5,228-relationship repository a ONE-symbol request cost 2,342 ms, flat in request
+//   size, and the four columns it got were the wrong four (line, confidence,
+//   cross-language flag and bridge mechanism all dropped). This loader reads exactly
+//   what the request needs, in two phases: resolve (no relationships), cap, then load
+//   the already-capped set. The bound is reported by `work` so it is checkable, not
+//   claimed.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_migrate.md, docs/BB_MIGRATE.md,
+//   validation/tools/bb_migrate/**, gates: npx tsx script/m13/verify-migrate-accuracy.ts,
+//   bun run script/m20/verify-migration-order.ts, bun run script/m65/verify-migrate-latency.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — migration-engine.ts (the cap and phases),
+//   cross-language-migration-assistant.ts (the shared name resolution), the planner gate
+//   suite, and validation/tools/bb_migrate/LATENCY.json.
+// CONTRACTS IT MUST NOT BREAK — byte-read-only index access (no migrations, no WAL
+//   movement), bounded load (resolve → cap → load), declared absence (an unmatched path
+//   or id is reported, never silently dropped), and the no-regex policy.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The planner's own view of the index: why it exists and what it deliberately omits.
 //
 // WHY THIS EXISTS. The planner used to call
 // `CrossLanguageIntelligence.analyzePolyglotProjectFromDB`, which selects EVERY
@@ -61,8 +86,8 @@ export interface MigrationSymbol {
    * The EXTERNAL import specifiers this symbol's FILE declares, as
    * `brain_import` holds them.
    *
-   * Round 2 recorded `dependencyProvenance.importEvidence` as "unavailable" and
-   * declared the missing analyzer lane a BLOCKER. That was wrong, and it was wrong
+   * An earlier version recorded `dependencyProvenance.importEvidence` as
+   * "unavailable" and declared missing analyzer work a blocker. That was wrong, and it was wrong
    * about the primary corpus: `brain_import` has been written by
    * `parallel-indexer` all along and is richly populated. Measured across 40 indexed
    * projects / 82,879 symbols / 13,351 import rows:
@@ -162,14 +187,38 @@ const placeholders = (n: number) => new Array(n).fill("?").join(",")
  * that survive are the first in file order rather than whatever the database
  * happened to return — and the rule is reported in `truncation.selection`.
  */
+/**
+ * A project-relative path in the spelling the index stores: forward slashes, no
+ * leading `./`, no trailing slashes.
+ *
+ * Explicit character work rather than a pattern: a path is a fixed small shape and
+ * three substitutions in one expression are harder to read than the loop that
+ * states the rule.
+ */
+function normalizeProjectPath(input: unknown): string {
+  let value = String(input ?? "").trim()
+  const slashed = value.split("\\").join("/")
+  value = slashed
+  while (value.startsWith("./")) value = value.slice(2)
+  while (value.length > 1 && value.endsWith("/")) value = value.slice(0, -1)
+  return value
+}
+
+/** Escape the two LIKE metacharacters so a path cannot match everything. */
+function escapeLikePrefix(input: string): string {
+  let escaped = ""
+  for (const character of input) escaped += character === "%" || character === "_" ? `\\${character}` : character
+  return escaped
+}
+
 export async function loadMigrationSymbolsByPath(
   projectId: string,
   paths: string[],
 ): Promise<{ symbols: MigrationSymbol[]; unmatched: string[]; files: string[] }> {
   const empty = { symbols: [] as MigrationSymbol[], unmatched: [] as string[], files: [] as string[] }
-  const cleaned = [...new Set(paths.map((p) => String(p ?? "").trim().replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "")))].filter(Boolean)
+  const cleaned = [...new Set(paths.map((p) => normalizeProjectPath(p)))].filter(Boolean)
   if (cleaned.length === 0) return empty
-  const raw = await BrainDatabase.getRawInstance(projectId as any)
+  const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
 
   const symbols: MigrationSymbol[] = []
   const matchedFiles = new Set<string>()
@@ -182,7 +231,7 @@ export async function loadMigrationSymbolsByPath(
     const isProjectRoot = path === "." || path === "./" || path === "/"
     // A LIKE pattern with the prefix escaped, so `%` and `_` in a path are
     // literal and cannot match everything.
-    const prefix = path.replace(/[%_]/g, (c) => `\\${c}`)
+    const prefix = escapeLikePrefix(path)
     const rows = raw
       .prepare(
         `SELECT s.id AS id, s.name AS name, s.symbol_type AS type, s.line_start AS line,
@@ -272,7 +321,7 @@ function dedupeById(symbols: MigrationSymbol[]): MigrationSymbol[] {
  * An id is a name that cannot collide, which is the whole reason this exists: two
  * components can share a name in two different files, and the tool's own
  * ambiguity refusal tells the caller to re-run against a symbol id — an option
- * that did not exist until round 6 made that advice true.
+ * that did not exist until the symbol-id selector did.
  *
  * An id that matches nothing is RETURNED, never dropped: a typo'd id that
  * silently planned nothing would be indistinguishable from an empty module.
@@ -282,7 +331,7 @@ async function loadMigrationSymbolsById(
   ids: string[],
 ): Promise<{ symbols: MigrationSymbol[]; unmatched: string[] }> {
   if (ids.length === 0) return { symbols: [], unmatched: [] }
-  const raw = await BrainDatabase.getRawInstance(projectId as any)
+  const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
   const symbols: MigrationSymbol[] = []
   const found = new Set<string>()
   for (const group of chunk(ids)) {
@@ -330,7 +379,7 @@ export async function resolveMigrationSymbols(
   idsUnmatched: string[]
   pathResolution: MigrationContext["pathResolution"]
 }> {
-  const raw = await BrainDatabase.getRawInstance(projectId as any)
+  const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
   const names = [...new Set(requestedNames.map((name) => String(name).trim().toLowerCase()).filter(Boolean))]
   const ids = [...new Set(requestedIds.map((id) => String(id).trim()).filter(Boolean))]
   const fromPaths = await loadMigrationSymbolsByPath(projectId, requestedPaths)
@@ -403,7 +452,7 @@ export async function loadMigrationContextForSymbols(
   dedupedSymbols: MigrationSymbol[],
   pathResolution?: MigrationContext["pathResolution"],
 ): Promise<MigrationContext> {
-  const raw = await BrainDatabase.getRawInstance(projectId as any)
+  const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
 
   const nameById = new Map<string, string>()
   const fileById = new Map<string, string>()

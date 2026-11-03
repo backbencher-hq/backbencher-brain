@@ -104,7 +104,7 @@ export namespace CrossLanguageMigrationAssistant {
        * What the file's imports actually were, as the index holds them.
        *
        * `unmapped` is the field that matters most, and it was STRUCTURALLY zero
-       * before round 9: the methodology's missing-mapping charge exists for a
+       * before the measured import split existed: the methodology's missing-mapping charge exists for a
        * third-party library with no registered mapping, and `dependencies` was
        * always empty, so nothing could ever be unmapped and `missingMappingHours`
        * was always 0.
@@ -884,6 +884,95 @@ export namespace CrossLanguageMigrationAssistant {
     proto: "an IDL schema, not migratable program logic",
   }
 
+  // ── regex-free text shaping ─────────────────────────────────────────────
+  // This module's text operations are explicit character work rather than
+  // regular expressions: a language label, a quoted import specifier and a
+  // file path are small fixed shapes, and a plain scan states the rule without
+  // the comment/string/Unicode edge cases a pattern would bring.
+
+  /** Fold runs of whitespace and hyphens to one `_` (language labels). */
+  function foldLanguageSeparators(input: string): string {
+    const raw = String(input ?? "").trim().toLowerCase()
+    let folded = ""
+    let pendingSeparator = false
+    for (const character of raw) {
+      if (character === "-" || character.trim() === "") {
+        pendingSeparator = true
+        continue
+      }
+      if (pendingSeparator) folded += "_"
+      pendingSeparator = false
+      folded += character
+    }
+    return pendingSeparator ? `${folded}_` : folded
+  }
+
+  /** Strip one leading and one trailing quote of either kind (import specifiers). */
+  function stripWrappingQuotes(input: string): string {
+    let start = 0
+    let end = input.length
+    if (end > start && (input[0] === '"' || input[0] === "'")) start = 1
+    if (end > start && (input[end - 1] === '"' || input[end - 1] === "'")) end -= 1
+    return input.slice(start, end)
+  }
+
+  /** True when every character is an ASCII letter or digit and the string is non-empty. */
+  function isAsciiWord(value: string): boolean {
+    if (!value) return false
+    for (let i = 0; i < value.length; i++) {
+      const code = value.charCodeAt(i)
+      const digit = code >= 48 && code <= 57
+      const upper = code >= 65 && code <= 90
+      const lower = code >= 97 && code <= 122
+      if (!digit && !upper && !lower) return false
+    }
+    return true
+  }
+
+  /** A Go module major-version segment: `v` followed only by digits. */
+  function isMajorVersionSegment(segment: string): boolean {
+    if (!segment.startsWith("v") || segment.length < 2) return false
+    for (let i = 1; i < segment.length; i++) {
+      const code = segment.charCodeAt(i)
+      if (code < 48 || code > 57) return false
+    }
+    return true
+  }
+
+  /** Test-shaped paths, from a segment and stem vocabulary instead of a pattern. */
+  const TEST_DIRECTORY_SEGMENTS: ReadonlySet<string> = new Set(["test", "tests", "spec", "specs", "__tests__", "testing"])
+  const TEST_FILE_SUFFIXES: readonly string[] = ["_test", "_tests", "_spec", ".test", ".spec", "Test", "Tests", "Spec"]
+  function isTestShapedPath(filePath: string): boolean {
+    const segments = filePath.split("/")
+    for (let i = 0; i < segments.length - 1; i++) {
+      if (TEST_DIRECTORY_SEGMENTS.has(segments[i])) return true
+    }
+    const fileName = segments[segments.length - 1] ?? ""
+    const dot = fileName.lastIndexOf(".")
+    if (dot < 1 || dot === fileName.length - 1) return false
+    const extension = fileName.slice(dot + 1)
+    if (!isAsciiWord(extension)) return false
+    const stem = fileName.slice(0, dot)
+    return TEST_FILE_SUFFIXES.some((suffix) => stem.endsWith(suffix))
+  }
+
+  /** Data-shaped component names: a bound name token, not a substring. */
+  const DATA_SHAPED_NAME_TOKENS: ReadonlySet<string> = new Set(["table", "schema", "migration", "migrate", "entity", "model", "dao", "repository", "repo"])
+  const DATA_SHAPED_TYPE_PARTS: readonly string[] = ["class", "struct", "interface", "type", "table", "enum"]
+  function isDataShapedComponent(symbolType: string, name: string): boolean {
+    if (symbolType === "database_entity") return true
+    if (!DATA_SHAPED_TYPE_PARTS.some((part) => symbolType.includes(part))) return false
+    const lowered = String(name ?? "").toLowerCase()
+    const tokens: string[] = []
+    let current = ""
+    for (const character of lowered) {
+      if (character === "_" || character === "-" || character === ".") { if (current) tokens.push(current); current = ""; continue }
+      current += character
+    }
+    if (current) tokens.push(current)
+    return tokens.some((token) => DATA_SHAPED_NAME_TOKENS.has(token))
+  }
+
   function normalizeMigrationLanguage(language: string): string | null {
     // Fold to a single `_`-separated form, then look up the folded form, the
     // raw form, and the form with separators stripped. All three are needed:
@@ -891,12 +980,12 @@ export namespace CrossLanguageMigrationAssistant {
     // `c++` never normalizes to a dictionary key by folding alone.
     const raw = String(language ?? "").trim().toLowerCase()
     if (!raw) return null
-    const folded = raw.replace(/[\s-]+/g, "_")
-    for (const candidate of [folded, raw, folded.replace(/_/g, "")]) {
+    const folded = foldLanguageSeparators(raw)
+    for (const candidate of [folded, raw, folded.split("_").join("")]) {
       const canonical = MIGRATION_LANGUAGE_ALIASES[candidate]
       if (canonical) return canonical
     }
-    const canonical = MIGRATION_LANGUAGE_ALIASES[folded] ?? folded.replace(/_/g, "")
+    const canonical = MIGRATION_LANGUAGE_ALIASES[folded] ?? folded.split("_").join("")
     return SUPPORTED_MIGRATION_LANGUAGES.has(canonical) ? canonical : null
   }
 
@@ -926,8 +1015,8 @@ export namespace CrossLanguageMigrationAssistant {
       if (nonMigratable) return { language: null, label: raw, reason: `source language "${raw}" is ${nonMigratable}` }
       return { language: canonical, label: raw, reason: null }
     }
-    const folded = raw.toLowerCase().replace(/[\s-]+/g, "_")
-    const nonMigratable = NON_MIGRATABLE_LANGUAGES[folded] ?? NON_MIGRATABLE_LANGUAGES[folded.replace(/_/g, "")]
+    const folded = foldLanguageSeparators(raw)
+    const nonMigratable = NON_MIGRATABLE_LANGUAGES[folded] ?? NON_MIGRATABLE_LANGUAGES[folded.split("_").join("")]
     return {
       language: null,
       label: raw,
@@ -971,6 +1060,50 @@ export namespace CrossLanguageMigrationAssistant {
   export type MigrationOutcome =
     | { ok: true; plan: MigrationPlan }
     | { ok: false; refusal: MigrationRefusal }
+
+  /**
+   * Resolve a requested NAME to exactly one symbol, or say why not.
+   *
+   * A name is not an identity: two components in two files can share one, and
+   * choosing one silently is the failure this tool can least afford. This is the
+   * planner's single resolution rule, exported so the batch engine can decide
+   * which components to load BEFORE it reads any relationship. The bounded-load
+   * design needs the decision without opening a plan; a second implementation of
+   * "which symbol did the caller mean" would be one truth too many.
+   */
+  export type MigrationNameResolution =
+    | { ok: true; symbol: MigrationSource["symbols"][number] }
+    | { ok: false; refusal: MigrationRefusal }
+
+  export function resolveMigrationName(symbolName: string, symbols: MigrationSource["symbols"]): MigrationNameResolution {
+    const requested = String(symbolName ?? "").trim()
+    const wanted = requested.toLowerCase()
+    const matches = symbols.filter((symbol) => String(symbol.name).toLowerCase() === wanted)
+    if (matches.length === 0) {
+      return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol named "${symbolName}"` } }
+    }
+    if (matches.length > 1) {
+      // Two shapes of collision, only one of which is a real ambiguity: two
+      // functions in one file that differ only in case are one component unless
+      // the caller named one of them exactly.
+      const files = new Set(matches.map((symbol) => symbol.file))
+      const exact = matches.filter((symbol) => symbol.name === requested)
+      if (files.size === 1 && exact.length === 1) return { ok: true, symbol: exact[0] }
+      const candidates = matches.map((symbol) => ({ id: symbol.id, name: symbol.name, language: symbol.language, file: symbol.file }))
+      return {
+        ok: false,
+        refusal: {
+          reason: "ambiguous-symbol",
+          detail:
+            files.size === 1
+              ? `"${symbolName}" matches ${matches.length} indexed symbols in one file (${candidates.map((c) => c.name).join(", ")}); none matches the requested spelling exactly, so this is a genuine collision — re-run against the exact spelling`
+              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); pass symbolIds with the id you mean, or restrict the request to one file with paths, or rename to disambiguate`,
+          candidates,
+        },
+      }
+    }
+    return { ok: true, symbol: matches[0] }
+  }
 
   // ── the planner's input ────────────────────────────────────────────────────
   // A narrow view of the index, produced by
@@ -1146,8 +1279,11 @@ export namespace CrossLanguageMigrationAssistant {
     "python", "r", "elixir", "haskell", "scala", "erlang", "julia", "lua",
   ])
 
+  /** Package prefixes whose dotted form is a type reference, not an import. */
+  const JAVA_FQN_PREFIXES: readonly string[] = ["java.", "javax.", "com.", "org.", "net.", "io."]
+
   export function canonicalPackageName(specifier: string, language?: string | null): CanonicalPackage {
-    let raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
+    let raw = stripWrappingQuotes(String(specifier ?? "").trim())
     if (!raw) return { name: null, excluded: "malformed" }
     if (raw.startsWith("node:")) return { name: null, excluded: "node-builtin" }
     if (raw.startsWith(".") || raw.startsWith("./") || raw.startsWith("../")) return { name: null, excluded: "relative" }
@@ -1195,7 +1331,7 @@ export namespace CrossLanguageMigrationAssistant {
         // segment is not a Go import — Go imports are paths — but it IS a valid
         // dictionary key that a caller can supply (`pool.query`, `asp.net`), and
         // reducing it against the host rules dropped it as malformed. Passed
-        // through unchanged, which is what round 1 did.
+        // through unchanged, which is the correct behaviour.
         if (segments.length === 1) return { name: withoutExt }
         const hasHost = segments[0].includes(".")
         if (!hasHost) {
@@ -1222,7 +1358,7 @@ export namespace CrossLanguageMigrationAssistant {
         //   gopkg.in/src-d/go-git.v4            -> src-d       (should be go-git.v4)
         //
         // `gonum` is a dictionary row. A Go project importing `gonum.org/v1/gonum/stat`
-        // could not reach it, so round 9's fix was incomplete in the same shape as the
+        // could not reach it, so that fix was incomplete in the same shape as the
         // bug it fixed.
         //
         // Every host below is one whose repository is NOT the last segment, which is
@@ -1240,7 +1376,7 @@ export namespace CrossLanguageMigrationAssistant {
         // the repository (`github.com/<org>/vN` is not a thing; `gonum.org` had no
         // entry, so it used the fallback). It read like protection and did nothing,
         // so it is deleted rather than kept as decoration.
-        const withoutMajor = rest.filter((segment) => !/^v\d+$/.test(segment))
+        const withoutMajor = rest.filter((segment) => !isMajorVersionSegment(segment))
         const rule = GO_MODULE_HOSTS.find((entry) => entry.host === host)
         if (rule) {
           const index = rule.repoAt(withoutMajor)
@@ -1259,8 +1395,11 @@ export namespace CrossLanguageMigrationAssistant {
       }
       // A Java/Kotlin/C# fully-qualified name is not an import at all; it is a
       // type reference, and nothing in the dictionary is keyed by one.
-      if (/^(?:java|javax|com|org|net|io)\./.test(withoutExt)) {
-        const first = withoutExt.split(/[./]/)[0]
+      if (JAVA_FQN_PREFIXES.some((prefix) => withoutExt.startsWith(prefix))) {
+        const dot = withoutExt.indexOf(".")
+        const slash = withoutExt.indexOf("/")
+        const end = dot === -1 ? slash : slash === -1 ? dot : Math.min(dot, slash)
+        const first = end === -1 ? withoutExt : withoutExt.slice(0, end)
         return first ? { name: first } : { name: null, excluded: "malformed" }
       }
       return withoutExt ? { name: withoutExt } : { name: null, excluded: "malformed" }
@@ -1294,18 +1433,24 @@ export namespace CrossLanguageMigrationAssistant {
    * through an import produced two different names.
    */
   export function packageFromNodeModulesPath(filePath: string, language?: string | null): CanonicalPackage {
-    const match = String(filePath ?? "").match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
-    if (!match) return { name: null, excluded: "malformed" }
-    return canonicalPackageName(match[1], language ?? "javascript")
+    const marker = "node_modules/"
+    const at = String(filePath ?? "").indexOf(marker)
+    if (at === -1) return { name: null, excluded: "malformed" }
+    const rest = String(filePath).slice(at + marker.length)
+    const segments = rest.split("/")
+    const first = segments[0] ?? ""
+    if (!first) return { name: null, excluded: "malformed" }
+    const scoped = first.startsWith("@") ? [`${first}/${segments[1] ?? ""}`] : [first]
+    const packagePath = scoped[0].endsWith("/") ? scoped[0].slice(0, -1) : scoped[0]
+    if (!packagePath || packagePath === "@") return { name: null, excluded: "malformed" }
+    return canonicalPackageName(packagePath, language ?? "javascript")
   }
 
   /** Test-shaped evidence, so the effort split is visible instead of implied. */
-  const TEST_PATH = /(?:^|\/)(?:tests?|spec|specs|__tests__|testing)\/|(?:_test|_spec|\.test|\.spec|Test|Tests|Spec)\.[A-Za-z0-9]+$|_(?:test|tests|spec)\.[A-Za-z0-9]+$/
-
   export function isTestPath(filePath: string): boolean {
     const p = String(filePath ?? "")
     if (!p || p === "unknown") return false
-    return TEST_PATH.test(p)
+    return isTestShapedPath(p)
   }
 
   /**
@@ -1350,43 +1495,12 @@ export namespace CrossLanguageMigrationAssistant {
   ): Promise<MigrationOutcome> {
     log.debug(`planMigration: '${symbolName}' -> '${targetLanguage}'`)
 
-    // 1. Resolve the component. A name that matches several symbols is NOT
-    // silently collapsed to the first one: measured on a two-file fixture, the
-    // previous `find` returned a confident plan for whichever symbol happened to
-    // be first and never mentioned the other.
-    const wanted = String(symbolName ?? "").trim().toLowerCase()
-    const matches = source.symbols.filter((s) => String(s.name).toLowerCase() === wanted)
-    if (matches.length === 0) {
-      return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol named "${symbolName}"` } }
-    }
-    if (matches.length > 1) {
-      // Two shapes of collision, only one of which is a real ambiguity.
-      //
-      // SAME FILE, different case: Go and many other languages treat `Execute`
-      // and `execute` as one component in one file. Measured on cobra: five such
-      // pairs, all in one file. Refusing there is noise — the caller asked for
-      // one component in one file and there is only one component in one file.
-      // An exact-case match resolves it unambiguously.
-      const files = new Set(matches.map((s) => s.file))
-      const exact = matches.filter((s) => s.name === String(symbolName ?? "").trim())
-      if (files.size === 1 && exact.length === 1) {
-        log.debug(`planMigration: resolved case-variant name '${symbolName}' to '${exact[0].name}' in ${[...files][0]}`)
-        return buildPlan(exact[0], targetLanguage, source)
-      }
-      const candidates = matches.map((s) => ({ id: s.id, name: s.name, language: s.language, file: s.file }))
-      return {
-        ok: false,
-        refusal: {
-          reason: "ambiguous-symbol",
-          detail:
-            files.size === 1
-              ? `"${symbolName}" matches ${matches.length} indexed symbols in one file (${candidates.map((c) => c.name).join(", ")}); none matches the requested spelling exactly, so this is a genuine collision — re-run against the exact spelling`
-              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); pass symbolIds with the id you mean, or restrict the request to one file with paths, or rename to disambiguate`,
-          candidates,
-        },
-      }
-    }
-    return buildPlan(matches[0], targetLanguage, source)
+    // 1. Resolve the component through the SAME rule the batch engine uses to
+    // decide what to load. One rule, so a component selected for planning and a
+    // component planned by name can never disagree.
+    const resolution = resolveMigrationName(symbolName, source.symbols)
+    if (!resolution.ok) return { ok: false, refusal: resolution.refusal }
+    return buildPlan(resolution.symbol, targetLanguage, source)
   }
 
   /**
@@ -1458,8 +1572,8 @@ export namespace CrossLanguageMigrationAssistant {
     // all of which are language-agnostic and all of which the tool can compute
     // without a single library row.
     //
-    // The gate `script/verify-visualize-migrate.ts` had been RED since round 1 for
-    // exactly this reason: round 1 correctly stopped fabricating mappings, the
+    // The shared visualize/migrate gate asserted a plan count, and refusing every
+    // unrouted pair was the only thing making it pass: the refusal replaced a
     // refusal it replaced had been the only thing making that assertion pass, and
     // the assertion it was hiding went unfollowed-up.
     //
@@ -1549,7 +1663,7 @@ export namespace CrossLanguageMigrationAssistant {
     // row — was absent from `dependencies` and therefore from this figure. The
     // batch methodology charges for exactly that case, so the per-plan view was
     // UNDER a component the total included, and their difference came out negative:
-    // the same "the two views disagree" defect round 3 fixed for shared edges,
+    // the same "the two views disagree" defect fixed for shared edges,
     // reintroduced through a different door.
     // The library NAMES, because the charge is per library and `imports.unmapped`
     // counts SPECIFIERS: a file that imports `gin` and `gin/render` declares two
@@ -1614,16 +1728,13 @@ export namespace CrossLanguageMigrationAssistant {
       riskFactors.push("Library dependencies are UNKNOWN, not empty: the index does not record the imports this component performs. Resolve them before estimating.")
     }
 
-    // Data-shaped detection now works on data the index actually holds: the
-    // raw `symbol_type` plus the component's own name. The previous guard
-    // required the `CrossLanguageSymbolType.DATABASE_ENTITY` enum value, which
-    // the bridge never wrote — measured 0 of 2988 flask symbols, so the Critical
-    // band was unreachable.
+    // Data-shaped detection works on data the index actually holds: the raw
+    // `symbol_type` plus the component's own name tokens. A type-only guard once
+    // required a bridge enum value the indexer never wrote, so the Critical band
+    // was unreachable; the name test is token-based, not a substring, so
+    // `mytable` is not a table.
     const symbolType = String(symbol.type ?? "").toLowerCase()
-    const isDataCarrier =
-      symbolType === "database_entity" ||
-      (/(?:class|struct|interface|type|table|enum)/.test(symbolType) &&
-        /(?:^|[_\-.])(?:table|schema|migration|migrate|entity|model|dao|repository|repo)(?:$|[_\-.])/i.test(symbol.name))
+    const isDataCarrier = isDataShapedComponent(symbolType, String(symbol.name ?? ""))
     if (isDataCarrier) {
       riskFactors.push(`Data-shaped component (${symbolType} "${symbol.name}"): schema and stored-state migration are likely in scope.`)
       complexityScore += 4
@@ -1757,7 +1868,7 @@ export namespace CrossLanguageMigrationAssistant {
    * fmt, github.com/spf13/pflag, io`: six of those seven are the standard library
    * and are not ported at all. Treating them as dependencies would put six
    * fictitious libraries in the plan and charge six missing-mapping penalties for
-   * them — the fabrication round 1 removed, one level down.
+   * them — the fabrication this planner removed, one level down.
    *
    * The rules are each language's OWN convention, not a guess:
    *
@@ -1829,7 +1940,7 @@ export namespace CrossLanguageMigrationAssistant {
   ])
 
   export function classifyImport(specifier: string, language: string | undefined): ImportClass | null {
-    const raw = String(specifier ?? "").trim().replace(/^['"]|['"]$/g, "")
+    const raw = stripWrappingQuotes(String(specifier ?? "").trim())
     if (!raw) return null
     const lang = normalizeMigrationLanguage(String(language ?? "").toLowerCase())
     if (lang === "go") {
@@ -1844,7 +1955,7 @@ export namespace CrossLanguageMigrationAssistant {
     }
     if (lang === "javascript" || lang === "typescript") {
       if (raw.startsWith("node:")) return "standard-library"
-      return JS_BUILTINS.has(raw.replace(/^node:/, "").split("/")[0]) ? "standard-library" : "third-party"
+      return JS_BUILTINS.has((raw.startsWith("node:") ? raw.slice("node:".length) : raw).split("/")[0]) ? "standard-library" : "third-party"
     }
     if (lang === "python") {
       // `from .models import x` is another file in this package; a module whose
@@ -1922,7 +2033,7 @@ export namespace CrossLanguageMigrationAssistant {
    */
   export function isSelfImport(specifier: string, language: string | undefined, self: ProjectSelfImport | null | undefined): boolean {
     if (!self) return false
-    const raw = String(specifier ?? "").trim().replace(/^['"]|['"]$/g, "")
+    const raw = stripWrappingQuotes(String(specifier ?? "").trim())
     if (!raw) return false
     const lang = normalizeMigrationLanguage(String(language ?? "").toLowerCase())
     if (lang === "dart") return !!self.dartPackage && raw.startsWith(`package:${self.dartPackage}/`)
@@ -2012,7 +2123,7 @@ export namespace CrossLanguageMigrationAssistant {
 
     // 1. THE IMPORTS THE INDEX ACTUALLY HOLDS.
     //
-    //    Round 2 concluded the index recorded no per-file imports and reported
+    //    An earlier version concluded the index recorded no per-file imports and reported
     //    `importEvidence: "unavailable"` on every plan. `brain_import` has been
     //    written by `parallel-indexer` all along — `doc-engine`,
     //    `analysis/dependencies` and `health` already read it — so the migration
@@ -2119,7 +2230,7 @@ export namespace CrossLanguageMigrationAssistant {
       //
       // I briefly made this conditional on a mapping being found, and that removed
       // every unresolved library from `dependencies` entirely — so a caller could
-      // no longer see WHICH libraries are unresolved, only how many. Round 4 exists
+      // no longer see WHICH libraries are unresolved, only how many. This pass exists
       // to prove exactly that visibility: an unmapped import must be listed and
       // marked uncertain, never supported and never silently absent.
       //
@@ -2159,7 +2270,7 @@ export namespace CrossLanguageMigrationAssistant {
     }
 
     // 2. Third-party packages at a relationship endpoint, canonicalized through
-    //    the SAME function as (1). Round 1 used two different rules on the two
+    //    the SAME function as (1). An earlier version used two different rules on the two
     //    sources, so one package produced two different library names.
     for (const relationship of relationships) {
       for (const side of [relationship.sourceFile, relationship.targetFile]) {

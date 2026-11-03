@@ -48,82 +48,34 @@ function negative(label: string, ok: boolean, detail = ""): void {
 }
 
 /**
- * Rows that an IMPORT-SPECIFIER lookup can never reach, by class.
+ * The ENFORCED unreachable class: keys the lookup's canonicalization cannot
+ * produce from any import specifier, in either direction.
  *
- * The audit found every one of these by reading the dictionary, not by taste.
- * They are kept rather than deleted because the KNOWLEDGE is real and useful to
- * a migrating engineer — "pg Pool.query becomes Drift" is exactly the advice
- * someone porting Dart needs. What is wrong is that they sit in a table the
- * lookup reads, implying coverage that does not exist.
+ * The audit is COMPLETENESS in both directions over exactly this set: every row
+ * that canonicalization cannot reach must appear here, and every key here must
+ * really be unreachable. A declaration for a row that has become reachable is a
+ * failure — the list cannot rot into an allowlist — and an unreachable row that
+ * is not declared is a failure too.
  *
- * The gate is COMPLETENESS, both directions: every unreachable key must appear
- * here, and every key here must really be unreachable. Adding a mis-keyed row
- * fails the audit; deleting a row without updating this list fails it too. That
- * is what turns "some rows are quietly broken" into a bounded, enforced number.
+ * This class is deliberately narrow. The dictionary also carries API idioms
+ * (`pool.query`, `Date.now`), a framework name (`asp.net`), Flutter widget class
+ * names and display names with spaces: knowledge a migrating engineer needs and
+ * an import lookup can only reach through a specifier real source code never
+ * writes. Those rows are kept, and their limit is stated in the tool's docs; they
+ * are not enforced here because canonicalization CAN produce their key, so calling
+ * them unreachable would be a claim this audit cannot evidence.
  */
-const DECLARED_NON_IMPORT_ROWS: Readonly<Record<string, string>> = {
-  // ── A. an API or idiom, not a package ──────────────────────────────────
-  // Reachable only with call-expression detection: a Go file calls pool.query(),
-  // it does not import "pool.query".
-  "pool.query": "API/idiom: pg Pool.query -> Drift. Needs call-expression detection.",
-  "logger.error": "API/idiom: winston/console -> dart logging. Needs call-expression detection.",
-  "Date.now": "API/idiom: Date.now -> DateTime.now. Needs call-expression detection.",
-  "JSON.stringify": "API/idiom: JSON.stringify -> jsonEncode. Needs call-expression detection.",
-  "jest.fn": "API/idiom: jest mocks -> Mockito/mocktail. Needs call-expression detection.",
-  // ── B. a framework, not an import ─────────────────────────────────────
-  // Reachable only with framework detection from a manifest, not from a file.
-  "asp.net": "framework: ASP.NET -> NestJS/Express/FastAPI/Shelf. Needs manifest-level framework detection.",
-  // ── C. a UI type, not a package ───────────────────────────────────────
-  // Flutter widget and container CLASSES under the dart source. A Dart file
-  // imports `flutter`, not `Container`. The package-level `flutter` row is the
-  // one that fires; these sixteen name the specific widget being replaced.
-  BoxDecoration: "Flutter widget/type name, not a package (dart source).",
-  Card: "Flutter widget/type name, not a package (dart source).",
-  Center: "Flutter widget/type name, not a package (dart source).",
-  CircularProgressIndicator: "Flutter widget/type name, not a package (dart source).",
-  Column: "Flutter widget/type name, not a package (dart source).",
-  Container: "Flutter widget/type name, not a package (dart source).",
-  Expanded: "Flutter widget/type name, not a package (dart source).",
-  GestureDetector: "Flutter widget/type name, not a package (dart source).",
-  Icon: "Flutter widget/type name, not a package (dart source).",
-  ListView: "Flutter widget/type name, not a package (dart source).",
-  MaterialApp: "Flutter widget/type name, not a package (dart source).",
-  Padding: "Flutter widget/type name, not a package (dart source).",
-  Row: "Flutter widget/type name, not a package (dart source).",
-  Scaffold: "Flutter widget/type name, not a package (dart source).",
-  SizedBox: "Flutter widget/type name, not a package (dart source).",
-  Text: "Flutter widget/type name, not a package (dart source).",
-  // ── D. a display name with a space, which no import can be ─────────────
-  "android jetpack": "display name, not a specifier (would be android-jetpack).",
-  "entity framework": "display name, not a specifier (would be entity-framework).",
-  "react context": "display name for the React Context API, not a package.",
-  "redux toolkit": "display name, not a specifier (the package is @reduxjs/toolkit).",
-  "svelte motion": "display name, not a specifier (the package is svelte-motion).",
-  "type providers": "display name for a type-provider pattern, not a package.",
-  // ── E. a Dart LIBRARY path, colliding with its own package row ─────────
-  // `package:flutter/material.dart` names the PACKAGE flutter; the
-  // `flutter/material` row can only be selected with library-level granularity
-  // the lookup does not have, and it collides with the reachable `flutter` row.
-  "flutter/material": "Dart library path; collides with the reachable `flutter` package row. Needs library-level lookup.",
-  // ── F. a MIS-KEYED block: a JavaScript ecosystem name under a DART source ─
-  // A Dart file cannot import an npm package. These twelve rows sit in
-  // `dart -> typescript`, where the meaningful mapping already exists as
-  // `flutter -> react-native`. They duplicate data reachable from the
-  // TypeScript side and imply Dart-to-TS coverage that cannot occur.
-  axios: "mis-keyed: an npm package under the `dart` source. Reachable from typescript/javascript instead.",
-  "drizzle-orm": "mis-keyed: an npm package under the `dart` source.",
-  expo: "mis-keyed: a React Native framework under the `dart` source.",
-  "next.js": "mis-keyed: a JS framework under the `dart` source (and the npm package is `next`).",
-  prisma: "mis-keyed: an npm package under the `dart` source.",
-  "react-native": "mis-keyed: a React Native framework under the `dart` source; the Dart row `flutter -> react-native` already carries this.",
-  tailwind: "mis-keyed: a CSS framework under the `dart` source.",
-  zod: "mis-keyed: an npm package under the `dart` source.",
-  zustand: "mis-keyed: an npm package under the `dart` source.",
-  "shadcn/ui": "mis-keyed: a component library under the `dart` source; also a display name, not a specifier.",
+const DECLARED_UNREACHABLE_ROWS: Readonly<Record<string, string>> = {
+  // A Dart library path: `package:flutter/material.dart` names the PACKAGE flutter,
+  // so the lookup canonicalizes to `flutter` and this compound key can never be
+  // selected. Needs library-level granularity the lookup does not have.
+  "flutter/material": "Dart library path; canonicalization resolves the package `flutter`, so this key is unreachable by an import lookup.",
+  // An npm subpath: `import ... from "shadcn/ui"` is not a package name. The lookup
+  // strips the path and canonicalizes to `shadcn`, so this key can never be selected.
+  "shadcn/ui": "npm subpath, not a package; canonicalization strips the path to `shadcn`, so this key is unreachable by an import lookup.",
 }
-
 /** The declared class as a set, for the two-directional completeness gate. */
-const declaredKeys = new Set(Object.keys(DECLARED_NON_IMPORT_ROWS))
+const declaredKeys = new Set(Object.keys(DECLARED_UNREACHABLE_ROWS))
 
 /** A realistic import specifier for `key` written in `language`. */
 function specifierFor(key: string, language: string): string {
@@ -174,7 +126,7 @@ console.log(`dictionary: ${sources.length} sources, ${targets.length} targets, $
   // The other direction: a declaration for a key that is NOT unreachable is
   // stale — the row became reachable, so it should leave the declared class and
   // become a normal, reachable row rather than being excused forever.
-  const stale = [...declaredKeys].filter((k) => keys.includes(k) && !unreachableKeys.has(k) && rows.every((r) => r.library === k))
+  const stale = [...declaredKeys].filter((k) => keys.includes(k) && !unreachableKeys.has(k))
   check(
     "M4: no declared non-import key is actually reachable",
     stale.length === 0,
@@ -182,8 +134,8 @@ console.log(`dictionary: ${sources.length} sources, ${targets.length} targets, $
   )
   // The declared class is reported, not waved through: if it grows, the
   // knowledge base is accumulating unreachable rows.
-  const declaredHits = unreachable.filter((u) => u.key in DECLARED_NON_IMPORT_ROWS)
-  console.log(`  rows matching a declared non-import key: ${declaredHits.length} of ${rows.length}`)
+  const declaredHits = unreachable.filter((u) => u.key in DECLARED_UNREACHABLE_ROWS)
+  console.log(`  rows matching a declared unreachable key: ${declaredHits.length} of ${rows.length}`)
   // Every declared key must still EXIST in the dictionary. A declaration for a
   // removed row is stale bookkeeping, and the two directions of the gate depend
   // on this set being the live one.
@@ -195,8 +147,20 @@ console.log(`dictionary: ${sources.length} sources, ${targets.length} targets, $
   // the dictionary against.
   const declaredRowsInDictionary = rows.filter((r) => declaredKeys.has(r.library)).length
   console.log(`  rows unreachable by an import lookup: ${rows.filter((r) => !declaredKeys.has(r.library) && unreachableKeys.has(r.library)).length}`)
-  console.log(`  rows in the declared non-import class: ${declaredRowsInDictionary} of ${rows.length} (${((declaredRowsInDictionary / rows.length) * 100).toFixed(1)}%)`)
-  check("M4: the declared non-import class is documented", Object.values(DECLARED_NON_IMPORT_ROWS).every((v) => v.length > 20), "each declaration must say why the row cannot be reached by import")
+  console.log(`  rows in the declared unreachable class: ${declaredRowsInDictionary} of ${rows.length} (${((declaredRowsInDictionary / rows.length) * 100).toFixed(1)}%)`)
+  // Negative control: the completeness predicate must reject a set that disagrees
+  // with the measured unreachable rows, so a green line is a measurement and not an
+  // absence of output. Both directions are exercised on the predicate itself.
+  const complete = (declared: ReadonlySet<string>, measured: ReadonlySet<string>): boolean =>
+    [...measured].every((key) => declared.has(key)) && [...declared].every((key) => measured.has(key))
+  negative(
+    "M4: the unreachable-class predicate detects a missing and a ghost declaration",
+    !complete(new Set([...unreachableKeys].filter((key) => key !== "flutter/material")), new Set(unreachableKeys)) &&
+      !complete(new Set([...unreachableKeys, "not-a-real-key"]), new Set(unreachableKeys)) &&
+      complete(declaredKeys, new Set(unreachableKeys)),
+    `measured keys: ${[...unreachableKeys].join(", ")}`,
+  )
+  check("M4: the declared unreachable class is documented", Object.values(DECLARED_UNREACHABLE_ROWS).every((value) => value.length > 20), "each declaration must say why canonicalization cannot produce the key")
 }
 
 // ── 2. the canonicalization rules that the audit found broken ──────────────
@@ -313,7 +277,7 @@ const evidence = {
     targets,
     rows: rows.length,
     distinctLibraryKeys: keys.length,
-    declaredNonImportRows: Object.keys(DECLARED_NON_IMPORT_ROWS),
+    declaredUnreachableRows: Object.keys(DECLARED_UNREACHABLE_ROWS),
     reachablePairs: [...new Set(rows.map((r) => `${r.sourceLanguage}->${r.targetLanguage}`))].sort(),
   },
   limitations: [
