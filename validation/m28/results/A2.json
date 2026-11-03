@@ -61,8 +61,8 @@
     }
   ],
   "blockedLegs": [],
-  "currentCommit": "aacc46abf6428ffb1a54db4b0d9fca151c2f90a8",
-  "sourceFingerprint": "46b7039e8855cff92683030cf5126ee263b75ca50dfbd6caee0e7dabd67d506e",
+  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
+  "sourceFingerprint": "aad4be32f5f908123afb849c134e29239a27c710f75f3389c028ee22502c64e6",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-annotation-ui.ts",
@@ -72,12 +72,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-11-03T05:04:27.014Z",
+  "generatedAt": "2026-11-03T16:35:24.559Z",
   "claimLevel": "annotations render in the real editor hover (author-labeled) and ride bb/graph — verified for every executable leg; the in-editor leg is a declared blocked leg when no editor binary exists",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-03T05:04:27.014Z",
-    "contentSha256": "3b5c3d1b489a8242d6be1327ef19c3e92912d0dca7e25203db31a8ddddc0b329"
+    "sealedAt": "2026-11-03T16:35:24.559Z",
+    "contentSha256": "b8288d51a00427215cb4640d4b5d552dc125b0dcd5f674a6c6bf83fadf6ec6a4"
   }
 }

@@ -1,33 +1,90 @@
 {
-  "issue": "M28.A1",
-  "code": "A1",
-  "milestone": "M28",
+  "schemaVersion": 1,
+  "tool": "bb_annotate",
+  "gate": "A1",
   "status": "verified",
-  "checks": 22,
-  "passed": 22,
+  "checks": 50,
+  "passed": 50,
   "failed": 0,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
+  "mutantsCaught": 7,
+  "mutantsTotal": 7,
   "mutantRecords": [
     {
-      "name": "A1 mutant: provenance-less write is refused by the schema (NOT NULL author_class)",
-      "caught": true
+      "name": "A1 negative control: the pre-fix independent-halves rule disagrees with the joint answer (it would have claimed a render)",
+      "caught": true,
+      "detail": "pre-fix rule = nameMatched && pathMatched"
     },
     {
-      "name": "A1 mutant: a write whose claim diverges from storage is caught by the round-trip invariant",
-      "caught": true
+      "name": "A1 negative control: a renderer that preserved newlines would produce a second bullet from the hostile body",
+      "caught": true,
+      "detail": "2 bullets unflattened"
     },
     {
-      "name": "A1 mutant: silently-truncating reader is caught by the write-claim equality",
-      "caught": true
+      "name": "A1 mutant: a handler that copies the caller's author class is caught (row must stay 'agent')",
+      "caught": true,
+      "detail": "row=human"
     },
     {
-      "name": "A1 mutant: guessed annotation is caught by the declared-absence check",
-      "caught": true
+      "name": "A1 mutant: a location key that ignores the path is caught (two files must be two rows)",
+      "caught": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "A1 mutant: a handler that ANDs the two independent halves is caught by the joint rule",
+      "caught": true,
+      "detail": "editor=true"
+    },
+    {
+      "name": "A1 mutant: a widened body bound is caught by the declared refusal",
+      "caught": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-1b06fdbbd0d1413c824eb440c1357142c58bd3f32928f88d6b48b2b44e4bf95b\""
+    },
+    {
+      "name": "A1 mutant: a disabled control-character refusal is caught",
+      "caught": true,
+      "detail": "isError=false"
     }
   ],
-  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
-  "sourceFingerprint": "3c22dd9fa778e9a15c7c47f00a7eab1e647cd88d4e2895155ad7060f36082d20",
+  "negativeCases": [
+    {
+      "name": "A1 negative control: the pre-fix independent-halves rule disagrees with the joint answer (it would have claimed a render)",
+      "caught": true,
+      "detail": "pre-fix rule = nameMatched && pathMatched"
+    },
+    {
+      "name": "A1 negative control: a renderer that preserved newlines would produce a second bullet from the hostile body",
+      "caught": true,
+      "detail": "2 bullets unflattened"
+    },
+    {
+      "name": "A1 mutant: a handler that copies the caller's author class is caught (row must stay 'agent')",
+      "caught": true,
+      "detail": "row=human"
+    },
+    {
+      "name": "A1 mutant: a location key that ignores the path is caught (two files must be two rows)",
+      "caught": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "A1 mutant: a handler that ANDs the two independent halves is caught by the joint rule",
+      "caught": true,
+      "detail": "editor=true"
+    },
+    {
+      "name": "A1 mutant: a widened body bound is caught by the declared refusal",
+      "caught": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-1b06fdbbd0d1413c824eb440c1357142c58bd3f32928f88d6b48b2b44e4bf95b\""
+    },
+    {
+      "name": "A1 mutant: a disabled control-character refusal is caught",
+      "caught": true,
+      "detail": "isError=false"
+    }
+  ],
+  "blockedLegs": [],
+  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
+  "sourceFingerprint": "4b2c44d2b2737daa5398242590a4e0e221c11d805219c62c6bc48f6635292327",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-annotation-store.ts",
@@ -37,12 +94,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-11-01T19:30:27.240Z",
-  "claimLevel": "verified — annotation store proven against a real sqlite db (fresh + pre-existing paths), provenance enforced in code, suite can-fail proven",
+  "generatedAt": "2026-11-03T16:36:12.634Z",
+  "claimLevel": "verified — store guarantees proven against a real sqlite db; the tool's wire contract, joint reachability, hostile-body rendering and declared bounds proven through a real bb mcp stdio session; five planted handler mutants caught",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T19:30:27.241Z",
-    "contentSha256": "129a1af47db632049c20f054113e560895464f7a4fc38ef9623caa135c665518"
+    "sealedAt": "2026-11-03T16:36:12.634Z",
+    "contentSha256": "531a431e98127e83608e5239515f0055f1c3531ff41ec30da254489f12b6f44e"
   }
 }

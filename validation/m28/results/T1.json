@@ -2,24 +2,24 @@
   "issue": "M28.T1",
   "code": "T1",
   "milestone": "M28",
-  "status": "known-gap",
-  "checks": 24,
-  "passed": 23,
-  "failed": 1,
-  "mutantsCaught": 1,
+  "status": "verified",
+  "checks": 26,
+  "passed": 26,
+  "failed": 0,
+  "mutantsCaught": 2,
   "mutantsTotal": 2,
   "mutantRecords": [
     {
       "name": "T1 mutant: silent empty impact set on unknown symbol is caught",
-      "caught": false
+      "caught": true
     },
     {
       "name": "T1 mutant: fabricated cross-language fact for unknown symbol is caught",
       "caught": true
     }
   ],
-  "currentCommit": "17cb859269cddbcab4d2c43fd25303caa1517e12",
-  "sourceFingerprint": "13b949a10443d362919abf754a0c1f0ed7f5196c4674cbc000f9246179fe4ab3",
+  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
+  "sourceFingerprint": "6f030d11b91462a55a7f22528b0888685faf3b8ebf3b816435d27f1eda5b88c0",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-mcp-tools.ts",
@@ -28,14 +28,14 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-11-01T20:28:26.023Z",
+  "generatedAt": "2026-11-03T16:34:55.710Z",
   "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
   "limitations": [
     "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T20:28:26.024Z",
-    "contentSha256": "b82af235cb44b31ff7246e549e90901f3726d5c546ba18167bcbe0d61e8081f2"
+    "sealedAt": "2026-11-03T16:34:55.711Z",
+    "contentSha256": "630f96f1282c773bbac5581f0c4050362aea5d2e014c48bf79db841009a9ddb2"
   }
 }

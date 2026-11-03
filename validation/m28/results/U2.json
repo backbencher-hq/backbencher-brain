@@ -40,8 +40,8 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "currentCommit": "d8a0f80523c294459f17323ed5f21686af2e6767",
-  "sourceFingerprint": "45ea6b8dfcba2791b3ae9f296d27f2d19a43e7c0ccfba3ba58370d513daa69ff",
+  "currentCommit": "f1c6bc4dcd0308e1d7df229a670d9ac187d766f5",
+  "sourceFingerprint": "a7246955e14b5e8036de09692739a371b9c253e85042c34f584a9e5bfd4c3f65",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-surface-parity.ts",
@@ -54,7 +54,7 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-11-01T20:35:03.433Z",
+  "generatedAt": "2026-11-03T04:32:07.294Z",
   "counts": {
     "seededRelationshipShapes": 2450,
     "seededShapesReturnedByBbGraph": 2450,
@@ -107,7 +107,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T20:35:03.433Z",
-    "contentSha256": "80586935ee4327cd77ed04682f3f659bea5c0ffb1091e8c3030735f42d1c6279"
+    "sealedAt": "2026-11-03T04:32:07.294Z",
+    "contentSha256": "b14ec3395330d4e4b0266917b7c2361ba9ea2dcd85e7bcc306837c9b2c71b3b9"
   }
 }

@@ -4,22 +4,15 @@
   "milestone": "M28",
   "status": "known-gap",
   "checks": 31,
-  "passed": 28,
-  "failed": 3,
+  "passed": 30,
+  "failed": 1,
   "failures": [
-    "X1: A2 verifier passes at HEAD — A2: KNOWN-GAP (12/13 passed, 5/5 mutants)  (exit=1)",
-    "X1: v4 completion bar audited item-by-item — zero violations — bar3: provenance not enforced; bar4: the annotations-in-IDE leg is not verified (A2); bar4: no real in-editor leg; bar: the generated MCP surface doc is not verified (V1)",
-    "X1: A2 regeneration run passes — A2: KNOWN-GAP (12/13 passed, 5/5 mutants)  (exit=1)"
+    "X1: A1 evidence byte-identical (modulo generatedAt/currentCommit)"
   ],
   "negativeCases": 4,
-  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
+  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
   "verifierCommand": "npx tsx script/m28/verify-closure.ts",
-  "barViolations": [
-    "bar3: provenance not enforced",
-    "bar4: the annotations-in-IDE leg is not verified (A2)",
-    "bar4: no real in-editor leg",
-    "bar: the generated MCP surface doc is not verified (V1)"
-  ],
+  "barViolations": [],
   "perMutantRecords": {
     "T1": [],
     "U1": [],
@@ -27,10 +20,10 @@
     "A2": [],
     "V1": []
   },
-  "generatedAt": "2026-11-01T19:30:36.698Z",
+  "generatedAt": "2026-11-03T16:35:39.970Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T19:30:36.699Z",
-    "contentSha256": "5d30ee02bd59c66f8829b45942a969716e0490dcb35c7005a78487ed2cd9cfcd"
+    "sealedAt": "2026-11-03T16:35:39.971Z",
+    "contentSha256": "ea56986ce848f152447265183a9a081a9c3717459e36f0eb57ec4cbd12f5adab"
   }
 }
