@@ -547,7 +547,14 @@ export function ensureAnnotationTable(raw: any): void {
   const normalise = (sql: string): string => {
     const before = sql.indexOf("BEFORE")
     if (before < 0) return ""
-    return sql.slice(before).replace(/\s+/g, " ").trim()
+    // SQLite stores a trigger's SQL WITHOUT the trailing semicolon of the
+    // CREATE statement, while the compiled constant carries it. Without
+    // stripping it on BOTH sides the comparison never matched, so every
+    // read-write open still dropped and recreated the guards (schema_version
+    // bumped on each fresh process). Plain string operations: no regex.
+    let body = sql.slice(before).replace(/\s+/g, " ").trim()
+    while (body.endsWith(";")) body = body.slice(0, -1).trimEnd()
+    return body
   }
   let guardIsStale = false
   for (const wanted of wantedStatements) {
