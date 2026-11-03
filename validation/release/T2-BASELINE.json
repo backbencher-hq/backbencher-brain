@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "what": "Campaign T2 baseline — all read tools against the shared 3.6 GB reference index, in-process handler calls, warm runs.",
+  "generatedAt": "2026-11-03T17:10:27.346Z",
+  "head": "ref: re",
+  "referenceIndex": {
+    "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+    "projectPath": "$HOME/mcp/backbencher-brain",
+    "dbPath": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "dbBytes": 3885883392,
+    "dbMtimeMs": 1793725551029.1978
+  },
+  "protocol": {
+    "env": "BB_DATA_DIR=<repo>/.bb-data, BB_NO_AUTO_REFRESH=1",
+    "warmupRuns": 1,
+    "measuredRuns": 3,
+    "readOnlyProof": {
+      "dbBytesBefore": 3885883392,
+      "dbBytesAfter": 3885883392,
+      "dbMtimeUnchanged": true,
+      "edgeHashBefore": "8a2358697d2eed7a",
+      "edgeHashAfter": "8a2358697d2eed7a",
+      "toolWriters": [],
+      "noToolWrote": true,
+      "wholeRunUnchanged": true
+    },
+    "loadavg": [
+      4.33,
+      5.13,
+      9.5
+    ]
+  },
+  "skippedWriteTools": [
+    "bb_edit",
+    "bb_index",
+    "bb_annotate"
+  ],
+  "budgets": {
+    "bb_health default": 2000,
+    "all other defaults": 5000
+  },
+  "results": [
+    {
+      "tool": "bb_health",
+      "mutability": "read",
+      "budgetMs": 2000,
+      "runs": [
+        625,
+        647
+      ],
+      "p50Ms": 636,
+      "p95Ms": 647,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 1541
+    },
+    {
+      "tool": "bb_search",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        266,
+        262
+      ],
+      "p50Ms": 264,
+      "p95Ms": 266,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 277
+    },
+    {
+      "tool": "bb_ask",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        1636,
+        1684
+      ],
+      "p50Ms": 1660,
+      "p95Ms": 1684,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 2408
+    },
+    {
+      "tool": "bb_analyze",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        2684,
+        2729
+      ],
+      "p50Ms": 2707,
+      "p95Ms": 2729,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 35118
+    },
+    {
+      "tool": "bb_patterns",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        3506,
+        3502
+      ],
+      "p50Ms": 3504,
+      "p95Ms": 3506,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 1190
+    },
+    {
+      "tool": "bb_security",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        5484,
+        5546
+      ],
+      "p50Ms": 5515,
+      "p95Ms": 5546,
+      "withinBudget": false,
+      "isError": false,
+      "outputBytes": 2897
+    },
+    {
+      "tool": "bb_visualize",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        264,
+        263
+      ],
+      "p50Ms": 264,
+      "p95Ms": 264,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 1491
+    },
+    {
+      "tool": "bb_migrate",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        989,
+        980
+      ],
+      "p50Ms": 985,
+      "p95Ms": 989,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 2856
+    },
+    {
+      "tool": "bb_doc",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        297,
+        294
+      ],
+      "p50Ms": 296,
+      "p95Ms": 297,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 6827
+    },
+    {
+      "tool": "bb_graph",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        3483,
+        3492
+      ],
+      "p50Ms": 3488,
+      "p95Ms": 3492,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 25928
+    },
+    {
+      "tool": "bb_impact",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        6135,
+        6539
+      ],
+      "p50Ms": 6337,
+      "p95Ms": 6539,
+      "withinBudget": false,
+      "isError": false,
+      "outputBytes": 171749
+    },
+    {
+      "tool": "bb_cross_language",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        4,
+        4
+      ],
+      "p50Ms": 4,
+      "p95Ms": 4,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 1274
+    },
+    {
+      "tool": "bb_annotations",
+      "mutability": "read",
+      "budgetMs": 5000,
+      "runs": [
+        0,
+        0
+      ],
+      "p50Ms": 0,
+      "p95Ms": 0,
+      "withinBudget": true,
+      "isError": false,
+      "outputBytes": 344
+    }
+  ],
+  "verdict": "ATTENTION: budgetFailures=bb_security,bb_impact errors=none toolWriters=none"
+}
