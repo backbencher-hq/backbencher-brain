@@ -24,7 +24,12 @@ const BASELINE = path.join(ROOT, "validation/m31/results/tool-mode-corpus.json")
 // before WRITE_TARGET is derived — so self-test runs can NEVER write the real
 // baseline (a mutated run writing the real file would poison it).
 const CHECK = process.argv.includes("--check") || process.env.BB_M31_CORPUS_CHECK_ONLY === "1"
-const WRITE_TARGET = CHECK ? BASELINE + ".fresh" : BASELINE
+// The check target is process-unique: several gates (and several lanes) run this
+// script concurrently, and a shared `.fresh` path lets one run diff against a
+// file another run is writing or deleting — an intermittent red that looks like
+// drift and is not. The real baseline is only ever written by an explicit
+// (non-check) regeneration.
+const WRITE_TARGET = CHECK ? `${BASELINE}.fresh.${process.pid}` : BASELINE
 
 delete process.env.BB_EMBEDDING_BASE_URL
 delete process.env.BB_EMBEDDING_API_KEY
@@ -365,9 +370,11 @@ async function main() {
     JSON.stringify((cc.negatives ?? {})[k]) !== JSON.stringify((ff.negatives ?? {})[k]))
   if (drift.length > 0) {
     console.error(`CORPUS CHECK: FAIL — behavior drifted from committed baseline. Drifting invocations: ${drift.slice(0, 10).join(", ")}${drift.length > 10 ? ` (+${drift.length - 10} more)` : ""}`)
+    rmSync(WRITE_TARGET, { force: true })
     process.exit(1)
   }
   console.log("CORPUS CHECK: PASS — observed behavior matches committed baseline")
+  rmSync(WRITE_TARGET, { force: true })
   // M31.T1 evidence envelope (same contract as every M21/M31 verifier evidence file)
   const { execFileSync } = await import("node:child_process")
   const evidence = {

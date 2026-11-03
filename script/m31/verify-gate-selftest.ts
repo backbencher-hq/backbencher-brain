@@ -137,8 +137,11 @@ const GATES: GateSpec[] = [
     mutate: (sandbox) => {
       // Mutation C: claim a WRITE tool (bb_edit, registry mutability=write) is
       // read-only — the mutability claim must fail against the registry.
+      // APPEND, never replace an anchor: the first version replaced a heading
+      // that the edit lane later rewrote, so the "corruption" was a no-op and
+      // the self-test reported the gate as blind when the mutation never landed.
       const p = path.join(sandbox, "docs/BB_EDIT.md")
-      writeFileSync(p, readFileSync(p, "utf8").replace("# Unified Editing (M9.13)", "# Unified Editing (M9.13)\n\nThis tool is read-only."))
+      writeFileSync(p, readFileSync(p, "utf8") + "\n\nThis tool is read-only.\n")
     },
   },
   {
@@ -401,7 +404,7 @@ for (const gate of selected) {
     const backup = readFileSync(srcPath, "utf8")
     try {
       const control = runGate(gate.script, { BB_M31_CORPUS_CHECK_ONLY: "1" })
-      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-200))
+      check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-400))
       const start = backup.indexOf(gate.mutatePattern.marker)
       const end = backup.indexOf(gate.mutatePattern.until)
       check(`${gate.name}: mutation markers found in source`, start !== -1 && end > start)
