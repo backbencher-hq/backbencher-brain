@@ -9,7 +9,7 @@
   "failed": 0,
   "negatives": 2,
   "negativePassed": 2,
-  "generatedAt": "2026-11-03T17:02:17.596Z",
+  "generatedAt": "2026-11-03T17:27:33.445Z",
   "negativeLine": "Does NOT prove taint-detection correctness (phantom sinks are an analyzer-domain gap routed to the analyzer milestone); proves only the history/persistence axis.",
   "measured": {
     "liveFindings": 30,
