@@ -428,5 +428,35 @@
       "m31/tool-mode-corpus --check"
     ],
     "otherLaneRedsReason": "other owners' in-flight tools; bb_doc is not named in the drift list"
+  },
+  "m31SelfTest": {
+    "status": "PASS",
+    "command": "BB_M31_EVIDENCE=1 BB_DATA_DIR=validation/tools/bb_doc/bbdata BB_NO_AUTO_REFRESH=1 bun run script/m31/verify-gate-selftest.ts",
+    "passed": 69,
+    "failed": 0,
+    "currentCommit": "60fa91be9",
+    "bbDocMutantsDetected": {
+      "m20-doc-truth-signature": {
+        "mutationFailed": true,
+        "controlPassed": true
+      },
+      "m20-doc-modes-contract": {
+        "mutationFailed": true,
+        "controlPassed": true
+      },
+      "m20-doc-truth-cap": {
+        "mutationFailed": true,
+        "controlPassed": true
+      },
+      "m20-doc-citations-freshness": {
+        "mutationFailed": true,
+        "controlPassed": true
+      },
+      "m20-doc-examples-honest": {
+        "mutationFailed": true,
+        "controlPassed": true
+      }
+    },
+    "note": "The two routed mutants were stale anchors from before the tool split, not weak gates: neither anchor existed in the mutated surface, so no mutation was applied and the control-only run passed. Both mutants are now pointed at the surfaces that carry the behaviour (doc-engine's delegating renderer and the bb_doc handler module), and two gate predicates were strengthened so the planted defects are convicted: T30 now treats an empty bracket pair as a claim even beside the 'no parameter list' caveat (it had exempted that exact shape), and m20 doc-modes reports a thrown refusal as a named check failure instead of aborting the run. Evidence: logs/selftest-routed-3.log + validation/m31/results/gate-selftest.json (Lead-owned path; this run wrote status verified, 69/69, at 60fa91be9)."
   }
 }
