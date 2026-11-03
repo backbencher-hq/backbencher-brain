@@ -84,7 +84,44 @@
    ],
    "readMovedIndex": false,
    "dbUnchanged": true,
-   "verdict": "FAIL: 33.7 s process CPU against a 5,000 ms budget. The scan cost is dominated by full scans of 820,040 relationship rows that read each row's evidence metadata (json_extract on metadata, confidence, source/target) and by the file-level GROUP BY join; the fix requires covering/expression indexes on the relationship table (schema/index scope), not another SQL rewrite in this lane."
+   "verdict": "FAIL: 33.7 s process CPU against a 5,000 ms budget. The scan cost is dominated by full scans of 820,040 relationship rows that read each row's evidence metadata (json_extract on metadata, confidence, source/target) and by the file-level GROUP BY join; the fix requires covering/expression indexes on the relationship table (schema/index scope), not another SQL rewrite in this lane.",
+   "schemaFix": {
+    "migrationEvidence": "validation/tools/bb_patterns/raw/schema-migration-t2.json",
+    "schema": {
+     "generatedColumn": "brain_relationship.evidence_class TEXT GENERATED ALWAYS AS (json_extract(metadata,'$.evidenceClass')) VIRTUAL",
+     "coveringIndex": "brain_rel_pattern_cover_idx(project_id, relationship_type, target_symbol_id, source_symbol_id, confidence, evidence_class)",
+     "migrationMsOnCopy": 45243
+    },
+    "engineRewrite": "orphans.ts GATE_SQL names r.evidence_class instead of json_extract(r.metadata,'$.evidenceClass'); rules.ts long-parameter count uses json_array_length instead of a json_each table; a dead 310k-row symbol\u2192file map was removed",
+    "plans": [
+     "SEARCH r USING INDEX brain_rel_pattern_cover_idx (project_id=? AND relationship_type=? AND target_symbol_id>?)",
+     "USE TEMP B-TREE FOR GROUP BY (used/incoming aggregate)",
+     "USE TEMP B-TREE FOR DISTINCT (distinct target statement)"
+    ],
+    "before": {
+     "wallMs": 85239.66,
+     "cpuMs": 33730
+    },
+    "after": {
+     "p50WallMs": 9343.25,
+     "p95WallMs": 10320.74,
+     "cpuMs": [
+      8143,
+      10563,
+      8817,
+      9533,
+      9577
+     ],
+     "runsMs": [
+      7959.24,
+      10320.74,
+      8594.3,
+      9343.25,
+      10141
+     ]
+    },
+    "verdict": "Still over the 5,000 ms budget: p50 9,343 ms / p95 10,321 ms wall at 8.1-10.6 s process CPU, down from 33.7 s CPU (3.6x). Reads left db+WAL unchanged. Remaining cost from the final statement profile (raw/t2-profile-postfix.json, 13.2 s): DISTINCT target_external over clean rows 4.58 s (target_external is NOT in the covering index, so each row still touches the relationship heap), symbol rows for the 52,903 reported-type symbols 3.20 s, used/incoming aggregate 1.30 s, referenced-file join 1.03 s, file coverage aggregate 0.96 s, long-parameter rule 0.60 s. A second covering index that includes target_external (and, for the symbol scan, a narrow (project_id, symbol_type) covering index over the columns the scan reads) would address the two largest lines; both are schema/index changes, outside this tool's write set."
+   }
   }
  },
  "liveT2Note": "The live shared index (.bb-data project 1d3d...) could not be opened byte-read-only at measurement time (SQLiteError: unable to open database file) while the same bytes copied to a lane file opened normally; the live-open failure and its exact command are recorded in raw/t2-live-open-failure.json and the measurement above used the byte-identical copy. This is a blocked live leg, with the fleet/rebuild pass owning the remediation.",
@@ -96,5 +133,12 @@
   "raw/t2-profile-phaseB2.json",
   "raw/t2-live-open-failure.json"
  ],
- "generatedAt": "2026-11-03T16:20:00Z"
+ "generatedAt": "2026-11-03T16:20:00Z",
+ "equivalenceProof": {
+  "tier": "T1",
+  "evidence": "raw/fingerprint-schemafix-t1.json",
+  "baseline": "raw/fingerprint-baseline-t1.json",
+  "result": "EQUIVALENT \u2014 orphans, orphansSummary, rules, scopeAllPatterns and whole are byte-identical after the schema column naming, scan consolidation, dead-map removal and json_array_length rewrite",
+  "crossCheck": "raw/dump-with-index-t1.json vs raw/dump-no-index-t1.json (same bytes, covering index dropped): findings identical; the column-vs-json probe on the same bytes also produced identical findings and summary"
+ }
 }

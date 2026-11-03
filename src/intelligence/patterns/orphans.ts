@@ -295,13 +295,9 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const fileById = new Map(files.map((f) => [f.id, f]))
 
   // ---- symbols -------------------------------------------------------------
-  // ALL symbols, for the file-referenced decision. This is the fix for the
-  // 76.7% of cross-file edges the previous revision could not see.
-  const allSymbols = raw.prepare(
-    "SELECT s.id, s.file_id AS fileId FROM brain_symbol s WHERE s.project_id = ?",
-  ).all(projectId) as Array<{ id: string; fileId: string }>
-  const fileOfSymbolId = new Map(allSymbols.map((s) => [s.id, s.fileId]))
-
+  // No id→file map is loaded: the file-referenced decision is answered by the
+  // relationship statements' own joins, so a 310k-row map would be context the
+  // scan never reads (it measured 7.1 s on the reference index for nothing).
   // The six reportable types, joined to their file's language and line count.
   const reportedTypes = [...REPORTED_SYMBOL_TYPES]
   const symbols = raw.prepare(
@@ -377,9 +373,12 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   // THE GATE, ONCE. Order matters and is load-bearing: a self-loop is counted as
   // a self-loop even when the same row is also `inferred` and below the
   // confidence floor, so the counters and the per-finding disclosure name the
-  // first applicable reason and no other. `json_extract` returning NULL for a
-  // row with no evidenceClass compares unequal to 'inferred' in SQL exactly as
-  // `null === "inferred"` is false in JS.
+  // first applicable reason and no other. `evidence_class` is the table's
+  // VIRTUAL GENERATED column over `json_extract(metadata, '$.evidenceClass')`, so
+  // naming it reads the same value the expression would while letting the
+  // covering index answer the statement; a row with no evidenceClass yields NULL,
+  // which compares unequal to 'inferred' in SQL exactly as `null === "inferred"`
+  // is false in JS.
   //
   //   selfLoop       source_symbol_id = target_symbol_id. The symbol consumes
   //                  itself. Rake publishes these for Ruby `override` keywords
@@ -417,7 +416,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const GATE_SQL =
     `(CASE WHEN r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NOT NULL ` +
     `AND r.source_symbol_id = r.target_symbol_id THEN '${SELF_LOOP_EXCLUDED}' ` +
-    `WHEN json_extract(r.metadata, '$.evidenceClass') = 'inferred' THEN '${INFERRED_EXCLUDED}' ` +
+    `WHEN r.evidence_class = 'inferred' THEN '${INFERRED_EXCLUDED}' ` +
     `WHEN r.confidence < @minConf THEN '${LOW_CONFIDENCE_EXCLUDED}' ELSE NULL END)`
   const CLEAN_SQL = `${GATE_SQL} IS NULL`
   // The one object every statement below binds. Spelled out once so that adding a
@@ -591,9 +590,9 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   }
 
   // referencedFiles is built by statement (6) above, in SQL. The previous
-  // version walked the in-memory edge list and consulted `fileOfSymbolId`, which
+  // version walked the in-memory edge list and consulted a symbol→file map, which
   // meant the edge list had to hold every clean row rather than a set of
-  // distinct files. `fileOfSymbolId` is still used for symbol-level attribution,
+  // distinct files. Symbol-level attribution now comes from the statements' joins,
   // where no aggregate can replace it.
 
   // ---- import resolution ----------------------------------------------------
@@ -832,7 +831,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
           ? [`${rejected.rows} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
           : []),
         ...(fileUsage
-          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources} source(s), so the absence of evidence here is probably the indexer's, not the code's. Verify against the source before acting on it.`]
+          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources} source(s), so the absence of evidence here is probably the analyzer's, not the code's. Verify against the source before acting on it.`]
           : []),
         ...(nameAmbiguous ? [`The name '${sym.name}' is declared more than once; unresolved name-only references are treated as uncertain and do not suppress this candidate.`] : []),
         "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
@@ -1017,7 +1016,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       // orphan page is the product of what is believed, so the volume that was
       // NOT believed is part of the result and is reported with it. These rows
       // are the index's own published confidence and evidence class, so the
-      // numbers belong to the indexer, not to this tool's opinion of them.
+      // numbers are the analyzer's, not this tool's opinion of them.
       unverifiedUsageEdges: {
         total: edgeRejects[SELF_LOOP_EXCLUDED] + edgeRejects[INFERRED_EXCLUDED] + edgeRejects[LOW_CONFIDENCE_EXCLUDED],
         byReason: {

@@ -139,11 +139,11 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     //     shorter rows can never match (cheap skip before json_each).
     const paramRows = raw.prepare(
       "SELECT s.name, s.parameters, f.relative_path AS file, COALESCE(s.line_start, 0) AS line, " +
-        "(SELECT COUNT(*) FROM json_each(s.parameters)) AS paramCount " +
+        "json_array_length(s.parameters) AS paramCount " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.parameters IS NOT NULL AND s.parameters != '[]' " +
         "AND json_valid(s.parameters) AND length(s.parameters) >= 17 " +
-        "AND (SELECT COUNT(*) FROM json_each(s.parameters)) > ?" + nonCodeClause +
+        "AND json_array_length(s.parameters) > ?" + nonCodeClause +
         " ORDER BY s.id",
     ).all(projectId, PARAMETER_THRESHOLD, ...nonCode.params) as Array<{ name: string; parameters: string; file: string; line: number; paramCount: number }>
     let shownParams = 0

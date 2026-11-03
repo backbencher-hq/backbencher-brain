@@ -198,16 +198,22 @@ The p95 wall figures on T1 are inflated by the shared host (load average 18-25 d
 the run); the same calls take 404-607 ms of process CPU. A quiet-load rerun is the
 remaining verification step.
 
-T2 (6,452 files / 310,423 symbols / 820,040 relationships) is **over budget and is
-reported as such**: one default-all call measured 85.2 s wall / **33.7 s process CPU**
-against a 5,000 ms budget, on a byte-identical copy of the index (the live fleet index refused a
-byte-read-only open at measurement time; that blocked live leg is recorded in
-`raw/t2-live-open-failure.json`). Reads left db+WAL unchanged. The cost is dominated by
-full scans of the 820,040 relationship rows that read each row's evidence metadata, and
-by the file-level `GROUP BY` join over the same rows; no further SQL rewrite inside this
-lane reaches 5 s. The fix is an index/schema change on the relationship table — covering
-`(project_id, relationship_type, confidence, source_symbol_id, target_symbol_id)` plus a
-declared evidence-class expression — which is the index/schema surface, not this tool's.
+T2 (6,452 files / 310,423 symbols / 820,040 relationships) is **still over budget and is
+reported as such** — but the schema change above it landed and the engine now reads the
+narrow computed column, so the same shape moved from 85.2 s wall / **33.7 s process CPU**
+to **p50 9,343 ms / p95 10,321 ms wall at 8.1-10.6 s process CPU** (3.6x better, 1.9x
+over the 5,000 ms budget), measured warm on a byte-identical copy of the index; reads left
+db+WAL unchanged. Migration and plan evidence: `raw/schema-migration-t2.json`; the
+pre-schema measurement and the blocked live byte-read-only open:
+`raw/t2-live-open-failure.json`. The remaining 13.2 s profile is: DISTINCT
+`target_external` over clean rows 4.58 s (`target_external` is not in the pattern covering
+index, so each row still touches the relationship heap), the 52,903 reported-type symbol
+rows 3.20 s, used/incoming aggregate 1.30 s, referenced-file join 1.03 s, file coverage
+aggregate 0.96 s, long-parameter rule 0.60 s. Closing the last 1.9x needs index coverage
+extensions — `target_external` added to `brain_rel_pattern_cover_idx`, and a narrow
+`(project_id, symbol_type)` symbol index over the columns the scan reads — which is the
+index/schema surface, not this tool's; that is the measured floor and the exact next step,
+not a green claim.
 
 ## Options — tool surface versus engine API
 
