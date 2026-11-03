@@ -191,8 +191,17 @@ export interface ImpactResult {
      *  more certain. */
     totalScanCeiling: number
     totalExpansionCeiling: number
-    /** The ceiling that actually governs the answer's cost, in milliseconds. */
+    /** The ceiling that actually governs the counting walk's cost, in
+     *  milliseconds; an applied ceiling can be smaller when the call deadline
+     *  has already spent part of the budget. */
     totalTimeCeilingMs: number
+    /** Declared wall-clock deadline for the engine's caller walk. When it
+     *  fires the answer is a sample and says so. */
+    walkTimeCeilingMs: number
+    /** Declared wall-clock deadline for this component's own work (walk plus
+     *  the completeness measurement). The handler's freshness envelope is
+     *  outside it. */
+    callDeadlineMs: number
   }
   /** How far the walk actually went, and the engine's own bound declarations
    *  (its per-query site limit, how many of its queries hit it, and the root's
@@ -204,6 +213,12 @@ export interface ImpactResult {
     edgeLimit: number | null
     cappedQueries: number | null
     callersIfUncapped: number | null
+    /** The engine's root caller rows RETURNED before any pump truncation
+     *  dropped duplicates — the count behind the returned prefix. */
+    returnedCallers: number | null
+    /** The engine walk's declared wall-clock deadline and whether it fired. */
+    walkTimeBudgetMs: number | null
+    walkTimeExhausted: boolean
     totalsAreLowerBounds: boolean
     dedupedAtToolLayer: { cascadeRepeatsCollapsed: number; spellingVariantsCollapsed: number } | null
   }
@@ -273,19 +288,18 @@ export interface ImpactResult {
    *  dependent), `false` (measured, disagrees or could not read: the answer is a
    *  prefix or a declared unknown), and `null` (not measured: complete by
    *  construction, which is a different claim from a measured one). */
-  countVerification: { ran: boolean; timedOut: boolean; boundarySuspect: boolean; complete: boolean | null }
+  countVerification: { ran: boolean; skipped: boolean; timedOut: boolean; boundarySuspect: boolean; complete: boolean | null }
   /** Would this answer be the same if it were asked again?
    *
    *  Every bound this tool and the engine declare is a property of the INDEX —
    *  a node budget, a depth cap, a site limit, a caller budget — so the same
    *  question on the same index gets the same answer, and the suite holds the
-   *  tool to that. The one exception is a WALL-CLOCK bound. The engine walks
-   *  with no clock bound unless a caller asks for one, and this component asks
-   *  for none; what can still vary is this component's own breaker on the
-   *  counting walk behind the declared total (`countVerification.timedOut`).
-   *  When that fires, two identical calls can return different counts, so this
-   *  field answers "will I get this again?" instead of leaving it to be guessed
-   *  from a sibling field. */
+   *  tool to that. The exceptions are its two WALL-CLOCK bounds: the declared
+   *  walk deadline (`traversal.walkTimeExhausted`) and the counting walk's
+   *  breaker / deadline skip (`countVerification.timedOut` / `.skipped`). When
+   *  either fires, two identical calls can return different sets or counts, so
+   *  this field answers "will I get this again?" instead of leaving it to be
+   *  guessed from a sibling field. */
   reproducible: boolean
 }
 
@@ -470,8 +484,51 @@ export const IMPACT_TOTAL_EXPANSION_CEILING = 2_000
  *  300-expansion ceiling, at the same wall time as at 2 000, and the three that
  *  stay unknown do so at every ceiling (their closures are wide, not deep). So
  *  the cost is set by the level widths, and 4 000 ms is a breaker that none of
- *  the measured corpora reaches while still capping the pathological one. */
+ *  the measured corpora reaches while still capping the pathological one.
+ *
+ *  A hub outside those corpora then measured the REAL cost driver: one level
+ *  query whose relation form could not use the target index. One statement took
+ *  4 349 ms, so no breaker that is only checked between statements could keep
+ *  the call inside the tool's 5 000 ms budget. Two things changed together: the
+ *  level query is now a flat, target-indexed id list (the same rows in 4.1 ms),
+ *  and the component ALSO declares an outer wall-clock deadline for the walk and
+ *  for its own whole work — declared in `budget`, `traversal` and
+ *  `countVerification`, never hidden. Work ceilings remain the primary bound;
+ *  the clock is the outer bound that a pathological statement cannot escape. */
 export const IMPACT_TOTAL_TIME_CEILING_MS = 4_000
+
+/** Declared WALL-CLOCK deadline for the ENGINE's caller walk, in milliseconds.
+ *
+ *  The engine applies no clock of its own (`DEFAULT_WALK_TIME_BUDGET_MS = 0`),
+ *  so this component passes one: a hub whose per-symbol dependency query is
+ *  cheap can still expand thousands of symbols, and the walk is the first half
+ *  of the answer's cost. When it fires the engine stops between statements and
+ *  the answer DECLARES it — `truncated`, `truncationReason` naming
+ *  `walk-time-budget-exhausted`, the engine's returned/uncapped counts in
+ *  `traversal`, and `reproducible: false`. A sampled answer is never presented
+ *  as a complete one. */
+export const IMPACT_WALK_TIME_CEILING_MS = 1_500
+
+/** Declared WALL-CLOCK deadline for this component's own work, in milliseconds:
+ *  the walk plus the completeness measurement behind the declared total. The
+ *  tool's T2 budget is 5 000 ms and the handler's freshness envelope runs
+ *  outside this deadline, so the headroom is deliberate. The deadline is
+ *  measured, not guessed: the `getRawInstance` hub spent 2.0-2.5 s in the walk
+ *  and 4.5-5.6 s in a counting statement that could not use the target index —
+ *  the fix is the indexed level query (the same rows in 4.1 ms), and this
+ *  deadline is the outer bound for the pathological shape the indexed query
+ *  still cannot finish in time. The two deadlines are sized so that the
+ *  bounded halves together leave the handler inside the tool's budget with
+ *  headroom: after the indexed-query fix the same hub is 2.9-3.0 s with the
+ *  walk at ~2.1-2.2 s and the measurement at ~0.7 s, and under a loaded machine
+ *  the declared bounds (not the machine) set the ceiling. */
+export const IMPACT_CALL_DEADLINE_MS = 3_000
+
+/** The completeness measurement is not started when the walk has already spent
+ *  the call deadline down to less than this. A measurement with no room to
+ *  finish buys nothing and only blurs the declaration; the answer then says the
+ *  measurement was skipped for the deadline instead of pretending it ran. */
+export const IMPACT_COUNT_MIN_BUDGET_MS = 400
 
 export interface ImpactTotalCount {
   /** Distinct dependent symbols under the declared rule, transitive to
@@ -502,6 +559,10 @@ export interface ImpactTotalCount {
    *  query, not a measured ceiling. A refusal is not a zero: both counts are
    *  null and the answer declares the measurement unavailable. */
   failed: boolean
+  /** True when the measurement was never started because the call's declared
+   *  wall-clock deadline left no room for it. A SKIP is not a zero and not a
+   *  ceiling: the counts are null and the answer says why they are missing. */
+  skipped: boolean
   /** The walk's composition by HOW each dependent is a dependent, measured
    *  under the same rule as `total`. See `ImpactResult.cascade`. */
   cascade: { exact: number; member: number; rangeFolded: number } | null
@@ -572,6 +633,7 @@ export function countImpactDependents(
       hitScanCeiling: false,
       timedOut: false,
       failed: true,
+      skipped: false,
       depths: new Map(),
       parents: new Map(),
       cascade: null,
@@ -597,17 +659,26 @@ export function countImpactDependents(
   //     list. Same relation: the symmetric difference against the old form is
   //     zero on all six measured hubs, at 1.4-1.7x the speed.
   const BATCH = 200
-  const levelSql = (ids: number, ranges: number) =>
+  // ONE query form, built to keep the target index in play: a flat id list.
+  //
+  // The previous form asked the relationships to filter themselves through
+  // `target_symbol_id IN (SELECT m.id … WHERE m.id IN (batch) OR owner range)`.
+  // With the OR'd owner-range predicates inside the subquery, SQLite fell back
+  // to scanning the relationship table by project+kind. Measured on the
+  // `getRawInstance` hub: ONE level-1 batch of that form took 4 349 ms; the same
+  // 137 rows come back in 4.1 ms when the cascade-range members are resolved
+  // separately through the owner-range index and the relationship query gets a
+  // flat `IN (?, ?, …)` list the target index can drive. That single statement
+  // was the tool's T2 breach, so the statement form is the fix.
+  const flatLevelSql = (n: number) =>
     "SELECT s.id AS id, s.name AS name, f.relative_path AS file, r.target_symbol_id AS targetId " +
     "FROM brain_relationship r " +
     "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
     "JOIN brain_file f ON f.id = s.file_id " +
     "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-    "AND r.target_symbol_id IN (SELECT m.id FROM brain_symbol m WHERE m.project_id = ? AND (m.id IN (" +
-    new Array(ids).fill("?").join(",") +
-    ")" +
-    new Array(ranges).fill(" OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?)").join("") +
-    "))"
+    "AND r.target_symbol_id IN (" + new Array(n).fill("?").join(",") + ")"
+  const rangeMembersSql = "SELECT id FROM brain_symbol WHERE project_id = ? AND owner_symbol_id >= ? AND owner_symbol_id < ?"
+  const TARGET_CHUNK = 400
   try {
     const found = new Set<string>()
     const depths = new Map<string, number>()
@@ -658,42 +729,62 @@ export function countImpactDependents(
         // silently drops the owner-cascade edges of every non-root level —
         // measured on rake `each`: 112 found instead of 143.
         //
-        // Distinct ranges, not distinct members: two members of the same
-        // container share one range, which is the whole point of the range's
-        // construction and the reason the statement stays small on a wide level.
+        // The range is resolved FIRST, through the owner-range index, so the
+        // relationship query below can be a flat target-id list (see above).
+        const targetIds = new Set<string>()
+        for (const entry of batch) targetIds.add(entry.id)
         const ranges = new Map<string, string>()
         for (const entry of batch) {
           const prefix = cascadePrefix(entry.id)
           if (!ranges.has(prefix)) ranges.set(prefix, prefix)
         }
-        const params: unknown[] = [projectId, ...relTypes, projectId, ...batch.map((entry) => entry.id)]
-        for (const prefix of ranges.values()) params.push(prefix, prefix + ";")
-        // `targetId` is the walk node this row actually matched — the member's
-        // own id, or a symbol inside a member's cascade range — so the SHORTEST
-        // path's parent is recorded rather than "some node in this batch".
-        const rows = db.prepare(levelSql(batch.length, ranges.size)).all(...params) as Array<{ id: string; name: string; file: string; targetId: string }>
-        rowsScanned += rows.length
-        if (rowsScanned > scanCeiling) {
-          hitScanCeiling = true
-          break
+        for (const prefix of ranges.values()) {
+          if (Date.now() - startedAt > timeCeilingMs) {
+            timedOut = true
+            hitScanCeiling = true
+            break
+          }
+          const members = db.prepare(rangeMembersSql).all(projectId, prefix, prefix + ";") as Array<{ id: string }>
+          for (const member of members) targetIds.add(member.id)
         }
-        for (const row of rows) {
-          if (!row.name || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
-          if (row.file && AnalysisExclusions.isHardNoisePath(row.file)) continue
-          // A cycle makes the root a dependent of itself; the set is about
-          // OTHER symbols (see the note where the walk is built).
-          if (row.id === rootSymbolId) continue
-          if (found.has(row.id)) continue
-          found.add(row.id)
-          depths.set(row.id, frontier[0]!.depth)
-          // The walk node whose expansion found this one, at the depth recorded.
-          // With the flat-list statement one batch can hold several walk nodes,
-          // so the parent is the target the row actually matched — the member's
-          // own id, or a symbol inside a member's cascade range.
-          parents.set(row.id, row.targetId)
-          if (frontier[0]!.depth === 0) direct++
-          if (frontier[0]!.depth + 1 < maxDepth) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })
+        if (hitScanCeiling) break
+        const flatTargets = [...targetIds]
+        const levelDepth = frontier[0]!.depth
+        for (let chunkStart = 0; chunkStart < flatTargets.length; chunkStart += TARGET_CHUNK) {
+          // Per CHUNK, not per level: a chunk is one statement, so the declared
+          // wall breaker bounds its overshoot to that statement.
+          if (Date.now() - startedAt > timeCeilingMs) {
+            timedOut = true
+            hitScanCeiling = true
+            break
+          }
+          const chunk = flatTargets.slice(chunkStart, chunkStart + TARGET_CHUNK)
+          if (chunk.length === 0) continue
+          // `targetId` is the walk node this row actually matched — the member's
+          // own id, or a symbol inside a member's cascade range — so the SHORTEST
+          // path's parent is recorded rather than "some node in this batch".
+          const rows = db.prepare(flatLevelSql(chunk.length)).all(projectId, ...relTypes, ...chunk) as Array<{ id: string; name: string; file: string; targetId: string }>
+          rowsScanned += rows.length
+          for (const row of rows) {
+            if (!row.name || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
+            if (row.file && AnalysisExclusions.isHardNoisePath(row.file)) continue
+            // A cycle makes the root a dependent of itself; the set is about
+            // OTHER symbols (see the note where the walk is built).
+            if (row.id === rootSymbolId) continue
+            if (found.has(row.id)) continue
+            found.add(row.id)
+            depths.set(row.id, levelDepth)
+            // The walk node whose expansion found this one, at the depth recorded.
+            parents.set(row.id, row.targetId)
+            if (levelDepth === 0) direct++
+            if (levelDepth + 1 < maxDepth) next.push({ id: row.id, depth: levelDepth + 1 })
+          }
+          if (rowsScanned > scanCeiling) {
+            hitScanCeiling = true
+            break
+          }
         }
+        if (hitScanCeiling) break
       }
       frontier = next
     }
@@ -705,6 +796,7 @@ export function countImpactDependents(
       hitScanCeiling,
       timedOut,
       failed: false,
+      skipped: false,
       depths,
       parents,
       cascade: classifyCascade(db, projectId, [...found], opened),
@@ -721,6 +813,7 @@ export function countImpactDependents(
       hitScanCeiling: false,
       timedOut: false,
       failed: true,
+      skipped: false,
       depths: new Map(),
       parents: new Map(),
       cascade: null,
@@ -824,7 +917,16 @@ export async function computeImpact(
       "bb/impact: relationshipTypes must name at least one relationship kind — an empty list matches nothing and would be silently re-read as the engine's default",
     )
   }
-  const walk = { direction: "callers" as const, maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes: [...relationshipTypes] }
+  // The call's own clock starts before the walk: both halves of the work spend
+  // from the same deadline, so a slow walk cannot leave a completeness
+  // measurement that overruns the tool's budget.
+  const callStartedAt = Date.now()
+  const walk = {
+    direction: "callers" as const,
+    maxDepth: IMPACT_BUDGET.maxDepth,
+    relationshipTypes: [...relationshipTypes],
+    timeBudgetMs: IMPACT_WALK_TIME_CEILING_MS,
+  }
   let resolution: ImpactResult["resolution"] = { through: "direct" }
   let result: Awaited<ReturnType<typeof graphTraversal>>
   try {
@@ -1128,18 +1230,39 @@ export async function computeImpact(
   // ~740 ms to ~180 ms over real corpora with no answer changed.
   const boundarySuspect = boundaryReached && boundaryHasDependents(db, projectId, impact, relationshipTypes)
   const verify = truncated || boundarySuspect
-  const counts = verify
-    ? countImpactDependents(db, projectId, result.root.id, { maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes })
-    : {
+  // The measurement spends what the walk left of the declared call deadline.
+  // Starting it when there is no room would only produce a timeout that looks
+  // like a busy machine; a declared SKIP says what actually happened.
+  const callElapsedMs = Date.now() - callStartedAt
+  const countBudgetMs = Math.max(0, Math.min(IMPACT_TOTAL_TIME_CEILING_MS, IMPACT_CALL_DEADLINE_MS - callElapsedMs))
+  const countSkipped = verify && countBudgetMs < IMPACT_COUNT_MIN_BUDGET_MS
+  const counts = !verify
+    ? {
         total: impact.length,
         direct: directFromSet,
         hitScanCeiling: false,
         timedOut: false,
         failed: false,
+        skipped: false,
         depths: new Map<string, number>(),
         parents: new Map<string, string>(),
         cascade: null,
       }
+    : countSkipped
+      ? {
+          total: null,
+          direct: 0,
+          rowsScanned: 0,
+          expansions: 0,
+          hitScanCeiling: false,
+          timedOut: false,
+          failed: false,
+          skipped: true,
+          depths: new Map<string, number>(),
+          parents: new Map<string, string>(),
+          cascade: null,
+        }
+      : countImpactDependents(db, projectId, result.root.id, { maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes, timeCeilingMs: countBudgetMs })
   // The measured depths are the shortest paths, so the answer reports them
   // rather than the walk's first-trace stamps, and the set is re-sorted so
   // "deepest last" remains true of what is actually shown. A dependent the
@@ -1218,7 +1341,7 @@ export async function computeImpact(
   // A count that cannot be trusted is worse than no count: when the counting
   // walk hit its ceiling, was refused, or stopped on the clock, BOTH numbers are
   // null (declared unknown), never a partial count presented as a whole.
-  const unmeasurable = counts.hitScanCeiling || counts.failed
+  const unmeasurable = counts.hitScanCeiling || counts.failed || counts.skipped
   const total = unmeasurable ? null : counts.total
   const direct = unmeasurable ? null : counts.direct
   // A depth cap is the one bound the counting walk shares with the traversal: the
@@ -1241,6 +1364,13 @@ export async function computeImpact(
     // it. Say that rather than letting the reader assume the whole set.
     truncated = true
     truncationReason = truncationReason ?? "impact-completeness-unverifiable-at-depth-boundary"
+  } else if (verify && counts.skipped) {
+    // The walk consumed so much of the call deadline that the measurement was
+    // not started. Declared as a skip, never as "the set is complete" and never
+    // as a measured zero.
+    truncated = true
+    const clause = `count: skipped — the walk left less than ${IMPACT_COUNT_MIN_BUDGET_MS} ms of the ${IMPACT_CALL_DEADLINE_MS} ms call deadline; the total was not measured`
+    truncationReason = truncationReason === null ? clause : `${truncationReason} (${clause})`
   } else if (verify && counts.total !== impact.length) {
     // The set is short of an unbounded walk of the same rule: it is a prefix of
     // a larger truth, and it says that instead of claiming to be the whole.
@@ -1267,6 +1397,10 @@ export async function computeImpact(
   if (verify && counts.timedOut === true) {
     truncated = true
     const clause = "count: time-budget-exhausted — this answer is not reproducible"
+    truncationReason = truncationReason === null ? clause : `${truncationReason} (${clause})`
+  }
+  if (countSkipped) {
+    const clause = "count: skipped for the call deadline — this answer is not reproducible"
     truncationReason = truncationReason === null ? clause : `${truncationReason} (${clause})`
   }
   const summary = result.summary
@@ -1306,7 +1440,9 @@ export async function computeImpact(
       maxDepth: IMPACT_BUDGET.maxDepth,
       totalScanCeiling: IMPACT_TOTAL_SCAN_CEILING,
       totalExpansionCeiling: IMPACT_TOTAL_EXPANSION_CEILING,
-      totalTimeCeilingMs: IMPACT_TOTAL_TIME_CEILING_MS,
+      totalTimeCeilingMs: countSkipped ? 0 : countBudgetMs,
+      walkTimeCeilingMs: IMPACT_WALK_TIME_CEILING_MS,
+      callDeadlineMs: IMPACT_CALL_DEADLINE_MS,
     },
     traversal: {
       depthReached: impact.reduce((n, entry) => (entry.depth > n ? entry.depth : n), 0),
@@ -1315,6 +1451,9 @@ export async function computeImpact(
       edgeLimit: summary?.edgeLimit ?? null,
       cappedQueries: summary?.cappedQueries ?? null,
       callersIfUncapped: summary?.callersIfUncapped ?? null,
+      returnedCallers: summary?.totalCallers ?? null,
+      walkTimeBudgetMs: summary?.timeBudgetMs ?? null,
+      walkTimeExhausted: summary?.timeBudgetExhausted === true,
       totalsAreLowerBounds: summary?.totalsAreLowerBounds === true,
       dedupedAtToolLayer: summary?.dedupedAtToolLayer ?? null,
     },
@@ -1342,8 +1481,14 @@ export async function computeImpact(
       maxDepth: IMPACT_BUDGET.maxDepth,
     },
     cascade,
-    countVerification: { ran: verify, timedOut: verify && counts.timedOut === true, boundarySuspect, complete: verify ? provenComplete : null },
-    reproducible: !walkTimeBoundFired && !(verify && counts.timedOut === true),
+    countVerification: {
+      ran: verify && !counts.skipped,
+      skipped: verify && counts.skipped,
+      timedOut: verify && counts.timedOut === true,
+      boundarySuspect,
+      complete: verify && !counts.skipped ? provenComplete : null,
+    },
+    reproducible: !walkTimeBoundFired && !(verify && counts.timedOut === true) && !countSkipped,
   }
 }
 

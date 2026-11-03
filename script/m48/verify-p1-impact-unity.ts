@@ -45,7 +45,7 @@ async function main() {
   const { getProjectId } = await import(path.join(ROOT, "src/cli/index"))
   const { indexProjectParallel } = await import(path.join(ROOT, "src/ast/parallel-indexer"))
   const { createToolHandlers } = await import(path.join(ROOT, "src/mcp/tool-handlers"))
-  const { computeImpact, countImpactDependents } = await import(path.join(ROOT, "src/lsp/impact"))
+  const { computeImpact, countImpactDependents, IMPACT_WALK_TIME_CEILING_MS, IMPACT_CALL_DEADLINE_MS } = await import(path.join(ROOT, "src/lsp/impact"))
   const { BrainDatabase } = await import(path.join(ROOT, "src/brain/database"))
 
   const proj = mkdtempSync(path.join(tmpdir(), "m48-p1-fixture-"))
@@ -129,6 +129,13 @@ async function main() {
     check(`P1: directCount is never smaller than the returned depth-0 count on ${root}`, imp.directCount === null || imp.directCount >= (imp.impact ?? []).filter((d: any) => d.depth === 0).length, `${imp.directCount}`)
     check(`P1: rule echoes the declared dependency kinds on ${root}`, JSON.stringify(imp.rule?.relationshipTypes) === JSON.stringify(["calls", "instantiates", "extends", "implements"]), JSON.stringify(imp.rule?.relationshipTypes))
     check(`P1: budget echoes the component's declared bounds on ${root}`, imp.budget?.maxNodes === 200 && imp.budget?.maxDepth === 5, JSON.stringify(imp.budget))
+    // The wall-clock bounds are DECLARED, not implicit: the budget names both
+    // deadlines, the traversal names the one the engine walk applied, and the
+    // measurement declares whether it ran or was skipped for the deadline.
+    check(`P1: budget declares the walk and call deadlines on ${root}`, imp.budget?.walkTimeCeilingMs === IMPACT_WALK_TIME_CEILING_MS && imp.budget?.callDeadlineMs === IMPACT_CALL_DEADLINE_MS, JSON.stringify({ walk: imp.budget?.walkTimeCeilingMs, call: imp.budget?.callDeadlineMs }))
+    check(`P1: traversal declares the walk deadline it applied on ${root}`, imp.traversal?.walkTimeBudgetMs === IMPACT_WALK_TIME_CEILING_MS, JSON.stringify({ walkTimeBudgetMs: imp.traversal?.walkTimeBudgetMs, exhausted: imp.traversal?.walkTimeExhausted }))
+    check(`P1: the measurement declares whether it ran or was skipped on ${root}`, typeof imp.countVerification?.skipped === "boolean" && !(imp.countVerification.ran === true && imp.countVerification.skipped === true) && (imp.countVerification.skipped === true ? imp.countVerification.complete === null : true), JSON.stringify(imp.countVerification))
+    check(`P1: an exhausted walk clock is declared non-reproducible on ${root}`, imp.traversal?.walkTimeExhausted !== true || imp.reproducible === false, JSON.stringify({ exhausted: imp.traversal?.walkTimeExhausted, reproducible: imp.reproducible }))
   }
 
   // Budget truncation: truncated MUST be true on both doors (hollow-false killed).

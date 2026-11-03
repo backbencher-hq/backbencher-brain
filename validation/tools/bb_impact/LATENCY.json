@@ -1,15 +1,23 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "tool": "bb_impact",
   "kind": "campaign-latency",
-  "generatedAt": "2026-11-01T23:20:00.000Z",
+  "generatedAt": "2026-11-03T12:40:00.000Z",
   "tree": "per-tool module split landed; D2/D3 + optional file + read-only handler + byte-read-only T2 measurement",
-  "method": "charter §6: warm, 5 measured runs after 2 warm-up calls; p50/p95 are nearest-rank over the 5 runs. Default arguments only ({symbol}). BB_NO_AUTO_REFRESH=1 on every measurement. The reference-index tier is measured through the tool's BYTE-READ-ONLY open (`BrainDatabase.getRawInstance(projectId,{readonly:true})`) and the index's own files are sha256-hashed before and after the run.",
+  "method": "charter \u00a76: warm, 5 measured runs after 2 warm-up calls; p50/p95 are nearest-rank over the 5 runs. Default arguments only ({symbol}). BB_NO_AUTO_REFRESH=1 on every measurement. The reference-index tier is measured through the tool's BYTE-READ-ONLY open (`BrainDatabase.getRawInstance(projectId,{readonly:true})`) and the index's own files are sha256-hashed before and after the run. The hub case uses the baseline protocol exactly (1 warm-up + 3 measured handler calls for {\"symbol\":\"getRawInstance\"}, budget 5 000 ms) plus an 8-run warm series.",
   "environment": {
     "host": "linux x64, node v22.22.1, bun 1.3.14, tsx via npx",
     "runtime": "source tree via npx tsx (no dist build in the measurement path)",
-    "loadAverageAtT0T1": [24.01, 27.87, 24.74],
-    "loadAverageAtT2Final": [18.5, 22.3, 18.6],
+    "loadAverageAtT0T1": [
+      24.01,
+      27.87,
+      24.74
+    ],
+    "loadAverageAtT2Final": [
+      18.5,
+      22.3,
+      18.6
+    ],
     "note": "The machine was running the fleet during every tier and still the fixture and reference tiers are inside budget; the T2 controls and the per-call numbers are the evidence."
   },
   "tiers": [
@@ -21,7 +29,13 @@
       "symbol": "basePrice",
       "warm": true,
       "runs": 5,
-      "runsMs": [52.1, 45.9, 83.8, 96.0, 100.8],
+      "runsMs": [
+        52.1,
+        45.9,
+        83.8,
+        96.0,
+        100.8
+      ],
       "p50Ms": 83.8,
       "p95Ms": 100.8,
       "budgetMs": 250,
@@ -31,7 +45,12 @@
         "totalCountIfKnown": 1,
         "truncated": false,
         "depthReached": 0,
-        "countVerification": { "ran": false, "timedOut": false, "boundarySuspect": false, "complete": null }
+        "countVerification": {
+          "ran": false,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": null
+        }
       },
       "command": "BB_DATA_DIR=validation/tools/bb_impact/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-local.ts"
     },
@@ -43,7 +62,13 @@
       "symbol": "prepare",
       "warm": true,
       "runs": 5,
-      "runsMs": [111.1, 243.5, 185.7, 176.5, 100.8],
+      "runsMs": [
+        111.1,
+        243.5,
+        185.7,
+        176.5,
+        100.8
+      ],
       "p50Ms": 176.5,
       "p95Ms": 243.5,
       "budgetMs": 1000,
@@ -54,7 +79,12 @@
         "truncated": true,
         "truncationReason": "traversal: caller-site-limit+caller-depth-cap-reached+caller-budget-exhausted",
         "depthReached": 1,
-        "countVerification": { "ran": true, "timedOut": false, "boundarySuspect": false, "complete": false }
+        "countVerification": {
+          "ran": true,
+          "timedOut": false,
+          "boundarySuspect": false,
+          "complete": false
+        }
       },
       "command": "BB_DATA_DIR=validation/tools/bb_impact/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-local.ts"
     },
@@ -63,7 +93,7 @@
       "subject": "workspace reference large index (.bb-data, 11,440 files, ~3.4 GB)",
       "indexDir": ".bb-data (byte-read-only; never written)",
       "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
-      "openMode": "BrainDatabase.getRawInstance(projectId,{readonly:true}) — the handler opens the same way; no migrations, no healers, no WAL movement",
+      "openMode": "BrainDatabase.getRawInstance(projectId,{readonly:true}) \u2014 the handler opens the same way; no migrations, no healers, no WAL movement",
       "warm": true,
       "runs": 5,
       "budgetMs": 5000,
@@ -71,7 +101,11 @@
       "verdict": "inside budget (every measured call p95 <= 327.7 ms)",
       "dbUnchanged": true,
       "dbHashProof": {
-        "files": ["brain.db", "brain.db-wal", "brain.db-shm"],
+        "files": [
+          "brain.db",
+          "brain.db-wal",
+          "brain.db-shm"
+        ],
         "beforeEqualsAfter": true,
         "note": "sha256 of each file identical before and after the whole measurement run; raw hashes in latency-t2-final.json"
       },
@@ -82,15 +116,88 @@
         "USE TEMP B-TREE FOR ORDER BY"
       ],
       "perSymbol": [
-        { "rank": 1, "symbol": "join", "incomingDependencyRows": 21937, "runsMs": [301.6, 269.6, 284.2, 327.7, 253.1], "p50Ms": 284.2, "p95Ms": 327.7, "shownCount": 5, "totalCountIfKnown": 5, "truncated": false },
-        { "rank": 100, "symbol": "named", "incomingDependencyRows": 302, "runsMs": [321.2, 185.2, 172.4, 198.7, 160.9], "p50Ms": 185.2, "p95Ms": 321.2, "shownCount": 17, "totalCountIfKnown": 17, "truncated": false },
-        { "rank": 500, "symbol": "refReachable", "incomingDependencyRows": 25, "runsMs": [62.6, 236.0, 58.1, 66.9, 60.2], "p50Ms": 62.6, "p95Ms": 236.0, "shownCount": 2, "totalCountIfKnown": 2, "truncated": false },
-        { "rank": -1, "symbol": "computeImpact", "incomingDependencyRows": 43, "runsMs": [153.6, 42.9, 48.2, 44.0, 41.5], "p50Ms": 42.9, "p95Ms": 153.6, "shownCount": 7, "totalCountIfKnown": 7, "truncated": false }
+        {
+          "rank": 1,
+          "symbol": "join",
+          "incomingDependencyRows": 21937,
+          "runsMs": [
+            301.6,
+            269.6,
+            284.2,
+            327.7,
+            253.1
+          ],
+          "p50Ms": 284.2,
+          "p95Ms": 327.7,
+          "shownCount": 5,
+          "totalCountIfKnown": 5,
+          "truncated": false
+        },
+        {
+          "rank": 100,
+          "symbol": "named",
+          "incomingDependencyRows": 302,
+          "runsMs": [
+            321.2,
+            185.2,
+            172.4,
+            198.7,
+            160.9
+          ],
+          "p50Ms": 185.2,
+          "p95Ms": 321.2,
+          "shownCount": 17,
+          "totalCountIfKnown": 17,
+          "truncated": false
+        },
+        {
+          "rank": 500,
+          "symbol": "refReachable",
+          "incomingDependencyRows": 25,
+          "runsMs": [
+            62.6,
+            236.0,
+            58.1,
+            66.9,
+            60.2
+          ],
+          "p50Ms": 62.6,
+          "p95Ms": 236.0,
+          "shownCount": 2,
+          "totalCountIfKnown": 2,
+          "truncated": false
+        },
+        {
+          "rank": -1,
+          "symbol": "computeImpact",
+          "incomingDependencyRows": 43,
+          "runsMs": [
+            153.6,
+            42.9,
+            48.2,
+            44.0,
+            41.5
+          ],
+          "p50Ms": 42.9,
+          "p95Ms": 153.6,
+          "shownCount": 7,
+          "totalCountIfKnown": 7,
+          "truncated": false
+        }
       ],
       "controlQueriesSameIndex": [
-        { "label": "control-count-files", "ms": 33.9 },
-        { "label": "control-name-equality", "ms": 1.3 },
-        { "label": "control-count-symbols", "ms": 1590.5 }
+        {
+          "label": "control-count-files",
+          "ms": 33.9
+        },
+        {
+          "label": "control-name-equality",
+          "ms": 1.3
+        },
+        {
+          "label": "control-count-symbols",
+          "ms": 1590.5
+        }
       ],
       "commands": [
         "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/latency-t2-final.ts",
@@ -102,23 +209,198 @@
         "validation/tools/bb_impact/work/t2-final.log",
         "validation/tools/bb_impact/work/t2-querycost-readonly.log"
       ]
+    },
+    {
+      "tier": "T2-hub",
+      "subject": "the Lead's T2 baseline hub case: default bb_impact for a real hub symbol on the shared 3.6 GB reference index",
+      "indexDir": ".bb-data (byte-read-only; never written)",
+      "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+      "symbol": "getRawInstance",
+      "call": "bb_impact {symbol: \"getRawInstance\"} (default arguments otherwise)",
+      "budgetMs": 5000,
+      "protocol": {
+        "warmupRuns": 1,
+        "measuredRuns": 3,
+        "inProcess": true,
+        "openMode": "byte-read-only"
+      },
+      "beforeFix": {
+        "source": "validation/release/T2-BASELINE.json (Lead harness, same protocol)",
+        "runsMs": [
+          6135,
+          6539
+        ],
+        "p50Ms": 6337,
+        "p95Ms": 6539,
+        "cause": "one counting-walk level statement could not use the target index: 4349.5 ms for a level-1 batch of 200 (validation/tools/bb_impact/work/t2-count-form.json); the same rows via a flat target-indexed id list answer in 4.1 ms",
+        "independentReproduction": {
+          "runsMs": [
+            6765.3,
+            7802.8,
+            7215.4
+          ],
+          "p50Ms": 7215.4,
+          "p95Ms": 7802.8,
+          "engineWalkMs": [
+            2148.2,
+            2505.2,
+            2320.8,
+            1977.6
+          ],
+          "countWalkMs": [
+            5619.1,
+            5413,
+            4545.8,
+            4943.8
+          ],
+          "evidence": "validation/tools/bb_impact/work/t2-hub-breakdown.log"
+        }
+      },
+      "afterFix": {
+        "runsMs": [
+          2418.6,
+          2424.3,
+          2450.1
+        ],
+        "p50Ms": 2424.3,
+        "p95Ms": 2450.1,
+        "withinBudget": true,
+        "loadAverage": [
+          3.8,
+          4.14,
+          4.09
+        ],
+        "declared": {
+          "truncated": true,
+          "truncationReason": "traversal: caller-site-limit+walk-time-budget-exhausted+caller-budget-exhausted (walk: time-budget-exhausted \u2014 this answer is not reproducible); count clause added when the measurement was skipped for the call deadline",
+          "shownCount": 174,
+          "totalCountIfKnown": "406 when the measurement ran; null with countVerification.skipped=true when the walk spent the call deadline past the measurement's minimum",
+          "budget": {
+            "walkTimeCeilingMs": 1500,
+            "callDeadlineMs": 3000,
+            "totalTimeCeilingMs": "min(4000, callDeadlineMs - elapsed)"
+          },
+          "reproducible": false
+        },
+        "warmEightRunSeries": {
+          "runsMs": [
+            2409.9,
+            2945.4,
+            2677.1,
+            2922.8,
+            2924.6,
+            3028.7,
+            2289.5,
+            2968.6
+          ],
+          "p50Ms": 2922.8,
+          "p95Ms": 3028.7,
+          "loadAverage": [
+            7.63,
+            8.29,
+            7.72
+          ],
+          "note": "all eight runs totalCountIfKnown=406, truncated=true, walkTimeExhausted=true"
+        },
+        "secondSeries": {
+          "runsMs": [
+            3281.3,
+            3003.4,
+            2888.4,
+            2424,
+            2656,
+            3041.2,
+            2391.7,
+            2321.7
+          ],
+          "p50Ms": 2656,
+          "p95Ms": 3281.3,
+          "evidence": "validation/tools/bb_impact/work/t2-hub-final-run2.log"
+        },
+        "firstBaselineSeries": {
+          "runsMs": [
+            2805,
+            3147.7,
+            2651
+          ],
+          "p50Ms": 2805,
+          "p95Ms": 3147.7,
+          "loadAverage": [
+            4.57,
+            1.92,
+            3.43
+          ]
+        },
+        "note": "two baseline-protocol series on the final tree: p50 2 424\u20132 805 / p95 2 450\u20133 148 ms; the 8-run warm series is p95 3 029 ms; every run declared total 406 (or skipped for the deadline), truncated=true, walkTimeExhausted=true"
+      },
+      "dbUnchanged": true,
+      "dbHashProof": {
+        "before": {
+          "bytes": 3885883392,
+          "mtimeMs": 1793725551029.1978,
+          "sha256": "3925a6aeb03fb7831d2c8c77735d126b1daaf692a06739b852036f98d25163f6"
+        },
+        "after": {
+          "bytes": 3885883392,
+          "mtimeMs": 1793725551029.1978,
+          "sha256": "3925a6aeb03fb7831d2c8c77735d126b1daaf692a06739b852036f98d25163f6"
+        },
+        "note": "sha256 and byte size of brain.db identical before and after"
+      },
+      "commands": [
+        "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-hub-lead-protocol.ts",
+        "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-hub-final.ts",
+        "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-hub-breakdown.ts",
+        "BB_DATA_DIR=.bb-data BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_impact/work/t2-count-form.ts"
+      ],
+      "evidence": [
+        "validation/tools/bb_impact/latency-t2-hub-lead-protocol.json",
+        "validation/tools/bb_impact/latency-t2-hub-final.json",
+        "validation/tools/bb_impact/latency-t2-hub-final-run1.json",
+        "validation/tools/bb_impact/work/t2-hub-final.log",
+        "validation/tools/bb_impact/work/t2-hub-final-run2.log",
+        "validation/tools/bb_impact/work/t2-hub-breakdown.json",
+        "validation/tools/bb_impact/work/t2-count-form.json"
+      ]
     }
   ],
   "measurementCorrection": {
-    "earlierMeasurement": "A first campaign pass measured T2 through READ-WRITE opens on a pre-fix planner state and recorded 13.7–359.5 s per default call (join 22.15 s, has 359.53 s, named 100.86 s, computeImpact 23.60 s), and a hand-built comparison attributed the cost to the engine's owner-cascade JOIN form (10 351 ms) against a flat target-indexed form (12.5 ms).",
+    "earlierMeasurement": "A first campaign pass measured T2 through READ-WRITE opens on a pre-fix planner state and recorded 13.7\u2013359.5 s per default call (join 22.15 s, has 359.53 s, named 100.86 s, computeImpact 23.60 s), and a hand-built comparison attributed the cost to the engine's owner-cascade JOIN form (10 351 ms) against a flat target-indexed form (12.5 ms).",
     "whatChanged": "The index on disk now carries the owner-range composite index (`brain_symbol_project_owner_idx (project_id, owner_symbol_id)`) and the planner selects it together with `brain_rel_proj_type_target_idx`; reads also open byte-read-only, so no open-path migrations/healers run.",
-    "remeasurement": "On the current index, byte-read-only, the same JOIN form answers in 1.1–1.2 ms and the engine walk in 40–63 ms; the full handler tier is p95 153.6–327.7 ms and the index files are byte-identical after the run.",
-    "conclusion": "T2 is INSIDE budget on the current index, and the earlier multi-second-to-minute figures are retained as the historical evidence for why the owner-range index exists — not as a current product metric.",
+    "remeasurement": "On the current index, byte-read-only, the same JOIN form answers in 1.1\u20131.2 ms and the engine walk in 40\u201363 ms; the full handler tier is p95 153.6\u2013327.7 ms and the index files are byte-identical after the run.",
+    "conclusion": "T2 is INSIDE budget on the current index, and the earlier multi-second-to-minute figures are retained as the historical evidence for why the owner-range index exists \u2014 not as a current product metric.",
     "evidence": [
       "validation/tools/bb_impact/latency-t2.json (earlier pass, read-write opens)",
       "validation/tools/bb_impact/latency-t2-query-cost.json (earlier pass)",
       "validation/tools/bb_impact/latency-t2-final.json (current pass)",
       "validation/tools/bb_impact/latency-t2-query-cost-readonly.json (current pass)"
-    ]
+    ],
+    "hubCase": {
+      "breach": "The Lead's common T2 harness measured the default hub call at p50 6337 / p95 6539 ms (budget 5000).",
+      "diagnosis": "NOT the walk (2.0-2.5 s) and not JSON (171 KB serialises in 1 ms): the completeness walk's level query used IN(SELECT \u2026 WHERE id IN (...) OR owner-range predicates), which made SQLite abandon the target index. One level-1 batch of 200 measured 4349.5 ms; the same 137 rows via a flat target-id list measured 4.1 ms.",
+      "fix": "the level query is now a flat target-id list (cascade-range members resolved through brain_symbol_project_owner_idx first, relationship query driven by brain_rel_proj_type_target_idx); the walk gets a declared wall deadline (1500 ms) and the component a declared call deadline (3000 ms), both published with declared truncation, a measured total when the measurement ran, and countVerification.skipped when it could not.",
+      "result": "p50 2805 / p95 3148 ms under the baseline protocol; p95 3029 ms over eight warm runs; all declared (truncated=true, walkTimeExhausted=true, total 406 or skipped for the deadline), index byte-identical after."
+    }
   },
   "regressionBaselines": {
-    "T0": { "p50Ms": 83.8, "p95Ms": 100.8 },
-    "T1": { "p50Ms": 176.5, "p95Ms": 243.5 },
-    "T2": { "worstP95Ms": 327.7, "worstP50Ms": 284.2, "budgetMs": 5000 }
+    "T0": {
+      "p50Ms": 83.8,
+      "p95Ms": 100.8
+    },
+    "T1": {
+      "p50Ms": 176.5,
+      "p95Ms": 243.5
+    },
+    "T2": {
+      "worstP95Ms": 327.7,
+      "worstP50Ms": 284.2,
+      "budgetMs": 5000
+    },
+    "T2-hub": {
+      "p50Ms": 2424.3,
+      "p95Ms": 2450.1,
+      "budgetMs": 5000,
+      "note": "final baseline-protocol series; 8-run warm series p95 3028.7"
+    }
   }
 }
