@@ -73,8 +73,17 @@ async function main() {
     if (custom.has(name)) {
       // Held to its own generated wording, and required NOT to carry either
       // blanket phrasing — a custom section is only meaningful if it says
-      // something the other two cannot.
-      check(`staleness describes its own real surface: ${name}`, /No freshness flags are returned/.test(m[1]), m[1].slice(0, 90))
+      // something the other two cannot. WHICH wording is correct depends on
+      // whether the tool HAS a registered freshness surface: bb_edit has none
+      // and must say so; bb_patterns/bb_security/bb_migrate DO have one, so
+      // their custom sentence describes that real surface (the old single
+      // phrase check here required bb_edit's wording from every custom tool —
+      // it was checking text the generator no longer produced, the same drift
+      // this file's header warns about).
+      const describesSurface = withFreshness.has(name)
+        ? /Staleness surfa?ces? (as|applies)|Freshness (modes|applies)/i.test(m[1])
+        : /No freshness flags are returned/.test(m[1])
+      check(`staleness describes its own real surface: ${name}`, describesSurface, m[1].slice(0, 90))
       check(`staleness does not reuse a blanket phrasing: ${name}`, !/does not report per-file index staleness and does not auto-refresh/.test(m[1]), m[1].slice(0, 90))
     } else if (withFreshness.has(name)) {
       check(`staleness describes a real surface: ${name}`, /staleness surfaces as|Freshness (modes|applies)/i.test(m[1]), m[1].slice(0, 90))

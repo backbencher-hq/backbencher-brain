@@ -267,7 +267,27 @@ async function main(): Promise<void> {
   // as a bb_graph parameter, so the corpus is spread over enough probe symbols
   // that no single answer can hit it: a truncated page is an UNREACHABLE shape,
   // and an unreachable shape is never counted as agreement.
-  const SEED_SYMBOLS = Math.max(24, Math.ceil(([...new Set([...indexKinds, ...OWNER_KINDS])].length * OWNER_CONFIDENCES.length * OWNER_CLASSES.length) / 30))
+  // BOUNDED SHAPE MATRIX (the full cross product is available with BB_U2_FULL_SHAPE_MATRIX=1).
+  // Every kind and every stored class is still exercised; confidence coverage is the
+  // STRUCTURAL_FLOOR bracket (just below / exactly at) plus the two endpoints, which are
+  // the only confidences the owner's classification branches on. WHY BOUNDED: the probe
+  // seeds synthetic relationship rows directly, and a 2,000+ row synthetic corpus makes a
+  // tiny database's join plan quadratic — one bb_graph page then costs seconds because the
+  // planner scans both small tables, which is a property of the FIXTURE size, not of the
+  // tool (the tool's scale behaviour is measured on T1/T2). This gate compares published
+  // tiers with the owner's classification; 1,248 shapes reach every kind x class x bracket.
+  const SHAPE_CONFIDENCES = process.env.BB_U2_FULL_SHAPE_MATRIX === "1" ? OWNER_CONFIDENCES
+    : [0, STRUCTURAL_FLOOR - 0.0001, STRUCTURAL_FLOOR, 1]
+  // OWNER_KINDS is ~45 strings because it scrapes every quoted token in the owner,
+  // including class labels and deliberately odd spellings ("CALLS", " Calls ",
+  // "widget_fact"). Parity needs one representative per CLASSIFICATION branch, not
+  // every spelling x every class x every confidence: the fixture's own kinds plus the
+  // declared relationship vocabulary plus the odd spellings. BB_U2_FULL_SHAPE_MATRIX=1
+  // restores the exhaustive cross product for deep runs.
+  const SHAPE_KINDS = process.env.BB_U2_FULL_SHAPE_MATRIX === "1"
+    ? [...new Set([...indexKinds, ...OWNER_KINDS])]
+    : [...new Set([...indexKinds, "calls", "contains", "exports", "imports", "references", "inferred", "unknown", "CALLS", " Calls ", "widget_fact"])]
+  const SEED_SYMBOLS = Math.max(24, Math.ceil((SHAPE_KINDS.length * SHAPE_CONFIDENCES.length * OWNER_CLASSES.length) / 60))
   const seedSymbolNames = Array.from({ length: SEED_SYMBOLS }, (_, i) => `u2SeedProbe${i}`)
   const seeded: Array<{ id: string; seedSymbol: string }> = []
   let seedFileId: string | null = null
@@ -276,8 +296,8 @@ async function main(): Promise<void> {
     seedFileId = fileRow?.id ?? null
     if (seedFileId) {
       const shapes: Array<{ kind: string; conf: number; cls: string | null }> = []
-      for (const kind of [...new Set([...indexKinds, ...OWNER_KINDS])]) {
-        for (const conf of OWNER_CONFIDENCES) {
+      for (const kind of SHAPE_KINDS) {
+        for (const conf of SHAPE_CONFIDENCES) {
           for (const cls of OWNER_CLASSES) shapes.push({ kind, conf, cls })
         }
       }

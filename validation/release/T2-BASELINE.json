@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "what": "Campaign T2 baseline — all read tools against the shared 3.6 GB reference index, in-process handler calls, warm runs.",
-  "generatedAt": "2026-11-03T17:10:27.346Z",
+  "generatedAt": "2026-11-03T17:53:22.609Z",
   "head": "ref: re",
   "referenceIndex": {
     "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
@@ -25,9 +25,9 @@
       "wholeRunUnchanged": true
     },
     "loadavg": [
-      4.33,
-      5.13,
-      9.5
+      3.13,
+      3.75,
+      3.95
     ]
   },
   "skippedWriteTools": [
@@ -45,11 +45,11 @@
       "mutability": "read",
       "budgetMs": 2000,
       "runs": [
-        625,
-        647
+        560,
+        564
       ],
-      "p50Ms": 636,
-      "p95Ms": 647,
+      "p50Ms": 562,
+      "p95Ms": 564,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1541
@@ -59,11 +59,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        266,
-        262
+        283,
+        272
       ],
-      "p50Ms": 264,
-      "p95Ms": 266,
+      "p50Ms": 278,
+      "p95Ms": 283,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 277
@@ -73,11 +73,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        1636,
-        1684
+        1710,
+        1696
       ],
-      "p50Ms": 1660,
-      "p95Ms": 1684,
+      "p50Ms": 1703,
+      "p95Ms": 1710,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2408
@@ -87,11 +87,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        2684,
-        2729
+        2881,
+        2857
       ],
-      "p50Ms": 2707,
-      "p95Ms": 2729,
+      "p50Ms": 2869,
+      "p95Ms": 2881,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 35118
@@ -101,11 +101,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3506,
-        3502
+        3594,
+        3503
       ],
-      "p50Ms": 3504,
-      "p95Ms": 3506,
+      "p50Ms": 3549,
+      "p95Ms": 3594,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1190
@@ -115,12 +115,12 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        5484,
-        5546
+        353,
+        465
       ],
-      "p50Ms": 5515,
-      "p95Ms": 5546,
-      "withinBudget": false,
+      "p50Ms": 409,
+      "p95Ms": 465,
+      "withinBudget": true,
       "isError": false,
       "outputBytes": 2897
     },
@@ -129,11 +129,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        264,
-        263
+        228,
+        226
       ],
-      "p50Ms": 264,
-      "p95Ms": 264,
+      "p50Ms": 227,
+      "p95Ms": 228,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1491
@@ -143,11 +143,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        989,
-        980
+        1012,
+        987
       ],
-      "p50Ms": 985,
-      "p95Ms": 989,
+      "p50Ms": 1000,
+      "p95Ms": 1012,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2856
@@ -158,9 +158,9 @@
       "budgetMs": 5000,
       "runs": [
         297,
-        294
+        288
       ],
-      "p50Ms": 296,
+      "p50Ms": 293,
       "p95Ms": 297,
       "withinBudget": true,
       "isError": false,
@@ -171,11 +171,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3483,
-        3492
+        3748,
+        3709
       ],
-      "p50Ms": 3488,
-      "p95Ms": 3492,
+      "p50Ms": 3729,
+      "p95Ms": 3748,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 25928
@@ -185,14 +185,14 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        6135,
-        6539
+        2451,
+        2394
       ],
-      "p50Ms": 6337,
-      "p95Ms": 6539,
-      "withinBudget": false,
+      "p50Ms": 2423,
+      "p95Ms": 2451,
+      "withinBudget": true,
       "isError": false,
-      "outputBytes": 171749
+      "outputBytes": 164662
     },
     {
       "tool": "bb_cross_language",
@@ -200,7 +200,7 @@
       "budgetMs": 5000,
       "runs": [
         4,
-        4
+        3
       ],
       "p50Ms": 4,
       "p95Ms": 4,
@@ -223,5 +223,5 @@
       "outputBytes": 344
     }
   ],
-  "verdict": "ATTENTION: budgetFailures=bb_security,bb_impact errors=none toolWriters=none"
+  "verdict": "ALL READ TOOLS WITHIN BUDGET; NO TOOL WROTE THE INDEX"
 }
