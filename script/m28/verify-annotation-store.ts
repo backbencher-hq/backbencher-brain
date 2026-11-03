@@ -53,18 +53,50 @@ let mutantsTotal = 0
 const negativeCases: Array<{ name: string; caught: boolean; detail: string }> = []
 const blockedLegs: Array<{ leg: string; reason: string; command: string; output: string }> = []
 
+/** Evidence must be byte-identical across two runs of the same tree: an annotation
+ *  id is a hash of the location including the temporary project path, so ids differ
+ *  between runs even when every assertion holds. Recorded detail strings therefore
+ *  mask an id with a fixed token; the assertions themselves still run on the real
+ *  values (the id uniqueness/replacement checks are unchanged). Character scan, no
+ *  pattern matching — the id alphabet is hex. */
+function maskVolatileAnnotationIds(text: string): string {
+  const marker = "bbann-"
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    const at = text.indexOf(marker, i)
+    if (at === -1) {
+      out += text.slice(i)
+      break
+    }
+    out += text.slice(i, at) + "bbann-<annotation-id>"
+    let j = at + marker.length
+    let consumed = 0
+    while (j < text.length && consumed < 128) {
+      const code = text.charCodeAt(j)
+      const isHex = (code >= 48 && code <= 57) || (code >= 97 && code <= 102) || (code >= 65 && code <= 70)
+      if (!isHex) break
+      j++
+      consumed++
+    }
+    i = j
+  }
+  return out
+}
+
 function check(name: string, cond: boolean, detail?: string): void {
   if (cond) passed++
   else {
     failed++
-    failures.push(detail ? `${name} — ${detail}` : name)
+    failures.push(detail ? `${name} — ${maskVolatileAnnotationIds(detail)}` : name)
     console.log(`  FAIL: ${name}${detail ? ` — ${detail}` : ""}`)
   }
 }
 function negative(name: string, caught: boolean, detail?: string): void {
   mutantsTotal++
-  mutantRecords.push({ name, caught, detail })
-  negativeCases.push({ name, caught, detail: detail ?? "" })
+  const recordedDetail = maskVolatileAnnotationIds(detail ?? "")
+  mutantRecords.push({ name, caught, detail: recordedDetail })
+  negativeCases.push({ name, caught, detail: recordedDetail })
   if (caught) {
     mutantsCaught++
     console.log(`  caught: ${name}`)
@@ -346,7 +378,7 @@ const callMutant = async (handler: any, args: any) => {
   if (missingAnchor) check("A1 mutant anchor: the declared body bound is present in the handler", false, missingAnchor)
   else {
     const r = await callMutant(handler, { symbol: "greet", body: "x".repeat(2001) })
-    negative("A1 mutant: a widened body bound is caught by the declared refusal", r.isError !== true || !r.text.includes("2000"), r.text.slice(0, 120))
+    negative("A1 mutant: a widened body bound is caught by the declared refusal", r.isError !== true || !r.text.includes("2000"), `accepted=${r.isError !== true} mentionsLimit=${r.text.includes("2000")}`)
   }
 }
 // M5: the control-character refusal is disabled.

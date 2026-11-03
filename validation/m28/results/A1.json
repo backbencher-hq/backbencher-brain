@@ -37,7 +37,7 @@
     {
       "name": "A1 mutant: a widened body bound is caught by the declared refusal",
       "caught": true,
-      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-1b06fdbbd0d1413c824eb440c1357142c58bd3f32928f88d6b48b2b44e4bf95b\""
+      "detail": "accepted=true mentionsLimit=false"
     },
     {
       "name": "A1 mutant: a disabled control-character refusal is caught",
@@ -74,7 +74,7 @@
     {
       "name": "A1 mutant: a widened body bound is caught by the declared refusal",
       "caught": true,
-      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-1b06fdbbd0d1413c824eb440c1357142c58bd3f32928f88d6b48b2b44e4bf95b\""
+      "detail": "accepted=true mentionsLimit=false"
     },
     {
       "name": "A1 mutant: a disabled control-character refusal is caught",
@@ -83,8 +83,8 @@
     }
   ],
   "blockedLegs": [],
-  "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
-  "sourceFingerprint": "4b2c44d2b2737daa5398242590a4e0e221c11d805219c62c6bc48f6635292327",
+  "currentCommit": "2d075c0997cfa91bef5d7b944d2a43644d3d7019",
+  "sourceFingerprint": "023d7408a96ed6665c3cea153439ac77671fbc44d68723bb416b13c72ba34f73",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m28/verify-annotation-store.ts",
@@ -94,12 +94,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-11-03T16:36:12.634Z",
+  "generatedAt": "2026-11-03T16:40:45.023Z",
   "claimLevel": "verified — store guarantees proven against a real sqlite db; the tool's wire contract, joint reachability, hostile-body rendering and declared bounds proven through a real bb mcp stdio session; five planted handler mutants caught",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-03T16:36:12.634Z",
-    "contentSha256": "531a431e98127e83608e5239515f0055f1c3531ff41ec30da254489f12b6f44e"
+    "sealedAt": "2026-11-03T16:40:45.023Z",
+    "contentSha256": "3805f9656aeb23b32d073f92a110e25556f52b1f4fb21e3489fac2cad98f7f83"
   }
 }
