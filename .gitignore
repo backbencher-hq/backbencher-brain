@@ -431,3 +431,13 @@ isolate-*.log
 # Release battery: indexed corpora are build artifacts, never repository content.
 validation/release/**/data/
 validation/release/**/workspace/
+# Generated tier-run scratch copies (source-file copies for measurement, not fixtures).
+validation/tools/**/work/run/
+# Lane-local indexed corpora and read-write measurement copies: large, regenerable state.
+validation/tools/**/realdata/
+validation/tools/**/realcorpus/
+validation/tools/**/bbdata/
+validation/tools/**/work/t2-*/
+# Editor session log from the headless nvim A2 leg.
+.nvimlog
+**/.nvimlog
