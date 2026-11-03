@@ -1,3 +1,33 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the visualization engine: it turns the index's stored
+//   symbol and relationship rows into one bounded, declared graph projection
+//   (nodes, links, exclusions, page, owner-cascade folds, annotation overlay) and
+//   renders that projection as text, JSON or a self-contained HTML artifact.
+// WHICH TOOL IT SERVES — bb_visualize (mutability read, requiresIndex true,
+//   modes: project, file, module, symbol, feature).
+// WHY IT IS SHAPED THIS WAY — the answer is a SELECTION, so every quantity that
+//   could be mistaken for a total is declared separately: totalNodesAvailable
+//   (what the scope and filters match), truncation.originalNodes (what reached
+//   the projection) and the returned node count; the page cursor walks one total
+//   order with an `s.id` tiebreaker; and the two reasons an edge is absent (the
+//   node cut, the maxLinks budget) are counted apart. The edge set is complete
+//   for the returned nodes because it is fetched by joining both endpoints
+//   rather than by slicing the relationship table. Targets are VALUES, never
+//   patterns: LIKE metacharacters are escaped and every LIKE carries ESCAPE.
+// WHERE ITS EVIDENCE LIVES — docs/tools/bb_visualize.md, docs/BB_VISUALIZE.md,
+//   validation/tools/bb_visualize/** (probe.ts, read-path.ts, latency.ts,
+//   real-corpus.ts); gates: npx tsx validation/tools/bb_visualize/probe.ts,
+//   script/m13/verify-visualize-*.ts, script/m15/verify-visualize-migrate-deep.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_visualize/{descriptor,handler}.ts,
+//   src/ast/dependency-graph-visualizer.ts (projection), the gates above, and
+//   both documentation pages.
+// CONTRACTS IT MUST NOT BREAK — read-only index access (byte-read-only handle),
+//   declared bounds and declared absence, the noise filter's attribution, and
+//   the no-regex policy (validation/tools/regex-allowlist.json).
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { BrainDatabase } from "../../brain/database"
 import { DependencyGraphVisualizer } from "../../ast/dependency-graph-visualizer"
 import { renderVisualizationStudio } from "../../ast/visualization/studio-renderer"
@@ -168,11 +198,11 @@ export interface VisualizationResult {
     languageCensus: Record<string, number>
     /** The index's OTHER facts about the nodes this answer returned, as a declared layer.
      *
-     *  MEASURED as a gap in the review's capability list: a picture that carries only nodes and
-     *  edges is a map of ONE layer, while the same index already holds agent annotations
-     *  (`bb_annotate`), security findings and orphan findings. A note written on a symbol is a
-     *  fact about that symbol, and the map that cannot show it is the one a reader trusts less
-     *  than they should.
+     *  A picture that carries only nodes and edges is a map of ONE layer, while the
+     *  same index already holds agent annotations (`bb_annotate`), security findings
+     *  and orphan findings. A note written on a symbol is a fact about that symbol,
+     *  and a map that cannot show it is incomplete evidence rather than a smaller
+     *  picture.
      *
      *  Annotations are matched by (symbol name, symbol path), which is how the store keys them
      *  rather than by symbol id — so a note whose path does not match any returned symbol is
@@ -254,7 +284,7 @@ export interface VisualizationResult {
    *  measured, and the text format printed "then cut by maxLinks" from it while `maxLinks`
    *  was 5000 and had withdrawn nothing. */
   provenance: {
-    source: "canonical-graph-engine"
+    source: "stored-symbol-and-relationship-rows"
     indexedProject: string
     /** Links the answer does not show because an ENDPOINT is not in the returned node set. */
     linksOmittedWithNodeCut: number
@@ -278,9 +308,9 @@ export interface VisualizationResult {
     /** Present ONLY when a bound had to be adjusted, naming what was asked for and what was
      *  applied.
      *
-     *  MEASURED: `maxNodes: 0` silently became 1, which is the shape the project already
-     *  ruled on for `bb_health sampleSize: 0` — "the caller asked to check no files and was
-     *  told one file was checked and clean". The TOOL door now refuses such a value outright
+     *  `maxNodes: 0` used to become 1 silently — the same shape `bb_health` refuses for
+     *  `sampleSize: 0`, where the caller asks to check no files and is told one file was
+     *  checked and clean. The TOOL door now refuses such a value outright
      *  (see the handler), naming the accepted range; this field covers the other door, a
      *  direct caller of the engine, so neither can be quietly given a different page than
      *  the one it asked for. */
@@ -296,7 +326,23 @@ export interface VisualizationResult {
 const LIKE_ESCAPE_CHAR = "\\"
 
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (c) => LIKE_ESCAPE_CHAR + c)
+  // Character walk rather than a regular expression: the set is three literal
+  // characters and the operation is a prefix, which string operations express
+  // exactly. A backslash is escaped too, because with ESCAPE in force it is the
+  // escape character and has to be able to match itself.
+  let escaped = ""
+  for (const character of value) {
+    if (character === LIKE_ESCAPE_CHAR || character === "%" || character === "_") escaped += LIKE_ESCAPE_CHAR
+    escaped += character
+  }
+  return escaped
+}
+
+/** Strip ONE trailing directory separator, so `src/util` and `src/util/` name the
+ *  same module on every scope. String operations rather than a regex because a
+ *  single anchored suffix is not a pattern language problem. */
+function withoutTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value.slice(0, -1) : value
 }
 
 /** The clause that makes `escapeLike` mean what it says.
@@ -326,10 +372,10 @@ function segmentPrefix(value: string): string {
  *
  *  MEASURED before: `bounded()` returned `Math.max(1, Math.min(max, floor(n)))`, so
  *  `maxNodes: 0` returned ONE node and echoed `truncation.maxNodes: 1` — the caller asked for
- *  no nodes and was handed one. That is the same defect the project already ruled on for
- *  `bb_health sampleSize: 0` ("asked to check no files and was told one file was checked and
- *  clean"), and `bb_analyze` REFUSES `limit: 0` "because a returned page must mean the page
- *  that was asked for".
+ *  no nodes and was handed one. `bb_health` refuses the same shape for `sampleSize: 0`
+ *  ("asked to check no files and was told one file was checked and clean"), and
+ *  `bb_analyze` refuses `limit: 0` because a returned page must mean the page that was
+ *  asked for.
  *
  *  So both doors are closed: the tool refuses an out-of-range budget (handler, naming the
  *  accepted range), and this function cannot adjust one without naming it, which is what a
@@ -396,7 +442,7 @@ function countAvailableSymbols(
   // returned answer can never describe different sets. This is not a nicety:
   // when the two drifted, one reply declared 56 javascript symbols available and
   // returned none of them.
-  const stripped = target.replace(/\/$/, "")
+  const stripped = withoutTrailingSlash(target)
   let where = "1=1"
   const params: unknown[] = []
   if (scope === "file") {
@@ -465,7 +511,12 @@ function scopedOrder(base: string): string {
 }
 
 export async function visualizeProject(projectId: string, request: VisualizationRequest = {}): Promise<VisualizationResult> {
-  const raw = await BrainDatabase.getRawInstance(projectId)
+  // Byte-read-only: a read answer must not migrate, heal or otherwise write the
+  // index just by being asked for. The read-write open runs the schema migrations
+  // and healers, which moves the WAL on every call (measured: WAL 0 → 2.5 MB after
+  // one default answer, and the annotation guard triggers were dropped and
+  // recreated on every open).
+  const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
   const scope = request.scope ?? "project"
   const target = String(request.target ?? "")
   const nodeBound = applyBound("maxNodes", request.maxNodes, 200, 2000)
@@ -492,7 +543,7 @@ export async function visualizeProject(projectId: string, request: Visualization
   const lang = languageClause(request)
   const kind = kindClause(request)
   let symbols: any[]
-  const stripped = target.replace(/\/$/, "")
+  const stripped = withoutTrailingSlash(target)
   const leaf = stripped.split("/").pop() ?? stripped
   const needle = `%${escapeLike(target.toLowerCase())}%`
   if (scope === "file") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where}${kind.where} AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?${LIKE_ESCAPE}) ORDER BY ${scopedOrder("s.line_start")} LIMIT ?`).all(projectId, ...lang.params, ...kind.params, target, target, segmentPrefix(stripped), fetchLimit) as any[]
@@ -528,42 +579,55 @@ export async function visualizeProject(projectId: string, request: Visualization
   if (ids.size === 0) {
     relationships = []
   } else {
+    // The edge set is fetched by joining the SELECTED identities, in chunks.
+    //
+    // MEASURED on the reference index (6,452 files / 310,423 symbols / 820,040
+    // relationships): the one-statement form with two IN lists of 400 parameters
+    // apiece took 9,825 ms cold because the planner can only seek one arm and then
+    // re-checks the other list per candidate. The same row set — verified identical,
+    // 8,382 rows — is fetched in 91 ms by binding a 100-id source chunk per statement
+    // and the full target list once per chunk. Chunking is what keeps the parameter
+    // count inside a plan SQLite can use; it is not a sampling of the edge set, so
+    // the completeness claim below still holds.
     const idList = [...ids]
-    const placeholders = idList.map(() => "?").join(",")
-    relationships = raw
-      .prepare(
-        `SELECT id AS row_id,source_symbol_id AS source_id,target_symbol_id AS target_id,relationship_type,confidence,is_cross_language,is_cross_file,bridge_mechanism,line_number
-           FROM brain_relationship
-          WHERE project_id = ?
-            AND source_symbol_id IN (${placeholders})
-            AND target_symbol_id IN (${placeholders})`,
+    const RELATIONSHIP_FETCH_CHUNK = 100
+    const targetPlaceholders = idList.map(() => "?").join(",")
+    relationships = []
+    for (let start = 0; start < idList.length; start += RELATIONSHIP_FETCH_CHUNK) {
+      const chunk = idList.slice(start, start + RELATIONSHIP_FETCH_CHUNK)
+      relationships.push(
+        ...(raw
+          .prepare(
+            `SELECT id AS row_id,source_symbol_id AS source_id,target_symbol_id AS target_id,relationship_type,confidence,is_cross_language,is_cross_file,bridge_mechanism,line_number
+               FROM brain_relationship
+              WHERE project_id = ?
+                AND source_symbol_id IN (${chunk.map(() => "?").join(",")})
+                AND target_symbol_id IN (${targetPlaceholders})`,
+          )
+          .all(projectId, ...chunk, ...idList) as any[]),
       )
-      .all(projectId, ...idList, ...idList) as any[]
+    }
   }
-  // The owner cascade, made real.
-  //
-  // The registry description claimed bb_graph's semantics — "member-level
-  // relationships are attributed to the owner class" — and this engine did not
-  // implement it: a call stored on a method simply vanished whenever the method
-  // was not itself in the node set. MEASURED on a two-class fixture with
-  // `scope: "symbol", target: "Api", view: "class"`, the diagram drew the class and
-  // ZERO connectors while bb_graph reported the same class carrying 2 callers with
-  // `match: "owner-cascade"`.
+  // The owner cascade: a relationship stored on a MEMBER is attributed to the
+  // class-like owner that is actually in the node set, and the edge says so.
   //
   // The fold is deliberately narrow, because an eager fold DOUBLE COUNTS: a member
   // is folded only when it is NOT itself in the node set (an exact edge is always
-  // preferred to an attributed one), only for CLASS-LIKE owners (the sentence is
+  // preferred to an attributed one), only for CLASS-LIKE owners (the attribution is
   // about the owner CLASS), and never for `contains` rows (the membership relation
   // itself, which would fold into a self-loop). Every folded row is MARKED on the
-  // edge, so a reader can still tell an edge the index stored between the two nodes
-  // as drawn from one attributed through a member.
-  let ownerCascade = { applied: false, owners: 0, membersScanned: 0, rowsFolded: 0, nodesAdded: 0, nodesDropped: 0, capped: false }
+  // edge, so a reader can tell an edge the index stored between the two drawn nodes
+  // from one attributed through a member.
+  let ownerCascade: { applied: boolean; owners: number; membersScanned: number; rowsFolded: number; nodesAdded: number; nodesDropped: number; nodesFiltered: number; foldedRowsWithoutDrawableCounterpart: number; capped: boolean } = { applied: false, owners: 0, membersScanned: 0, rowsFolded: 0, nodesAdded: 0, nodesDropped: 0, nodesFiltered: 0, foldedRowsWithoutDrawableCounterpart: 0, capped: false }
   // The counterpart nodes the cascade added, so a budget cut can be counted later.
   const cascadeNodeIds = new Set<string>()
   const classOwners = ids.size === 0 ? [] : symbols.filter((symbol) => CLASS_LIKE_TYPES.has(String(symbol.symbol_type))).map((symbol) => symbol.id)
-  if (classOwners.length > 0) {
+  const OWNER_SCAN_CAP = 500
+  const ownersCapped = classOwners.length > OWNER_SCAN_CAP
+  const ownersToScan = ownersCapped ? classOwners.slice(0, OWNER_SCAN_CAP) : classOwners
+  if (ownersToScan.length > 0) {
     const MEMBER_CAP = 3000
-    const ownerPlaceholders = classOwners.map(() => "?").join(",")
+    const ownerPlaceholders = ownersToScan.map(() => "?").join(",")
     const selectedPlaceholders = [...ids].map(() => "?").join(",")
     const memberRows = raw
       .prepare(
@@ -574,7 +638,7 @@ export async function visualizeProject(projectId: string, request: Visualization
             AND r.target_symbol_id NOT IN (${selectedPlaceholders})
           LIMIT ?`,
       )
-      .all(projectId, ...classOwners, ...ids, MEMBER_CAP) as any[]
+      .all(projectId, ...ownersToScan, ...ids, MEMBER_CAP) as any[]
     const memberOwner = new Map<string, { owner: string; name: string; type: string }>()
     for (const row of memberRows) {
       if (!memberOwner.has(String(row.member_id))) {
@@ -582,31 +646,41 @@ export async function visualizeProject(projectId: string, request: Visualization
       }
     }
     let rowsFolded = 0
-    let capped = memberRows.length >= MEMBER_CAP
+    let capped = memberRows.length >= MEMBER_CAP || ownersCapped
+    let foldedRelationships: any[] = []
     const counterpartIds = new Set<string>()
     if (memberOwner.size > 0) {
       const CASCADE_CAP = 20000
       const memberIds = [...memberOwner.keys()]
-      const memberPlaceholders = memberIds.map(() => "?").join(",")
-      const rowsOnMembers = raw
-        .prepare(
-          `SELECT id AS row_id,source_symbol_id AS source_id,target_symbol_id AS target_id,relationship_type,confidence,is_cross_language,is_cross_file,bridge_mechanism,line_number
-             FROM brain_relationship
-            WHERE project_id = ?
-              AND relationship_type <> 'contains'
-              AND (source_symbol_id IN (${memberPlaceholders}) OR target_symbol_id IN (${memberPlaceholders}))
-            LIMIT ?`,
-        )
-        .all(projectId, ...memberIds, ...memberIds, CASCADE_CAP) as any[]
+      // Fetch the rows on members in source/target chunks and de-duplicate by row id.
+      //
+      // MEASURED on the reference index: the one-statement `(source IN (N) OR target IN
+      // (N))` form with 399 member ids took 288-639 ms warm and grew sharply with the id
+      // list, while 100-id chunks keep every statement on an index seek. A row is
+      // collected once even though it appears in both directions.
+      const rowsOnMemberMap = new Map<string, any>()
+      const MEMBER_ROW_CHUNK = 100
+      const selectRows = "SELECT id AS row_id,source_symbol_id AS source_id,target_symbol_id AS target_id,relationship_type,confidence,is_cross_language,is_cross_file,bridge_mechanism,line_number FROM brain_relationship WHERE project_id = ? AND relationship_type <> 'contains'"
+      for (let start = 0; start < memberIds.length && rowsOnMemberMap.size < CASCADE_CAP; start += MEMBER_ROW_CHUNK) {
+        const chunk = memberIds.slice(start, start + MEMBER_ROW_CHUNK)
+        const placeholders = chunk.map(() => "?").join(",")
+        for (const row of raw.prepare(`${selectRows} AND source_symbol_id IN (${placeholders})`).all(projectId, ...chunk) as any[]) {
+          if (rowsOnMemberMap.size >= CASCADE_CAP) break
+          rowsOnMemberMap.set(String(row.row_id), row)
+        }
+        for (const row of raw.prepare(`${selectRows} AND target_symbol_id IN (${placeholders})`).all(projectId, ...chunk) as any[]) {
+          if (rowsOnMemberMap.size >= CASCADE_CAP) break
+          rowsOnMemberMap.set(String(row.row_id), row)
+        }
+      }
+      const rowsOnMembers: any[] = [...rowsOnMemberMap.values()]
       // An END of a stored row, resolved against the node set: the symbol itself
       // when it is selected, the owner it is a member of when it is not, and
       // nothing when it is neither. A row whose other end resolves to nothing is
-      // still folded -- but its counterpart has to be DRAWN, or the edge has no
-      // endpoint and the renderer drops it, which is exactly how the claim came to
-      // be false: MEASURED, `scope: "symbol"` on a class whose members carried two
-      // stored `calls` rows returned ONE node and ZERO links, because the only
-      // candidate fold had `outside` at the other end and `outside` was not in the
-      // node set.
+      // still folded — but its counterpart has to be DRAWN, or the edge has no
+      // endpoint and the projection drops it. A class whose members carry stored
+      // calls therefore shows those calls only when the connected symbols are added
+      // to the node set, which is what the block below does.
       const resolved = (id: unknown): { owner: string | null; member: { owner: string; name: string; type: string } | null } => {
         const key = String(id)
         if (ids.has(key)) return { owner: key, member: null }
@@ -627,17 +701,23 @@ export async function visualizeProject(projectId: string, request: Visualization
         if (target.owner === null) counterpartIds.add(String(row.target_id))
         folded.push({ ...row, source_id: foldedSource, target_id: foldedTarget, owner_cascade: 1, matched_member: via ? `${via.name}:${via.type}` : null })
       }
-      if (folded.length > 0) relationships = relationships.concat(folded)
-      rowsFolded = folded.length
-      capped = capped || rowsOnMembers.length >= CASCADE_CAP
+      foldedRelationships = folded
+      capped = capped || rowsOnMemberMap.size >= CASCADE_CAP
     }
     // Draw the counterparts the folded edges need. Budgeted like everything else,
-    // and a cut is declared rather than silently dropping the edge again.
+    // and every removal is declared rather than silently dropping the edge: a
+    // counterpart cut by the node budget, by the page window, or by the caller's own
+    // symbolKinds/languages filter is counted, and a folded row whose counterpart
+    // cannot be drawn is not reported as folded.
     let nodesAdded = 0
+    let nodesFiltered = 0
     const budget = Math.max(0, fetchLimit - symbols.length)
     const wanted = [...counterpartIds].filter((id) => !ids.has(id))
     const chosen = wanted.slice(0, budget)
     if (wanted.length > chosen.length) capped = true
+    const allowedKinds = request.symbolKinds?.length ? new Set(request.symbolKinds.map((kind) => kind.toLowerCase())) : null
+    const allowedLanguages = request.languages?.length ? new Set(request.languages.map((language) => language.toLowerCase())) : null
+    const drawnCounterparts = new Set<string>()
     if (chosen.length > 0) {
       const chosenPlaceholders = chosen.map(() => "?").join(",")
       const extra = raw
@@ -648,13 +728,24 @@ export async function visualizeProject(projectId: string, request: Visualization
               AND s.id IN (${chosenPlaceholders})`,
         )
         .all(projectId, ...chosen) as any[]
-      if (extra.length > 0) {
-        symbols = symbols.concat(extra)
-        for (const node of extra) cascadeNodeIds.add(String(node.id))
-        nodesAdded = extra.length
+      // The caller's stored-row filters scope the whole answer, including the
+      // symbols the cascade would add: a graph returned for `symbolKinds: ["class"]`
+      // must not contain a function just because a folded edge pointed at it.
+      const kept = extra.filter((node) => (!allowedKinds || allowedKinds.has(String(node.symbol_type).toLowerCase())) && (!allowedLanguages || allowedLanguages.has(String(node.language ?? "").toLowerCase())))
+      nodesFiltered = extra.length - kept.length
+      if (kept.length > 0) {
+        symbols = symbols.concat(kept)
+        for (const node of kept) { cascadeNodeIds.add(String(node.id)); drawnCounterparts.add(String(node.id)) }
+        nodesAdded = kept.length
       }
     }
-    ownerCascade = { applied: true, owners: classOwners.length, membersScanned: memberOwner.size, rowsFolded, nodesAdded, nodesDropped: 0, capped }
+    // A folded row whose non-selected end is not drawn has no second endpoint, so it
+    // is not part of the edge set the answer states — count it out and say so.
+    const foldedDrawable = foldedRelationships.filter((row) => (ids.has(String(row.source_id)) || drawnCounterparts.has(String(row.source_id))) && (ids.has(String(row.target_id)) || drawnCounterparts.has(String(row.target_id))))
+    const foldedUndrawable = foldedRelationships.length - foldedDrawable.length
+    relationships = relationships.concat(foldedDrawable)
+    rowsFolded = foldedDrawable.length
+    ownerCascade = { applied: true, owners: classOwners.length, membersScanned: memberOwner.size, rowsFolded, nodesAdded, nodesDropped: 0, nodesFiltered, foldedRowsWithoutDrawableCounterpart: foldedUndrawable, capped }
   }
   const filteredRelationships = relationships.filter((relationship) => !request.relationshipTypes?.length || request.relationshipTypes.includes(relationship.relationship_type))
   const graph = DependencyGraphVisualizer.generateGraphData(symbols, filteredRelationships, { excludePatterns: request.excludePatterns, includeTests: request.includeTests })
@@ -816,13 +907,38 @@ export async function visualizeProject(projectId: string, request: Visualization
     nextOffset,
     rule: `the same total order the ranking uses — ${nodeSelectionNote}${offset > 0 ? `, after the first ${offset}` : ", from the first"}`,
   }
-  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", layout: request.layout === "force" ? "force" : "regions", nodes, links, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, overlays: { annotations: annotationOverlay }, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
+  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", layout: request.layout === "force" ? "force" : "regions", nodes, links, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "stored-symbol-and-relationship-rows", indexedProject: projectId, linksOmittedWithNodeCut, linksOmittedByBudget }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table${ownerCascade.rowsFolded > 0 ? `, including ${ownerCascade.rowsFolded} row(s) stored on members of selected classes and folded onto the owner (marked ownerCascade)` : ""}`, relationshipSetTruncated, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null, relationshipTypesConsidered: request.relationshipTypes?.length ? request.relationshipTypes : null, symbolKindsConsidered: request.symbolKinds?.length ? request.symbolKinds : null, kindCensus, languageCensus, page, overlays: { annotations: annotationOverlay }, ownerCascade: { ...ownerCascade, rule: "a relationship stored on a member of a SELECTED class-like symbol is attributed to that symbol; the edge is marked ownerCascade with the member it came through (matchedMembers), the member itself keeps its exact edge when it is also in the node set, and the symbol at the other end is added to the node set so the folded edge can be drawn at all — the stored row is never modified" } }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable, offset, nextOffset: page.nextOffset, ...(boundsAdjusted.length ? { boundsAdjusted } : {}) } }
 }
 
 export function formatVisualization(result: VisualizationResult): string {
   if (result.format === "json") return JSON.stringify(result, null, 2)
   if (result.format === "html") {
-    return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded }, { layout: result.layout })
+    // The artifact carries the SAME declared bounds as the text and JSON formats
+    // instead of only the drawn slice: the payload is machine-readable, so
+    // `totalNodesAvailable`, the projection count and the page cursor are facts a
+    // reader (or a script) can check without a second call. The projection keys
+    // (`nodes`, `links`, `excluded`) are unchanged, so the renderer reads it as before.
+    const declared = {
+      totalNodesAvailable: result.totalNodesAvailable,
+      originalNodes: result.truncation.originalNodes,
+      originalLinks: result.truncation.originalLinks,
+      maxNodes: result.truncation.maxNodes,
+      maxLinks: result.truncation.maxLinks,
+      truncated: result.truncation.truncated,
+      offset: result.truncation.offset,
+      nextOffset: result.truncation.nextOffset,
+      returnedNodes: result.nodes.length,
+      returnedLinks: result.links.length,
+      scope: result.scope,
+      target: result.target,
+      layout: result.layout,
+      page: result.considered?.page ?? null,
+      ownerCascade: result.considered?.ownerCascade ?? null,
+      freshness: (result as VisualizationResult & { freshness?: unknown }).freshness ?? null,
+      rule: "the artifact carries the same declared bounds as the text and JSON formats: totalNodesAvailable (what the scope and filters match), originalNodes (what reached the projection) and returnedNodes (what was drawn), so a short page cannot be read as a whole set",
+    }
+    const graphData = { nodes: result.nodes, links: result.links, excluded: result.excluded, declared }
+    return DependencyGraphVisualizer.generateHTML(graphData as any, { layout: result.layout })
   }
 
   // The DEFAULT format is what every caller gets unless they think to ask for JSON,

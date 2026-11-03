@@ -61,10 +61,17 @@ rmSync(root, { recursive: true, force: true })
   try {
     const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
     const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
-    const sid = typeof Bun !== "undefined"
-    const serverEntry = sid ? path.resolve("src/mcp/server.ts") : path.resolve("bin/bb")
-    const serverArgs = sid ? ["--dir", mcpRoot] : ["mcp", "--dir", mcpRoot]
-    const transport = new StdioClientTransport({ command: process.execPath, args: [serverEntry, ...serverArgs], cwd: process.cwd(), stderr: "pipe" })
+    // SOURCE DOOR, and the environment is forwarded. The compiled bin is a build
+    // artifact that can lag the tree this gate verifies, and the SDK's transport drops
+    // BB_DATA_DIR unless it is passed explicitly — with the default env the spawned
+    // server looked in the default store and answered "No index found" for a fixture
+    // this gate had just indexed (a red that described the harness, not the product).
+    // Node + tsx under BOTH runtimes: the source CLI needs a loader that sets
+    // `import.meta.main` only when it actually is the entry, and the server's stdio
+    // transport is simplest to reason about under one runtime. The compiled bin is not
+    // used, because a build artifact can lag the tree this gate is verifying.
+    const serverArgs = ["--import", "tsx", path.resolve("src/cli/index.ts"), "mcp", "--dir", mcpRoot]
+    const transport = new StdioClientTransport({ command: "node", args: serverArgs, cwd: process.cwd(), env: { ...process.env } as Record<string, string>, stderr: "pipe" })
     const client = new Client({ name: "verify-viz-e2e", version: "1.0.0" })
     await client.connect(transport)
     const r: any = await client.callTool({ name: "bb_visualize", arguments: { format: "json" } })

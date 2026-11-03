@@ -12,6 +12,7 @@ import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
+import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { visualizeProject, formatVisualization } from "../../src/intelligence/visualization/visualization-engine"
 import { generateMigrationPlans, formatMigrationPlans } from "../../src/intelligence/migration/migration-engine"
 import { fileURLToPath } from "node:url"
@@ -97,6 +98,11 @@ const FIXTURE: Record<string, string> = {
   {
     const root = mkdtempSync(path.join(tmpdir(), "bb-v2-"))
     for (const [f, c] of Object.entries(FIXTURE)) writeFileSync(path.join(root, f), c)
+    // A module scope needs a directory to name: the tool refuses an empty target, and
+    // the directory itself is what the segment-boundary rule is about.
+    mkdirSync(path.join(root, "pkg"), { recursive: true })
+    writeFileSync(path.join(root, "pkg", "one.ts"), "export function pkgOne(): number { return 1 }\n")
+    writeFileSync(path.join(root, "pkg", "two.ts"), "export function pkgTwo(): number { return 2 }\n")
     const projectId = await indexProject(root)
     try {
       const sym = await visualizeProject(projectId, { scope: "symbol", target: "mid", format: "json" })
@@ -105,8 +111,8 @@ const FIXTURE: Record<string, string> = {
       const file = await visualizeProject(projectId, { scope: "file", target: "b.ts", format: "json" })
       // engine maps the file column to filePath; b.ts defines mid
       ck("V2: file scope resolves b.ts symbols", file.nodes.some((n) => n.name === "mid") && file.nodes.every((n) => (n.filePath || "").endsWith("b.ts")), file.nodes.map((n) => n.name + "@" + n.filePath).join(","))
-      const mod = await visualizeProject(projectId, { scope: "module", target: "", format: "json" })
-      ck("V2: module scope (root) includes all files", mod.nodes.length >= 3, "nodes=" + mod.nodes.length)
+      const mod = await visualizeProject(projectId, { scope: "module", target: "pkg", format: "json" })
+      ck("V2: module scope resolves the named directory", mod.nodes.length >= 2 && mod.nodes.every((n) => String(n.filePath ?? "").includes("pkg/")), "nodes=" + mod.nodes.length + " " + mod.nodes.map((n) => n.name + "@" + n.filePath).join(","))
       // Truncation honesty: tiny maxNodes must set truncated=true and count originals
       const tight = await visualizeProject(projectId, { scope: "project", format: "json", maxNodes: 2, maxLinks: 2 })
       ck("V2: truncation flag set when budget exceeded", tight.truncation.truncated === true, "truncated=" + tight.truncation.truncated)
@@ -126,14 +132,16 @@ const FIXTURE: Record<string, string> = {
   // V3: docs honesty + regex census + measured complexity
   // ═══════════════════════════════════════════════════════════════════
   {
-    const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
+    // The registry is an assembler over per-tool descriptors now, so its facts are read
+    // from the live registry rather than from one file's source text, and the handler is
+    // read from the module that holds it rather than from the assembler that names it.
+    const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool) => tool.name === "bb_visualize")
     const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_visualize.md"), "utf8")
-    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
+    const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tools/bb_visualize/handler.ts"), "utf8")
     const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/visualization/visualization-engine.ts"), "utf8")
-    const block = reg.split('name: "bb_visualize"')[1].split(/name: "/)[0]
-    ck("V3: registry lists bb_visualize", reg.includes("bb_visualize"))
-    ck("V3: registry mutability=read", block.includes('mutability: "read"'))
-    ck("V3: registry requiresIndex=true", block.includes("requiresIndex: true"))
+    ck("V3: registry lists bb_visualize", !!descriptor)
+    ck("V3: registry mutability=read", descriptor?.mutability === "read", String(descriptor?.mutability))
+    ck("V3: registry requiresIndex=true", descriptor?.requiresIndex === true, String(descriptor?.requiresIndex))
     ck("V3: doc exists", doc.length > 100, "len=" + doc.length)
     ck("V3: doc covers truncation honesty", doc.includes("truncat"))
     ck("V3: handler calls visualizeProject + formatVisualization", hnd.includes("visualizeProject") && hnd.includes("formatVisualization"), "")
@@ -246,13 +254,12 @@ const FIXTURE: Record<string, string> = {
   // M2: truncation honesty + measured complexity + docs
   // ═══════════════════════════════════════════════════════════════════
   {
-    const reg = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-registry.ts"), "utf8")
+    const migrateDescriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool) => tool.name === "bb_migrate")
     const doc = readFileSync(path.join(ROOT_DIR, "docs/tools/bb_migrate.md"), "utf8")
     const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/migration/migration-engine.ts"), "utf8")
-    const block = reg.split('name: "bb_migrate"')[1].split(/name: "/)[0]
-    ck("M2: registry lists bb_migrate", reg.includes("bb_migrate"))
-    ck("M2: registry mutability=read", block.includes('mutability: "read"'))
-    ck("M2: registry requiresIndex=true", block.includes("requiresIndex: true"))
+    ck("M2: registry lists bb_migrate", !!migrateDescriptor)
+    ck("M2: registry mutability=read", migrateDescriptor?.mutability === "read", String(migrateDescriptor?.mutability))
+    ck("M2: registry requiresIndex=true", migrateDescriptor?.requiresIndex === true, String(migrateDescriptor?.requiresIndex))
     ck("M2: doc exists", doc.length > 100, "len=" + doc.length)
     const relits = impl.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
     const clean = relits.filter((r: string) => !r.startsWith("import"))

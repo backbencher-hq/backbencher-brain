@@ -17,15 +17,19 @@ const harness = new Harness({
   limitations: ["Covers bb_visualize only."],
 })
 
-const root = path.resolve(import.meta.dir, "..", "..")
+const root = path.resolve((import.meta as any).dirname ?? (import.meta as any).dir ?? ".", "..", "..")
 const RESULTS = path.join(root, "validation", "m13", "results")
 
 const registry = PUBLIC_TOOL_DESCRIPTORS.find((t) => t.name === "bb_visualize")
 const doc = readFileSync(path.join(root, "docs", "tools", "bb_visualize.md"), "utf8")
 
 if (registry) {
+  // The generated page carries the §8 author header, so the description is the first
+  // non-empty line AFTER the `# \`bb_visualize\`` heading, not a fixed line index.
   const docLines = doc.split("\n")
-  harness.check("docs: description matches", docLines[2] === registry.description, docLines[2].slice(0, 80))
+  const heading = docLines.findIndex((line) => line.trim() === "# `bb_visualize`")
+  const descriptionLine = heading >= 0 ? (docLines.slice(heading + 1).find((line) => line.trim().length > 0) ?? "") : ""
+  harness.check("docs: description matches", descriptionLine === registry.description, descriptionLine.slice(0, 80))
   harness.check("docs: modes = scopes only", doc.includes("- Modes: `project`, `file`, `module`, `symbol`, `feature`"))
   harness.check("docs: format separate from modes", doc.includes('"format"'))
   harness.check("docs: defaults match", doc.includes(JSON.stringify(registry.documentation.defaults)))
@@ -34,7 +38,7 @@ if (registry) {
   harness.check("docs: requiresIndex = true", doc.includes("- Requires index: `true`"))
 }
 
-const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root, encoding: "utf8", timeout: 120_000 })
+const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts", "--only", "bb_visualize"], { cwd: root, encoding: "utf8", timeout: 120_000 })
 harness.check("docs: generator verify passes", gen.status === 0, gen.status === 0 ? "" : (gen.stderr || gen.stdout || "").slice(0, 200))
 
 // Evidence

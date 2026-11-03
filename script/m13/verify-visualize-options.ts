@@ -361,8 +361,9 @@ harness.check("control: default patterns are the documented twelve", JSON.string
   const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((t) => t.name === "bb_visualize")
   const properties = Object.keys((descriptor?.inputSchema as any)?.properties ?? {})
   harness.check("registry: bb_visualize publishes its input properties", properties.length >= 10, String(properties.length))
-  const source = readFileSync(path.resolve(import.meta.dir, "..", "..", "src", "mcp", "tool-handlers.ts"), "utf8")
-  const section = source.slice(source.indexOf("bb_visualize:"), source.indexOf("bb_migrate:"))
+  // The handler module is where the request literal lives after the per-tool split.
+  const source = readFileSync(path.resolve((import.meta as any).dirname ?? (import.meta as any).dir ?? ".", "..", "..", "src", "mcp", "tools", "bb_visualize", "handler.ts"), "utf8")
+  const section = source
   const requestLiteral = section.slice(section.indexOf("const request: VisualizationRequest"), section.indexOf("const result = await visualizeProject"))
   // Every published property must be a KEY of the request the handler builds. The
   // value side is checked separately below, and `scope` is deliberately read from a
@@ -381,7 +382,7 @@ harness.check("control: default patterns are the documented twelve", JSON.string
     ["relationshipTypes: relationshipFilter.folded", "languages: languageFilter.folded", "symbolKinds: symbolKindFilter.folded"].every((needle) => requestLiteral.includes(needle)),
     requestLiteral.slice(requestLiteral.indexOf("relationshipTypes"), requestLiteral.indexOf("relationshipTypes") + 120),
   )
-  harness.check("handler: scope is validated against the five scopes before it is used", section.includes('["project", "file", "module", "symbol", "feature"].includes(scope)'), "scope validation missing")
+  harness.check("handler: scope is validated against the five scopes before it is used", section.includes('const SCOPES = ["project", "file", "module", "symbol", "feature"]') && section.includes("(SCOPES as readonly string[]).includes(scope)"), "scope validation missing")
   harness.negative("handler: the request names the two options that were dropped before", requestLiteral.includes("args.excludePatterns") && requestLiteral.includes("args.includeTests"), requestLiteral.slice(0, 120))
 }
 
