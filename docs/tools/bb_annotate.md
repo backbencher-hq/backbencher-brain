@@ -7,7 +7,7 @@ EDIT TOGETHER WHEN THIS CHANGES — src/mcp/tools/bb_annotate/descriptor.ts, src
 -->
 # `bb_annotate`
 
-Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location, enforced by a unique index over (project, symbol, author, path). The symbol is NOT checked against the index, so a note may name anything; instead the reply MEASURES whether an editor surface can show it and says so in `surfacing` (`editor`, `matchedAs`, `matchedNames`, `statement`) — a typo'd name or a qualified name is stored and reported honestly rather than promised to a surface it cannot reach. `path` is resolved to the index's own spelling, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Annotations are opinions layered on evidence, never index facts. To change source code use bb_edit; to read notes back use bb_annotations.
+Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: `author_class` is hardcoded 'agent' for tool writes (a tool call cannot write a 'human' note), and the row records the caller's self-declared `toolIdentity` plus timestamps. Re-annotating the same symbol+path updates the note in place and reports the note it replaced — one note per author per location is enforced by a unique index over (project, symbol, author, path). The symbol is not checked against the index; the reply MEASURES whether an editor surface can show the note and says so in `surfacing`. `editor` is the JOINT truth the hover and graph badge use: the name (or qualified name) must be indexed AND declared in the resolved file, so a name indexed only in another file is reported `editor: false` with the reason rather than promised. `path` resolves to the index's own spelling, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Declared bounds: body 2000 chars, toolIdentity 200 chars, symbol 500 chars, path 1024 chars — refusals, never truncation. Annotations are opinions layered on evidence, never index facts. On a project with no index, the first write creates that project's annotation store and `surfacing.editor` is false. To change source code use bb_edit; to read notes back use bb_annotations.
 
 ## Contract
 
@@ -26,19 +26,19 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
   "properties": {
     "symbol": {
       "type": "string",
-      "description": "symbol name to annotate (`target`/`query` are accepted as aliases)"
+      "description": "symbol name to annotate, max 500 chars (`target`/`query` are accepted as aliases); it is not required to exist in the index — reachability is measured and reported"
     },
     "body": {
       "type": "string",
-      "description": "annotation text (max 2000 chars)"
+      "description": "annotation text, max 2000 chars counted in code points (an astral glyph is one character); empty or whitespace-only is refused"
     },
     "path": {
       "type": "string",
-      "description": "optional file path to disambiguate same-named symbols; resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path all reach the same note"
+      "description": "optional file path to scope the note to one file's copy of the symbol, max 1024 chars; resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path all reach the same note"
     },
     "toolIdentity": {
       "type": "string",
-      "description": "optional name of the calling agent/tool (recorded verbatim)"
+      "description": "optional name of the calling agent/tool, max 200 chars (recorded verbatim; line breaks and control characters are refused)"
     }
   },
   "required": [
@@ -50,8 +50,9 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 
 ## Returns
 
-- Stored annotation row with its enforced provenance (author class `agent`, never spoofable) and the calling tool identity, recorded verbatim
-- `surfacing` — whether an editor surface can actually show this note, MEASURED against the index rather than promised: `editor` (bool, the AND of `nameMatched` and `pathMatched` — the editor needs BOTH), `nameMatched`, `pathMatched`, `matchedAs` (`name` and/or `qualifiedName`), `matchedNames`, and a `statement` saying what is and is not true. The name matching is necessary but not sufficient: a note on a symbol the index holds, written against a path it has never seen, can never be selected by a file-scoped hover, and is reported `editor: false` with the reason. This replaced a `surfaces` field that claimed the note "renders in the editor hover section and graph badge" for every note; measured on a real corpus, 100% of notes written under a symbol's qualified name matched no symbol name at all, so that claim was false exactly where it sounded most confident
+- The stored annotation row with its enforced provenance (`author_class` is always `agent` for tool writes) and the caller's self-declared `toolIdentity`, recorded verbatim with `time_created`/`time_updated`
+- `replaced` — present only when this location already held a different note: the previous author class, tool identity, body and timestamps, so the second writer can merge instead of clobbering. The previous note does not survive in the store
+- `surfacing` — a MEASUREMENT against the index, not a promise: `editor` (bool, the JOINT truth — the name or qualified name must be indexed AND declared in the resolved file), `nameMatched`, `pathMatched`, `fileMatched` (`true`/`false` when a path was given, `null` for a name-level note), `matchedAs` (`name` and/or `qualifiedName`), `matchedNames`, and a `statement` saying what is and is not true. A name that is indexed only in a DIFFERENT file than the one the path resolves to is reported `editor: false` with that reason — the hover and graph badge select notes by the file under the cursor, so those two individually-true halves would render nowhere
 - The path handling: `surfacing.pathNote` when a path was resolved to the index's own spelling, `surfacing.pathWarning` when no indexed file matches the given path (stored under that spelling, no editor surface will scope it to a file), and a name-level note statement when no path was given
 
 ## Examples
@@ -61,37 +62,42 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 ## Errors
 
 - Missing or blank symbol
-- Empty body (a refusal, not a silent no-op)
-- Body exceeds the declared 2000-char limit, counted in characters (an astral glyph is one character, not two UTF-16 units)
-- toolIdentity exceeds the declared 200-char limit — refused, never truncated
-- toolIdentity containing a control character or line break — a label is a name, not a document. Refused, because a newline in that field rendered (measured, through the real renderer) as a SECOND provenance line that could claim to be a human note
+- Symbol longer than the declared 500-char limit — refused, never truncated
+- Empty or whitespace-only body (a refusal, not a silent no-op)
+- Body longer than the declared 2000-char limit, counted in characters (an astral glyph is one character, not two UTF-16 units)
+- Path longer than the declared 1024-char limit — refused, never truncated
+- toolIdentity longer than the declared 200-char limit — refused, never truncated
+- toolIdentity containing a control character or line break — a label is a name, not a document. Refused, because a line break in that field is exactly what once rendered as a SECOND provenance line that could claim to be a human note
+- Unknown options (including `author_class`/`authorClass`) are rejected by name with the accepted option list — provenance is not a caller input
 
 ## Limitations
 
 - Annotations are opinions layered on index evidence, never index truth
-- Annotation store semantics are owned by the M28 workstream
 - Any symbol name is accepted. Reachability is reported, not enforced: a name no indexed symbol carries is stored and declared `surfacing.editor: false`
-- The note is keyed on the name as given. A name that matches several indexed symbols (a name is one symbol per file/line — `force` in 8 files of a real corpus) is one note shown wherever that name appears, unless `path` scopes it to a file
+- The note is keyed on the name as given. A name that matches several indexed symbols is one name-level note shown wherever that name appears, unless `path` scopes it to a file
+- `surfacing.editor` is the joint rule the editors apply: the symbol must be declared in the file the path resolves to (or the note must be name-level). A name match plus a path match for a different file is reported `editor: false`
 - `path` is resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path are the SAME note. A path matching no indexed file is stored verbatim and declared
 - `toolIdentity` is the caller's own label. It is recorded verbatim and never verified — `author_class` is the enforced field
-- The editor renderer escapes EVERY interpolated field, not only the body: `author_class`, `tool_identity` and `body` all go through the escaper, and a line break in any of them is flattened to a space. Markup escaping alone is not enough — a newline is what turns one annotation into two in a markdown list, which is how a caller's own label once forged a line reading 'human note by the-review-team'. So a row that already carries such a value — written before the guard, or by any other writer — still renders as exactly one line
-- One note is kept per location, so a second agent annotating the same symbol+path REPLACES the first note. The replacement is reported in `replaced` with the previous body, but the previous note does not survive in the store. Annotating a DIFFERENT path (or no path) keeps a separate note per location
+- The editor renderer escapes EVERY interpolated field, not only the body: `author_class`, `tool_identity` and `body` all go through the escaper, and a line break in any of them is flattened to a space, so one stored row always renders as one line. Markup escaping alone is not enough — a newline is what turns one annotation into two in a markdown list
+- One note is kept per author per location, so a second agent annotating the same symbol+path REPLACES the first note. The replacement is reported in `replaced` with the previous body, but the previous note does not survive in the store. Annotating a DIFFERENT path (or no path) keeps a separate note per location
+- On a project that has never been indexed, the first write creates that project's annotation store; the reply still reports `surfacing.editor: false` because no symbol can be matched yet
+- This tool does not report per-file index staleness and does not auto-refresh: output reflects the index as of the last index run
 
 ## Performance
 
-Constant-time store write bounded by the 2000-char body limit. `surfacing` adds two indexed lookups (name, qualified name) plus one file-row lookup for the path.
+Measured through the real MCP stdio door on isolated indexes, five warm runs per tier (validation/tools/bb_annotate/LATENCY.json): p50 83.4 / p95 96.1 ms on the 5-file polyglot fixture; p50 5.8 / p95 12.1 ms on the 97-file n100 fixture; p50 5.7 / p95 17.9 ms on the 564-file graphql-js corpus; p50 3.5 / p95 5.1 ms on the 109-file rake corpus; p50 3.8 / p95 5.8 ms on the 6,452-file / 310,423-symbol reference index. The first call in a fresh server process opens the project index read-write and runs its additive migrations, measured at 1.8 s on the reference-index snapshot. The write itself is three indexed lookups (name, qualified name, file row) plus the location upsert.
 
 ## Safety
 
-Write-capable against the annotation store only. It never modifies source files.
+Write-capable against the annotation store only. It never modifies source files. It opens the project index read-write the way every write door does, so the additive schema migrations may apply on the first call; index content outside brain_annotation is not written.
 
 ## Evidence Semantics
 
-Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation. `author_class` is constrained to {agent, human} by a storage-level trigger, so a row cannot carry a third claim that every reader would then render verbatim.
+Provenance is enforced three ways: the write hardcodes 'agent', the column is NOT NULL, and a storage trigger constrains `author_class` to {agent, human} — so a row cannot carry a third claim that every reader would render verbatim. `toolIdentity` and timestamps are recorded, and the toolIdentity claim is a label, not evidence. Reachability is measured against the same predicates the readers use: `brain_symbol.name`/`qualified_name` for the name, `brain_file.relative_path` for the file.
 
 ## Relationship to other tools
 
-To change source code use `bb_edit`; this tool stores provenance-enforced notes on symbols.
+To change source code use `bb_edit`; this tool stores provenance-enforced notes on symbols. Read them back with `bb_annotations`.
 
 ## Staleness
 
