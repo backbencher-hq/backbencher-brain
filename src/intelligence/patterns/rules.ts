@@ -215,7 +215,7 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     ).all(projectId, GOD_CLASS_MEMBER_THRESHOLD, ...nonCode.params) as Array<{ name: string; file: string; line: number; members: number }>
     let shownGod = 0
     for (const row of godClasses) {
-      // The previous gate was `row.members / 20 < confidenceThreshold`, which
+      // The earlier form was `row.members / 20 < confidenceThreshold`, which
       // is a ratio on a scale unrelated to the confidence emitted below. At the
       // default threshold of 0.6 it DROPPED an 11-member class (ratio 0.55)
       // while KEEPING a 0.65-confidence complexity finding — the filter was

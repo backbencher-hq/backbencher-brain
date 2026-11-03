@@ -115,7 +115,7 @@ Detect orphaned code, framework patterns, and anti-patterns, ranked by confidenc
 
 ## Performance
 
-A default call ({} — all scope, limit 20) measured on the reference index (6,452 files / 310,423 symbols / 820,040 relationships) at T2: TODO-MEASURE. The cost is index-bound and grows with the SYMBOL count, not the relationship count: every usage set the scan builds is reduced in SQL and bounded by the symbol count. The tool opens the database byte-read only, so a read does not pay the write path's migration/healer cost. limit bounds the displayed page only; the census in the header is the full candidate count, and `raise `limit`` is shown when the page is short.
+Warm in-process measurements (one excluded warmup, five runs, wall clock and process CPU recorded): T0 (5 files / 13 symbols) p50 18.6 ms default-all and 11.2 ms orphaned; T1 (97 files / 3,512 symbols) p50 632 ms default-all and 773 ms orphaned, at 404-607 ms process CPU per call. T2 (6,452 files / 310,423 symbols / 820,040 relationships) is OVER BUDGET: one default-all call measured 85.2 s wall / 33.7 s process CPU against a 5,000 ms budget, on a byte-identical copy of the index; reads left db+WAL unchanged. The cost is full scans of the 820,040 relationship rows that read each row's evidence metadata plus the file-level GROUP BY join; the documented fix is a covering/expression index on the relationship table (index/schema surface, not this tool). limit bounds the displayed page only; the census in the header is the full candidate count, and `raise `limit`` is shown when the page is short. Full data: validation/tools/bb_patterns/LATENCY.json.
 
 ## Safety
 

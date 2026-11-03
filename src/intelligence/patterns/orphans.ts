@@ -832,7 +832,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
           ? [`${rejected.rows} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
           : []),
         ...(fileUsage
-          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources} source(s), so the absence of evidence here is probably the analyzer's, not the code's. Verify against the source before acting on it.`]
+          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources} source(s), so the absence of evidence here is probably the indexer's, not the code's. Verify against the source before acting on it.`]
           : []),
         ...(nameAmbiguous ? [`The name '${sym.name}' is declared more than once; unresolved name-only references are treated as uncertain and do not suppress this candidate.`] : []),
         "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
@@ -1017,7 +1017,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       // orphan page is the product of what is believed, so the volume that was
       // NOT believed is part of the result and is reported with it. These rows
       // are the index's own published confidence and evidence class, so the
-      // numbers are the analyzer's, not this tool's opinion of them.
+      // numbers belong to the indexer, not to this tool's opinion of them.
       unverifiedUsageEdges: {
         total: edgeRejects[SELF_LOOP_EXCLUDED] + edgeRejects[INFERRED_EXCLUDED] + edgeRejects[LOW_CONFIDENCE_EXCLUDED],
         byReason: {

@@ -183,13 +183,31 @@ auto-refresh and publishes no `refresh` option; the remediation is manual
 
 ## Latency
 
-Measured on the reference index (6,452 files / 310,423 symbols / 820,040 relationships)
-with the tool's own handler over the source door, warm, five runs:
+Measured with the tool's own handler, warm in-process (one excluded warmup, five runs),
+recording wall clock **and** process CPU time per call, with db+WAL stat'ed before and
+after every call. Full data and commands: `validation/tools/bb_patterns/LATENCY.json`.
 
-- `{}` (all scope, default limit, page of 20): TODO-MEASURE
-- `{scope:"orphaned"}`: TODO-MEASURE
+| Tier | Population | Shape | p50 wall | p95 wall | CPU per call | 1,000 ms budget |
+|---|---|---|---|---|---|---|
+| T0 | 5 files / 13 symbols | default-all | 18.6 ms | 25.0 ms | 9-10 ms | pass |
+| T0 | | orphaned | 11.2 ms | 18.8 ms | 5-11 ms | pass |
+| T1 | 97 files / 3,512 symbols | default-all | 632 ms | 1,877 ms | 409-572 ms | pass on CPU and p50 |
+| T1 | | orphaned | 773 ms | 1,537 ms | 404-607 ms | pass on CPU and p50 |
 
-Tier measurements and the exact commands are in `validation/tools/bb_patterns/LATENCY.json`.
+The p95 wall figures on T1 are inflated by the shared host (load average 18-25 during
+the run); the same calls take 404-607 ms of process CPU. A quiet-load rerun is the
+remaining verification step.
+
+T2 (6,452 files / 310,423 symbols / 820,040 relationships) is **over budget and is
+reported as such**: one default-all call measured 85.2 s wall / **33.7 s process CPU**
+against a 5,000 ms budget, on a byte-identical copy of the index (the live fleet index refused a
+byte-read-only open at measurement time; that blocked live leg is recorded in
+`raw/t2-live-open-failure.json`). Reads left db+WAL unchanged. The cost is dominated by
+full scans of the 820,040 relationship rows that read each row's evidence metadata, and
+by the file-level `GROUP BY` join over the same rows; no further SQL rewrite inside this
+lane reaches 5 s. The fix is an index/schema change on the relationship table — covering
+`(project_id, relationship_type, confidence, source_symbol_id, target_symbol_id)` plus a
+declared evidence-class expression — which is the index/schema surface, not this tool's.
 
 ## Options — tool surface versus engine API
 
