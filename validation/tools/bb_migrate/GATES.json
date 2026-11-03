@@ -1,0 +1,299 @@
+{
+ "schemaVersion": 1,
+ "tool": "bb_migrate",
+ "currentCommit": "755157b7fa1ebb9606a6284699e5b3ff4ff3d060",
+ "generatedAt": "2026-11-03T04:06:30.898Z",
+ "status": "partial",
+ "verifierCommand": "gate table below; every row's log is under validation/tools/bb_migrate/logs/",
+ "passed": 11,
+ "failed": 4,
+ "negativeCases": 26,
+ "blockedLegs": [
+  {
+   "leg": "m13/verify-migrate-docs — generator dependency",
+   "reason": "the gate spawns the FULL docs generator, which is red mid-campaign by Lead ruling (§B4): shared artifacts are regenerated once at integration. With --only bb_migrate the page is congruent (exit 0)."
+  },
+  {
+   "leg": "m15/verify-visualize-migrate-deep",
+   "reason": "crashes reading pre-split descriptor blocks from src/mcp/tool-registry.ts (the descriptors moved to src/mcp/tools/<tool>/descriptor.ts); also V2 module-scope nodes=0. Outside task-13's write scope (shared visualize+migrate gate) — reported to the Lead."
+  },
+  {
+   "leg": "m48/verify-c1-corpus",
+   "reason": "not run: corpus-scale central gate; bb_migrate's edge cases are covered by m48 C2 (73/73) and the REAL-CORPUS door battery."
+  },
+  {
+   "leg": "m31/tool-mode-corpus --check",
+   "reason": "red fleet-wide (23 drifting invocations); bb_migrate.plan is NOT among them — the tool's own corpus row is unchanged."
+  },
+  {
+   "leg": "T2 directory-cohort shape",
+   "reason": "the reference index predates the module split, so src/mcp paths match no indexed file; the tool refused by name. Measured on the corrected copy the plan counts would be the same shape as T1."
+  },
+  {
+   "leg": "compiled door (dist)",
+   "reason": "dist is stale by Lead ruling; all door evidence uses the source entry (npx tsx src/mcp/server.ts)."
+  }
+ ],
+ "gates": [
+  {
+   "id": "m13-m1",
+   "command": "npx tsx script/m13/verify-migrate-accuracy.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "9/9 checks, 2 negatives — contract-level only (text assertions); strengthened in Phase B",
+   "evidenceLog": "validation/tools/bb_migrate/logs/script_m13_verify-migrate-accuracy.log",
+   "tail": [
+    "M1: VERIFIED (9/9 passed, 2 negatives)"
+   ]
+  },
+  {
+   "id": "m13-m2",
+   "command": "bun run script/m13/verify-migrate-e2e-corpus.ts",
+   "exitCode": 1,
+   "status": "known-gap",
+   "detail": "6/7: the MCP leg fails because the SDK child environment drops BB_DATA_DIR (the same defect LEAD-FINDINGS records fixed in script/verify-mcp.ts). Gate defect in scope.",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_m13_verify-migrate-e2e-corpus.log",
+   "tail": [
+    "  FAIL: MCP: returns JSON plans No index found for /tmp/bb-mig-mcp-wJtm7h. Run: bb index \"/tmp/bb-mig-mcp-wJtm7h\".",
+    "M2: KNOWN-GAP (6/7 passed, 1 negative)"
+   ]
+  },
+  {
+   "id": "m13-m3",
+   "command": "bun run script/m13/verify-migrate-docs.ts",
+   "exitCode": 1,
+   "status": "known-gap",
+   "detail": "8/10: (a) description anchor doc.split('\\n')[2] is now the blank line inside the author header; (b) spawns the full docs generator instead of --only bb_migrate. Gate defect in scope.",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_m13_verify-migrate-docs.log",
+   "tail": [
+    "  FAIL: docs: description matches",
+    "  FAIL: docs: generator passes fail",
+    "M3: KNOWN-GAP (8/10 passed, 1 negative)"
+   ]
+  },
+  {
+   "id": "m20-m1-order",
+   "command": "bun run script/m20/verify-migration-order.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "13/13, 3 negatives",
+   "evidenceLog": "validation/tools/bb_migrate/logs/script_m20_verify-migration-order.log",
+   "tail": [
+    "M1: VERIFIED (13/13 passed, 3 negative)"
+   ]
+  },
+  {
+   "id": "m20-m2-methodology",
+   "command": "bun run script/m20/verify-migration-methodology.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "17/17, 3 negatives",
+   "evidenceLog": "validation/tools/bb_migrate/logs/script_m20_verify-migration-methodology.log",
+   "tail": [
+    "M2: VERIFIED (17/17 passed, 3 negative)"
+   ]
+  },
+  {
+   "id": "m20-m3-mappings",
+   "command": "bun run script/m20/verify-migration-mappings.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "15/15, 5 negatives",
+   "evidenceLog": "validation/tools/bb_migrate/logs/script_m20_verify-migration-mappings.log",
+   "tail": [
+    "M3: VERIFIED (15/15 passed, 5 negative)"
+   ]
+  },
+  {
+   "id": "m20-m4-dictionary",
+   "command": "bun run script/m20/verify-migration-dictionary.ts",
+   "exitCode": 1,
+   "status": "known-gap",
+   "detail": "29/30: three declared non-import keys no longer exist in the dictionary after the source/target table un-inversion (react context -> react, next.js -> next, tailwind -> tailwindcss). Gate defect in scope.",
+   "evidenceLog": "validation/tools/bb_migrate/logs/run_script_m20_verify-migration-dictionary.log",
+   "tail": [
+    "  FAIL: M4: no declared non-import key is missing from the dictionary — react context; next.js; tailwind",
+    "M4: KNOWN-GAP (29/30 passed, 2 negative) — 486 dictionary rows audited"
+   ]
+  },
+  {
+   "id": "m35-s3-graph-migrate",
+   "command": "bun run script/m35/verify-s3-graph-migrate.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "staleness surface for graph+migrate",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_m35_verify-s3-graph-migrate.log",
+   "tail": [
+    "M35 S3 GRAPH+MIGRATE: PASS (23/23, negatives=4)"
+   ]
+  },
+  {
+   "id": "m48-c2-edge-mutations",
+   "command": "bun run script/m48/verify-c2-edge-mutations.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "73 passed / 0 failed / 3 negatives; includes bb_migrate 'calm' cases (unknown target language, empty symbol) and missing-required refusal",
+   "evidenceLog": "validation/tools/bb_migrate/logs/run_script_m48_verify-c2-edge-mutations.log",
+   "tail": [
+    "M48 C2 EDGE+MUTATIONS: PASS (73 passed, 0 failed, 3 negatives)"
+   ]
+  },
+  {
+   "id": "m48-p4-param-matrix",
+   "command": "bun run script/m48/verify-p4-param-matrix.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "10 passed / 0 failed / 2 negatives — live registry parameter matrix",
+   "evidenceLog": "validation/tools/bb_migrate/logs/m48-p4.log",
+   "tail": [
+    "M48 P4 PARAM MATRIX: PASS (10 passed, 0 failed, 2 negatives)"
+   ]
+  },
+  {
+   "id": "m65-latency",
+   "command": "bun run script/m65/verify-migrate-latency.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "all checks pass; includes negative controls that fail the historical 2342 ms cost and the cap/accounting predicates",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_m65_verify-migrate-latency.log",
+   "tail": [
+    "  PASS  migrate latency: the two fixtures differ in scale  small 361 symbols / 906 relationships vs large 2737 / 13575",
+    "  PASS  migrate latency: work grows with the request, not with the repository  loaded-relationship ratio 1.94x < project-size ratio 14.98x (per-symbol costs 9.3 ms vs 9.0 ms)",
+    "  PASS  migrate latency: the budget would fail the historical 2342 ms one-symbol cost  2342 ms (measured on cobra before the bounded loader) > budget 500 ms",
+    "  PASS  migrate latency: the budget predicate passes a measured value [negative control]  19.4 ms <= 500 ms <= no; 2342 ms > 500 ms",
+    "  PASS  migrate latency: the accounting predicate detects a vanished name [negative control]  12 = 2 + 10 accounts; 12 != 2 + 9 does not",
+    "  PASS  migrate latency: the cap predicate detects an over-cap answer [negative control]  100 plans are within the cap; 101 are not"
+   ]
+  },
+  {
+   "id": "m65-selectors",
+   "command": "bun run script/m65/verify-migrate-selectors.ts",
+   "exitCode": 1,
+   "status": "failed",
+   "detail": "1 check failed: a name and its own symbol id produce TWO plans for one component (plans 2, 2 for the component). Engine defect H2.",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_m65_verify-migrate-selectors.log",
+   "tail": [
+    "  PASS  migrate selectors: the handler turns an unknown id into an error result  isError, message names the id",
+    "  PASS  migrate selectors: an absolute path inside the project equals its relative spelling  10 plan(s) each, identical: true",
+    "  PASS  migrate selectors: a path outside the project is refused by name  isError, message names the path",
+    "  PASS  migrate selectors: the identity predicate rejects a different component [negative control]  same id matches; a suffixed id and an empty id do not",
+    "  PASS  migrate selectors: the de-duplication predicate detects a doubled plan [negative control]  one plan passes; two plans and zero plans fail",
+    "1 check(s) FAILED."
+   ]
+  },
+  {
+   "id": "m15-visualize-migrate-deep",
+   "command": "bun run script/m15/verify-visualize-migrate-deep.ts",
+   "exitCode": 2,
+   "status": "blocked",
+   "detail": "FATAL: reg.split('name: \"bb_visualize\"') on the post-split tool-registry.ts; cross-scope shared gate",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_m15_verify-visualize-migrate-deep.log",
+   "tail": [
+    "V1: VERIFIED (6/5 passed, 1 negatives)",
+    "  FAIL: V2: module scope (root) includes all files — nodes=0",
+    "V2: KNOWN-GAP (6/7 passed, 0 negatives)",
+    "FATAL 128 |   {"
+   ]
+  },
+  {
+   "id": "verify-visualize-migrate",
+   "command": "bun run script/verify-visualize-migrate.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "PASS",
+   "evidenceLog": "validation/tools/bb_migrate/logs/bun_script_verify-visualize-migrate.log",
+   "tail": [
+    "VISUALIZE/MIGRATE: PASS"
+   ]
+  },
+  {
+   "id": "docs-only",
+   "command": "npx tsx script/verify-tool-docs.ts --only bb_migrate",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "generated page is congruent with the registry/curation",
+   "evidenceLog": "validation/tools/bb_migrate/logs/verify-tool-docs-only.log",
+   "tail": [
+    "TOOL DOCS: PASS (16 public tools, 1 artifacts)"
+   ]
+  },
+  {
+   "id": "m31-tool-mode-corpus",
+   "command": "bun run script/m31/tool-mode-corpus.ts --check",
+   "exitCode": 1,
+   "status": "blocked",
+   "detail": "fleet-wide drift (23 invocations); bb_migrate.plan is not among the drifting rows",
+   "evidenceLog": "validation/tools/bb_migrate/logs/run_script_m31_tool-mode-corpus.log",
+   "tail": [
+    "M31 TOOL-MODE CORPUS: PASS (76/76) — 42 valid + 30 negative invocations",
+    "CORPUS CHECK: FAIL — behavior drifted from committed baseline. Drifting invocations: bb_search.content, bb_search.symbol, bb_ask.answer, bb_health.status, bb_health.refresh, bb_patterns.orphaned, bb_patterns.all, bb_visualize.project, bb_visualize.file, bb_visualize.symbol (+15 more)"
+   ]
+  },
+  {
+   "id": "m31-bb-docs-truth",
+   "command": "bun run script/m31/verify-bb-docs-truth.ts",
+   "exitCode": 1,
+   "status": "blocked",
+   "detail": "fails on BB_EDIT.md / BB_HEALTH.md fences; no bb_migrate failure row",
+   "evidenceLog": "validation/tools/bb_migrate/logs/run_script_m31_verify-bb-docs-truth.log",
+   "tail": [
+    "FAIL: BB_EDIT.md: json fence parses — \"importPruning\": {\"attempted\": false, \"language\": \"haskell\", \"removedBindings\": ",
+    "FAIL: BB_HEALTH.md: json fence parses — { \"verbose\": true }",
+    "FAIL: no executed claim failed — BB_EDIT.md:json fence parses | BB_HEALTH.md:json fence parses",
+    "M31 BB DOCS TRUTH: FAIL (38/41, negatives=1) — executed=12 structural=16 declared-unverifiable=8"
+   ]
+  },
+  {
+   "id": "regex-policy",
+   "command": "npx tsx script/tools/verify-regex-policy.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "PASS — 14 allowlisted, 73 frozen debt, 0 new; the tool's own 22 regex uses are baseline debt (see regexInventory) and the assistant file is outside the policy scan roots",
+   "evidenceLog": "validation/tools/bb_migrate/logs/regex-policy.log",
+   "tail": [
+    "REGEX POLICY: PASS — 14 allowlisted, 73 frozen debt, 0 new, 2 baseline rows now paid"
+   ]
+  },
+  {
+   "id": "typecheck",
+   "command": "npx tsc --noEmit",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "clean working tree at the audited commit",
+   "evidenceLog": "validation/tools/bb_migrate/logs/tsc-baseline.log",
+   "tail": []
+  },
+  {
+   "id": "mcp-door",
+   "command": "npx tsx validation/tools/bb_migrate/door-phaseA-t0.ts",
+   "exitCode": 0,
+   "status": "verified-with-failures",
+   "detail": "doors: 11/12 supplied cases reached their expected class; the 3 unexpected classes are recorded as defects (blank target/blank names return empty success; same-language and unknown-target are payload refusals, not isError — documented contract, not defect). Wire hygiene: no non-JSON stdout, no unhandled rejection.",
+   "evidenceLog": "validation/tools/bb_migrate/raw/door-phaseA-t0.json"
+  },
+  {
+   "id": "real-corpus",
+   "command": "BB_DATA_DIR=validation/tools/bb_migrate/realdata npx tsx validation/tools/bb_migrate/real-corpus.ts",
+   "exitCode": 0,
+   "status": "verified",
+   "detail": "82/82 checks, 6 planted negative controls; 4 real repositories through the real MCP stdio door",
+   "evidenceLog": "validation/tools/bb_migrate/REAL-CORPUS.json"
+  }
+ ],
+ "regexInventory": {
+  "gateStatus": "PASS",
+  "ownUses": 22,
+  "byFile": {
+   "src/mcp/tools/bb_migrate/handler.ts": 2,
+   "src/intelligence/migration/migration-source.ts": 4,
+   "src/ast/cross-language-migration-assistant.ts": 16
+  },
+  "note": "src/ast/cross-language-migration-assistant.ts is not in the policy gate's scan roots (it names explicit src/ast files); its 16 uses are invisible debt owned by this lane"
+ },
+ "routeMatrix": {
+  "rows": 486,
+  "sources": 30,
+  "routedPairs": 126,
+  "note": "from migrationDictionaryRows()/hasMigrationRoute on the running module"
+ }
+}
