@@ -424,3 +424,7 @@ isolate-*.log
 
 # Stray command-output file from a misparsed shell flag.
 --out
+
+# Release battery: indexed corpora are build artifacts, never repository content.
+validation/release/**/data/
+validation/release/**/workspace/
