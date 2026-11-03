@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "tool": "bb_doc",
-  "currentCommit": "a9e4c1a62446de960214df3a4db16897e0b348ee",
+  "currentCommit": "f3744dbda (plus the release-grade commit that contains this file)",
   "status": "verified-with-declared-blocked",
   "generatedAt": "2026-11-02T00:13:19.215114+00:00",
   "verifierCommands": [
@@ -291,7 +291,7 @@
       "bytes": 3639963648,
       "mtime": "2026-11-01T23:42:08.253Z"
     },
-    "declaration": "cold first default call on T2 is 3.9 s (cold page cache, load 3.7); a fresh process with a warm page cache measured 930 ms. Warm default calls are 0.07-1.97 s. No default call is hidden: before the default budget cleared the reference rendering the cold first call was 6.8 s, and that measurement stays in logs/latency-t2*.log."
+    "declaration": "cold first default call on T2 is 3.9 s (cold page cache, load 3.7); a fresh process with a warm page cache measured 930 ms. Warm default calls are 0.07-1.97 s. No default call is hidden: before the default budget cleared the reference rendering the cold first call was 6.8 s, and that measurement stays in logs/latency-t2*.log. Cold open is declared end-to-end in docs/BB_DOC.md \u00a7Measured cost, docs/BB_DOC_REFERENCE.md and the generated page's Performance section; the descriptor deliberately carries no latency promise (page-claims gate enforces claims)."
   },
   "blockedLegs": [
     {
@@ -326,5 +326,107 @@
   "audit": {
     "file": "validation/tools/bb_doc/AUDIT.md",
     "phase": "A audit + recorded Phase B resolution"
+  },
+  "realCorpus": {
+    "file": "validation/tools/bb_doc/REAL-CORPUS.json",
+    "door": "REAL MCP stdio: `node bin/bb mcp --dir <corpus>` via @modelcontextprotocol/sdk Client, env inherited",
+    "corpora": 5,
+    "languages": [
+      "Ruby (rake)",
+      "Erlang (rebar3)",
+      "Clojure (clojure)",
+      "Go (go-tools/gopls)",
+      "Zig (zig/src)"
+    ],
+    "population": "109/303/347/706/174 files -> 1,593/7,012/12,764/16,069/34,006 symbols",
+    "modesAnswered": "35 / 35",
+    "citationsResolved": "932 / 932",
+    "refusalsNamed": "30 / 30 (unknown module, limit 101, maxTokens 0, includeTests on project, symbol missing target, bad mode)",
+    "freshnessPassed": "35 / 35 documents",
+    "latencyRangeMs": "60 - 2,272",
+    "runtimeNote": "MCP child is node (bin/bb node shebang). A bun-child probe answered 'No index found' on a WAL-backed corpus because bun:sqlite could not open the read-only handle; the identical node-door request returns the full document.",
+    "command": "BB_DATA_DIR=validation/tools/bb_doc/realcorpus/bbdata BB_NO_AUTO_REFRESH=1 bun validation/tools/bb_doc/work/real-corpus.ts",
+    "isolatedIndex": "validation/tools/bb_doc/realcorpus/bbdata (gitignored build state, 1.2 GB, regenerable)",
+    "measured": {
+      "corporaIndexed": 5,
+      "modesAnswered": "35/35",
+      "citationsResolved": "932/932",
+      "refusalsNamed": "30/30",
+      "freshnessPassed": "35/35",
+      "latencyRangeMs": "49-887",
+      "populations": {
+        "rake": "109 files / 1,593 symbols",
+        "rebar3": "303 files / 7,012 symbols",
+        "clojure": "347 files / 12,764 symbols",
+        "go-tools/gopls": "706 files / 16,069 symbols",
+        "zig/src": "174 files / 34,006 symbols"
+      }
+    }
+  },
+  "gatesFinal": {
+    "command": "BB_DATA_DIR=validation/tools/bb_doc/bbdata BB_NO_AUTO_REFRESH=1 bun run <gate>",
+    "green": [
+      {
+        "gate": "m13/verify-doc-facts",
+        "exit": 0
+      },
+      {
+        "gate": "m13/verify-doc-modes",
+        "exit": 0
+      },
+      {
+        "gate": "m13/verify-doc-e2e-corpus",
+        "exit": 0
+      },
+      {
+        "gate": "m13/verify-doc-docs",
+        "exit": 0
+      },
+      {
+        "gate": "m15/verify-doc-deep",
+        "exit": 0
+      },
+      {
+        "gate": "m20/verify-doc-modes",
+        "exit": 0
+      },
+      {
+        "gate": "m20/verify-doc-citations",
+        "exit": 0
+      },
+      {
+        "gate": "m20/verify-doc-examples-diagrams",
+        "exit": 0
+      },
+      {
+        "gate": "m20/verify-doc-truth",
+        "exit": 0
+      },
+      {
+        "gate": "script/verify-doc.ts",
+        "exit": 0
+      },
+      {
+        "gate": "script/verify-doc-design.ts",
+        "exit": 0
+      }
+    ],
+    "crossLaneGreen": [
+      "script/tools/verify-regex-policy.ts",
+      "script/verify-tool-page-claims.ts"
+    ],
+    "sharedBlocked": [
+      "verify-tool-docs",
+      "m35/verify-docs-staleness",
+      "m48/verify-d1-doc-truth",
+      "m31/verify-tool-docs-deep"
+    ],
+    "sharedBlockedReason": "stale Lead-owned full-generator artifacts docs/data/public-tools.json + website/src/data/tools.generated.ts; cleared by the Lead's `npm run docs:generate` at integration",
+    "otherLaneReds": [
+      "m16/verify-docs-truth",
+      "m31/verify-bb-docs-truth",
+      "m31/tool-mode-corpus --check"
+    ],
+    "otherLaneRedsReason": "other owners' in-flight tools; bb_doc is not named in the drift list"
   }
 }
