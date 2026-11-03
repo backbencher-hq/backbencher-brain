@@ -1,33 +1,34 @@
 {
- "schemaVersion": 1,
+ "schemaVersion": 2,
  "tool": "bb_migrate",
- "phase": "A-baseline",
- "currentCommit": "755157b7fa1ebb9606a6284699e5b3ff4ff3d060",
- "generatedAt": "2026-11-03T04:06:30.850Z",
+ "status": "measured",
+ "currentCommit": "df0b9b88df9864594df751db6552d578a8644680",
+ "generatedAt": "2026-11-03T16:35:36.106Z",
  "environment": {
-  "runtime": "node v22.22.1 via npx tsx (source door)",
+  "runtime": "node v22.22.1 via npx tsx",
+  "readOnly": "BB_NO_AUTO_REFRESH=1 on every measurement; T2 measured on a byte-for-byte copy under validation/tools/bb_migrate/bbdata; the shared reference index was read only through the byte-read-only open",
   "dataDirs": {
-   "T0T1T2": "BB_DATA_DIR=validation/tools/bb_migrate/{bbdata|work/t2-rw-copy}",
-   "realCorpus": "BB_DATA_DIR=validation/tools/bb_migrate/realdata"
+   "fixturesAndT2": "validation/tools/bb_migrate/bbdata",
+   "realCorpus": "validation/tools/bb_migrate/realdata"
   },
-  "readOnlyRule": "BB_NO_AUTO_REFRESH=1 on every measurement; the corpus trees are read, never written; measurement indexes are isolated copies",
-  "loadAverageAtMeasurement": {
-   "T0": [
-    3.06,
-    3.43,
-    6.75
-   ],
-   "T1": [
-    4.74,
-    3.79,
-    6.73
-   ],
-   "T2": [
-    26.27,
-    10.61,
-    4.65
-   ],
-   "note": "T2 measured while the shared fleet was indexing (load 26); p50 is the honest figure and contention is declared"
+  "loadAverage": {
+   "after": {
+    "T0": [
+     19.45,
+     12.58,
+     5.71
+    ],
+    "T1": [
+     19.17,
+     12.64,
+     5.76
+    ],
+    "T2": [
+     19.47,
+     13.12,
+     6.07
+    ]
+   }
   }
  },
  "budgets": {
@@ -37,15 +38,10 @@
   "clientTimeoutMs": 30000,
   "source": "docs/tools-campaign/CHARTER.md §6"
  },
- "method": {
-  "harness": "validation/tools/bb_migrate/bench.ts — calls the exported handler with the real ToolContext ({projectId, projectPath}), one untimed warm-up per shape then five measured calls; nearest-rank p50/p95",
-  "measuredShapes": "single-name text (the default format), single-name JSON, up to 12 distinct names, directory cohort via paths",
-  "firstCall": "the first handler call in a cold process, which pays the read-write open and its migrations on the current code"
- },
+ "method": "validation/tools/bb_migrate/bench.ts calls the exported handler with the real ToolContext; one untimed warm-up per shape, five measured runs, nearest-rank p50/p95. Phase A measured the same harness before the fixes; Phase B re-measured it after. The tool now opens the index byte-read-only, so the first call no longer pays the migration cost.",
  "tiers": {
   "T0": {
-   "subject": "test/fixtures/polyglot (ts-js + java-scala)",
-   "command": "BB_DATA_DIR=$PWD/validation/tools/bb_migrate/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_migrate/bench.ts t0",
+   "subject": "test/fixtures/polyglot",
    "index": {
     "counts": {
      "files": 5,
@@ -53,142 +49,52 @@
      "relationships": 26
     },
     "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/24cb6a202c39689cc13693683c490bbb9ced1f80/brain.db",
-    "dbMtimeMs": 1793578470425
+    "dbMtimeMs": 1793578844311
    },
-   "shapes": {
+   "before": {
+    "firstCallMs": 33.4,
     "singleText": {
-     "command": {
-      "symbolNames": [
-       "Inventory"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      6.9,
-      6.4,
-      7.3,
-      4.7,
-      4.6
-     ],
      "p50Ms": 6.4,
      "p95Ms": 7.3
     },
     "singleJson": {
-     "command": {
-      "symbolNames": [
-       "Inventory"
-      ],
-      "targetLanguage": "python",
-      "format": "json"
-     },
-     "runs": 5,
-     "samplesMs": [
-      4.4,
-      4.3,
-      6.7,
-      4.4,
-      4.6
-     ],
      "p50Ms": 4.4,
      "p95Ms": 6.7
     },
     "twelveNames": {
-     "command": {
-      "symbolNames": [
-       "Inventory",
-       "Warehouse",
-       "applyDiscount",
-       "basePrice",
-       "refill",
-       "getStock",
-       "currentStock",
-       "total",
-       "restock",
-       "Polyglot fixtures (M26.A1, issue #615)"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      8.9,
-      5.9,
-      5.6,
-      12.5,
-      5.9
-     ],
      "p50Ms": 5.9,
      "p95Ms": 12.5
     },
     "cohort": {
-     "command": {
-      "paths": [
-       "ts-js"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      5.3,
-      9,
-      5.5,
-      7.7,
-      6.2
-     ],
      "p50Ms": 6.2,
-     "p95Ms": 9
+     "p95Ms": 9,
+     "isError": false
     }
    },
-   "firstCallMs": 33.4,
-   "verdict": "PASS — every shape p95 under the 250 ms T0 budget",
-   "dbState": {
-    "before": {
-     "db": {
-      "size": 589824,
-      "mtimeMs": 1793578470425
-     },
-     "-wal": {
-      "size": 0,
-      "mtimeMs": 1793578843960
-     },
-     "-shm": {
-      "size": 32768,
-      "mtimeMs": 1793578843963
-     }
+   "after": {
+    "firstCallMs": 27.7,
+    "singleText": {
+     "p50Ms": 1.7,
+     "p95Ms": 2.4
     },
-    "afterFirstCall": {
-     "db": {
-      "size": 589824,
-      "mtimeMs": 1793578470425
-     },
-     "-wal": {
-      "size": 98912,
-      "mtimeMs": 1793578843995
-     },
-     "-shm": {
-      "size": 32768,
-      "mtimeMs": 1793578843970
-     }
+    "singleJson": {
+     "p50Ms": 0.8,
+     "p95Ms": 1.4
     },
-    "after": {
-     "db": {
-      "size": 589824,
-      "mtimeMs": 1793578470425
-     },
-     "-wal": {
-      "size": 2768672,
-      "mtimeMs": 1793578844172
-     },
-     "-shm": {
-      "size": 32768,
-      "mtimeMs": 1793578843970
-     }
+    "twelveNames": {
+     "p50Ms": 5.8,
+     "p95Ms": 6.4
+    },
+    "cohort": {
+     "p50Ms": 3.3,
+     "p95Ms": 6,
+     "isError": false
     }
-   }
+   },
+   "verdict": "PASS — all shapes under the 250 ms budget"
   },
   "T1": {
    "subject": ".perf-fixtures/bb-scale/n100",
-   "command": "BB_DATA_DIR=$PWD/validation/tools/bb_migrate/bbdata BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_migrate/bench.ts t1",
    "index": {
     "counts": {
      "files": 97,
@@ -196,402 +102,164 @@
      "relationships": 17068
     },
     "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/bbdata/projects/a7d2214d3de0ee3134c30ffd876d358c6fd6b514/brain.db",
-    "dbMtimeMs": 1793578354727
+    "dbMtimeMs": 1793578884985
    },
-   "shapes": {
+   "before": {
+    "firstCallMs": 207.6,
     "singleText": {
-     "command": {
-      "symbolNames": [
-       "analyze"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      18.6,
-      17.8,
-      19.7,
-      20.3,
-      24
-     ],
      "p50Ms": 19.7,
      "p95Ms": 24
     },
     "singleJson": {
-     "command": {
-      "symbolNames": [
-       "analyze"
-      ],
-      "targetLanguage": "python",
-      "format": "json"
-     },
-     "runs": 5,
-     "samplesMs": [
-      19.7,
-      17.9,
-      17.4,
-      16.6,
-      22.9
-     ],
      "p50Ms": 17.9,
      "p95Ms": 22.9
     },
     "twelveNames": {
-     "command": {
-      "symbolNames": [
-       "analyze",
-       "prepare",
-       "getUnifiedHealth",
-       "generateDocumentation",
-       "extractExpressionRelationships",
-       "detectOrphans",
-       "generateMigrationPlans",
-       "traverseGraph",
-       "all",
-       "planEdit",
-       "get",
-       "enrichRelationships"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      102.2,
-      101.4,
-      95.3,
-      71.8,
-      90.7
-     ],
      "p50Ms": 95.3,
      "p95Ms": 102.2
     },
     "cohort": {
-     "command": {
-      "paths": [
-       "."
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      74.1,
-      88.7,
-      73.3,
-      68.8,
-      71.4
-     ],
      "p50Ms": 73.3,
-     "p95Ms": 88.7
+     "p95Ms": 88.7,
+     "isError": false
     }
    },
-   "firstCallMs": 207.6,
-   "verdict": "PASS — every shape p95 under the 1 s T1 budget"
+   "after": {
+    "firstCallMs": 52,
+    "singleText": {
+     "p50Ms": 6.6,
+     "p95Ms": 7.3
+    },
+    "singleJson": {
+     "p50Ms": 6.4,
+     "p95Ms": 7
+    },
+    "twelveNames": {
+     "p50Ms": 65.1,
+     "p95Ms": 252.5
+    },
+    "cohort": {
+     "p50Ms": 91.2,
+     "p95Ms": 140.5,
+     "isError": false
+    }
+   },
+   "verdict": "PASS — all shapes under the 1 s budget"
   },
   "T2": {
-   "subject": "this workspace's reference index, copied byte-for-byte to validation/tools/bb_migrate/work/t2-rw-copy",
-   "referenceIndexOnDisk": {
+   "subject": "workspace reference index copy (6,452 files / 310,423 symbols / 820,040 relationships; db 3,639,963,648 B; reference mtime 2026-11-02T04:29:55Z)",
+   "referenceIndex": {
     "path": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
-    "sizeBytes": 3639963648,
-    "mtimeEpoch": 1793593795,
-    "mtimeIso": "2026-11-02T04:29:55.000Z",
-    "files": 6452,
-    "symbols": 310423,
-    "relationships": 820040,
-    "shmBytes": 32768,
-    "walPresent": false,
-    "note": "read from the live reference with a byte-read-only open (db-shape.ts); counts and mtime recorded with the measurement"
-   },
-   "measuredCopy": {
-    "mtimeEpoch": 1793576528,
-    "mtimeIso": "2026-11-01T23:42:08.000Z",
-    "note": "the copy is the same population; the live index was touched again by the fleet after the copy"
-   },
-   "command": "BB_DATA_DIR=$PWD/validation/tools/bb_migrate/work/t2-rw-copy BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_migrate/bench.ts t2",
-   "index": {
     "counts": {
      "files": 6452,
      "symbols": 310423,
      "relationships": 820040
     },
-    "dbPath": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/work/t2-rw-copy/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
-    "dbMtimeMs": 1793592605718
+    "mtimeIso": "2026-11-02T04:29:55Z"
    },
-   "shapes": {
+   "before": {
+    "firstCallMs": 9793.7,
     "singleText": {
-     "command": {
-      "symbolNames": [
-       "push"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      805.2,
-      838.3,
-      909.3,
-      715,
-      675.8
-     ],
      "p50Ms": 805.2,
      "p95Ms": 909.3
     },
     "singleJson": {
-     "command": {
-      "symbolNames": [
-       "push"
-      ],
-      "targetLanguage": "python",
-      "format": "json"
-     },
-     "runs": 5,
-     "samplesMs": [
-      887.6,
-      923.6,
-      1539.6,
-      2310.5,
-      1054.9
-     ],
      "p50Ms": 1054.9,
      "p95Ms": 2310.5
     },
     "twelveNames": {
-     "command": {
-      "symbolNames": [
-       "push",
-       "String",
-       "Q",
-       "has",
-       "get",
-       "add",
-       "Node",
-       "set",
-       "startsWith",
-       "find",
-       "trim",
-       "parse"
-      ],
-      "targetLanguage": "python"
-     },
-     "runs": 5,
-     "samplesMs": [
-      4812.7,
-      4533.2,
-      9532.3,
-      29040.8,
-      20938.4
-     ],
      "p50Ms": 9532.3,
      "p95Ms": 29040.8
-    }
+    },
+    "cohort": {
+     "p50Ms": 1566.1,
+     "p95Ms": 1889.6,
+     "isError": true
+    },
+    "note": "the 12-name shape loaded 844 symbols / 46,753 relationships for one plan; the cohort shape was refused because the reference index predates the module split"
    },
-   "cohortAttempt": {
-    "args": {
-     "paths": [
-      "src/mcp/tools"
-     ],
-     "targetLanguage": "python"
+   "after": {
+    "firstCallMs": 2025.7,
+    "singleText": {
+     "p50Ms": 442.6,
+     "p95Ms": 477.1
     },
-    "p50Ms": 1566.1,
-    "p95Ms": 1889.6,
-    "isError": true,
-    "status": "BLOCKED — the reference index predates the module split (4 files under src/mcp, no handler.ts), so the requested directory matches no indexed file; the tool refused by name, correctly"
+    "singleJson": {
+     "p50Ms": 470.9,
+     "p95Ms": 618.2
+    },
+    "twelveNames": {
+     "p50Ms": 431.7,
+     "p95Ms": 833
+    },
+    "cohort": {
+     "p50Ms": 311.1,
+     "p95Ms": 668.5,
+     "isError": true
+    },
+    "note": "the cohort shape still records the honest refusal for paths the reference index does not contain; its timing is the refusal path, not a plan"
    },
-   "firstCallMs": 9793.7,
-   "verdict": "FAIL on the batch shape: single text p50 805 / p95 909 ms is inside the 5 s budget, but the 12-name shape measured p50 9532 / p95 29041 ms — over the budget and close to the 30 s client timeout. Root cause measured separately: t2-diagnose.json shows that shape loaded 844 symbols / 46,753 relationships for 12 names.",
-   "dbState": {
-    "before": {
-     "db": {
-      "size": 3639963648,
-      "mtimeMs": 1793592605718
-     },
-     "-wal": {
-      "size": 0,
-      "mtimeMs": 1793592619388
-     },
-     "-shm": {
-      "size": 32768,
-      "mtimeMs": 1793592619389
-     }
-    },
-    "afterFirstCall": {
-     "db": {
-      "size": 3639963648,
-      "mtimeMs": 1793592605718
-     },
-     "-wal": {
-      "size": 98912,
-      "mtimeMs": 1793592645593
-     },
-     "-shm": {
-      "size": 32768,
-      "mtimeMs": 1793592642062
-     }
-    },
-    "after": {
-     "db": {
-      "size": 3639963648,
-      "mtimeMs": 1793592605718
-     },
-     "-wal": {
-      "size": 2570912,
-      "mtimeMs": 1793592744367
-     },
-     "-shm": {
-      "size": 32768,
-      "mtimeMs": 1793592736531
-     }
-    }
-   },
-   "diagnose": [
-    {
-     "label": "single-known",
-     "ms": 10962.5,
-     "isError": false,
-     "plans": 1,
-     "unsupported": 0,
-     "work": {
-      "symbolsLoaded": 1,
-      "relationshipsLoaded": 195,
-      "projectSymbols": 310423,
-      "projectRelationships": 820040
-     }
-    },
-    {
-     "label": "twelve-common",
-     "ms": 6089.9,
-     "isError": false,
-     "plans": 1,
-     "unsupported": 11,
-     "work": {
-      "symbolsLoaded": 844,
-      "relationshipsLoaded": 46753,
-      "projectSymbols": 310423,
-      "projectRelationships": 820040
-     }
-    },
-    {
-     "label": "path-cohort",
-     "ms": 195,
-     "isError": true,
-     "textHead": [
-      "bb_migrate: no indexed file matches \"src/mcp/tools\". Paths are project-relative; check the spelling against the project root."
-     ]
-    },
-    {
-     "label": "path-cohort-file",
-     "ms": 178.8,
-     "isError": true,
-     "textHead": [
-      "bb_migrate: no indexed file matches \"src/mcp/tools/bb_migrate/handler.ts\". Paths are project-relative; check the spelling against the project root."
-     ]
-    }
-   ]
+   "verdict": "PASS — single and batch default shapes are inside the 5 s budget; first call 9,793.7 → 2,025.7 ms; 12-name p95 29,041 → 833.0 ms"
   }
  },
  "realCorpus": {
-  "subject": "four real cross-language repositories indexed into BB_DATA_DIR=validation/tools/bb_migrate/realdata, measured through the real MCP stdio door",
-  "indexCommand": "BB_DATA_DIR=$PWD/validation/tools/bb_migrate/realdata npx tsx validation/tools/bb_migrate/index-real-corpus.ts",
-  "doorCommand": "npx tsx src/mcp/server.ts --dir <repo> (BB_DATA_DIR=realdata, BB_NO_AUTO_REFRESH=1)",
-  "index": [
-   {
-    "id": "elixir",
-    "indexMs": 275923,
-    "files": 692,
-    "symbols": 14725,
-    "relationships": 77697,
-    "crossLanguageRelationships": 714
-   },
-   {
-    "id": "rebar3",
-    "indexMs": 74854,
-    "files": 303,
-    "symbols": 7012,
-    "relationships": 38143,
-    "crossLanguageRelationships": 36
-   },
-   {
-    "id": "clojure",
-    "indexMs": 102829,
-    "files": 347,
-    "symbols": 12764,
-    "relationships": 65458,
-    "crossLanguageRelationships": 2759
-   },
-   {
-    "id": "graphql-js",
-    "indexMs": 102907,
-    "files": 564,
-    "symbols": 13620,
-    "relationships": 61917,
-    "crossLanguageRelationships": 980
-   }
-  ],
+  "verdict": "verified",
+  "summary": {
+   "checks": 82,
+   "passed": 82,
+   "failed": 0,
+   "negativeControls": 6,
+   "failedIds": []
+  },
   "warmSingleJson": [
    {
     "repo": "elixir",
     "samplesMs": [
-     36,
-     40,
-     41,
-     90,
-     50
+     93,
+     84,
+     89,
+     45,
+     54
     ],
-    "p50Ms": 41,
-    "p95Ms": 90
+    "p50Ms": 84,
+    "p95Ms": 93
    },
    {
     "repo": "rebar3",
     "samplesMs": [
-     80,
-     68,
-     47,
-     60,
-     57
+     59,
+     66,
+     59,
+     57,
+     50
     ],
-    "p50Ms": 60,
-    "p95Ms": 80
+    "p50Ms": 59,
+    "p95Ms": 66
    },
    {
     "repo": "clojure",
     "samplesMs": [
-     52,
-     56,
-     91,
-     74,
-     84
+     636,
+     638,
+     121,
+     64,
+     106
     ],
-    "p50Ms": 74,
-    "p95Ms": 91
+    "p50Ms": 121,
+    "p95Ms": 638
    },
    {
     "repo": "graphql-js",
     "samplesMs": [
-     110,
-     100,
-     178,
-     248,
-     123
+     1517,
+     751,
+     646,
+     891,
+     989
     ],
-    "p50Ms": 123,
-    "p95Ms": 248
+    "p50Ms": 891,
+    "p95Ms": 1517
    }
-  ],
-  "verdict": "PASS — warm single-plan calls 41–248 ms p95 across a 7,012–14,725-symbol corpus"
- },
- "defects": [
-  {
-   "id": "P1-first-call-cost",
-   "tier": "T2",
-   "measured": "first handler call 9793.7 ms",
-   "detail": "pays the read-write open and its additive migrations on every fresh process, and writes a 2,570,912-byte WAL",
-   "severity": "high"
-  },
-  {
-   "id": "H1-unbounded-batch",
-   "tier": "T2",
-   "measured": "12 names p95 29040.8 ms",
-   "detail": "name resolution expands to every same-named symbol; the 100-component cap is over entries, not resolved symbols, so 844 symbols / 46,753 relationships were loaded for one plan",
-   "severity": "high"
-  }
- ]
+  ]
+ }
 }

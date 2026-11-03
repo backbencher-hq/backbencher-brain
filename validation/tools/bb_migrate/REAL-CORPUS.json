@@ -1,7 +1,7 @@
 {
  "tool": "bb_migrate",
- "measuredAt": "2026-11-03T00:53:48.171Z",
- "gitHead": "6db736c86a43f5dc68309a413bee8d70ff05f384",
+ "measuredAt": "2026-11-03T16:13:13.772Z",
+ "gitHead": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
  "dataDir": "$HOME/mcp/backbencher-brain/validation/tools/bb_migrate/realdata",
  "corpusRoot": "$HOME/fixtures/repositories",
  "door": {
@@ -69,7 +69,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 230,
+     "ms": 866,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -197,7 +197,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 88,
+     "ms": 638,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -286,7 +286,7 @@
          "symbols": 5,
          "processed": 5,
          "planned": 0,
-         "refused": 0
+         "refused": 5
         }
        ],
        "refusedByReason": [
@@ -296,7 +296,7 @@
          "example": "EnumTest"
         }
        ],
-       "statement": "NO PLANS: all 5 resolved component(s) were refused — 5 same-language (e.g. \"EnumTest\"). The cohort's language mix is 5 elixir; the 5 component(s) the cap let through were 5 elixir, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 5 resolved component(s) were refused — 5 same-language (e.g. \"EnumTest\"). The cohort's language mix is 5 elixir; the 5 entries the cap let through identified 5 component(s) (5 elixir)."
       },
       "freshness": {
        "fresh": 0,
@@ -326,17 +326,12 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 291,
+     "ms": 1438,
      "isError": false,
      "rpcError": null,
      "parsed": {
       "plans": [],
       "unsupported": [
-       {
-        "symbolName": "EEx.SyntaxError",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
        {
         "symbolName": "EEx.SyntaxError",
         "reason": "source and target are both elixir",
@@ -368,22 +363,7 @@
         "unsupportedReason": "same-language"
        },
        {
-        "symbolName": "message",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
         "symbolName": "EEx",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "line",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "column",
         "reason": "source and target are both elixir",
         "unsupportedReason": "same-language"
        },
@@ -454,21 +434,6 @@
        },
        {
         "symbolName": "EEx.Compiler",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "tokenize",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "tokenize",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "tokenize",
         "reason": "source and target are both elixir",
         "unsupportedReason": "same-language"
        },
@@ -588,11 +553,6 @@
         "unsupportedReason": "same-language"
        },
        {
-        "symbolName": "column",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
         "symbolName": "syntax_error!",
         "reason": "source and target are both elixir",
         "unsupportedReason": "same-language"
@@ -633,11 +593,6 @@
         "unsupportedReason": "same-language"
        },
        {
-        "symbolName": "handle_expr",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
         "symbolName": "handle_begin",
         "reason": "source and target are both elixir",
         "unsupportedReason": "same-language"
@@ -669,36 +624,6 @@
        },
        {
         "symbolName": "EEx.SmartEngine",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "init",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_body",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_begin",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_end",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_text",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_expr",
         "reason": "source and target are both elixir",
         "unsupportedReason": "same-language"
        },
@@ -778,42 +703,7 @@
         "unsupportedReason": "same-language"
        },
        {
-        "symbolName": "init",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_body",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_begin",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_end",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_text",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "handle_expr",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
         "symbolName": "strip_ansi",
-        "reason": "source and target are both elixir",
-        "unsupportedReason": "same-language"
-       },
-       {
-        "symbolName": "assert_eval",
         "reason": "source and target are both elixir",
         "unsupportedReason": "same-language"
        },
@@ -867,7 +757,7 @@
        "truncated": true,
        "requested": 13300,
        "returned": 100,
-       "deduplicated": 0,
+       "deduplicated": 22,
        "capped": 13200,
        "pathSymbols": 416,
        "selection": "first N resolved symbols by project-relative file path, then symbol name",
@@ -14093,7 +13983,7 @@
          "symbols": 10722,
          "processed": 100,
          "planned": 0,
-         "refused": 0
+         "refused": 78
         },
         {
          "language": "markdown",
@@ -14120,11 +14010,11 @@
        "refusedByReason": [
         {
          "reason": "same-language",
-         "count": 100,
+         "count": 78,
          "example": "EEx.SyntaxError"
         }
        ],
-       "statement": "NO PLANS: all 100 resolved component(s) were refused — 100 same-language (e.g. \"EEx.SyntaxError\"). The cohort's language mix is 10722 elixir, 1357 markdown, 6 bash, 1215 erlang; the 100 component(s) the cap let through were 100 elixir, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 78 resolved component(s) were refused — 78 same-language (e.g. \"EEx.SyntaxError\"). The cohort's language mix is 10722 elixir, 1357 markdown, 6 bash, 1215 erlang; the 100 entries the cap let through identified 100 component(s) (100 elixir). Scope paths to the code you mean."
       },
       "freshness": {
        "fresh": 0,
@@ -14154,7 +14044,7 @@
       "targetLanguage": "cobol",
       "format": "json"
      },
-     "ms": 49,
+     "ms": 106,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -14233,7 +14123,7 @@
          "example": "EnumTest"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"EnumTest\"). The cohort's language mix is 1 elixir; the 1 component(s) the cap let through were 1 elixir, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"EnumTest\"). The cohort's language mix is 1 elixir; the 1 entry the cap let through identified 1 component(s) (1 elixir)."
       },
       "freshness": {
        "fresh": 0,
@@ -14263,7 +14153,7 @@
       "targetLanguage": "erlang",
       "format": "json"
      },
-     "ms": 30,
+     "ms": 143,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -14342,7 +14232,7 @@
          "example": "format_error"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"format_error\"). The cohort's language mix is 1 erlang; the 1 component(s) the cap let through were 1 erlang, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"format_error\"). The cohort's language mix is 1 erlang; the 1 entry the cap let through identified 1 component(s) (1 erlang)."
       },
       "freshness": {
        "fresh": 0,
@@ -14372,7 +14262,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 44,
+     "ms": 125,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -14443,7 +14333,7 @@
          "example": "zzz_no_such_symbol_elixir"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_elixir\"). The cohort's language mix is ; the 0 component(s) the cap let through were none, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_elixir\"). The cohort's language mix is empty (no symbols resolved); the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -14472,7 +14362,7 @@
       ],
       "targetLanguage": "typescript"
      },
-     "ms": 30,
+     "ms": 41,
      "isError": true,
      "rpcError": null,
      "parsed": null,
@@ -14489,7 +14379,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 73,
+     "ms": 48,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -14561,8 +14451,8 @@
        "pathsUnmatched": [],
        "filesCovered": 0,
        "work": {
-        "symbolsLoaded": 2,
-        "relationshipsLoaded": 6,
+        "symbolsLoaded": 0,
+        "relationshipsLoaded": 0,
         "projectSymbols": 14725,
         "projectRelationships": 77697
        },
@@ -14570,9 +14460,9 @@
         {
          "language": "elixir",
          "symbols": 2,
-         "processed": 2,
+         "processed": 0,
          "planned": 0,
-         "refused": 0
+         "refused": 1
         }
        ],
        "refusedByReason": [
@@ -14582,7 +14472,7 @@
          "example": "=~"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"=~\"). The cohort's language mix is 2 elixir; the 2 component(s) the cap let through were 2 elixir, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"=~\"). The cohort's language mix is 2 elixir; the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -14612,7 +14502,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 34,
+     "ms": 56,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -14729,7 +14619,7 @@
       "targetLanguage": "clojure",
       "format": "json"
      },
-     "ms": 35,
+     "ms": 95,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -14848,18 +14738,18 @@
    "latency": {
     "singleJson": {
      "samplesMs": [
-      36,
-      40,
-      41,
-      90,
-      50
+      93,
+      84,
+      89,
+      45,
+      54
      ],
-     "p50Ms": 41,
-     "p95Ms": 90
+     "p50Ms": 84,
+     "p95Ms": 93
     }
    },
    "doorNonJsonStdout": [],
-   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Pla"
+   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. A r"
   },
   {
    "id": "rebar3",
@@ -14912,7 +14802,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 112,
+     "ms": 96,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -15046,7 +14936,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 171,
+     "ms": 192,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -15236,7 +15126,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 150,
+     "ms": 244,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -16052,27 +15942,7 @@
         "unsupportedReason": "unsupported-source"
        },
        {
-        "symbolName": "{{name}}",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
-        "symbolName": "Build",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
-        "symbolName": "code_block",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
         "symbolName": "Run",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
-        "symbolName": "code_block",
         "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
         "unsupportedReason": "unsupported-source"
        },
@@ -16087,22 +15957,7 @@
         "unsupportedReason": "unsupported-source"
        },
        {
-        "symbolName": "Build",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
-        "symbolName": "code_block",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
         "symbolName": "Use",
-        "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
-        "unsupportedReason": "unsupported-source"
-       },
-       {
-        "symbolName": "code_block",
         "reason": "source language \"markdown\" is a Markdown document, not migratable program logic",
         "unsupportedReason": "unsupported-source"
        },
@@ -16249,7 +16104,7 @@
        "truncated": true,
        "requested": 4784,
        "returned": 100,
-       "deduplicated": 0,
+       "deduplicated": 7,
        "capped": 4684,
        "pathSymbols": 205,
        "selection": "first N resolved symbols by project-relative file path, then symbol name",
@@ -20966,7 +20821,7 @@
          "symbols": 28,
          "processed": 28,
          "planned": 0,
-         "refused": 28
+         "refused": 21
         },
         {
          "language": "make",
@@ -20979,7 +20834,7 @@
        "refusedByReason": [
         {
          "reason": "unsupported-source",
-         "count": 54,
+         "count": 47,
          "example": "Apache License"
         }
        ],
@@ -21013,7 +20868,7 @@
       "targetLanguage": "cobol",
       "format": "json"
      },
-     "ms": 45,
+     "ms": 37,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21092,7 +20947,7 @@
          "example": "get_value"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"get_value\"). The cohort's language mix is 1 erlang; the 1 component(s) the cap let through were 1 erlang, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"get_value\"). The cohort's language mix is 1 erlang; the 1 entry the cap let through identified 1 component(s) (1 erlang)."
       },
       "freshness": {
        "fresh": 0,
@@ -21122,7 +20977,7 @@
       "targetLanguage": "erlang",
       "format": "json"
      },
-     "ms": 23,
+     "ms": 25,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21201,7 +21056,7 @@
          "example": "sort"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"sort\"). The cohort's language mix is 1 erlang; the 1 component(s) the cap let through were 1 erlang, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"sort\"). The cohort's language mix is 1 erlang; the 1 entry the cap let through identified 1 component(s) (1 erlang)."
       },
       "freshness": {
        "fresh": 0,
@@ -21231,7 +21086,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 24,
+     "ms": 13,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21302,7 +21157,7 @@
          "example": "zzz_no_such_symbol_rebar3"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_rebar3\"). The cohort's language mix is ; the 0 component(s) the cap let through were none, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_rebar3\"). The cohort's language mix is empty (no symbols resolved); the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -21331,7 +21186,7 @@
       ],
       "targetLanguage": "typescript"
      },
-     "ms": 17,
+     "ms": 10,
      "isError": true,
      "rpcError": null,
      "parsed": null,
@@ -21348,7 +21203,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 34,
+     "ms": 12,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21420,8 +21275,8 @@
        "pathsUnmatched": [],
        "filesCovered": 0,
        "work": {
-        "symbolsLoaded": 2,
-        "relationshipsLoaded": 8,
+        "symbolsLoaded": 0,
+        "relationshipsLoaded": 0,
         "projectSymbols": 7012,
         "projectRelationships": 38143
        },
@@ -21429,9 +21284,9 @@
         {
          "language": "erlang",
          "symbols": 2,
-         "processed": 2,
+         "processed": 0,
          "planned": 0,
-         "refused": 0
+         "refused": 1
         }
        ],
        "refusedByReason": [
@@ -21441,7 +21296,7 @@
          "example": "'$handle_undefined_function'"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"'$handle_undefined_function'\"). The cohort's language mix is 2 erlang; the 2 component(s) the cap let through were 2 erlang, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"'$handle_undefined_function'\"). The cohort's language mix is 2 erlang; the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -21471,7 +21326,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 27,
+     "ms": 11,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21588,7 +21443,7 @@
       "targetLanguage": "clojure",
       "format": "json"
      },
-     "ms": 31,
+     "ms": 17,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21713,18 +21568,18 @@
    "latency": {
     "singleJson": {
      "samplesMs": [
-      80,
-      68,
-      47,
-      60,
-      57
+      59,
+      66,
+      59,
+      57,
+      50
      ],
-     "p50Ms": 60,
-     "p95Ms": 80
+     "p50Ms": 59,
+     "p95Ms": 66
     }
    },
    "doorNonJsonStdout": [],
-   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Pla"
+   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. A r"
   },
   {
    "id": "clojure",
@@ -21777,7 +21632,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 218,
+     "ms": 519,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -21929,7 +21784,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 138,
+     "ms": 1807,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -22129,7 +21984,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 170,
+     "ms": 2463,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -25924,7 +25779,7 @@
       "targetLanguage": "cobol",
       "format": "json"
      },
-     "ms": 38,
+     "ms": 426,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26003,7 +25858,7 @@
          "example": "are"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"are\"). The cohort's language mix is 1 clojure; the 1 component(s) the cap let through were 1 clojure, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"are\"). The cohort's language mix is 1 clojure; the 1 entry the cap let through identified 1 component(s) (1 clojure)."
       },
       "freshness": {
        "fresh": 0,
@@ -26033,7 +25888,7 @@
       "targetLanguage": "clojure",
       "format": "json"
      },
-     "ms": 42,
+     "ms": 311,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26112,7 +25967,7 @@
          "example": "clojure.core"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"clojure.core\"). The cohort's language mix is 1 clojure; the 1 component(s) the cap let through were 1 clojure, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"clojure.core\"). The cohort's language mix is 1 clojure; the 1 entry the cap let through identified 1 component(s) (1 clojure)."
       },
       "freshness": {
        "fresh": 0,
@@ -26142,7 +25997,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 23,
+     "ms": 21,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26213,7 +26068,7 @@
          "example": "zzz_no_such_symbol_clojure"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_clojure\"). The cohort's language mix is ; the 0 component(s) the cap let through were none, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_clojure\"). The cohort's language mix is empty (no symbols resolved); the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -26242,7 +26097,7 @@
       ],
       "targetLanguage": "typescript"
      },
-     "ms": 19,
+     "ms": 15,
      "isError": true,
      "rpcError": null,
      "parsed": null,
@@ -26259,7 +26114,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 50,
+     "ms": 37,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26355,8 +26210,8 @@
        "pathsUnmatched": [],
        "filesCovered": 0,
        "work": {
-        "symbolsLoaded": 6,
-        "relationshipsLoaded": 182,
+        "symbolsLoaded": 0,
+        "relationshipsLoaded": 0,
         "projectSymbols": 12764,
         "projectRelationships": 65458
        },
@@ -26364,14 +26219,14 @@
         {
          "language": "java",
          "symbols": 4,
-         "processed": 4,
+         "processed": 0,
          "planned": 0,
-         "refused": 0
+         "refused": 1
         },
         {
          "language": "clojure",
          "symbols": 2,
-         "processed": 2,
+         "processed": 0,
          "planned": 0,
          "refused": 0
         }
@@ -26383,7 +26238,7 @@
          "example": "accept"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"accept\"). The cohort's language mix is 4 java, 2 clojure; the 6 component(s) the cap let through were 4 java, 2 clojure, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"accept\"). The cohort's language mix is 4 java, 2 clojure; the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -26413,7 +26268,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 26,
+     "ms": 23,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26537,7 +26392,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 83,
+     "ms": 232,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26680,18 +26535,18 @@
    "latency": {
     "singleJson": {
      "samplesMs": [
-      52,
-      56,
-      91,
-      74,
-      84
+      636,
+      638,
+      121,
+      64,
+      106
      ],
-     "p50Ms": 74,
-     "p95Ms": 91
+     "p50Ms": 121,
+     "p95Ms": 638
     }
    },
    "doorNonJsonStdout": [],
-   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Pla"
+   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. A r"
   },
   {
    "id": "graphql-js",
@@ -26752,7 +26607,7 @@
       "targetLanguage": "python",
       "format": "json"
      },
-     "ms": 293,
+     "ms": 937,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -26886,7 +26741,7 @@
       "targetLanguage": "python",
       "format": "json"
      },
-     "ms": 315,
+     "ms": 914,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -27096,7 +26951,7 @@
       "targetLanguage": "python",
       "format": "json"
      },
-     "ms": 906,
+     "ms": 1870,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -36622,7 +36477,7 @@
       "targetLanguage": "cobol",
       "format": "json"
      },
-     "ms": 153,
+     "ms": 305,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -36701,7 +36556,7 @@
          "example": "toDeepEqual"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"toDeepEqual\"). The cohort's language mix is 1 typescript; the 1 component(s) the cap let through were 1 typescript, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 unsupported-target (e.g. \"toDeepEqual\"). The cohort's language mix is 1 typescript; the 1 entry the cap let through identified 1 component(s) (1 typescript)."
       },
       "freshness": {
        "fresh": 0,
@@ -36731,7 +36586,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 45,
+     "ms": 270,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -36810,7 +36665,7 @@
          "example": "join"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"join\"). The cohort's language mix is 1 typescript; the 1 component(s) the cap let through were 1 typescript, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 same-language (e.g. \"join\"). The cohort's language mix is 1 typescript; the 1 entry the cap let through identified 1 component(s) (1 typescript)."
       },
       "freshness": {
        "fresh": 0,
@@ -36840,7 +36695,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 33,
+     "ms": 246,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -36911,7 +36766,7 @@
          "example": "zzz_no_such_symbol_graphql-js"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_graphql-js\"). The cohort's language mix is ; the 0 component(s) the cap let through were none, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 missing-symbol (e.g. \"zzz_no_such_symbol_graphql-js\"). The cohort's language mix is empty (no symbols resolved); the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -36940,7 +36795,7 @@
       ],
       "targetLanguage": "typescript"
      },
-     "ms": 24,
+     "ms": 188,
      "isError": true,
      "rpcError": null,
      "parsed": null,
@@ -36957,7 +36812,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 64,
+     "ms": 144,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -37029,8 +36884,8 @@
        "pathsUnmatched": [],
        "filesCovered": 0,
        "work": {
-        "symbolsLoaded": 2,
-        "relationshipsLoaded": 58,
+        "symbolsLoaded": 0,
+        "relationshipsLoaded": 0,
         "projectSymbols": 13620,
         "projectRelationships": 61917
        },
@@ -37038,9 +36893,9 @@
         {
          "language": "javascript",
          "symbols": 2,
-         "processed": 2,
+         "processed": 0,
          "planned": 0,
-         "refused": 0
+         "refused": 1
         }
        ],
        "refusedByReason": [
@@ -37050,7 +36905,7 @@
          "example": "'program:exit'"
         }
        ],
-       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"'program:exit'\"). The cohort's language mix is 2 javascript; the 2 component(s) the cap let through were 2 javascript, so scope paths to the code you mean."
+       "statement": "NO PLANS: all 1 resolved component(s) were refused — 1 ambiguous-symbol (e.g. \"'program:exit'\"). The cohort's language mix is 2 javascript; the 1 entry the cap let through identified 0 component(s) (none)."
       },
       "freshness": {
        "fresh": 0,
@@ -37080,7 +36935,7 @@
       "targetLanguage": "typescript",
       "format": "json"
      },
-     "ms": 36,
+     "ms": 274,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -37210,7 +37065,7 @@
       "targetLanguage": "elixir",
       "format": "json"
      },
-     "ms": 66,
+     "ms": 974,
      "isError": false,
      "rpcError": null,
      "parsed": {
@@ -37335,18 +37190,18 @@
    "latency": {
     "singleJson": {
      "samplesMs": [
-      110,
-      100,
-      178,
-      248,
-      123
+      1517,
+      751,
+      646,
+      891,
+      989
      ],
-     "p50Ms": 123,
-     "p95Ms": 248
+     "p50Ms": 891,
+     "p95Ms": 1517
     }
    },
    "doorNonJsonStdout": [],
-   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. Pla"
+   "toolDescription": "Read-only single or batch migration planning with dependency order, explicit effort methodology, library mappings, risks, truncation, and unsupported cases. A r"
   }
  ],
  "checks": [
@@ -37361,7 +37216,7 @@
    "label": "elixir: single plan by symbol id (format_error, erlang -> elixir)",
    "pass": true,
    "detail": {
-    "ms": 230,
+    "ms": 866,
     "plan": "format_error"
    }
   },
@@ -37514,7 +37369,7 @@
    "pass": true,
    "detail": {
     "plan": "=~",
-    "ms": 34
+    "ms": 56
    }
   },
   {
@@ -37540,7 +37395,7 @@
    "label": "rebar3: single plan by symbol id (sort, erlang -> elixir)",
    "pass": true,
    "detail": {
-    "ms": 112,
+    "ms": 96,
     "plan": "sort"
    }
   },
@@ -37699,7 +37554,7 @@
    "pass": true,
    "detail": {
     "plan": "'$handle_undefined_function'",
-    "ms": 27
+    "ms": 11
    }
   },
   {
@@ -37725,7 +37580,7 @@
    "label": "clojure: single plan by symbol id (clojure.core, clojure -> typescript)",
    "pass": true,
    "detail": {
-    "ms": 218,
+    "ms": 519,
     "plan": "clojure.core"
    }
   },
@@ -37884,7 +37739,7 @@
    "pass": true,
    "detail": {
     "plan": "accept",
-    "ms": 26
+    "ms": 23
    }
   },
   {
@@ -37910,7 +37765,7 @@
    "label": "graphql-js: single plan by symbol id (join, typescript -> python)",
    "pass": true,
    "detail": {
-    "ms": 293,
+    "ms": 937,
     "plan": "join"
    }
   },
@@ -38069,7 +37924,7 @@
    "pass": true,
    "detail": {
     "plan": "'Program:exit'",
-    "ms": 36
+    "ms": 274
    }
   },
   {
