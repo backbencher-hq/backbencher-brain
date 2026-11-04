@@ -63,8 +63,8 @@ analyzers.
 | instantiates | yes | type construction | measured |
 | extends | no | RULED: Zig has no inheritance | - (ruled absent) |
 | implements | no | RULED: Zig has no interface implementation | - (ruled absent) |
-| mixes_in | no | RULED: Zig has no mixin composition | - (ruled absent) |
-| part_of | yes | struct/enum/union containment | measured |
+| mixes_in | yes | `usingnamespace X;` merges X's DECLARATION SET into the enclosing container (a member-set composition: the host composes, X's struct is the merged unit), so the edge runs container → merged unit; at file scope the source is the file-scope marker `(global)`, while an in-function or anonymous container owns no nameable composing unit and publishes no edge. Emitted at src/ast/real-zig-analyzer.ts:917 with `metadata.relationshipType: zig_usingnamespace`, `isMixin`, `mixinForm`. | 1.0 (structural; `fileLevel` on the file-scope form) |
+| part_of | no | RULED: Zig has no part-file mechanism. A `part` shares its library's single scope; Zig's `@import`/`@cImport`/`usingnamespace` create a MODULE binding instead, and they are already published as `imports`/`mixes_in`. The "struct/enum/union containment" this cell used to point at is `contains`, a different relation. | — (ruled absent; 0 `RelationshipType.PartOf` sites in src/ast/real-zig-analyzer.ts) |
 | renders | no | RULED: Zig has no rendering | - (ruled absent) |
 | decorates | no | RULED: Zig has no decorators | - (ruled absent) |
 
