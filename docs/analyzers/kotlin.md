@@ -27,7 +27,7 @@
 
 ## Relationship ontology
 
-The ten engine types, each with a verdict and a number; the detailed verdict table follows.
+The ten engine types, plus the one extended vocabulary value this analyzer emits (`renders`), each with a verdict and a number; the detailed verdict table follows.
 
 Verdicts are from `script/m14/kotlin-ontology-census.ts` over a **stratified
 deterministic draw** of `fixtures/repositories/kotlin@9b80c8ff99f3a63fcf578010bb2712697f4886aa`
@@ -57,6 +57,9 @@ stay reproducible; `--sample-strata` is what new claims use.
 | implements | ✅ EMITTED | 550 | 316 | 35.1 | 99.8 | 34.2 | 0 | 1.00×550 |
 | overrides | ✅ EMITTED | 1,282 | 374 | 65.6 | 99.9 | 18.4 | 1,048 | 0.50×1,048, 0.90×234 |
 | instantiates | ✅ EMITTED | 4,281 | 904 | 33.4 | 89.6 | 35.9 | 0 | 0.70×4,281 |
+| renders | ✅ EMITTED (corpus-unexercised) | 0 | 0 | — | 100 (by construction) | 100 (by construction) | 0 | 0.90 — the fixed confidence of a structural render edge |
+
+**`renders` is the one extended vocabulary value this analyzer emits, and it is corpus-unexercised** (the csharp shape: counted once, in the implemented set, with the population overlap printed). Inside a `@Composable` function body (an annotated `function_declaration`), each function call whose name is one of the file's OWN `@Composable` declarations publishes a `renders` edge: **source** = the rendering composable, **target** = the rendered composable's name, and **line = the CALL site's row** (the component is named at its call site), `metadata: { relationshipType: "compose_render", isComposableMarker: true, isComponentCall: true, evidenceClass: "structural" }`, confidence **0.9** (`src/ast/real-kotlin-analyzer.ts:4550`). The impostor stops: a plain helper called inside a composable body is not a rendered component, a composable called from a PLAIN function is not a rendering symbol, and a composable calling itself is recursion, not a render (no self edge). The whole admitted population (2,346 files across 8 repos) is server-side/library Kotlin and carries **0 Compose sites**, so the population edges are **0** and the proof is behavioural: fixture `validation/m14/fixtures/kotlin/composable-renders.kt` (Screen→Header and Screen→Badge emitted; NotRendering→Badge, Screen→formatLabel and Recursive→Recursive forbidden).
 
 The `Emitted?` column header is not cosmetic: `script/m14/verify-doc-truth-emissions.ts`
 grades this table against the analyzer's own `RelationshipType.*` references and
@@ -66,7 +69,7 @@ used `Verdict` as that header and the gate reported `NO_CLAIM_TABLE [kotlin]` �
 i.e. it had stopped being able to check this doc at all, which reads as coverage
 and is not.
 
-No type is RULED and none is a GAP: kotlin emits all ten. `imports` and `exports`
+No type is RULED and none is a GAP: kotlin emits all ten engine types, plus the extended `renders` (corpus-unexercised, ruled implemented on its behavioural fixture). `imports` and `exports`
 were the two missing at handover and are now emitted; the reasoning and the
 measurements are under "Relationship ontology" below and in commits `5c8eb030b`
 and `cbd08a09e`.
