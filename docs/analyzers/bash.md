@@ -32,14 +32,15 @@ at all.
 | parameters | yes | positional `$1..$9` and `$@`/`$*` populate `parameters` |
 | returnType / type | no | Bash is untyped; variables hold strings |
 | documentation/comments | no | comments are not attached as documentation |
-| complexity metrics | no | no separate complexity metric published |
+| complexity metrics | yes | per-scope cyclomatic: `1 + decision points`, set on `module`/`function` symbols only (a `local` is not itself complex); see `## Complexity envelope and measured performance` |
 | syntax errors | yes | syntax errors are engine-owned; damaged regions are not blanket-refused |
 | decorators/attributes | no | Bash has no decorator syntax |
 
 ## Differential ground truth
 
-- Ground truth: `validation/m12/ground-truth/bash.json` — manual audit of the lane's fixtures.
-- Result `validation/m12/results/bash-differential.json`: `passed: true`, expected 55, truePositive 55, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Ground truth: `validation/m12/ground-truth/bash.json` — **derived**, not hand-written: `script/m12/bash-truth-derive.ts` reads it off the tree with the F5 oracle (`deriveBashEdges`), and every fact's `evidence.authority` is `f5_tree_oracle` (the file's own `truthSource` says so). The pre-wave file it supersedes was a manual audit of the lane's fixtures, and twelve of its 55 facts asserted the phantom `global` owner endpoint.
+- Canonical F5 draw (`npx tsx script/m14/differential.ts --lang bash`, corpus `otp`, 60 files, hash `93dbe4539798b0ca`): tree-truth **1,553**, covered **1,553 (100%)**, MISSING **0**; analyzer-edges **1,534**, unexplained **5**, all five `contains` on implicit-binding owners (`for`/`read`). The five are the **derivation-debt class `BASH-DD1`** — the truth oracle derives no containment for a `for`/`read`/`mapfile`/`printf -v` target, while the analyzer publishes it; measured and adjudicated in `validation/m14/measurements/bash-floor-2026-11-03.json` (20 deduped class rows on the draw, 8 masked by the harness's substring fallback, 5 unmasked). MISSING=0 means there is no analyzer gap on this draw.
+- The M12 result (`validation/m12/results/bash-differential.json`, `precision 1`, `recall 1`) is the **superseded manual-audit truth's** score and is kept as history — the page's own round-3/round-6 discussions record why a `precision 1.000` over a truth written by the same hand measured nothing.
 
 ## Corpus validation
 
@@ -58,7 +59,7 @@ at all.
 | Uses | `$VAR`, `${VAR}`, `${VAR:-x}`, `${arr[i]}` emit `uses` (subscript base name only). Targets are trimmed, and `metadata.isAssignedInFile` is set when the file assigns the name **under any owner** (`BD11`) — **64,514 of 81,534 reads corpus-wide (79.1%)**, the rest either declared in another file, supplied by the environment, or a name only a function declares. **The predicate is evaluated in a post-walk pass, not during the walk**: evaluated in the walk it could only see the declarations already passed, so the answer depended on where the read sat — 37 (file, target) pairs in 25 of 400 files carried both answers, and the corpus-wide self-contradiction count is now **0**. Round 12; see [Round 12](#round-12-the-assignment-that-binds-a-name-and-the-flag-whose-answer-was-a-line-number). |
 | Calls | Non-builtin commands emit `calls` with the line the command **name** is on. A computed command is a `uses`, never a fabricated `calls` (`BD4`). **Case-arm commands are calls** (`BD8`) — the pre-existing doc claimed they were noise. A command name must be a `word`, not a bare number, not an escape, and **not a shell reserved word** (`BD5`, `M60`). A trap **signal is not a caller** (`BD3`); the handler body is a real call attributed to the installing function. |
 | `contains` | Every declaration is contained by its owning scope at the declaration's line. |
-| `imports` / `references` | `source` / `.` emit both, and the path is kept **as written** (`BD9`). An earlier version "improved" it by resolving against the sourcing file's directory, which was wrong: bash resolves a relative `source` against `$PWD` at run time. Dynamic paths are labelled, not presented as resolved. |
+| `part_of` / `references` / import-site | `source` / `.` in THIS shell's scope emits `part_of` (`BD16`): source is the file's module symbol, target is the part file's module symbol (basename WITH extension, `BD2`), `metadata.partRole` is mandatory, and `partPath` keeps the path **as written** (`BD9`) — bash resolves a relative `source` against `$PWD` at run time, so "improving" it against the sourcing file's directory was wrong. The same site emits the `references` mention row and an `ImportInfo` import-site payload; the relationship `imports` label reads **0** after the relabel. A child-process inclusion — `( source x )`, `$( source x )`, `<( source x )` — is refused: its definitions bind in the forked shell, not this file's scope. |
 | `exports` | `export VAR`, `export VAR=value`, `declare -x` and `export -f fn` each emit an `exports` edge from the owning scope at the export line (`BD7`). This type was absent for the whole pre-`#277` history and its absence was a **defect, not a language limitation** — seven peer lanes already emitted it. |
 | `overrides` | A re-declared function emits `overrides` from the later declaration to the earlier one, with `metadata.overridesLine` naming the prior line (`BD8b`). 57 redefinitions across 38 of 2,747 admitted files. |
 | Patterns | `set -e`/`set -o errexit`, `curl \| bash`, `rm -rf /`, `chmod 777`, `eval`, `sudo`, container/cloud/build tooling — all from AST structure, never source text. |
@@ -66,6 +67,27 @@ at all.
 | Regex | **zero** regex usages, and the M12 contract probe enforces it. Round 2 broke this and round 3 restored it; see [Regex inventory](#regex-inventory) |
 
 ## Relationship ontology
+
+**The claim table.** Fourteen rows, in the canonical register order of `src/ast/types.ts`. Constructs,
+rulings and confidence values below are read from the analyzer and the lane's committed measurements;
+the evidence discussions and the round tables that follow are the measurements those rows rest on.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ emitted | A command word in command position — the `command_name` child of a `command`; reserved words, shell builtins, bare numbers and escapes are refused, and a computed command is a `uses` (`BD4`/`BD5`). Source is the enclosing function, else the script module; target is the command word. A local function is marked `isFunctionCall` + `resolvedWithinFile` and the attribution pass adds `targetLine`; a trap handler body is a real call with `viaTrap` + `signals[]` (`BD3`). | confidence 1.0, trap-handler body 0.7; `evidenceClass: structural` |
+| `extends` | ❌ never emitted | grammar-absence, measured: 0 `RelationshipType.Extends` references in the analyzer (grep), and the pinned grammar's own 280-node-type table has no type-declaration or supertype production — `function_definition` has no supertype clause, 0 candidate nodes on 2,962 census trees (`script/m14/spec/bash-completeness.json`). | — no edge to model (ruled, not missing) |
+| `implements` | ❌ never emitted | grammar-absence, measured: 0 `RelationshipType.Implements` references in the analyzer (grep); no interface or supertype-clause production among the 280 node types, 0 candidate nodes on 2,962 census trees. | — no edge to model (ruled, not missing) |
+| `uses` | ✅ emitted | A name READ at an expansion — `$VAR`, `${VAR}`, `${VAR:-x}`, `${arr[i]}` (base name only) — or inside an arithmetic context. Targets are trimmed; `metadata.isVariableReference`; `isAssignedInFile` is a post-walk fact from any owner (`BD11`); `isShellDefined`/`isExternalShellVariable` mark names the interpreter binds. | confidence 0.8; `evidenceClass: usage_contextual` |
+| `imports` | ✅ emitted (payload channel only: `import-site: ImportInfo[]`) | Every `source`/`.` site publishes an `ImportInfo` with the path kept as written (`BD9`); a dynamic path is labelled in `resolution`, never presented as resolved. The RELATIONSHIP edge is 0 rows after `BD16`: the same-scope textual inclusion is published as `part_of`. | payload carries no confidence; the paired `references` mention row is confidence 1.0, `evidenceClass: import_based` |
+| `exports` | ✅ emitted | `export NAME`, `export NAME=value`, `declare -x` and `export -f fn` each emit from the owning scope at the export site (`BD7`); `metadata.exportForm` is `variable` or `function`. | confidence 1.0; `evidenceClass: structural` |
+| `contains` | ✅ emitted | Every published declaration is contained by its owning scope at the declaration's name line (`BD1`): functions, assignments (`arr[i]=value` declares `arr`), `local`/`declare`/`typeset`, `readonly`, aliases, and the implicit bindings (`for`/`read`/`mapfile`/`printf -v` targets). | confidence 1.0; `evidenceClass: structural` |
+| `references` | ✅ emitted | A `source`/`.` site also emits the MENTION row — this file names that path, kept as written (`BD9`), `metadata.isSourceDependency`, `resolution: literal` or `dynamic`. | confidence 1.0; `evidenceClass: import_based` |
+| `overrides` | ✅ emitted | A re-declared function emits from the later declaration to the earlier one; `metadata.overridesLine` names the prior line and `redefinition: true` (`BD8b`). | confidence 1.0; `evidenceClass: structural` |
+| `instantiates` | ❌ never emitted | grammar-absence, measured: 0 `RelationshipType.Instantiates` references in the analyzer (grep); no constructor node type among the 280 served node types, 0 candidate nodes on 2,962 census trees. | — no edge to model (ruled, not missing) |
+| `decorates` | ❌ never emitted | ruled on measurement: 0 modifier/annotation productions among the 280 served node types, and 0 modifier clauses on any of the 4,667 `function_definition` nodes (their complete child-type inventory: word 4,667, compound_statement 4,658, `(` 3,752, `)` 3,752, function 1,632, subshell 9). The nearest shapes are metadata or handler registration — `trap` 225, `set` shell-option 2,904, attribute-flag declarations 590, `alias` 10 — not applied code. | — no edge to model (ruled with a falsifier) |
+| `renders` | ❌ never emitted | ruled on measurement: the vocabulary's endpoints are COMPONENT symbols; no component production exists among the 280 node types (0), and the nearest shapes write TEXT to a stream naming no symbol this analyzer declares (heredoc 984, printf/echo 12,972). | — no edge to model (ruled with a falsifier) |
+| `mixes_in` | ❌ never emitted | ruled on measurement: 0 mixin-application productions among the 280 node types; the language's only splice construct is `source`/`.` textual inclusion into the calling scope, published as `part_of`, not a set of definitions applied to a declaration. | — no edge to model (ruled with a falsifier) |
+| `part_of` | ✅ emitted | A `source`/`.` inclusion in THIS shell's scope (`BD16`): source is the file's module symbol, target is the part file's module symbol (basename WITH extension, `BD2`); `metadata.partRole: "library"` is mandatory, `partPath` keeps the path as written, `resolution: literal` or `dynamic`. Child-process inclusions — `( source x )`, `$( source x )`, `<( source x )` — and expression-last-segment paths are REFUSED with patterns Child-Process Inclusion and Dynamic Source Path. | confidence 1.0; `evidenceClass: import_based` |
 
 Two measurements, two denominators, both reproducible. The **census** sample is
 400 files taken in **hash order** (ascending sha256 of `repo/relpath`, admitted
@@ -172,7 +194,11 @@ round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | **WHOLE CORPUS: 4,185 admitted, production `parseFile` (round 14)** | census: 400 files (round 14) | **edges that resolve to ONE declaration** | evidence |
+**The table below is a HISTORICAL reading (round 14, pre-`BD16`), kept as measured evidence and not as the
+current emission claim.** It is where the round-14 numbers below come from; the claim table is at the top of
+this section. `imports`/`references` show 679 relationship rows there because `part_of` had not been relabelled yet.
+
+| type | round-14 reading (historical) | **WHOLE CORPUS: 4,185 admitted, production `parseFile` (round 14)** | census: 400 files (round 14) | **edges that resolve to ONE declaration** | evidence |
 | --- | --- | --- | --- | --- | --- |
 | `calls` | **EMITTED** | **56,181** | 5,181 | 231 of 236 ambiguous decided by `targetLine`; **5 with `resolution=undefined`**; **0 dangling** | `census-bash-ontology.ts --all`, gate row, `probe-bash-published-resolvability.mts --all` |
 | `uses` | **EMITTED** | **83,392** | 8,104 | **11,403 of 12,372** ambiguous decided by `targetLine`; the other **969 are self-declared BARE**; **0 dangling** | same |
