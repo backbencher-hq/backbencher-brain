@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "965e30f0fd0dff5e3e877ebf4348ec37951ee3e99582239c6e20e004c459490c",
-    "sealedAt": "2026-11-04T05:18:01.000Z"
+    "contentSha256": "b227347ff1956a81d510b577f36a53c83bd0865738b0c833ebc571133824d4e7",
+    "sealedAt": "2026-11-04T21:05:27.000Z"
   },
   "checks": [
     {
@@ -2819,8 +2819,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "91efe91a6483c13e38f55c4bbc6ac7e401286638",
-  "committedAt": "2026-11-04T00:18:01-05:00",
+  "commit": "fe5dc571d9710526d8f45ca6de74e6cd3844a904",
+  "committedAt": "2026-11-04T16:05:27-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -5561,9 +5561,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-11-04T00:18:01-05:00",
-  "regeneratedAtCommit": "91efe91a6483c13e38f55c4bbc6ac7e401286638",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-11-04T16:05:27-05:00",
+  "regeneratedAtCommit": "fe5dc571d9710526d8f45ca6de74e6cd3844a904",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }
