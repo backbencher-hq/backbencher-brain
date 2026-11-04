@@ -145,6 +145,7 @@ in another file, and an `imports` target is a dotted module path by construction
 | implements | ✅ | 379 | 202 | 61.2% | 1.00 |
 | overrides | ✅ | 872 | 288 | 100.0% | 0.50 ×805 · 1.00 ×67 |
 | instantiates | ✅ | 12,054 | 1,250 | 27.2% | 0.95 |
+| decorates | ✅ | — | — | — | 1.00 |
 
 Run-to-run variance, disclosed because the numbers above are compared against a
 before-run: the pool's per-file `analyzer timeout` fallback returns a degraded
@@ -164,6 +165,7 @@ implemented, and are measured above.
 | extends | `superclass` → type child (class/trait → class); `extends_interfaces` → type children (interface → interface). |
 | implements | `super_interfaces` → type children (class/trait → interface/trait). |
 | instantiates | `object_creation_expression` (`new Type(...)`), with `type_identifier`, `generic_type` or `scoped_type_identifier` receivers. |
+| decorates | one edge **per decorator** on a declaration (`real-groovy-analyzer.ts:555`, the annotation post-pass). Source = the DECORATED declaration's symbol name; target = the decorator expression **as written** (the annotation's short name, taken from `sym.decorators`); confidence **1.0**; `line_number` = the decorator's own line, carried from `sym.metadata.decoratorLines` so two decorators on one declaration get their own lines rather than the declaration's. |
 | overrides | `@Override`, or an un-annotated instance method; three resolution tiers recorded in `metadata.reasonCode` — `exact-in-file` (1.0), `companion-index` (0.85), `first-parent-guess` (0.5). |
 | uses | `field_access` → leaf identifier; `array_access` reads; `leading_dot_call` member reads; GString interpolation reads. A receiver that is not a plain name yields **no** source and the read is attributed to the enclosing method (see the receiver section below). |
 | references | import MENTIONS (target = the dotted module path) plus declared-type references, qualified names only (see the qualification rule below). |
