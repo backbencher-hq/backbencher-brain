@@ -78,6 +78,9 @@ drift (`script/verify-tool-docs.ts` writes [`data/public-tools.json`](./data/pub
 points at these directories, so an installed user has the same reference. There are no hidden tools or aliases:
 the `0.3.0` release removed them, and `bb --help` lists exactly these sixteen.
 
+Ownership and scope for future changes: [`TOOL-OWNERS.md`](./TOOL-OWNERS.md) maps every tool to its
+permanent owner, the files that owner may change, its evidence directory and its acceptance gate.
+
 ### Deep guides
 
 Each generated reference page links its hand-written deep guides under **Deep guides**; they carry the
