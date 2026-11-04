@@ -173,6 +173,7 @@
           "target",
           "maxNodes",
           "maxLinks",
+          "offset",
           "relationshipTypes",
           "symbolKinds",
           "languages",
@@ -186,6 +187,7 @@
           "scope": "project",
           "maxNodes": 200,
           "maxLinks": 5000,
+          "offset": 0,
           "format": "text"
         }
       },
@@ -236,7 +238,9 @@
           "limit"
         ],
         "defaults": {
-          "limit": 20
+          "limit": "25 edges per direction (callers/callees/trace); 20 files (dependencies); 50 entries (test_mapping/test_gaps); 50 files (test_quality)",
+          "target": "required for callers, callees, trace, impact, test_impact; optional file path or directory prefix for complexity",
+          "filePath": "optional path prefix (or an exact file) for dependencies, test_mapping, test_gaps, test_quality"
         }
       },
       "bb_doc": {
@@ -275,7 +279,7 @@
           "includeDiagrams": false,
           "includeTests": false,
           "limit": 20,
-          "maxTokens": 4000
+          "maxTokens": 8000
         }
       },
       "bb_edit": {
@@ -355,7 +359,7 @@
           "edgeLimit"
         ],
         "defaults": {
-          "maxDepth": 3,
+          "maxDepth": 5,
           "direction": "both"
         }
       },
@@ -371,6 +375,7 @@
         "properties": [
           "symbol",
           "relationshipTypes",
+          "file",
           "refresh"
         ],
         "defaults": {}

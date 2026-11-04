@@ -80,6 +80,9 @@ const transport = new StdioClientTransport({
   args: [serverEntry, ...serverArgs],
   cwd: process.cwd(),
   stderr: "pipe",
+  // The SDK transport's default env subset drops BB_DATA_DIR, which would point
+  // the child server at the default index instead of the fixture indexed above.
+  env: { ...process.env, BB_DATA_DIR: process.env.BB_DATA_DIR ?? "" } as Record<string, string>,
 })
 const client = new Client({ name: "verify-e2e", version: "1.0.0" })
 let serverStderr = ""

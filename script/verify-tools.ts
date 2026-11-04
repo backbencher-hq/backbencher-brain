@@ -218,6 +218,7 @@ const EXCLUDED: ExcludedGate[] = [
   { script: "script/m57/verify-governance.ts", reason: "requires GitHub API (gh) for issue registration — network unavailable" },
   { script: "script/m57/verify-t4-corpus-identity.ts", reason: "corpus identity gate — needs the recorded corpus set" },
   { script: "script/m65/verify-refresh-resolution.ts", reason: "analyzer fleet coverage (50 lanes vs FLEET-48 fixtures) — analyzer portfolio, not the tool surface" },
+  { script: "script/m57/verify-t5-predicate-unity.ts", reason: "analyzer refactor policy (one shared test-shape definition across src/) — analyzer portfolio, not the tool surface" },
 ]
 
 const args = new Set(process.argv.slice(2))
@@ -230,10 +231,24 @@ function head(): string {
   try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" }
 }
 
+// Phases get the same isolated HOME/data dir as the gates: several gates spawn
+// the CLI or a server child, and a read-only HOME makes those children fail for a
+// reason that has nothing to do with the tree. One scratch dir is shared by the
+// phases and removed at the end.
+const PHASE_SCRATCH = mkdtempSync(path.join(tmpdir(), "bb-verify-tools-phases-"))
+const PHASE_ENV = {
+  HOME: path.join(PHASE_SCRATCH, "home"),
+  BB_DATA_DIR: path.join(PHASE_SCRATCH, "data"),
+  BB_NO_AUTO_REFRESH: "1",
+}
+import { mkdirSync as mkdirPhase } from "node:fs"
+mkdirPhase(PHASE_ENV.HOME, { recursive: true })
+mkdirPhase(PHASE_ENV.BB_DATA_DIR, { recursive: true })
+
 function runPhase(label: string, command: string, timeoutMs = 1_800_000): { ok: boolean; ms: number; tail: string } {
   if (LIST_ONLY) { console.log(`  [phase] ${label}: ${command}`); return { ok: true, ms: 0, tail: "" } }
   const started = Date.now()
-  const result = spawnSync(command, { cwd: ROOT, shell: true, encoding: "utf8", timeout: timeoutMs, env: { ...process.env } })
+  const result = spawnSync(command, { cwd: ROOT, shell: true, encoding: "utf8", timeout: timeoutMs, env: { ...process.env, ...PHASE_ENV } })
   const ms = Date.now() - started
   const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
   const ok = result.status === 0
@@ -312,4 +327,5 @@ if (!LIST_ONLY) {
   if (failedGates.length) console.log("failed gates: " + failedGates.map((r) => r.gate.script).join(", "))
   if (failedPhases.length) console.log("failed phases: " + failedPhases.map((p) => p.name).join(", "))
   process.exitCode = failedGates.length === 0 && failedPhases.length === 0 ? 0 : 1
+  rmSync(PHASE_SCRATCH, { recursive: true, force: true })
 }

@@ -25,6 +25,10 @@ function textOf(result: any): string {
 const root = mkdtempSync(path.join(tmpdir(), "bb-contract-"))
 const fixture = createContractFixture(root)
 const projectId = getProjectId(root)
+// This gate MEASURES the auto-refresh path, so the launch runner's hermetic
+// `BB_NO_AUTO_REFRESH=1` default must not apply here: the gate opts back in and
+// then tests the explicit opt-out as its own case.
+delete process.env.BB_NO_AUTO_REFRESH
 const isBun = typeof Bun !== "undefined"
 
 try {
@@ -37,6 +41,10 @@ try {
       : ["tsx", path.resolve("src/mcp/server.ts"), "--dir", root],
     cwd: process.cwd(),
     stderr: "pipe",
+    // StdioClientTransport defaults to a safe env subset that DROPS BB_DATA_DIR;
+    // without this the child server targets the default data dir and every call
+    // answers "No index found" for the fixture this gate just indexed.
+    env: { ...process.env, BB_DATA_DIR: process.env.BB_DATA_DIR ?? "" } as Record<string, string>,
   })
   const client = new Client({ name: "contract-baseline", version: "1.0.0" })
   await client.connect(transport)

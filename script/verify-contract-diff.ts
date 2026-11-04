@@ -27,7 +27,9 @@ const baseline = JSON.parse(readFileSync(resolve(root, "docs/data/m10-baseline.j
 const cliSource = readFileSync(resolve(root, "src/cli/index.ts"), "utf8")
 const handlersSource = readFileSync(resolve(root, "src/mcp/tool-handlers.ts"), "utf8")
 const registrySource = readFileSync(resolve(root, "src/mcp/tool-registry.ts"), "utf8")
-const migrationGuide = readFileSync(resolve(root, "docs/MCP_TOOL_MIGRATION.md"), "utf8")
+// The 0.2.x migration guide is a historical record; it moved to the archive when
+// the live docs were consolidated, so the gate reads it from its retained path.
+const migrationGuide = readFileSync(resolve(root, "archive/docs-pre-consolidation/MCP_TOOL_MIGRATION.md"), "utf8")
 const toolRegistryDoc = readFileSync(resolve(root, "docs/TOOL-REGISTRY.md"), "utf8")
 
 let failures = 0
@@ -58,8 +60,11 @@ check("tool names match baseline order and content",
 // 3. Registry/handlers/CLI gateway triangle: one-to-one.
 // Every descriptor must have a dispatch entry in handlers (by `name: async`)
 // and every handlers entry must be a registered descriptor.
-const handlerMatches = handlersSource.match(/^  (bb_[a-z_]+): async /gm) ?? []
-const handlerNames = handlerMatches.map((m) => m.trim().replace(/\s*:\s*async\s*$/, "")).sort()
+// The handler map was split out of `tool-handlers.ts`; read the assembled map
+// instead of scanning one file for `name: async` property keys (which no longer
+// exist there). The triangle is still registry ↔ handlers ↔ CLI.
+const { createToolHandlers } = await import("../src/mcp/tool-handlers")
+const handlerNames = Object.keys(createToolHandlers()).sort()
 check("handlers count matches descriptor count", handlerNames.length === PUBLIC_TOOL_DESCRIPTORS.length)
 const sortedToolNames = [...names].sort()
 check("handler set equals descriptor set",
