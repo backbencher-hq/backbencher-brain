@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "94d9b3497fb38ce34689770c95cf85dcd981f6cf",
+  "currentCommit": "1c2d326a58392f46a0911fa742313b63c786098a",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
   "evidenceFile": "C1-bb_cross_language.json",
-  "generatedAt": "2026-11-04T01:47:49.991Z",
+  "generatedAt": "2026-11-04T05:55:38.533Z",
   "tools": [
     "bb_cross_language"
   ],
@@ -13,7 +13,7 @@
       "repo": "rake",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 3,
+      "ms": 4,
       "args": "{\"symbol\":\"join\"}",
       "outHead": "{\"symbol\":\"join\",\"language\":\"ruby\",\"languages\":[\"ruby\"],\"copies\":[{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"symbol\":\"joi"
     },
@@ -29,7 +29,7 @@
       "repo": "graphql-js",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 2,
+      "ms": 4,
       "args": "{\"symbol\":\"toDeepEqual\"}",
       "outHead": "{\"symbol\":\"toDeepEqual\",\"language\":\"typescript\",\"languages\":[\"typescript\"],\"copies\":[{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
     },
@@ -37,7 +37,7 @@
       "repo": "tree-sitter-clean",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 2,
+      "ms": 3,
       "args": "{\"symbol\":\"is_newline\"}",
       "outHead": "{\"symbol\":\"is_newline\",\"language\":\"c\",\"languages\":[\"c\"],\"copies\":[{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"symbol\":\"is_new"
     },
