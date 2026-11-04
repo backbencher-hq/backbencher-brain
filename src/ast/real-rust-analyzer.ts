@@ -2832,7 +2832,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (parent?.metadata?.type === "impl") {
       // the impl block is a CONTAINER: its members are owned by the implemented TYPE (nominal name),
-      // never by the container's distinct `<Type>::impl` identity.
+      // never by the container's distinct `<Type>::r#impl` identity.
       ownerName = parent.metadata?.target ?? parent.name
     }
     // Trait symbols should expose themselves as Interface for ownerKind
@@ -3092,10 +3092,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // own name put a duplicate declaration in the project key space — `struct Foo` + `impl Foo` read as
     // TWO declarations, so the unique-bare-name rule refused every Foo (the measured 1,672-row
     // instantiates artifact and the same-file ambiguity across instantiates/exports/references/uses).
-    // The block keeps a distinct qualified identity `<Type>::impl`; its members keep the NOMINAL type as
+    // The block keeps a distinct qualified identity `<Type>::r#impl`; its members keep the NOMINAL type as
     // their owner (`metadata.target` below), and the `implements` edge keeps the type as its SOURCE —
     // so every observable edge surface is unchanged except the duplicate declaration itself.
-    const implName = nominal === null ? RUST_UNNAMED_IMPL : `${nominal}::impl`
+    // THE CONTAINER'S QUALIFIED IDENTITY IS `<Type>::r#impl` — the impl keyword SPELLED AS A RAW
+    // IDENTIFIER, which is the only legal Rust source spelling of that segment. The 2026-10-19
+    // task-36 decision still holds (a container identity, never a duplicate declaration of the
+    // type), but the earlier `<Type>::impl` spelling published a BARE KEYWORD SEGMENT in a symbol
+    // name and as a relationship target: the M60-C name-surface gate (R1/R2, #924) measured 1,375
+    // impl symbols and 35 `contains` targets named `…::impl` over the full ripgrep+cargo extent —
+    // a name no Rust source can write and no consumer can spell. `r#impl` is the one spelling that
+    // keeps the distinct identity AND is a rust name path (the gate accepts raw identifiers on the
+    // symbol and its targets alike, so the edge still resolves: symbol and target are equal).
+    const implName = nominal === null ? RUST_UNNAMED_IMPL : `${nominal}::r#impl`
 
     // Use SymbolKind.Impl for Rust impl blocks
     const symbol = this.createSymbol(
