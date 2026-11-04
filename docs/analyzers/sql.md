@@ -85,21 +85,35 @@ that is over the 512 KB cap and contributes 0)
 (`validation/m14/fixtures/sql/measurements/pass4-census.json`): **31,066 relationships and
 18,482 symbols**, with **0 files degraded by the analyzer timeout and 0 in the regex-extractor
 fallback**. Every count on this page was re-measured at pass 4's HEAD; nothing is carried
-forward. Pass 3's artifacts are kept at `measurements/pass3-final-census.json` and are superseded,
+forward.
+
+**THE POPULATION RULE THESE COUNTS USE, STATED BECAUSE LATER WORK USES A WIDER ONE.** Every figure
+on this page is measured over the admitted set under a **512 KB size cap**, which yields 1,955
+files over 16 repositories. The lane's later whole-population runs use the production pool limit
+of **1 MiB**, which admits **2,125 files over 21 repositories** (`git ls-files` tracked paths, the
+gate's own rule — 6 files over the cap, 0 tracked-but-absent, 0 parse failures). **The two sets are
+different populations and their counts are not comparable line by line**; the pass-4 figures below
+stand for the 512 KB population they were measured on, and the wider run reads 31,572 edges over
+the 2,125-file population. Neither number supersedes the other, and a reader comparing this page to
+`validation/m14/measurements/sql-resolution-causes.json` is comparing two rules. Pass 3's artifacts are kept at `measurements/pass3-final-census.json` and are superseded,
 not deleted — the difference between them is itself a measurement (see *Reproducibility*).
 
-| Relationship | Rule **in SQL** | Census |
-| --- | --- | --- |
-| `contains` | table → column, and table → index/constraint. A SQL file's containment is its schema: a column is not a member of the query that selects it, and a CTE body is not a member of the statement that holds it. **Every edge carries `metadata.memberKind`** — see *Pass 3* | 11,977 |
-| `uses` | view / function / query / DML → referenced table. Anonymous statements use `global`. **A CTE name is not a table**: an unqualified reference matching a CTE of the statement's WITH list is suppressed, a qualified one never is. The scope is the WITH LIST, not the enclosing query — see *Pass 2* | 9,106 |
-| `references` | FK table → referenced table, index → indexed table, trigger → target table, policy → its table, GRANT/REVOKE → the object granted on. Each target sits in a grammar-mandated slot after `keyword_references` / `keyword_on` | 5,996 |
-| `calls` | trigger → executed function, and any `invocation` node **anywhere in the tree**, not only inside a query — a `DEFAULT`, a `CHECK`, a generated column's expression, a policy's `USING (…)`, a `DO` block's `PERFORM`, and an `ALTER COLUMN … SET DEFAULT` are all `invocation`s in grammar-mandated slots. The callee must be free of ERROR and not a keyword or builtin. Two of those routes were dead until pass 3 | 3,892 |
-| `imports` | two distinct mechanisms, kept separable in metadata: a psql `\i`/`\ir` include (**22**, `metadata.psqlInclude`, target is a file in this repository) and `CREATE EXTENSION` (**30**, `metadata.extensionInstall`, target is a distribution that must be installed and can never bind) | 52 |
-| `overrides` | `CREATE OR REPLACE` on a name **this file already declared of the same kind**. SQL has no method table; this is the only replacement event the language has | 22 |
-| `instantiates` | `ROW(...)::composite` — a composite cast, which PostgreSQL implements as a call to the type's constructor. A conversion (`x::my_enum`, `nextval('s')::bigint`) is **not** an instantiation | 21 |
-| `exports` | not derivable — RULED, and the ruling is the **weakest of the three**: no correct implementation could meet its condition. See below | 0 |
-| `extends` | **SQL HAS table inheritance and the wired grammar cannot read it.** RULED on a grammar inventory, but this is a GRAMMAR GAP, not an inapplicability — see below | 0 |
-| `implements` | not derivable — RULED, instrument A + B | 0 |
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ yes | trigger → executed function, and any `invocation` node **anywhere in the tree** — a `DEFAULT`, a `CHECK`, a generated column's expression, a policy's `USING (…)`, a `DO` block's `PERFORM`, and `ALTER COLUMN … SET DEFAULT` are all `invocation`s in grammar-mandated slots. The callee must be free of ERROR and not a keyword or builtin (`processCalls`, `real-sql-analyzer.ts:3045`). Census 3,892. | `evidenceClass` = `usage_contextual` (3,417) + `reference_qualified` (475); `confidence` 1 on every edge. |
+| `extends` | ✅ yes | `CREATE TABLE … INHERITS (parent)` and `ALTER TABLE … INHERIT parent`, emitted from the `inherit_clause` path (`real-sql-analyzer.ts:2491`) and the `inherit_specification` path (`:3512`, `:3602`). **The wired grammar defines neither node type — 0 of 596 named types carry them (`validation/m14/measurements/sql-grammar-nodes.json`) — so both reads are DEAD and the corpus count is 0.** Ruled grammar-absence with both halves measured, not pending: see *Ontology verdicts* → `extends`. | `structural` (the arm at `:4425`); `confidence` 1. |
+| `implements` | ❌ no | **0 emission sites and 0 payload.** The analyzer's only reference is the `evidenceClassFor` switch arm (`real-sql-analyzer.ts:4426`), which assigns a tier to an edge that no site creates — a tier label is not an emission, and there is no `implements` array in the result. SQL has no interface/implementation relation. Census 0. | — (no edge exists to carry one). |
+| `uses` | ✅ yes | view / function / query / DML → referenced table; anonymous statements use `global`. **A CTE name is not a table**: an unqualified reference matching a CTE of the statement's WITH list is suppressed, a qualified one never is. The scope is the WITH LIST, not the enclosing query. Census 9,106. | `evidenceClass` = `usage_contextual` (7,276) + `reference_qualified` (1,830); `confidence` 1. |
+| `imports` | ✅ yes | two distinct mechanisms, kept separable in metadata: a psql `\i`/`\ir` include (**22**, `metadata.psqlInclude`, target is a file in this repository) and `CREATE EXTENSION` (**30**, `metadata.extensionInstall`, target is a distribution that must be installed and can never bind). Census 52. | `evidenceClass` = `import_based` on every edge; `confidence` 1. |
+| `exports` | ❌ no | **0 emission sites, and the `ExportInfo[]` channel is DECLARED BUT ALWAYS EMPTY — measured, not assumed:** `exports: []` is initialised at `real-sql-analyzer.ts:935`, returned unchanged at `:1054`, and **there is no `state.exports.push(` anywhere in the analyzer** (the two `push(` sites at `:3141` and `:3406` are `state.imports.push`). The field exists because the analyzer contract requires it; a declared channel is not a published one. The only `RelationshipType.Exports` reference is the tier switch arm at `:4427`. Census 0. | — (no edge exists to carry one). |
+| `contains` | ✅ yes | table → column, and table → index/constraint. A SQL file's containment is its schema: a column is not a member of the query that selects it, and a CTE body is not a member of the statement that holds it. **Every edge carries `metadata.memberKind`.** Census 11,977, plus 9 same-name edges a guard had been dropping — see *PASS 3* and the same-name containment note. | `evidenceClass` = `structural` on every edge; `confidence` 1. |
+| `references` | ✅ yes | FK table → referenced table, index → indexed table, trigger → target table, policy → its table, GRANT/REVOKE → the object granted on. Each target sits in a grammar-mandated slot after `keyword_references` / `keyword_on`. Census 5,996. | `evidenceClass` = `structural` on every edge; `confidence` 1. |
+| `overrides` | ✅ yes | `CREATE OR REPLACE` on a name **this file already declared of the same kind**. SQL has no method table; this is the only replacement event the language has. Census 22. | `evidenceClass` = `structural`; `confidence` 1. |
+| `instantiates` | ✅ yes | `ROW(...)::composite` — a composite cast, which PostgreSQL implements as a call to the type's constructor. A conversion (`x::my_enum`, `nextval('s')::bigint`) is **not** an instantiation. Census 21. | `evidenceClass` = `structural`; `confidence` 1. |
+| `decorates` | ❌ no | 0 `RelationshipType.Decorates` sites in `src/ast/real-sql-analyzer.ts`. SQL has no decorator syntax, and the nearest construct is a comment: 1,398 `comment_statement` nodes in 343 files (`validation/m14/measurements/sql-ruling-census.json`), which annotate rather than decorate. Census 0. | — (no edge exists to carry one). |
+| `renders` | ❌ no | 0 `RelationshipType.Renders` sites. SQL has no rendering construct. The near miss is `CREATE VIEW` / `CREATE MATERIALIZED VIEW` — 755 sites in 141 files — which **publishes a query** rather than rendering a component. Census 0. | — (no edge exists to carry one). |
+| `mixes_in` | ❌ no | 0 `RelationshipType.MixesIn` sites. SQL has no mixin mechanism. The near miss is a PL/pgSQL body — 2,357 sites in 301 files — which is an inlined procedural language, not an inclusion of a reusable unit. Census 0. | — (no edge exists to carry one). |
+| `part_of` | ❌ no | 0 `RelationshipType.PartOf` sites. A table is not a library part. The near miss is `CREATE TABLE … PARTITION OF <parent>` — 50 sites in 29 files — which is a **row-level storage division of one table**, not a library/part relation, and `metadata.partRole` has no meaning for it. Census 0. | — (no edge exists to carry one). |
 
 Relationship identity uses a `Map` keyed by type/source/target. Repeated DML operations merge
 operation metadata rather than creating duplicate graph edges. Unresolved tables/functions
@@ -152,7 +166,7 @@ unexplained reason", which is 196 and is named as such rather than folded into t
 number. Measured before the guard export the two were indistinguishable, and a drifting copy
 of the lists would have turned a working guard into a reported defect.
 
-## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at passes 6, 7, 8 and 9, 2026-10-04 — pass 8 re-derived this page's OWN figures from the stored artifacts and corrected four of them, and pass 9 audited the artifacts against each other, found the census's reproducibility claim true and its artifact not reproducible, fixed that, and corrected four stale rows of the pass-3 table; see *PASS 8* and *PASS 9*)
+## Ontology measurements — ten types, verdicts and counts (re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at passes 6, 7, 8 and 9, 2026-10-04 — pass 8 re-derived this page's OWN figures from the stored artifacts and corrected four of them, and pass 9 audited the artifacts against each other, found the census's reproducibility claim true and its artifact not reproducible, fixed that, and corrected four stale rows of the pass-3 table; see *PASS 8* and *PASS 9*)
 
 Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files, of
 which 16 corpus repositories contribute at least one**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
@@ -583,9 +597,16 @@ After registering the oracle the gate reports **9** for sql, up from 6, and that
 in direction: a per-lane export **wins** over the shared allowlist, so SQL's four inherited
 labels (`extends`, `implements`, `instantiates`, `overrides`) drop out — and they were never
 backed by an oracle, only *named* in a shared list. The residual 9-vs-7 is the gate's
-`emitted` set being **source-derived and over-reporting**: `exports`, `extends` and
-`implements` appear in `real-sql-analyzer.ts` only inside `evidenceClassFor`'s switch, and
-the arbiter measures **0** edges for all three. §8 item.
+`emitted` set being **source-derived and over-reporting**: `exports` and `implements` appear
+in `real-sql-analyzer.ts` **only** inside `evidenceClassFor`'s switch (`:4427`, `:4426`), and
+the arbiter measures **0** edges for both. `extends` was in that list too when this paragraph was
+written, and **it no longer is**: the analyzer now has three real `RelationshipType.Extends`
+emission sites (`:2491` from `inherit_clause`, `:3512` and `:3602` from `inherit_specification`),
+added after the ruling was first made. They still measure **0** edges, and the reason is now
+measured rather than implied: **the wired grammar defines neither `inherit_clause` nor
+`inherit_specification` — 0 of 596 named types carry them** (`validation/m14/measurements/sql-grammar-nodes.json`),
+so both reads are DEAD against the wired build. A tier-switch mention and a dead read are two
+different reasons to measure 0, and this paragraph previously gave both the weaker one. §8 item.
 
 ### The source mutant, and why it needed its own runner
 

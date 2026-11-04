@@ -211,9 +211,14 @@ const RELATIONSHIP_ALIASES: Record<string, string> = {
  * The second regex of each pair covers an analyzer that keeps an untyped
  * `exports` array and pushes onto it, with no `ExportInfo` token to find.
  */
-const PAYLOAD_CHANNELS: { kind: string; label: string; type: RegExp; push: RegExp }[] = [
-  { kind: "imports", label: "import-site: ImportInfo[]", type: /ImportInfo/, push: /imports\s*\.\s*push\s*\(/ },
-  { kind: "exports", label: "export-site: ExportInfo[]", type: /ExportInfo/, push: /exports\s*\.\s*push\s*\(/ },
+const PAYLOAD_CHANNELS: { kind: string; label: string; type: RegExp; push: RegExp; filled: RegExp }[] = [
+  // `type` alone is NOT a publication (sql 2026-11-03): `exports: ExportInfo[]` as an interface
+  // field with `exports = []` returned unchanged publishes nothing, and the type arm credited it,
+  // producing two FALSE_NEGATIVE rows against a page that had already called the over-reporting
+  // out. A payload is published when the code PUSHES into it, or constructs one in an expression
+  // (`= <something>ImportInfo…`); a bare annotation is only a declaration of intent.
+  { kind: "imports", label: "import-site: ImportInfo[]", type: /ImportInfo/, push: /imports\s*\.\s*push\s*\(/, filled: /=\s*[^;\n]*ImportInfo/ },
+  { kind: "exports", label: "export-site: ExportInfo[]", type: /ExportInfo/, push: /exports\s*\.\s*push\s*\(/, filled: /=\s*[^;\n]*ExportInfo/ },
 ]
 
 function payloadLabel(kind: string): string {
@@ -388,6 +393,14 @@ export function readSurface(file: string): Surface {
   // `RelationshipType.Override`. Prose cannot emit an edge, so the raw text is
   // read only to count the aliases that appear in prose and nowhere else.
   for (const m of code.matchAll(/RelationshipType\.([A-Za-z]+)/g)) {
+    // A SWITCH CASE LABEL NAMES A KIND, IT DOES NOT EMIT ONE (sql 2026-11-03): the analyzer's
+    // `evidenceClassFor` switch has `case ASTEngine.RelationshipType.Exports:` arms for kinds the
+    // lane never emits, and the text-only scan credited them, producing FALSE_NEGATIVE rows against
+    // a page that was correctly ruling them absent. The match itself is still a reference; it is
+    // just not a publication, so it is excluded from the emission set (the comment-only census
+    // keeps it only if it never appears in code at all, which is the existing behaviour).
+    const before = code.slice(Math.max(0, (m.index ?? 0) - 40), m.index ?? 0)
+    if (/\bcase\s+[\w.]*$/.test(before)) continue
     const kind = resolve(m[1])
     if (kind) kinds.add(kind)
   }
@@ -401,7 +414,10 @@ export function readSurface(file: string): Surface {
   // untyped array. real-toml-analyzer.ts returns `imports: []` and pushes
   // nothing, so it is correctly measured as publishing NEITHER payload.
   const payload = new Set<string>()
-  for (const ch of PAYLOAD_CHANNELS) if (ch.type.test(code) || ch.push.test(code)) payload.add(ch.kind)
+  for (const ch of PAYLOAD_CHANNELS) {
+    // PUSH, or a value-bearing expression — never a bare annotation (see PAYLOAD_CHANNELS).
+    if (ch.push.test(code) || (ch.type.test(code) && ch.filled.test(code))) payload.add(ch.kind)
+  }
   return { kinds, payload, commentOnly }
 }
 
