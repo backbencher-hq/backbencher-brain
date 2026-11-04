@@ -65,8 +65,10 @@
 | overrides | ✅ | `instance C T where m ...` → `overrides T.m -> C.m`, matched against a class→methods pre-pass (**M60-HK**) |
 | uses | ✅ | a type synonym → the `name`/`constructor` leaves of its right-hand side; a `variable` there is a type PARAMETER and is excluded (**M60-HK**) |
 | references | ✅ | FFI entity edges only — an `imports` edge now carries the module dependency (**M60-HK**; 7 edges corpus-wide) |
+| decorates | ✅ | a TH splice that decorates a NAMED declaration publishes `scope -> decorated-name` at 1.0 (real-haskell-analyzer.ts:950): the enclosing scope is the module the splice sits in (`ctx.currentModule`, else `Main`) — a `top_splice` is a declaration and can never sit in a callable body — and the decorated declaration's name is the splice's target declaration; metadata names the construct | 1.0 |
 | renders | ❌ RULED 2026-10-27 | no component model: **0** template-loader sites over 3,702 files, and the 4,201 quasiquote sites produce markup VALUES rather than rendering a declared component. Ladder R1/R2/R3 all unavailable — see `## renders and mixes_in — the two rulings (2026-10-27)` | — |
 | mixes_in | ❌ RULED 2026-10-27 | no member-set composition: the conformance family is already published (extends 189 · implements 13,721 · overrides 1,274), and DerivingVia (493 sites) obtains an instance THROUGH a carrier type rather than attaching members to one. See the section below | — |
+| part_of | ✅ | a QUOTED `#include "x.h"` (`form === "quoted"`) names another module's header for TEXTUAL inclusion — one `scope -> include.stem` edge at 1.0 (real-haskell-analyzer.ts:1062), the cpp lane's by-written-form rule with the same node and the same parse. An ANGLE include is the IMPORT form and is never part_of: the lane measured 0 angle sites in its admitted population and keeps the branch so the form is classified by the construct rather than by the corpus | 1.0 |
 
 ## Noise-elimination contract (what produces NO edges)
 

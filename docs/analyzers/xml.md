@@ -101,6 +101,29 @@ turned into phantom recovery symbols.
 
 ## Relationship ontology
 
+The canonical claim table, fourteen rows in the register's order. The per-type arbiters table further
+down is the ARBITER's reading of the ten original types at the commit it names; two kinds below are
+newer than that round (`mixes_in`, `part_of`) and one (`uses`) gained its emission sites after it, so
+the claim table is the current statement and the arbiters table is kept verbatim as measured history.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+|---|---|---|---|
+| calls | `✅` emitted — `real-xml-analyzer.ts:2117` | an XSLT named-template call: `cand.ownerName → cand.templateName` with `role: "xslt_named_template_call"`, `attributeName: "name"`, `templateName`; a name resolved against the stylesheet's OWN declarations is what makes it a call rather than a mention, and a template calling itself is published (XSLT 1.0 §6 makes two templates of one name an error, not recursion) | 1 by default, with the evidenceClass stamped from the rule's role (`xslt_named_template_call`); an unrecognised role defaults to `inferred` |
+| extends | `✅` emitted — `:2265` | a DTD/XSD supertype clause resolved through the construct's own node/attribute (the arbiter measured 1,429 edges on its population) | 1 by default, evidenceClass from the rule's role |
+| implements | `❌` no — RULED-SOUND | instrument A: the grammar's 95 distinct node types contain none expressing a conformance clause; 5 candidate sites adjudicated to 0 | — (nothing to model; ruling in the arbiters table) |
+| uses | `✅` emitted — `:1005` (element half) and `:2752` (attribute half) | a NAMESPACE-PREFIX USE: an element or attribute written with a prefix that the document's own `xmlns:` binds (`role: "xml_namespace_prefix_use"`, `namespaceUri`, `resolvable: "in-document"`); the `xmlns`/`xml` prefixes are excluded by construction, an undeclared prefix is refused, and the default namespace is out of scope because it has no written prefix to name | 1 by default, rule-role evidenceClass |
+| imports | `✅` emitted — `:1236`, `:1718`, `:2518`, `:2838`, `:3663` | an external identifier / include target naming a FILE (a DTD/XInclude/XSLT include source); the target is a file path by design, which is why its in-file resolution rate is 0 and its site ledger is 468 of 468 edges with a site and 0 sites with no edge | 1 by default, rule-role evidenceClass (`import_based` for the include roles) |
+| exports | `❌` no — RULED-SOUND | instrument A: none of the 95 node types expresses a published name; 611 candidate sites adjudicated to 0 | — (ruled) |
+| contains | `✅` emitted — `:1291`, `:1380`, `:1433` (and the element/attribute scopes) | the nearest addressable element/declaration owning a child symbol — DOM containment, plus the DTD declaration forms (`role: "dtd_element_declaration"`, `"dtd_attribute_declaration"`); measured 188,224 edges on the arbiter's 11,552-file population | 1 by default, `structural` for the containment roles |
+| references | `✅` emitted — `:815`, `:1955`, `:2074`, `:2352`, `:2374` | an ID/IDREF-shaped mention resolved against a declaration this document publishes (a DTD entity, an IDREF token, a QName in a type position); measured 11,108 edges | 1 by default, rule-role evidenceClass (`reference_qualified` where the reference is qualified) |
+| overrides | `✅` emitted — `:2216` | an XSLT template/attribute-set redefinition that shadows a declaration of the same precedence chain; the corpus overturned the earlier RULED verdict and the arbiter measured 3 edges, all resolved | 1 by default, rule-role evidenceClass |
+| instantiates | `❌` no — RULED-SOUND | instrument A: no object-creation node exists; instrument B probe counts 0 and 0 | — (ruled) |
+| decorates | `❌` no — 0 sites | XML attributes are DATA of an element and a DTD/XSD declaration is not an annotation: the analyzer has no decorator construct to publish, and the extended census counts none | — (0 `RelationshipType.Decorates` sites) |
+| renders | `❌` no — 0 sites | the format has no component model or render host; 0 `RelationshipType.Renders` sites, and the grammar inventory has no node that could carry the edge | — (0 sites) |
+| mixes_in | `✅` emitted — `:2310` | an XSD COMPOSITION: `xs:group/@ref` or `xs:attributeGroup/@ref` whose target resolves in-document or to a builtin/imported namespace → one edge `ownerName → qname.local` carrying `role: "xsd_definition_composition"`, `attributeName: "ref"`, `qname`, `prefix`, `namespaceUri`, `composedKind` (a group composes a content model; an attributeGroup composes attribute declarations) and `resolvable: builtin | in-document | external` — so a consumer filtering on the kind need not re-derive which carrier it came from | 1 by default, rule-role evidenceClass; per-run count is not in the arbiters table (newer than it) |
+| part_of | `✅` emitted — `:1200` | a TEXTUAL INCLUSION: an `xi:include` or XSLT `xsl:include` with a non-remote `href` → one edge `documentElement → includedModuleStem`, carrying `role: "xinclude_part" | "xslt_include_part"`, MANDATORY `partRole: "library"`, and both `partPath` (the evidence) and `partSymbol` (the target) so the difference is checkable rather than inferred; the vocabulary rides on the role so the two inclusion channels are distinguishable without re-deriving namespace bindings | 1 by default, rule-role evidenceClass; per-run count is not in the arbiters table |
+
+
 **A RULED-SOUND row is only worth the walk behind it, so the walk is now a number.**
 The arbiter runs every instrument-B `countOnTree` over the admitted files and reports
 only `occurrences` and `files`. A probe that visited nothing therefore reports 0
