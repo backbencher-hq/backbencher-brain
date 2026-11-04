@@ -3,11 +3,23 @@
 ## Language
 
 - Analyzer: `src/ast/real-php-analyzer.ts`
-- Parser: `tree-sitter-php` **0.24.2** (npm, upgraded in M12.29 from the stale
-  pinned grammar; WASM at `wasm/tree-sitter-php.wasm`, loaded by `engine.ts`
-  via `resolveWasm`)
-- Detection: `.php` → `php` in `src/ast/language-detection.ts`
-- Wiring: `ASTEngine.getAnalyzer("php")` → `RealPhpAnalyzer`
+- Parser: served WASM `wasm/tree-sitter-php.wasm`, **sha256 `d4df6a6ff08c…`, 1,058,041 B**. The
+  bytes are byte-identical to two local copies — the `~/.bb/wasm` mirror and the npm
+  `tree-sitter-php@0.24.2` package's wasm in the bun install cache — per
+  `validation/m14/results/wasm-provenance-census.json` (verdict: "byte-identical to 2 local
+  copy/copies"). The grammar surface measured FROM THE LIVE PARSER is **432 type ids · 177 named
+  ids · 157 distinct named type names** (`validation/m14/measurements/php-grammar-nodes.json`,
+  measured 2026-10-26; 20 names are aliased to more than one id, so 177 named ids are 157 distinct
+  names). There is **no vendored grammar source and no `PIN.md`**, so a source↔wasm rebuild proof
+  does not apply and the grammar is not rebuildable offline — a recorded limit, not a glossed one.
+  The lane has **no entry in `validation/m14/grammar-pins.json`**, so this page makes no pin/drift
+  claim for it.
+- Detection: **`.php` and `.phpt` both route to `php`** (`src/ast/language-detection.ts:167`).
+  `.phpt` is PHP's test-file format (PHP source plus an expected-output section) and the engine
+  parses it with this analyzer — 1,310 of the 6,424 admitted files are `.phpt`. `.inc` is
+  deliberately NOT routed (the extension is ambiguous across languages).
+- Wiring: `ASTEngine.getAnalyzer("php")` → `RealPhpAnalyzer` (`src/ast/engine.ts:2396`)
+
 
 ## Symbol contract
 
@@ -15,6 +27,7 @@
 | --- | --- | --- |
 | `namespace A\B;` | `namespace` | `namespace_definition` → `namespace_name` |
 | `class C extends B implements I` | `class` | `class_declaration` → `name`; `base_clause`/`class_interface_clause` for edges |
+| `new class { … }` (anonymous class) | `class` | `class_declaration` with no `name`; the symbol name is the SYNTHETIC `anonymous_class_<startIndex>` (`real-php-analyzer.ts:667`, symbol push `:754`) |
 | `interface I extends J` | `interface` | `interface_declaration` → `name` |
 | `trait T` | `trait` | `trait_declaration` → `name` |
 | `enum E: string` + `case X` | `enum` + `enum_member` | `enum_declaration` → `name`; `enum_case` → `name` |
@@ -23,37 +36,80 @@
 | `public string $prop` | `property` | `property_declaration` → `property_element` → `variable_name` |
 | `public const C = 1` | `constant` | `const_declaration` → `const_element` → `name` |
 | promoted constructor params | `property` | `property_promotion_parameter` → `variable_name` |
+| `define('NAME', …)` at file scope | `constant` | `function_call_expression` resolving to the global `define`; the symbol carries `isDefinedConstant` + `fileLevel` and NO `ownerName`, because `define()` publishes into the global scope even inside a namespace — `real-php-analyzer.ts:1700-1711` |
 
-Locals, parameters, `$this->x` member access, and `global` declarations are
-**never symbols**. The legacy phantom symbols (Laravel Eloquent
-`getAttribute`/`setAttribute`, WordPress `wp_add_*` hooks) are removed — only
-facts that exist in the AST are emitted. Anonymous classes/closures are
-expressions, not named declarations, so they emit no symbol.
+Locals, parameters, `global` declarations, and member *access* are **never symbols**: a member read
+is a `uses` edge, a member call is a `calls` edge, and a member declaration is a symbol owned through
+its `ownerName`. Closures and arrow functions are expressions and emit no symbol. Anonymous classes
+are the one expression-shaped declaration that DOES emit a symbol (see the row above). The legacy
+phantom symbols (Laravel Eloquent `getAttribute`/`setAttribute`, WordPress `wp_add_*` hooks) are
+removed — only facts that exist in the AST are emitted.
+
 
 ## Relationship ontology
+
+One row per `RelationshipType` value, in the canonical register order of `src/ast/types.ts`
+(`calls · extends · implements · uses · imports · exports · contains · references · overrides ·
+instantiates · decorates · renders · mixes_in · part_of`). The analyzer publishes the twelve
+emitted kinds; the two ruled values are excluded in `script/m14/spec/php-completeness.json` on
+counted measurements. "How resolved" states the construct and the resolution rule in the
+analyzer's own terms, with the confidence value and `evidenceClass` the code carries.
+Whole-population counts are the 2026-10-23 arm's (`validation/m14/measurements/php-emission-census.json`);
+no count here is invented.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | ✅ emitted | `function_call_expression` / `member_call_expression` / `nullsafe_member_call_expression` / `scoped_call_expression` → callee leaf; source = enclosing function/method else `global`; PHP builtins filtered after leaf-flattening; a first-class tear-off `foo(...)` is `uses`, not `calls` (`real-php-analyzer.ts:2050`, `:2193`, `:2228`); 112,067 edges / 4,952 files | 0.9 · `usage_contextual` |
+| extends | ✅ emitted | class → its declared superclass (`:802`) and interface → its extended interface (`:871`); a qualified base keeps its qualification, and a base that resolves to the declaring type itself emits nothing (a self-extends would be a fabrication); 3,178 edges / 3,159 files | 1.0 · `structural` |
+| implements | ✅ emitted | `class_interface_clause` on classes (`:710`) and on enums (`:955`) → each interface; a clause naming the declaring type itself emits nothing; 1,205 edges / 1,112 files | 1.0 · `structural` |
+| uses | ✅ emitted | value/read edges: `$this->p` / `$o->p` (`:1842`), `C::$p` (`:1872`), `C::K` (`:1902`), first-class tear-offs (`:2040`, `:2183`, `:2218`), subscript bases / interpolations / closure captures, bare `$var` through the frame chain → file functions → superglobals (`:3211`, target spelled `<source>\u0000<binding>` with `metadata.localBinding`), file-constant reads (`:3341`); a braced dynamic member `$o->{$x}` emits no member edge; 157,345 edges / 3,748 files | 0.9 · `usage_contextual` |
+| imports | ✅ emitted | a `use` clause → the module FQN as written (the alias is NOT part of the target; a grouped `use C\{D, E}` records each member qualified), source = file scope `global` (`:3007`); an `ImportInfo[]` payload is ALSO published (`:2991`, returned `:579`); 28,519 edges / 4,321 files | 1.0 · `import_based` |
+| exports | ✅ emitted | file-scope `define('NAME', …)`: the callee must resolve to the GLOBAL `define` (bare name or absolute-FQ `\define`; `Other\define`, `namespace\define` and variable callees are refused); the first argument's value is a string literal read through the `argument` wrapper; no enclosing function/method/class; source `global` → NAME (`:1713`); an `ExportInfo[]` payload is ALSO published (`:1728`); 59 edges / 19 files | 1.0 · `import_based` |
+| contains | ✅ emitted | one edge per owned symbol: a member → its class/interface/trait/enum (`:1394`, `metadata.isContained`) and, since M60, a top-level declaration → its namespace (`ownerKind: Namespace`, `:783`/`:886`/`:916`/`:969`/`:1045`/`:1534`); 35,580 edges / 5,019 files | 1.0 · `structural` |
+| references | ✅ emitted | the R9 declared-type graph ONLY: property types, typed class-constant types (PHP 8.3), parameter types and return types; wrappers descend (`?Dep`, `Dep\|Other`); primitives are silent; `self`/`static` → enclosing class and `parent` → declared base; `metadata.relationshipType` is `declared_type` or `return_type`, `metadata.declaredOn` names the position (`:3711`); 10,376 edges / 2,444 files | 0.9 · `import_based` |
+| overrides | ✅ emitted | a method whose DECLARED base declares the same name, verified in-file or through `AnalyzeContext.overrideCompanion`; resolution is per-link, never transitive; private base methods are suppressed (PHP does not inherit them); target is `Owner.member` (`:2836`); 37 edges / 30 files | 0.95 · `structural` |
+| instantiates | ✅ emitted | `object_creation_expression` (`new C(...)`, incl. `new self/static/parent`); `self`/`static` → the enclosing class, `parent` → its declared base, and an unresolvable `parent` emits nothing (`:2290`); 15,279 edges / 3,067 files | 0.9 · `structural` |
+| decorates | ❌ **not emitted** | **0** `RelationshipType.Decorates` references in the analyzer (the whole-file grep) and no edge is published: PHP 8 attributes parse and are PASSIVE, lazily-instantiated metadata, not an applied callable. RULED ONTOLOGICAL with the pre-registered counter measured: **0 of 6,507 attributes over 1,799 files** had a call-shaped direct argument (`validation/m14/measurements/php-attribute-census.json`); excluded in `script/m14/spec/php-completeness.json` | — (ruled; no confidence to state) |
+| renders | ❌ **not emitted** | **0** `RelationshipType.Renders` references. RULED GRAMMAR-ABSENCE: **0 of 177** named types are a component/element/render family, R2 has nothing to lex (no component syntax — the EMPTY form), and the near misses are counted: inline HTML `text` **1,407** sites + `text_interpolation` **85** sites over 1,327 files (`validation/m14/measurements/php-emission-census.json`); excluded in the spec | — (ruled; no confidence to state) |
+| mixes_in | ✅ emitted | trait `use` inside a class body (and trait-in-trait): source = the composing type, target = the trait's leaf, `metadata.isTraitUse` retained (`:1200`); the 1:1 relabel of the rows that were `uses` before 2026-10-23, evidence tier structural because the construct is a declaration-header clause; 320 edges / 107 files | 1.0 · `structural` |
+| part_of | ✅ emitted | `include` / `require` / `include_once` / `require_once` of a statically known path: source = file scope `global`, target = the written path, `metadata.partRole: "library"` plus `includeType` keeping the written form and `relationshipType: "include_path"` (`:3089`); an `ImportInfo[]` record is also pushed; the 1:1 relabel of the include rows that were `imports`, 2026-10-23; 1,494 edges / 1,324 files | 0.9 · `import_based` |
+
+**Twelve emitted, two ruled** — the table is the checkable statement. The ruled values carry their
+own counts and falsifiers in §"`decorates`" and §"`renders`" of the lane page
+`validation/m14/verification/PHP-EXTENDED-ADJUDICATION-2026-10-23.md`; the register's other twelve
+values are all emitted and all compared by the differential.
+
+**Falsified-ruling history, KEPT.** `exports` was previously PHPD33, RULED on a parse-tree count;
+that count read 0 because the probe tested the `argument` wrapper node instead of the string literal
+inside it, so it could not fire on any input and **no corpus could falsify it**. A positive control
+corpus found it. The M60-era summary this section used to open with said "ten emitted, none ruled" —
+that was the ten-value register of the time; the register has since grown to fourteen and the
+current split is the claim table above (twelve emitted, two ruled). The withdrawn PHPD33 paragraph
+was removed rather than amended, because leaving a withdrawn verdict readable next to its
+replacement is how a reader ends up citing the wrong one.
+
+## Ontology construct rules — the measured detail behind the table
+
+The prose below is this page's original per-construct rule table, KEPT as measured detail and
+updated for the current register: the trait-composition rows moved `uses` → `mixes_in` and the
+include/require rows moved `imports` → `part_of` (1:1 relabels, 2026-10-23). This is the finer
+detail the claim table's cells compress.
 
 | Relationship | Rule |
 | --- | --- |
 | `extends` | class → superclass, and interface → extended interface. A qualified base whose leaf equals the declaring class keeps its qualification (PHPD10); an unresolvable same-leaf base emits **nothing** — a self-extends is always a fabrication |
 | `implements` | class → interface, **and enum → interface** (M37.13 — enums use the same `class_interface_clause` shape) |
-| `uses` | the lane's largest and most subdivided label. Trait `use` inside a class body; member reads (a static `name` field only — a braced `$o->{$x}` is a dynamic selection and emits nothing); static property reads; class-constant fetches (`::class` skipped); subscript bases; closure captures; interpolation; first-class tear-offs; bare `$var` reads through the frame chain → file functions → superglobals; bare `NAME` const reads from the file inventory. Eleven distinct read flags ride the label (`isLocalRead`, `isMemberRead`, `isConstRead`, `isSubscriptBase`, `isConstFetch`, `isStaticRead`, `isInterpolationRead`, `isClosureCapture`, `isGlobalRead`, `isTraitUse`, `isTearOff`) |
+| `uses` | the lane's largest and most subdivided label. Member reads (a static `name` field only — a braced `$o->{$x}` is a dynamic selection and emits nothing); static property reads; class-constant fetches (`::class` skipped); subscript bases; closure captures; interpolation; first-class tear-offs; bare `$var` reads through the frame chain → file functions → superglobals; bare `NAME` const reads from the file inventory. Trait `use` rows were here until 2026-10-23 and now ride `mixes_in`; the read flags on `uses` are `isLocalRead`, `isMemberRead`, `isConstRead`, `isSubscriptBase`, `isConstFetch`, `isStaticRead`, `isInterpolationRead`, `isClosureCapture`, `isGlobalRead`, `isTearOff` |
 | `calls` | `function_call_expression`, `member_call_expression`, `nullsafe_member_call_expression`, `scoped_call_expression`; leaf target; source = enclosing function/method (PHP builtins filtered **after** leaf-flattening, so a `\is_file()` cannot escape the filter) |
 | `instantiates` | `object_creation_expression` (`new Class(...)`, incl. `new self/static/parent`); `self`/`static` → the enclosing class, `parent` → its **declared** base, an unresolvable `parent` → nothing |
 | `overrides` | a method the **declared** base actually declares — in this file, or via `AnalyzeContext.overrideCompanion`. Resolution is **per-link**: a class is compared only against the base it declares, never transitively. Emitted at 0.95 / `structural` |
-| `imports` | module dependencies: `use` clauses (module = the FQN, alias carried in `metadata.aliased`, and a **grouped** `use C\{D, E}` records members *qualified*) and `require` / `require_once` / `include` / `include_once` paths. Owner is file scope — `use` is per-compilation-unit in PHP. A path is emitted only when **statically** known, and the operand **values** compose (never the source text of the concatenation) |
-| `references` | **only** the R9 declared-type reference graph: property types, **typed class constant types** (PHP 8.3), parameter types, and return types. `metadata.relationshipType` is `declared_type` or `return_type`; `metadata.declaredOn` names the position. Wrappers descend (`?Dep`, `Dep\|Other`, `Dep&IShape` → each member is its own dependency); `primitive_type` is silent; `self`/`static` resolve to the enclosing class and `parent` to its declared base. NOT include paths (those are `imports`) and NOT constant fetches (those ride `uses` with `isConstFetch`) |
+| `imports` | module dependencies from `use` clauses ONLY: module = the FQN, alias carried in `metadata.aliased`, and a **grouped** `use C\{D, E}` records members *qualified*. Owner is file scope — `use` is per-compilation-unit in PHP. Include/require paths were here until 2026-10-23 and now ride `part_of`; their `ImportInfo` records are still published as the parsed directive list |
+| `references` | **only** the R9 declared-type reference graph: property types, **typed class constant types** (PHP 8.3), parameter types, and return types. `metadata.relationshipType` is `declared_type` or `return_type`; `metadata.declaredOn` names the position. Wrappers descend (`?Dep`, `Dep\|Other`, `Dep&IShape` → each member is its own dependency); `primitive_type` is silent; `self`/`static` resolve to the enclosing class and `parent` to its declared base. NOT include paths (those are `part_of`) and NOT constant fetches (those ride `uses` with `isConstFetch`) |
 | `contains` | one edge for every owned symbol. **Two owner levels**: a member is owned by its class/interface/trait/enum, and since M60 a **top-level declaration is owned by its namespace** (`contains App\One -> A`), matching the csharp and typescript convention. See "Namespace containment" below — that sentence about being "audited by an independent oracle" was **false** in this tree and has been corrected |
+| `exports` | a name the file **publishes** and no declaration in it writes: a file-scope `define('NAME', …)`. Three grammar tests — the callee **resolves to the global `define`** (the bare name, or the **fully qualified** `\define`; a qualified `Other\define`, a relative `namespace\define` and a variable callee are refused, each with a measured count behind it since 2026-10-08); the first argument's value is a string literal read **through** the `argument` wrapper; no enclosing function/method/closure/class (a top-level `if` is not a scope). Emitted at 1.0 / `import_based` with `metadata.calleeShape`, with a `constant` symbol carrying **no** `ownerName` because `define()` publishes into the **global** scope even inside a namespace — hence no `contains` edge. **59 edges over 19 files** on the whole admitted population (2026-10-23 arm; the older 58/18 figure was the pre-`.phpt` population). See "`exports` — the ruling that was falsified" below |
+| `mixes_in` | trait composition: a `use` clause in a class (or trait) body → the trait's leaf. Emitted at 1.0 / `structural` with `metadata.isTraitUse`; a trait's methods belong to the trait and are not re-declared on the composing class, which is why the composition is the edge and the adaptation clauses (`insteadof`/`as`) are not |
+| `part_of` | include/require: a file-level directive naming a path. Emitted at 0.9 / `import_based`, source file scope, target the statically-known path, `metadata.partRole` mandatory with the written form kept as `metadata.includeType`; a path is emitted only when **statically** known and the operand **values** compose (never the source text of the concatenation) |
 
-| `exports` | **added this round, after the ruling that said it did not exist.** A name the file **publishes** and no declaration in it writes: a file-scope `define('NAME', …)`. Three grammar tests — the callee **resolves to the global `define`** (the bare name, or the **fully qualified** `\define`; a qualified `Other\define`, a relative `namespace\define` and a variable callee are refused, each with a measured count behind it since 2026-10-08); the first argument's value is a string literal read **through** the `argument` wrapper; no enclosing function/method/closure/class (a top-level `if` is not a scope). Emitted at 1.0 / `import_based` with `metadata.calleeShape`, with a `constant` symbol carrying **no** `ownerName` because `define()` publishes into the **global** scope even inside a namespace — hence no `contains` edge. **58** edges over 18 files, every target resolving. See "`exports` — the ruling that was falsified" and the 2026-10-08 audit below it |
-
-Every value `RelationshipType` declares is accounted for: **ten emitted, none
-ruled**. `exports` was previously PHPD33, RULED on a parse-tree count; that
-count read 0 because the probe tested the `argument` wrapper node instead of the
-string literal inside it, so it could not fire on any input and **no corpus could
-falsify it**. A positive control corpus found it. The previous ruling paragraph
-that stood here has been removed rather than amended, because leaving a withdrawn
-verdict readable next to its replacement is how a reader ends up citing the wrong
-one.
 
 ## Namespace containment (M60)
 
@@ -138,19 +194,23 @@ edges, and the owner is now unconditionally `global`, which is what the
 Pinned by `php/namespace-containment` (the namespaced case of the same rule) and
 `php/include-paths` (the file-scope contract).
 
-Member *access* (`$obj->prop`, no call) produces no edge; only member *calls*
-(`$obj->method()`) do. Constructor expressions emit `instantiates`, not `calls`.
+Member *access* (`$obj->prop`, no call) produces no SYMBOL: it emits a `uses` edge with
+`metadata.isMemberRead` (the `calls` label is for member *calls*, and an object creation
+emits `instantiates`, not `calls`).
 
 ### `imports` is the kind the file-level reader needs
 
-`src/lsp/graph_request.ts:256` is `relationship_type IN ('imports','exports')`.
+`src/lsp/graph_request.ts:303,335` admits `relationship_type IN ('imports','exports','part_of')`
+and `graph_usages.ts:160` / `evidence_tier.ts:140` name `part_of` the same way.
 This analyzer used to emit **zero** `imports` edges: a `use` clause was
 recorded only as `ImportInfo` with no relationship, and an include path was
 mislabeled `references` — a file-level module edge presented as an intra-file
 symbol read. Every PHP module dependency was therefore invisible to that
 reader, while the ontology above already promised otherwise. Fixed in
-M12.PHP-IMPORTS: `use` and include paths now share the `imports` kind, with
-`metadata.isImport` / `metadata.fileLevel` set.
+M12.PHP-IMPORTS with `metadata.isImport` / `metadata.fileLevel` set. The
+2026-10-23 relabel moved the include/require rows from `imports` to `part_of`
+(they name a path, not a module), and the readers above already admit that
+kind, so no product surface loses the dependency.
 
 ### `overrides` — verified only, and now CROSS-FILE too (M60)
 
@@ -199,28 +259,73 @@ coverage honestly means populating the companion index, not guessing.
 
 ## Supported constructs
 
-- Namespaces, classes (abstract/final/static), interfaces, traits, enums
-- Methods and functions with typed parameters (simple, variadic, promoted)
-  and return-type hints
-- Properties (typed, static, multi-declaration) and class/global constants
-- Trait `use`, namespace `use` (with aliases), require/include
-- Function/member/scoped/nullsafe calls, object creation, anonymous functions
-- Control-flow nodes for cyclomatic complexity (if/elseif/for/foreach/while/
-  do/switch/match/try/catch/conditional/`&&`/`||`/`and`/`or`)
+- Namespaces in both spellings (`namespace A { … }` and `namespace A;`), classes
+  (abstract/final/static, named and anonymous), interfaces, traits, enums with cases
+- Methods and functions (named, nested named, closures and arrow functions as expressions) with
+  typed parameters (simple, variadic, promoted) and return-type hints
+- Properties (typed, static, multi-declaration), class constants, and file-scope `define('NAME', …)`
+- Trait `use` (`mixes_in`), namespace `use` with aliases and groups (`imports`),
+  include/require (`part_of`)
+- Function/member/scoped/nullsafe calls, first-class callables `foo(...)`, object creation,
+  anonymous functions
+- Control-flow nodes for cyclomatic complexity (if/elseif/for/foreach/while/do/switch/match/
+  try/catch/conditional/`&&`/`||`/`and`/`or`)
+- PHP 8 attributes are parsed by the grammar but publish NO relationship — see the `decorates`
+  row above
+
 
 ## Regex inventory
 
-**Zero.** The analyzer contains no source-text regex doing syntax work; names come from grammar fields and node positions.
+**Zero live regexes.** The analyzer contains no regex literal and no `RegExp` constructor doing
+syntax work: names come from grammar fields and node positions, and path composition uses string
+operations. The only regex-shaped text in the file is a comment recording the one that was removed
+(`raw.replace(/^\+/, "")`). Measured project-wide, not by grep: `validation/m12/results/regex-census.json`
+reports **0 regex usages across 50 analyzers**, and its walk counts regex-literal nodes and
+`RegExp` constructors — a naive `.replace(` grep false-positives on a string argument and on a
+comment.
+
 
 ## Differential ground truth
 
-- Ground truth: `validation/m12/ground-truth/php.json` — manual audit of PHP fixtures.
-- Result `validation/m12/results/php-differential.json`: `passed: true`, expected 66, truePositive 66, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- **M12 manual-audit truth**: `validation/m12/ground-truth/php.json` — **66** manual facts over the
+  fixtures. Result `validation/m12/results/php-differential.json`: `passed: true`, expected **66**,
+  observedResolved 66, truePositive 66, falsePositive 0, falseNegative 0, unknown 0,
+  precision 1, recall 1, `earliestFailingLayer: null` (corpus `phpunit@c8d6921fb6`).
+- **The M14 arbiter is the live differential.** It derives php's truth with `derivePhpEdges` from
+  the same tree, and php's compared set is `calls, uses, references, extends, implements,
+  instantiates, renders, overrides, contains, imports, exports, mixes_in, part_of` — the twelve
+  emitted kinds plus `renders` admitted as a declared zero. `mixes_in` and `part_of` joined both
+  halves (truth derivation + compared set) in Lead commit `8d1809c06`, in the same change, after
+  the lane's 1:1 relabels — an oracle with no entry compares nothing, and an entry with no oracle
+  turns every analyzer row into a fabrication.
+- **Scoped probe (a sample, NOT the whole-population claim)** on both php corpora, 60 sealed files
+  each: `bun script/m14/differential.ts --lang php --sample 60` →
+  phpunit: truth **1,772** / covered **1,772 (100%)** / MISSING **0** / analyzer **1,841** /
+  unexplained **0**; phpmyadmin: truth **2,735** / covered **2,735 (100%)** / MISSING **0** /
+  analyzer **3,053** / unexplained **0** — artifact
+  `validation/m14/measurements/php-differential-relabel-smoke-2026-10-23.txt`. A scoped run
+  writes no canonical artifact: the canonical claim is the 60-file, 47-language sweep.
+- The whole-population statement is the incoming gate (see Corpus validation); the differential is
+  a sealed sample by construction and its green is about the sample.
+
 
 ## Corpus validation
 
-- Corpus `validation/m12/results/php-corpus-errors.json`: corpus `phpunit`, extensions `*.php`, 0 error files, 0 crash files.
-- Differential `validation/m12/results/php-differential.json`: `passed: true`, expected 66, truePositive 66, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- **Admitted population** (the git-tracked rule; `.php` + `.phpt`; engine 1 MiB cap; dedup by
+  realpath): **6,424 admitted of 6,780 tracked paths — 5,114 `.php` + 1,310 `.phpt`** across 10
+  repositories carrying an admitted file; 0 over the cap; 356 tracked-but-absent paths named;
+  digest `sha256:aad2f27831987aeb` — `validation/m14/measurements/php-population.json`.
+- **Whole-population arm, 2026-10-23 (one token acquisition)**: parse **6,424 of 6,424 files,
+  0 failed, 87 s** (`validation/m14/measurements/php-emission-census.json`); incoming closure
+  **365,409 edges = 140,540 resolved + 44,275 amb(decl) + 48,378 unresolved + 121,044 bindOK +
+  11,172 extOK + 0 unclassed — EXACT** (`validation/m14/measurements/php-gate-whole-2026-10-23.txt`).
+- **Corpus error census** (`validation/m12/results/php-corpus-errors.json`, phpunit
+  `c8d6921f`, deterministic first-400 sorted): 3,231 tracked, 400 measured, **errorFiles 0,
+  crashFiles 0**.
+- The older M60 census quoted in §Ontology measurements was taken over **4,642 admitted `.php`
+  files ≤ 512 KB — a pre-`.phpt`, pre-1 MiB-rule population**, not this one; its counts are that
+  run's and are not current-population numbers.
+
 
 ## Verification evidence
 
@@ -338,7 +443,15 @@ Removing the guess took heuristic edges **198 → 0** on phpunit and **171 → 0
 on phpmyadmin with tree-truth coverage unchanged at 100%, confirming it
 contributed no real coverage.
 
-## The ontology, verdict by verdict (M60, re-measured)
+## Ontology measurements — verdict by verdict (M60, re-measured)
+
+**THIS SECTION IS THE M60 CENSUS AT ITS ORIGINAL POPULATION, KEPT AS A MEASURED RECORD.** It
+was measured over **4,642 admitted `.php` files ≤ 512 KB** (pre-`.phpt`, pre-1 MiB rule) and its
+totals belong to that run. The CURRENT whole-population statement is the 14-row claim table
+above and `validation/m14/measurements/php-emission-census.json`; its per-kind rules remain
+the lane's measured detail. The register has since grown to fourteen values and the lane now
+emits twelve (`mixes_in` and `part_of` added 2026-10-23; `decorates` and `renders` ruled), so
+the "ten emitted" sentence inside this section is the M60 vocabulary's, not today's.
 
 Every number below is measured through **`parseFile`** (`src/ast/pool-worker.ts`),
 never `analyze()`, over the whole admitted corpus: **4,642 git-tracked `.php`
@@ -1119,40 +1232,32 @@ rather than guessing one (see the audit above).
 
 ### Known gaps
 
-**The lane declares 0 gaps** (`script/m14/spec/php-completeness.json`: `gap.gaps = []`).
-The Verification-evidence block above used to say "2 declared gaps", which contradicted this
-section of the same document; the two below are the constructs that were once filed as gaps and
-are now adjudicated `RULED`, i.e. deliberate language boundaries rather than forgotten work:
+**The spec's `gap.gaps` is empty** (`script/m14/spec/php-completeness.json`), and its coverage block
+declares **12 implemented, 2 excluded** — the two excluded values are ruled, with counts, in the
+claim table above. The constructs once filed as gaps are now either handled or adjudicated
+boundaries rather than forgotten work:
 
-1. **PHPD31/PHPD32 — HTML/text interpolation outside `<?php` blocks** — `php_tag`,
-   `text_interpolation`, `encapsed_string`, `heredoc`, `nowdoc`. The interpolated HTML is not
-   PHP and its `$var` slots are not PHP symbols, so they are outside this analyzer's contract.
-   The in-PHP string-interpolation cases that matter for value flow (`"hello $name"`,
-   `"{$o->p}"`) **are** handled and are adjudicated in the spec.
-2. **ini directives and hash-bang lines** — `ini_section`, `ini_entry`, `preprocessor`,
-   `shell_comment`, `hash_bang_line`. Configuration and shell, not PHP declarations.
-3. **PHPD33 — an `exports` kind is ruled OUT.** The wording in the spec ("PHP has no export
-   syntax") is **not** the basis and is not sufficient: the gate's own header records that ruling
-   a convention on a grammar inventory is unsound, because a convention is not a node. The
-   measurement that carries the ruling is Instrument B in
-   §"`exports` is RULED, and what would overturn it" — **P3 = 0 and P4 = 0** over all 4,621
-   admitted files, **P1b = 4 distinct** qualified re-export targets of which 3 the analyzer
-   already publishes, and P2b = 28 file-level returns of which 19 are composer's vendored
-   autoload convention and 9 are one grammar indent-test fixture. Overturn conditions are stated
-   with it.
+1. **PHP 8 attributes carry no relationship** — `decorates` is RULED ONTOLOGICAL on the
+   pre-registered counter (0 of 6,507 attributes over 1,799 files had a call-shaped direct
+   argument). Not a gap.
+2. **HTML/text interleaving outside `<?php` blocks** — `php_tag`, `text_interpolation`,
+   `encapsed_string`, `heredoc`, `nowdoc`: the interpolated HTML is not PHP and its `$var` slots
+   are not PHP symbols. The in-PHP interpolations that matter for value flow (`"hello $name"`,
+   `"{$o->p}"`) ARE handled. `renders` is RULED GRAMMAR-ABSENCE with its near misses counted
+   (inline HTML `text` 1,407, `text_interpolation` 85 over 1,327 files).
+3. **ini directives and hash-bang lines** — `ini_section`, `ini_entry`, `preprocessor`,
+   `shell_comment`, `hash_bang_line`: configuration and shell, not PHP declarations.
 4. **Namespace-level dynamic dispatch is unresolved, and unresolvable from one file.** PHP
    resolves an unqualified class name against the current namespace first and falls back to
    global. The analyzer records `use` clauses as `imports` (the declared preference) and does not
    use them to rewrite call or instantiation targets, so `calls`/`instantiates` targets are leaf
    names that may name the wrong class when two namespaces declare the same leaf. That is
-   deliberate — it is the same leaf-keyed ambiguity that makes cross-file `overrides`
-   unresolvable — and it is the single largest source of the `to`-resolved rates in §"The six
-   questions".
-5. **`contains` and `imports` are unaudited.** Both are emitted in volume (30,315 and 25,900
-   edges) and the differential compares neither, because the php oracle does not derive them and
-   they are absent from php's compared-label allowlist. The fixture suite is the only thing
-   standing behind them. This is a DERIVATION finding, not a known gap in the analyzer, and the
-   change that would settle it is §"What this lane could not settle", item 2.
+   deliberate — the same leaf-keyed ambiguity bounds cross-file `overrides`.
+5. **No emitted kind is unaudited by the differential** (corrected 2026-11-03). php's compared
+   set now includes `contains` and `imports` (2026-10-08), `exports` (2026-10-08), and
+   `mixes_in`/`part_of` (2026-10-23) beside the base labels, so all twelve emitted kinds are
+   compared. What remains outside the differential is a SCOPE limit, not a label: the differential
+   draws a sealed sample, so whole-population claims come from the incoming gate.
 
 **A boundary written only in a source comment is not a ruling.** That sentence is the M60 round's
 own lesson and it has a named victim: typed class constants sat on `phpDeclaredTypeRefs`'s
