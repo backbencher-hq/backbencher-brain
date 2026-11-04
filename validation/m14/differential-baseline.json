@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 16.55,
-    "loadAvgEnd": 13.91,
+    "loadAvgStart": 11.03,
+    "loadAvgEnd": 7.95,
     "sliceCount": 1
   },
   "counts": {
@@ -1689,6 +1689,15 @@
         "avgMsPerFile": 4.1
       },
       "sampleSetHash": "93dbe4539798b0ca"
+    },
+    "mojo:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 4.2
+      },
+      "sampleSetHash": "87fbbb53c2a11ada"
     }
   },
   "hashes": {
@@ -1759,7 +1768,8 @@
     "redis:make": "e1b49ce25608c189",
     "duckdb:sql": "8378a1275fc0b970",
     "consul:make": "abac0ebd75471c84",
-    "otp:bash": "93dbe4539798b0ca"
+    "otp:bash": "93dbe4539798b0ca",
+    "mojo:perl": "87fbbb53c2a11ada"
   },
   "floorMoves": {
     "solidity:solidity": {

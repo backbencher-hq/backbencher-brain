@@ -89,23 +89,28 @@ extends 243 · implements 0 · overrides 1,419 · instantiates 527 · mixes_in 0
 decorates 0 · renders 0 · part_of 0.
 
 **The canonical-sample differential** (`npx tsx script/m14/differential.ts
---lang perl`, mojo, 60 files, hash `87fbbb53c2a11ada`). Before 2026-11-03 it read
-tree truth 2,657 / covered 2,333 (87.8%) / MISSING 324 / unexplained 11 — and 318
-of those 324 were a WIRING gap, not a lane defect: the harness's compared-label
-allowlist filtered the ANALYZER side for `imports`, `uses` and `references`
-while its oracle's rows were pushed unfiltered (the documented #910/G7 shape). With
-the lane's four oracle-declared labels admitted, and the oracle's block-form
-`use constant` scan repaired (it kept only a table's first key and read every later
-VALUE as a key), the run reads **tree truth 2,668 / covered 2,659 (99.7%) /
-MISSING 9 / analyzer edges 2,400 / unexplained 71** — `exports=62, uses=8,
-references=1`. The residue is ITEMISED and ORACLE-SIDE: the oracle derives only
-assignment-form exports while the analyzer also publishes `push @EXPORT_OK` (62);
-it does not derive qualified-name `uses` (`EV::run`, `EV::READ`: 8) or the
-`bless`/`ref(...) eq`/`UNIVERSAL::isa` `references` (1); and nine truth rows are
-over-derived shapes the analyzer rightly refuses — method calls on expression
-receivers (`->to_string`), `no strict`/`no warnings` read as imports, a self-call,
-and `defined &builtin::is_bool` read as a call (it is a code-slot `uses`). The
-analyzer's side of each is pinned by the fixture suite.
+--lang perl`, mojo, 60 files, hash `87fbbb53c2a11ada`) reads **tree truth 2,730
+rows / covered 2,730 (100%) / MISSING 0 / analyzer edges 2,400 / unexplained 0 /
+heuristic 0**, and the lane's floor is PINNED at that row
+(`validation/m14/differential-baseline.json`: missing 0, unexplained 0,
+avgMsPerFile 4.2, sampleSetHash 87fbbb53c2a11ada). Getting there named three
+defects, all on the truth side: (1) 318 of the original 324 MISSING were a WIRING
+gap — the harness's compared-label allowlist filtered the ANALYZER side for
+`imports`, `uses` and `references` while its oracle's rows were pushed
+unfiltered (the #910/G7 shape; the lane's four oracle-declared labels are now
+admitted); (2) the oracle's walk was narrower than the analyzer's — it did not
+mirror the analyzer's rule that a `use` statement's direct `list_expression`
+is walked while a SINGLE-EXPRESSION argument is not, that a COMPUTED
+`require(...)` payload is walked, and that `no strict` / `no warnings` loads
+nothing; it also derived nothing for a block-form `use constant { ... }` table
+(its pair scan took the first key and read every later value as a key); (3) it
+did not derive the three shapes the analyzer had added later — push-form and
+parenthesized-list `@EXPORT_OK` exports, qualified variable and bareword reads,
+and the `bless` / `ref(...) eq` / `UNIVERSAL::isa` references — and it read
+`defined &builtin::is_bool` as a CALL where the analyzer publishes the code-slot
+`uses`. With the walk, the four refusals and the three shapes mirrored, both
+sides are 0/0 on the canonical sample and the fixture suite's analyzer side is
+unchanged.
 
 **The older 5,127-file census** below is kept as the measurement it was: a
 27-repository walk including test-fixture trees no `perl-*` glob reaches. Where
@@ -292,9 +297,9 @@ exists; the claim table is the contract.
 
 ## Differential ground truth
 
-- **Current canonical-sample differential** — numbers and the itemised residue are
-  in `## Ontology measurements — 2026-10-26`: covered 2,659/2,668 (99.7%), MISSING 9,
-  unexplained 71 (all oracle-side), hash `87fbbb53c2a11ada`.
+- **Current canonical-sample differential** — PINNED at the canonical sample:
+  covered 2,730/2,730 (100%), MISSING 0, unexplained 0, hash `87fbbb53c2a11ada`
+  (`validation/m14/differential-baseline.json` `mojo:perl` row).
 - Ground truth: `validation/m12/ground-truth/perl.json` — `truthSource: manual_audit`, source the lane's fixtures.
 - Result `validation/m12/results/perl-differential.json`: `passed: true`, expected 32, truePositive 32, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
 

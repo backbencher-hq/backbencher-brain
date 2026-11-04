@@ -771,8 +771,31 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
       const leftVar = lefts.flatMap((l) => fieldAll(l, "variable")).map((v) => byType(v, "varname")).find(Boolean)
       const leftName = String(leftVar?.text ?? "").replace(/^[@%]/, "")
       const right = rights.find((r) => r.isNamed && r.namedChildCount > 0) ?? rights[0]
+      // A LIST OF WRITTEN NAMES IS READ ELEMENT BY ELEMENT.
+      //
+      // `wordsOf` answers for a bareword, a qw list or a string, and NOTHING for
+      // the parenthesized list form — so `our @EXPORT_OK = ('curfile', 'path',
+      // 'tempdir', 'tempfile');` (Mojo::File) and the wrapped qw list (Mojo::
+      // WebSocket) derived ZERO exports while the analyzer published every name.
+      // MEASURED (2026-10-26, canonical-sample differential): 62 analyzer
+      // `exports` rows had no truth row and the label's truth was EMPTY. The
+      // descent is the analyzer's own shape: each group's words are the names.
+      const wordsDeep = (node: any): string[] => {
+        if (!node) return []
+        const direct = wordsOf(node)
+        if (direct.length) return direct
+        const out: string[] = []
+        for (let i = 0; i < (node.namedChildCount ?? 0); i++) {
+          const c = node.namedChild(i)
+          if (c) out.push(...wordsDeep(c))
+        }
+        return out
+      }
       if (right && (leftName === "EXPORT" || leftName === "EXPORT_OK")) {
-        for (const exported of wordsOf(right)) push("exports", packageOf(n) || "global", exported)
+        for (const exported of wordsDeep(right)) {
+          if (!exported || exported.startsWith("-")) continue
+          if (isWrittenName(exported)) push("exports", packageOf(n) || "global", exported)
+        }
       }
       if (right && leftName === "EXPORT_TAGS") {
         for (const tag of fatKeysOf(right)) push("exports", packageOf(n) || "global", String(tag?.text ?? ""))
@@ -800,6 +823,16 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
     // `contains` rows over the population are constants the oracle did not derive,
     // and every one of them surfaced as unexplained.
     if (n.type === "use_statement") {
+      // `no strict 'refs';` PARSES AS A use_statement WHOSE FIRST CHILD IS `no`.
+      //
+      // The grammar types `use` and `no` alike, and a `no` DISABLES a feature
+      // instead of loading a module, so it is not an import. The analyzer's own
+      // guard is `node.child(0)?.type === "no"`. MEASURED (2026-10-26,
+      // canonical-sample differential): two truth rows over-derived, from
+      // `no strict 'refs'` and `no warnings 'numeric'`. A `no` statement's
+      // arguments are not walked either (the analyzer returns for it), so the
+      // whole statement leaves pass 1 here.
+      if (n.child(0)?.type === "no") return
       const modNode = n.childForFieldName?.("module")
       const module = String(modNode?.text ?? "")
       // THE INHERITANCE AND ROLE DECLARATIONS ✓✓.
@@ -894,10 +927,67 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
         }
       }
     }
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const c = n.namedChild(i)
-      if (c) visit(c)
+    // `push @EXPORT_OK, qw(...)` — a module's exported API built with `push`.
+    //
+    // The assignment-only reader derived `our @EXPORT_OK = ...` and missed the
+    // push form, which is how mojo's plugins declare their API. MEASURED
+    // (2026-10-26, canonical-sample differential): 62 analyzer `exports` rows over
+    // the 60-file sample had no truth row, and the label's truth was EMPTY (the
+    // gate read `COMPARED WITH NO TRUTH: exports`). The rules are the analyzer's:
+    // the FIRST element is the array being pushed onto (an array variable,
+    // unqualified or `@Pkg::NAME`); only the EXPORT / EXPORT_OK arrays declare
+    // exports; the elements are the words of a qw list, a string literal or a
+    // bareword; and an array COPY (`push @EXPORT_OK, @Other::EXPORT_OK`) declares
+    // nothing because the words are not written here.
+    if (n.type === "function_call_expression" || n.type === "ambiguous_function_call_expression") {
+      const fnNode = fieldAll(n, "function").find((c: any) => c.isNamed)
+      if (String(fnNode?.text ?? "") === "push") {
+        const elements = argsOf(n).filter((c: any) => c.isNamed && c.type !== "comment")
+        const targetEl = elements[0]
+        const arrayVar = targetEl && targetEl.type === "array" ? byType(targetEl, "varname") : undefined
+        const arrayText = String(arrayVar?.text ?? "")
+        const arrayName = leafOf(arrayText)
+        const owner = arrayText.includes("::") ? arrayText.slice(0, arrayText.lastIndexOf("::")) : packageOf(n) || "global"
+        if (arrayName === "EXPORT" || arrayName === "EXPORT_OK") {
+          const NAMED_ELEMENT = new Set(["quoted_word_list", "string_literal", "interpolated_string_literal", "autoquoted_bareword", "bareword"])
+          for (const el of elements.slice(1)) {
+            if (!NAMED_ELEMENT.has(el.type)) continue
+            for (const value of wordsOf(el)) {
+              if (!value || value.startsWith("-")) continue
+              if (isWrittenName(value)) push("exports", owner, value)
+            }
+          }
+        }
+      }
     }
+    // THE DIRECTIVE'S ARGUMENT LIST IS WALKED, AND ONLY IT — the same rule the
+    // relationship pass states: a `use` statement's direct `list_expression` is
+    // walked (the analyzer walks it for the `use overload` shape); a single
+    // expression argument is not; a `require` argument is not; a `no` statement
+    // falls through to the ordinary walk (the analyzer `break`s for `no`).
+    let visitChildren: any[] | null = null
+    if (n.type === "use_statement") {
+      const isNo = n.child(0)?.type === "no"
+      if (!isNo) {
+        const list = byType(n, "list_expression")
+        visitChildren = list ? [list] : []
+      }
+    } else if (n.type === "require_expression") {
+      // Mirror of the relationship pass's rule: a WRITTEN payload returns from
+      // the analyzer's require case, a COMPUTED one falls through to the walk.
+      const written = byType(n, "bareword") ?? byType(n, "package") ?? byType(n, "string_literal")
+      visitChildren = written ? [] : null
+    } else if (n.type === "require_version_expression") {
+      visitChildren = []
+    }
+    if (visitChildren === null) {
+      visitChildren = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) visitChildren.push(c)
+      }
+    }
+    for (const c of visitChildren) visit(c)
   }
   visit(root)
 
@@ -1104,15 +1194,25 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
         const named = raw.startsWith("&") ? raw.slice(1) : raw
         const probe = named
         if (!builtins.has(probe) && probe !== "use" && probe !== "no" && isWrittenName(named)) {
-          // A code-slot REFERENCE with no argument list is not a call.
+          // THE `&` TEST IS ON THE RAW TEXT, AND IT USED TO BE ON THE STRIPPED ONE.
+          //
+          // `named` has already had its `&` removed, so `named.startsWith("&")` was
+          // false for every callee and the code-slot guard never fired: `&builtin::
+          // is_bool` (a DEFINEDNESS TEST) and `&Mojo::Base::import` (a `goto`) were
+          // published as CALLS. The analyzer publishes the first as `uses` (a code
+          // slot is a value) and refuses the second as a self-reference. MEASURED
+          // (2026-10-26, canonical-sample differential): two truth rows over-derived,
+          // one of them the `defined &X` shape the analyzer's own comment calls
+          // perl's most idiomatic conditional probe. A callee WITH an argument list
+          // is perl's explicit-call syntax and stays a call.
           const hasArgs = fieldAll(n, "arguments").some((c) => c.isNamed)
-          if (!(named.startsWith("&") && !hasArgs)) {
+          if (raw.startsWith("&") && !hasArgs) {
+            if (leafOf(named) !== leafOf(src)) push("uses", src, leafOf(named))
+          } else if (probe !== "new" && probe !== "with" && probe !== "has" && probe !== "extends" && probe !== "bless") {
             // `new` and the other magic shapes are the analyzer's business; this
             // oracle does not reproduce its POSITIVE class allowlist, so those
             // targets are simply not claimed here (see the header).
-            if (probe !== "new" && probe !== "with" && probe !== "has" && probe !== "extends" && probe !== "bless") {
-              push("calls", src, leafOf(named))
-            }
+            push("calls", src, leafOf(named))
           }
         }
       }
@@ -1128,10 +1228,136 @@ export function derivePerlTruth(root: any, options: PerlTruthOptions = {}): Perl
       }
     }
 
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const c = n.namedChild(i)
-      if (c) walk2(c, nextFn, nextPkg)
+    // A PACKAGE-QUALIFIED BAREWORD IN VALUE POSITION IS A READ OF THAT NAME.
+    //
+    // Mirror of the analyzer's `case "bareword"` rule: only a QUALIFIED name
+    // (`EV::READ`), never a trailing `::` (an invocant spelling); never a hash key
+    // or the `=>` KEY of a pair; never a directive's module, a callee, or a
+    // method's invocant; and only in a VALUE slot. MEASURED (2026-10-26,
+    // canonical-sample differential): 8 analyzer `uses` rows had no truth row —
+    // `EV::run` in an expression statement and `EV::READ` / `EV::WRITE` on the
+    // right of an assignment, i.e. two packages' constants read as values.
+    if (n.type === "bareword" || n.type === "package") {
+      const text = String(n.text ?? "")
+      if (text.includes("::") && !text.endsWith("::")) {
+        const parent = n.parent
+        const parentType = String(parent?.type ?? "")
+        const VALUE_PARENT = new Set(["assignment_expression", "return_expression", "list_expression", "expression_statement", "keyval_expression"])
+        let refused = parentType === "hash_element_expression" || parentType === "slice_container_variable" || !VALUE_PARENT.has(parentType)
+        if (parent && !refused) {
+          // The `=>` that FOLLOWS the node is the only thing in the source that
+          // says "this is a key"; the same positional rule the analyzer states.
+          for (let i = 0; i < parent.childCount; i++) {
+            const child = parent.child(i)
+            if (!child || child.id !== n.id) continue
+            const next = parent.child(i + 1)
+            if (next && !next.isNamed && next.type === "=>") refused = true
+            break
+          }
+        }
+        if (!refused) push("uses", src, text)
+      }
     }
+    // `$Pkg::name` / `@Pkg::name` / `%Pkg::name` — a QUALIFIED VARIABLE READ.
+    //
+    // Mirror of the analyzer's `case "scalar"/"array"/"hash"` rule: the varname
+    // carries the package qualification, the target keeps the FULL name, and a
+    // variable has no per-sub leaf binding (`$Foo::LIMIT` and `$Bar::LIMIT` are
+    // two globals). The analyzer's comment records that a COMPUTED package half
+    // (`$Config{ $key }::SSL_ERROR`) does not parse as this shape at all, so
+    // nothing written can be invented. MEASURED (2026-10-26, canonical-sample
+    // differential): the analyzer's qualified-variable reads were the remaining
+    // `uses` rows with no truth row.
+    if (n.type === "scalar" || n.type === "array" || n.type === "hash") {
+      const varname = byType(n, "varname")
+      const qualified = String(varname?.text ?? "")
+      if (qualified.includes("::") && isWrittenName(qualified)) push("uses", src, qualified)
+    }
+
+    // ---- `references` FOR THE THREE NAMED-IN-A-QUERY SHAPES THE ANALYZER PUBLISHES.
+    //
+    // `bless $x, 'Class'` names the class in the LAST WRITTEN literal,
+    // `ref($x) eq 'Class'` is perl's type test as a COMPARISON (the grammar types
+    // it `equality_expression`, not `binary_expression`), and the FUNCTION
+    // spelling `UNIVERSAL::isa($x, 'Class')` names the class in a literal. A
+    // COMPUTED class (`bless $x, $class`, `ref($x) eq $wanted`) writes no name and
+    // is refused. MEASURED (2026-10-26, canonical-sample differential): one
+    // analyzer `references` row had no truth row.
+    const writtenLiteral = (node: any): string => {
+      if (!node) return ""
+      const t = String(node.type)
+      if (t === "string_literal" || t === "interpolated_string_literal") {
+        if (String(node.text ?? "").includes("$")) return ""
+        return wordsOf(node)[0] ?? ""
+      }
+      if (t === "autoquoted_bareword" || t === "bareword" || t === "package") return String(node.text ?? "").trim()
+      return ""
+    }
+    const REF_TYPES = new Set(["ARRAY", "HASH", "SCALAR", "CODE", "REF", "GLOB", "LVALUE", "REGEXP", "IO", "VSTRING", "UNKNOWN"])
+    const referenceName = (word: string): void => {
+      if (!word || !isWrittenName(word) || REF_TYPES.has(word)) return
+      if (leafOf(word) === leafOf(src)) return
+      push("references", src, leafOf(word))
+    }
+    if (n.type === "function_call_expression" || n.type === "ambiguous_function_call_expression") {
+      const fnNode = fieldAll(n, "function").find((c: any) => c.isNamed)
+      const fnText = String(fnNode?.text ?? "")
+      if (fnText === "bless" || fnText === "UNIVERSAL::isa") {
+        // THE LAST WRITTEN literal, mirroring the analyzer: `bless $x, 'C'` names
+        // C; the 3-argument `UNIVERSAL::isa($x, 'C', $v)` still names C.
+        let word = ""
+        for (const a of argsOf(n).filter((c: any) => c.isNamed)) {
+          const w = writtenLiteral(a)
+          if (w) word = w
+        }
+        referenceName(word)
+      }
+    }
+    if (n.type === "equality_expression") {
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
+      const refKid = kids.find((k: any) => k && k.type === "func1op_call_expression" && String(k.child(0)?.text ?? "") === "ref")
+      const litKid = kids.find((k: any) => k && (k.type === "string_literal" || k.type === "interpolated_string_literal"))
+      if (refKid && litKid) referenceName(writtenLiteral(litKid))
+    }
+
+    // THE DIRECTIVE'S ARGUMENT LIST IS WALKED, AND ONLY IT.
+    //
+    // The analyzer `return`s from the `use_statement` case after walking exactly
+    // the statement's direct `list_expression` child (`use overload '@{}' => sub
+    // { shift->to_array }, ...` is such a list, and its calls ARE emitted); a
+    // directive whose argument is ONE expression with no list (the measured case
+    // is `use lib curfile->sibling('lib')->to_string;`, whose child is a
+    // method_call_expression) is NOT walked. `require` arguments are not walked at
+    // all. MEASURED (2026-10-26, canonical-sample differential): three truth rows
+    // `calls -> to_string` were over-derived from the un-walked `use lib` shape
+    // (t/mojolicious/embedded_lite_app.t, t/mojo/util.t, t/mojo/morbo.t) — so the
+    // oracle mirrors the walk instead of mirroring the `return`.
+    let childNodes: any[] | null = null
+    if (n.type === "use_statement") {
+      if (n.child(0)?.type !== "no") {
+        const list = byType(n, "list_expression")
+        childNodes = list ? [list] : []
+      }
+    } else if (n.type === "require_expression") {
+      // A WRITTEN MODULE OR PATH RETURNS (the analyzer's require case), and a
+      // COMPUTED payload `break`s into the ordinary walk. MEASURED (2026-10-26,
+      // canonical-sample differential): `require(Mojo::BaseUtil::class_to_path(
+      // $flag))` is a computed payload and its CALL is emitted by the analyzer —
+      // the oracle skipped the subtree and left that one `calls` row unexplained.
+      const written = byType(n, "bareword") ?? byType(n, "package") ?? byType(n, "string_literal")
+      childNodes = written ? [] : null
+    } else if (n.type === "require_version_expression") {
+      childNodes = []
+    }
+    if (childNodes === null) {
+      childNodes = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) childNodes.push(c)
+      }
+    }
+    for (const c of childNodes) walk2(c, nextFn, nextPkg)
   }
   walk2(root, undefined, "")
 
