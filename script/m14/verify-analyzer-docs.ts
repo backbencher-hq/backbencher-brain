@@ -234,3 +234,21 @@ if (payload.worklist.unexplainedOntologyCells.length) {
   for (const r of payload.worklist.unexplainedOntologyCells) console.log(`  ${r.lang}: ${r.gaps.slice(0, 3).join("; ")}`)
 }
 console.log(`\n→ ${only ? "(not written: scoped run)" : path.relative(ROOT, OUT)}`)
+// ENFORCING SINCE 2026-11-03 (the launch pass). The fleet reads 50/50 fully complete, so the debt
+// this gate was written to MEASURE is closed and the measurement becomes a FLOOR. The `baseline`
+// block above stays exactly what it always was — the historical record — and the exit code is what
+// changes. The design note at the head of this file already said "a language that LOSES a section
+// fails"; nothing implemented it, because at the time 22 languages were short and a red gate would
+// have been ignored. That reason is gone: every page now carries all eight sections with no
+// unexplained ontology cell, so any new absence, missing section or unexplained cell is a
+// REGRESSION and the run must say so with an exit code, not only in a printed count.
+const regressions = [
+  ...absent.map((r: any) => `${r.lang}: no canonical doc`),
+  ...sectionShort.flatMap((r: any) => r.missingSections.map((s: string) => `${r.lang}: missing section ${s}`)),
+  ...cellGaps.flatMap((r: any) => r.ontologyGaps.map((g: string) => `${r.lang}: ${g}`)),
+]
+if (regressions.length > 0) {
+  console.log(`\nFAIL — ${regressions.length} regression(s) against the 2026-11-03 floor of 50/50 fully complete:`)
+  for (const r of regressions) console.log(`  ${r}`)
+  process.exit(1)
+}
