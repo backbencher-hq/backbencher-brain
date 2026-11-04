@@ -114,16 +114,36 @@ see "Defect D1" below.
 
 ## Relationship ontology
 
-TOML's relationship vocabulary is `contains`, **and that is the whole truth** — now
-established by measurement rather than by assertion, with each of the other nine
-types carrying a falsifiable ruling (next section).
+The canonical claim table, fourteen rows in the register's order. Six of the four classes below are
+marked in the page's own code terms; every "emitted" row names the emission site, and every ruled
+row carries the measurement that rules it (the ten-type verdict table below keeps those measurements
+verbatim, including the ones the analyzer has since moved past — those are flagged where they moved).
 
-| Label | Emitted for | Confidence | Tier |
+| Relationship type | Emitted? | How resolved | Confidence model |
 |---|---|---|---|
-| `contains` | the module → its top-level tables and root keys; a table → its keys and sub-tables | 1.0 | `structural` |
-| `imports` | a Cargo `path` dependency: the manifest itself writes a file/directory path, which `dependencyFileClaim` checks against the project's admitted files and `sourcePathClaim` covers for the refuted remainder | 1.0 | `import_based` |
+| calls | `❌` no — grammar-inventory | the corpus's 20 distinct node types contain no callable node (no `function_definition`, `call_expression`, `lambda`, `macro_invocation`); a key is data, not a callee | — (nothing to model; ruling in the verdict table) |
+| extends | `❌` no — measurement | 14 candidate sites / 13 files, 12 of them a bare name that names no admitted document and 2 a path; the 11 `base` hits are `cargo add --base` git branches, not supertypes | — (ruled) |
+| implements | `❌` no — measurement | 0 occurrences of the marker names over 1,141 admitted files; no supertype clause and no interface node exists in the grammar | — (ruled) |
+| uses | `❌` no — grammar + parse-tree count | 1 template-key occurrence and 366 interpolation-marker values, every one inspected as a template for ANOTHER tool (Go/JS), rendered before TOML reads it | — (ruled) |
+| imports | `✅` emitted — `real-toml-analyzer.ts:1623` | a Cargo `path` dependency: the manifest writes a file/directory path and the edge is published only where `dependencyFileClaim` verifies it against the project's admitted files (`metadata.isPathDependency`, `dependencySection`, `FILE_CLAIM_KEY`); the refuted remainder is counted, not claimed | 1.0 `import_based` |
+| exports | `✅` emitted in code — `:1599`; corpus-zero | a `publish`-style site whose VALUE names a declaration of this document (`metadata.isPublishSurfaceExport`, `exportForm: "manifest_publish_surface"`); the candidate is only admitted after the self/context/ancestor filters, and the measured corpus has 174 candidates with 0 emitted — the graph is unchanged, the type error is now impossible by construction | 1.0 `structural` |
+| contains | `✅` emitted — `:1197`, `:1286` | the module → its top-level tables and root keys; a table → its keys and sub-tables; 19,087 edges, 100% resolved at both ends | 1.0 `structural` |
+| references | `✅` emitted — `:1446`, `:1542` | (a) `version.ref = "<name>"` in a Gradle version catalogue: the alias is resolved to the key declared under the document's final segment (`metadata.isAliasReference`); (b) Cargo workspace inheritance `x.workspace = true`: resolved against the workspace root's declared path list and read through the root's module name (`metadata.isWorkspaceInheritance`, `inheritedFrom`); an ambiguous or unresolved alias publishes nothing | 1.0 `reference_qualified` |
+| overrides | `❌` no — measurement | TOML v1.0.0 FORBIDS redeclaring a table or key, so the one duplicated `[core]` header in 1,141 files is a spec violation, not a winning second body; 96 `[[array-of-tables]]` redeclarations APPEND and replace nothing | — (ruled) |
+| instantiates | `❌` no — measurement | 0 occurrences of the marker names over 1,141 admitted files; the grammar has no constructor or `new` node | — (ruled) |
+| decorates | `❌` no — ontological | a TOML key is data; the format has no declaration/annotation distinction for an attribute to decorate, and the extended census counts 0 constructs of that shape | — (ruled) |
+| renders | `❌` no — grammar-absence | no render host and no component boundary exists in the format; 0 of the 20 node types could carry the edge | — (ruled) |
+| mixes_in | `❌` no — grammar-absence | no heritage clause, no member-set provider and no composition node in the grammar; 0 candidates | — (ruled) |
+| part_of | `❌` no — ruled with near misses | a TOML document is only ever included by another TOOL, never by TOML itself: the 7 `.toml` values that name another existing `.toml` file are lists of files a linter is told about (`extend-exclude`, `srcs`), not splices — the shape the arbiter's header warns about | — (ruled) |
 
-There is no second type, and inventing one would be worse than a thin graph.
+**Two notes the table must not lose.** (1) The `references` and `exports` shapes above are LATER than
+the ten-type verdict table below: that table records `references` as "Gradle half emitted, Cargo
+half unemitted" and `exports` as RULED 0, which was true of the analyzer it measured. The code now
+emits workspace inheritance (`:1523-1556`, pattern `workspace-inheritance-refs`) and the publish
+surface (`:1568-1623`, measured 174 candidates / 0 emitted), so the verdict table's rows for those
+two are kept as MEASURED HISTORY and the claim table is the current statement. (2) The `imports` row
+is deliberately narrow: the format defines no module system, so the edge exists only where a
+manifest writes a path AND the file claim verifies it — a target naming nothing carries no claim.
 
 ## The ten types, verdict by verdict
 
