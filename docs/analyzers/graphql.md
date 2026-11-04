@@ -8,10 +8,10 @@
   `bkegley/tree-sitter-graphql@ee5ce96` plus a generated patch (see
   `grammars/tree-sitter-graphql/README.md` and `port.py`). The pin, its
   provenance, its rejected alternatives and the offline source↔wasm proof live
-  in `script/m14/verify-grammar-pins.ts` under the `graphql` lane.
-- Detection: `.graphql`, `.graphqls`, `.gql` → `graphql` in
-  `src/ast/language-detection.ts`
-- Wiring: `ASTEngine` → `RealGraphqlAnalyzer`
+  in `script/m14/verify-grammar-pins.ts` under the `graphql` lane (`:976`).
+- Detection: `.graphql`, `.graphqls`, `.gql` → `graphql` in the router's one table
+  (`src/ast/language-detection.ts:101`)
+- Wiring: `ASTEngine` → `RealGraphqlAnalyzer` (`src/ast/engine.ts:2435`)
 
 ### The node names are a contract
 
@@ -65,6 +65,37 @@ type on every branch; `metadata.graphqlCategory` is the specification's word for
 the same thing; `metadata.topLevel` marks a type-system declaration.
 
 ## Relationship ontology
+
+THE CLAIM TABLE. One row per canonical `RelationshipType`, in the register order of
+`src/ast/types.ts`, derived from the analyzer's own `RelationshipType.*` sites
+(`src/ast/real-graphql-analyzer.ts`) and the lane's committed measurements. Where the
+dated tables elsewhere on this page differ, THIS table is the claim; the measured
+rulings behind the six ❌ rows are in
+`## The completion bar: extends + the four extended types` below. Confidence and the
+`evidenceClass` tier are emitted per edge by `addRelationship` (`:447-492`), which
+stamps `confidence: 1` on every edge and `evidenceClass: "structural"` except for the
+one `import_based` tier.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ❌ not emitted | 0 `RelationshipType.Calls` sites. RULED grammar-absence, measured in BOTH spaces the arbiter requires: 0 of 10 call-shaped node types among the 75 named types over 2,338,690 nodes, and 0 of 22 keyword-shaped KEYS applies anything (`validation/m14/fixtures/graphql/rulebook-space-probe.json`, read by `ruling-attestation.json`). The nearest real form — an argument-bearing `Field`/`Directive` — is published as `uses`, not relabelled. | — (no edge emitted; grammar-absence ruling) |
+| `extends` | ✅ emitted | `emitHeritage` labels an `implements` clause `extends` only when THIS DOCUMENT declares the named supertype as an object type, input object, union or scalar (`:609-632`); role `extends`, `metadata.implementsClause: true`. Whole-population count 0 (0 of 3,179 `implements` clauses is inheritance-shaped) — corpus-unexercised, branch pinned by `validation/m14/fixtures/graphql/ontology-heritage-and-surface.expectation.json`. | confidence `1`; `evidenceClass: "structural"` (`:488`) |
+| `implements` | ✅ emitted | Every `NamedType` in the left-recursive `ImplementsInterfaces` subtree → the object/interface declaring the clause, when the supertype is interface-shaped or its kind is unknown in this document (`:629-632`); role `implements`. | confidence `1`; `evidenceClass: "structural"` |
+| `uses` | ✅ emitted | NAME READS (not declarations): declared types at use positions — field return type, field argument type, directive argument type, input-field type, variable type — plus union membership and root-operation types (`:772`, `:810`, `:868`), directive applications (`:1678`), and executable field selections (an alias does not change the target: `nick: name` references `name`), fragment spreads, fragment and inline-fragment type conditions, variable references and enum-value references (`:1172`, `:1211`, `:1231`, `:1244`, `:1261`, `:1894`). A field selection targets `<Type>.<field>` only when the document states the type (a fragment or inline-fragment type condition); otherwise the bare field name with `metadata.selectionPath`. | confidence `1`; `evidenceClass: "structural"` |
+| `imports` | ✅ emitted | ONLY the `#import "<file>"` COMMENT convention — the grammar has no import node (`:1350`). Source is the importing file's last path segment, target the module path verbatim, `metadata{isGraphqlImport, importSource, importForm, fileLevel: true}` plus `importProjectFile` when the caller supplies a `projectRoot`. The `ImportInfo[]` payload channel is declared (`:435`) but this analyzer publishes the EDGE, not the payload. | confidence `1`; `evidenceClass: "import_based"` — the lane's deliberate second tier, because the target is a comment string rather than a named AST node. Whole-population 170 edges / 131 files |
+| `exports` | ✅ emitted | Every top-level type-system declaration — the `schema` namespace, object/interface/union/scalar/enum/input types, and directive definitions — → the declared name. Source `(file)` with `metadata.fileLevel: true` (`:1408`), and the same set in the `exports: ExportInfo[]` payload (`:1390`, returned `:1453`). | confidence `1`; `evidenceClass: "structural"` |
+| `contains` | ✅ emitted | Whole/part membership: type → field, enum → value, input object → input field, `schema` → root operation type (`:768`, `:896`, `:981`, `:1053`). A member contributed by `extend type X` is contained by `X` with `metadata.extension: true` (and `inExtension` on its symbol). | confidence `1`; `evidenceClass: "structural"` |
+| `references` | ✅ emitted | A DECLARATION naming the type it writes — field return type, field argument type, input-field type, variable type, directive argument type — one edge per site with `metadata.relationshipType: "declared_type"` (ledger rule R9; `:525`). | confidence `1`; `evidenceClass: "structural"` |
+| `overrides` | ✅ emitted | A member an object declares for a member its implemented interface also declares: `<Object>.<member>` → `<Interface>.<member>`, role `interface_member_supplied` (`:1323`; the `RelationshipType.Override` alias serializes as `overrides`). | confidence `1`; `evidenceClass: "structural"` |
+| `instantiates` | ❌ not emitted | 0 `RelationshipType.Instantiates` sites. RULED grammar-absence in both spaces: 0 of 8 construction-shaped node types among the 75 named types; 340 keyword-shaped KEYS with 0 constructing an instance of a DECLARED type; the excluded near-miss population is 3,715 `ObjectValue` argument values (`rulebook-space-probe.json` / `ruling-attestation.json`). | — (no edge emitted; grammar-absence ruling) |
+| `decorates` | ❌ not emitted | 0 `RelationshipType.Decorates` sites. RULED ontological 2026-10-31: a directive application annotates a declaration but names a SIGNATURE with no implementation body — 3,747 applications (3,535 on declarations), 600 directive definitions, 0 with a body (`validation/m14/fixtures/graphql/extended-census.json`). The application is published as `uses` with `metadata.relationshipRole: "directive_application"` (`:1678`). | — (no edge emitted; ontological ruling) |
+| `renders` | ❌ not emitted | 0 `RelationshipType.Renders` sites. RULED grammar-absence: 0 of the served build's 142 declared node types is a component/element production; near misses counted — 36,293 operations / 765 files, 796 executable-only (persisted-query) documents, 32 `@defer`/`@stream`/`@live` applications (`extended-census.json`). | — (no edge emitted; grammar-absence ruling) |
+| `mixes_in` | ❌ not emitted | 0 `RelationshipType.MixesIn` sites. RULED grammar-absence: `extend type X` adds members to the SAME type (252 extension sites = 76 declared-here + 176 declared-elsewhere, published as `contains`), and `implements` is conformance; 0 sites compose a distinct NAMED member-set provider into a supertype chain (`extended-census.json`). | — (no edge emitted; grammar-absence ruling) |
+| `part_of` | ❌ not emitted | 0 `RelationshipType.PartOf` sites. RULED grammar-absence: `#import` is a comment convention naming FILE PATHS — 170 sites / 131 files, 156 targets exist on disk, 1 symbol-shaped spelling and 0 naming a declaration — and it is already published as `imports` (`extended-census.json`). | — (no edge emitted; grammar-absence ruling) |
+
+The three families the earlier waves measured in depth, and the qualification rules beside
+them, remain below. No cell above is derived from those prose sections; they are the
+evidence trail, not the claim.
 
 - `contains` — type → field, enum → value, input → input field, `schema` → root
   operation type (qualified identities).
@@ -1629,8 +1660,12 @@ empty file, whitespace only, comment only, no trailing newline, a UTF-8 **BOM**,
 `real-graphql-analyzer.ts` row, and the committed analyzer at `HEAD` was already
 regex-free — the count is 0, not "pending paydown". Zero `RegExp` calls, and no
 `match` / `matchAll` / `replace` / `search` / `split` used as a parser —
-machine-checked by `script/m14/tmp/graphql/probe/no-text-scan.mts`, which also has
-**two negative controls** proving it can fail. Descriptions are unquoted by
+machine-checked by the fleet's AST census (`bash script/m14/no-regex-gate.sh` → 0
+regex literals, 50/50 analyzers in scope under `src/ast`) and read directly by the
+lane's lexical guard `script/m14/tmp/graphql/probe/no-text-scan.mts`, which exits
+non-zero on a `regex-literal`, `RegExp-constructor` or
+`structural-fact-from-a-text-comparison` finding. (The guard itself has no planted
+negative control; the fleet census is the gate.) Descriptions are unquoted by
 `slice` plus an explicit escape scan, and block strings are dedented by the
 §2.9.4 algorithm implemented line by line. Three `String` operations remain and
 are printed as permitted: `content.split("\n")` for the line count,
@@ -1644,7 +1679,23 @@ block-string escape.
 
 ## Supported constructs
 
-GraphQL documents have no `import`/`export` statement surface; the analyzer reads operation and fragment definitions directly from the document. See `## Imports and exports` below for how document roots and named definitions are surfaced.
+The analyzer reads the **whole GraphQL document**, not only executable requests:
+
+- **Type-system (SDL).** `schema` definitions and extensions; object, interface, union,
+  scalar, enum and input-object definitions **and their `extend` forms**; fields, input
+  fields and enum values; directive definitions with their arguments, defaults, locations
+  and `repeatable`; `implements` clauses; union member lists; descriptions on every
+  declarable node.
+- **Executable.** Operations (`query`/`mutation`/`subscription`, named and shorthand),
+  fragments, variables, field selections and aliases, fragment spreads, inline fragments,
+  and directive applications on both type-system and executable nodes.
+- **File inclusion — a convention, not syntax.** GraphQL has no `import`/`export`
+  statement surface and the grammar produces no import node; what the analyzer reads is
+  Apollo's `#import "<file>"` comment convention, published as `imports` (see
+  `## Imports and exports`).
+
+Symbols and identities are in `## Symbol contract`; the emitted relationship set is in
+`## Relationship ontology`.
 
 ## Imports and exports
 
@@ -1671,13 +1722,38 @@ narrowing the rule to object types would fail rather than pass quietly.
 
 ## Differential ground truth
 
-- Ground truth: `validation/m12/ground-truth/graphql.json` — manual audit of GraphQL documents.
-- Result `validation/m12/results/graphql-differential.json`: `passed: true`, expected 97, truePositive 97, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- **M12 differential (fixture-scope, manual audit).** Ground truth
+  `validation/m12/ground-truth/graphql.json` (`truthSource: manual_audit`, 3 fixture
+  documents) against the analyzer: `validation/m12/results/graphql-differential.json`
+  → `passing.passed: true`, `expected 97`, `truePositive 97`, `falsePositive 0`,
+  `falseNegative 0`, `unknown 0`, `precision 1`, `recall 1`. This is fixture-scope,
+  not a corpus claim.
+- **M14 fixture suite.** `validation/m14/results/M14.0.F3.json` carries
+  `fixtures-graphql`: "6/6 fixtures pass"; a scoped re-run on this tree reads
+  `{"graphql":{"pass":6,"fail":0}}` (the extended-type rulings are pinned by
+  `validation/m14/fixtures/graphql/extended-types-and-near-misses.expectation.json`).
+- **UNKNOWN here.** The M14 differential/mutation harnesses publish no `graphql` row
+  in the milestone artifact (`validation/m14/results/M14.0.F3.json` has only
+  `fixtures-graphql` for this lane), so their per-lane verdict is not claimed.
 
 ## Corpus validation
 
-- Corpus `validation/m12/results/graphql-corpus-errors.json`: corpus `graphql_js`, extensions `*.graphql`, 0 error files, 0 crash files.
-- Complexity: no in-tree `graphql-complexity.json` artifact exists; the lane does not claim a wall-clock envelope, and none is fabricated here.
+- **M12 named-file corpus.** `validation/m12/results/graphql-corpus-errors.json`:
+  `corpus: graphql_js`, `extensions: ["*.graphql"]`, `mode: named-files`,
+  `measuredFiles: 2` (the GitHub public schema plus the kitchen-sink torture test),
+  `symbols: 3251`, `relationships: 7474`, `errorFiles: 0`, `crashFiles: 0`,
+  `passed: true`. The artifact's own `corpusSize` field states the limit: "2 file(s) is
+  NOT a corpus" — it is a read-and-does-not-crash proof, not a breadth measurement.
+- **Whole-population arm — the lane's breadth measurement.**
+  `validation/m14/instruments/graphql/incoming-declaration.json`: 1,911 admitted
+  `.graphql`/`.gql` files in 22 repositories, 7 disjoint slices tiling `[0,1911)`,
+  closure EXACT at **205,327** edges (resolved 127,868 + external 35,512 + ambiguous
+  10,253 + otherUnresolved 31,694), five buckets per type with `unclassed: 0`, and six
+  cause rulings each carrying a population and a `falsifier{run,wouldFail}`.
+- **Complexity.** No in-tree `graphql-complexity.json` artifact exists (checked under
+  `validation/m12/results/` and `validation/m14/results/`); the counts in
+  `## Complexity envelope` are probe measurements, and the lane claims no wall-clock
+  envelope.
 
 ## The metadata surface
 
@@ -2064,8 +2140,11 @@ log(n), so if you might be iterating over a long list of children, you should us
 `Node#namedChildren` instead"* — and that getter materialises the whole list in one
 wasm call and caches it on the node. This analyzer walked children the documented-
 against way in **nine** places, including `pushChildren`, which runs once per node.
-It now reads `node.namedChildren` everywhere, so a node's children cost one wasm
-call rather than one call per child. For the same reason `firstChildOfType` exists
+It now reads `node.namedChildren` in the hot paths (the pre-pass, `pushChildren`, and
+every place a whole child list is needed), so a node's children cost one wasm call
+rather than one call per child; the `namedChild` count is **92,276 → 3,311**, and the
+two live `namedChild(0)` reads are single positional children
+(`src/ast/real-graphql-analyzer.ts:1757`, `:1825`). For the same reason `firstChildOfType` exists
 instead of `findChild(node, n => n.type === "X")`: the comparison is a string
 equality, and the closure bought 40 allocations per symbol and a call frame per
 child examined. Two `findChild`/`hasChild` sites remain **deliberately**, because
@@ -2105,8 +2184,10 @@ so instead of quoting the older, rosier figure. It then fell to 151,488 when the
 `type` memo landed. The pinned claim is the count and the fact total, both
 machine-independent; the wall clock is not pinnable and is not pinned.
 
-Gate 10b fails if `namedChildCount` ever becomes non-zero again, because a
-silent regression there is exactly what the wall clock is too noisy to catch.
+NO IN-TREE GATE ENFORCES THIS. The claim was carried from the review as "Gate 10b",
+and no gate by that name exists in this repository (searched `script/` and
+`validation/`); the evidence is the probe's counted accessor totals, and whether a
+future gate pins them is unknown here rather than asserted.
 
 **Throughput is a per-machine measurement, not a claim**: the same binary on the same
 47-file corpus read 26,345 and 36,013 parse lines/s on two runs of it, so no
@@ -2117,9 +2198,11 @@ spread of **3.9×** inside a single series, and repeated sessions of the same A/
 reported 35% faster, 40%, 52%, and **13% slower**. That is not a measurement of the
 code; it is a measurement of the machine, so **no wall-clock figure is pinned for
 this change**. The probe prints the minimum (the better estimator under contention)
-and the median and gates on neither. What is pinned is the counted
-**338,432 → 213,497, 36.9% fewer accessor calls** with **9,622 facts** and
-P=1.000/R=1.000 — an exact, machine-independent fact. The 2×2 attribution (parse
+and the median and gates on neither. What is pinned is the final counted
+**338,432 → 151,488, 55.2% fewer accessor calls** with **9,622 facts** and
+P=1.000/R=1.000 — an exact, machine-independent fact. The intermediate 213,497 this
+paragraph used to pin is superseded: `reviews/graphql/master-review.md:381` and `:738`
+pin 151,488. See review §I and §I.1. The 2×2 attribution (parse
 ×1.55, analyze ×1.65) remains valid because it is a ratio between two cells measured
 in the same process under the same conditions. See REVIEW.md §I and §I.1.
 

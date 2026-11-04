@@ -3,8 +3,8 @@
 ## Language
 
 - Analyzer file: `src/ast/real-csharp-analyzer.ts`
-- Parser: `tree-sitter-c-sharp` **v0.23.5** (WASM in `wasm/tree-sitter-c_sharp.wasm`; also mirrored to `~/.bb/wasm`)
-- Language detection: extension `.cs` → `language-detection.ts`
+- Parser: the pinned **`wasm/tree-sitter-c_sharp.wasm`** — `sha256 6f69e1cae44e1c32…`, **239 named node types over 533 ids**, resolved at `engine.ts:1189`. **The upstream package version (`v0.23.5`, quoted in the M12.07 notes below) is NOT pinned in this tree**: there is no `tree-sitter-c-sharp` dependency and no version registry, so the artifact digest is the identifier a reader can actually check. The served build's own node-type names are enumerated in `validation/m14/measurements/csharp-grammar-nodes.json`.
+- Language detection: extensions **`.cs` and `.csx`** → `language-detection.ts:170` (`cs: "csharp", csx: "csharp"`); both are admitted by the incoming gate (the one extension table, `script/m14/language-extensions.ts`: `csharp: "cs,csx"`)
 - Wired in: `engine.ts getAnalyzer` → `RealCSharpAnalyzer`
 
 ### Grammar upgrade (M12.07)
@@ -41,27 +41,51 @@ grammar errors or missing tokens**.
 
 ## Relationship ontology
 
-> **The `uses` row below is STALE and says so at the end of this block.** It reads
-> "❌ (not emitted)". That was true in M12.07 and stopped being true at CS-R1: bare
-> identifier value reads and member-access reads have both been emitted since, and
-> the 2026-09-28 round corrected the row in prose further down this file rather than
-> here. Read the table below, then the "CS3 ontology" section for the measured
-> per-type verdicts, which supersede every "Emitted?" cell in it.
+> **THE CANONICAL REGISTER — fourteen body rows, in the order of `src/ast/types.ts`.** `Emitted?` is
+> not a claim about intent: it is read off the analyzer by grepping `RelationshipType.<X>`, so a
+> kind with **0 sites** is not emitted and the row then carries the measurement or ruling that says
+> so. A kind that is ruled out names its ruling in the row — **ontological**, **informational** or
+> **grammar-side** — with the count behind it, because a ruling without a count is prose. Each
+> emitted row cites the analyzer line that publishes it. (This table replaces one that carried 12
+> rows — 10 register kinds plus two non-engine labels — and omitted all four extended values; the
+> doc-truth gate graded that state `UNDOCUMENTED renders` plus two `NON_ENGINE_KIND` rows. The two
+> non-engine labels are kept, with their measurements, immediately below the table rather than as
+> rows that state no checkable engine claim.)
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `invocation_expression` → leaf method name (`obj.Method(...)` → `Method`, `Task.FromResult(...)` → `FromResult`); source = enclosing method; **single pass** (no duplicates) | 0.9 |
-| extends | ✅ | class base-list FIRST type when it is a known class (in-file declaration, or cross-file via the type-kind companion); interface base-list all types (interfaces extend interfaces) | 1.0 |
-| implements | ✅ | class base-list entries that are known interfaces (in-file or companion) plus all entries after the first when unknown (deterministic C# rule: a base class, if any, is listed first; the rest are necessarily interfaces); qualified names resolved by leaf (`BaseService.Entity` → `Entity` in the companion) | 1.0 |
-| instantiates | ✅ | `object_creation_expression` (`new Foo(...)` → `Foo`) and `implicit_object_creation_expression` (target-typed `new()` — the type is resolved purely from the enclosing `variable_declarator`/`property_declaration` type) | 0.95 |
-| overrides | ✅ | TWO published surfaces. (A) C# `override` members on all FIVE overridable kinds — method / property / indexer (`this`) / field / event — with `metadata.overriddenMemberKind`; multi-declarator fields are TWO members on the shared line; methods resolve the same-signature base overload, the other kinds resolve by name; without context → first hierarchy parent (deterministic per-file default). (B) interface-member implementations (C923): explicit `IFoo.M` always, implicit only where an in-file ancestor interface declares the member (a base class redeclaring it stops that path). Task-37 correction: the historical machinery was METHOD-ONLY, so property/indexer/field/event overrides published no edge; `override-member-kinds` pins all five plus the two non-edges (`virtual`/`new`). | 1.0 |
-| uses | ✅ | two producers: a member read (`member_binding_expression`/field access) at **0.7** (`relationshipType: "csharp_field_access"`, deduped per `source.target`), and the identifier-usage pass at **1.0** (`relationshipType: "identifier_usage"`, deduped per `source::uses::target`). The row read "not emitted — **STALE, see CS-R1**" until 2026-10-16: the cell was itself a M12.07 statement about call-level coverage that the later `uses` work never updated, which is exactly what a reader could not have known | 0.7 field access, 1.0 identifier usage |
-| references | ✅ | **three families, and the target is a NAME in all of them.** (1) `using_directive` → the module path as written; for an ALIAS whose target is a type, the module is the type's **name** (D3) and each type argument is published as its own `references` edge marked `using_type_argument` / `reference_qualified`. (2) the declared-type graph (R9) — a written type name, a qualified name's **leaf**, and a generic's base **and every argument** (D1). (3) nothing else | 0.9 |
-| contains | ✅ | owner → owned members via `ownerName` (namespace → types, class → members, enum → members) | 1.0 |
-| depends | ✅ | imports → References | 0.9 |
-| field_access | ❌ (not emitted) | covered at call level; not materialized as separate edges | — |
-| **exports** | ✅ **corrected 2026-10-19 (task-37)** | one edge per exported **top-level public type**: `source = "root"` (the file/assembly root — the namespace qualifies the NAME, it does not own the edge), `target` = the **FULLY-QUALIFIED** name (a namespaced type is imported as `Acme.Surface.PublicType`; the bare leaf is not a name the assembly exports), line = the NAME's own line, `metadata.arity` = generic arity, `metadata.relationshipType: "assembly_public_surface"`. Deduped on **(name, arity)**: a `partial` split is ONE exported unit on the first declaration's line, while a partial split crossing arity stays two units. Classes/structs/interfaces/enums/delegates/records included; a type nested inside another TYPE is not assembly surface; `internal` and `file`-scoped never export; block and file-scoped namespaces select the SAME set; a DOTTED namespace declaration is absolute (one spelling: `Acme.Inner.Doubled`, never doubled); `#if`-guarded top-level declarations are published. `exports` payload (`res.exports[]`) carries `{name, kind, arity, line, visibility}` on the same rule. Pins: `export-arity-collision`, `import-export-edges`, `public-type-exports` (updated to this contract), `export-global-scope`; mutants `export-any-visibility`, `export-nested-types-too`. | 1.0, `evidenceClass: structural` |
-| imports | ✅ **on BOTH channels, and the .NET citation claim rides the edge** | a `using_directive` publishes a `RelationshipType.Imports` edge at **1.0** (`metadata.relationshipType: "using_import"`, `importKind`, `isUsingDirective`) **and** a `res.imports[]` entry (`ImportInfo[]`) that `parallel-indexer.ts` writes to the **`brain_import` TABLE**; an `extern_alias` directive publishes the same edge at 1.0 (`relationshipType: "extern_alias_import"`). Both sit beside a `references` edge marked `isImport: true`, at 0.9, which carries R9's normalisation of the dotted path. This row read "separate channel, not a relationship", ending "`RelationshipType.Imports` names the table, not a row type" — the payload half of that is right and the conclusion is not: the table is FILLED from the payload while the edge is emitted alongside it. Corrected 2026-10-16. TASK-37 follow-up 2: a `using` directive whose target falls under a committed `.NET platform libraries` namespace (`dotnet-platform-libraries` vocabulary, seven measured namespaces) also carries `metadata.languageNamespace: [matched roots]` + `metadata.languageNamespacePolicy: "strict-absent"`; no match ⇒ NO marker (fail-closed, unaffected edges byte-identical), extern-alias rows stay unmarked, and `strict-absent` keeps the citation from ever displacing a name-model answer. Pins: `dotnet-citation-claims` (marker on the seven, absent on unlisted `System.Text`/`System`, no empty list, 9-edge count) | 1.0 edge (import, extern alias); 0.9 on the `references` twin |
+| calls | ✅ | `invocation_expression` → leaf method name (`obj.Method(...)` → `Method`, `Task.FromResult(...)` → `FromResult`); source = enclosing method; **single pass** (no duplicates) · site `real-csharp-analyzer.ts:1986, :2247` | 0.9 |
+| extends | ✅ | class base-list FIRST type when it is a known class (in-file declaration, or cross-file via the type-kind companion); interface base-list all types (interfaces extend interfaces) · site `real-csharp-analyzer.ts:1615, :1655` | 1.0 |
+| implements | ✅ | class base-list entries that are known interfaces (in-file or companion) plus all entries after the first when unknown (deterministic C# rule: a base class, if any, is listed first; the rest are necessarily interfaces); qualified names resolved by leaf (`BaseService.Entity` → `Entity` in the companion) · site `real-csharp-analyzer.ts:1655` | 1.0 |
+| uses | ✅ | two producers: a member read (`member_binding_expression`/field access) at **0.7** (`relationshipType: "csharp_field_access"`, deduped per `source.target`), and the identifier-usage pass at **1.0** (`relationshipType: "identifier_usage"`, deduped per `source::uses::target`). The row read "not emitted — **STALE, see CS-R1**" until 2026-10-16: the cell was itself a M12.07 statement about call-level coverage that the later `uses` work never updated, which is exactly what a reader could not have known · site `real-csharp-analyzer.ts:3373, :4008` | 0.7 field access, 1.0 identifier usage |
+| imports | ✅ **on BOTH channels, and the .NET citation claim rides the edge** | a `using_directive` publishes a `RelationshipType.Imports` edge at **1.0** (`metadata.relationshipType: "using_import"`, `importKind`, `isUsingDirective`) **and** a `res.imports[]` entry (`ImportInfo[]`) that `parallel-indexer.ts` writes to the **`brain_import` TABLE**; an `extern_alias` directive publishes the same edge at 1.0 (`relationshipType: "extern_alias_import"`). Both sit beside a `references` edge marked `isImport: true`, at 0.9, which carries R9's normalisation of the dotted path. This row read "separate channel, not a relationship", ending "`RelationshipType.Imports` names the table, not a row type" — the payload half of that is right and the conclusion is not: the table is FILLED from the payload while the edge is emitted alongside it. Corrected 2026-10-16. TASK-37 follow-up 2: a `using` directive whose target falls under a committed `.NET platform libraries` namespace (`dotnet-platform-libraries` vocabulary, seven measured namespaces) also carries `metadata.languageNamespace: [matched roots]` + `metadata.languageNamespacePolicy: "strict-absent"`; no match ⇒ NO marker (fail-closed, unaffected edges byte-identical), extern-alias rows stay unmarked, and `strict-absent` keeps the citation from ever displacing a name-model answer. Pins: `dotnet-citation-claims` (marker on the seven, absent on unlisted `System.Text`/`System`, no empty list, 9-edge count) · site `real-csharp-analyzer.ts:1419, :1461` | 1.0 edge (import, extern alias); 0.9 on the `references` twin |
+| exports | ✅ **corrected 2026-10-19 (task-37)** | one edge per exported **top-level public type**: `source = "root"` (the file/assembly root — the namespace qualifies the NAME, it does not own the edge), `target` = the **FULLY-QUALIFIED** name (a namespaced type is imported as `Acme.Surface.PublicType`; the bare leaf is not a name the assembly exports), line = the NAME's own line, `metadata.arity` = generic arity, `metadata.relationshipType: "assembly_public_surface"`. Deduped on **(name, arity)**: a `partial` split is ONE exported unit on the first declaration's line, while a partial split crossing arity stays two units. Classes/structs/interfaces/enums/delegates/records included; a type nested inside another TYPE is not assembly surface; `internal` and `file`-scoped never export; block and file-scoped namespaces select the SAME set; a DOTTED namespace declaration is absolute (one spelling: `Acme.Inner.Doubled`, never doubled); `#if`-guarded top-level declarations are published. `exports` payload (`res.exports[]`) carries `{name, kind, arity, line, visibility}` on the same rule. Pins: `export-arity-collision`, `import-export-edges`, `public-type-exports` (updated to this contract), `export-global-scope`; mutants `export-any-visibility`, `export-nested-types-too`. · site `real-csharp-analyzer.ts:2637` | 1.0, `evidenceClass: structural` |
+| contains | ✅ | owner → owned members via `ownerName` (namespace → types, class → members, enum → members) · site `real-csharp-analyzer.ts:2544` | 1.0 |
+| references | ✅ | **three families, and the target is a NAME in all of them.** (1) `using_directive` → the module path as written; for an ALIAS whose target is a type, the module is the type's **name** (D3) and each type argument is published as its own `references` edge marked `using_type_argument` / `reference_qualified`. (2) the declared-type graph (R9) — a written type name, a qualified name's **leaf**, and a generic's base **and every argument** (D1). (3) nothing else · site `real-csharp-analyzer.ts:1343, :1380, :2526, :2688` | 0.9 |
+| overrides | ✅ | TWO published surfaces. (A) C# `override` members on all FIVE overridable kinds — method / property / indexer (`this`) / field / event — with `metadata.overriddenMemberKind`; multi-declarator fields are TWO members on the shared line; methods resolve the same-signature base overload, the other kinds resolve by name; without context → first hierarchy parent (deterministic per-file default). (B) interface-member implementations (C923): explicit `IFoo.M` always, implicit only where an in-file ancestor interface declares the member (a base class redeclaring it stops that path). Task-37 correction: the historical machinery was METHOD-ONLY, so property/indexer/field/event overrides published no edge; `override-member-kinds` pins all five plus the two non-edges (`virtual`/`new`). · site `real-csharp-analyzer.ts:3181, :3269` | 1.0 |
+| instantiates | ✅ | `object_creation_expression` (`new Foo(...)` → `Foo`) and `implicit_object_creation_expression` (target-typed `new()` — the type is resolved purely from the enclosing `variable_declarator`/`property_declaration` type) · site `real-csharp-analyzer.ts:2338, :2353` | 0.95 |
+| decorates | ❌ **not emitted — RULED (ontological)** | `0` `RelationshipType.Decorates` sites in the analyzer (grep). The grammar **has** the construct — `attribute`, `attribute_list` and `attribute_argument` are 3 of the 239 named node types (`validation/m14/measurements/csharp-grammar-nodes.json`) — so this is not a grammar absence: **the reason is ontological.** The relation asserts that a **callable was APPLIED** to a declaration; a C# attribute asserts **passive metadata** (it names a type for reflection) and is published on the **symbol** side as `decorators` (see the symbol contract above), while the fleet publishes annotations as `references{isAnnotation}`. The store could carry the edge; the vocabulary does not credit it. Near miss, measured over the WHOLE admitted population: **52,205 attribute sites over 5,425 files / 20 repos**, of which **609 attribute-argument CALLS over 274 files / 3 repos** (`csharp-emission-census-whole.json`). | — (not emitted); the metadata channel is the symbol's `decorators` |
+| renders | ✅ **emitted, corpus-unexercised** | C#'s component-render construct is the **dynamic render host**: an `invocation_expression` whose callee names a host in `CSHARP_RENDER_HOSTS` (`RenderComponent`, `RenderChild`, `real-csharp-analyzer.ts:791`) and whose component is either a **type argument** (`builder.RenderComponent<Widget>()`) or a **`typeof` argument** (`builder.RenderComponent(typeof(OtherWidget))`). Source = the enclosing symbol (`parentContext.rawName \|\| "global"`); target = the component type's cleaned name (`csharpTypeNameText` → `cleanTypeName`), so the component resolves downstream as a NAME like every other target. Sites: `:2285` (type-argument form, line = the type argument) and `:2315` (`typeof` form, line = the type node). Rung **R3**: the EXISTING `invocation_expression` node type carries the construct — no grammar change. **The population is ZERO**: the analyzer emits **0 `renders` edges over the whole admitted population** (the rendering construct itself is Razor's, a different language), and a whole-population census of render-host calls found **298 sites over 85 files, 0 of which name a component** over a four-name superset (`csharp-emission-census-whole.json`). The proof is therefore **behavioural**, not population: fixture `validation/m14/fixtures/csharp/render-host-component.cs` emits the edge only when the construct reaches the analyzer as a real node. | 0.9, `metadata: { isRenderHost: true, renderHost: <host> }` |
+| mixes_in | ❌ **not emitted — RULED (grammar-side; the ladder is exhausted)** | `0` `RelationshipType.MixesIn` sites, and **`0` of the 239 named node types** (`csharp-grammar-nodes.json`) is a mixin or composition clause. C#'s only supertype composition is the **base list** — one base (`extends`) plus the interface list (`implements`), both already emitted above — and the contract's defining property is a mixin composed INTO the supertype chain. Rungs, each named: **R1 UNAVAILABLE** (no published grammar carries the construct — 0 of 239, measured); **R2 NOT APPLICABLE** (there is no `with`-style heritage clause to match); **R3 MEASURED and not taken** — the two nearest neighbours are the **extension method** (`parameter` with the `this` modifier, **3,312 sites / 875 files / 10 repos**) and the **record `with` form** (**673 sites: 274 `with_expression` + 399 `with_initializer`**, 88 and 86 files, 3 repos) — and neither is the construct: an extension member is resolved AT THE CALL SITE, never inherited into a supertype chain. Counts from `csharp-emission-census-whole.json`. | — (not emitted) |
+| part_of | ❌ **not emitted — RULED (informational)** | `0` `RelationshipType.PartOf` sites. The grammar declares **no `part_*` and no `partial_*` node type** — 0 of the 239 named types (`csharp-grammar-nodes.json`) — and C# has no construct that names ANOTHER compilation unit as a part. The nearest construct is the **`partial` MODIFIER**, which **splits ONE type across declarations that merge into ONE symbol**, so a `part_of` row would read **X → X**: a relation between a type and itself, carrying no information. That is why the label is **informational** rather than grammatical. Measured over the whole population: **1,873 `partial` sites on six declaration kinds** (class 1,198 · method 447 · interface 212 · struct 14 · property 1 · constructor 1) with **300 types split across more than one file, over 1,067 files** (`csharp-emission-census-whole.json`). | — (not emitted) |
+
+**TWO NON-ENGINE LABELS THE TABLE USED TO CARRY — KEPT WITH THEIR MEASUREMENTS.** `src/ast/types.ts`
+defines the fourteen kinds above and neither of these is one of them, so a row for either states no
+checkable engine claim. Their content is not deleted:
+
+- **`depends`** — the analyzer emits **no** `depends` edge (0 `RelationshipType.Depends` sites). On
+  lanes that have it, the label is a rendering of `imports → References`.
+- **`field_access`** — **not emitted as its own kind.** A member read is published as a **`uses`**
+  edge at 0.7 carrying `metadata.relationshipType: "csharp_field_access"`, i.e. a marker on the
+  `uses` row above, not a fifteenth kind. Whole-population: **203,825** `uses | csharp_field_access`
+  edges (`csharp-emission-census-whole.json`).
+
+**WHERE THE MEASURED PER-TYPE VERDICTS LIVE.** The whole-population closure behind these rows is
+`validation/m14/measurements/csharp-emission-census-whole.json` (14,424 parsed of 14,424, 22 repos)
+and the lane's declaration `validation/m14/instruments/csharp/incoming-declaration.json`; the
+whole-inventory node census that makes the three "0 emissions" rulings grammar-side rather than
+assertions is `validation/m14/measurements/csharp-grammar-nodes.json` (239 named node types over 533
+ids, pinned to the served build's digest).
 
 ## Supported constructs
 
@@ -84,32 +108,20 @@ grammar errors or missing tokens**.
 - **Cross-file base-kind resolution**: resolved via the shared type-kind companion (`context.typeKinds`, built by the harness pre-pass from the cross-file symbol space — same machinery as the override companion, wired via M12.44). Without context, unknown external base types follow the deterministic C# rule: first base = extends, rest = implements. A single *external* interface base (`class C : IExternalInterface`) therefore classifies as extends without context — the honest per-file default, documented.
 - **Compiler-generated members** (record `ToString`/`Equals`/`GetHashCode`, enum ordinal, `Deconstruct`): not materialized as symbols; the declared class + properties are extracted. Documented non-goal.
 - **Property accessors**: `get`/`set`/`init` accessors are detected for metadata (`hasGet`/`hasSet`/`hasInit`/`isAutoProperty`) but are NOT symbols or scopes — pure AST contract (the old analyzer pushed accessor scopes, creating noise).
-- **`uses`/`field_access` edges**: property reads are not materialized as separate edges in M12.07 (covered at call level); documented non-goal, consistent with the Java-family contract.
+- **`uses` — CORRECTED 2026-11-03: this bullet used to say `uses` was not emitted and that property reads were "covered at call level". Both halves are stale.** `uses` IS emitted (see the register row) by two producers — a member read at 0.7 marked `csharp_field_access`, and the bare-identifier pass at 1.0 marked `identifier_usage`. What remains true, and is all this bullet should have claimed, is that a *separate* `field_access` **kind** is not materialized: the member read rides the `uses` edge with that marker instead.
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json` (entries for this analyzer).
+The shared census `validation/m12/results/regex-census.json` records **`totalRegexUsages: 0`** with
+`methodology: parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp
+constructors`. **CORRECTED 2026-11-03: that file carries NO per-analyzer entries at all** — this
+section used to say "entries for this analyzer", which was never true of the file — so the census
+supports the lane-level total, not a csharp-specific claim.
 
-**0 usages** — the C# analyzer is fully regex-free. The previous analyzer had
-1 regex (`replace(/"/g, "")` in Minimal API detection), eliminated by the
+**The load-bearing evidence is the lane's own three-layer gate, which is about THIS analyzer:**
+`script/m14/verify-csharp-no-regex.ts`. **0 usages** — the C# analyzer is fully regex-free; the
+previous analyzer had 1 regex (`replace(/"/g, "")` in Minimal API detection), eliminated by the
 rewrite with pure string operations.
-
-That claim was previously a `grep` someone ran once, which is not a gate: it
-does not run again, and it cannot see a pattern assembled at runtime. It is now
-`script/m14/verify-csharp-no-regex.ts`, on three layers:
-
-| layer | what it proves | measured |
-| --- | --- | --- |
-| parsed | no regex literal, and no regex-only call the source cannot rule out — the file is *parsed*, so `/a\/b/` and `a / b / c` are not confused | 0 literals, 0 calls needing justification |
-| runtime | `RegExp` is replaced with a recording subclass before the analyzer loads and runs, so a pattern built from a variable, an array, or JSON still has to construct one | 0 constructions over 20 files |
-| artifact | the shipped analyzer is hashed against the working copy, so a build step cannot make the source claim quietly untrue | no built artifact; the repo runs from source |
-
-Rule: **zero unclassified regex** — and the runtime figure is the load-bearing
-one. Replaying the shape that defeats the obvious checks (a pattern joined from
-array parts, so no literal exists and `new RegExp` takes a variable) fails the
-gate on the parsed *and* the runtime layer, with the assembled pattern printed.
-
-Gate: `bun script/m14/verify-csharp-no-regex.ts --list <paths>`.
 
 ## aspnetcore, exhaustively — and the last known coverage defect, finally located
 
@@ -478,22 +490,45 @@ analyze plus ~3.5 ms/file parse, i.e. ~14–17 s for the corpus, inside budget w
 
 ## Differential ground truth
 
-- Ground truth: `validation/m12/ground-truth/csharp.json`
-  (authority: `manual_audit`)
+- Ground truth: `validation/m12/ground-truth/csharp.json` (authority: `manual_audit`)
 - Result: `validation/m12/results/csharp-differential.json`
-- Precision / recall / FP / FN / unknown rates:
-  **1.000 / 1.000 / 0 / 0 / 0** — 166/166 facts across 5 fixtures (4
-  positive + 1 negative), zero parse errors.
+- **WHAT THE COMMITTED ARTIFACT ACTUALLY SAYS — CORRECTED 2026-11-03.** This section used to read
+  `1.000 / 1.000 / 0 / 0 / 0 — 166/166 facts`. The artifact does not say that. It records
+  **`passed: false`**: expected 166, true positives **162**, **false positives 42**, **false
+  negatives 4**, precision **0.794**, recall **0.976**, unknown 0, unsupported 0, and
+  `earliestFailingLayer: "ast_extraction"`.
+- **AND THAT ARTIFACT PREDATES THIS LANE'S OWN FIXES**, which is how the clean reading was
+  believed: its minimized failure is `sym:Features.cs:25:class:Vector2` **expected `class`, observed
+  `struct`** — the `record struct` defect this page records as fixed on 2026-09-23 (see the symbol
+  contract's correction) — and two of the four false negatives are `operator` / `implicit string`
+  name normalisations from the same era. The 42 false positives are `references` to framework names
+  (`List`, `Task`, `EventArgs`, `IEnumerable`) and field/property `uses` rows the ground truth does
+  not carry.
+- **SO THE POST-FIX DIFFERENTIAL IS UNKNOWN HERE, NOT CLEAN.** No regenerated result for this lane
+  exists in the tree as of this date. The `1.000` claim is WITHDRAWN; re-running the differential at
+  the pinned fixtures is what would restore it, and this page does not claim it until then.
 
 ## Corpus validation
 
-- Corpus target: `validation/m12/corpus-manifest.json` → `roslyn@73241b4b`
-  (clean repo, 17,137 committed `.cs` files)
-- 400 tracked `*.cs` files (deterministic first-400 sorted, pinned
-  revision, clean repo)
-- Files / symbols / relationships / errors: **400 / 4,451 / 17,563 / 0
-  grammar errors** (0.0% — tree-sitter-c-sharp v0.23.5; **0 missing
-  tokens**)
+- Corpus target: `validation/m12/corpus-manifest.json` → `roslyn@73241b4b` (clean repo, **17,137**
+  committed `.cs` files); sample list `validation/m12/results/csharp-corpus-sample.txt` (400 paths,
+  deterministic first-400 sorted).
+- **WHAT THE COMMITTED ARTIFACT SAYS — CORRECTED 2026-11-03.**
+  `validation/m12/results/csharp-corpus-errors.json` (`revision 73241b4b…`) records **400 measured
+  files, 390 clean, 10 with grammar errors (2.5 %), 5 with missing nodes, 8 with ERROR nodes, 0
+  crashes, `passed: false`**, and **8 missing tokens over 5 token types** (`#endif` 2, `!` 2, `)` 2,
+  `>` 1, `:` 1). This section used to end `400 / 4,451 / 17,563 / 0 grammar errors … 0 missing
+  tokens`, which that artifact contradicts on both counts. Its `mode: "recorded-m12-sample"` says
+  why: **it is the PRE-upgrade record.**
+- **THE POST-UPGRADE CLAIM IS UNVERIFIED.** The `### Grammar upgrade (M12.07)` section asserts the
+  v0.23.5 grammar parses the 30-construct matrix with 0 errors and that **0/400** roslyn files carry
+  grammar errors or missing tokens. **No committed artifact in this tree carries that
+  re-measurement**, so it is recorded as the round's claim, not as an artifact-backed measurement.
+  What would verify it: re-run the corpus-errors probe at the same revision and sample list, and
+  commit the result.
+- The **symbol / relationship counts** this section used to carry (**4,451 / 17,563**) are **not in
+  that artifact either** — it carries file and error counts only — so they are likewise the round's
+  record and are marked unverified here rather than repeated as measured.
 
 ## Section A of the completeness gate fails on a CROSS-LANE schema gap, not a csharp defect
 
