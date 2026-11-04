@@ -3,7 +3,7 @@
 ## Language
 
 - Analyzer file: `src/ast/real-vb-analyzer.ts`
-- Parser: `tree-sitter-vbnet` — a **vendored and patched** grammar (18 repairs over `govindbanura/tree-sitter-vbnet`, which publishes no release). WASM in `wasm/tree-sitter-vbnet.wasm`; the `~/.bb/wasm` mirror is byte-identical and is the second copy the pin verifies.
+- Parser: `tree-sitter-vbnet` — a **vendored and patched** grammar (18 repairs over `govindbanura/tree-sitter-vbnet`, which publishes no release). WASM in `wasm/tree-sitter-vbnet.wasm` — 4,083,368 B, sha256 `4d8d8e0e81211696dee64ae2edadf8a3504a65e5daacbdcadfae0af5bec183de` — and those are the bytes `engine.ts` loads. `validation/m14/grammar-pins.json` → `lanes.vb` pins the wired bytes and the parser's enumerable surface (450 node-type ids / 449 distinct names / 167 named slots over 166 distinct named names / 54 fields); the two other copies the pin looks for (`~/.bb/wasm` mirror, local build output) are recorded ABSENT, so this is a single-copy pin.
 - Language detection: extension `.vb` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealVbAnalyzer`; the wasm path is a second `case "vb"` in `getParser` (the engine has two language switches, and changing only `SUPPORTED_LANGUAGES` leaves every `.vb` file throwing "parser not yet implemented" — that was measured, not guessed).
 - Pin: `validation/m14/grammar-pins.json` → `lanes.vb`; grammar doc `grammars/tree-sitter-vbnet/PIN.md`; lane review `reviews/vb/master-review.md`
@@ -41,69 +41,137 @@ minimal repro under `grammars/_vendored/vbnet/repro-cases/`:
 | name | ✅ | `childForFieldName("name")` → `namingToken()` (descends to the last segment's leaf); fallback to the first `identifier`/`simple_name` child |
 | kind | ✅ | `namespace_declaration`→Namespace, `class_declaration`→Class, `structure_declaration`→Struct, `interface_declaration`→Interface, `module_declaration`→Module, `enum_declaration`→Enum (+`enum_member_declaration`→EnumMember), `delegate_declaration`→Type, `method_declaration`→Method, `constructor_declaration`→Constructor, `property_declaration`→Property, `event_declaration`→Event, `operator_declaration`→Method (`Operator +`), `declare_statement`→Method (P/Invoke), `field_declaration`→Variable/`Constant` |
 | owner | ✅ | the declaration stack (`ownerStack`); namespaces and types both push |
-| visibility | ✅ | the `modifiers` field's `member_modifier` list, resolved in VB's own precedence order: `Private` → `Protected` → `Friend`(internal) → `Public`; default `internal` |
+| visibility | ✅ | the `member_modifier` list split into WORDS (the grammar can put a sequence — `Protected Friend` — in one node), resolved in VB's precedence order: `Private` → `Protected` → `Friend`(internal) → `Public`. Modifier-less defaults are VB's own table, not a single word: `EnumMember` → `public`; a top-level declaration (owner namespace) → `friend`; a field → `public` in a `Structure` and `private` in a `Class`/`Module`; every other member → `public` |
 | isStatic | ✅ | `Shared` |
 | isAbstract | ✅ | `Abstract` or `MustInherit` |
 | parameters | ✅ | `parameter_list` → `parameter`; `ByVal`/`ByRef` recorded as `passingMode` (VB's default is `ByRef`, so it is stated explicitly rather than left implicit) |
 | returnType | ✅ | `as_clause` → `declared_type` |
 | range | ✅ | 1-based `startLine`/`endLine` + byte `startIndex`/`endIndex` |
+| documentation/comments | ❌ not captured | doc comments arrive as `comment` extras and are not attached to a symbol; there is no documentation field on the symbol record |
+| complexity metrics | ✅ | `metadata.complexity` (total AST node count), `metadata.cyclomaticComplexity` (counted off the named decision set — `if_statement`, `while_statement`, `do_statement`, `for_statement`, `for_each_statement`, `case_clause`, `case_else_clause`, `else_clause`, `catch_clause`, `catch_block`, `catch_filter_clause`, `when_clause` — starting at 1), `metadata.linesOfCode` |
+| syntax errors | ❌ not surfaced as analyzer output | the analyzer returns no `errors` field. `ERROR`/MISSING nodes are parsed by `visitRecovery`, which dispatches declaration-shaped children to their visitors and the rest as body code; a site with no readable name is COUNTED in `metadata.vbGaps` rather than published. Parse-error counts are the harness's (`expectNoParseErrors`), not this analyzer's |
+| decorators/attributes | ✅ | emitted as `decorates` edges, not as symbol metadata: the attribute list is read off the declaration (`repeat(field("attributes", $.attribute_list))`) and the edge carries `attributeName`, `attributeForm`, `argumentCount`, `decoratedKind` and `resolved` |
 
 `metadata` carries the grammar node name, `NotInheritable`/`NotOverridable` as
 `sealed`, `Partial`, `ReadOnly`, `WriteOnly`, `Default`, `Shared`, `WithEvents`,
 `autoImplemented` for a property with no accessor block, and the P/Invoke
 `library`/`entryPoint`/`kind`.
 
-## Language
-
-- Analyzer file: `src/ast/real-vb-analyzer.ts`
-- Parser: `tree-sitter-vb` (VB.NET) / `tree-sitter-vba` (VBA)
-- Language detection: extensions `.vb` / `.vba`
-- Wired in: `engine.ts` `getAnalyzer` → `RealVbAnalyzer`
-
 ## Supported constructs
 
 | construct | what it produces |
 | --- | --- |
-| module / class | `class` symbol |
-| function / sub | `function` symbol |
-| property | `property` symbol |
-| variable / field | `variable` symbol |
-| import / namespace | `imports` edge |
-| call | `calls` edge |
-| reference | `references` edge |
+| `Namespace N` (block and file-scoped) | `namespace` symbol; containment from its last segment (`Contoso.Kinds` → `Kinds`) |
+| `Class` / `Structure` / `Interface` / `Module` / `Enum` / `Delegate` | the matching symbol kind (`class`, `struct`, `interface`, `module`, `enum`, `type`); a nested type gets `ownerName` and a `contains` edge |
+| `Sub` / `Function` | `method` symbol; a modifier-less member is `public` inside a type, `friend` at namespace level |
+| `Sub New` | `constructor` symbol (the name is the contract literal — `New` is an anonymous token, so it has no `name` field) |
+| `Property`, `Event`, `Declare … Lib`, `Operator +` | `property`, `event`, `method` (P/Invoke), `method` (the contract literal `operator`) |
+| field / `Const` declaration | `variable` / `constant` symbol per declarator (`Dim Left, Top, Depth As Integer` is three members) |
+| `Inherits` / `Implements` (line or header form, type or member level) | `extends` / `implements` edge |
+| `Overrides` member | `overrides` edge |
+| `Imports X.Y.Z` | `imports` edge to the dotted PATH + an `ImportInfo[]` row |
+| a declaration with an access modifier | `exports` edge when the access set is assembly-visible |
+| `New T` / `New T(args)` / `As New T` (field or local) / qualified `New A.B.C(x)` | `instantiates` edge, one label only (not `calls`) |
+| `obj.M()` / `obj.M(args)` / statement-level `M(x)` | `calls` edge (argument-bearing calls arrive as `array_access_expression`; ambiguous index-or-call sites are counted, not guessed) |
+| member read `obj.Member` | `uses` edge (not when it is a callee, an index head, an assignment's left side, or an attribute argument) |
+| type name in a signature or body | `references` edge |
+| `<Attribute()>` on a declaration | `decorates` edge to the attribute's leaf |
+| local variable / field in `WithEvents` / `Handles` | symbols and references; the `Handles`/`AddHandler`/`RaiseEvent` event-wiring forms publish no edge of their own and are not claimed |
+
+The fully pinned shapes are the six fixtures under `validation/m14/fixtures/vb/`
+(`declaration-shapes`, `member-read-and-construction`,
+`ontology-exports-instantiates-uses`, `edge-endpoint-integrity`,
+`loop-and-using-bindings`, `attributes-as-decorations`); `declaration-shapes` and
+`edge-endpoint-integrity` carry `forbid` rows for the shapes that must NOT be
+published (a construction as `calls`, an attribute argument as `uses`, a
+fabricated endpoint).
 
 ## Regex inventory
 
-**Zero.** No source-text regex doing syntax work.
+**Zero.** Measured: 0 regex literals in `src/ast/real-vb-analyzer.ts`. Every
+classification is a node-type test, a field read, or a character-code scan with
+the equivalence argued inline (the `As New` clause and the heritage keyword are
+scanned because the grammar inlines those tokens away). The no-regex gate
+(`bash script/m14/no-regex-gate.sh`) does not name this analyzer.
 
 ## Complexity envelope
 
-No in-tree `vb-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here.
+Measured, not assumed — `validation/m12/results/vb-corpus-complexity.json`
+(analyzer `vb`, corpus p3d, 1,880 tracked files, one production `parseFile` pass
+each): wall **130,139 ms**, **14.45 files/s**, 15,848 symbols, 45,076
+relationships, **0 crash files**, 2,768 parse errors across 1,037 files (the
+vendored grammar's real error profile — nothing excluded), `passed: false`.
+The analysis is a single pre-order walk with containment resolved in one trailing
+pass and a per-file relationship dedupe, so the envelope is
+O(nodes + emitted facts) with no per-symbol rescan of the tree.
+`validation/m14/results/vb-visual-basic-parse-timing.json` measures the same
+production path at scale: 2,658 files admitted and 2,658 drawn, mean **134.6 ms**,
+median **58 ms**, 134 files over the 500 ms slow threshold, **0 over budget,
+0 trapped, 0 regex fallbacks**. The payload/latency cost of the two added edge
+types is reported in the AFTER section below and is a REGRESSION, not
+re-baselined.
 
 ## Differential ground truth
 
-- No M12 ground-truth or differential artifact exists for vb in-tree, so precision/recall cannot be claimed; declared unknown rather than fabricated.
+`validation/m14/results/M14.0.F5.json` carries this lane's two committed
+differential rows, both `pass`:
+`differential-vb` — P3D-Legacy, 60 files, coverage **99.9 %**, unexplained **0 %**;
+`differential-DISMTools:vb` — DISMTools, 60 files, coverage **99.6 %**,
+unexplained **0 %**. The page body below records the whole-corpus sweeps the
+differential was extended to (P3D 1,880/1,880 files, DISMTools 483/483,
+23,356 and 15,689 truth edges, 3 and 4 missing, 0 unexplained) and the sampler
+defect that made earlier 100 % figures a single file set measured repeatedly. No
+M12 ground-truth artifact exists for vb in-tree, so a precision/recall figure
+against M12 truth is declared UNKNOWN rather than fabricated.
 
 ## Corpus validation
 
-- No M12 corpus-validation artifact exists for vb in-tree, so corpus error/counts cannot be claimed; declared unknown rather than fabricated.
+`validation/m12/results/vb-corpus-shapes.json` is the committed per-file corpus
+artifact (repo p3d @ `9cf333e6f19018ccf3ab571e67db916134b7ab1e`: symbols,
+relationships, parse errors and ms per file). `validation/m14/measurements/task105/vb-whole-population-gate.txt`
+is the 58-file admitted-population arm — every edge closes into one printed
+bucket: calls 2,212 · uses 3,532 · contains 2,366 · imports 363 · references
+2,759 · exports 594 · extends 32 · implements 82 · overrides 76 · instantiates 374
+= **12,390** edges, resolved 43.1 %, 0 extension/binding/cause failures. The
+current arm over the same admitted population (2026-10-28 changes: `decorates`,
+the imports path target, the qualifiedName alias) reads **11,928** edges across
+eleven emitted types — calls 1,838 · uses 3,141 · contains 2,366 · imports 372 ·
+references 2,759 · exports 594 · extends 32 · implements 82 · overrides 76 ·
+instantiates 459 · decorates 209 (`script/m14/spec/vb-completeness.json`,
+`coverage._implemented_measured`). Fixtures: 6/6 pass
+(`bun script/m14/run-fixtures.ts --lang vb`). No M12 corpus-validation artifact
+exists for vb in-tree, so M12 counts are declared UNKNOWN rather than fabricated.
 
 ## Relationship ontology
 
-| Type | Source → Target | Confidence | Line stamped on |
+This is the CLAIM TABLE: fourteen rows, one per value of `RelationshipType` in
+`src/ast/types.ts`, in the register's order. "Emitted?" is checkable against
+`script/m14/verify-doc-truth-emissions.ts`; "how resolved" names the grammar shape
+the analyzer reads and the `RelationshipType.*` emission site it comes from; the
+confidence model is the value the code stamps, not a target.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| `contains` | owner → member | 1.0 | the member's name node |
-| `calls` | enclosing method/property/field-init → callee | 1.0 in-file, 0.6 not | the **callee name leaf** |
-| `extends` | type → base type | 1.0 in-file, 0.7 not | the base name leaf |
-| `implements` | type/member → interface | 1.0 in-file, 0.7 not | the interface name leaf |
-| `imports` | `root` → namespace | 1.0 | the namespace path **as written** (`System.Collections.Generic`); carries `isImport` + `include_dependency` |
-| `references` | declaration → a type it names | 0.6 | the type name leaf |
-| `overrides` | member → itself (base member unknown) | 0.6 | the member's name node |
-| `uses` | declaration → a name it **reads** (a member read that is neither the callee, nor an index head, nor a write) | 0.9 in-file, 0.7 not | the read name leaf; one edge per `(source, target)` with `metadata.sites` reporting the merged sites and the earliest line |
-| `instantiates` | the declaration that constructs → the constructed type | 1.0 in-file, 0.6 not | the constructed type's name leaf |
-| `exports` | owner type/module, or `root` → the type/member it publishes | 1.0 | the declared name leaf |
-| `decorates` | the **decorated declaration** → the attribute's name leaf | 1.0 in-file, 0.8 not | the attribute's name node |
-| `writes` | — **not emitted** — a member assignment is a disclosed gap, not a read; see the `uses` section | — | — |
+| calls | ✅ emitted | `invocation_expression` → the `function` leaf; a call WITH arguments arrives as `array_access_expression` and is accepted only on one of two measured signals — the callee is a callable this file declares and is not array-valued (`metadata.callSignal: callee-declared-callable-in-file`), or the node is a statement-level call whose callee is not a file variable (`callSignal: call-statement`); a site with neither is counted `index-or-call-ambiguous` rather than guessed. A construction's callee is excluded here (one syntactic event, one label — see `instantiates`). Emission site `real-vb-analyzer.ts:2968` / `:3047` | 1.0 in-file and cross-file by declaration, 0.7 when only the statement shape decides; `evidenceClass structural` |
+| extends | ✅ emitted | the `Inherits` line, the header clause `Class C : Inherits B`, and a member's `inherits_member_clause`. Emission site `:1889` / `:1939` / `:2105` | 1.0 in-file, 0.7 cross-file |
+| implements | ✅ emitted | the `Implements` line, the header clause `: Implements I`, the keyword-less interface base list (`Interface I : IDisposable` — every entry is an interface the type implements), and `Implements I.M` on a member (the target keeps its `I.` qualifier, or the edge would collapse onto itself). Emission site `:1894` / `:1901` / `:2104` | 1.0 in-file, 0.7 cross-file |
+| uses | ✅ emitted | a member read that is neither the callee, the index head, an assignment's left side, nor an attribute argument; the target is the last identifier leaf of the access chain, so a dotted path publishes the segments the file reads; one row per `(source, target)` carrying `metadata.sites`. Emission site `:3110` (read walk, earliest-line dedupe) and `:3398` (body-edge walk, `readNode` + `sites`) | 0.9 in-file, 0.7 cross-file for the read walk (`metadata.relationshipType: vb_member_read`); the body-edge walk's row is 1.0, and where both fire on one site the duplicate is collapsed with `metadata.duplicateRows` |
+| imports | ✅ emitted | an `Imports` statement → the namespace PATH as written (`System.Collections.Generic`), carrying `isImport` + `include_dependency`; the same namespaces also ride the `ImportInfo[]` payload channel. Emission site `:2398` | 1.0 (`evidenceClass import_based`) |
+| exports | ✅ emitted | the owner type/module (or `root`) → a declaration whose access levels put it in the assembly's public surface; `Protected Friend` is assembly-visible through its friend half, and a modifier-less `Friend` type's `Public` member still exports with `ownerAccessLevel: friend`. Emission site `:1704` | 1.0 |
+| contains | ✅ emitted | owner → member, emitted once in `pushSymbol`; a self-edge from a declaration recovered out of a verbatim string is refused. Emission site `:1588` | 1.0 |
+| references | ✅ emitted | a declaration → a type name it writes (`fieldType`, `returnType`, `parameter`, `propertyType`, `eventType`, `operatorReturnType`, `enumUnderlyingType`); a `predefined_type` target is canonicalised from the language's closed 16-name set. A tuple type has no single name and is COUNTED in `metadata.vbGaps` instead of published. Emission site `:3742` | 0.6 (`evidenceClass inferred`) |
+| overrides | ✅ emitted | a member carrying `Overrides` → `${baseType}.${member}` when the declaring type's base is known, else the bare member name. Emission site `:943` | 0.9 base type known, 0.6 unknown |
+| instantiates | ✅ emitted | the declaration that constructs → the constructed type, across all four VB construction surfaces: `object_creation_expression`; `array_creation_expression` (every construction WITH arguments); the `as_clause` `As New` form, both field and local; and a qualified construction whose `New` head is the chain's leading segment (the fragment climb). One label only — a construction is NOT also `calls`. `metadata.constructionForm` / `qualifiedConstruction` / `constructsArray` record which surface produced the row. Emission site `:3148` / `:3596` | 1.0 in-file, 0.6 cross-file |
+| decorates | ✅ emitted | a declaration's `attribute_list` → the attribute's LEAF (`System.Obsolete` → `Obsolete`); the written spelling rides in `metadata.attributeName` beside `attributeForm`, `argumentCount`, `decoratedKind` and `resolved`. Attribute names stay out of `references` AND out of `uses` (`inAttributePosition`). The holder is resolved by a bounded climb (`field_declaration` / `declaration_statement` only), so a member cannot inherit its enclosing type's attributes. Emission site `:1473` | 1.0 in-file, 0.8 cross-file |
+| renders | ❌ not emitted — ruled | 0 `RelationshipType.Renders` sites in the analyzer. GRAMMAR-ABSENCE measured on three axes, separately (VB-D1, `script/m14/spec/vb-completeness.json`): 0 of the 168 named node types the grammar audit carries matches the render/component stem scan; no markup extension routes to this lane; the corpus holds 0 tracked `.aspx`/`.ascx`/`.vbhtml`/`.master`. A grammar patch would fire on 0 sites, because no admitted source writes a markup tag; the nearest code construct, object creation, is already `instantiates` | — |
+| mixes_in | ❌ not emitted — ruled | 0 `RelationshipType.MixesIn` sites in the analyzer. GRAMMAR-ABSENCE (VB-D2): 0 of the 168 named node types matches the mixin/trait/composition stem scan. VB's composition surfaces are `Inherits`/`Implements`, and both are published as their own types; a `Module`'s members enter scope by an `Imports` directive, which is name resolution and injects no member; `Partial` (2 occurrences over the 58-file population) is X→X and refused by fleet precedent | — |
+| part_of | ❌ not emitted — ruled | 0 `RelationshipType.PartOf` sites in the analyzer. GRAMMAR-ABSENCE (VB-D3): 0 of the 168 named node types is a part-inclusion production; `#Include` does not exist in VB.NET (0 occurrences over the 58-file population) and `#Region` names no unit. VB has no textual inclusion of any kind, so there is nothing for a patch to express | — |
+
+**`writes` is not a relationship in this lane.** A member assignment
+(`_gauge.Reading = value`) is a WRITE: it is excluded from `uses` by
+`isAssignmentLhs` (span-based, so `x = x + 1` keeps its right-hand read) and it
+publishes no edge of its own. The gap is disclosed here rather than given an
+invented label.
 
 **`decorates` (2026-10-28)** publishes the attribute lists the grammar attaches to a declaration
 (`repeat(field("attributes", $.attribute_list))` on every declaration production). The target is the
@@ -118,11 +186,11 @@ this type is where the construct is published instead. Measured: **209 edges** o
 admitted population, all unresolved because the framework attribute types are not declared in these
 projects — ruled as a wall with a population and a falsifier in the lane's incoming declaration.
 
-**The other three extended values are RULED, not missing:** `renders`, `mixes_in` and `part_of` are
-grammar-absence (VB-D1/D2/D3, `script/m14/spec/vb-completeness.json`): 0 of the 168 named node
-types matches any of their stems, 0 markup files are routed to this lane, `#Include` does not exist
-in the language (0 occurrences) and the only near-miss, `Partial` (2 occurrences), is X→X and
-refused by the fleet's own precedent.
+**The three RULED rows above** (`renders`, `mixes_in`, `part_of`) are
+grammar-absence, not missing work (VB-D1/D2/D3, `script/m14/spec/vb-completeness.json`): 0 of the 168
+named node types matches any of their stems, 0 markup files are routed to this lane, `#Include` does
+not exist in the language (0 occurrences) and the only near-miss, `Partial` (2 occurrences), is X→X
+and refused by the fleet's own precedent.
 
 **Every relationship carries `line_number`** (M59.A7), 1-based, on the node that
 *names* the thing, per site rather than per set. Measured: **0 of 33,910 edges**
@@ -174,8 +242,10 @@ their counts are the evidence, not because their headings describe today's code.
    (`vbGaps["declaration-without-name"]`) rather than emitted with an invented
    one.
 3. **The grammar's real vocabulary.** Node types and field names were read out of
-   the pinned wasm's enumerable surface (449 ids / 165 named / 54 fields). The
-   first version of this file named three node types that do not exist
+   the pinned wasm's enumerable surface (450 node-type ids / 449 distinct names /
+   167 named slots over 166 distinct named names / 54 fields, and 451 oracle node
+   types once ERROR and MISSING are counted — `validation/m14/results/M14.0.F1.json`).
+   The first version of this file named three node types that do not exist
    (`blank_line`, `name_reference`, `namespace_name`) — dead branches, the LUA-00
    defect class. M14.0.F1 caught them; all three are fixed and the audit is green.
 4. **Gaps are disclosed, not silent.** `metadata.vbGaps` counts what the grammar
@@ -206,10 +276,16 @@ Kinds: 5456 variable, 4370 method, 913 enum_member, 725 property, 481 class,
 Edges: 14410 references, 11973 contains, 10451 calls, 1157 imports, 265 extends,
 176 implements.
 
-M14.0.F1: **PASS**, 27 references, 0 unknown node types, 0 unknown fields.
+M14.0.F1: **PASS**, 52 referenced type literals and 18 referenced field literals,
+0 unknown node types, 0 unknown fields (`validation/m14/results/M14.0.F1.json`,
+`data.languages.vb` — `status: pass`, `waivedFindings: []`).
 
-M14.0.F8 (node-type census, `script/m14/vb-node-type-census.ts`): **145/145
-classified, exit 0.** The first run found 146 distinct named types against 42
+M14.0.F8 (node-type census, `script/m14/vb-node-type-census.ts`): the gate
+universe is the pinned grammar's **168 named types** (166 distinct names +
+ERROR/MISSING), classified **146 handled_verified + 22 internal_silent,
+unclassified 0, stale 0** (`script/m14/spec/vb-completeness.json` §E, measured
+2026-10-17 against the wired wasm). The first run of this tool, on an earlier
+grammar build, found 146 distinct named types against 42
 classified — the "every construct is accounted for" claim was 29 % true and
 nothing had measured it. Two whole kinds fell out of the unclassified 101:
 **interface members** (three node types in neither set, so nothing visited them

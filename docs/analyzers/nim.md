@@ -73,18 +73,18 @@ re-parsing.
 
 | Relationship | Rule | Carries a line |
 | --- | --- | --- |
-| `imports` | one edge per module named by `import` and `from M import …`; source is the synthetic `(global)` | the naming node (the path token, not the directive) |
-| `part_of` | one edge per operand of `include` — a TEXTUAL scope-sharing inclusion, not a module import (the included file's declarations join THIS module's single scope; no module is created and nothing can `import` it). 1:1 RELABEL of the old `imports` row, rung R3, 2026-10-23: same source, target, line and confidence, plus `partRole: "library"` and `targetResolution: "module-name"` | the naming node (the path token) |
-| `decorates` | one edge per DECLARATION-OWNED pragma name that resolves to a **pragma template declared in the same file** (`template/macro X() {.pragma.}`) — the APPLIED-CALLABLE class, rung R3, 2026-10-23. Source is the decorated declaration's published spelling (`qualifiedName` for methods), target the template name; `metadata.decoratorConstruct: "pragma_template"` names the class. A builtin directive pragma (`{.inline.}`, `{.cdecl.}`, `{.raises.}`) is passive compiler metadata and emits NO row | the pragma NAME's own line |
-| `exports` | one edge per OPERAND of an `export` statement — a re-export of a name this module imported, which nothing else in the payload records | the operand node |
-| `contains` | one edge per owned member: object fields, enum members, module-level procs/types, methods under their receiver | no, by design |
 | `calls` | `call` and `dot_generic_call` whose callee resolves to a callable this file declares; UFCS member calls included | the callee node |
-| `uses` | a bare identifier read, and the member leaf of a `dot_expression` that is not a call callee (Nim's UFCS makes `x.foo` a member read) | the identifier / leaf node |
-| `references` | the declared-type graph: parameter, return, field, `const`/`let`/`var` annotations, `new`/`of` operands | the annotation node |
-| `instantiates` | `TypeName(field: v)` — a `call` whose callee is a type this file declares and not a callable it also declares | the call node |
 | `extends` | an `object_declaration` that inherits, including a qualified base from another module | the base node |
 | `implements` | a concept naming another contract it includes — the `of` clause (`concept x of B`) or the `is` form (`x is B` in the body); see *Concept refinement* below | the concept's declaration / body |
+| `uses` | a bare identifier read, and the member leaf of a `dot_expression` that is not a call callee (Nim's UFCS makes `x.foo` a member read) | the identifier / leaf node |
+| `imports` | one edge per module named by `import` and `from M import …`; source is the synthetic `(global)` | the naming node (the path token, not the directive) |
+| `exports` | one edge per OPERAND of an `export` statement — a re-export of a name this module imported, which nothing else in the payload records | the operand node |
+| `contains` | one edge per owned member: object fields, enum members, module-level procs/types, methods under their receiver | no, by design |
+| `references` | the declared-type graph: parameter, return, field, `const`/`let`/`var` annotations, `new`/`of` operands | the annotation node |
 | `overrides` | a `method` whose name matches a method of a base this file also declares; the target is receiver-qualified (`Rect.describe -> Shape.describe`) | the method node |
+| `instantiates` | `TypeName(field: v)` — a `call` whose callee is a type this file declares and not a callable it also declares | the call node |
+| `decorates` | one edge per DECLARATION-OWNED pragma name that resolves to a **pragma template declared in the same file** (`template/macro X() {.pragma.}`) — the APPLIED-CALLABLE class, rung R3, 2026-10-23. Such a name publishes one edge at **confidence 1**, source the decorated declaration's published spelling (`qualifiedName` for methods), target the pragma template name, `metadata.decoratorConstruct: "pragma_template"`, `metadata.relationshipType: "nim_pragma_template"`. A builtin directive pragma (`{.inline.}`, `{.cdecl.}`, `{.raises.}`) is passive compiler metadata and emits NO row; a directive-only or unpublished declaration emits no row (the MUST-NOT). | the pragma NAME's own line |
+| `part_of` | each operand of `include` — a TEXTUAL scope-sharing inclusion, not a module import (the included file's declarations join THIS module's single scope; no module is created and nothing can `import` it) — publishes one edge at **confidence 1**, source `(global)`, target `moduleNameOfPath(text)`, line the operand's line, `partRole: "library"`, `targetResolution: "module-name"`; the lane's `ImportInfo` gets `metadata.nimInclude`. 1:1 RELABEL of the old `imports` row, rung R3, 2026-10-23 | the operand's line |
 
 Nim expresses contract refinement in **two** spellings and neither is an
 interface declaration in the Java sense — a concept is satisfied structurally, by
@@ -693,17 +693,21 @@ records the count its run used.
 
 | Relationship type | Emitted? | Verdict | Measured on this corpus | Files | Where the number comes from |
 | --- | --- | --- | --- | --- | --- |
-| **all ten, one row each** | 10 of 10 examined | **10 EMITTED, 0 ruled** | **267,265 edges over 110,043 symbols** | **6,063 admitted** | `validation/m14/measurements/nim/session10-1w-census.txt`, digest-pinned on both sides of the walk, 1 worker |
 | `calls` | YES | EMITTED | 118,261 edges | **4,903** | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
-| `uses` | YES | EMITTED | 45,664 edges | **2,833** | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
-| `contains` | YES | EMITTED | 29,330 edges | **2,415** | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
-| `references` | YES | EMITTED | 56,445 edges | **2,920** | `collectDeclaredTypeRefAt`, the declared-type sites |
-| `imports` | YES | EMITTED | 13,364 edges | **3,429** | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
-| `instantiates` | YES | EMITTED | 2,843 edges | **1,419** | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
 | `extends` | YES | EMITTED | 627 edges | **299** | `collectInheritance`, from `object_declaration.inherits`, minus the compiler's own roots |
 | `implements` | YES | **EMITTED** | **47 edges** — *was 0, and the ruling that said 0 was falsified* | **23** | `collectContractRefinement`, from `concept_declaration.refines`; all 47 in `nimony` |
-| `overrides` | YES | EMITTED | 67 edges | **36** | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
+| `uses` | YES | EMITTED | 45,664 edges | **2,833** | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
+| `imports` | YES | EMITTED | 13,364 edges | **3,429** | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
 | `exports` | YES | EMITTED | 617 edges | **154** | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
+| `contains` | YES | EMITTED | 29,330 edges | **2,415** | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
+| `references` | YES | EMITTED | 56,445 edges | **2,920** | `collectDeclaredTypeRefAt`, the declared-type sites |
+| `overrides` | YES | EMITTED | 67 edges | **36** | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
+| `instantiates` | YES | EMITTED | 2,843 edges | **1,419** | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
+| `decorates` | YES | EMITTED | **30 edges** over the 6,063-file population — all 30 resolved | **7** | `collectPragmaDecorates` (`real-nim-analyzer.ts:2331`): a DECLARATION-OWNED pragma name resolving to a pragma TEMPLATE declared in the same file (`template/macro X() {.pragma.}`) publishes one edge at **confidence 1**, source the decorated declaration's published spelling (`qualifiedName` for methods), target the template name, `metadata.decoratorConstruct: "pragma_template"`. A builtin directive pragma (`{.inline.}`, `{.cdecl.}`, `{.raises.}`) is passive compiler metadata and emits NO row; a directive-only or unpublished declaration emits no row (the MUST-NOT). `validation/m14/measurements/nim/nim-gate-whole-2026-10-23.txt` TABLE 1 (whole 6,063-file population, one run, 2026-10-23) |
+| `part_of` | YES | EMITTED | **457 edges** over the 6,063-file population — 411 resolved, 37 ambiguous, 9 unresolved | **242** | `readIncludeStatement` (`real-nim-analyzer.ts:1538`): one edge per operand of `include` — a TEXTUAL scope-sharing inclusion (the included file's declarations join THIS module's single scope; no module is created and nothing can `import` it) — at **confidence 1**, source `(global)`, target `moduleNameOfPath(text)`, line the operand's line, `partRole: "library"`, `targetResolution: "module-name"`; the lane's `ImportInfo` carries `metadata.nimInclude`. `validation/m14/measurements/nim/nim-gate-whole-2026-10-23.txt` TABLE 1 (whole 6,063-file population, one run, 2026-10-23) |
+
+**Twelve emitted, two ruled** — the table is the checkable statement, and it now covers the twelve values this analyzer emits (the `decorates` and `part_of` rows were added 2026-10-23 from the whole-population arm, in canonical register order). `renders` and `mixes_in` are RULED, with their own counts and falsifiers, in `validation/m14/verification/NIM-EXTENDED-TYPES.md`.
+
 
 **The FILES column is new, and it exists because the instrument that produces it was
 wrong until this pass.** `census.ts:264` capped the example list at six entries *on the
