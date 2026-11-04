@@ -4291,7 +4291,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // THE BODY — the dart grammar puts a method's signature and its body as SIBLINGS inside
       // `class_body`, so the body is the sibling that follows the signature.
       let body: Node | null = member.nextNamedSibling
-      while (body && body.type !== "function_body" && body.type !== "method_signature" && body.type !== "field_signature") {
+      while (body && body.type !== "function_body" && body.type !== "method_signature") {
         body = body.nextNamedSibling
       }
       if (!body || body.type !== "function_body") continue
@@ -4323,7 +4323,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   private renderedComponentName(expr: Node | null): string | null {
     if (!expr) return null
     let name: string | null = null
-    if (expr.type === "const_object_expression" || expr.type === "new_expression" || expr.type === "instance_creation_expression") {
+    if (expr.type === "const_object_expression" || expr.type === "new_expression") {
       const t = expr.childForFieldName("type") ?? expr.namedChildren.find((k) => k && (k.type === "type_identifier" || k.type === "identifier"))
       name = t ? t.text : null
     } else if (expr.type === "identifier") {

@@ -4821,7 +4821,7 @@ class TypeScriptAnalysisRunner {
         }
         if (p.type === "pair_pattern") { walkPat(p.childForFieldName?.("value") ?? p.namedChild(1) ?? p.namedChild(0)); return }
         if (p.type === "object_assignment_pattern" || p.type === "assignment_pattern") { walkPat(p.childForFieldName?.("left") ?? p.namedChild(0)); return }
-        if (p.type === "rest_pattern" || p.type === "spread_pattern" || p.type === "object_pattern" || p.type === "array_pattern") {
+        if (p.type === "rest_pattern" || p.type === "object_pattern" || p.type === "array_pattern") {
           for (let i = 0; i < p.namedChildCount; i++) walkPat(p.namedChild(i))
         }
       }
@@ -8726,10 +8726,12 @@ class TypeScriptAnalysisRunner {
         // directive (nothing else can match that token), and its `role` and `target` are read out of
         // the node's OWN fixed spelling. That is not a regex over the file: it is the grammar's own
         // guarantee being unwrapped, the same operation as reading an import's string source.
-        const roleField = node.childForFieldName?.("role") ?? null
-        const targetField = node.childForFieldName?.("target") ?? null
-        let role = roleField?.text ?? ""
-        let raw = targetField?.text ?? ""
+        // The pinned wasm surfaces no `role`/`target` fields on this node (the grammar audit's
+        // field enumeration is the oracle), so the old fast path that read them never fired: the
+        // directive is unwrapped by the character walk below, which the lane's contract already
+        // calls the real reading. Removed rather than kept as a dead branch.
+        let role = ""
+        let raw = ""
         if (role === "" || raw === "") {
           const text = node.text ?? ""
           // ⇒⇒⇒ THE DIRECTIVE IS UNWRAPPED BY A CHARACTER WALK OVER THE NODE'S OWN FIXED SPELLING, NOT BY

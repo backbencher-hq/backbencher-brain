@@ -4424,7 +4424,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     let cls: string | null = null
     for (let p: Node | null = fn.parent; p; p = p.parent) {
       if (p.type === "class_declaration") { cls = p.childForFieldName("name")?.text ?? null; break }
-      if (p.type === "class" || p.type === "class_expression") return null
+      if (p.type === "class") return null
       if (p.type === "function_declaration" || p.type === "function_expression" ||
           p.type === "generator_function_declaration" || p.type === "generator_function") return null
     }
@@ -4762,8 +4762,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             (p.type === "generator_function_declaration" && p.childForFieldName("name")?.id === n.id) ||
             (p.type === "class_declaration" && p.childForFieldName("name")?.id === n.id) ||
             (p.type === "function_expression" && p.childForFieldName("name")?.id === n.id) ||
-            (p.type === "method_definition" && p.childForFieldName("name")?.id === n.id) ||
-            (p.type === "required_parameter") || (p.type === "optional_parameter")
+            (p.type === "method_definition" && p.childForFieldName("name")?.id === n.id)
           const isBindingPosition =
             p.type === "formal_parameters" ||
             p.type === "import_clause" || p.type === "import_specifier" || p.type === "namespace_import" ||

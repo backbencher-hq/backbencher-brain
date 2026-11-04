@@ -1569,7 +1569,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // A bare `{ ... }` among the names is a MODIFIER SPECIFICATION: its
               // keys are OPTION names (`-excludes`, `-alias`), and publishing them
               // as roles was measured on Moose's role_conflict_detection.t.
-              if (arg.type === "anonymous_hash_expression" || arg.type === "hash_expression" || arg.type === "anonymous_array_expression") continue
+              if (arg.type === "anonymous_hash_expression" || arg.type === "anonymous_array_expression") continue
               for (const value of this.wordValues(arg)) {
                 if (!value || this.isOption(value)) continue
                 if (isWith) {
@@ -2352,7 +2352,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return splitWords(content.text).filter(Boolean).map((name) => ({ name, node: content }))
     }
     // `has [qw(a b)]` / `has [ 'a', 'b' ]` — an array of names.
-    if (head.type === "anonymous_array_expression" || head.type === "array_expression") {
+    if (head.type === "anonymous_array_expression") {
       const out: { name: string; node: Node }[] = []
       for (let i = 0; i < head.namedChildCount; i++) {
         const child = head.namedChild(i)
