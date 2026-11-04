@@ -26804,11 +26804,26 @@ async function main() {
       }
       const outPath = path.join(ROOT, "validation", "m14", "results", "M14.0.F5.lane-measurements.json")
       fs.mkdirSync(path.dirname(outPath), { recursive: true })
+      // A SCOPED RUN MUST NOT SHRINK A CANONICAL MEASUREMENT RECORD (2026-11-03).
+      // `--lang X --update-baseline` measured one lane and this writer replaced the whole file, so
+      // validation/m14/results/M14.0.F5.lane-measurements.json went from 86 lane rows to 1 — and
+      // verify-fleet reads this record to decide each lane's differential status, so TEN lanes
+      // (clean, fsharp, graphql, lua, matlab, powershell, protobuf, r, vb, vba) flipped from
+      // MEASURED to ABSENT and the fleet gate went red while no measurement had been lost. The
+      // record is per-lane VERDICTS, so the write MERGES: this run's measured lanes replace their
+      // rows and every lane the run did not measure keeps its last verdict.
+      let previous: Record<string, any> = {}
+      try {
+        previous = (JSON.parse(fs.readFileSync(outPath, "utf8")) as { lanes?: Record<string, any> }).lanes ?? {}
+      } catch {
+        /* first write, or an unreadable file: there is nothing to carry and the merge is the write */
+      }
+      const merged = { ...previous, ...measurements }
       fs.writeFileSync(outPath, JSON.stringify({
-        note: "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence.",
-        lanes: measurements,
+        note: "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence. MERGED across runs: a scoped run updates its own lanes and carries every other lane's last verdict.",
+        lanes: merged,
       }, null, 2) + "\n")
-      console.log(`differential lane measurements written: ${Object.keys(measurements).length} lane(s) — ${Object.values(measurements).filter((m: any) => m.pinned).length} pinned, ${Object.values(measurements).filter((m: any) => !m.pinned).length} measured-unpinned`)
+      console.log(`differential lane measurements written: ${Object.keys(measurements).length} lane(s) this run — ${Object.values(measurements).filter((m: any) => m.pinned).length} pinned, ${Object.values(measurements).filter((m: any) => !m.pinned).length} measured-unpinned (record now carries ${Object.keys(merged).length} lane verdicts)`)
     } catch (err) {
       console.log(`differential lane measurements NOT written: ${(err as Error).message}`)
     }
