@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "0591fd9da77c4d3a8a8e91564c65d8181892ee53e960ea0a86ae7adb7c365ddb",
-    "sealedAt": "2026-11-03T22:32:57.000Z"
+    "contentSha256": "ee5267e4ee3d9005731f51d8efc962b42328e6dd098c33f20a872fd54393c518",
+    "sealedAt": "2026-11-04T00:43:36.000Z"
   },
   "checks": [
     {
@@ -2374,80 +2374,6 @@
       "status": "pass"
     },
     {
-      "description": "solidity: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity: 0 ruled, 7 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (solidity)",
-      "detail": "126 types, 102 handled, 17 silent, 0 gaps, 7 decisions",
-      "id": "section-a-structural",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "11 relationship kinds pinned by solidity fixtures; 11 emitted and all accounted for",
-      "detail": "pinned: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for solidity (1)",
-      "detail": "complexity",
-      "id": "section-c-payload-matrix",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity:solidity at documented residual floor (SOL-SCOPE: missing 2, unexplained 21)",
-      "detail": "floor solidity:solidity: missing=2, unexplained=21 — expected 2/21 per SOL-SCOPE (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "solidity:solidity 5.3 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "solidity analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/solidity.md + head comment present",
-      "id": "section-g-docs",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "solidity",
-      "status": "pass"
-    },
-    {
       "description": "elixir: every named node type classified",
       "id": "inventory-fully-classified",
       "language": "elixir",
@@ -2594,13 +2520,229 @@
       "id": "section-h-cross-language",
       "language": "cpp",
       "status": "pass"
+    },
+    {
+      "description": "bash: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "bash: 1 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "bash: 17 ruled, 7 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (bash)",
+      "detail": "61 types, 32 handled, 28 silent, 1 gaps, 24 decisions",
+      "id": "section-a-structural",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "7 relationship kinds pinned by bash fixtures; 7 emitted and all accounted for",
+      "detail": "pinned: calls, contains, exports, overrides, part_of, references, uses; emitted: calls, contains, exports, overrides, part_of, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for bash (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "otp:bash at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor otp:bash: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "bash avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "otp:bash 4.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "bash analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/bash.md + head comment present",
+      "id": "section-g-docs",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "bash",
+      "status": "pass"
+    },
+    {
+      "description": "solidity: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity: 0 ruled, 7 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (solidity)",
+      "detail": "126 types, 102 handled, 17 silent, 0 gaps, 7 decisions",
+      "id": "section-a-structural",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "11 relationship kinds pinned by solidity fixtures; 11 emitted and all accounted for",
+      "detail": "pinned: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses; emitted: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for solidity (1)",
+      "detail": "complexity",
+      "id": "section-c-payload-matrix",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity:solidity at documented residual floor (SOL-SCOPE (re-pinned 2026-11-03 to the canonical 50/50 pin; see the note above): missing 0, unexplained 0)",
+      "detail": "floor solidity:solidity: missing=0, unexplained=0 — expected 0/0 per SOL-SCOPE (re-pinned 2026-11-03 to the canonical 50/50 pin; see the note above) (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "solidity:solidity 6.4 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "solidity analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/solidity.md + head comment present",
+      "id": "section-g-docs",
+      "language": "solidity",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "solidity",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "bb21fce0e728f3598f95eff19815d5401a543eb7",
-  "committedAt": "2026-11-03T17:32:57-05:00",
+  "commit": "6353685ba8e32cfdf7edd045e622b904cee886b6",
+  "committedAt": "2026-11-03T19:43:36-05:00",
   "data": {
     "languages": {
+      "bash": {
+        "gaps": [
+          "BA-G1: `unset VAR` names a real project variable and emits no relationship of any kind."
+        ],
+        "nodeTypeCount": 61,
+        "pendingDecisions": [
+          "BD11",
+          "BD12",
+          "BD13",
+          "BD14",
+          "BD15",
+          "BD16",
+          "BD17"
+        ],
+        "ruledDecisions": [
+          "BD1",
+          "BD2",
+          "BD3",
+          "BD4",
+          "BD5",
+          "BD6",
+          "BD7",
+          "BD8",
+          "BD9",
+          "BD10",
+          "BD-gap-closure",
+          "BD-census-authority",
+          "BD-word-vs-identifier",
+          "BD-shell-defined-vars",
+          "BD-perf",
+          "BD-assigned-in-file",
+          "BD8b"
+        ],
+        "sections": {
+          "section-a-structural": {
+            "detail": "61 types, 32 handled, 28 silent, 1 gaps, 24 decisions",
+            "status": "pass"
+          },
+          "section-b-relationship-kinds": {
+            "detail": "pinned: calls, contains, exports, overrides, part_of, references, uses; emitted: calls, contains, exports, overrides, part_of, references, uses",
+            "status": "pass"
+          },
+          "section-c-payload-matrix": {
+            "detail": "complexity",
+            "status": "pass"
+          },
+          "section-d-evidence-tiers": {
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
+            "status": "pass"
+          },
+          "section-e-differential": {
+            "detail": "floor otp:bash: missing=0, unexplained=0 (differential-baseline.json)",
+            "status": "pass"
+          },
+          "section-f-perf-budget": {
+            "detail": "otp:bash 4.1 ms/file",
+            "status": "pass"
+          },
+          "section-g-docs": {
+            "detail": "docs/analyzers/bash.md + head comment present",
+            "status": "pass"
+          },
+          "section-h-cross-language": {
+            "detail": "12 checks pass",
+            "status": "pass"
+          }
+        }
+      },
       "c": {
         "gaps": [],
         "nodeTypeCount": 130,
@@ -4430,11 +4572,11 @@
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "floor solidity:solidity: missing=2, unexplained=21 — expected 2/21 per SOL-SCOPE (differential-baseline.json)",
+            "detail": "floor solidity:solidity: missing=0, unexplained=0 — expected 0/0 per SOL-SCOPE (re-pinned 2026-11-03 to the canonical 50/50 pin; see the note above) (differential-baseline.json)",
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "solidity:solidity 5.3 ms/file",
+            "detail": "solidity:solidity 6.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -5073,8 +5215,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-11-03T17:32:57-05:00",
-  "regeneratedAtCommit": "bb21fce0e728f3598f95eff19815d5401a543eb7",
+  "regeneratedAt": "2026-11-03T19:43:36-05:00",
+  "regeneratedAtCommit": "6353685ba8e32cfdf7edd045e622b904cee886b6",
   "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

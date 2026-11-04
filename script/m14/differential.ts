@@ -29200,6 +29200,34 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
     edges.push({ label, from, target })
   }
 
+  // --- IMPLICIT BINDINGS (BASH-DD1, 2026-11-03) -------------------------------------------
+  //
+  // The inverse of the `unset` ruling below: bash CREATES bindings the declaration syntax
+  // never mentions, and the analyzer publishes them as owned symbols while this oracle
+  // derived no `contains` row for them. Measured on the canonical draw: 5 unexplained
+  // `contains` rows (`for` 4 · `read` 1) and, on the 400-file census, a 20-row class (177
+  // edges) that the analyzer's own page has called DERIVATION debt since round 12.
+  //
+  // The rules below MIRROR src/ast/real-bash-analyzer.ts's collector (its `publish(...)`
+  // helper), deliberately and with its comments, because an oracle that invents its own
+  // binding model stops being independent evidence for the thing it measures. The
+  // independence argument is about the DERIVATION SOURCE (the tree), not about writing a
+  // different rule for the same language fact.
+  const READ_TARGETS = new Set(["read", "mapfile", "readarray"])
+  const READ_VALUE_OPT_LETTERS = new Set(["d", "e", "i", "n", "N", "p", "s", "t", "u", "O"])
+  const READ_OPTION_LETTERS = new Set(["r", "a", "d", "e", "i", "n", "N", "p", "s", "t", "u", "O", "C", "c"])
+  /** The command word of a `command` node, exactly as the analyzer reads it (the first
+   *  `word` child of `command_name`, falling back to its text). */
+  const bashCommandNameOf = (node: any): string => {
+    const cn = node.childForFieldName?.("name") ?? (() => {
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c && c.type === "command_name") return c }
+      return null
+    })()
+    if (!cn) return ""
+    for (let j = 0; j < cn.namedChildCount; j++) { const w = cn.namedChild(j); if (w && w.type === "word") return w.text }
+    return cn.text ?? ""
+  }
+
   // --- the file's own function names, in one pass, so a forward reference
   // resolves the same as a backward one.
   const declaredFns = new Set<string>()
@@ -29338,6 +29366,63 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
               for (let j = 0; j < c.namedChildCount; j++) { const v = c.namedChild(j); if (v?.type === "variable_name") push("exports", owner, v.text) }
             }
           }
+        }
+      }
+    }
+    // --- IMPLICIT BINDING CONTAINMENT (BASH-DD1) -----------------------------------------
+    // `for NAME in words` / `for NAME`: a bare `variable_name` child of for_statement. The
+    // c-style loop is a `c_style_for_statement` whose init is a variable_assignment, so it
+    // arrives through the branch above and is deliberately NOT handled here (the analyzer's
+    // collector says the same thing for the same reason: two collectors publishing one name
+    // would make one of them dead).
+    if (n.type === "for_statement") {
+      const owner = scopeStack[scopeStack.length - 1] ?? scriptName
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "variable_name") push("contains", owner, c.text)
+      }
+    }
+    if (n.type === "command") {
+      const owner = scopeStack[scopeStack.length - 1] ?? scriptName
+      const cmd = bashCommandNameOf(n)
+      if (READ_TARGETS.has(cmd)) {
+        // `read`/`mapfile`/`readarray` targets. An option letter that CONSUMES THE NEXT
+        // SIBLING is decided by POSITION inside the bundle (`-ra args` binds args; `-u3 name`
+        // keeps the descriptor in the bundle and binds name) — the analyzer's comment records
+        // that the first version of its own rule dropped `read -u3 name` and a MUTANT found it.
+        let skipNext = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const child = n.namedChild(i)
+          if (!child || child.type === "command_name") continue
+          if (child.type === "variable_assignment") continue
+          const isOption =
+            child.type === "word" && child.text.length > 1 && child.text.charCodeAt(0) === 45 /* - */ && child.text.charCodeAt(1) !== 45 /* not -- */
+          if (isOption) {
+            const lastIndex = child.text.length - 1
+            let consumesNext = false
+            for (let j = 1; j < child.text.length; j++) {
+              const letter = child.text[j]
+              if (!READ_OPTION_LETTERS.has(letter)) continue
+              if (READ_VALUE_OPT_LETTERS.has(letter)) {
+                consumesNext = j === lastIndex
+                break
+              }
+            }
+            skipNext = consumesNext
+            continue
+          }
+          if (skipNext) { skipNext = false; continue }
+          push("contains", owner, child.text)
+        }
+      } else if (cmd === "printf") {
+        // `printf -v NAME fmt …` (bash 4.1): the target is the node IMMEDIATELY after `-v`
+        // and must itself be a word, so `printf -v "$2" …` — a computed name — binds nothing.
+        for (let i = 0; i < n.namedChildCount - 1; i++) {
+          const child = n.namedChild(i)
+          if (!child || child.type !== "word" || child.text !== "-v") continue
+          const target = n.namedChild(i + 1)
+          if (target && target.type === "word") push("contains", owner, target.text)
+          break
         }
       }
     }

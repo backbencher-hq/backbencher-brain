@@ -1283,7 +1283,25 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   differentialCheck: "differential-solidity",
   perfKey: "solidity:solidity",
   floorResidual: {
-    missing: 2,
+    // RE-PINNED 2026-11-03 (launch pass) TO THE CANONICAL 50/50 SWEEP'S OWN ROW, WHICH IS 0/0.
+    //
+    // The 2/21 ruling below was measured on an EARLIER 60-file draw (SOL-15 moved it up from
+    // 18, and its reasoning is kept verbatim below because it is the record of why the number
+    // was allowed to move in the direction that usually means a regression). It is no longer the
+    // row the gate reads: commit 9c0cc0b14 ("DIFFERENTIAL AT 50/50: CANONICAL SWEEP …") added
+    // `counts["solidity:solidity"] = {missing 0, unexplained 0, sampleSetHash e9708e750546e983}`
+    // from the canonical sweep, and a pinned row of 0/0 with a 2/21 ruling is exactly the shape
+    // this gate was written to refuse ("a lower-than-documented floor is acceptable ONLY after
+    // the ruling is re-pinned"). The ruling is therefore re-pinned to the row, and the 2/21
+    // reading stays in this comment as history rather than as a claim.
+    //
+    // DRAW VARIANCE IS RECORDED, NOT ABSORBED. A scoped probe on a LATER rotated draw
+    // (hash b7bb9c3a028f84c7) read 60 files / tree-truth 3177 / covered 3162 (99.5%) /
+    // MISSING=15 / unexplained=0 — the same class of cross-file residue the 2/21 reading
+    // itemised, appearing because the 60-file draw rotates. Both readings are 60-file draws and
+    // neither is the whole population; the PIN is the canonical sweep's draw, and a future sweep
+    // that draws a file carrying the residual will re-pin it and must update this ruling with it.
+    missing: 0,
     // SOL-15 moved this floor UP from 18, which is the direction that normally means
     // a regression, so the reason lives with the number in
     // validation/m14/differential-baseline.json `floorMoves["solidity:solidity"]` and
@@ -1295,8 +1313,8 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // `sweepStateKey` so an oracle edit can no longer resume a cached verdict, left a
     // residual of 3 custom-error calls to errors declared in another file — 0
     // unclassifiable.
-    unexplained: 21,
-    ruling: "SOL-SCOPE",
+    unexplained: 0,
+    ruling: "SOL-SCOPE (re-pinned 2026-11-03 to the canonical 50/50 pin; see the note above)",
   },
   // `decorates` JOINED THE CONTRACT ROW WITH THE SOL-17/SOL-R3 RELABEL (144 rows at index
   // scope, 31 per file): the modifier invocation is published as its own kind now, and the
