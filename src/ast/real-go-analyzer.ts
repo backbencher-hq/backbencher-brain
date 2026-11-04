@@ -2567,9 +2567,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * go-stdlib + cobra. See docs/analyzers/go.md for the counts.
    *
    * ENDPOINT SPELLING follows the family: a method has no package-scope name of
-   * its own, so both ends are `Receiver.Method` (perl, objc, python, kotlin,
-   * dart, swift, php, cpp all publish `overrides|.` as a recorded separator
-   * triple in validation/m60/target-spelling-register.json).
+   * its own, so the SHADOWING end is `Receiver.Method` (perl, objc, python,
+   * kotlin, dart, swift, php, cpp all publish `overrides|.` as a recorded
+   * separator triple in validation/m60/target-spelling-register.json).
+   *
+   * THE TARGET IS THE MEMBER NAME ALONE (name-surface round, #924). A
+   * relationship target is a NAME the lane publishes, and `Embedder.Method` is a
+   * selector chain — Go has no qualified declaration names. So the promoted
+   * method publishes as its bare name, with `metadata.embedder` and
+   * `metadata.targetQualified` preserving the pair `Embedder.Method` that names
+   * WHICH declaration was displaced. The source keeps its qualified spelling
+   * because a Go method has no package-scope name of its own (the endpoint
+   * ambiguity the fixtures pin); only the target was ever source text on a
+   * name-bearing surface, and this is the rule that built it, fixed at the
+   * source rather than filtered afterwards.
    *
    * THE NAME RULE IS GO's, not the family's: the match is on the method NAME
    * alone. A signature-compatible shadow is the only shape other languages
@@ -2698,7 +2709,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         depths.set(key, entry.depth)
         relationships.push({
           source: `${outer}.${m.name}`,
-          target: `${embedder}.${em.name}`,
+          // THE TARGET IS THE MEMBER NAME, NOT A SELECTOR CHAIN (name-surface
+          // round, #924): a relationship target is a NAME the lane publishes,
+          // and `Embedder.Method` is source text with a separator in it — Go has
+          // no qualified declaration names. The SHADOWING declaration keeps its
+          // qualified spelling on the SOURCE (a Go method has no package-scope
+          // name of its own; that is the endpoint-ambiguity rule the fixtures
+          // pin), and the promoting pair moves to `metadata.targetQualified` /
+          // `metadata.embedder` so no fact is lost with the spelling.
+          target: em.name,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
           // the SHADOWING declaration's own line — the site that
@@ -2707,6 +2726,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             relationshipType: "go_method_promotion_shadowing",
             isOverride: true,
+            // THE PROMOTING TYPE, and the pair spelling it used to publish as the
+            // TARGET before the name-surface round. The target is now the member
+            // name alone, so these two fields carry the identity that distinguishes
+            // two embedders declaring the same method name.
+            embedder,
+            targetQualified: `${embedder}.${em.name}`,
             // contract : confidence < 1.0 carries a machine-readable reason.
             reasonCode: "promoted-method-shadowed-by-outer-declaration",
             // True when the two signatures match, i.e. this is a substitutable

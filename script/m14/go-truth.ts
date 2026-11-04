@@ -160,7 +160,9 @@ export function deriveGoExportedVarsTruth(root: Node): GoTruthEdge[] {
 /**
  * TRUTH for `overrides` — Go's METHOD-PROMOTION SHADOWING.
  *
- * Both endpoints are member identities (`Type.Method`). An edge exists when, WITHIN THIS FILE:
+ * The SOURCE is a member identity (`Type.Method`); the TARGET is the member NAME
+ * alone (name-surface round, #924 — a name-bearing target is a name, not a selector
+ * chain). An edge exists when, WITHIN THIS FILE:
  *   · `Outer` declares a method `M`, and
  *   · `Outer` embeds (directly or transitively, depth ≤ 4) a type `Embedder` that declares its own
  *     method `M` in the same file.
@@ -249,7 +251,12 @@ export function deriveGoOverridesTruth(root: Node): GoTruthEdge[] {
         const key = `${outer}.${m}->${embedder}.${m}`
         if (seen.has(key)) continue
         seen.add(key)
-        out.push({ label: "overrides", from: `${outer}.${m}`, target: `${embedder}.${m}`, line: 0 })
+        // THE TARGET IS THE MEMBER NAME (name-surface round, #924): the pair
+        // spelling `embedder.m` is source text with a separator, and a name-bearing
+        // target is a NAME. The oracle moves WITH the analyzer — an oracle that
+        // still spelled the old target would disagree with the fixed rule, and the
+        // differential would report the fix as an unexplained edge.
+        out.push({ label: "overrides", from: `${outer}.${m}`, target: m, line: 0 })
       }
     }
   }
