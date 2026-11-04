@@ -23,12 +23,12 @@
     {
       "name": "CLI symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"ebf85d9fca30704d2221e8fbbcde5cc021af3310:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-CjsWs3/src/dup.ts\""
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-LlSVPK/src/dup.ts\""
     },
     {
       "name": "CLI file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"ebf85d9fca30704d2221e8fbbcde5cc021af3310:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"045251be801440cfa6661e23ce456446594148cc:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "CLI rejects empty query [negative]",
@@ -73,12 +73,12 @@
     {
       "name": "MCP symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"ebf85d9fca30704d2221e8fbbcde5cc021af3310:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-CjsWs3/src/dup.ts\""
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-LlSVPK/src/dup.ts\""
     },
     {
       "name": "MCP file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"ebf85d9fca30704d2221e8fbbcde5cc021af3310:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"045251be801440cfa6661e23ce456446594148cc:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "MCP rejects empty query [negative]",
@@ -125,7 +125,7 @@
     {
       "name": "MCP symbol mode pages over a complete match set (declared total, distinct pages)",
       "pass": true,
-      "detail": "p1={\n  \"matches\": [\n    {\n      \"id\": \"ebf85d9fca30704d2221e8fbbcde5cc021af3310:src/dup.ts:du p2={\n  \"matches\": [\n    {\n      \"id\": \"ebf85d9fca30704d2221e8fbbcde5cc021af3310:src/app.ts:du"
+      "detail": "p1={\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/dup.ts:du p2={\n  \"matches\": [\n    {\n      \"id\": \"045251be801440cfa6661e23ce456446594148cc:src/app.ts:du"
     },
     {
       "name": "MCP symbols answer declares its match set",
@@ -159,5 +159,5 @@
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
     "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
   ],
-  "generatedAt": "2026-11-04T04:22:48.095Z"
+  "generatedAt": "2026-11-04T05:38:55.062Z"
 }

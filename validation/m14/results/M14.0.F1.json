@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "6dce5cf4c8a1f5264002d22235f4f1a40ffb9a9f31ee491f315bd696d3876b41",
-    "sealedAt": "2026-11-04T00:28:30.000Z"
+    "contentSha256": "5a1516b4b0f85cafeaf63395a2b14b53c73b532729363f61db6dd4eb46a82678",
+    "sealedAt": "2026-11-04T05:33:03.000Z"
   },
   "checks": [
     {
@@ -18,8 +18,8 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (35/47 languages pass)",
-      "detail": "unregistered cpp type \"unique_ptr\"; unregistered cpp type \"shared_ptr\"; unregistered cpp type \"weak_ptr\"; unregistered cpp type \"auto_ptr\"; unregistered cpp type \"optional\"; unregistered cpp type \"reference_wrapper\"; unregistered cpp type \"atomic\"; unregistered dart type \"mixes_in\"; unregistered dart type \"mixes_in\"; unregistered dart type \"mixes_in\"",
+      "description": "per-literal shrink-only register with reasons (44/47 languages pass)",
+      "detail": "unregistered vb type \"local_declaration_statement\"; unregistered vb type \"attribute_argument\"; unregistered vb type \"argument\"; unregistered powershell type \"adsi\"; unregistered powershell type \"System.DirectoryServices.DirectoryEntry\"; unregistered powershell type \"adsisearcher\"; unregistered powershell type \"System.DirectoryServices.DirectorySearcher\"; unregistered powershell type \"alias\"; unregistered powershell type \"System.Management.Automation.AliasAttribute\"; unregistered powershell type \"allowemptycollection\"",
       "id": "dead-literal-gate",
       "status": "fail"
     },
@@ -30,46 +30,16 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "f58832eb1bdb7d5d7ebedbbfcd586734d447359e",
-  "committedAt": "2026-11-03T19:28:30-05:00",
+  "commit": "d9bb172aea309649e573aa32fa6cdef3b1e83391",
+  "committedAt": "2026-11-04T00:33:03-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
         "countRegressions": [
           {
             "from": 0,
-            "lang": "cpp",
-            "to": 7
-          },
-          {
-            "from": 0,
-            "lang": "dart",
-            "to": 7
-          },
-          {
-            "from": 0,
             "lang": "vb",
             "to": 3
-          },
-          {
-            "from": 0,
-            "lang": "javascript",
-            "to": 3
-          },
-          {
-            "from": 0,
-            "lang": "objective-c",
-            "to": 1
-          },
-          {
-            "from": 0,
-            "lang": "perl",
-            "to": 13
-          },
-          {
-            "from": 0,
-            "lang": "php",
-            "to": 2
           },
           {
             "from": 0,
@@ -80,125 +50,12 @@
             "from": 0,
             "lang": "r",
             "to": 3
-          },
-          {
-            "from": 0,
-            "lang": "ruby",
-            "to": 2
-          },
-          {
-            "from": 0,
-            "lang": "sql",
-            "to": 2
-          },
-          {
-            "from": 0,
-            "lang": "typescript",
-            "to": 3
           }
         ],
         "ok": false,
         "recordIsV1": false,
         "shrunk": [],
         "unregistered": [
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "unique_ptr"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "shared_ptr"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "weak_ptr"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "auto_ptr"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "optional"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "reference_wrapper"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 2968,
-            "literal": "atomic"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 2048,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 2086,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 4365,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 4294,
-            "literal": "field_signature"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 4326,
-            "literal": "instance_creation_expression"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 4362,
-            "literal": "part_of"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "dart",
-            "line": 4382,
-            "literal": "renders"
-          },
           {
             "context": "real-vb-analyzer.ts:comparison",
             "kind": "type",
@@ -219,139 +76,6 @@
             "lang": "vb",
             "line": 3268,
             "literal": "argument"
-          },
-          {
-            "context": "real-javascript-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "javascript",
-            "line": 4427,
-            "literal": "class_expression"
-          },
-          {
-            "context": "real-javascript-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "javascript",
-            "line": 4766,
-            "literal": "required_parameter"
-          },
-          {
-            "context": "real-javascript-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "javascript",
-            "line": 4766,
-            "literal": "optional_parameter"
-          },
-          {
-            "context": "real-objective-c-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "objective-c",
-            "line": 1753,
-            "literal": "part_of"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "ARRAY"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "HASH"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "SCALAR"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "CODE"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "REF"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "GLOB"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "LVALUE"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "REGEXP"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "IO"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "VSTRING"
-          },
-          {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
-            "kind": "type",
-            "lang": "perl",
-            "line": 339,
-            "literal": "UNKNOWN"
-          },
-          {
-            "context": "real-perl-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "perl",
-            "line": 1572,
-            "literal": "hash_expression"
-          },
-          {
-            "context": "real-perl-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "perl",
-            "line": 2355,
-            "literal": "array_expression"
-          },
-          {
-            "context": "real-php-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "php",
-            "line": 3877,
-            "literal": "part_of"
-          },
-          {
-            "context": "real-php-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "php",
-            "line": 3886,
-            "literal": "mixes_in"
           },
           {
             "context": "real-powershell-analyzer.ts:const:RESOLVED_FRAMEWORK_TYPES",
@@ -1829,55 +1553,6 @@
             "lang": "r",
             "line": 76,
             "literal": "namespace_access"
-          },
-          {
-            "context": "real-ruby-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "ruby",
-            "line": 3227,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-ruby-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "ruby",
-            "line": 3265,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "sql",
-            "line": 2484,
-            "literal": "inherit_clause"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "sql",
-            "line": 3506,
-            "literal": "inherit_specification"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "typescript",
-            "line": 4824,
-            "literal": "spread_pattern"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "typescript",
-            "line": 8729,
-            "literal": "role"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "typescript",
-            "line": 8730,
-            "literal": "target"
           }
         ]
       },
@@ -2016,46 +1691,46 @@
         "oracleNodeTypeCount": 496,
         "referencedFieldLiterals": 13,
         "referencedTypeLiterals": 106,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "unique_ptr"
           },
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "shared_ptr"
           },
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "weak_ptr"
           },
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "auto_ptr"
           },
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "optional"
           },
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "reference_wrapper"
           },
           {
-            "context": "real-cpp-analyzer.ts:const:OWNER_WRAPPER_TYPES",
+            "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
             "line": 2968,
             "literal": "atomic"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-cpp.wasm"
         ],
@@ -2108,47 +1783,27 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 115,
-        "status": "fail",
+        "referencedTypeLiterals": 113,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-dart-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 2048,
             "literal": "mixes_in"
           },
           {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 2086,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 4365,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 4294,
-            "literal": "field_signature"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 4326,
-            "literal": "instance_creation_expression"
-          },
-          {
-            "context": "real-dart-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 4362,
             "literal": "part_of"
           },
           {
-            "context": "real-dart-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 4382,
             "literal": "renders"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-dart.wasm"
         ],
@@ -2381,26 +2036,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
         "referencedFieldLiterals": 17,
-        "referencedTypeLiterals": 75,
-        "status": "fail",
+        "referencedTypeLiterals": 72,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-javascript-analyzer.ts:comparison",
-            "line": 4427,
-            "literal": "class_expression"
-          },
-          {
-            "context": "real-javascript-analyzer.ts:comparison",
-            "line": 4766,
-            "literal": "required_parameter"
-          },
-          {
-            "context": "real-javascript-analyzer.ts:comparison",
-            "line": 4766,
-            "literal": "optional_parameter"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-javascript.wasm"
@@ -2533,16 +2172,16 @@
         "oracleNodeTypeCount": 560,
         "referencedFieldLiterals": 4,
         "referencedTypeLiterals": 66,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-objective-c-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 1753,
             "literal": "part_of"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-objc.wasm"
         ],
@@ -2557,77 +2196,67 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
         "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 74,
-        "status": "fail",
+        "referencedTypeLiterals": 72,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "ARRAY"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "HASH"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "SCALAR"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "CODE"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "REF"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "GLOB"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "LVALUE"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "REGEXP"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "IO"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "VSTRING"
           },
           {
-            "context": "real-perl-analyzer.ts:const:PERL_BUILTIN_REF_TYPES",
+            "justification": "real-perl-analyzer.ts PERL_BUILTIN_REF_TYPES (line 339): a table of PERL's BUILT-IN REFERENCE-TYPE names as Perl names them (ARRAY, HASH, SCALAR, CODE, REF, GLOB, LVALUE, REGEXP, IO, VSTRING, UNKNOWN), used to name the type a reference points at. None of these is a tree-sitter node type and none is read from a node — the auditor extracts string literals from const initializers it treats as node-type sets, and this set is semantic vocabulary (the same class as swift's \"String\" entry).",
             "line": 339,
             "literal": "UNKNOWN"
-          },
-          {
-            "context": "real-perl-analyzer.ts:comparison",
-            "line": 1572,
-            "literal": "hash_expression"
-          },
-          {
-            "context": "real-perl-analyzer.ts:comparison",
-            "line": 2355,
-            "literal": "array_expression"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-perl.wasm"
         ],
@@ -2643,21 +2272,21 @@
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
         "referencedTypeLiterals": 84,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-php-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 3877,
             "literal": "part_of"
           },
           {
-            "context": "real-php-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 3886,
             "literal": "mixes_in"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-php.wasm"
         ],
@@ -3806,21 +3435,16 @@
         "oracleNodeTypeCount": 286,
         "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 64,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-ruby-analyzer.ts:comparison",
+            "justification": "Compared against a RELATIONSHIP RECORD's type (`r.type`/`type` of a relationship row), not against a parse-tree node: the literal is a canonical relationship-kind name this lane emits/metadata-tiers, and no grammar declares node types with these spellings. The auditor's comparison extractor cannot tell the two receivers apart, which is why the finding exists; the code is live and its fixtures pin the tier it assigns.",
             "line": 3227,
-            "literal": "mixes_in"
-          },
-          {
-            "context": "real-ruby-analyzer.ts:comparison",
-            "line": 3265,
             "literal": "mixes_in"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-ruby.wasm"
         ],
@@ -3893,20 +3517,9 @@
         "oracleNodeTypeCount": 823,
         "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 55,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 2484,
-            "literal": "inherit_clause"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 3506,
-            "literal": "inherit_specification"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
@@ -3917,6 +3530,16 @@
             "justification": "M14.0.F1 register repayment (2026-10-08, real-sql-analyzer.ts:922 adoptLateDeclaredIndexOwners): this is the symbol-metadata TAG THE ANALYZER ITSELF WRITES — `createSymbol(..., { type: \"index\", indexName, table, columns })` at real-sql-analyzer.ts:2380, read back as `symbol.metadata?.type !== \"index\"` — not a parse-tree node reference. The pinned sql grammar declares no node named `index` (its index productions are `create_index` / `alter_index` / `drop_index` / `index_fields` / `index_hint` / `keyword_index`), and no comparison in this analyzer ever tests a node against it. Waived, not fixed: deleting the comparison would drop the CREATE INDEX symbols' owner adoption, which is a behaviour change with no grammar conformance to buy. Same shape as the sql `table`/`grant_statement` and typescript `default_export_expression` entries above — an analyzer-owned payload compared against a literal, making no grammar claim. The site carries a comment saying so.",
             "line": 1245,
             "literal": "index"
+          },
+          {
+            "justification": "KEPT FOR A DOCUMENTED GRAMMAR REMEDY, dead under the pinned build: the wired tree-sitter-sql declares no `inherit_clause`/`inherit_specification` node (0 of 596 named types), so the loop is a no-op today; the lane's page records the grammar absence and the ALTER TABLE form is read by the mis-parse path in processAlterTable, so when the grammar is remedied these branches become live without a code change. Dead by design, not by accident — the same register the swift entry uses.",
+            "line": 2484,
+            "literal": "inherit_clause"
+          },
+          {
+            "justification": "KEPT FOR A DOCUMENTED GRAMMAR REMEDY, dead under the pinned build: the wired tree-sitter-sql declares no `inherit_clause`/`inherit_specification` node (0 of 596 named types), so the loop is a no-op today; the lane's page records the grammar absence and the ALTER TABLE form is read by the mis-parse path in processAlterTable, so when the grammar is remedied these branches become live without a code change. Dead by design, not by accident — the same register the swift entry uses.",
+            "line": 3506,
+            "literal": "inherit_specification"
           }
         ],
         "wasm": [
@@ -4074,28 +3697,11 @@
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 394,
-        "referencedFieldLiterals": 27,
-        "referencedTypeLiterals": 116,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
-            "line": 8729,
-            "literal": "role"
-          },
-          {
-            "context": "real-typescript-analyzer.ts:field-call:childForFieldName",
-            "line": 8730,
-            "literal": "target"
-          }
-        ],
-        "unknownNodeTypes": [
-          {
-            "context": "real-typescript-analyzer.ts:comparison",
-            "line": 4824,
-            "literal": "spread_pattern"
-          }
-        ],
+        "referencedFieldLiterals": 25,
+        "referencedTypeLiterals": 115,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
@@ -4250,10 +3856,10 @@
       }
     },
     "summary": {
-      "fail": 12,
+      "fail": 3,
       "languagesAudited": 47,
-      "pass": 35,
-      "totalUnknownReferences": 254
+      "pass": 44,
+      "totalUnknownReferences": 214
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -4281,8 +3887,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-11-03T19:28:30-05:00",
-  "regeneratedAtCommit": "f58832eb1bdb7d5d7ebedbbfcd586734d447359e",
+  "regeneratedAt": "2026-11-04T00:33:03-05:00",
+  "regeneratedAtCommit": "d9bb172aea309649e573aa32fa6cdef3b1e83391",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
