@@ -17,7 +17,9 @@
  * CLI: bun run script/m14/mutate-analyzer.ts
  */
 import * as fs from "fs"
+import * as os from "os"
 import * as path from "path"
+import { spawnSync } from "child_process"
 import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
 import { CSS_MUTANTS } from "./css-mutants"
@@ -19914,6 +19916,85 @@ export const MUTANTS: Mutant[] = [
   },
 ]
 
+/**
+ * FRESH PROCESS PER LANE (2026-11-03).
+ *
+ * MEASURED: the full battery, run in ONE process, aborts with
+ * `RuntimeError: Out of bounds call_indirect` inside web-tree-sitter after a lane whose grammar was
+ * already initialised runs another language's fixture — reproduced at the svelte→cpp boundary, twice,
+ * at the same point. A per-lane run (`--lang cpp`: all 64 caught) is clean, so the defect is the
+ * PROCESS, not a mutant: the engine's wasm parser is not safely reused across grammar switches in one
+ * long-lived process. verify-fleet's battery already answers this by construction ("fresh process per
+ * lane"); this driver gives the mutation battery the same property instead of leaving `npm run verify`
+ * to depend on which languages happen to share a process.
+ *
+ * Each child runs `--lang <lane>` with BB_MUTANT_DRIVEN=1 and writes its slice (checks, mutationLog,
+ * counts) to a temp file; the driver aggregates the slices and is the ONLY caller of emitEvidence, so
+ * the canonical M14.0.F4 claim is still produced by exactly one full-battery run. A lane that exits
+ * with any code other than 0 (clean) or 2 (survivors) is reported as a CRASH and fails the gate — a
+ * crashed lane is not a lane whose mutants were caught.
+ */
+async function driveFleet(): Promise<void> {
+  const lanes = [...new Set(MUTANTS.filter((m) => !m.retired).map((m) => m.language))].sort()
+  const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
+  const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
+  let survivors = 0
+  let run = 0
+  const crashed: string[] = []
+  const slices: string[] = []
+  for (const lane of lanes) {
+    const slice = path.join(os.tmpdir(), `bb-mut-slice-${lane.replace(/[^a-z0-9]+/gi, "_")}-${process.pid}.json`)
+    slices.push(slice)
+    const r = spawnSync(process.execPath, [process.argv[1]!, "--lang", lane], {
+      env: { ...process.env, BB_MUTANT_DRIVEN: "1", BB_MUTANT_SLICE: slice },
+      encoding: "utf8",
+      maxBuffer: 128 * 1024 * 1024,
+    })
+    for (const line of `${r.stdout ?? ""}${r.stderr ?? ""}`.split("\n")) {
+      if (line.startsWith("CAUGHT ") || line.startsWith("SURVIVED ")) process.stdout.write(line + "\n")
+    }
+    try {
+      const s = JSON.parse(fs.readFileSync(slice, "utf8")) as { checks: typeof checks; mutationLog: typeof mutationLog; survivors: number; run: number }
+      checks.push(...s.checks)
+      mutationLog.push(...s.mutationLog)
+      survivors += s.survivors
+      run += s.run
+      fs.rmSync(slice, { force: true })
+    } catch {
+      crashed.push(`${lane}(rc=${r.status})`)
+      console.log(`LANE ${lane}: NO SLICE (rc=${r.status}) — the lane did not finish its own mutants`)
+    }
+    if (r.status !== 0 && r.status !== 2) crashed.push(`${lane}(rc=${r.status})`)
+  }
+  // de-duplicate crash reports (a missing slice and a non-zero rc are the same lane)
+  const crashedLanes = [...new Set(crashed)]
+  if (crashedLanes.length > 0) {
+    console.error(`\n${crashedLanes.length} LANE(S) DID NOT COMPLETE: ${crashedLanes.join(" ")}`)
+    console.error("A lane that crashes is not a lane whose mutants were caught. Fix the crash before trusting the battery.")
+    process.exit(1)
+  }
+  if (survivors > 0) {
+    console.error(`\n${survivors} SURVIVING MUTANT(S) - the suite cannot detect real defects. Fix the suite before trusting any green.`)
+    process.exit(2)
+  }
+  const { emitEvidence } = await import("./evidence-harness")
+  emitEvidence({
+    issueId: "M14.0.F4",
+    title: "Mutation-testing harness",
+    claimLevel: "L1",
+    layers: ["fixtures", "mutation"],
+    checks,
+    limitations: [
+      { description: "mutants wrap analyzer output rather than rewriting analyzer source; equivalent at the suite level but not a compiler-level injection" },
+      { description: "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start" },
+      { description: "each lane runs in its own process: the wasm parser is not safely reused across grammar switches in one process (measured abort, svelte→cpp)" },
+    ],
+    mutationLog,
+    data: { summary: { mutantsRun: run, caught: run - survivors, survived: survivors } },
+  })
+  console.log(`\nall ${run} mutants caught - the gates can fail (fresh process per lane: ${lanes.length} lane(s))`)
+}
+
 async function realAnalyzer(lang: string): Promise<any> {
   const cfg = LANGS[lang]
   const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
@@ -19921,6 +20002,17 @@ async function realAnalyzer(lang: string): Promise<any> {
 }
 
 async function main() {
+  // Full battery: drive it lane-by-lane, each in a fresh process (see driveFleet's measurement).
+  const argvLangEarly = (() => {
+    const i = process.argv.findIndex((a) => a === "--lang" || a.startsWith("--lang="))
+    if (i === -1) return (process.env.BB_MUTANT_LANG ?? "").trim()
+    const a = process.argv[i] ?? ""
+    return (a.includes("=") ? a.slice(a.indexOf("=") + 1) : (process.argv[i + 1] ?? "")).trim()
+  })()
+  if (!process.env.BB_MUTANT_DRIVEN && !process.env.BB_MUTANT_ONLY && !argvLangEarly) {
+    await driveFleet()
+    return
+  }
   const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, "validation", "m14", "fixture-baseline.json"), "utf8"))
   const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
   const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
@@ -20020,9 +20112,13 @@ async function main() {
   }
 
   const { emitEvidence } = await import("./evidence-harness")
-  // M61 #886: a filtered run's result is dev-scoped — print only, never write
-  // canonical M14.0.F4 (a 4-mutant slice once replaced the 21-language artifact).
-  if (!scoped) emitEvidence({
+  // A DRIVEN child hands its slice to the driver, which is the only emitter of the canonical claim.
+  // The child is ALWAYS "scoped" (--lang is how the driver selects the lane), so this must not be
+  // gated on `!scoped`: a child that wrote no slice read as a crashed lane (measured, css rc=0).
+  if (process.env.BB_MUTANT_DRIVEN === "1") {
+    const sliceOut = process.env.BB_MUTANT_SLICE
+    if (sliceOut) fs.writeFileSync(sliceOut, JSON.stringify({ checks, mutationLog, survivors, run: selected.length }))
+  } else if (!scoped) emitEvidence({
     issueId: "M14.0.F4",
     title: "Mutation-testing harness",
     claimLevel: "L1",
