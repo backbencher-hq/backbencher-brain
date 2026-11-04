@@ -62,7 +62,7 @@ and `DART-APPLICABLE-SET.md`.
 
 ## Relationship ontology
 
-**What each of the ten types means IN DART** — not in general. The counts are a
+**One row per kind of the canonical 14-value register** — what each means IN DART, not in general. The register is fixed by `src/ast/types.ts:91-197` and its order is the table's order: calls · extends · implements · uses · imports · exports · contains · references · overrides · instantiates · decorates · renders · mixes_in · part_of. The counts are a
 2,735-file deterministic stride sample across five repositories (600 each from
 `proxicall`, `riverpod`, `flutter-packages`, `dart-sdk`, plus all 335 of
 `dart-http`), measured through the production entry point `parseFile` by
@@ -86,18 +86,51 @@ file-parses under concurrency (twice in ~5,500 file-parses, never at concurrency
 so the loss is a failed parse inside the WASM parser, not arithmetic in the census.
 `parseFile` is shared machinery; see §Shared-machinery needs.
 
-| Relationship type | Emitted? | What it means in Dart | How resolved | Count (2,735 files) | BEFORE | Confidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| calls | ✅ | an EXPRESSION was invoked | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 43,042 | 43,044 (−2, R7 rows) | 0.9 |
-| uses | ✅ | a VALUE was read — distinct surfaces, not one | (1) MIXIN — moved to the canonical `mixes_in` label 2026-10-18 (was `mixins` child → each `type_identifier`, 1.0 here). (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern`. (3) BARE IDENTIFIER — `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a local DECLARATOR suppresses it, a PARAMETER does not | 110,679 | 110,762 (−83, R7 rows) | 0.6–1.0 by surface |
-| contains | ✅ | a declaration is a member of a container | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 119,515 | 119,534 (−19, R7 rows) | 1.0 |
-| imports | ✅ | this file REACHES FOR a module | `import_specification` → the project-relative FILE path the specifier names when the checkout can answer, else `${uri}:*` (pre-2026-10-18 count: 10,657; `part`/`part of` directives moved to `part_of`) | 10,657 | 10,657 | 1.0 |
-| references | ✅ **(new)** | this declaration NAMES A TYPE in a type position | every `type_identifier` outside the positions another label already publishes, gated on the name binding to a type this run can see — same file always, `projectIndex.typeKinds` when an index is supplied | **5,265** | **0** | 0.95, `isTypeMention` + `typePosition` + `isIndexResolved` |
-| exports | ✅ | this library PUBLISHES a module | `library_export` → module leaf → exported uri | 302 | 302 | 1.0 |
-| extends | ✅ | a type INHERITS a base type | `superclass` → first `type_identifier` (a mixin `on`-base is `references{isMixinOn}` since 2026-10-18, NOT this edge) | 4,730 | 4,730 | 1.0 |
-| implements | ✅ | a type SATISFIES an interface | `interfaces` → each `type_identifier` | 758 | 758 | 1.0 |
-| overrides | ✅ | a member REPLACES one it inherits | derived method matching base-class method name; base resolved via extends + the cross-file companion | 90,352 | 90,352 | 0.8 |
-| instantiates | ✅ | an object of a type was CONSTRUCTED | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 18,374 | 18,374 | 0.95 |
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | ✅ yes | `selector` + `argument_part` → the leaf callee (a selector chain reduces to its last identifier: `obj.method()` → `method`, `Future.delayed(…)` → `delayed`); source = the enclosing function/method/constructor leaf, derived from the signature that precedes the `function_body` sibling; a cascade (`..increment()`) is the cascade selector's leaf; global builtins (`print`, `assert`, `identical`) and Object-leaf methods (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) are filtered; `metadata.owner` + `metadata.ownerEvidence` ride the row when the receiver's type is statically known (`src/ast/member-owner-resolution.ts`) | 0.9 |
+| extends | ✅ yes | `superclass` → its first `type_identifier`; a mixin-application class (`class A = Base with M;`) takes its base from the first resolved heritage node of the `mixin_application` (`real-dart-analyzer.ts:4120-4130`); a mixin `on`-base is deliberately NOT this edge — it is `references{isMixinOn, typePosition:"mixin_on_clause"}` | 1.0 |
+| implements | ✅ yes | `interfaces` → each `type_identifier` | 1.0 |
+| uses | ✅ yes | a VALUE was read, through four distinct surfaces: (1) FIELD/MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`); a called member is a `calls` edge and never this one; a `qualified` name under a `constant_pattern` is the same read parsed the other way round and carries `isConstantPattern`; (2) BARE IDENTIFIER on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, `isBareRead`; (3) TEMPLATE INTERPOLATION — each identifier in `${…}`, `isLocalRead` (a local DECLARATOR suppresses it, a PARAMETER does not); (4) constant-pattern tests in all their forms, `isPatternTest`. Mixins are NOT here since 2026-10-18 — they are `mixes_in` | 0.9 for (1), (3), (4) · **0.6** for (2) the bare read |
+| imports | ✅ yes | `import_specification` → the project-relative FILE path the specifier names when the checkout can answer, else `${uri}:*`; the parsed directive list is also published on the payload channel `import-site: ImportInfo[]` | 1.0 |
+| exports | ✅ yes | `library_export` → module leaf → exported uri; payload channel `export-site: ExportInfo[]` | 1.0 |
+| contains | ✅ yes | derived from `ownerName` over the symbol table in a single pass — class / mixin / extension / enum members | 1.0 |
+| references | ✅ yes | every `type_identifier` in a type position that no other label already publishes, gated on the name binding to a type this run can SEE (same file always; `projectIndex.typeKinds` when an index is supplied). Three mention shapes ride the same label with their own flags: an annotation mention (`isAnnotation`, `annotatedKind`), a mixin `on` constraint (`isMixinOn`, `typePosition:"mixin_on_clause"`), and a type mention (`isTypeMention`, `typePosition`) | 0.95, `isTypeMention` + `typePosition` + `isIndexResolved` |
+| overrides | ✅ yes | derived method matching: a method whose name matches a base-class method, with the base resolved through `extends` plus the cross-file companion | 0.8 |
+| instantiates | ✅ yes | capitalization + `argument_part` selector — Dart has no `new`: `Counter(1)` → instantiates `Counter`; a `constructor_invocation` (`List<int>.filled(…)`) → the constructed `type_identifier`; a redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 0.95 |
+| decorates | ❌ not emitted | **0** `decorates` edges over the 33,738-file population (`validation/m14/measurements/dart-closure-arm-population-2026-10-21.json`, `perType.decorates.edges = 0`) and **0** `RelationshipType.Decorates` sites in the analyzer (`grep -c "RelationshipType.Decorates" src/ast/real-dart-analyzer.ts` → 0). An annotation in Dart is a `references` row from the annotated DECLARATION to the annotation TYPE — a reference, not a decoration edge (see the canonical-vocabulary table above) | — (no edge exists) |
+| renders | ✅ yes | a class member whose `method_signature` → `function_signature` is named **`build`** and whose DECLARED RETURN TYPE is exactly **`Widget`** (`real-dart-analyzer.ts:4285-4290`), whose body's `return_statement` expression names a construction — `const_object_expression` / `new_expression` / `instance_creation_expression`, or a bare `identifier` FOLLOWED BY a `selector` (`T()`) — whose first character is UPPERCASE, which is the component test (`:4326-4337`); source = the enclosing CLASS, target = the rendered component's name; `metadata.isRenderHost`, `renderHost:"build"`, `renderTarget` | 0.9, `evidenceClass: usage_contextual` |
+| mixes_in | ✅ yes | one row per APPLIED mixin, from all three grammar shapes: a `mixin_application_class` (`class A = Base with M1, M2;`, `real-dart-analyzer.ts:4131-4145`), a superclass `with`-clause (`class C extends B with M`), and a `mixins` node directly on the class (`class C with M`, an enhanced enum's `with`) — the second and third are one branch at `:4215-4230`, whose `superclass` first / direct-child second order is what separates them. Names are resolved ALIAS-FREE through `resolvedHeritageNodes` (the `_i2.M` leak fix), and `metadata.isMixin` rides every row | 1.0, `evidenceClass: structural` |
+| part_of | ✅ yes | `part_directive` (`part 'x.dart';`) and `part_of_directive` (`part of 'x.dart';`, and the NAMED `part of my.lib;`) — `real-dart-analyzer.ts:1811`. Target = `targetOf(uri)`, the resolved project-relative path; **an UNRESOLVABLE specifier publishes NO row** (`:1808-1810`, `:1842`), because an edge naming a specifier string is the `:*` shape this label exists to stop publishing. The named form targets the declared library NAME whitespace-stripped, which is the module symbol's own name (`:1823-1835`). **`metadata.partRole` is MANDATORY on every row and says which direction the directive writes: `"part"` for `part_of_directive` (this part file → the library it belongs to), `"library"` for `part_directive` (this library → the part file it lists)** (`:1804-1805`, `:1849`); the named form additionally carries `isNamedLibrary: TRUE` (`:1832`), and the `part` directive also rides the payload channel as `ImportInfo{…, isPart: true}` (`:1841`), which is a directive record and NOT the stored edge | 1.0, `evidenceClass: import_based` |
+
+**Measured counts per kind.** The claim table above states the SHAPE of each claim; the numbers are
+here so a claim and a count are never mistaken for each other. Two populations, never mixed: the
+**stride sample** is 2,735 deterministic files across five repositories (the counts this page has
+carried since the M14 ontology wave, with the pre-M14 analyzer at `8286c7391` as BEFORE), and the
+**population** is the full 33,738-file chunked arm over six repositories, whose tiling and closure are
+committed in `validation/m14/measurements/dart-closure-arm-population-2026-10-21.json` (edges
+3,977,705, closure EXACT, `amb(kind)` reported beside and never added).
+
+| Relationship type | Stride sample (2,735 files) | BEFORE (2,735 files, `8286c7391`) | Population (33,738 files) | Resolved on the population |
+| --- | --- | --- | --- | --- |
+| calls | 43,042 | 43,044 | 672,107 | 334,154 |
+| extends | 4,730 | 4,730 | 36,850 | 20,598 |
+| implements | 758 | 758 | 12,398 | 8,717 |
+| uses | 110,679 | 110,762 | 1,398,263 | 340,748 |
+| imports | 10,657 | 10,657 | 103,317 | 39,230 |
+| exports | 302 | 302 | 2,026 | 1,733 |
+| contains | 119,515 | 119,534 | 696,132 | 696,132 |
+| references | 5,265 | 0 | 597,225 | 197,270 |
+| overrides | 90,352 | 90,352 | 288,840 | 273,191 |
+| instantiates | 18,374 | 18,374 | 155,429 | 66,179 |
+| decorates | — | — | **0** | 0 |
+| renders | not measured on this sample | — | 5,142 | 481 |
+| mixes_in | not measured on this sample (was `uses{isMixin:true}`) | — | 7,763 | 5,540 |
+| part_of | not measured on this sample (was `imports{isPart,isPartOf}`) | — | 2,213 | 2,038 |
+
+The three kinds added after this sample are marked rather than back-filled: their counts come from the
+population run, and putting a population number in a sample column is the one thing this table must
+never do.
 
 Total relationships on the sample: **403,674** after, **398,513** before —
 +5,265 new `references`, −104 net from the R7 filter. Those two deltas account for the
@@ -2208,10 +2241,12 @@ nothing — parse the whole corpus.
 ## Supported constructs
 
 - Libraries: `library` directive (no symbol — file-level declaration, metadata only) — all fixtures
-- Imports/exports/parts: `import 'package:...'`, `import ... as ... show ...`, `export '...'`, `part '...'` — `Features.dart`, `Services.dart`
+- Imports/exports: `import 'package:...'`, `import ... as ... show ...`, `export '...'` — `Features.dart`, `Services.dart`
+- **Library parts, both directions**: `part 'x.dart';` → `part_of{partRole:"library"}` (this library → the part file it lists) and `part of 'lib.dart';` / the NAMED `part of my.lib;` → `part_of{partRole:"part"}` (this part file → its library; the named form additionally carries `isNamedLibrary:true` and targets the declared library NAME). An unresolvable specifier publishes NO row — `validation/m14/fixtures/dart/part-of-roles`, `part-of-named`, `part-of`
+- **Flutter component rendering — `renders`**: a class whose `build` method declares its return type `Widget` and returns a capitalized construction (`Scaffold(...)`, `const Text(...)`, `MyWidget()`) → `renders{isRenderHost:true, renderHost:"build", renderTarget}` from the enclosing CLASS to the component name, `confidence 0.9`, `evidenceClass: usage_contextual`. Measured on the 33,738-file population: **5,142 rows**, 481 resolved, most-rendered `Scaffold` (1,004), `MaterialApp` (878), `CupertinoApp` (120), `ListView` (110) — `validation/m14/fixtures/dart/renders-components.dart`, `validation/m14/measurements/dart-closure-arm-population-2026-10-21.json`
 - Classes: fields (`final`/`static const`/`late`), constructors (positional + named + const), getters/setters → property, static methods, abstract methods — all fixtures
 - Factory constructors: `factory User.anonymous() => User(...)` (expression body) — `Domain.dart`
-- Mixins: `mixin` declaration + `with` clause (`Counter extends BaseService with Loggable`) → uses + member symbols — `base.dart`, `Features.dart`
+- Mixins: `mixin` declaration + every `with` clause shape (`class C with M`, `extends B with M`, `class A = Base with M1, M2`, an enhanced enum's `with`, `mixin M on B with N`) → **`mixes_in`** (one row per applied mixin, `metadata.isMixin`, `evidenceClass: structural`) + member symbols; a mixin `on`-base is `references{isMixinOn}`, NEVER `extends` — `validation/m14/fixtures/dart/mixes-in`, `base.dart`, `Features.dart`
 - Extensions: named (`extension StringUtils on String`) and unnamed (`extension on T` named after the target type) — `Features.dart`
 - Enums + enum members — `Features.dart` (`Status` → `active`/`inactive`/`pending`)
 - Generics: `class Box<T>`, `List<int>` parameters — `Features.dart`, `Services.dart`
@@ -2247,6 +2282,7 @@ nothing — parse the whole corpus.
   TYPES as containers and record LITERALS are unresolved; `library_name` is low
   value. The old framing ("records and patterns are parsed but not yet emitted")
   overstated the work and could not be prioritised — see `989ba4c7`.
+- **`renders` states its own refusals, and they are why the count is 5,142 and not "every build method".** A `build` method is a render host only when its DECLARED return type spells exactly `Widget` — `Widget?`, `Widget Function()`, or a differently-spelled alias publishes NO row, and that is a refusal, not a parse gap. The returned expression must name a construction: a capitalized `identifier` with NO `selector` after it is a VARIABLE and publishes nothing (`renderedComponentName`, `real-dart-analyzer.ts:4326-4332`). And a lowercase construction is not a component, which is the same capitalization convention the JS/TS lane applies to a JSX tag. What this lane cannot answer: a component built by a helper (`Widget _row() => Text(…)`) and returned by name is not a render of the helper's result — that is a call, and the analyzer publishes the `calls` edge for it.
 - `this.x`/`obj.x` **does** now produce a `uses` edge (the DT-F+ bare/member-read
   surfaces above). An earlier revision of this file stated the opposite, which was
   true before those waves landed and is the kind of statement that outlives its
@@ -2305,11 +2341,32 @@ dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no 
 scope: lane-owned set
 owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
             script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
-files scanned: 21  (9154 lines)   excluded from its own count: …/regex-census.ts
-lane-owned files: 21
+files scanned: 116  (31632 lines)   excluded from its own count: …/regex-census.ts
+lane-owned files: 116
 
-RESULT: 0 regexes in the lane-owned set.
+RESULT: 102 regex construct(s) in the lane-owned set:
+  validation/m14/fixtures/dart/_dump-probe.ts:44  /\\u0000/g   … and 101 more, all in the lane's
+  measurement fixtures, oracles and probes
 ```
+
+**THAT 102 IS NOT A CONTRADICTION OF THE OWNER'S CRITERION, AND THE DISTINCTION IS THE MEASUREMENT.**
+The criterion is that RESOLUTION uses no regex. Measured separately, on the resolution path itself:
+
+- `src/ast/real-dart-analyzer.ts` — **0 regex literals**. Verified two ways: a character-class scan
+  (`grep -cE "= /[^/*]" src/ast/real-dart-analyzer.ts` → 0) and the fleet's own AST gate
+  (`bash script/m14/no-regex-gate.sh`, which reports dart with no line at all). The LAST literal —
+  `/^[A-Z][A-Za-z0-9_$]*$/`, the capitalised-identifier test — was removed by `c09e77ddf`, replaced by
+  the `charCodeAt` predicate `isCapitalisedIdentifier`; that was the sixth and final one.
+- the lane's **measurement fixtures** — 102 constructs over 116 files. These are instruments: probes
+  that dump a tree, oracles that compare the analyzer against an independent walk, censuses that parse
+  a number out of tool output. They do not resolve a relationship and they are not loaded by the
+  pipeline; they are the thing that measures it, and a regex is often the honest way to read a
+  probe's own output.
+
+The earlier version of this block said "0 regexes in the lane-owned set" against 21 files. That was
+true of the 21 files it scanned and false as a statement about the set, which has since grown to 116 —
+the same failure mode this whole section is about: a number is only as wide as the population it was
+measured over, and an old number does not widen with the set.
 
 The 20 files that are not the instrument are the whole lane-owned set — 4 oracles,
 3 verifiers, the analyzer and 13 fixture harnesses. **Both numbers in that block are 21,
