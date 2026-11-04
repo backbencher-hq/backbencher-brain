@@ -23,7 +23,12 @@ for (const issue of ledger.issues as Array<Record<string, any>>) {
     continue
   }
   const ev = JSON.parse(readFileSync(path.join(RESULTS_DIR, f), "utf8"))
-  issue.status = ev.status === "verified" ? "verified" : ev.status ?? "known-gap"
+  // The ledger's legal status set is {pending, verified, known-gap, blocked}; a
+  // verifier's raw `failed` status is honest evidence, but the ledger has no such
+  // state — record it as known-gap so the ledger stays structurally legal while
+  // the evidence file keeps the raw status.
+  const LEGAL = new Set(["pending", "verified", "known-gap", "blocked"])
+  issue.status = ev.status === "verified" ? "verified" : LEGAL.has(ev.status) ? ev.status : "known-gap"
   issue.evidenceFile = `${issue.code}.json`
   issue.stamp = ev.currentCommit ?? null
   issue.evidence = {

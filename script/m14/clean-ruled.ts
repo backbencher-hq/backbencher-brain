@@ -92,6 +92,12 @@ export type Ruled = {
   nodeTypesThatWouldMeanIt?: string[]
   /** B: count occurrences on the tree. A: unused. */
   countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
+  /**
+   * Which probe spaces this lane enumerated. The ontology gate declares the same
+   * union; entries here state it explicitly (the shape is shared data, not a
+   * second definition — the gate imports CLEAN_RULED and validates the values).
+   */
+  spacesProbed?: Array<"node-types" | "block-types" | "attribute-keys" | "corpus-count">
   describe: string
 }
 type Type =

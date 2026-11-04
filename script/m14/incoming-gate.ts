@@ -1050,12 +1050,11 @@ const INDEX_SPECS: Record<string, { spec?: () => Promise<any>; wasm: string }> =
   // RUBY (task-22): the lane's index facts; without this entry `--index` builds 0 indexes for ruby and
   // the arm that exercises the consumption cannot be produced at all.
   ruby: { spec: async () => (await import("../../src/ast/project-index")).RUBY_DECLARATION_SPEC, wasm: "tree-sitter-ruby.wasm" },
-  // VB (2026-10-28): absent like `.scss` and `.js` were, and with the same consequence — `--index` built
-  // 0 indexes for the lane, so EVERY recorded vb arm was a per-file arm and the cross-file mechanism could
-  // not be measured at all. MEASURED on the no-index arm: 325 rows whose target IS declared in the same
-  // repository (imports 54 · uses 160 · calls 101 · references 3 · instantiates 2 · implements 5). The
-  // spec is `VB_DECLARATION_SPEC`, read off the pinned vendored grammar's own declaration productions.
-  vb: { spec: async () => (await import("../../src/ast/project-index")).VB_DECLARATION_SPEC, wasm: "tree-sitter-vbnet/tree-sitter-vbnet.wasm" },
+  // VB: the `--index` arm is UNAVAILABLE — `src/ast/project-index.ts` exports no
+  // VB_DECLARATION_SPEC, so importing it is a compile error (this entry referenced
+  // an export that was never merged). The vb lane therefore stays on the per-file
+  // arm; the measured no-index consequence is recorded in the analyzer campaign's
+  // portfolio work, not silently papered over here.
 }
 const INDEX_CACHE = process.env.BB_INDEX_CACHE ?? "/tmp/bb-project-index"
 

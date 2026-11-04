@@ -148,16 +148,18 @@ for (const tool of EXPECTED) {
   ck("handler references " + tool, found, "property key or string in tool-handlers.ts")
 }
 
-// Count unique tool handlers
-const toolKeyRE = /^\s+(bb_\w+):\s*(?:async\s*)?\(/gm
-const handlerTools = new Set<string>()
-while ((m = toolKeyRE.exec(handlerContent)) !== null) handlerTools.add(m[1])
-ck("handler covers all 10 tools", handlerTools.size >= 10, "found " + handlerTools.size + ": " + [...handlerTools].join(", "))
+// Count unique tool handlers. The handler map was split out of the old monolith,
+// so read the assembled map instead of scanning one file's property keys.
+const { createToolHandlers } = await import(path.join(ROOT, "src/mcp/tool-handlers"))
+const handlerTools = new Set(Object.keys(createToolHandlers()))
+ck("handler covers every registered tool", EXPECTED.every((tool) => handlerTools.has(tool)), "found " + [...handlerTools].join(", "))
 
-// Also check tool registry
+// Also check tool registry. The registry was split into per-tool descriptors and
+// imports each one; a name is listed when the module references the descriptor
+// binding, so match identifiers rather than only `name: "bb_x"` literals.
 const registryContent = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf-8")
 for (const tool of EXPECTED) {
-  const found = registryContent.includes('"' + tool + '"') || registryContent.includes("'" + tool + "'") || registryContent.includes(tool + ":")
+  const found = new RegExp(`\\b${tool}\\b`).test(registryContent)
   ck("tool registry lists " + tool, found, "in tool-registry.ts")
 }
 

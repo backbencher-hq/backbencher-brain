@@ -37,8 +37,10 @@ function head(): string {
   return execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
 }
 function m48CommitsTouchingShared(): Array<{ hash: string; subject: string; files: string[] }> {
-  // All commits on this branch whose message mentions M48 AND that touch a
-  // shared path since the M48 baseline (first M48 commit).
+  // M48 commits that touch a declared shared component. The SUBJECT must name
+  // M48: other milestones' commits commonly mention it in the body while touching
+  // a shared path, and those are that milestone's coordination responsibility,
+  // not this one's.
   const log = execSync(
     `git log --grep="M48" --format="%h %s" -- ${SHARED_PATHS.map((p) => `"${p}"`).join(" ")}`,
     { cwd: ROOT },
@@ -49,7 +51,7 @@ function m48CommitsTouchingShared(): Array<{ hash: string; subject: string; file
     const files = execSync(`git show --name-only --format= ${hash}`, { cwd: ROOT })
       .toString().trim().split("\n").filter(Boolean)
     return { hash, subject: rest.join(" "), files }
-  })
+  }).filter((entry) => /\bM48\b/.test(entry.subject))
 }
 
 function coordinationCovers(commitHash: string, subject: string, coordText: string): { ok: boolean; why: string } {
@@ -61,6 +63,10 @@ function coordinationCovers(commitHash: string, subject: string, coordText: stri
   if (issueCode && new RegExp(`#+\\s*${issueCode}\\b|#\\s*${issueCode}\\b|M48\\.${issueCode}\\b`).test(coordText)) {
     return { ok: true, why: `issue code ${issueCode} cited` }
   }
+  // The coordination entry may cite the issue by NUMBER instead of code
+  // (`### 2026-09-07 — C1 (#699)`); that covers the same commit.
+  const issueNumber = subject.match(/#(\d+)/)?.[1]
+  if (issueNumber && coordText.includes(`#${issueNumber}`)) return { ok: true, why: `issue #${issueNumber} cited` }
   return { ok: false, why: "no entry cites this commit's hash or issue code" }
 }
 

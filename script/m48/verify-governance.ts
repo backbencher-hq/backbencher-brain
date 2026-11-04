@@ -40,15 +40,16 @@ function currentCommit(): string {
 }
 
 // The 16 public tools, derived from the LIVE registry so the matrix can never
-// drift from what is actually advertised.
-function registryTools(): string[] {
-  const src = readFileSync(path.join(ROOT, "src/mcp/tool-registry.ts"), "utf8")
-  const names = [...src.matchAll(/name:\s*"(bb_[a-z_]+)"/g)].map((m) => m[1])
-  return [...new Set(names)].sort()
+// drift from what is actually advertised. The registry was split into per-tool
+// descriptor modules, so a source-text scan no longer sees `name:` literals
+// here — read the assembled registry instead (this is what "live" meant).
+async function registryTools(): Promise<string[]> {
+  const { PUBLIC_TOOL_DESCRIPTORS } = await import(path.join(ROOT, "src/mcp/tool-registry"))
+  return PUBLIC_TOOL_DESCRIPTORS.map((tool: { name: string }) => tool.name).sort()
 }
 
-function main() {
-  const tools = registryTools()
+async function main() {
+  const tools = await registryTools()
   check("registry yields exactly 16 public tools", tools.length === 16, `${tools.length} found: ${tools.join(",")}`)
 
   let ledger: { issues?: Array<Record<string, any>>; milestone?: number } = {}
@@ -72,7 +73,10 @@ function main() {
     if (issue.status === "verified") {
       check(`${issue.code}: verified status carries conforming evidence + on-disk file`, evidenceConforms(issue.code, issue.evidence), JSON.stringify(issue.evidence ?? {}).slice(0, 120))
     } else {
-      check(`${issue.code}: non-verified status has no conforming-only evidence`, !issue.evidence || issue.evidence.status === issue.status, "")
+      // A non-verified row must not present VERIFIED evidence (that would be a
+      // status/evidence contradiction). A failed or known-gap evidence status is
+      // expected here — the ledger keeps the raw verifier status on the row.
+      check(`${issue.code}: non-verified status carries no conforming-only evidence`, !issue.evidence || issue.evidence.status !== "verified", JSON.stringify(issue.evidence ?? {}).slice(0, 120))
     }
   }
   const fabricated = issues.find((i) => i.status === "verified" && !evidenceConforms(i.code, i.evidence))
@@ -173,4 +177,4 @@ function main() {
   process.exit(ok ? 0 : 1)
 }
 
-main()
+await main()

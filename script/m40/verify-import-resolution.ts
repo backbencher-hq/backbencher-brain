@@ -130,11 +130,17 @@ console.log(`\nimport edges after resolution (${imports.length}):`)
 for (const r of imports) console.log(`   ${r.tgt.padEnd(28)} -> ${r.name ?? "(unresolved)"}${r.inFile ? "  in " + r.inFile : ""}`)
 
 console.log("")
-// 1. the positive case
+// 1. the positive case. Two representations are legitimate: the
+//    module-qualified form `./extra.js:helper` (used by lanes that emit
+//    `path:item` targets) and the resolved declared-name form `helper`
+//    (JavaScript/TypeScript now emit ESM imports already resolved to the declared
+//    symbol). The gate asserts RESOLUTION, not one spelling of the raw target.
+const resolvedImports = imports.filter((r) => typeof r.name === "string" && r.name.length > 0)
 const helper = byTarget.get("./extra.js:helper")
+  ?? resolvedImports.find((r) => r.tgt === "helper" && r.inFile === "src/extra.js")
 check("JD2.1 a named unaliased import of an internal module RESOLVES",
   helper?.name === "helper" && helper?.inFile === "src/extra.js",
-  `got ${helper?.name ?? "unresolved"}`)
+  `got ${helper?.name ?? "unresolved"} (row target ${helper?.tgt ?? "absent"})`)
 
 // 2. namespace
 const ns = byTarget.get("./extra.js:*")
@@ -142,14 +148,15 @@ check("JD2.2 a namespace import does NOT resolve (no single target symbol)",
   !ns?.name, `got ${ns?.name ?? "unresolved"}`)
 
 // 3. ALIASED (JD2b): the edge spells the LOCAL binding `render`, but the module
-//    declares `draw`. The analyzer records the declared name as additive
-//    metadata, so the edge resolves to `draw` — neither the local binding nor
-//    the decoy method that shares it.
+//    declares `draw`. Accept either the module-qualified row resolving to `draw`,
+//    or the resolved declared-name row (`draw`) — never the local binding and
+//    never the decoy method that shares it.
 const aliased = byTarget.get("./lib.js:render")
+  ?? resolvedImports.find((r) => r.tgt === "draw" && r.inFile === "src/lib.js")
 check("JD2.3 an ALIASED import resolves to the DECLARED name, not the local binding",
-  aliased?.name === "draw" && aliased?.inFile === "src/lib.js", `got ${aliased?.name ?? "unresolved"}`)
+  aliased?.name === "draw" && aliased?.inFile === "src/lib.js", `got ${aliased?.name ?? "unresolved"} (row target ${aliased?.tgt ?? "absent"})`)
 check("JD2.5 NEGATIVE: never attached to the same-named non-exported METHOD",
-  aliased?.name !== "render", `attached to ${aliased?.name}`)
+  !imports.some((r) => r.name === "render"), `attached to ${imports.find((r) => r.name === "render")?.tgt ?? "nothing"}`)
 
 // 4. DEFAULT (JD2b): `import Def from "./lib.js"` where lib.js does
 //    `export default class Main`. The edge spells the local binding `Def` and

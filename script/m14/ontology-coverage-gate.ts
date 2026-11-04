@@ -554,7 +554,11 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   sql: SQL_RULED,
   scss: SCSS_RULED,
   markdown: MARKDOWN_RULED,
-clean: CLEAN_RULED,
+  // clean-ruled declares a WIDER `Type` union (it also rules the four extended
+  // relationship types); CLEAN_RULED's entries use only the ontology's base
+  // values, and the pair is validated by clean's own gate. The cast keeps one
+  // documented shape (this gate's Ruled) as the contract instead of forking it.
+  clean: CLEAN_RULED as unknown as Ruled[],
   r: R_RULED,
   graphql: GRAPHQL_RULED,
   dart: DART_RULED,

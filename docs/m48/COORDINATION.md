@@ -53,4 +53,4 @@ gate.
   P3 agreement re-run 28/28; full M48 gate set re-run green at the fix HEAD.
 - **Risk to hub**: none — zero behavioral delta; hub's `bb/graph` wire smoke
   re-run verified (leg A 24/24, leg B 5/5) at the same HEAD.
-- **Commit**: 1bbbd932.
+- **Commit**: 1bbbd932 (amendment: c130b2fd9 disclosed the class-member attribution text in the generated docs and the D1 gate that holds it).

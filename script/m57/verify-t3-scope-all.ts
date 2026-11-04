@@ -146,7 +146,11 @@ async function main() {
   if (readdirSync(distDir).length > 0) {
     walkDist(distDir)
     try {
-      const grep = execFileSync("grep", ["-rl", "json_each(s.parameters)", distDir], { encoding: "utf8" })
+      // The counting query is `json_array_length(s.parameters …)` on the current
+      // engine (the patterns engine moved off the earlier json_each form while the
+      // counted-parameters fix stayed the same). Track the SHIPPED form here rather
+      // than one historical spelling of it.
+      const grep = execFileSync("grep", ["-rl", "json_array_length(s.parameters", distDir], { encoding: "utf8" })
       distHasFix = grep.trim().length > 0
     } catch { distHasFix = false } // grep exit 1 = no match
   }

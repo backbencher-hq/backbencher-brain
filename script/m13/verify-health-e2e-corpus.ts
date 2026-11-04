@@ -68,8 +68,18 @@ writeFileSync(stalePath, readFileSync(stalePath, "utf8") + "\n// h5-probe\n")
 // would have been the compiled entry, so a split/refactor could leave this leg
 // measuring the previous release.
 const cliEntry = path.resolve("src/cli/index.ts")
+// The gate may run under bun or node. Under node the TS entry needs the tsx
+// loader; under bun it is loadable directly (and `--import tsx` is not a bun
+// flag). Spawn the runtime the gate itself is running on, with its own loader.
+const isBun = typeof (globalThis as any).Bun !== "undefined"
 const runCliTool = (args: Record<string, unknown>) =>
-  execFileSync(process.execPath, ["--import", "tsx", cliEntry, "tool", "bb_health", "--dir", root, "--args", JSON.stringify(args)], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
+  execFileSync(
+    process.execPath,
+    isBun
+      ? [cliEntry, "tool", "bb_health", "--dir", root, "--args", JSON.stringify(args)]
+      : ["--import", "tsx", cliEntry, "tool", "bb_health", "--dir", root, "--args", JSON.stringify(args)],
+    { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" },
+  )
 {
   const out = runCliTool({})
   harness.check("CLI: health reports counts", /files=5 symbols=\d+/.test(out), out.slice(0, 120))
@@ -88,7 +98,11 @@ const runCliTool = (args: Record<string, unknown>) =>
   // would target the real ~/.bb (and fail here with ENOENT under the sandbox).
   const serverEntry = path.join(root, "server-entry.mts")
   writeFileSync(serverEntry, `import { startMcpServer } from "${path.resolve("src/mcp/server.ts").replace(/\\/g, "/")}"\nconst i = process.argv.indexOf("--dir")\nawait startMcpServer(i >= 0 ? process.argv[i + 1] : process.cwd())\n`)
-  const transport = new StdioClientTransport({ command: process.execPath, args: ["--import", "tsx", serverEntry, "--dir", root], cwd: process.cwd(), stderr: "pipe", env: { ...process.env, BB_DATA_DIR: process.env.BB_DATA_DIR ?? "" } as Record<string, string> })
+  // Runtime-aware server invocation (same rule as the CLI leg above): under bun the
+  // TS entry runs directly; under node it needs the tsx loader. The old fixed
+  // `--import tsx` form died under bun with "Connection closed".
+  const serverArgs = isBun ? [serverEntry, "--dir", root] : ["--import", "tsx", serverEntry, "--dir", root]
+  const transport = new StdioClientTransport({ command: process.execPath, args: serverArgs, cwd: process.cwd(), stderr: "pipe", env: { ...process.env, BB_DATA_DIR: process.env.BB_DATA_DIR ?? "" } as Record<string, string> })
   const client = new Client({ name: "verify-health-e2e", version: "1.0.0" })
   const call = async (args: Record<string, unknown>) => {
     const res: any = await client.callTool({ name: "bb_health", arguments: args })
