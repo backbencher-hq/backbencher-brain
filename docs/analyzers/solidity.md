@@ -58,28 +58,82 @@ work queued.
 | Field | Supported? | How extracted |
 | --- | --- | --- |
 | name | yes | declaration node's name text |
-| kind | yes | `contract` → `contract`; `function` → `function`; `event` → `event`; `modifier` → `modifier`; `struct` → `struct`; `enum` → `enum`; `variable` → `variable` |
-| qualified/container name | yes | contract-scoped declarations carry the contract as container |
-| ownerName / ownerKind | yes | members owned by their declaring contract/function |
+| kind | yes | `ASTEngine.SymbolKind` per declaration: contract **and library** → `class`; interface → `interface`; function → `method` at contract scope, `function` at file scope; **modifier and fallback/receive → `method`** (a modifier is not a distinct kind); constructor → `constructor`; event → `event`; struct → `struct`; enum → `enum`; enum value → `enum_member`; state variable → `property`; constant/immutable → `constant`; local → `variable`; user-defined value type → `type`; file → `module` |
+| qualified/container name | yes | contract-scoped declarations carry the contract as container; `qualified_calls` names the qualified call expressions a symbol makes (SOL-20) |
+| ownerName / ownerKind | yes | members owned by their declaring contract/function; `ownerKind` is the enclosing declaration's kind — `contract`, `interface` or `library` (SOL-18) |
 | range (start/end line + column) | yes | node positions |
 | parameters | yes | function parameters from the parameter list |
 | returnType / type | yes | return types from the function signature |
-| documentation/comments | no | comments are not attached as documentation |
-| complexity metrics | no | no separate complexity metric published |
+| documentation/comments | yes | NatSpec `///` and block form attach to the NEXT declaration as `docstring`, `comments`, `docstringKind` and `docTags` (SOL-16); `undocumentedParameters` / `overDocumentedParameters` / `returnDocumentedWithoutReturn` check the documentation against the signature (SOL-23) |
+| complexity metrics | yes | per-symbol cyclomatic `complexity` attributed through the frame stack (1 + branch nodes inside that frame, nested declarations excluded) and `ownerKind` (SOL-18) |
 | syntax errors | yes | syntax errors are engine-owned |
-| decorators/attributes | no | Solidity has no decorator syntax |
+| decorators/attributes | yes | applied modifiers are published as the `decorators` name list on the decorated declaration (SOL-17); they are ALSO a relationship — `decorates`, see the claim table |
 
 ## Relationship ontology
 
-Solidity emits `contains` (contract → members), `calls` (function calls within the same contract), `references` (type/variable references), `uses`, `imports` (file imports), `exports` (contract-exported symbols), `overrides` (function overrides), `instantiates` (contract instantiation via `new`). `extends`, `implements`, `mixes_in`, `part_of`, `renders`, `decorates` are ruled absent on measurement (no inheritance, interfaces, mixins, parts, rendering, or decorators in Solidity's object model as analyzed).
+The 14-value canonical register, one row per value, derived from the analyzer's own emission
+sites (`src/ast/real-solidity-analyzer.ts`, `RelationshipType.` references) and no further. The
+scope matters and is stated per row: most values are emitted per file, while `extends`,
+`implements` and `decorates` gain resolution when production supplies
+`AnalyzeContext.projectIndex` (SOL-21) — the arm numbers differ between the per-file and indexed
+runs, and the D2/D3 sections carry both. **Code locations in this table are line numbers in
+`src/ast/real-solidity-analyzer.ts` unless another file is named.**
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ yes | The call-expression callee (`call_expression` :2519), the Yul call target (`yul_function_call` :2345), `emit E(…)` (:2567), `revert Err(…)` (:2598) and struct construction (`struct_expression` :2699); the callee is read through the grammar's wrappers by `calleeNameOf` (SOL-9), and every row is post-labelled `calleeKind` (SOL-15): `localFunction` · `inheritedMember` · `crossFileInheritedMember` · `inFileTypeMember` · `projectMemberCandidate` · `external` · `eventEmission` · `errorRevert` · `structConstructor` · `namespaceBuiltin` · `localBinding` · `modifierInvocation` (unresolved/base-constructor only) · `conversion` (no edge — a conversion is not a call). Engine builtins are refused at the emit site (SOL-7b). | `0.9` for ordinary/Yul/event/error/struct-constructor rows, `0.85` for the unresolved modifier-invocation fallback; `evidenceClass: usage_contextual`. |
+| `extends` | ✅ yes | An `inheritance_specifier` whose ancestor is not bound to an in-file `interface_declaration` (and is not settled as an interface by the project index) — SOL-5. Emitted per file, and the kind is SETTLED when production supplies the index (SOL-21: 588→488 extends, 7→107 implements). | `1.0` / `structural` when the base's kind is settled in-file or by the index; `0.9` / `inferred` with `kindUnresolved: true`, `assumedKind: extends`, `reasonCode: "base-not-declared-in-file"` and `externalVia: "base"` when neither the file nor the index declares it (SOL-19/SOL-27). |
+| `implements` | ✅ yes | The same heritage ternary (:1948): an ancestor bound to an in-file `interface_declaration`, or settled as an interface by the project index (SOL-5/SOL-21). Solidity has no `implements` clause — the value is reached by adapted semantics (SOL-R1), not by reading a keyword. | `1.0` / `structural` when the interface is settled; `0.9` / `inferred` when the base's kind is undecided (`kindUnresolved`). |
+| `uses` | ✅ yes | Read positions, POSITIONAL not name-list (SOL-2): a type mention in a type position (`user_defined_type` :2413), a member read (`member_expression` :2724), a bare `identifier` read (:2765), a Yul path segment (:2380), and function-scope binding reads published as fleet claims `<callable>\0<binding>` with `localBinding: true` (:2375/:2761). **Declared scope limit:** a member of a built-in global (`msg.sender`, `block.timestamp`, `tx.gasprice`, `this`/`super` members) is refused (SOL-7), so `uses` names project members only. | `0.7` Yul path segment · `0.75` bare read / binding claim · `0.8` member read · `0.85` type mention; `evidenceClass: usage_contextual`. |
+| `imports` | ✅ yes | One edge per module PATH, not per imported name — `import {A,B} from "./X.sol"` is one file dependency and two `references` (SOL-R6); `import_directive` reads the source, braced list, alias and `any_source_type`, and the target is the module specifier as written, with the symbol-name guard bypassed only via `pathTarget` (:3362). Also published through the payload channel as `import-site: ImportInfo[]` (`source`, `imported`, `metadata`, :1829). | `1.0` / `import_based`. The target names a FILE, so as a symbol it is unresolved by construction; where the project's admitted file set answers the path, `importProjectFile` carries the claim, and where it does not, `sourcePathClaim` does (SOL-28). |
+| `exports` | ✅ yes | The compilation-unit surface: every file-scope declaration except a free function (SOL-12), sourced from the file's module symbol (:3308). Also `export-site: ExportInfo[]` (:3310). | `1.0` / `structural`. |
+| `contains` | ✅ yes | The declaration container: file module → file-scope declarations; contract/interface/library → members (:1210); a function → its own locals (SOL-13); a struct → fields; an enum → values; a public state variable → its synthesised getter (`bal()`, SOL-3, :2234). | `1.0` / `structural`. |
+| `references` | ✅ yes | Name positions that are neither calls nor reads: an imported binding (import-annotated with `importPath`, :3378/:3384), a `using`-directive target (:2423) and `using_alias` function (:2444) — a using-directory publishes a REFERENCE and no composition edge (SOL-R6/SOL-24) — a caught error (:2455), a `type(X)` mention of a project type (:2470), an external `override(A)` base (:2050), and the variable↔getter pair (:2240). | `0.8` external override base · `0.85` using target/alias, caught error, meta type · `1.0` import binding and getter pair; `evidenceClass: usage_contextual`, `import_based` for imports. |
+| `overrides` | ✅ yes | The `override` keyword, resolved in a POST-pass because a base may be declared after its subclass (SOL-11, :2897): an in-file base that declares the member is a verified target; an external base named by an explicit `override(A)` or the single header base is inferred; a bare `override` over 2+ header bases is REFUSED (the keyword says one of them declares the member, not which). `AnalyzeContext.overrideCompanion` is read when populated. | `0.9` for the in-file verified target, `0.75` for the external/named rows with a `reasonCode`; `evidenceClass: inferred` — the central classifier's tier for this type, so the tier is a function of the TYPE and not of the score (SOL-19). |
+| `instantiates` | ✅ yes | `new_expression` only (SOL-R7, :2685); the `user_defined_type` is nested under a `type_name`, so it is read by descendant search. Struct construction in either spelling (`S({a:1})` / `S(1)`) is `calls`, never creation (SOL-10). | `0.95` / `structural` — the conservative score is not an inferred claim (SOL-19). |
+| `decorates` | ✅ yes | An applied MODIFIER: a `modifier_invocation` whose target RESOLVES to a declared `modifier_definition` — in the file's own declaration prepass, or as a project member/symbol through the index (:2654, SOL-R3/SOL-17). Source = the decorated declaration, target = the modifier. The impostor is the SAME node type — a base-constructor call `constructor() Base(1)`; a target that resolves to a contract/interface/library stays `calls` with `isBaseConstructorCall` (:2667). Measured on the construct population: 144 modifier-resolving rows vs 78 base-constructor rows, 0 ambiguous, 0 unresolved. | `0.9` in-file/project-member · `0.8` project-symbol; `evidenceClass: usage_contextual`; `metadata.isAppliedModifier`, `modifierResolution`, `decoratesOwner`; a post-pass qualifies an inherited modifier through the enclosing type's closure (W15b, :3285). |
+| `renders` | ❌ no | **Not emitted and not applicable.** 0 `RelationshipType.Renders` sites in the analyzer. The served grammar's 124 named types contain no template/component/element/render/markup node, and the vocabulary has no component `SymbolKind`; Solidity has no component model — a contract is DEPLOYED, not rendered, and the nearest construct (`new_expression`) is truthfully `instantiates` (SOLIDITY-D1 ruling; `script/m14/spec/solidity-completeness.json`). | — |
+| `mixes_in` | ❌ no | **Not emitted — tried, shipped, and withdrawn the same day (SOL-24).** 0 `RelationshipType.MixesIn` sites. `using L for T` was published as `mixes_in` (27 rows, 1.0/`structural`) and removed: the vocabulary's contract requires the mixin to become a supertype MEMBER, and Solidity adds no member — after `using MathLib for Price`, `Price` is still `uint128`, has no `double`, and `p.double()` binds as `MathLib.double(p)` only where a directive is in scope; the composing actor is the SCOPE, not the type. The 27 `references` rows to the same libraries remain, and the 124 `using_directive` sites split 27 declared-host + 54 `for *` + 39 primitive host + 4 braced function set. | — |
+| `part_of` | ❌ no | **Not emitted and not applicable.** 0 `RelationshipType.PartOf` sites. Solidity has no part-file directive: a file dependency is an `import` naming a MODULE compiled in its own scope (already `imports`, one edge per path), not a fragment sharing another unit's single scope. Declaration nesting — a struct inside a contract — is `contains`, and 0 of the grammar's 124 named types names a part construct. | — |
 
 ## Differential ground truth
 
-- No M12 ground-truth or differential artifact exists for solidity in-tree, so precision/recall cannot be claimed and are declared unknown rather than fabricated.
+The lane HAS an F5 differential instrument (`script/m14/differential.ts`), and THREE readings of it
+are recorded. They answer different questions and are not interchangeable.
+
+- **Canonical F5 pin — `{missing: 0, unexplained: 0}`, sample-set hash `e9708e750546e983`.**
+  This is the row `validation/m14/differential-baseline.json` pins for `solidity:solidity`, and the
+  value the completeness gate's section E validates the lane against. It is the canonical 60-file
+  sample; re-derive with `bun run script/m14/differential.ts --lang solidity`.
+- **`2 missing / 21 unexplained` — HISTORY (the SOL-SCOPE residual), not the current floor.** It is
+  an earlier adjudication draw at the SAME sample hash (`e9708e75`): the MISSING rows are one class
+  (a `type(IFoo).interfaceId` mention of an interface declared in another file) and the unexplained
+  rows are `uses` naming a member of a built-in type. Both are SCOPE limits with a named class each;
+  the floor was re-pinned to the canonical `0/0` row afterwards (the move and its reason are recorded
+  under `floorMoves["solidity:solidity"]`). Read it as history, not as today's allowance.
+- **Rotated draw — coverage 99.5%, MISSING 15, unexplained 0, sample-set hash `b7bb9c3a028f84c7`.**
+  A fresh `--lang solidity` run on a rotated 60-file draw measured tree-truth 3,177, covered 3,162,
+  analyzer edges 2,313. The 15 MISSING are one sampled class of member reads the tree oracle derives
+  and this draw's analyzer output does not carry (samples: `verificationGasLimit` reading
+  `accountGasLimits` in `contracts/account/utils/ERC4337Utils.sol`, `set` reading `_keys` in
+  `EnumerableMap.sol`); unexplained is 0. A different draw has a different sample hash and is NOT the
+  canonical pin.
+
+Precision/recall against an external ground truth is still **unknown**: F5 compares the analyzer with
+a tree-derived oracle, which is a consistency instrument, not an independent truth set.
 
 ## Corpus validation
 
-- No M12 corpus-validation artifact exists for solidity in-tree, so corpus error/counts cannot be claimed and are declared unknown rather than fabricated.
+- **Corpus:** `OpenZeppelin/openzeppelin-contracts` at `32b5b8c4655448291e27272d43607b9e3ae8c1d8` —
+  420 tracked `.sol` files, **389 production** (`test/` and `*.t.sol` excluded). Draw digest
+  `c1531019`, unbiased (hash of `repo/relative-path`).
+- **Parse damage: 0.** 0 damaged files, 0 ERROR nodes, 0 MISSING tokens, 0 damage classes over the
+  draw, measured by `script/m60/solidity-type-census.ts`. The census exercises 112 of the 124
+  declared named types; each of the 12 never-exercised types was reached by a `--verify-silence`
+  probe rather than assumed silent.
+- **M12 corpus-validation artifact: none in-tree,** so an M12-specific corpus error/count claim is
+  UNKNOWN and is not fabricated here. The census above is this lane's own measurement and is not an
+  M12 artifact.
 
 ## Contract
 
@@ -537,15 +591,18 @@ Named, with their measured size. None of these is hidden in a percentage.
    so the census passes, but it is not Solidity conformance evidence; a Solidity F11
    instance would be. Named rather than fixed, because the pin is a shared file and a
    working gate beats a clever one.
-10. **The F5 floor is 2 missing / 21 unexplained, not 0/0.** The floor moved UP from
-    18 because of limitation 11 — more truth is derived and more analyzer edges exist,
-    so the residue is larger in absolute terms while `unclassifiable` stays **0**. The
-    move and its reason are recorded in `validation/m14/differential-baseline.json`
-    under `floorMoves["solidity:solidity"]`. Both directions are itemised into classes
-    with reasons, and **0 rows are unclassifiable in either direction**. The 8 MISSING
-    rows are one class — a `type(IFoo).interfaceId` mention of an interface declared in
-    another file. The unexplained rows are `uses` naming a member of a built-in type.
-    Both are SCOPE limits with a named class each.
+10. **The F5 floor is the canonical `0/0` pin (sample-set hash `e9708e750546e983`).**
+    `2 missing / 21 unexplained` was the SOL-SCOPE residual on an earlier adjudication
+    draw at the same sample hash, and it is HISTORY: the floor was re-pinned after the
+    SOL-26/27/28 external claims and the oracle repairs, and the move and its reason are
+    recorded in `validation/m14/differential-baseline.json` under
+    `floorMoves["solidity:solidity"]`. The classes it named are kept because a rotated
+    draw still surfaces them: the MISSING rows are `type(IFoo).interfaceId`-shaped
+    mentions of a type declared in another file, and the unexplained rows are `uses`
+    naming a member of a built-in type — both SCOPE limits, each with a named class, and
+    **0 rows unclassifiable in either direction**. A rotated draw (different sample hash
+    `b7bb9c3a028f84c7`) measured 99.5% coverage / MISSING 15 / unexplained 0; see
+    Differential ground truth for what each reading is.
 11. **Two dead instruments that agreed were reading as a pass.** The `revert_statement`
     case had **never fired** — in the analyzer *and* in the F5 oracle — because both
     tested `node.namedChild(0).type === "identifier"` and the grammar puts an
@@ -647,15 +704,15 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
 | Completeness | **126/126** classified exactly once, **0 gaps** | `script/m60/solidity-completeness-spec.ts --verify-silence` |
-| Fixtures | **36**, all passing (0 fail), every row read off measured output — including `using-directive-is-not-a-mix-in`, the control for the withdrawn `mixes_in` emission, and `sol25/`, which pins four member-resolution rewrites beside three negatives | `bun run script/m14/run-fixtures.ts --lang solidity` |
-| Applicable set | **11 implemented / 11 applicable / 3 excluded** (renders, part_of — grammar-remedy-ruled after R1/R2/R3; mixes_in — ontological, emission tried and withdrawn) | `bun run script/m14/coverage-block-gate.ts --json` |
+| Fixtures | **37**, all passing (0 fail), every row read off measured output — including `using-directive-is-not-a-mix-in`, the control for the withdrawn `mixes_in` emission, and `sol25/`, which pins four member-resolution rewrites beside three negatives | `bun run script/m14/run-fixtures.ts --lang solidity` |
+| Applicable set | **11 implemented / 11 applicable / 3 excluded** (renders, part_of — grammar-remedy-ruled after R1/R2/R3; mixes_in — ontological, emission tried and withdrawn); the three are also carried as measured NOT-EMITTED claim-table rows | `bun run script/m14/coverage-block-gate.ts --json` |
 | `mixes_in` ruling | **0 rows.** The emission published **27** (all resolved, from 124 `using_directive` sites in 76 files; 54 no-host + 39 primitive host + 4 braced set skipped and counted) and was withdrawn the same day: 0 of the 27 adds a member to the host. The 27 `references` rows to the same libraries remain | `validation/m14/measurements/solidity-extended-census.json`; `script/m14/tmp/sol24-mixes-counters.mts`; `bun run script/m14/run-fixtures.ts --lang solidity` |
 | Mutants | **49**, all caught (0 survivors; `modifiers-every-scope` was a no-op keyed on the pre-relabel `calls` shape and is now fixed to read `decorates` too) | `BB_MUTANT_ONLY="solidity/" bun run script/m14/mutate-analyzer.ts`; log `validation/m14/fixtures/solidity/measurements/mutants-solidity-2026-10-27.txt` |
 | Zero regex | 0 operations, 0 literals, 4/4 helpers; gate verified to fail 3 ways | `bun run script/m60/solidity-zero-regex.ts --selftest` |
-| F5 differential | coverage **99.9%**, MISSING **2**, unexplained **21** (1.2%) | `bun run script/m14/differential.ts --lang solidity` |
+| F5 differential | canonical pin **0/0** @ sample hash `e9708e75`; the D4 adjudication draw at the same hash read coverage 99.9% / MISSING 2 / unexplained 21; a rotated draw read 99.5% / MISSING 15 / unexplained 0 @ hash `b7bb9c3a` | `bun run script/m14/differential.ts --lang solidity`; `validation/m14/differential-baseline.json` |
 | F5 adjudication | **0** unclassifiable in either direction | `script/m60/solidity-unexplained-adjudication.ts` |
 | Project index over REAL IPC | **7/7** — the index crosses a `fork()` boundary and settles BOTH kinds there: `ERC2981 is IERC2981` → `implements`, `ERC2981 is ERC165` → `extends` | `bun run script/m60/solidity-ipc-wiring-gate.ts` |
-| F5 floor / perf baseline | `missing 2 / unexplained 21 / ruling SOL-SCOPE`; 5.3 ms/file with its load recorded and flagged unqualified | `validation/m14/differential-baseline.json` |
+| F5 floor / perf baseline | canonical `{missing 0, unexplained 0}`, sample-set hash `e9708e750546e983`; the SOL-SCOPE `2 / 21` residual is history (see limitation 10); 5.3 ms/file with its load recorded and flagged unqualified | `validation/m14/differential-baseline.json`; `script/m14/completeness-inventory.ts` (Lead-pinned `floorResidual`) |
 
 ### What the instruments are for, and what they are not
 
