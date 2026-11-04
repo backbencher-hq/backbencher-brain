@@ -74,11 +74,42 @@ they stopped being the same file, and saying otherwise in either direction is th
 
 ## Supported constructs
 
-PowerShell's supported constructs map to the ontology: cmdlets and functions emit `calls`; modules and classes are contained; imports load external modules; exports publish cmdlets/functions; overrides re-declare functions. `extends`, `implements`, `instantiates`, `mixes_in`, `part_of`, `renders`, `decorates` are ruled absent on measurement (no inheritance, interfaces, mixins, parts, rendering, or decorators in PowerShell's object model as analyzed).
+PowerShell's supported constructs map to the ontology: cmdlets and functions emit `calls`;
+modules and classes are contained; classes' `: Base, IFoo` headers emit `extends` and
+`implements`; `[Type]::new(...)` and `New-Object` emit `instantiates`; `Import-Module` /
+`using namespace` / `#requires` emit `imports` (with a `references` sibling); `Export-ModuleMember`
+emits `exports`; dot-sourcing (`. ./lib.ps1`) emits `part_of` — the sourced file's declarations
+land in the caller's scope. `decorates`, `renders` and `mixes_in` are ruled not applicable on
+measurement (attributes are engine metadata, PowerShell has no component model, and the only
+declaration-level composition construct is the class base list, which is conformance and is
+emitted as `extends`/`implements`). The measured per-type census is further down under
+"Ontology measurements"; the canonical claim table is below.
 
 ## Relationship ontology
 
-PowerShell emits `calls` (cmdlets and functions, source = enclosing owner or `global`), `contains`, `uses`, `imports` (module loading), `exports`, `overrides` (re-declared functions), `references`; `extends`, `implements`, `instantiates` are ruled absent on measurement. Every emitted relationship carries a line number.
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ yes | cmdlet/function invocation by name, method call (`$obj.Method()`), static call (`[Type]::Static()` → `Type.Static`, PS-B22), or a script run through an invocation operator (`. ./x.ps1`, `& ./x.ps1`); resolved by name against the file's own declarations, then project-wide | `usage_contextual`; 0.9 invocation-operator / 0.8 static-member / 0.6 dynamic member call |
+| `extends` | ✅ yes | the FIRST name in a class header's `: Base, IFoo, IBar` list; position is the only information the grammar carries (the language resolves class-vs-interface at run time) | `structural`; 1.0 |
+| `implements` | ✅ yes | every name AFTER the first in the same header list | `structural`; 0.85 |
+| `uses` | ✅ yes | a name READ rather than invoked: a type literal's spec, a variable read, a hashtable key, a cmdlet parameter name, an attribute, hashtable/array composition, and a `New-Object` type name held in a variable (PS29); resolved by name, then to a declaration when one is visible | `usage_contextual`; 0.8 type-reference / 0.9 write or argument read |
+| `imports` | ✅ yes | one module dependency from `Import-Module` / `ipmo`, `using namespace`, or a `#requires` list/hashtable; also carried on the import-site channel (`ImportInfo[]`) | `import_based` (the `import: true` short-circuit); 0.9 |
+| `exports` | ✅ yes | what `Export-ModuleMember -Function`/`-Variable`/`-Alias`/`-Cmdlet` publishes, read from the command's argument list; wildcard targets publish nothing; also carried on the export-site channel (`ExportInfo[]`) | `structural`; 1.0 |
+| `contains` | ✅ yes | lexical nesting: the module contains its functions/classes, a class its members, a function its locals and parameters | `structural`; 1.0 |
+| `references` | ✅ yes | the sibling channel for the same module dependency (`import_sibling`, plus `requires_version`); never a mention of an arbitrary name | `import_based`; 0.9 |
+| `overrides` | ✅ yes | a subclass member that overrides a member of its RESOLVED base: same name, same kind, base member neither `hidden` nor `static`; PowerShell has no `override` keyword (class methods are virtual by default), so this is the lane's one INFERRED type | `inferred`; 0.9 |
+| `instantiates` | ✅ yes | an object construction: `[Type]::new(...)` or `New-Object` in its three spellings; type-accelerator names are suppressed, and a type name held in a variable is not published as an instantiates target | `usage_contextual`; 0.9 |
+| `decorates` | ❌ no | 0 `RelationshipType.Decorates` sites in the analyzer. RULED ONTOLOGICAL (PSD13): a PowerShell attribute is engine metadata, not an applied callable — measured over the whole population, 6,421 attribute sites / 2,825 arguments / 0 arguments that apply a declared callable at declaration creation; the two call-shaped same-file sites are validation/completion REGISTRATIONS already published as `calls` | — (ruling: no emission) |
+| `renders` | ❌ no | 0 sites over 1,181 admitted files; the vocabulary's relation is a component rendering another component and PowerShell has no component model (`ConvertTo-Html` is a text serializer, `[Windows.Markup.XamlReader]::Parse` builds UI from XAML text) — RULED, PS-B20 | — (ruling: no emission) |
+| `mixes_in` | ❌ no | 0 sites over 1,181 admitted files; PowerShell has no trait/role construct, and its one declaration-level composition construct — the class base list (50 entries) — IS conformance and is already emitted as `extends`/`implements` — RULED, PS-B20 | — (ruling: no emission) |
+| `part_of` | ✅ yes | the DOT-SOURCE operator (`. ./lib.ps1`): the sourced script runs in the CALLER's session scope, so the file is a part of the calling unit (the `part_of` contract's positive test). 1:1 relabel from `calls` at rung R3; the target is the sourced file's basename (its module-symbol name), the written path stays in `metadata.partPath`, and `metadata.partRole:"library"` is mandatory. `& ./x.ps1` (child scope) stays `calls`; `Import-Module` stays `imports` | `import_based`; 0.9; measured 38 edges over 37 files (whole admitted population) |
+
+PowerShell-specific channels, named so a consumer does not mistake them for extra kinds:
+`import-site: ImportInfo[]` and `export-site: ExportInfo[]` carry the same dependencies as the
+`imports`/`exports` rows; every row carries `powershellSpecific: true`; the module symbol is the
+file's basename WITH its extension (PS1), which is why the `part_of` target is symbol-shaped.
+The per-type measured census (edges, files, corpus/intra resolution, tier) is the table under
+"Ontology measurements".
 
 ## Differential ground truth
 
@@ -98,7 +129,7 @@ PowerShell emits `calls` (cmdlets and functions, source = enclosing owner or `gl
 | Parameters | typed from `type_literal → type_spec` (no bracket stripping needed — the grammar separates the spec); `script_parameter_default` marks `isOptional`; both `script_parameter` and `class_method_parameter` shapes handled |
 | Owners | class members and function locals carry `ownerName` = enclosing class/function; top-level declarations are unowned. No synthetic `global` scope symbol is ever emitted; a constructor never contains itself |
 | Variables | assignments (including `for` counters and `foreach` loop vars) declare once per scope; `$global:`/`$script:`/`$env:` qualified names and automatic variables (`$this`, `$_`, `$args`, `$PSItem`, …) are never declarations |
-| Calls | cmdlets and functions emit `calls` (source = enclosing owner or `global`); flow keywords (`break`, `continue`, `return`, …) excluded; `$obj.Method()` → `calls` with `methodCall`; `[Type]::Static()` → `calls` to the store's QUALIFIED NAME `Type.Static` (the source's `::` is not a name any declaration has — PS-B22); `. ./file.ps1` and `& ./file.ps1` → `calls` with the invocation operator recorded |
+| Calls | cmdlets and functions emit `calls` (source = enclosing owner or `global`); flow keywords (`break`, `continue`, `return`, …) excluded; `$obj.Method()` → `calls` with `methodCall`; `[Type]::Static()` → `calls` to the store's QUALIFIED NAME `Type.Static` (the source's `::` is not a name any declaration has — PS-B22); `& ./file.ps1` → `calls` with the invocation operator recorded; `. ./file.ps1` (DOT-SOURCE) → `part_of`: the sourced file's declarations land in the CALLER's scope, so the file is a part of the calling unit; the invocation operator is recorded on that row too (`invokationOperator: "."`) |
 | Instantiates | `[Type]::new(...)` → `instantiates` to the type |
 | Imports | `Import-Module` (bare, `-Name` and positional), `using module`, `using namespace`, and `#requires -Module`/`-Modules` populate the import table **and emit BOTH an `imports` and a `references` edge** at 0.9, tier `import_based`, with `metadata.via` naming which of the four forms declared it (char/index scanning only — comments are opaque to the grammar). Both edges carry identical metadata. See "The ontology types" for why both and not one |
 | Extends / Implements | class header `: Base, IFoo, IBar` → `extends` to the FIRST base and `implements` to the rest. PowerShell's header cannot say which base is a class and which are interfaces — the language resolves that at runtime — so the grammar's positional shape is the only information there is, and this row pins the rule rather than a guess. Gated by `class-inherit-psa2` and three mutants |

@@ -57,9 +57,20 @@ function sectionHasContent(text: string, heading: string): boolean {
   const lines = text.split("\n")
   const start = lines.findIndex((l) => l.trim() === heading || l.trim().startsWith(`${heading} `))
   if (start < 0) return false
+  // A SECTION'S SUBSECTIONS ARE PART OF IT (2026-11-03). This used to stop at ANY heading, so a
+  // section whose first non-blank line was a `###` subheading read as EMPTY — rust's
+  // `## Corpus validation` followed directly by `### Current admitted population`, and r's
+  // `## Relationship ontology` followed by `### The canonical claim table…`, were graded "missing
+  // section" while both sections were fully written. The scan now ends only at a heading of the
+  // SAME OR HIGHER level, and a subheading is traversed rather than treated as content itself.
+  const level = (heading.match(/^#+/) ?? ["##"])[0].length
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i]!.trim()
-    if (/^#{1,6}\s/.test(line)) return false
+    const h = line.match(/^(#{1,6})\s/)
+    if (h) {
+      if (h[1]!.length <= level) return false
+      continue
+    }
     if (!line) continue
     if (/^\|[\s:|-]+\|$/.test(line)) continue // a bare table separator carries nothing
     if (line === "---") continue

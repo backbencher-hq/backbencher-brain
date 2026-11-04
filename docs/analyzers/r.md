@@ -170,19 +170,19 @@ wobble is measured*).
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| `calls` | ✅ emitted | `call` node whose callee is a name; source is the nearest enclosing named symbol (function, S4 method, R6/R5 member), target the callee as written (`pkg::fn`, `obj$method`) | `attribution.confidence`: 1.0 when the owner is named directly, 0.7 when attributed through an anonymous closure (`closure_call`) |
-| `extends` | ✅ emitted | R6 `R6Class(inherit=)`, S7 `new_class(parent=)`, and the ONE-class shape of S4 `setClass(contains=)` / R5 `setRefClass(contains=)`; target is the bare class name (a package qualifier is dropped) | 1.0 (`r6_inherits`, `s7_parent`, `s4_inherits`, `r5_inherits`) |
-| `implements` | ✅ emitted | S3 method registration `generic.class <- function`; target is the generic prefix | 0.8 (`s3_method`, `s3_dotted_name_convention`) |
-| `uses` | ✅ emitted | member READ: `obj$member`, `obj@slot`, `obj[[...]]` without a call, attributed to the enclosing symbol | `attribution.confidence`: 1.0, 0.7 through an anonymous closure (`member_read`) |
-| `imports` | ✅ emitted | `library()`/`require()` (payload `ImportInfo[]`), `pkg::fn`/`pkg:::fn` namespace access, and `source()`/`sourceCpp()` paths | 1.0 string literal, namespace access and source path · 0.8 bare identifier (`library_dependency`/`library_import` reason `library_bare_identifier`) |
-| `exports` | ✅ emitted | roxygen `#' @export` on a declaration; payload `ExportInfo[]` | 1.0 (`roxygen_export`) |
-| `contains` | ✅ emitted | owning symbol → declared member: file-level `global` → top-level declaration, class → slot/property/field/method, function → its body's owner; one deduplicated set pass closes what member extraction opens | 1.0 |
-| `references` | ✅ emitted | `pkg::fn`/`pkg:::fn` dependency, `library()` dependency, `source()` path, and the binding edges `X <- setClass(...)` (`s4_binding`) / `X <- S7::new_class(...)` (`s7_class_binding`) | 1.0 namespace access, source path and binding · 0.8 bare `library()` identifier |
-| `overrides` | ✅ emitted | a member declared in the derived class AND in its base, where the base is declared earlier in the same file | 0.95 (`object_system_method_override`) |
-| `instantiates` | ✅ emitted | `Cls$new()` for a class declared in the file (R6/R5) and `new("Cls")` for an S4 class declared in the file | 0.9 (`isRConstructor` / `isS4Constructor`, reason `declared_class_constructor`) |
+| `calls` | ✅ emitted | `call` node whose callee is a name; source is the nearest enclosing named symbol (function, S4 method, R6/R5 member), target the callee as written (`pkg::fn`, `obj$method`) (`real-r-analyzer.ts:2247`) | `attribution.confidence`: 1.0 when the owner is named directly, 0.7 when attributed through an anonymous closure (`closure_call`) |
+| `extends` | ✅ emitted | R6 `R6Class(inherit=)`, S7 `new_class(parent=)`, and the ONE-class shape of S4 `setClass(contains=)` / R5 `setRefClass(contains=)`; target is the bare class name (a package qualifier is dropped) (`:925`, `:961`, `:1049`, `:1427`, `:2527`) | 1.0 (`r6_inherits`, `s7_parent`, `s4_inherits`, `r5_inherits`) |
+| `implements` | ✅ emitted | S3 method registration `generic.class <- function`; target is the generic prefix | 0.8 (`s3_method`, `s3_dotted_name_convention`; `:830`) |
+| `uses` | ✅ emitted | member READ: `obj$member`, `obj@slot`, `obj[[...]]` without a call, attributed to the enclosing symbol (`:2098`) | `attribution.confidence`: 1.0, 0.7 through an anonymous closure (`member_read`) |
+| `imports` | ✅ emitted | `library()`/`require()` (payload `ImportInfo[]`), `pkg::fn`/`pkg:::fn` namespace access, and `source()`/`sourceCpp()` paths (`:2440` library, `:2179` namespace, `:2473` source) | 1.0 string literal, namespace access and source path · 0.8 bare identifier (`library_dependency`/`library_import` reason `library_bare_identifier`) |
+| `exports` | ✅ emitted | roxygen `#' @export` on a declaration; payload `ExportInfo[]` (`:444`) | 1.0 (`roxygen_export`) |
+| `contains` | ✅ emitted | owning symbol → declared member: file-level `global` → top-level declaration, class → slot/property/field/method, function → its body's owner; one deduplicated set pass closes what member extraction opens (`:538`, `:1070`, `:1408`, `:1447`, `:1790`, `:2589`) | 1.0 |
+| `references` | ✅ emitted | `pkg::fn`/`pkg:::fn` dependency, `library()` dependency, `source()` path, and the binding edges `X <- setClass(...)` (`s4_binding`) / `X <- S7::new_class(...)` (`s7_class_binding`) (`:2204`, `:2427`, `:2472`, `:1046`, `:1112`) | 1.0 namespace access, source path and binding · 0.8 bare `library()` identifier |
+| `overrides` | ✅ emitted | a member declared in the derived class AND in its base, where the base is declared earlier in the same file | 0.95 (`object_system_method_override`; `:497`) |
+| `instantiates` | ✅ emitted | `Cls$new()` for a class declared in the file (R6/R5) and `new("Cls")` for an S4 class declared in the file | 0.9 (`isRConstructor` / `isS4Constructor`, reason `declared_class_constructor`; `:2255`, `:2261`) |
 | `decorates` | ❌ not emitted — RULED | RULED UNDECIDABLE (ontological). 0 `RelationshipType.Decorates` sites. Roxygen `#'` tags are COMMENTS a tool reads from source text at build time, not applied callables: the served grammar carries 0 annotation/decorator-family named types among 41. Measured: 59,334 roxygen sites in 779 files, 45,830 of them preceding a declaration; they publish as `exports` (3,695 `@export` sites, 718 files) and as the declaration's `docstring`. Instrument `validation/m14/fixtures/r/census-decorates-falsifier.ts`; artifact `validation/m14/fixtures/r/measurements/r-decorates-falsifier.txt` | — |
 | `renders` | ❌ not emitted — RULED | RULED UNDECIDABLE (ontological). 0 `RelationshipType.Renders` sites; no component model. Measured over 7 `*Output` widget call sites: 0 name a component (5 carry a string output ID the server wires at runtime, 1 an argument object). 0 render/component-family named types among the served 41; `.Rmd`/`.Rnw` = 0 on the corpus tree (the router's table admits `.r` only). Instrument `census-renders-falsifier.ts`; artifact `r-renders-falsifier.txt` | — |
-| `mixes_in` | ✅ emitted | R's LIST-shaped composition clause `contains = c("A", "B")` (two or more entries) on both `setClass` (S4) and `setRefClass` (R5); one row per composed class, target = the class SYMBOL; the ONE-class shape stays `extends` | 1.0 (`s4_composes` / `r5_composes`) |
+| `mixes_in` | ✅ emitted | R's LIST-shaped composition clause `contains = c("A", "B")` (two or more entries) on both `setClass` (S4) and `setRefClass` (R5); one row per composed class, target = the class SYMBOL; the ONE-class shape stays `extends` | 1.0 (`s4_composes` / `r5_composes`; `:925`, `:2526`) |
 | `part_of` | ❌ not emitted — RULED | RULED UNDECIDABLE (ontological). 0 `RelationshipType.PartOf` sites; R has no inclusion directive. Measured over 38 `source()`/`sys.source()` sites: 0 are BOTH a literal path AND scope-sharing (`local=FALSE`/`globalenv()`). The runtime dependency stays published as `r_source` `imports`/`references`. 0 include/part-family named types among the served 41. Instrument `census-partof-falsifier.ts`; artifact `r-partof-falsifier.txt` | — |
 
 The `Emitted?` cells open with the glyph the doc-truth gate reads; a `❌` row carries the
@@ -1682,11 +1682,12 @@ tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 
 | construct | node type | what it produces |
 | --- | --- | --- |
-| assignment `<-` | `assignment` | `variable` symbol |
-| function definition | `function_definition` | `function` symbol |
-| function call | `call` | `calls` edge |
-| library call | `library_call` | `imports` edge |
-| index access | `[` | `references`/`uses` edge |
+| assignment `<-` / `=` / `<<-` / `->` / `->>` | `binary_operator` | `variable` symbol, or `function`/`class` symbol when the value is a function or a class constructor |
+| function definition | `function_definition` | `function` (or `method` for an S3 `generic.class` name) symbol |
+| function call | `call` | `calls` edge (plus `instantiates` for `Cls$new()` / `new("Cls")` on a class declared in the file) |
+| library call | `call` with callee `library`/`require` | `imports` + `references` edges, and an `ImportInfo[]` payload entry |
+| index / member access | `subset` (`[`), `subset2` (`[[`), `extract_operator` (`$`, `@`) | a call target is a `calls` edge; a read is a `uses` (`member_read`) edge |
+| namespace access | `namespace_operator` (`::`, `:::`) | `imports` + `references` edges naming the package, and a `calls` edge to `pkg::fn` |
 
 ## Regex inventory
 
@@ -1694,12 +1695,25 @@ tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 
 ## Differential ground truth
 
-- Result `validation/m12/results/r-differential.json`: `passed: true`, expected 46, truePositive 46, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- `validation/m12/results/r-differential.json` is a **three-fixture differential** — `Base.R`,
+  `Negative.R`, `Service.R` — whose `truthSource` is `manual_audit` and whose `perFile` rows
+  declare the analyzer's counts per fixture (symbols/relationships: 3/4, 2/4, 12/21). The
+  artifact carries **no** precision/recall totals, so none are claimed here.
+- The stronger ground truth is the independent R oracle:
+  `validation/m12/results/r-oracle-differential.json` — **1,174 files considered, 993 compared,
+  8,707 file-level bindings, 8,707 agreed, 0 phantom, 0 missed, precision 1, recall 1**
+  (831 declarations that are not bindings, 1 rejected by R). R 4.4.3's own `parse()` builds the
+  AST the oracle walks; the note beside it (see *Verification evidence*) records that agreement
+  with that oracle is not verification of R's semantics.
 
 ## Corpus validation
 
-- Corpus `validation/m12/results/r-corpus-errors.json`: no per-file totals declared by the artifact; 0 crash files.
-- Differential `validation/m12/results/r-differential.json`: `passed: true`, expected 46, truePositive 46, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- `validation/m12/results/r-corpus-errors.json`: **1,174 tracked `.R` files** across 5
+  repositories, **16,102 symbols**, **41,107 relationships**, **2 files with a parse error**
+  (the artifact's own totals; the two errors are grammar-level, not analyzer crashes).
+- The whole-population arm cited at the top of this page is separate and newer:
+  `parsed=2184/2184 admitted=2184`, `TOTAL` 80,123
+  (`validation/m14/fixtures/r/measurements/r-arm-whole.txt`).
 
 ## Verification evidence
 
