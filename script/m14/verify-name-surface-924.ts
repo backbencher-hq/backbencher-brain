@@ -598,9 +598,21 @@ async function main(): Promise<void> {
   show("V3-symbol-name-is-a-name", byCheck.get("V3-name-is-a-name") ?? 0, preByCheck.get("V3-name-is-a-name") ?? 0, (byCheck.get("V3-name-is-a-name") ?? 0) === 0)
 
   const selfTestFails = (["V1-no-whitespace-target", "V2-no-cast-target", "V3-name-is-a-name"] as const).filter((k) => (preByCheck.get(k) ?? 0) === 0)
-  const okCFamily = violations.length === 0 && selfTestFails.length === 0
+  // ★ INSTRUMENT BUG, FIXED 2026-10-28 (found by the cpp lane). This line used to read
+  //   `okCFamily = violations.length === 0 && selfTestFails.length === 0`
+  // and to print its message on `okCFamily`. THE CONSEQUENCE: ANY violation made V4 print
+  //   `FAIL V4-selftest: no pre-fix violation for  — a check that cannot fail is decoration`
+  // with an EMPTY name, because `selfTestFails` is empty in exactly that case. A lane with
+  // one real violation was told its self-test was decoration, about no check at all.
+  // MEASURED on the cpp lane's one V3 violation: the pre-fix derivations were NOT empty —
+  // V1 4, V2 134, V3 2 — so the self-test was working the whole time and the report was
+  // lying about it. THE SELF-TEST IS ABOUT THE SELF-TEST: a violation is already reported
+  // by its own V1/V2/V3 row above, and folding it in here double-counts it as a second,
+  // unnamed defect. The lane's combined pass/fail still ANDs both.
+  const okSelfTest = selfTestFails.length === 0
+  const okCFamily = violations.length === 0 && okSelfTest
   lines.push(
-    okCFamily
+    okSelfTest
       ? "ok   V4-selftest-prefix-is-caught the pre-fix rules re-derived from these files trip all three checks — the gate can fail"
       : `FAIL V4-selftest: no pre-fix violation for ${selfTestFails.join(", ")} — a check that cannot fail is decoration`,
   )

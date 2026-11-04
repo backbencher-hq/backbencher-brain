@@ -1269,6 +1269,52 @@ export function isCppSpelledName(text: string | null | undefined): boolean {
 }
 
 /**
+ * V3 (#924 NAME SURFACE, cpp): IS THIS PUBLISHED SYMBOL NAME A NAME?
+ *
+ * A function/method symbol's `name` is what every consumer keys on — the arbiter's
+ * qualified-name match, the bare-name `count = 1` strategy, `bb_graph`'s node label,
+ * `contains`'s member list. So a `name` that is not a NAME is not a cosmetic defect:
+ * it is a published identifier nothing can ever match.
+ *
+ * THE DEFECT THIS EXISTS FOR, MEASURED. `nlohmann-json/include/nlohmann/detail/input/
+ * input_adapters.hpp` is a class member with a `#if defined(__cpp_lib_concepts) …`
+ * block INSIDE the class body:
+ *
+ *     static constexpr bool iterator_is_contiguous =
+ *         (std::is_same<IteratorType, SentinelType>::value || std::sized_sentinel_for<SentinelType, IteratorType>)
+ *
+ * The grammar ERROR-recovers that `#if` block into a `declaration`, and the pre-fix
+ * analyzer read the parenthesised expression as a declarator and published a METHOD
+ * named `"sized_sentinel_for<SentinelType, IteratorType>"` — a TEMPLATE-ID source
+ * slice, with a space where the template argument list's comma is. Published, it is a
+ * member no consumer can name, and `verify-name-surface-924`'s V3 flags it as what it
+ * is: a whitespace-containing symbol name.
+ *
+ * THE RULE, AND WHY IT IS NOT A FILTER ON THE GATE'S RULE. The gate's V3 tests for
+ * WHITESPACE, and a whitespace test would also reject two legitimate C++ spellings —
+ * `operator new` and the user-defined-literal form `operator"" _km` — so this
+ * predicate is stated in the LANGUAGE's terms instead:
+ *
+ *   * an `operator` name is a name, whatever it contains: `operator<`, `operator<<`,
+ *     `operator<=>`, `operator new`, `operator"" _km`. The prefix is the claim.
+ *   * otherwise a C++ identifier is `[A-Za-z_~][A-Za-z0-9_]*` (the `~` for a
+ *     destructor's source spelling `~lexer`). It contains NO whitespace and NO angle
+ *     bracket, because neither can appear in an identifier. A "name" that holds one is
+ *     a multi-token SOURCE SLICE that a recovery path mistook for a declarator.
+ *
+ * DECLINING IS THE PUBLICATION RULE, NOT A POST-FILTER: the caller does not publish the
+ * symbol at all, exactly as `calleeLeafNode` publishes no `calls` edge for a callee the
+ * language cannot spell (#924) and D21 publishes no symbol for an unnamed scope. An
+ * unnamed construct has no name; inventing one from source text is the fabrication this
+ * lane's gates exist to prevent.
+ */
+export function isPublishableFunctionName(name: string | null | undefined): boolean {
+  if (!name) return false
+  if (/^operator/.test(name)) return true
+  return /^[A-Za-z_~][A-Za-z0-9_]*$/.test(name)
+}
+
+/**
  * ONTOLOGY/D23: is this declaration a PURE VIRTUAL — `virtual T f(...) = 0;`?
  *
  * The member a pure virtual declares is the C++ spelling of an interface
@@ -6746,6 +6792,20 @@ private functionDeclaratorOf(node: Node | null): Node | null {
       }
     }
 
+    // ★ V3 (#924 NAME SURFACE, cpp) — THE DERIVATION RULE, and the one place it can live.
+    // `name` at this point is `nameNode.text` (or `actualNameNode.text` on the qualified
+    // branch), i.e. a SOURCE SLICE taken from the node the descent landed on. That is a
+    // NAME only when the tree actually named a function. MEASURED DEFECT this declines:
+    // `nlohmann-json/include/nlohmann/detail/input/input_adapters.hpp` has a
+    // `#if defined(__cpp_lib_concepts) …` block INSIDE a class body whose recovered
+    // `declaration` made the pre-fix analyzer publish a METHOD whose name was
+    // `"sized_sentinel_for<SentinelType, IteratorType>"` — a TEMPLATE-ID with a space
+    // where the argument comma is, which no consumer can ever match.
+    // Declining here is the same discipline as #924's callee rule (a callee the language
+    // cannot spell emits no edge) and D21's unnamed scope (an unnamed scope publishes no
+    // symbol): an unnamed construct has no name, and inventing one from source text is
+    // the fabrication the lane's gates exist to prevent.
+    if (!isPublishableFunctionName(name)) return null
     return { name, scope, isDestructor, isOperator, nameNode: namedNode, declarator: decl }
   }
 
