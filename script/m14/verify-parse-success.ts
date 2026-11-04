@@ -278,7 +278,13 @@ function provenance(): { atCommit: string | null; treeModifiedInputs: number } {
 }
 
 async function measureLane(lane: Lane, outPath: string) {
-  const repoDir = path.join(CORPUS_ROOT, lane.repo)
+  // A DEDICATED-ROOT LANE CARRIES AN ABSOLUTE CORPUS PATH (matlab, vba) — the shared corpus holds
+  // 0 genuine files for either, so the differential names their roots absolutely. `path.join(CORPUS_ROOT,
+  // lane.repo)` then produces CORPUS_ROOT + an absolute path, the directory is "absent", the lane is
+  // silently skipped as corpus-absent, and the child writes its skip record to an outPath that contains
+  // the absolute path (measured 2026-11-03: ENOENT on /tmp/bb-f10-…/home/ishaq…/.corpus-tail/…__matlab.json,
+  // which aborted the whole fresh-module-per-lane run). Both are fixed here, not worked around.
+  const repoDir = path.isAbsolute(lane.repo) ? lane.repo : path.join(CORPUS_ROOT, lane.repo)
 
   if (!existsSync(repoDir)) {
     writeFileSync(outPath, JSON.stringify({ lane: lane.key, skipped: "corpus-absent" }))
@@ -549,7 +555,9 @@ async function main() {
   )
 
   for (const lane of lanes) {
-    const outPath = path.join(work, `${lane.repo}__${lane.lang}.json`)
+    // The child writes to this path, so it must not carry the repo path's separators (see measureLane).
+    const safeRepo = lane.repo.replace(/[^A-Za-z0-9._-]+/g, "_")
+    const outPath = path.join(work, `${safeRepo}__${lane.lang}.json`)
     const r = spawnSync(
       process.execPath,
       [
