@@ -4,9 +4,14 @@
 
 - Analyzer: `src/ast/real-hcl-analyzer.ts`
 - Parser: `wasm/tree-sitter-hcl.wasm`, loaded as `tree-sitter-hcl`
-- Detection: `.tf`, `.tfvars`, `.tofu`, `.hcl` → `hcl` in
-  `src/ast/language-detection.ts:85`. Three corpus formats that route nowhere are
-  recorded under **Declared limitations**.
+- Detection: the router sends `.hcl` → `hcl` and `.tf` / `.tfvars` / `.tofu` →
+  `terraform` (`src/ast/language-detection.ts:183`), and BOTH ids load the same
+  grammar — `src/ast/engine.ts:333` maps `terraform` → `tree-sitter-hcl`. The
+  lane's own extension table is `hcl: tf,hcl,tfvars,tofu`
+  (`script/m14/language-extensions.ts:116`), which is why all four spellings enter
+  this analyzer's population. `.pkr.hcl` / `.tfcomponent.hcl` / `.tfmock.hcl`
+  reach it through their `.hcl` suffix; formats that route nowhere are recorded
+  under **Declared limitations**.
 - Grammar pin: `grammars/tree-sitter-hcl/` (vendored source +
   `src/node-types.json`), gated by `script/m14/verify-grammar-pins.ts`.
   Upstream `tree-sitter-grammars/tree-sitter-hcl@64ad6278`, package
@@ -31,7 +36,7 @@ each entry says what the edge asserts here, and what it is not.
 | `exports` | the document root publishes a top-level block as part of its surface | not a module export in the JS sense; a Terraform module's outputs are `output` blocks, which are among the exported blocks |
 | `imports` | a `module` block names an external module by its `source` path | not a code import. The target is a filesystem path or a registry coordinate and binds to no symbol |
 | `part_of` | a terragrunt `include` block SPLICES the included file's configuration into this document: terragrunt merges the included blocks into the child, so the included file is a PART of this one | not module inclusion. A `module { source = … }` is a separate unit addressed `module.NAME.*` whose members never become this document's own; it earns `imports`, never `part_of` |
-| `extends` | — (ruled, below) | HCL has no type declaration to extend |
+| `extends` | a docker-bake `target` block whose `inherits = ["parent", …]` names OTHER `target` declarations in the same file — the parent's attributes are MERGED into the child (HCL-D10: 44 sites / 53 parents / 53 resolved / 53 edges) | not a subtype hierarchy; `inherits` is a merge, and an `inherits` value naming no declared `target` publishes nothing |
 | `implements` | — (ruled, below) | HCL has no interface to implement |
 | `instantiates` | a `resource` / `data` block constructs an instance of the PROVIDER TYPE its first label names (`resource "aws_instance" "web"` instantiates `aws_instance`); the source is the document root, the target is the type label as written, and `metadata.instanceType`/`instanceKind`/`instanceName` say which instance and which half of the provider schema | not a declaration — a provider type is declared by a provider BINARY, in no repository, so the target resolves externally or not at all, and no symbol is invented for it. IMPLEMENTED and CORPUS-UNEXERCISED (HCL-D13): 3,932 blocks over 444 labels, 0 labels declared as a type |
 | `mixes_in` | — (ruled, below) | no HCL construct composes a MEMBER SET from one declaration into another; `dynamic` repeats a member set the enclosing block itself writes, and `lifecycle`/`provisioner` are already `contains` |
@@ -39,6 +44,29 @@ each entry says what the edge asserts here, and what it is not.
 | `renders` | — (ruled, below) | HCL HAS templates (`quoted_template` 3,710, `heredoc_template` 3,506) and they render STRINGS from text plus values — no construct names a DECLARATION as the rendered target (`templatefile()` 60 sites, 0 literal paths; 0 declaration-target candidates) |
 
 ## Relationship ontology
+
+The single 14-row claim table for this lane. `Emitted?` is what
+`src/ast/real-hcl-analyzer.ts` actually publishes (every `RelationshipType.*` site
+read, not grepped alone); the ruled `❌` rows carry the measurement that says so.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | ✅ yes | `real-hcl-analyzer.ts:712` — a `function_call` whose callee identifier matches a `function` block declared in the SAME file (`functionDecls`, first-wins), joined AFTER the DFS; every global/provider callee resolves to nothing and publishes no edge. Fixture `hcl/declared-function-call`; census 4 edges / 1 file. | `confidence: 1`; `evidenceClass: "structural"` |
+| extends | ✅ yes | `:695` — docker-bake `inherits = [...]` inside a `target` block, resolved AFTER the DFS against `target` declarations in the same file (`targetDecls`); an unresolved parent publishes nothing. HCL-D10; 53 edges / 8 files, 53/53 binding. | `confidence: 1`; `evidenceClass: "structural"`; metadata `hclSite: "inherits"`, `hclInheritedTarget` |
+| implements | ❌ no — 0 `RelationshipType.Implements` sites (`grep -c` = 0). No declaration/base/interface production exists: 0 of 18 declaration-shaped node types are produced, and 0 of 455 corpus block types and 5,311 attribute keys name an interface. Spec HCL-D1a, class `grammar-absence`. | — | — |
+| uses | ✅ yes | `:664` — an expression path whose ROOT is a language builtin (`count.`, `each.`, `self.`, `path.`, `terraform.`, `BUILTIN_ROOTS`): a global-namespace name no file declares. Census 2,073 edges / 579 files. | `confidence: 1`; `evidenceClass: "builtin_qualified"`; metadata `hclBuiltin: true` |
+| imports | ✅ yes | `:484` — a `module` block → its `source` string, on the `source` attribute KEY's line. Emitted alongside the `import-site: ImportInfo[]` payload (`imports.push`, `:478`); the target is a path/registry coordinate that binds to no symbol by construction (1.03 % bind only by name collision). | `confidence: 1`; `evidenceClass: "import_based"`; payload `ImportInfo[]` |
+| exports | ✅ yes | `:731` — document root → each top-level block symbol, on the block's start line, alongside the `export-site: ExportInfo[]` payload (`exports.push`, `:730`). Census 31,663 edges / 8,343 files. | `confidence: 1`; `evidenceClass: "structural"`; payload `ExportInfo[]` |
+| contains | ✅ yes | `:434` (block) and `:603` (attribute) — parent qualified path → child qualified name; `line_number` is the block header / attribute-key line; dedupe is per SITE (the key includes the line). Census 138,570 edges / 8,343 files. | `confidence: 1`; `evidenceClass: "structural"` |
+| references | ✅ yes | `:664` — enclosing block → a fully-qualified PROJECT address (`var.`, `local.`, `module.`, `data.`, `<type>.`), from a maximal `variable_expr` + `get_attr` sibling run; the target is the address string and the ARBITER resolves it (per-file scope, index=no). Census 42,122 edges / 3,807 files. | `confidence: 1`; `evidenceClass: "reference_qualified"` |
+| overrides | ✅ yes | `:631` — an `override_resource` / `override_data` / `override_module` block → the declaration its `target` names; the ordinary `references` edge is SUPPRESSED (RETYPED, not duplicated) and builtin roots are refused. Census 68 edges / 33 files. | `confidence: 1`; `evidenceClass: "structural"`; metadata `hclSite: "override-target"`, `hclOverrideKind` |
+| instantiates | ✅ yes | `:460` — a `resource` / `data` block → the PROVIDER TYPE label as written (`aws_instance`), sourced from the document root; `metadata.instanceType` / `instanceKind` / `instanceName`. No declaration is invented for the type. IMPLEMENTED + CORPUS-UNEXERCISED (HCL-D13): 3,932 blocks / 444 labels, 0 labels declared as a TYPE. | `confidence: 1`; `evidenceClass: "structural"`; targets resolve externally/unresolved by construction |
+| decorates | ❌ no — 0 `RelationshipType.Decorates` sites. No corpus construct applies a CALLABLE to a declaration: `validation` 1,228 (992 invoke a function INSIDE the condition — evaluated, not applied), `precondition` / `postcondition` 57, `depends_on` 883 (ordering metadata, already `references`), 0 declaration-attached callables. Spec HCL-D14, class `ontological`. | — | — |
+| renders | ❌ no — 0 `RelationshipType.Renders` sites. HCL HAS template nodes (`quoted_template` 3,710, `heredoc_template` 3,506) but a template renders a STRING from text plus values: `templatefile()` 60 sites (0 with a literal path), `templatestring()` 2, `template_file` / `template_dir` sources 21, 0 declaration-target candidates. Spec HCL-D15, class `ontological` — NOT grammar-absence. | — | — |
+| mixes_in | ❌ no — 0 `RelationshipType.MixesIn` sites. `dynamic` 374 blocks write their generated members in the source `content` block (15 with nested block children) and iterate VALUES (`for_each` 859); `lifecycle` 227 and `provisioner` 294 are members the enclosing resource itself declares (already `contains`); a module `source` keeps its members namespaced `module.NAME.*`. Spec HCL-D12, class `ontological`. | — | — |
+| part_of | ✅ yes | `:516` — a terragrunt `include` block whose `path` is a single STRING LITERAL → the INCLUDED file's root-module symbol (its file stem); the written path is kept in `metadata.partPath`, `metadata.partRole: "library"`. A computed path (`find_in_parent_folders(...)` / interpolation) publishes NOTHING. HCL-D11: 22 edges / 17 files = 22/22 literal sites (exact). | `confidence: 1`; `evidenceClass: "include_literal"`; `partRole: "library"` |
+
+### What was changed in the 2026-10-09 wave (historical record)
 
 What was changed in this wave; the detailed verdicts follow this canonical heading.
 
@@ -121,7 +149,7 @@ supervisor**.
 - **Address reads**: traversals naming a project address (`var.x`, `local.x`, `module.x`, `data.T.N`, `T.N.attr`) become `references`; language builtins (`count.index`, `each.k`, `self.a`, `path.k`, `terraform.k`) become `uses`.
 - **Declarations**: `resource`, `data`, `module`, `variable`, `locals`, `output`, `provider`, `terraform`, terragrunt `include` and `override_*` blocks, and same-file `function` blocks (the only call targets).
 - **Composition and replacement**: a terragrunt `include` splices the included configuration into this document (`part_of`); an `override_*` block replaces the declaration its `target` names (`overrides`); `dynamic` repeats a member set but is not `mixes_in`.
-- **Ruled-absent constructs** are named with their counts in the verdict section below; fixtures: `validation/m14/fixtures/hcl/`.
+- **Ruled-absent constructs** are named with their counts in **The extended values** section below and in `script/m14/spec/hcl-completeness.json`; the **Verdicts** section above is the 2026-10-09 wave record. Fixtures: `validation/m14/fixtures/hcl/`.
 
 ## Symbol contract
 
@@ -181,7 +209,7 @@ or `nested`), `hclAddress`, `hclDuplicateIndex`, and `hclFunctionDecl` on a
 actually describes the value — the `operation` wrapper is unwrapped to
 `binary_operation`/`unary_operation`), `hclAddress`.
 
-**Symbol metadata does not cross the worker boundary.** `pool-worker.ts:960`
+**Symbol metadata does not cross the worker boundary.** `pool-worker.ts:1631` (the narrow metadata allowlist)
 forwards a fixed allowlist of symbol-metadata keys and none of the `hcl*` keys
 are on it, so `hclFunctionDecl` — like `hclBlockType`, `hclAddress` and every
 other key above — is readable from `analyze()` and from the fixture lane but not
@@ -189,6 +217,12 @@ from `parseFile`. Relationship metadata has no such filter and does cross.
 Recorded for the supervisor rather than worked around: the fix is a shared file.
 
 ## Verdicts — all ten types
+
+**Historical wave record (2026-10-09 census).** This table preserves a measured
+run. Two rows were SUPERSEDED by later measurement and are marked inline:
+`extends` (HCL-D10 → EMITTED, 53 edges) and `instantiates` (HCL-D13 → EMITTED,
+corpus-unexercised). The authoritative current emission statement is the claim
+table under **Relationship ontology**.
 
 Measured with `validation/m14/measurements/hcl/hcl-corpus-census.ts` (production
 `parseFile` from `src/ast/pool-worker.ts`, never `analyze()`) and
@@ -209,10 +243,10 @@ population is never quoted as the other's.
 | `imports` | EMITTED | 2,041 | 1,403 | `boundary/enos/ci/hcp-resources/main.tf:35` → `../../modules/aws_ssh_keypair` |
 | `references` | EMITTED | 42,122 | 3,807 | `terraform-aws-components/…/context.tf` → `module.this.context` |
 | `exports` | EMITTED | 31,663 | 8,343 | every top-level block of every file |
-| `extends` | **RULED** | 0 | — | instrument A, below |
+| `extends` | **RULED** (this wave; SUPERSEDED — HCL-D10 emits 53 edges) | 0 | — | instrument A, below |
 | `implements` | **RULED** | 0 | — | instrument A, below |
 | `overrides` | **EMITTED** (ruled inapplicable at handover) | 68 | 33 | `terraform/internal/configs/testdata/valid-modules/with-mocks/test_case_one.tftest.hcl` |
-| `instantiates` | **RULED** | 0 | — | instrument B, below |
+| `instantiates` | **RULED** (this wave; SUPERSEDED — HCL-D13 emits it, corpus-unexercised) | 0 | — | instrument B, below |
 
 Totals for the same census: **147,485 symbols, 216,541 relationships, 2,044
 imports, 40,987 exports**, 84 files carrying syntax errors, 14 files yielding no
@@ -256,7 +290,14 @@ the totals carry −26 relationships of noise against a +4 real change. The caus
 is the worker pipeline under load, not the grammar: see **Not reproducible
 byte-for-byte**.
 
-### RULED: `extends`, `implements`
+### 2026-10-09 wave: `extends` and `implements` as they stood then
+
+**`extends` SUPERSEDED 2026-10-09 by HCL-D10.** A docker-bake
+`target "child" { inherits = ["parent", …] }` is a real inheritance-shaped
+construct — 44 sites in 8 files, 53 parents, 53/53 resolved, and the analyzer now
+emits **53 `extends` edges**. The grammar-inventory measurement below stands for
+`implements` only; its node-type count was correct and the construct was still
+expressible through an ATTRIBUTE KEY, which a node-type inventory cannot see.
 
 - **Instrument: A — grammar inventory.**
 - **Probe:** enumerate every node type the grammar produces across the whole
@@ -284,7 +325,18 @@ byte-for-byte**.
   `hcl-construct-probe.ts` prints both inventories in full, so a new type cannot
   arrive without appearing in that output.
 
-### RULED: `instantiates`
+### 2026-10-09 wave: `instantiates` as it stood then
+
+**SUPERSEDED 2026-10-28 by HCL-D13.** The type is IMPLEMENTED at R3 — a
+`resource` / `data` block publishes `instantiates` from the document root to its
+PROVIDER TYPE label as written, with no invented declaration — and DECLARED
+CORPUS-UNEXERCISED with the re-measured `_why`: 3,932 resource/data blocks over
+444 distinct type labels, **0 labels declared as a TYPE** (the 42 address
+collisions are 14 variables / 12 modules / 6 outputs / 2 providers / 4 label-less
+resource blocks / 1 label-less data block / 3 DSL blocks; 997 sites carry one, so
+the arm's `resolved` column is an upper bound). The measurement below is the
+wave's mock-resource reading; its 891 mock-label count was not re-measured and is
+preserved, not restated as current.
 
 - **Instrument: B — parse-tree semantic count.** A grammar inventory cannot
   settle this one: the language *can* express an instantiation
@@ -378,19 +430,17 @@ first dot.
 are the two that were believed dead. `calls` fires on **1 file of 9,329** — that
 is the whole population, and it is stated rather than rounded up.
 
-**3 — Correct.** **No independent oracle exists for HCL, and the differential
-refuses to run.** `npx tsx script/m14/differential.ts --lang hcl --repo
-terraform --sample 60` exits with `parsed 60 file(s) and derived ZERO truth
-edges — the parser or the oracle is dead, not clean (a 0/0 row is a fabricated
-pass)`. This is pre-existing, not a consequence of this wave: the identical
-error appears with the analyzer at `HEAD` (verified by reverting the file and
-re-running). `grep 'lang === "hcl"' script/m14/differential.ts` returns nothing,
-so no truth derivation and no label-allowlist entry is registered for this
-language. The consequence is stated plainly: **question 3 is UNANSWERED for every
-HCL type, including the five that were already emitted.** The reference-extraction
-figures this document inherited (recall 0.999931, precision 1.000000 over an
-independent flat-sweep oracle) come from an oracle that no longer runs in this
-tree and are therefore not re-published as current.
+**3 — Correct.** **The independent oracle EXISTS now** (`deriveHclEdges`,
+`script/m14/differential.ts:22678`, wired by the `if (lang === "hcl")` branch at
+`:24211`, corpus `tf-aws-components`), so this wave's "the differential refuses to
+run" statement is superseded. Last recorded result:
+`validation/m14/results/M14.0.F5.json` (commit `f8fc2d718`) — hcl **FAIL**, 60
+files, `coveragePct: 100`, `unexplainedInAnalyzer: 13` (`fabricationPct: 3`),
+`missingInAnalyzer: 0`; every unexplained row is an `instantiates` edge the oracle
+does not derive. So question 3 is ANSWERED as a FAIL with a NAMED oracle gap for
+the derived labels and UNANSWERED for `instantiates` / `part_of`. The
+reference-extraction figures this document inherited (recall 0.999931, precision
+1.000000 over an independent flat-sweep oracle) remain NOT re-published as current.
 
 **4 — Labelled.** The two new labels are pinned in both directions.
 `overrides`: `hcl/override-target-not-reference` forbids `references` and `uses`
@@ -506,15 +556,21 @@ the grammar emits no `block` node at all under Go-template damage, is ruled in
 ## Regex inventory
 
 The analyzer contains **zero** regular-expression literals and no
-`RegExp`/`match`/`replace` calls. The only `split` is `content.split("\n")` for a
-line count. Labels come from the `template_literal` grammar field, object values
+`RegExp`/`match`/`replace` calls. There are three `.split(...)` calls and all
+three are STRING splits, not patterns: `content.split("\n")` for the line count
+(`real-hcl-analyzer.ts:746`) and `ref.path.split(".")[0]` twice, to read a
+reference's ROOT (`:630`, `:659`). Labels come from the `template_literal` grammar field, object values
 from the `val` field, function callees from the `function_call` node's `identifier`
 child, and all reference extraction is node-type and field driven.
 
 ## The extended values — what each one was measured against
 
+**Every count in this section is a CENSUS count (9,329 files / 16 repositories, the lane's
+own walk); the ARM population is 11,139 admitted and is the declaration's — see
+**Corpus validation**.**
+
 `part_of` is EMITTED at R3 (HCL-D11): terragrunt `include` SPLICES the included file's configuration
-into the child, so the included file is a PART of the including document. Whole admitted population:
+into the child, so the included file is a PART of the including document. CENSUS population:
 287 include blocks, 22 literal `path` (all inside the admitted set), 265 computed
 (`find_in_parent_folders(...)` / interpolated templates, refused), and exactly 22 `part_of` edges over
 17 files — 22/22 literal sites, the census's own control. A module `source` is the discriminator, not
@@ -561,24 +617,46 @@ precede its declaration in the file (`docker/docker-bake.hcl` declares `bindir` 
 line 56 and calls it on 101). A pre-pass would have doubled the node visits this
 envelope is written against.
 
-**No ms-per-file budget is published.** What is published instead is the
-machine-independent shape: ms per 1k AST nodes flat across size quartiles. Per
-source byte the ratio *falls* as fixed per-file overhead amortises, which is the
-opposite of the O(n²) signature.
+**No ms-per-file budget is published.** An earlier revision claimed a
+machine-independent shape — "ms per 1k AST nodes flat across size quartiles" — but
+**no measurement of that shape exists** in this page or its artifacts. The only
+published timings are the M12 corpus run under **Corpus validation** below
+(37,752.3 ms over 2,357 files / 450.8 symbols/s,
+`validation/m12/results/hcl-corpus-complexity.json`); a size-quartile analysis is
+**UNKNOWN** and is not restated here.
 
 ## Differential ground truth
 
-**There is none that runs.** See question 3 above: the F5 harness exits on
-`derived ZERO truth edges` for `terraform:hcl`, and it did so identically before
-this wave. The inherited numbers (recall 0.999931, precision 1.000000 over
-9,079 files, `M14.0.F5` at 100 % coverage on two corpora) are **not
-reproduced here** and are not published as current.
+The F5 differential **runs** for hcl now: `script/m14/differential.ts` derives an
+INDEPENDENT tree oracle for this language (`deriveHclEdges`, `differential.ts:22678`,
+selected by the `if (lang === "hcl")` branch at `:24211`) over the corpus
+`tf-aws-components` (`SECOND_CORPUS`, `:833`). Its last recorded artifact is
+`validation/m14/results/M14.0.F5.json` (commit `f8fc2d718`), and the hcl row is
+**FAIL**: 60 files sampled, `coveragePct: 100`, `analyzerEdges: 1312`,
+`treeTruthEdges: 1069`, `explainableByTree: 1272`, `unexplainedInAnalyzer: 13`,
+`fabricationPct: 3`, `missingInAnalyzer: 0`. Every one of the 13 unexplained rows
+is an `instantiates` edge (e.g. `main -> aws_iam_service_linked_role`): the oracle's
+own comment lists the labels it derives (`:22686-22715`) and `instantiates` and
+`part_of` are not among them, so those rows CANNOT be explained by this oracle.
+**Question 3 therefore reads: FAIL for the derived labels, UNANSWERED for
+`instantiates` and `part_of` — a NAMED oracle gap, not a measured fabrication.**
+The inherited numbers (recall 0.999931, precision 1.000000 over 9,079 files) are
+NOT re-published as current, and `M14.0.F5.json` itself warns
+`tf-aws-components:hcl: baseline row records no load context (pin with
+--update-baseline)`, so a fresh run is required before quoting a trend.
 
 ## Corpus validation
 
 - `validation/m12/results/hcl-corpus-errors.json`: corpus `terraform`, extensions `*.tf` / `*.tfvars` / `*.hcl`, 2,361 tracked files, 4 error files / 10 error nodes, 0 crash files.
 - `validation/m12/results/hcl-corpus-complexity.json`: production run over 2,357 acceptance files (the 4 excluded invalid fixtures are named in the artifact), 17,019 symbols / 23,252 relationships / 37,752.3 ms / 450.8 symbols/s / peak 294.4 MiB; `passed: true`, 0 errors, 0 crashes.
-- Differential `validation/m12/results/hcl-differential.json`: `passed: true`, expected 107, truePositive 107, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Differential `validation/m12/results/hcl-differential.json`: **historical M12
+  manual-audit ground truth** (`truthSource: manual_audit`, fixtureDir
+  `validation/m12/fixtures/hcl`), `passed: true`, expected 107, truePositive 107,
+  falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1. This is NOT
+  the current F5 sweep — see **Differential ground truth**.
+- Adversarial fixtures `validation/m14/results/M14.0.F3.json`: `hcl adversarial
+  fixtures` **14 / 14 pass** (the 12 wave fixtures plus `terragrunt-include` and
+  `instantiates-resource-type`).
 
 ## Mutation
 
@@ -595,19 +673,22 @@ defect class and the fixture that catches it.
 
 ## Verification
 
+**Recorded 2026-10-09; rows superseded by later waves are marked inline, and each
+row is a command to RE-RUN before quoting.**
+
 | Gate | Command | Result |
 | --- | --- | --- |
-| Ontology coverage | `npx tsx script/m14/ontology-coverage-gate.ts hcl` | **exit 2 — no ruling table for `hcl`**; see Findings 1 |
+| Ontology coverage | `npx tsx script/m14/ontology-coverage-gate.ts hcl --fresh` | the gate still has no `RULED_BY_LANG` entry for `hcl` (`script/m14/ontology-coverage-gate.ts:541`, Findings 1) and reads this lane's written spec rulings instead; run with `--fresh` — a resumed run reads `0/4,047` files and certifies nothing |
 | Relationship-type coverage | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=hcl` | 6 DERIVATION findings; checks 2–4 clean |
 | Completeness sections A–H | `bun run script/m14/completeness-inventory.ts --lang hcl` | **4 of 8 sections FAIL** — A, B, E, F; C, D, G, H pass. Three of the four also FAIL with the analyzer at `HEAD` |
-| Fixtures | `npx tsx script/m14/run-fixtures.ts --lang hcl` | **11 / 11 pass** |
+| Fixtures | `npx tsx script/m14/run-fixtures.ts --lang hcl` | **14 / 14 pass** (`validation/m14/results/M14.0.F3.json`) |
 | Mutation (shared registry) | `BB_MUTANT_ONLY=hcl/ npx tsx script/m14/mutate-analyzer.ts` | **12 / 12 caught** |
 | Mutation (lane-owned) | `npx tsx validation/m14/measurements/hcl/hcl-mutants.ts` | **6 / 6 caught** |
 | Grammar audit | `bun run script/m14/audit-analyzer-grammar.ts` | hcl **PASS**, refs=15, unknown=0, unknownFields=0 |
 | Grammar pin | `bun run script/m14/verify-grammar-pins.ts` | hcl pinned, `copies:mirror=IDENTICAL`, 121 ids / 64 named / 57 anon / 2 fields. `PIN FAILURE julia` is another lane's |
 | Analyzer hygiene | `bun run script/m14/verify-analyzer-hygiene.ts` | hcl clean; 3 findings, all in `cpp` / `haskell` / `elixir`, and the gate's `release blocked` line is theirs |
 | m12 contract probe | `npx tsx script/m12/hcl-contract-probe.ts` | **38 / 38 pass** |
-| Differential | `npx tsx script/m14/differential.ts --lang hcl --repo terraform --sample 60` | **hard error, ZERO truth edges** |
+| Differential | `npx tsx script/m14/differential.ts --lang hcl --sample 60` | **runs since the tree oracle landed** (`deriveHclEdges`); last artifact `M14.0.F5.json` reads hcl **FAIL** — 60 files, coverage 100 %, 13 unexplained (`instantiates`, oracle gap) |
 | Parse success | `bun run script/m14/verify-parse-success.ts` | **no hcl row exists** — the lane has no corpus pin (Findings 3). The run exits 2 on `proxicall:dart`'s moved sample, which is not this lane |
 | Probe battery | `bun run script/m14/verify-probe-battery.ts` | 2 failures, `F9-PROBE-M3710-PHP` and `F9-PROBE-CLEAN-HEAD-PATTERN`; no hcl row |
 
@@ -617,8 +698,8 @@ defect class and the fixture that catches it.
 | --- | --- | --- | --- |
 | A — structural | FAIL | FAIL | unchanged: the census finds 2 runtime node types (`ERROR`, `MISSING`) in no bucket, which spec decision HCL-D7 argues for and the gate's rule 2 rejects |
 | B — relationship kinds | **pass** | **FAIL** | **caused by this wave**: the analyzer now emits `calls` and `overrides`, and `requiredKinds` for hcl (`script/m14/completeness-inventory.ts:772`) names only the five it emitted before. See Findings 9 |
-| E — differential | FAIL | FAIL | unchanged: no baseline floor row for `terraform:hcl`, because the differential cannot run |
-| F — perf budget | FAIL | FAIL | unchanged: no `avgMsPerFile` row for `terraform:hcl`, same cause |
+| E — differential | FAIL | FAIL | at that time: no baseline floor row for `terraform:hcl` because the differential had no oracle. The oracle now exists (see **Differential ground truth**); the row's CURRENT state is UNKNOWN until a fresh F5 run |
+| F — perf budget | FAIL | FAIL | at that time: no `avgMsPerFile` row for `terraform:hcl`, same cause. `M14.0.F5.json` now records `perf.avgMsPerFile` 1.7 over 60 hcl files; the budget row itself is UNKNOWN |
 | C, D, G, H | pass | pass | — |
 
 **An instrument defect this lane introduced and removed.** The four harnesses were
@@ -642,11 +723,18 @@ wrong answer): `operation-operand-references`, `dynamic-iterator-scope`,
 ## Spec
 
 `script/m14/spec/hcl-completeness.json` buckets all 64 grammar named types (57
-`handled_verified`, 7 `internal_silent`). **Its corpus block and its decision
-HCL-D1 are now stale and the file is not this lane's to edit** — see Findings.
-HCL-D1's ruling on `calls` and `overrides` is falsified by the measurements
-above; its rulings on `extends`, `implements` and `instantiates` still hold, with
-the probes now stated in measurable form.
+`handled_verified`, 7 `internal_silent`) and carries the lane's coverage block.
+The spec IS current and lane-owned: HCL-D1 is kept as **SUPERSEDED** (it ruled
+`calls` / `extends` / `implements` / `overrides` / `instantiates` inapplicable and
+the measurements refuted it), and the replacements are HCL-D1a, HCL-D9, HCL-D10
+(`extends`), HCL-D11 (`part_of`), HCL-D12 (`mixes_in`), HCL-D13 (`instantiates`),
+HCL-D14 (`decorates`), HCL-D15 (`renders`). Under the 14-value vocabulary the
+block closes at **10 / 10 implemented**, with four ruled classes (`implements`
+grammar-absence; `mixes_in` / `decorates` / `renders` ontological) and one
+`corpusUnexercised` property on the implemented `instantiates` row. Its two
+populations are stated in its `corpus._populationRule`: **CENSUS 9,329 files / 16
+repositories** (the construct counts) vs **THE ARM POPULATION 11,139 admitted**
+(the declaration's, `validation/m14/instruments/hcl/incoming-declaration.json`).
 
 ## Review
 
@@ -700,7 +788,7 @@ that this analyzer does not cover.
    on the LSP surfaces while the stored metadata says `builtin_qualified`. 2,073
    corpus edges are affected. Reported, not changed: the label is pinned by an
    existing fixture and the tier vocabulary is a shared file.
-8. **No HCL symbol metadata reaches the index.** `pool-worker.ts:960` forwards a
+8. **No HCL symbol metadata reaches the index.** `pool-worker.ts:1631` (the narrow metadata allowlist) forwards a
    fixed allowlist of symbol-metadata keys; no `hcl*` key is on it. Every
    `hclBlockType` / `hclAddress` / `hclFunctionDecl` value is therefore readable
    from `analyze()` and from the fixture lane but **not** from `parseFile` or from
@@ -711,10 +799,13 @@ that this analyzer does not cover.
    reported `[BB-HANG] parser stuck 120s` under six concurrent agents while
    parsing in 4–7 ms in isolation. Every number here is one measured run.
 10. **HCL is a configuration language with a provider binary behind it.** No
-    repository declares the resource types, provider functions or backend
-    schemas a `.tf` file uses, so `instantiates` has no bindable target and
-    `imports` has no bindable target by construction. A graph over HCL is a graph
-    over declarations, not over the infrastructure it describes.
+    repository declares the resource types, provider functions or backend schemas
+    a `.tf` file uses: `instantiates` publishes its target as the PROVIDER TYPE
+    label and the corpus binds none (**0 of 444 labels is a declared TYPE** —
+    HCL-D13, corpus-unexercised), and `imports` targets paths/coordinates that
+    bind to no symbol by construction (1.03 % bind only by name collision). A
+    graph over HCL is a graph over declarations, not over the infrastructure it
+    describes.
 
 ## Findings for the supervisor
 
