@@ -58,13 +58,18 @@ measurable gap into an unmeasurable one.
 | ATX heading (`#`..`######`) | `type` | `atx_heading` + `atx_hN_marker` | heading text |
 | Setext heading (`===`/`---` underline) | `type` | `setext_heading` + `setext_hN_underline` | heading text |
 | Pipe table | `class` | `pipe_table` | header cells joined by `/` |
+| Pipe-table column | `property` | `pipe_table_cell` in the header row | header cell text, under the table |
 | Fenced code block | `function` | `fenced_code_block` + `info_string` → `language` | `code_block.<lang>` |
 | Front matter (`---` block) | `namespace` | `minus_metadata` | `front_matter` |
+| Document (whole file) | `module` | file identity (the file model) | repo-relative path |
 
 Heading ownership follows the document hierarchy: an h2 is owned by the
 enclosing h1, an h3 by the enclosing h2, and so on (the M11 contract `ATX
 headings as type; heading hierarchy via parent chain`). Table columns are
-emitted as `contains` children of the table symbol.
+published as `property` sites under the table symbol and emitted as `contains`
+children of it. The document `module` symbol is the file model's other half:
+each file publishes its own repo-relative path so a cross-file, relative
+destination has an identity to name.
 
 ### A heading's name is its display text
 
@@ -136,27 +141,52 @@ emitted for every column of every table, and no column symbol was ever declared.
 
 ## Relationship ontology
 
-- `contains`: heading → nested heading, table, code fence; table → column.
-- `uses`: owning heading/document → every link destination, image source,
-  URI autolink, email autolink, and **resolved** reference link (from the inline
-  grammar).
+The claim table below is derived from `src/ast/real-markdown-analyzer.ts` (`grep
+RelationshipType.`, each site opened) and the lane's committed evidence: the rulings and
+measurements in `script/m14/spec/markdown-completeness.json`, the fixtures in
+`validation/m14/fixtures/markdown/`, and the whole-population declaration
+`validation/m14/instruments/markdown/incoming-declaration.json` (17,786 admitted files, 60
+disjoint slices, 509,908 edges, closure exact, unclassed 0). Markdown is a DOCUMENT format:
+its relations are document structure, link destinations, in-document anchors and file
+inclusion — there is no module system, no type system and no callable, which is why the
+other nine kinds are ruled absent rather than left blank.
 
-Every edge carries a 1-based `line_number` and an `evidenceClass` from the
-closed five-tier vocabulary:
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | ❌ no | Ruled grammar-absence (MD-D12): no `RelationshipType.Calls` site in the analyzer and 0 `calls` edges over the whole admitted population. A call inside a code fence belongs to the fenced language's lane; the handful a concurrency-degraded run reports are `pool-worker.ts extractFallback` regex reads of fenced JavaScript, attributed in `validation/m60/markdown/fallback-attribution.json`. | — (no emission) |
+| extends | ❌ no | Ruled grammar-absence (MD-D7): no type system — a section is CONTAINED in a section (`contains`), not inheriting from it. Instrument A: 0 of the 70 union named node types is a class/inheritance production. | — (no emission) |
+| implements | ❌ no | Ruled grammar-absence (MD-D8): nothing to conform to; the one construct binding a document to another by FILE is a `{% include %}` and it is `imports`. 0 of the 70 union names is a conformance production. | — (no emission) |
+| uses | ✅ yes (`real-markdown-analyzer.ts:1253`, `:1285`, `:1403`) | Every inline link destination, image source, URI/email autolink and resolved reference link, read from the companion inline grammar. A relative destination is resolved against the containing document (`markdownResolveRelativeLink`) and targets the target file's published document symbol (repo-relative path) when it names a file on disk, else the written string; a fragment-only destination is deferred to `references`. The written destination stays on the edge as `linkDestination`. | confidence 1.0; `evidenceClass: reference_qualified` |
+| imports | ✅ yes (`real-markdown-analyzer.ts:1073`) + `import-site: ImportInfo[]` (`imports.push` at `:1057`) | A Jekyll/Liquid `{% include … %}` template directive that names a file (quoted or bare argument, closed file-extension list; macro calls naming no file are refused — 1,030+ measured corpus impostors). `emitIncludeImports` pushes `ImportInfo{importType:"template-include"}` and emits the edge; source = the owning heading or `document`, target = the path as written. | confidence 1.0; `evidenceClass: import_based` |
+| exports | ❌ no | Ruled grammar-absence (MD-D9): a markdown file is a document, not a module. No `RelationshipType.Exports` site and no `ExportInfo[]` payload; the only reserved-position name (a front-matter `title:`) names the document itself, a `document -> document` self-edge (the M60 R7 class). | — (no emission) |
+| contains | ✅ yes (`real-markdown-analyzer.ts:404`, `:469`, `:506`, `:559`) | Document structure read off the block tree: heading → nested heading (`heading_hierarchy`), heading → pipe table (`table_under_heading`), heading → fenced/indented code block (`code_block_under_heading`), table → column (`table_column`). Ownership follows heading level; sites are published per occurrence with a `#N` ordinal on a repeat. | confidence 1.0; `evidenceClass: structural` |
+| references | ✅ yes (`real-markdown-analyzer.ts:719`) | A fragment-only destination (`[x](#anchor)`, or a reference link whose definition is `#anchor`) resolved to the heading it names: deferred until the walk has published the heading, then matched by the published anchor slug. An undefined anchor publishes nothing — CommonMark renders it as literal text, and publishing it measured 171 fabricated endpoints over 34 files. | confidence 1.0; `evidenceClass: reference_qualified` |
+| overrides | ❌ no | Ruled grammar-absence (MD-D10): no `RelationshipType.Overrides` site. A repeated heading text is a second SECTION with its own ordinal anchor (`#slug-1`), not a replacement — 570 redeclarations and 0 displacements measured in `validation/m60/markdown/overrides-probe.json`. | — (no emission) |
+| instantiates | ❌ no | Ruled grammar-absence (MD-D11): no construction production in the 70-name union and no `RelationshipType.Instantiates` site. The component reading measured 0 capitalised `html_tag` names and 0 `<script>` with a `src` in markdown's HTML blocks. | — (no emission) |
+| decorates | ❌ no | Ruled grammar-absence (MD-G6): 0 of the 70 union names is a decorator/annotation production, and the corpus half was measured (4,148 front-matter files, 743 `layout:` keys, 961 MkDocs `!!!` markers — document metadata and block markers, not a decorator applied to a declaration; `minus_metadata` has zero named children). 0 `decorates` edges over the whole admitted population. | — (no emission) |
+| renders | ❌ no | Ruled grammar-absence (MD-G6): 0 of the 70 union names is a component/render production. The corpus near family is dispositioned: 5,699 image references (assets → `uses`), 230 diagram fences (quoted text), 10,196 raw-HTML opening lines (passthrough the html lane's own grammar models). 0 `renders` edges. | — (no emission) |
+| mixes_in | ❌ no | Ruled grammar-absence (MD-G6): 0 of the 70 union names is a mixin/class production. The template-composition family is measured and labelled elsewhere — `{% include %}` 1,440 sites, `{% extends %}` 45, `{% block %}` 96 — content/template composition whose file half is `imports`/`part_of`. 0 `mixes_in` edges. | — (no emission) |
+| part_of | ✅ yes (`real-markdown-analyzer.ts:1723`) | A MyST brace-directive inclusion fence (`{include}` / `{literalinclude}`) whose argument is a non-empty path and whose fence carries NO fragment option (`:lines:`, `:start-after:`, `:end-before:`, `:start-line:`, `:end-line:`, `:lineno-*`): the whole file is spliced into this document's scope. Target = the included file's module stem (symbol-shaped); the path as written rides on `metadata.partPath`, `metadata.partRole:"library"` is mandatory. Three splice sites measured over 17,786 files; fragment-quoted and nested-in-admonition near misses are counted and never published. | confidence 1.0; `evidenceClass: import_based` |
 
-- `contains` → `structural`. It is a parent/child relation read off the block
-  tree. This mattered more than it sounds: with no stored class, the read-time
-  derivation in `graph-core.ts` decides instead, and its `STRUCTURAL_TYPES` set
-  does **not** contain `contains` — so the entire heading hierarchy was rendered
-  to readers as `inferred`, "a guess, treat as a hint, never as fact".
-- `uses` → `reference_qualified`. The destination is a node's own text and, for
-  a reference link, the destination the document's own
+### Evidence tiers and the inline line rule
+
+Every edge carries a 1-based `line_number` and an `evidenceClass` from the closed five-tier
+vocabulary:
+
+- `contains` → `structural`. It is a parent/child relation read off the block tree. This
+  mattered more than it sounds: with no stored class, the read-time derivation in
+  `graph-core.ts` decides instead, and its `STRUCTURAL_TYPES` set does **not** contain
+  `contains` — so the entire heading hierarchy was rendered to readers as `inferred`, "a
+  guess, treat as a hint, never as fact".
+- `uses` and `references` → `reference_qualified`. The destination is a node's own text
+  and, for a reference link, the destination the document's own
   `link_reference_definition` declares.
+- `imports` and `part_of` → `import_based`. The evidence is a path the document's own
+  directive names, read verbatim out of the directive rather than matched against context.
 
-The line for an inline edge is `mdInlineLines[i] + row`, because the engine
-sub-parses each `inline` node as a SUBSTRING and a node row inside that tree is
-relative to the substring. `context.mdInlineLines` was computed by the engine
-and read by nobody before this round.
+The line for an inline edge is `mdInlineLines[i] + row`, because the engine sub-parses each
+`inline` node as a SUBSTRING and a node row inside that tree is relative to the substring.
+`context.mdInlineLines` was computed by the engine and read by nobody before this round.
 
 ## Supported constructs
 
@@ -326,6 +356,14 @@ The corpus is a MOVING TARGET under ten concurrent lanes and the growth is visib
 branch's own history: the arbiter's two runs each admitted 15,234 files, and the census
 written afterwards admits 17,456. Every figure below therefore names its population, and the
 population hash is in the JSON beside it.
+
+**Superseded population, 2026-10-31.** The whole-population arm over the gate's current
+`$PWD/.corpus` admits **17,786 files over 202 repositories** (202 rather than 196: pixie,
+plack and tf-aws-components were added to the corpus root after the census above) —
+`validation/m14/instruments/markdown/incoming-declaration.json`, 60 disjoint slices,
+`parsed=17786/17786`, 509,908 edges, closure exact. The 17,456 figures below remain the dated
+2026-10-04 census they name; they are not the current population and must not be compared as
+one.
 
 ### The supervisor's arbiter now runs for this lane — and what it printed
 
