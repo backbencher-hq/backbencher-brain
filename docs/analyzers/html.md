@@ -151,29 +151,102 @@ construct occurs; the **instantiation** does not.
 
 ## Relationship ontology
 
-Every applicable label is emitted. Labels with no HTML construct (`extends`,
-`implements`, `overrides`, `exports`) are **absent, with a measurement each** —
-the table above, and `script/m14/html-ruled.ts`. The previous wording here read
-"measured at 0 exports across 1,200 files, because markup has no module surface".
-The reason was right about html and the framing was wrong: 575 `exports[]` rows
-arrive on this corpus, every one of them from the inline-JS delegate.
+**How to read the `Emitted?` column — it answers ONE narrow question, and this lane's
+whole difficulty is that the question is narrower than it looks.** The column asks
+*does html's own grammar construct this edge?* There are **three** such kinds
+(`contains`, `uses`, `references`) and the analyzer's source names exactly those three
+at their push sites (plus three more it *reads* — see below). Everything else a
+document publishes arrives through the **embedded-script seam**: the engine pre-parses
+each `<script>`/`<style>` body with the JS/TS/CSS grammar and
+`mergeEmbeddedBlocks` (`src/ast/real-html-analyzer.ts:2003`) republishes the
+delegate's rows **verbatim**, stamped with `htmlEmbedded` / `embeddedLang` /
+`embeddedLineOffset` (`:2276-2282`). The four extended values `decorates`,
+`implements`, `renders`, `mixes_in` are **published by this lane** — pinned by
+`validation/m14/fixtures/html/embedded-extended-types.html`, whose expectation file
+carries one row for each — and they are published **because a `<script>` in an `.html`
+document is html's payload**, not because the markup grammar can carry them.
 
-| Label | Emitted for | By | Confidence | Tier |
+**Why three of the nine delegated rows still say `yes` and six say `no`.** The seam
+does not merely forward `extends`, `imports` and `overrides` — it **translates** them,
+which means the source names the kind at a comparison site: `extends` is read to
+reconstruct an override's base (`:2219`), `imports` to restore the
+`<specifier>:<item>` spelling the delegate moved into `metadata.module` (`:2230`), and
+`overrides` to restore `<Base>.<member>` (`:2245`). Those three are therefore
+first-class to this file. `calls`, `implements`, `instantiates`, `decorates`,
+`renders` and `mixes_in` are never named in the source at all: the seam is
+**kind-agnostic** to them, so their rows are the delegate's. A row that says
+`no — by html's own grammar` is a statement about *this file's* construction, and the
+same cell carries the count the lane actually publishes. **A reader who stops at the
+first token reads this lane as emitting six kinds fewer than it does.**
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+|---|---|---|---|
+| calls | `no` — by html's own grammar (constructs none); the seam publishes **3,147** edges, 100% delegate | the javascript/typescript delegate's own call rule inside an inline `<script>`; the seam republishes the row verbatim at `:2276-2282` | 0.9 `usage_contextual`, the delegate's own — the seam changes no confidence field |
+| extends | `yes` — delegate-only in practice (0 constructed here, 1 pinned fixture row) | the delegate's heritage clause, resplit by the seam at `:2219` so an `overrides` base can be reconstructed | 1.0 `structural` (`embedded-heritage` pins it) |
+| implements | `no` — by html's own grammar (constructs none); the seam publishes it from a `lang="ts"` block only | the typescript delegate's `class_heritage` conformance clause; a javascript block cannot carry the construct at all | the delegate's own; `embedded-extended-types` pins `Square → Shape` |
+| uses | `yes` — html-own **and** delegate | 37 `RESOURCE_RULES` over 28 tags (fetch: `src`/`href`/`srcset`/`action`/`ping`/`poster`/`data`/`manifest`); in-document navigation (`a`/`area` fragment → the element, `:1868`); `label@for` → the labelled control (`:1454`); citations graded `usage_contextual`; plus the delegate's bare-identifier reads | 1.0 `import_based` (fetch) / 1.0 `structural` (resolved reference) / 0.9 `usage_contextual` (navigation, citation) / **0.60 unclaimed** for the delegate's `bareRead` guesses |
+| imports | `yes` — both channels | the `imports[]` payload mirrors every fetched project-relative module (`imports.push`, `:2285-2297`); the relationship channel row comes from the delegate and the seam restores `<specifier>:<item>` at `:2230` | payload row carries the attribute's own range; relationship row keeps the delegate's confidence |
+| exports | `yes` — as an `ExportInfo[]` payload, never a pure-HTML edge | `exports.push` at `:2355`; every row is the delegate's (a `<script type="module">` export becomes a row on the host document). Three fixtures **forbid** a pure-HTML export: 0 `<slot name>`, 0 `<slot>`, 0 `part=` over 1,652 files | payload row, `htmlEmbedded` + `embeddedLineOffset` stamped so the origin is auditable |
+| contains | `yes` — html-own **and** seam-created | markup DOM containment: the nearest **addressable** ancestor → the child symbol (`:1312`), so an anonymous element passes its parent's identity through instead of becoming a node; the seam also creates the delegate-symbol → owner edge (`:2151`), the one row production would otherwise need a hierarchy it never emitted | 1.0 `structural` on both |
+| references | `yes` — **html-own**, and this row used to deny it | the **IDREF list class**: `aria-labelledby`/`aria-describedby`/`aria-controls`/`aria-errormessage`/`headers` tokens, one deferred entry per token (`:1467-1491`), resolved after the walk against `getElementById` and emitted at `:1590-1608` with `isIdref: true` + `idrefKind`. Unresolved handles emit **nothing** rather than a placeholder | 1.0 `structural` — both ends are symbols in this document, the token was read from the element's own attribute, and the rule **is** `getElementById` |
+| overrides | `yes` — delegate-only in practice (1 pinned fixture row) | the delegate's member-over-base-member rule, re-qualified by the seam at `:2245` from the delegate's own `extends` row, with the base read back rather than re-derived | the delegate's, carrying `reasonCode: "verified-in-file"`; the seam preserves every metadata field it was given |
+| instantiates | `no` — by html's own grammar (constructs none); the seam publishes **47** edges | the delegate's construction site inside an inline `<script>`. The construct that *looks* like html's own — a hyphenated tag — occurs 2,010 times and **instantiates nothing**: 0 of 2,010 names a registered custom element (see the `instantiates` section below) | the delegate's own; 0 html-own because the count was interrogated, not quoted |
+| decorates | `no` — by html's own grammar (constructs none); the seam publishes it over a fixture | the javascript delegate's decorator application: source = the **decorated declaration**, target = the decorator (the direction `src/ast/types.ts` fixes). Pinned by `embedded-extended-types` (`Decorated → sealed`), with a **fired** negative control — deleting the `@sealed` line fails that pin by name | the delegate's own; the row is a same-file causal edge, which is why it exists only where the construct is a real node |
+| renders | `no` — by html's own grammar (constructs none); the seam publishes it over a fixture | the delegate's JSX/host-renderer shape: source = the **rendering symbol**, target = the **rendered component**. Not `instantiates`: nothing is `new`ed, and a construction edge would claim an allocation site the source does not contain. Pinned by `embedded-extended-types` (`Panel → Button`), fired negative control | the delegate's own |
+| mixes_in | `no` — by html's own grammar (constructs none); the seam publishes it over a fixture | the delegate's heritage-as-call shape: source = the class that **composes** the mixin, target = the mixin. The javascript lane's discriminator is a **POSITION**, not a name — the call in the heritage **is** the mixin. Pinned by `embedded-extended-types` (`Record → Timestamped`), fired negative control | the delegate's own |
+| part_of | `no` — **RULED**, and the ruling is over a counted near miss | html has no part/include construct at any layer. The markup grammar's inventory holds no such node type, and the spelling that occurs (**379 bare `include`/`extends` sites over 127 files**) is **not dialect-clean**: 252 are `.pug` textual scope-sharing parts and 120 are `.html` static-site-generator partials with their own scope, so one grammar rule would be wrong for a third of them. The bytes arrive as `text`, classified `internal_silent`, and the lane's own HTML-IDENTITY rule forbids template directives as symbols. **Falsifier:** a patched grammar publishing the `.pug` sites and the `.html` sites alike would mis-publish 120 partials as parts; the arm's `part_of` row is **0** over the whole 8,888-file admitted population, and the construct census counts **0** part directives over 13,768 embedded blocks in 4,644 files | — (no edges to model; the ruling is published in `script/m14/spec/html-completeness.json`) |
+
+**The delegation split, per channel — the numbers behind nine of those rows.** Origin is
+measured by **differencing** the production path against the same path with the seam
+switched off (`script/m14/html-origin-census.ts`), so it reads no metadata field and
+cannot inherit the `htmlEmbedded` tagging defect the seam's own history documents.
+Population: 1,652 `.html`/`.htm` files (1,652 parsed, 0 failed).
+
+| channel | total | html-own | delegate | delegate share |
 |---|---|---|---|---|
-| `contains` | DOM containment, document module → top-level included | html | 1.0 | `structural` |
-| `uses` | fetched resources, in-project navigation, form endpoints, resolved in-document references, citations | html | 1.0 fetch / 1.0 reference / 0.9 navigation | `import_based` / `structural` / `usage_contextual` |
-| `contains` | the delegate symbol → its owner, created by the SEAM | seam | 1.0 | `structural` |
-| `uses` | a bare identifier read inside an inline `<script>`/`<style>` | **delegate** | **0.60 — unclaimed** | `usage_contextual` |
-| `calls` | invocations found inside an inline `<script>`/`<style>` | **delegate** | 0.9 | `usage_contextual` |
-| every edge | carries `line_number` — 1-based, the site, never `0` | | | |
-| `imports` | mirrors every fetched project-relative module; the `range` is the **attribute's**, not the element's | | | |
+| `contains` | 12,174 | 10,811 | 1,363 | 11.2% |
+| `uses` | 74,919 | 70,105 | 4,814 | 6.4% |
+| `references` | 78 | **0 on this corpus** — see the correction below | 78 | 100% |
+| `calls` | 3,147 | **0** | 3,147 | **100%** |
+| `instantiates` | 47 | **0** | 47 | **100%** |
+| `imports[]` | 4,682 | 4,675 | 7 | 0.15% |
+| `exports[]` | 575 | **0** | 575 | **100%** |
+| symbols | 13,604 | 12,463 | 1,141 | 8.4% |
 
-`calls` is emitted **only** by the embedded-block seam: 3,016 `calls` on 400 corpus
-files, of which **3,016 came from the delegate and 0 from html**. Markup has no
+**`references` is html-own, and this document denied it.** The verdict above the rewrite
+read `references — EMITTED (delegate-only), html-own 0`, and `Q1` below said the
+analyzer constructs "`Contains` and `Uses` and nothing else". Both are wrong:
+`RelationshipType.References` is constructed at `:1590`, for the IDREF list class. Two
+independent measurements, both re-run for this page:
+
+* **By construction, needing no differencing:** a document with **no**
+  `<script>`/`<style>` has no delegate, so every edge it publishes is html's own. Over
+  the corpus, **4,274 documents carry an IDREF list carrier, and 77 `references` edges
+  live in documents that hold no embedded block at all** — every one of them with
+  `htmlEmbedded: undefined`, e.g.
+  `wagtail/…/pages/search_results.html  search_results -> page-types-title [aria-labelledby]`.
+* **By kind:** of **4,484** `references` edges on that population, **4,413 carry
+  `metadata.idrefKind`** (`aria-controls` 4,274, `aria-labelledby` 132,
+  `aria-describedby` 7) and **71 carry none**. A `references` row without
+  `isIdref`/`idrefKind` **cannot** be html's — the code sets both unconditionally at
+  `:1596-1599` — so the 71 are the CSS delegate's `var(--x)` shape. That is the whole
+  of the delegate's share, and it is close enough to the old table's `78` to be the
+  figure that was miscounted as 100% delegate.
+* The census's `0 html-own` is a fact about **that 1,652-file population**, not about
+  the analyzer: the census predates the IDREF list class reaching the corpus, and the
+  pure-HTML fixture `idref-references` pins **14** html-own `references` rows —
+  including one `ambiguousTarget` — so the count is not zero anywhere the carrier is
+  present.
+
+`calls` is emitted **only** by the embedded-block seam: 3,147 `calls` over the census
+population, of which **3,147 came from the delegate and 0 from html**. Markup has no
 invocation semantics of its own — a `<form action>` is a navigation the *browser*
 performs, which is exactly why it is `uses` and **never** `calls`. The pre-rewrite
 truth said `calls`, conflating a network dependency with a control-flow edge, so
 renaming a submit handler would have looked like a change to a URL.
+
+**Every edge carries `line_number`** — 1-based, the site, never `0` — and a mirrored
+`imports[]` row carries the **attribute's** range, not the element's.
 
 **Measured invariants** (1,200 files / 45,768 relationships, production
 `ASTEngine.parseFile` path):
