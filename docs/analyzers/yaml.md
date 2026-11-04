@@ -2,7 +2,7 @@
 
 ## Language
 
-- Analyzer file: `src/ast/real-yaml-analyzer.ts` (2,283 lines)
+- Analyzer file: `src/ast/real-yaml-analyzer.ts` (4,652 lines)
 - Parser: `@tree-sitter-grammars/tree-sitter-yaml` 0.7.1, wasm `wasm/tree-sitter-yaml.wasm`,
   source vendored in-repo at `grammars/tree-sitter-yaml/` and pinned in
   `validation/m14/grammar-pins.json`
@@ -28,6 +28,48 @@
 | decorators/attributes | n/a | YAML has no attribute syntax; the analogue is a **tag**, which is emitted as a `declared_type` edge rather than a decorator, because a tag names a type and a decorator does not |
 
 ## Relationship ontology
+
+The single claim table for this analyzer: one row per vocabulary value, in the canonical register
+order of `src/ast/types.ts`, each row graded against what `src/ast/real-yaml-analyzer.ts` actually
+publishes. The counts are the **whole admitted population** —
+`validation/m14/measurements/yaml-emission-census-full.json`, 18,997 admitted = 18,997 parsed,
+0 failures, 18,970 distinct realpaths, 192 repositories, 199 symlinked repository directories
+followed — read from `perType` and `perTypeBuckets` in that artifact. `ambiguous` is 0 for a
+structural reason (this language has **no symbol index**, `index=no`) and `unclassed` is 0 in every
+row by construction, checked by the census (it exits 10 if the four buckets do not sum to a type's
+edges).
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ yes | `jobs.<job>.uses` — a reusable workflow the job **invokes**. The role is read from the path the analyzer built for the entry (`isJobLevelPath`), never from the value's characters, because `acme/infra/x.yml@v3` and `actions/checkout@v4` both contain a `/` and only one names a workflow. Marker `yaml_workflow_call`, `evidenceClass: structural`. **343 edges / 165 files / 54 repos**; 343 resolved. | 1 (default): the invocation position is structural, not a guess |
+| `extends` | ✅ yes | Three mechanisms, one relation: the merge key `<<` (`yaml_merge`, **155**), JSON-Schema composition `allOf` whose `$ref` is a DIRECT member of an `allOf` item (`yaml_schema_composition`, **892**, the composer being the schema that composes and never the `allOf` array), and the configuration `extends:` key (`yaml_config_extends`, **78**). Total **1,125 / 120 files / 18 repos**; 1,045 resolved, 16 external, 64 unresolved | 1 when the target resolves, **0.9** with `unresolvedReason: composition-target-not-resolved` when it does not |
+| `implements` | ❌ no | Not emitted: **0** `RelationshipType.Implements` sites in `src/ast/real-yaml-analyzer.ts` (grep `RelationshipType.`). Ruled in `script/m14/spec/yaml-completeness.json` as `D10` — the served grammar's own inventory names no conformance construct (161 named node types, none for interface satisfaction) | — |
+| `uses` | ✅ yes | A **non-merge alias** `*ref` reading an anchor. Marker `yaml_alias`; the merge/non-merge split is `alias.merge`, so a merged alias is `extends` and every other alias is `uses`. **168 edges / 46 files / 8 repos**, all 168 resolved | 1 (default): the anchor is in the same document |
+| `imports` | ✅ yes | A **file** this file pulls in, through four markers: `yaml_action_use` **7,536** (a step-level `uses:` naming an action), `yaml_keyword_include` **1,002** (Ansible `include_tasks`-family keys), `yaml_tag_include` **55** (a `!include`-family tag), `yaml_extends_file` **39** (an `extends:` naming a file). Total **8,632 / 1,696 files / 171 repos**; 8,437 resolved, 195 external. Also a payload channel: the `ImportInfo[]` import-site list | 1 when the path resolves in the project, **0.9** with `unresolvedReason` when it does not |
+| `exports` | ✅ yes | A named schema definition a document **publishes** for other documents to `$ref`. Marker `yaml_schema_publication`, `evidenceClass: structural`. **4,080 edges / 68 files / 7 repos**, all 4,080 resolved. Also a payload channel: the `ExportInfo[]` export-site list | 1 (default): the publication key is a declaration, not an inference |
+| `contains` | ✅ yes | The **key tree** — the containment every YAML document has, one edge per mapping pair and sequence item under its parent. The largest row by two orders of magnitude and that is correct for a nested data format, not a duplication defect. **1,413,388 edges / 18,509 files / 192 repos**, all resolved | 1 (default): containment is read from the tree's own parent/child structure |
+| `references` | ✅ yes | A **key naming something else**, through five markers: `yaml_json_pointer` **16,002** (a `$ref`/JSON pointer), `yaml_depends_on` **1,946** (a dependency position), `yaml_resource_ref` **3,619** (a key such as `secretName`/`configMap` naming a sibling resource), `declared_type` **109** (a tag naming a declared type), `yaml_action_use_unverified` **131**. Total **21,807 / 950 files / 104 repos**; 19,856 resolved, 142 external, 1,809 unresolved | 1 when the name binds; **0.8** with a reason (`unresolved-sibling-name`, `pointer-not-declared-in-file`, …) when it does not |
+| `overrides` | ✅ yes | A **duplicate mapping key** — the later entry replaces the earlier, and the edge runs earlier→later. Marker `yaml_duplicate_key`. **32 edges / 24 files / 12 repos**, and all 32 are in `otherUnresolved` **by design**: a duplicate key names a position in this file, not a resolvable symbol, so `resolved` and confidence deliberately disagree here | **0.8**: the replacement is in the semantics, so the edge is certain while the target is not a symbol |
+| `instantiates` | ❌ no | Not emitted: **0** `RelationshipType.Instantiates` sites in the analyzer. Ruled as `D11` — construction is an expression, and the served grammar has no expression node type; a YAML document cannot construct a value | — |
+| `decorates` | ❌ no | Not emitted, and ruled on a **counted construct** rather than on prose. The vocabulary's `decorates` is an APPLIED CALLABLE; YAML's nearest neighbour is a tag with a CONSTRUCTOR ARGUMENT, and a tag's suffix is a name, never a call. Measured over the whole population: **0** `yaml.tag_with_a_call_shaped_argument` against **167** `yaml.tag_with_a_constructor_argument` — the pointer shape exists, the application shape does not. A tag that names a declaration in its own document is published as the reference it is (`references`, marker `declared_type`), never as a decoration | — |
+| `renders` | ❌ no | Not emitted, ruled on the decisive difference between two counters: **0** `yaml.template_component_named_in_a_scalar` against **245** `yaml.template_component_named_in_the_file_text`. Component-naming interpolations (`{{ template "x" . }}`) exist in the corpus's YAML **files** and never in a YAML **value**, because the grammar cannot lex them — a Helm chart template's root node is an `ERROR` and the interpolation parses as a `flow_mapping` inside it — and the `{{ define }}` declarations live in `_helpers.tpl` files the admitted extension set does not carry | — |
+| `mixes_in` | ❌ no | Not emitted, ruled on the shape the contract names: a mixin has **no single base** and its `with` list is not an inheritance clause. In YAML the merge key IS the base clause, so a merge list names several components IN THE SAME POSITION, ordered by precedence — an order among bases, not a supertype chain. Measured: **0** `yaml.merge_list_with_a_separate_base_clause` against **1** `yaml.merge_sequence_with_more_than_one_alias` | — |
+| `part_of` | ❌ no | Not emitted, ruled on a measured near miss: the `!include` family puts the included fragment **at a key**, never at the including document's top-level scope, and it is a leader-defined convention (pyyaml-include) rather than a construct of the format — already published honestly as `imports`/`yaml_tag_include`. Measured: **0** `yaml.include_family_tag_at_the_document_root` against **55** `yaml.include_family_tag_at_a_key_position` | — |
+
+**Eight emitted, six not** — `8/12` on the coverage gate after the two grammar-absence exclusions and
+the four zero-emission facts, and the lane reads `8/8` against the applicable set. Every "no" row
+names either a grep count of zero or a whole-population counter, and every one of the four extended
+types names the near miss measured beside it, so a zero is a measurement that found nothing rather
+than a counter that never ran: the census declares all **53** counters it maintains and emits a
+declared zero for each (`meta.counterReconciliation` in the spec: 53 declared, 53 observed,
+difference zero both ways).
+
+The four rulings are in `script/m14/spec/yaml-completeness.json` as `zeroEmissionFacts` rows carrying
+their count, their near miss, and a falsifier that names the counted construct — and
+`script/m14/yaml-spec-rulings.ts` **refuses to write those rows when a decisive counter is non-zero**
+(exit 4), so a ruling cannot be filed against a measurement that contradicts it.
+
+### The M60 round's per-type verdicts and draws (2026-10-09) — kept as measured evidence
 
 M60 ontology round. Every row carries a **verdict** and the **measurement** behind it,
 because the six questions fail independently: a type the analyzer can construct is not a
@@ -320,7 +362,9 @@ one of them.
 
 ## Supported constructs
 
-Each with its fixture under `validation/m14/fixtures/yaml/` (27 fixtures, all green):
+Each with its fixture under `validation/m14/fixtures/yaml/` (40 fixtures, all green —
+`bun run script/m14/run-fixtures.ts --lang yaml` reports pass, and its baseline gate reports
+no regressions):
 
 - block and flow mappings, block and flow sequences, nested to any depth
   (`sequences`, `flow-collections`)
@@ -505,8 +549,12 @@ needed is in the lane report.
 
 From `validation/m12/results/regex-census.json`: **0 entries for this analyzer.**
 
-The lane was 0 from the start of this wave and is 0 now. Nothing is tolerated by an
-implicit allowlist: the census enumerates analyzers, so a lane with no regexes has no rows
+The 0 is the census's present reading. It is not a claim about the past: FOUR regex literals
+were removed from this analyzer on 2026-11-03 — two that matched a SIBLING manifest's source
+lines for `kind:`/`name:`, and two `allOf` path tests — and the two source-line ones were
+replaced by a TREE read (the engine's parser cache is now readable synchronously, so a
+sibling is parsed rather than pattern-matched) and the path tests by a string walk. Nothing
+is tolerated by an implicit allowlist: the census enumerates analyzers, so a lane with no regexes has no rows
 rather than a cleared row, and the grammar-pin gate's own re-run is what confirms the
 analyzer file carries no dead analyzer literals.
 
@@ -611,13 +659,14 @@ analyzer, and 0/0 in both directions is what a fitted referee looks like.
 - Corpus target: `validation/m12/corpus-manifest.json` → `kubernetes@dfd7b93a` (primary),
   with seven more candidates: `ansible@7ec731bf`, `helm@d31cd699`, `grails_core@a83f8748`,
   `docker@4359a27c`, `terraform@2e1710bf`, `openapi_spec@447c479c`, `gh_cli@9b031151a`
-- Draw: 1,274 tracked files, 250 per repository, deterministic stride over each repository's
-  sorted file list
-- Through the **production entry** (`pool-worker.parseFile`): **275,689 symbols, 284,303
-  relationships, 0 crashes, 0 duplicate identities, 284,303/284,303 relationships carrying a
-  1-based line and an evidence class, 275,689/275,689 carrying complexity, 0 unknown
-  sentinels** (`validation/m12/results/yaml-corpus-errors.json`)
-- 52 of 1,274 files carry grammar errors. 38 are **unexpanded templates** (37 Go
+- Draw: **1,282 files**, 250 per repository over 9 repositories, deterministic stride over each
+  repository's sorted file list (`validation/m12/results/yaml-corpus-errors.json`, whose
+  `trackedFiles` is 9,961 and whose `files` is 1,282)
+- Through the **production entry** (`pool-worker.parseFile`): **275,765 symbols, 284,381
+  relationships, 0 crashes, 0 duplicate identities, 284,381/284,381 relationships carrying a
+  1-based line and an evidence class, 275,765/275,765 carrying complexity, 0 unknown
+  sentinels, 0 `unexpectedErrors`** (`validation/m12/results/yaml-corpus-errors.json`)
+- 52 of 1,282 files carry grammar errors (`errorFiles` 52, `errorNodes` 80). 38 are **unexpanded templates** (37 Go
   text/template, 1 Grails `@...@`) named per file with the mechanism rather than excluded by
   path pattern; `unexpectedErrors` is **empty**; 15 are the grammar defect above.
 - The row this replaced measured **one** repository — grails-core, 274 files, the smallest of
