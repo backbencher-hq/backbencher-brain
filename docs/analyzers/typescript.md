@@ -3,9 +3,16 @@
 ## Language
 
 - Analyzer file: `src/ast/real-typescript-analyzer.ts`
-- Parser: `tree-sitter-typescript` 0.23.2 (npm, latest release; WASM at
-  `node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm`, loaded by
-  `engine.ts` via `resolveWasm`). TSX uses `tree-sitter-tsx.wasm`.
+- Parser: `tree-sitter-typescript` 0.23.2 (npm grammar source), and the **served WASM is the
+  repository's own pinned build**, `wasm/tree-sitter-typescript.wasm`, whose sha256
+  `b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335` is recorded in
+  `engine.ts`'s `PATCHED_GRAMMAR_SHA256` table. The resolver consults that table BEFORE it reaches
+  the dependency tree and serves the repo copy **only when the digest matches** — a file whose digest
+  does not match is NOT served and the refusal is logged, so the pin is enforced rather than asserted.
+  The pinned build differs from the npm build in one rule: it exposes the triple-slash reference
+  directive as a `reference_directive` NODE, which is what makes `part_of` readable at all
+  (`script/m14/ts-partof-grammar-proof.ts` hashes both builds and exits 1 if either stops behaving).
+  TSX uses `tree-sitter-tsx.wasm`.
 - Language detection: extensions `.ts` / `.mts` / `.cts` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealTypeScriptAnalyzer`
 
@@ -26,13 +33,36 @@
 
 ## Relationship ontology
 
-Per-type verdicts for the ten types, the six questions per emitted type, and the
-DERIVATION status of this lane are in
-[`typescript-ambiguity-sweep.md`](typescript-ambiguity-sweep.md), with the
-instruments under `validation/m14/instruments/typescript/`. Summary of what that
-sweep measured, so this file is not the only place a reader looks:
+**Canonical claim table.** Fourteen rows in the register order of `src/ast/types.ts`, one per
+relationship kind this analyzer can publish. `Emitted?` is the analyzer's own answer: all fourteen
+are emitted, each from a named site in `src/ast/real-typescript-analyzer.ts`, and the `How resolved`
+column names the construct and the rule in the code's terms. Confidence values are the literals the
+emission sites carry; where a kind has several sites, every value is listed. These are capabilities of
+the analyzer, NOT corpus counts — a population count appears only where the lane has a committed
+measurement and is cited as such.
 
-- **Ten of ten EMITTED**, none RULED, none GAP — per-type counts and file counts
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | ✅ yes | `call_expression` → the callee's LEAF name by `calleeLeafName()` (identifier; member → property; private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member publish NO edge); source = the enclosing function/method leaf; builtins filtered (console output, Object leaf methods, `super`). A member call whose receiver type the SYNTAX proves carries `metadata.owner` = that class plus `metadata.ownerEvidence` naming which form stated it (`assignment`, `annotation`, `param`, `this`, and the D7 classes `destructured`, `element`, `generic`, `factory`, `cast`, `enum`, `class-static`) — the STORE channel `src/ast/member-owner-resolution.ts` binds the member inside THAT class instead of by bare name. A name declared with two different types in one file is dropped whole, not guessed | 0.9 |
+| extends | ✅ yes | `class_heritage` → `extends_clause` → the base name (a qualified base stays qualified; a missing type from error recovery is skipped rather than emitted as `""`). **A CALL-SHAPED heritage is a mixin application: its base name is the CALLEE** (`class Post extends Tagged(Timestamped)` → `Tagged`), so an `extends` edge never names a call expression, measured on the fixture `typescript/mixin-application` whose negative half forbids a target ending in `(` | 1.0 |
+| implements | ✅ yes | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
+| uses | ✅ yes | Four syntactic arms, each labelled in metadata: a declared-type reference (`declaredTypeRole`), a type reference (`isTypeReference`), a template interpolation (`isTemplateInterpolation`), a value/member read in expression position (`isFieldAccess`). The duplicate-`references` arbitration is the `references` row's business | 0.85–0.9 |
+| imports | ✅ yes | `import_statement` specifiers, `require` calls, side-effect imports and re-exports → `metadata.module` carries the specifier, `metadata.isRequire` / `isSideEffectImport` / `isTypeOnly` / `isReExport` / `localBinding` name the form. **Payload channel too: `ImportInfo[]` is published on the file's import-site** | 1.0 |
+| exports | ✅ yes | `export` statements → source = the module leaf, target = the exported name; `metadata.isDefault` and `metadata.kind` name the form. **Payload channel too: `ExportInfo[]` is published on the export-site** | 1.0 |
+| contains | ✅ yes | owner → member computed from `ownerName` on the symbol list in one pass (namespace/class/interface/enum/type-alias → member); `firstByName` makes repeated names first-wins, which is the contract and not an accident; the edge takes the MEMBER's declaration line | 1.0 |
+| references | ✅ yes | Identifier references in expression position (0.8), and type-position mentions that carry `metadata.relationshipType` naming the position — `declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target` (0.95); `type_parameter_constraint` and `type_predicate_target` are the two positions that keep both surfaces | 0.8 / 0.95 |
+| overrides | ✅ yes | A member of a derived class whose name matches a base-class member, and a member that matches a base-INTERFACE member → `Derived.member → Base.member`. **It ABSTAINS unless the base declaration resolves IN FILE** (`if (!baseDecl) continue`), so the edge is derived from in-file structural truth | 0.95 (⇒ `evidenceClass: usage_contextual`; see limitation 2) |
+| instantiates | ✅ yes | `new_expression` → the constructor's LEAF name (generics stripped, `ns.Thing` reduced to `Thing`, JS global constructors filtered because they construct the RUNTIME); the site line is the constructor's own node. **A JSX element that CREATES a component instance is also an `instantiates` row** (`metadata.isJsxComponent`, `metadata.jsxTag`) beside its `renders` row — the two facts are kept distinct | 1.0 (JSX-creation site 0.95) |
+| decorates | ✅ yes | Since 2026-10-18 (was a `references{isDecorator}` row): source = the DECORATED declaration (class/method/field), target = the decorator's name leaf (`@module.Decorator` → `Decorator`), `line_number` = the decorator's OWN line, one row per decorator per decorated symbol; a decorator's ARGUMENT is not a row, and the call/reference walks skip decorator position so no duplicate is left behind; `metadata.isDecorator` + `metadata.decoratorLine` | 1.0 |
+| renders | ✅ yes | A JSX element whose OPENING name is CAPITALIZED — the language's own component convention — one row per ELEMENT (`<Foo>…</Foo>` and `<Foo/>` are one row each: the opening node is read for the name but never matched as its own node), source = the enclosing declaration, target = the written tag, and `Foo.Bar` from a `nested_identifier` tag. What does NOT fire, each for its own reason: a lowercase intrinsic tag (`<div>`) is an HTML element, a fragment (`<>…</>`) has no identifier, and `React.createElement(Foo, …)` is a CALL, so it stays a `calls` row. Metadata `jsxElement` is the pre-relabel key, kept so an older consumer is not forced to learn a second spelling | 0.9 |
+| mixes_in | ✅ yes | A class heritage whose extends-expression is a `call_expression` — `class X extends Mixin(Base) {}` — i.e. a mixin APPLICATION as opposed to inheritance. The discriminator is the SHAPE of the heritage expression, not the base's name; the target is the CALLEE, because that is the factory a reader follows. Metadata `mixinCalleeShape` and `mixinArgCount`. Measured on the population: **2 edges, both resolved** (`vault/ui`'s `class X extends baseResourceFactory<Mount>()`); the lane's first text census counted 0 and was wrong — it required `Name(` and missed a GENERIC callee | 0.9 |
+| part_of | ✅ yes | The triple-slash reference directive — `/// <reference path="…" />`, `types="…"`, `lib="…"` — published from the grammar's `reference_directive` NODE, never from a comment's text. The site reads the node's role and target as fields when the build exposes them and otherwise unwraps the node's own fixed spelling by a character walk (the pinned build exposes it as ONE ATOMIC TOKEN). `metadata.partRole` is MANDATORY on every row: a `part_of` edge that does not say WHICH kind of part it is cannot be checked against the directive that produced it. Measured on the population: **50 directives in 34 files (types 47 · path 2 · lib 1) → 50 edges, 0 resolved, 12 ambiguous, 38 unresolved** — a directive's target is a package or lib name, so a per-file scope cannot resolve it, and those 38 edges exist only because this analyzer publishes them | 0.95 |
+
+### Sweep measurements
+
+- **Ten of ten EMITTED** at the time of that sweep (the register later admitted `renders`, `mixes_in`
+  and `part_of`, so the committed spec now reads **14 of 14 implemented** — 0 pending, 0
+  corpus-unexercised, 0 excluded); none RULED, none GAP — per-type counts and file counts
   over two derived populations (vuejs 400 files, element-plus 400 files).
 - **`firing-check-v2` = 8/10** at NFILES 200 and 400 on element-plus; **7/10** at
   NFILES 25. The two silent types (`implements`, `overrides`) are silent because
@@ -75,26 +105,26 @@ file this lane does not own:
 2. **`overrides` reports the wrong `evidenceClass`.** It emits
    `usage_contextual` at 0.95 while every other structurally-derived type on this
    lane reports `structural`. Its arms abstain unless the base declaration
-   resolves in-file (`if (!baseDecl) continue`, `:5346` and `:5458`), so the edge
+   resolves in-file (`if (!baseDecl) continue`, `:7564` and `:7676`), so the edge
    is derived from in-file structural truth and not from a contextual mention.
 
-| Relationship type | Emitted? | How resolved | Confidence model |
-| --- | --- | --- | --- |
-| calls | ✅ | `call_expression` → callee LEAF by `calleeLeafName()` (identifier; member → property, private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member → NO edge); source = enclosing function/method leaf; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword). **A member call whose receiver type the syntax proves carries `metadata.owner` = that class, plus `metadata.ownerEvidence` naming WHICH form stated it** — `assignment` (`const c = new Widget()`), `annotation` (`const d: Widget = make()`), `param` (a parameter annotation, `function f(w: Widget)`), `this` (a one-hop `this.<field>.m()` where the field is annotated; the field-name node in this grammar is a `property_identifier`, and a test accepting only `identifier` silently killed this whole class once — measured, recorded on the symbol). A name declared with two different types in one file is dropped whole, not guessed. This is the STORE channel `src/ast/member-owner-resolution.ts` uses to bind the member INSIDE that class instead of by bare name: on a 3-file program where a third file declares its own `run()`, the call bound to the OTHER file's `run` at confidence 0.9 (`verify-patterns` caught the symptom — the dead file could not be reported as orphaned because a fabricated edge referenced it), and the row now binds to the class it was constructed from. MEASURED ON REAL CODE (graphql-js/src, 24,801 `calls` rows, full re-index of a fresh copy both arms): 958 rows carry a receiver type, 493/493 of those whose target resolves inside a class agree with the receiver, and of the 423 rows the name binding had resolved that are now unresolved, 404 had landed in a DIFFERENT class than the receiver, 16 on a free function, 3 in the receiver's own class (the price of not guessing). Pinned by `typescript/receiver-owner-from-new` — one positive row per evidence class plus two line-scoped forbids on receivers that state no type (`const e = make()`, `u: any`) — and end-to-end in `script/verify-graph.ts`. OWNER-COVERAGE BY EVIDENCE CLASS IS MEASURED BY `script/m14/ts-owner-coverage.ts` over a derived population; the count is not quoted in this file until the measurement is run at HEAD under the Lead's resource hold, and an owner-carrying row is NEVER reported here as a resolved row. | 0.9 |
-| extends | ✅ | `class_heritage` `extends_clause` → base class name (verbatim: a qualified base stays qualified) | 1.0 |
-| implements | ✅ | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
-| instantiates | ✅ | `new_expression` → constructor leaf name (with `contains: owner → constructor` complement) | 1.0 |
-| uses | ✅ | a VALUE/MEMBER READ in expression position (field access, template interpolation) AND a type MENTION (`isTypeReference`, label-per-position). **RULING 2026-10-17 (`8def4a5d5`): the type-mention `uses` row SURVIVES and the duplicate `references` row for the same (source, target) is dropped** — the reverse of the earlier one-label survivor; predicates/constraints and every other type position keep `uses`, the duplicate is what goes | 0.85–0.9 |
-| imports | ✅ | `import_statement`/`import` specifiers → source = module leaf name. Named/default items from a RELATIVE or ABSOLUTE specifier publish the bare `<name>` (the resolver can join it); everything else publishes `<module>:<name>`. Side-effect-only, namespace and `require`/dynamic forms publish the family BINDING spelling `<moduleLeaf>\u0000<modulePath>:*` + `metadata.localBinding` (unrefutable by construction). A complete `ProjectIndex` adds two operations, both fail-closed on `complete !== true` — RESOLUTION: a `module:name` whose specifier is the project's own module space (path algebra, or a package the project's own `package.json` workspaces declare) is re-spelled to the bare name ONLY when `symbolCounts` says the name is declared exactly once (production's `_res_name.cnt = 1`); CLAIM: a module outside the project's module space carries `externalReason: "module-namespace"` + `externalSpecifier`, verified by the arbiter against the project module space and never refuted, and the same claim is attached to `calls`/`uses`/`references`/`instantiates`/`extends`/`implements` edges whose target or receiver root is a binding imported from that module. A bare name absent from `symbolNames` is NOT claimed: that set covers declared types and members only. Measurement status in §"2026-10-18" below | 1.0 |
-| imports — type-only marker | ✅ | `metadata.isTypeOnly` — `true` for `import type {…}` (anonymous `type` child of the statement) and for the inline TS 4.5+ form `import { type A, B }` (anonymous `type` child of the `import_specifier`); `false` otherwise. Metadata only: no edge added, removed, or re-pointed | 1.0 |
-| exports | ✅ | `export` statements → source = module leaf, target = exported name; `export default` handled | 1.0 |
-| overrides | ✅ | method in derived class whose name matches a base-class method (base resolved via extends heritage) → `Derived.method → Base.method` | 1.0 |
-| references | ✅ | a TYPE mention that does NOT also have a `uses` row for the same (source, target) → referenced type name, with `metadata.relationshipType` naming the position (`declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target`). `type_parameter_constraint` / `type_predicate_target` are the two positions that keep BOTH surfaces | 0.95 |
-| decorates | ✅ | since 2026-10-18 (was a `references{isDecorator}` row): source = the DECORATED declaration (class/method/field), target = the decorator's name leaf (`@module.Decorator` → `Decorator`), `line_number` = the decorator's OWN line (M59 #860); one row per decorator per decorated symbol; a decorator's ARGUMENT is not a row, and the call/reference walks skip decorator position so no duplicate row is left behind. `evidenceClass: structural` (read off the declaration's own decorator list). Pinned by `typescript/decorator-emission` (+ the two re-pinned M59 fixtures) | 1.0 |
-| contains | ✅ | namespace → member; class/interface/enum → member; type alias → member; computed from `ownerName` on symbols (single-pass, no per-symbol scan) | 1.0 |
-| depends | — | not emitted (covered by imports) | — |
-| field_access | — | folded into `uses`/`references` (family contract) | — |
-| JSX element usage | ✅ | since 2026-10-18 a `renders` relationship (was `uses`): `jsx_self_closing_element`/`jsx_element` → component function/class; source = enclosing declaration, target = the written tag (`Foo`, and `Foo.Bar` for a nested_identifier tag), one row PER ELEMENT (the opening element is read for the name but never matched as its own node), only capitalized component tags — a lowercase intrinsic tag or a fragment fires nothing, and `React.createElement(Foo, …)` stays a `calls` row. A QUALIFIED tag in tsx (`<Ns.Chart/>`) is a `member_expression` in the grammar and does NOT fire: a measured bound of the current name rule, not expanded by the relabel. Pinned by `typescript/tsx-renders` + `script/m14/ts-fixture-probe.ts` | 0.9 |
+### Labels with no edge of their own
+
+Four names appear in this lane's history that are **not** relationship kinds in `src/ast/types.ts`,
+kept here so a reader who greps for them finds the answer rather than a missing section:
+
+- **`depends`** — not emitted; module dependency is the `imports` kind (see the canonical row).
+- **`field_access`** — not emitted as its own kind; folded into `uses` (`metadata.isFieldAccess`) and
+  `references`, which is the JS/TS family contract.
+- **`imports — type-only marker`** — not a kind: `metadata.isTypeOnly` is a MARKER on an `imports`
+  row (`true` for `import type {…}` and for the inline TS 4.5+ `import { type A, B }` form), and it
+  adds, removes and re-points no edge.
+- **`JSX element usage`** — the label this lane used for JSX before 2026-10-18; it is now the
+  `renders` kind (canonical row), and a JSX element that CREATES a component instance is additionally
+  an `instantiates` row. The `renders` row's measured bound: a QUALIFIED tag in `.tsx` (`<Ns.Chart/>`)
+  is a `member_expression` in this grammar and does NOT fire — a bound of the current name rule, not
+  something the relabel expanded.
+
 
 ## Supported constructs
 
@@ -130,17 +160,25 @@ file this lane does not own:
   grammar gap. Two corpus files (`types.ts`, `exportInfoMap.ts`).
 - All are small, localized, recoverable ERROR nodes (7 total across 400
   sample files) — never silently dropped constructs.
+- The three gaps above were measured against the STOCK parser. The pinned build differs from it in
+  exactly one respect — it adds the `reference_directive` rule used by `part_of` and changes no other
+  rule — so these gaps are unchanged by the pin; a stock-build re-measurement is what the numbers
+  above remain, and a re-measurement on the pinned build is **not made here** rather than assumed
+  equal.
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the TypeScript analyzer has
-**0 regex usages** (baseline 36 — the single largest regex user in the
-codebase; eliminated by the M12.09 regex-free rewrite, completed for the last
-five stragglers on 2026-09-27: three copies of a type-parameter constraint
-strip, a rest-parameter `...` strip and an index-signature `:` strip, each
-replaced by a `startsWith` + `slice` helper call). The doc previously claimed 0
-while the register still listed 5 — the claim is now true rather than
-aspirational. All text normalization uses pure-String helpers
+**0 regex literals**, and the claim is now true rather than aspirational for the third time — each
+time because a measurement disagreed with the page. From `validation/m12/results/regex-census.json`:
+baseline **36** (the single largest regex user in the codebase), eliminated by the M12.09 regex-free
+rewrite, completed for five stragglers on 2026-09-27 (three copies of a type-parameter constraint
+strip, a rest-parameter `...` strip, an index-signature `:` strip). **Three more survived that sweep
+and were removed on 2026-11-03, all in the `part_of` path**: the file-stem suffix strip
+(`/\.[^.]*$/`), the reference-directive unwrap (a text match on the directive's source — replaced by
+a character walk over the grammar node's own fixed spelling), and the quote trim (`/^"|"$/g`). Both
+`npx tsx script/m12/regex-census.ts --head` and `script/m14/no-regex-gate.sh` read **0 for this
+analyzer at HEAD**, and the rewrite was verified behaviour-preserving on the population: 50 `part_of`
+edges across 34 files, split `path 2 · types 47 · lib 1`, identical to the pre-rewrite count. All text normalization uses pure-String helpers
 (`startsWith`/`endsWith` + `slice`): `stripLeading`, `stripLeadingColon`,
 `stripLeadingEquals`, `stripTrailingDot`, `stripTrailingQuestion`,
 `stripPrivatePrefix`, `stripPrefix`, `stripLeadingKeyword`, `unquote`,
