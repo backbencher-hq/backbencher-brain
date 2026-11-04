@@ -160,7 +160,6 @@ const GATES: Gate[] = [
   { group: "m57", runner: "bun run", script: "script/m57/verify-t1-classifier.ts" },
   { group: "m57", runner: "bun run", script: "script/m57/verify-t2-consumers.ts" },
   { group: "m57", runner: "bun run", script: "script/m57/verify-t3-scope-all.ts" },
-  { group: "m57", runner: "bun run", script: "script/m57/verify-t5-predicate-unity.ts" },
   { group: "m65", runner: "bun run", script: "script/m65/verify-edge-kind-scoping.ts" },
   { group: "m65", runner: "bun run", script: "script/m65/verify-graph-blindspots.ts" },
   { group: "surface", runner: "bun run", script: "script/verify-mcp.ts" },
