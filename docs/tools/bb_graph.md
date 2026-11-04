@@ -158,6 +158,10 @@ Nodes and edges come from the canonical graph engine over brain_symbol and brain
 
 For richer analysis (dependencies, complexity, tests, impact aggregation) use `bb_analyze`; for plain callers/callees with evidence tiers this is the tool.
 
+## Deep guides
+
+- [The graph engine: what each edge means and how it is resolved](../GRAPH_ENGINE.md)
+
 ## Staleness
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).

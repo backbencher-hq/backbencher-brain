@@ -48,11 +48,21 @@ if (process.env.BB_EMBEDDING_DISABLED !== "1") process.env.BB_EMBEDDING_DISABLED
 let failures = 0
 let checks = 0
 let passed = 0
+let negatives = 0
 function check(label: string, value: boolean, detail = ""): void {
   checks++
   if (value) passed++
   if (value) console.log(`  ok: ${label}`)
   else { failures++; console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`) }
+}
+/**
+ * A negative case: the assertion is about something the tool must REFUSE, BOUND, or
+ * not do. The evidence schema requires verified documents to carry at least one, so
+ * they are counted explicitly instead of being inferred from check labels.
+ */
+function negative(label: string, value: boolean, detail = ""): void {
+  negatives++
+  check(label, value, detail)
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -115,21 +125,21 @@ const contract = async () => {
     await wait(300)
     const afterAll = snapshot()
     check("READ: default all-scope answer is not an error", !all.isError, all.text.slice(0, 160))
-    check("READ: default all-scope call leaves db and WAL unchanged", JSON.stringify(before.db) === JSON.stringify(afterAll.db) && before.wal === afterAll.wal,
+    negative("READ: default all-scope call leaves db and WAL unchanged", JSON.stringify(before.db) === JSON.stringify(afterAll.db) && before.wal === afterAll.wal,
       `db ${JSON.stringify(before.db)} -> ${JSON.stringify(afterAll.db)}; wal ${before.wal} -> ${afterAll.wal}`)
     const beforeOrphaned = snapshot()
     const orphaned = await call({ scope: "orphaned" }, projectId, dir)
     await wait(300)
     const afterOrphaned = snapshot()
     check("READ: orphaned-scope answer is not an error", !orphaned.isError, orphaned.text.slice(0, 160))
-    check("READ: orphaned-scope call leaves db and WAL unchanged", JSON.stringify(beforeOrphaned.db) === JSON.stringify(afterOrphaned.db) && beforeOrphaned.wal === afterOrphaned.wal,
+    negative("READ: orphaned-scope call leaves db and WAL unchanged", JSON.stringify(beforeOrphaned.db) === JSON.stringify(afterOrphaned.db) && beforeOrphaned.wal === afterOrphaned.wal,
       `wal ${beforeOrphaned.wal} -> ${afterOrphaned.wal}`)
     const beforeHistory = snapshot()
     const history = await call({ history: true, limit: 5 }, projectId, dir)
     await wait(300)
     const afterHistory = snapshot()
     check("READ: history answer is not an error", !history.isError, history.text.slice(0, 160))
-    check("READ: history call leaves db and WAL unchanged", JSON.stringify(beforeHistory.db) === JSON.stringify(afterHistory.db) && beforeHistory.wal === afterHistory.wal,
+    negative("READ: history call leaves db and WAL unchanged", JSON.stringify(beforeHistory.db) === JSON.stringify(afterHistory.db) && beforeHistory.wal === afterHistory.wal,
       `wal ${beforeHistory.wal} -> ${afterHistory.wal}`)
     BrainDatabase.closeAll()
   }
@@ -141,10 +151,10 @@ const contract = async () => {
     const dbPath = BrainDatabase.getDbPath(projectId)
     const existed = existsSync(dbPath)
     const result = await call({}, projectId, dir)
-    check("UNINDEXED: the answer is an error, not a clean zero", result.isError === true, `isError=${result.isError} text=${result.text.slice(0, 140)}`)
+    negative("UNINDEXED: the answer is an error, not a clean zero", result.isError === true, `isError=${result.isError} text=${result.text.slice(0, 140)}`)
     check("UNINDEXED: the error names the index and the repair", /index/i.test(result.text) && /bb index/i.test(result.text), result.text.slice(0, 180))
-    check("UNINDEXED: the answer does not claim a clean scan", !/patterns \(\d+ found\)/.test(result.text) && !/orphaned code \(\d+ found\)/.test(result.text), result.text.slice(0, 140))
-    check("UNINDEXED: a read does not create a database", !existsSync(dbPath) || existed, `dbExists=${existsSync(dbPath)} existedBefore=${existed}`)
+    negative("UNINDEXED: the answer does not claim a clean scan", !/patterns \(\d+ found\)/.test(result.text) && !/orphaned code \(\d+ found\)/.test(result.text), result.text.slice(0, 140))
+    negative("UNINDEXED: a read does not create a database", !existsSync(dbPath) || existed, `dbExists=${existsSync(dbPath)} existedBefore=${existed}`)
     BrainDatabase.closeAll()
   }
 
@@ -199,9 +209,9 @@ const contract = async () => {
     for (let i = 0; i < 30; i++) writeFileSync(path.join(dir, "src", `m${i}.ts`), `export function unref${i}(): number { return ${i} }\n`)
     const projectId = await indexFixture(dir)
     const above = await call({ limit: 501 }, projectId, dir)
-    check("LIMIT: a request above the declared maximum is refused by name", above.isError === true && /maximum page size 500/.test(above.text), above.text.slice(0, 160))
+    negative("LIMIT: a request above the declared maximum is refused by name", above.isError === true && /maximum page size 500/.test(above.text), above.text.slice(0, 160))
     const huge = await call({ limit: 1_000_000 }, projectId, dir)
-    check("LIMIT: an unbounded request is refused, not answered", huge.isError === true, `isError=${huge.isError}`)
+    negative("LIMIT: an unbounded request is refused, not answered", huge.isError === true, `isError=${huge.isError}`)
     const zero = await call({ limit: 0 }, projectId, dir)
     check("LIMIT: limit=0 is answered as an empty page", !zero.isError && displayedRows(zero.text).length === 0, zero.text.slice(0, 120))
     check("LIMIT: limit=0 still names the census", /\d+ finding\(s\)/.test(zero.text), zero.text.slice(0, 160))
@@ -226,8 +236,8 @@ const contract = async () => {
     check("STALENESS: the orphaned-scope footer is manual-only too",
       !/auto-refresh stale files/.test(scoped.text) && !/refresh=false/.test(scoped.text) && /does NOT auto-refresh/.test(scoped.text), scoped.text.slice(-240))
     check("STALENESS: the footer counts stale/missing findings' files", /\d+ stale, \d+ missing of \d+ findings' files/.test(result.text), result.text.slice(-240))
-    check("STALENESS: the footer does not promise auto-refresh", !/auto-refresh stale files/.test(result.text), result.text.split("\n").filter((line) => /auto-refresh/.test(line)).join(" ").slice(0, 200))
-    check("STALENESS: the footer does not name a refresh=false option the schema does not publish", !/refresh=false/.test(result.text), "")
+    negative("STALENESS: the footer does not promise auto-refresh", !/auto-refresh stale files/.test(result.text), result.text.split("\n").filter((line) => /auto-refresh/.test(line)).join(" ").slice(0, 200))
+    negative("STALENESS: the footer does not name a refresh=false option the schema does not publish", !/refresh=false/.test(result.text), "")
     check("STALENESS: the remediation says the read does NOT auto-refresh", /does NOT auto-refresh/.test(result.text), result.text.slice(-240))
     BrainDatabase.closeAll()
   }
@@ -345,17 +355,27 @@ async function selfTest(): Promise<void> {
       record.push({ mutant: mutation.id, caught, status: result.status, undoes: mutation.undoes })
     } finally { rmSync(mirror, { recursive: true, force: true }) }
   }
+  const selfChecks = 1 + record.length
   const report = {
+    schemaVersion: 1,
+    milestone: "M13",
     issue: "M13.40", code: "P6", tool: "bb_patterns",
     title: "bb_patterns handler contract: read-only, bounded page, bounded history, honest staleness/evidence, falsifiable",
     gate: "script/m13/verify-patterns-handler-contract.ts",
     mode: "self-test (mutations in tmp copies)",
+    verifiedState: selfFailures === 0 ? "verified" : "known-gap",
+    layers: ["unit"],
+    checks: selfChecks,
+    passed: selfChecks - selfFailures,
+    failed: selfFailures,
+    negativeCases: MUTATIONS.length,
+    summary: { total: selfChecks, passed: selfChecks - selfFailures, failed: selfFailures },
     baselineGreen: record[0]?.green === true,
     mutants: record.slice(1),
     mutantsCaught: record.slice(1).filter((row) => row.caught === true).length,
     mutantsPlanted: MUTATIONS.length,
-    failed: selfFailures,
-    verifiedState: selfFailures === 0 ? "verified" : "known-gap",
+    decisions: { falsifiability: "every planted mutation must turn the gate RED on a mirrored tree" },
+    limitations: ["Self-test only; the contract itself is verified by the green run."],
     generatedAt: new Date().toISOString(),
   }
   mkdirSync(RESULTS, { recursive: true })
@@ -371,10 +391,22 @@ try {
     await contract()
     BrainDatabase.closeAll()
     const report = {
+      schemaVersion: 1,
+      milestone: "M13",
       issue: "M13.40", code: "P6", tool: "bb_patterns",
       title: "bb_patterns handler contract: read-only, bounded page, bounded history, honest staleness/evidence",
       gate: "script/m13/verify-patterns-handler-contract.ts",
+      verifiedState: failures === 0 ? "verified" : "known-gap",
+      layers: ["unit", "integration"],
       checks, passed, failed: failures,
+      negativeCases: negatives,
+      summary: { total: checks, passed, failed: failures },
+      decisions: {
+        readOnly: "reads must leave the database and WAL unchanged",
+        bounds: "page and history are bounded, and refusals are named rather than clamped",
+        staleness: "the answer never promises a refresh the schema does not publish",
+      },
+      limitations: ["Covers bb_patterns only.", "Runs against tmpdir fixtures with embeddings disabled."],
       status: failures === 0 ? "verified" : "known-gap",
       verifierCommand: "bun run script/m13/verify-patterns-handler-contract.ts",
       generatedAt: new Date().toISOString(),

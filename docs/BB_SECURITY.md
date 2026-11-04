@@ -228,8 +228,10 @@ Stated explicitly, because a security answer is misread in exactly these places:
   values are connected". A token like `execute` can match the universal SQL-sink
   rule in a symbol that never touches a database; measured on real repositories,
   this produces critical `sql_injection` rows in Ruby and C corpora where no SQL
-  is involved. The cost of a false positive is bounded (validate before acting);
-  the cost of silence would be worse.
+  is involved. That is the analyzer/indexer-domain (sink classification), not
+  this read tool: `bb_security` reports the stored rows honestly and does not
+  invent or suppress them. The cost of a false positive is bounded (validate
+  before acting); the cost of silence would be worse.
 - **Parameterized/escaped sinks can still be reported.** The matcher does not
   track sanitizers, so a placeholder query may be flagged. The tool says so here
   and in every finding's limitations; it is not a substitute for validating the

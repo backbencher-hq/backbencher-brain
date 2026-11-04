@@ -124,6 +124,10 @@ Dependency ordering comes from indexed relationships; effort and library mapping
 
 For dependency structure use `bb_graph`; this tool produces migration plans with declared limitations.
 
+## Deep guides
+
+- [Migration plans, ordering and honesty](../BB_MIGRATE.md)
+
 ## Staleness
 
 Freshness modes (registered as `freshnessModes`): `plan`. Staleness surfaces as: per-plan `sourceFile` + `stale` flags with an up-front stale-plan notice + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON. This tool does NOT auto-refresh and has no `refresh` option: the flags and the envelope DESCRIBE the index as it stands, and the repair is manual — project scope → run: `bb index --changed` (or the `bb_index` tool with the project path — incremental, changed files only); file scope → run: `bb index "<file>"` for the file the plan belongs to. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

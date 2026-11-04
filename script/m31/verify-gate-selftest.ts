@@ -115,9 +115,11 @@ const GATES: GateSpec[] = [
     script: "script/m31/verify-bb-docs-truth.ts",
     surfaces: [{ from: "docs/BB_VISUALIZE.md", to: "docs/BB_VISUALIZE.md" }],
     mutate: (sandbox) => {
-      // Mutation A: advertise a fake scope in a mode list sentence.
+      // Mutation A: advertise a fake mode. APPEND, never replace a sentence: the
+      // visualize lane rewrote this guide, so an anchor replace became a no-op and
+      // the self-test blamed the gate for passing over text that never changed.
       const p = path.join(sandbox, "docs/BB_VISUALIZE.md")
-      writeFileSync(p, readFileSync(p, "utf8").replace("It supports `project`, `file`, `module`, `symbol`, and `feature` scopes.", "It supports `project`, `file`, `module`, `symbol`, `feature`, and `galaxy` scopes."))
+      writeFileSync(p, readFileSync(p, "utf8") + "\n\nThe modes are `galaxy`.\n")
     },
   },
   {
@@ -125,9 +127,12 @@ const GATES: GateSpec[] = [
     script: "script/m31/verify-bb-docs-truth.ts",
     surfaces: [{ from: "docs/BB_MIGRATE.md", to: "docs/BB_MIGRATE.md" }],
     mutate: (sandbox) => {
-      // Mutation B: drop the required targetLanguage from a documented invocation.
+      // Mutation B: document an invocation that omits the required targetLanguage.
+      // APPEND a fence keyed by `symbolNames` (unique to bb_migrate) so the gate must
+      // classify it as an invocation and reject it; replacing an inline example string
+      // stopped landing when the migrate lane rewrote the guide.
       const p = path.join(sandbox, "docs/BB_MIGRATE.md")
-      writeFileSync(p, readFileSync(p, "utf8").replace('"targetLanguage":"go",', ""))
+      writeFileSync(p, readFileSync(p, "utf8") + "\n\n```json\n{\"symbolNames\": [\"buildSchema\"]}\n```\n")
     },
   },
   {

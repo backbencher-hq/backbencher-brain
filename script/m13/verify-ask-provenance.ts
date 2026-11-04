@@ -42,7 +42,7 @@ const harness = new Harness({
     confidence: "a non-discriminative ranking publishes NO numeric confidence; the handler says 'not a measurement' in words instead",
     bounds: "every answer carries returned/totalMatches/truncated bounds",
   },
-  limitations: ["Embedding availability is runtime-dependent; the vector path is asserted when it answers and the lexical path when it does not."],
+  limitations: ["This gate pins the lexical route (BB_EMBEDDING_DISABLED=1) so the no-match contract is deterministic; the vector route's labelled non-discriminative behaviour is measured by the ask lane's retrieval evidence, not asserted here."],
 })
 
 // ── 1. Static audit: every return path carries the honesty fields ─────────
@@ -58,6 +58,12 @@ harness.check("audit: fallback declares it is a fallback, not semantic evidence"
 // Identical bodies guarantee identical cosines, which is what makes the
 // non-discriminative branch deterministic instead of luck.
 const root = mkdtempSync(path.join(tmpdir(), "bb-ask-provenance-"))
+// The no-match contract is a LEXICAL-route contract: a vector model always returns
+// its nearest neighbours, so with embeddings enabled a nonsense token legitimately
+// reaches the labelled non-discriminative retrieval branch instead of the unknown
+// branch. Pin the route for this gate so every assertion below is deterministic,
+// and state it as a limitation rather than pretending the vector branch was probed.
+process.env.BB_EMBEDDING_DISABLED = "1"
 const projectId = getProjectId(root)
 mkdirSync(path.join(root, "src"), { recursive: true })
 const identical = "export function requestHandler(request: string): string { return request + \"handled\" }\n"

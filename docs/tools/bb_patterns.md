@@ -129,6 +129,10 @@ The wire answer is deliberately explicit about its own coverage: census and per-
 
 For security-specific taint findings use `bb_security`; this tool covers orphans, framework patterns, and anti-patterns.
 
+## Deep guides
+
+- [Patterns: dead code, orphans, frameworks and anti-patterns](../BB_PATTERNS.md)
+
 ## Staleness
 
 Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh. This tool does NOT auto-refresh: the per-finding flags DESCRIBE the index as it stands, nothing is reindexed to make them stale or fresh, and there is no `refresh` option to opt out with. When findings name stale or missing files, repair them with the manual interface: run: `bb index --changed` (or the `bb_index` tool with the project path — incremental, changed files only). Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

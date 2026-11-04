@@ -173,6 +173,10 @@ Nodes and links resolve to canonical indexed entities; links with an endpoint ou
 
 For one symbol's depth-bounded callers and callees with per-edge evidence tiers, use `bb_graph`; `bb_visualize` projects a whole scope — a project, file, module, symbol or feature — into one bounded graph and renders it as text, JSON or a self-contained HTML map.
 
+## Deep guides
+
+- [Bounded dependency maps and their declared bounds](../BB_VISUALIZE.md)
+
 ## Staleness
 
 Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness. This tool does NOT auto-refresh: the flags and the envelope DESCRIBE the index as it stands, nothing is reindexed to make them stale or fresh, and there is no `refresh` option to opt out with. Project scope → run: `bb index --changed` (or the `bb_index` tool with the project path — incremental, changed files only). File scope → run: `bb index "<file>"` for the one file named in the answer. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

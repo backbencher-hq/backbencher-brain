@@ -97,6 +97,10 @@ Counts come from the real parse/store pipeline. The report's own assertions are 
 
 The CLI twin is `bb index`. The MCP path is incremental only: `auto`/`file`/`dir` refresh changed files, `post` re-derives the heavy phases; a full rebuild is the CLI's `bb index --force`. Refresh changed files after agent edits with mode `dir`/`file` or the CLI `--changed`.
 
+## Deep guides
+
+- [Indexing guide: flags, resume, performance, troubleshooting](../indexing/README.md)
+
 ## Staleness
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).

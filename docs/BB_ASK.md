@@ -30,6 +30,9 @@ shown.
 | **semantic retrieval** | stored embeddings exist in the query model's vector space and at least one clears the floor | ranked matches with cosine similarities | yes, with the model and coverage named |
 | **keyword fallback** | embeddings are unavailable, or nothing clears the floor | lexical matches | **no** — none was computed, and the answer says so |
 
+A keyword-fallback answer is labelled as *search results, not a verified answer*: it points at
+candidate code, it does not claim a verified fact about it.
+
 When nothing matches, the answer is an explicit "I couldn't find…" with zero sources; it
 never claims the code does not exist. When there is no index at all, the answer says so and
 does not create one.

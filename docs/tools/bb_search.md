@@ -139,6 +139,10 @@ Paths, line ranges, symbol kinds, byte bounds and snippets are indexed evidence;
 
 For lexical/exact retrieval use this tool. For natural-language questions over the codebase use `bb_ask` (semantic, cited answers).
 
+## Deep guides
+
+- [Search semantics and modes](../BB_SEARCH.md)
+
 ## Staleness
 
 Freshness modes (registered as `freshnessModes`): `symbol`, `content`, `file`. Staleness surfaces as: per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`). When something is stale/missing, the remediation names the registered reindex interfaces: project scope → `reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)`; file scope → `reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

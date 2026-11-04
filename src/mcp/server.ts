@@ -10,6 +10,32 @@ import { createToolHandlers, type ToolContext } from "./tool-handlers"
 import { TOOL_DESCRIPTORS, PUBLIC_TOOL_DESCRIPTORS, toMcpToolList, type ToolDescriptor } from "./tool-registry"
 import { validateToolArguments } from "./tool-validation"
 
+// ─────────────────────────────────────────────────────────────────────────────
+// STDOUT IS THE MCP JSON-RPC CHANNEL. Never write anything else to it.
+//
+// The engines behind the tools log through the default console (the indexer's
+// worker-pool banner, the relationship resolver's bounded-resolution summary).
+// In a CLI run those lines belong on stdout. Under `bb mcp` they would sit
+// between JSON-RPC messages and poison strict clients — measured: two distinct
+// non-JSON lines per client (`[brain] ✓ worker pool available…` and
+// `bounded: resolved …`), which a tolerant client classifies but a strict one
+// rejects. Redirect the console's informational writes to stderr for this
+// process only; the transport writes through process.stdout.write and is
+// untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  const toStderr = (...args: unknown[]): void => {
+    try {
+      process.stderr.write(args.map((value) => (typeof value === "string" ? value : String(value))).join(" ") + "\n")
+    } catch {
+      // A closed stderr must never make a tool call fail.
+    }
+  }
+  console.log = toStderr
+  console.info = toStderr
+  console.debug = toStderr
+}
+
 const handlers = createToolHandlers()
 const descriptors = new Map(TOOL_DESCRIPTORS.map((descriptor) => [descriptor.name, descriptor]))
 

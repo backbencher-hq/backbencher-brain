@@ -14,6 +14,7 @@ import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel, flushBackgroundEmbeddings } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
+import { readRowVector } from "../../src/brain/semantic/vector-binary"
 
 let checks = 0
 let passed = 0
@@ -80,18 +81,22 @@ try {
   await flushBackgroundEmbeddings()
 
   const raw = await BrainDatabase.getRawInstance(durableProject)
-  const rows = raw.prepare("SELECT entity_id, embedding_model, vector_dimension, embedding_vector FROM brain_semantic_embedding WHERE project_id=?").all(durableProject) as any[]
+  const rows = raw.prepare("SELECT entity_id, embedding_model, vector_dimension, embedding_vector, embedding_blob FROM brain_semantic_embedding WHERE project_id=?").all(durableProject) as any[]
   const embeddedIds = new Set(rows.map((row) => row.entity_id))
   const symbolRows = raw.prepare("SELECT id FROM brain_symbol WHERE project_id=?").all(durableProject) as any[]
   ck("EMB2: flush makes vectors durable", rows.length > 0, "rows=" + rows.length)
   ck("EMB2: every fixture symbol has a vector", symbolRows.length > 0 && symbolRows.every((row) => embeddedIds.has(row.id)), `symbols=${symbolRows.length} embedded=${embeddedIds.size}`)
   ck("EMB2: vectors have one real model and positive dimension", rows.length > 0 && new Set(rows.map((row) => row.embedding_model)).size === 1 && rows.every((row) => typeof row.embedding_model === "string" && row.embedding_model.length > 0 && row.vector_dimension > 0), JSON.stringify(rows.slice(0, 2).map((row) => ({ model: row.embedding_model, dimension: row.vector_dimension }))))
-  ck("EMB2: vectors are valid numeric arrays", rows.length > 0 && rows.every((row) => {
-    try {
-      const vector = JSON.parse(row.embedding_vector)
-      return Array.isArray(vector) && vector.length === row.vector_dimension && vector.length > 0 && vector.every((value: unknown) => typeof value === "number" && Number.isFinite(value))
-    } catch { return false }
-  }))
+  // Dense vectors live in embedding_blob (little-endian float32); the JSON text is
+  // kept only for sparse/legacy rows — the schema names the blob authoritative. Read
+  // through the same reader the engines use, so the gate measures storage truth rather
+  // than one legacy encoding.
+  ck("EMB2: vectors are valid numeric arrays (blob-first, JSON fallback)", rows.length > 0 && rows.every((row) => {
+    const dimension = Number(row.vector_dimension)
+    if (!Number.isInteger(dimension) || dimension <= 0) return false
+    const vector = readRowVector(row.embedding_blob, row.embedding_vector, dimension, new Float32Array(dimension))
+    return !!vector && vector.length === dimension && vector.length > 0 && Array.from(vector).every((value) => typeof value === "number" && Number.isFinite(value))
+  }), JSON.stringify(rows.slice(0, 2).map((row) => ({ dimension: row.vector_dimension, blobBytes: row.embedding_blob?.length ?? 0, jsonBytes: typeof row.embedding_vector === "string" ? row.embedding_vector.length : -1 }))))
 
   // EMB3: index a second project and remove it immediately after indexing
   // returns. The queue is non-blocking, so this happens before its scheduled

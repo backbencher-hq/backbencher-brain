@@ -92,6 +92,10 @@ Only `brain_relationship` rows with `is_cross_language = 1`, filtered by the ROW
 
 For same-language callers/callees use `bb_graph`; this tool reports stored cross-language pairs and bridges (declared absent when none).
 
+## Deep guides
+
+- [Cross-language facts: what is stored and what is not](../BB_CROSS_LANGUAGE.md)
+
 ## Staleness
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).

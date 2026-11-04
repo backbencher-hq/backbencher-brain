@@ -78,6 +78,45 @@ drift (`script/verify-tool-docs.ts` writes [`data/public-tools.json`](./data/pub
 points at these directories, so an installed user has the same reference. There are no hidden tools or aliases:
 the `0.3.0` release removed them, and `bb --help` lists exactly these sixteen.
 
+### Deep guides
+
+Each generated reference page links its hand-written deep guides under **Deep guides**; they carry the
+operational detail the generated contract does not: worked runs, measured costs, refusal behaviour and the
+limits a caller must carry forward.
+
+| Tool | Deep guide(s) |
+| --- | --- |
+| `bb_analyze` | [`BB_ANALYZE.md`](./BB_ANALYZE.md), [`BB_TEST_INTEL.md`](./BB_TEST_INTEL.md), [`BB_TEST_QUALITY.md`](./BB_TEST_QUALITY.md), [`BB_ANALYSIS_HISTORY.md`](./BB_ANALYSIS_HISTORY.md) |
+| `bb_annotate` | [`BB_ANNOTATE.md`](./BB_ANNOTATE.md) |
+| `bb_annotations` | [`BB_ANNOTATIONS.md`](./BB_ANNOTATIONS.md) |
+| `bb_ask` | [`BB_ASK.md`](./BB_ASK.md) |
+| `bb_cross_language` | [`BB_CROSS_LANGUAGE.md`](./BB_CROSS_LANGUAGE.md) |
+| `bb_doc` | [`BB_DOC.md`](./BB_DOC.md), [`BB_DOC_REFERENCE.md`](./BB_DOC_REFERENCE.md), [`BB_DOC_EXAMPLES.md`](./BB_DOC_EXAMPLES.md) |
+| `bb_edit` | [`BB_EDIT.md`](./BB_EDIT.md) |
+| `bb_graph` | [`GRAPH_ENGINE.md`](./GRAPH_ENGINE.md) — the graph model rather than a per-tool guide |
+| `bb_health` | [`BB_HEALTH.md`](./BB_HEALTH.md) |
+| `bb_impact` | [`BB_IMPACT.md`](./BB_IMPACT.md) |
+| `bb_index` | [`indexing/README.md`](./indexing/README.md) — flags, resume, performance, troubleshooting |
+| `bb_migrate` | [`BB_MIGRATE.md`](./BB_MIGRATE.md) |
+| `bb_patterns` | [`BB_PATTERNS.md`](./BB_PATTERNS.md) |
+| `bb_search` | [`BB_SEARCH.md`](./BB_SEARCH.md) |
+| `bb_security` | [`BB_SECURITY.md`](./BB_SECURITY.md) |
+| `bb_visualize` | [`BB_VISUALIZE.md`](./BB_VISUALIZE.md) |
+
+The deep-guide set is itself gated: `script/m31/verify-bb-docs-truth.ts` extracts every testable claim from
+these pages (JSON invocations validated against the live registry, mode lists, parameter tables, output
+fields against the behavioural corpus, mutability claims) and records the claims it cannot verify as declared
+unverifiable in `validation/m31/results/D2.json`.
+
+### Historical documents at this level
+
+Milestone records are evidence of what was checked when, not current behaviour. That applies to `docs/m*/`
+directories and equally to the legacy milestone records kept directly under `docs/` (`M10-*`, `M13-*`,
+`M14-*`, `M26-*`, `M55-*`, `MCP_*`). They are not contracts and should not be read as current tool
+documentation; the per-tool pages and deep guides above are. Older plans and migration guides that no longer
+describe the shipped surface are kept in [`archive/docs-pre-consolidation/`](../archive/docs-pre-consolidation/)
+rather than mixed into the live set.
+
 ## Analyzers
 
 One canonical page per analyzer: [`analyzers/README.md`](./analyzers/README.md) indexes all fifty
@@ -103,6 +142,13 @@ relationship-ontology table; the measured worklist is on the analyzer index). Ol
 - `reviews/` — per-lane review records and resolution evidence.
 - `archive/` — recovered code from branches removed on 2026-11-01 (`archive/unmerged-pre-merge-2026-11-01/`),
   and pre-consolidation handoff/process pages (`archive/docs-pre-consolidation/`) that tracked evidence cites by path.
+
+### Superseded copies
+
+A page may keep its previous revision as `<name>.superseded-<commit>.md` next to it. That is allowed only
+while tracked evidence still cites the old content; the copy is evidence, not documentation, and it is
+removed to `archive/` once no gate or ledger references it. The current revision is always the unsuffixed
+file. Do not treat a superseded copy as the contract when both exist.
 
 ## Verifying a doc
 

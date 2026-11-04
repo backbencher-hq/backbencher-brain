@@ -89,6 +89,10 @@ A finding is supported by indexed source/sink locations and relationship paths; 
 
 For general code-quality patterns use `bb_patterns`; this tool focuses on taint flows and security findings.
 
+## Deep guides
+
+- [Security: taint flows, tiers, and what is not detected](../BB_SECURITY.md)
+
 ## Staleness
 
 Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh. This tool does not auto-refresh and has no `refresh` option: a touched finding file is marked `[stale]` and the footer names the MANUAL repair — run: `bb index --changed` (or the `bb_index` tool with the project path — incremental, changed files only). Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

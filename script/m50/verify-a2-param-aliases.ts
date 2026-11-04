@@ -122,11 +122,15 @@ async function main() {
   // options and the aliases the tool forgives.
   check("P4b rejection names the accepted options", errUnknown.includes("accepted options:") && errUnknown.includes("symbol"), errUnknown)
   check("P4b rejection names the forgiven aliases", errUnknown.includes("aliases accepted:") && errUnknown.includes("query"), errUnknown)
-  const errDirection = throws(() => validateToolArguments(graph, { symbol: "x", direction: "callers" }))
+  // The A1 guess `direction` has since become a DOCUMENTED bb_graph parameter (the
+  // graph lane added bounded traversal direction). The teaching requirement is what
+  // still matters, and the unknown-option case above proves it; this row now pins the
+  // surface truth: the once-guessed spelling is legitimately accepted.
+  const directionOut = validateToolArguments(graph, { symbol: "x", direction: "callers" })
   check(
-    "P4b the verbatim A1 guess (`direction` on bb_graph) is still refused, with the fix named",
-    errDirection.includes("direction") && errDirection.includes("accepted options:") && errDirection.includes("aliases accepted:"),
-    errDirection,
+    "P4b the A1 guess `direction` is now a documented bb_graph parameter (surface evolved)",
+    directionOut.direction === "callers",
+    JSON.stringify(directionOut),
   )
   check("P4b a tool with no aliases names no alias list", !throws(() => validateToolArguments(health, { bogus: 1 })).includes("aliases accepted:"))
 
@@ -220,6 +224,11 @@ async function main() {
     text
       .replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/g, "<ts>")
       .replace(/\b\d+(\.\d+)?\s?ms\b/g, "<ms>")
+      // Per-call timing numbers are legitimately non-deterministic (walk deadlines,
+      // elapsed durations): normalize the numeric fields so the assertion compares
+      // the ANSWER, not the clock.
+      .replace(/"(elapsed|duration|took|latency|wall|walkTime|callDeadline|deadline)[A-Za-z]*"\s*:\s*\d+(\.\d+)?/g, '"$1":<n>')
+      .replace(/"([A-Za-z]+Ms)"\s*:\s*\d+(\.\d+)?/g, '"$1":<n>')
       .replace(/\s+/g, " ")
       .trim()
 

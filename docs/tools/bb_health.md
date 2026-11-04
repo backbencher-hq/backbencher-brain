@@ -145,6 +145,10 @@ Counts, schema version and embedding rows are measured from the brain database; 
 
 For index size/counts use `bb index status` (CLI) or the stats surface; this tool reports index health, freshness, completeness and integrity.
 
+## Deep guides
+
+- [Index health and freshness](../BB_HEALTH.md)
+
 ## Staleness
 
 Freshness applies to the tool's read output (no registered per-mode split). Staleness surfaces as: a top-level `freshness` block on every report (`{ mode, requestedMode, checked, total, fresh, stale, missing, staleFiles, missingFiles, unresolved, isComplete, reasons }`) — `mode` is what was actually CHECKED, `isComplete` is the boolean to branch on before reading `stale` as a project total, `unresolved` is counted as neither fresh nor stale, and `reasons` carries the verdict mix (`{ byKind, freshVerifiedByContent, freshVerifiedByMetadata, isSample }`) so a consumer can tell a content-hash-verified file from an `mtime+size` fast-path one without reading the prose. `paths` answers per-path state for named files; `verbose` adds the stale/missing file NAMES. It does not auto-refresh on a read: the report DESCRIBES the index and a reindex happens only when asked for (`refresh: true` reindexes before reporting, `force: true` wipes and rebuilds first and is destructive, `wait: false` detaches it), so a stale report is a measurement, not a repair. When the report names stale or missing files, repair them with the manual interface: run: `bb index --changed` (or the `bb_index` tool with the project path — incremental, changed files only), or pass `paths` to check named files instead of scanning the project. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

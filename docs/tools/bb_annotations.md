@@ -95,6 +95,10 @@ Rows come from brain_annotation with provenance fields preserved.
 
 To write a note use `bb_annotate`; this tool reads stored annotations, declares absence, and opens the store without writing it.
 
+## Deep guides
+
+- [Reading annotations: filters, bounds, absence](../BB_ANNOTATIONS.md)
+
 ## Staleness
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).

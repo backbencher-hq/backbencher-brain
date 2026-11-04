@@ -175,6 +175,10 @@ Mutation bounds come from indexed AST bytes, re-resolved from the file on disk w
 
 To attach human-visible notes to symbols use `bb_annotate`; this tool mutates source files.
 
+## Deep guides
+
+- [Unified editing: safety model, rollback and every mode](../BB_EDIT.md)
+
 ## Staleness
 
 No freshness flags are returned — this tool does not summarize OTHER files' staleness, and it does not read stale data: a stale TARGET file is refreshed (that file only) and the symbol re-resolved from the bytes on disk before the edit is planned, and the refresh is named in `warnings`. If that change renamed or removed the symbol, the edit is refused by name rather than applied to a stale span. For unrelated files, remediation stays manual: project scope → run `bb index --changed` (or the `bb_index` tool with the project path — incremental, changed files only).

@@ -90,6 +90,10 @@ Treat matched symbols and resolvable source locations as evidence; treat similar
 
 For exact symbol/content/file retrieval use `bb_search`; this tool answers natural-language questions with citations.
 
+## Deep guides
+
+- [Asking questions honestly — routes, confidence, bounds](../BB_ASK.md)
+
 ## Staleness
 
 Freshness modes (registered as `freshnessModes`): `answer`. Staleness surfaces as: per-source `[STALE — file changed since index]` markers on retrieval answers, repeated in the source list; a verified aggregate answer carries no per-file marker (it describes the whole index, not a file). This tool does not auto-refresh, and it emits no `freshness` envelope: a verified aggregate answer is a count over the whole index rather than a per-file fact, so there is no per-file envelope to publish. When a cited source is stale, remediation is manual: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only). Nothing is stale → no marker. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in `src/brain/freshness.ts`).

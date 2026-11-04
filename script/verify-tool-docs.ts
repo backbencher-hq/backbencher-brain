@@ -132,6 +132,50 @@ export const RELATIONS: Record<string, string> = {
 }
 
 /**
+ * Deep guides linked from each generated page.
+ *
+ * The reference page is generated from the registry; the hand-written deep guides
+ * carry the operational detail. They were only reachable by guessing the filename,
+ * so every page now links its guides. Tools without a dedicated guide point at the
+ * document that owns their detail (indexing, graph engine); tools whose guide is
+ * written for the annotation family get their own page.
+ */
+export const GUIDE_LINKS: Record<string, { label: string; href: string }[]> = {
+  bb_search: [{ label: "Search semantics and modes", href: "../BB_SEARCH.md" }],
+  bb_ask: [{ label: "Asking questions honestly — routes, confidence, bounds", href: "../BB_ASK.md" }],
+  bb_analyze: [
+    { label: "Analysis modes and output shapes", href: "../BB_ANALYZE.md" },
+    { label: "Test intelligence (mode: tests)", href: "../BB_TEST_INTEL.md" },
+    { label: "Test quality (mode: test_quality)", href: "../BB_TEST_QUALITY.md" },
+    { label: "Recorded analysis runs", href: "../BB_ANALYSIS_HISTORY.md" },
+  ],
+  bb_health: [{ label: "Index health and freshness", href: "../BB_HEALTH.md" }],
+  bb_patterns: [{ label: "Patterns: dead code, orphans, frameworks and anti-patterns", href: "../BB_PATTERNS.md" }],
+  bb_security: [{ label: "Security: taint flows, tiers, and what is not detected", href: "../BB_SECURITY.md" }],
+  bb_visualize: [{ label: "Bounded dependency maps and their declared bounds", href: "../BB_VISUALIZE.md" }],
+  bb_migrate: [{ label: "Migration plans, ordering and honesty", href: "../BB_MIGRATE.md" }],
+  bb_doc: [
+    { label: "Document generation: modes, citations, audiences", href: "../BB_DOC.md" },
+    { label: "Doc reference: every field and option", href: "../BB_DOC_REFERENCE.md" },
+    { label: "Doc examples", href: "../BB_DOC_EXAMPLES.md" },
+  ],
+  bb_edit: [{ label: "Unified editing: safety model, rollback and every mode", href: "../BB_EDIT.md" }],
+  bb_index: [{ label: "Indexing guide: flags, resume, performance, troubleshooting", href: "../indexing/README.md" }],
+  bb_graph: [{ label: "The graph engine: what each edge means and how it is resolved", href: "../GRAPH_ENGINE.md" }],
+  bb_impact: [{ label: "Impact: budgets, completeness and the wall clock", href: "../BB_IMPACT.md" }],
+  bb_cross_language: [{ label: "Cross-language facts: what is stored and what is not", href: "../BB_CROSS_LANGUAGE.md" }],
+  bb_annotate: [{ label: "Writing annotations: provenance, bounds, surfacing", href: "../BB_ANNOTATE.md" }],
+  bb_annotations: [{ label: "Reading annotations: filters, bounds, absence", href: "../BB_ANNOTATIONS.md" }],
+}
+
+/** Rendered after the relations section; empty when the tool has no linked guide. */
+function guideSection(toolName: string): string {
+  const links = GUIDE_LINKS[toolName] ?? []
+  if (links.length === 0) return ""
+  return `## Deep guides\n\n${links.map((link) => `- [${link.label}](${link.href})`).join("\n")}\n\n`
+}
+
+/**
  * Tools whose staleness section is written by hand in `stalenessSection`
  * rather than derived from FRESHNESS_TOOLS or from the "no freshness surface"
  * default. Exported so the M48.D1 gate can hold these to their real text
@@ -233,7 +277,7 @@ function renderReference(tool: any): string {
     "-->",
     "",
   ].join("\n")
-  return `${authorHeader}# \`${tool.name}\`\n\n${tool.description}\n\n## Contract\n\n- Category: \`${tool.documentation.category}\`\n- Mutability: \`${tool.mutability}\`\n- Requires index: \`${tool.requiresIndex}\`${indexRequirementNote(tool)}\n- Modes: ${tool.modes.map((mode: string) => `\`${mode}\``).join(", ")}\n- Planned modes (roadmap, not executable): ${(tool.plannedModes ?? []).map((mode: string) => `\`${mode}\``).join(", ") || "(none)"}\n- Defaults: \`${JSON.stringify(tool.documentation.defaults)}\`\n\n## Input Schema\n\n\`\`\`json\n${schema}\n\`\`\`\n\n## Returns\n\n${bullets(tool.returns)}\n\n## Examples\n\n${examples}\n\n## Errors\n\n${bullets(tool.errors)}\n\n## Limitations\n\n${bullets(tool.limitations)}\n\n## Performance\n\n${tool.performance}\n\n## Safety\n\n${tool.safety}\n\n## Evidence Semantics\n\n${tool.evidence}\n\n## Relationship to other tools\n\n${RELATIONS[tool.name] ?? ""}\n\n## Staleness\n\n${stalenessSection(tool)}\n\nThis page is generated from the executable registry and curated documentation. Run \`npm run docs:generate\` to update it, or \`npx tsx script/verify-tool-docs.ts --only <tool> --write\` for a single page.\n`
+  return `${authorHeader}# \`${tool.name}\`\n\n${tool.description}\n\n## Contract\n\n- Category: \`${tool.documentation.category}\`\n- Mutability: \`${tool.mutability}\`\n- Requires index: \`${tool.requiresIndex}\`${indexRequirementNote(tool)}\n- Modes: ${tool.modes.map((mode: string) => `\`${mode}\``).join(", ")}\n- Planned modes (roadmap, not executable): ${(tool.plannedModes ?? []).map((mode: string) => `\`${mode}\``).join(", ") || "(none)"}\n- Defaults: \`${JSON.stringify(tool.documentation.defaults)}\`\n\n## Input Schema\n\n\`\`\`json\n${schema}\n\`\`\`\n\n## Returns\n\n${bullets(tool.returns)}\n\n## Examples\n\n${examples}\n\n## Errors\n\n${bullets(tool.errors)}\n\n## Limitations\n\n${bullets(tool.limitations)}\n\n## Performance\n\n${tool.performance}\n\n## Safety\n\n${tool.safety}\n\n## Evidence Semantics\n\n${tool.evidence}\n\n## Relationship to other tools\n\n${RELATIONS[tool.name] ?? ""}\n\n${guideSection(tool.name)}## Staleness\n\n${stalenessSection(tool)}\n\nThis page is generated from the executable registry and curated documentation. Run \`npm run docs:generate\` to update it, or \`npx tsx script/verify-tool-docs.ts --only <tool> --write\` for a single page.\n`
 }
 
 // M56.T1 (#781): the website's tool reference is generated HERE, in the same

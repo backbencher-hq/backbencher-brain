@@ -1,5 +1,5 @@
 // script/m31/verify-bb-docs-truth.ts — M31.D2
-// Behavioral truth gate for the 15 hand-written docs/BB_*.md files (historically
+// Behavioral truth gate for the hand-written docs/BB_*.md files (historically
 // ungated). Every testable claim is extracted, classified, and CHECKED:
 //
 //   executed   — JSON fences claiming to be tool invocations: schema-valid (ajv)
@@ -85,7 +85,17 @@ async function main() {
   const corpus = existsSync(CORPUS) ? JSON.parse(readFileSync(CORPUS, "utf8")) as { corpus: Record<string, unknown> } : { corpus: {} }
 
   const bbFiles = readdirSync(DOCS_DIR).filter((f) => /^BB_[A-Z_]+\.md$/.test(f)).sort()
-  check("all 15 BB_*.md files present", bbFiles.length === 15, bbFiles.join(","))
+  const expectedGuides = [
+    "BB_ANALYSIS_HISTORY.md", "BB_ANALYZE.md", "BB_ANNOTATE.md", "BB_ANNOTATIONS.md",
+    "BB_ASK.md", "BB_CROSS_LANGUAGE.md", "BB_DOC.md", "BB_DOC_EXAMPLES.md",
+    "BB_DOC_REFERENCE.md", "BB_EDIT.md", "BB_HEALTH.md", "BB_IMPACT.md",
+    "BB_MIGRATE.md", "BB_PATTERNS.md", "BB_SEARCH.md", "BB_SECURITY.md",
+    "BB_TEST_INTEL.md", "BB_TEST_QUALITY.md", "BB_VISUALIZE.md",
+  ]
+  const missingGuides = expectedGuides.filter((f) => !bbFiles.includes(f))
+  const unexpectedGuides = bbFiles.filter((f) => !expectedGuides.includes(f))
+  check("all expected BB_*.md guides present", missingGuides.length === 0, `missing=${missingGuides.join(",") || "none"}`)
+  check("no unexpected BB_*.md guides", unexpectedGuides.length === 0, `unexpected=${unexpectedGuides.join(",") || "none"}`)
 
   const claims: Claim[] = []
   const unverifiable: { file: string; claim: string; reason: string }[] = []

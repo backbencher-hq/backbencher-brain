@@ -99,6 +99,10 @@ Provenance is enforced three ways: the write hardcodes 'agent', the column is NO
 
 To change source code use `bb_edit`; this tool stores provenance-enforced notes on symbols. Read them back with `bb_annotations`.
 
+## Deep guides
+
+- [Writing annotations: provenance, bounds, surfacing](../BB_ANNOTATE.md)
+
 ## Staleness
 
 This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only).

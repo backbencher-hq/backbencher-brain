@@ -63,6 +63,19 @@ export function validateEvidence(doc: Evidence, options: EvidenceValidationOptio
   if (!Array.isArray(doc.layers) || doc.layers.length < 1 || !doc.layers.every((l: any) => EVIDENCE_LAYERS.includes(l))) {
     errors.push("layers must be a non-empty array of valid layers")
   }
+  // Two legitimate shapes exist: the detailed one (checks: per-check objects) and the
+  // count-style one several emitters write (checks: <number> plus passed/failed).
+  // The validator used to assume the array shape and crashed on the count shape,
+  // which made the gate's own verdict depend on which producer ran last.
+  if (typeof doc.checks === "number") {
+    const total = doc.checks
+    if (!Number.isInteger(total) || total < 1) errors.push("checks count must be a positive integer")
+    if (typeof doc.passed !== "number" || typeof doc.failed !== "number") errors.push("count-style evidence must carry passed and failed")
+    else if (doc.passed + doc.failed !== total) errors.push(`passed+failed (${doc.passed}+${doc.failed}) must equal checks (${total})`)
+    if (typeof doc.negativeCases === "number" && doc.negativeCases < 0) errors.push("negativeCases must be >= 0")
+    if (doc.status === "verified" && (doc.failed > 0 || !(doc.negativeCases >= 1))) errors.push("verified requires failed === 0 and negativeCases >= 1")
+    return errors
+  }
   if (!Array.isArray(doc.checks) || doc.checks.length < 1) {
     errors.push("checks must be a non-empty array")
   } else {

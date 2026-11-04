@@ -1,0 +1,13 @@
+{
+  "tool": "shared/mcp",
+  "gate": "script/m28/verify-mcp-stdout.ts",
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "negativeCases": 1,
+  "stdoutLines": 3,
+  "stdoutNoiseLines": 0,
+  "stderrLogLines": 6,
+  "verified": true,
+  "generatedAt": "2026-11-04T00:44:57.898Z"
+}
