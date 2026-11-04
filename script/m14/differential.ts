@@ -25734,6 +25734,17 @@ async function main() {
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
           ...(lang === "perl" ? ["contains"] : []),
+          // PERL (2026-11-03, Lead-approved): the lane's oracle declares TEN labels
+          // (`PERL_ORACLE_LABELS`, script/m14/perl-truth.ts) and this allowlist compared
+          // seven — the head's extends/implements/instantiates/renders/overrides plus
+          // `calls` and `contains` above. The allowlist filters the ANALYZER side only,
+          // so the four labels below had their analyzer edges dropped while the oracle's
+          // rows were pushed unfiltered and every one read MISSING: measured on the
+          // 60-file canonical sample, 318 of the 324 MISSING rows (imports 286, uses 21,
+          // references 11, exports 0 on this sample). This is the #910 (c imports) /
+          // G7 (groovy uses) / scss shape — a harness gap, not an oracle judgement, and
+          // the labels added are exactly the ones the oracle itself declares.
+          ...(lang === "perl" ? ["imports", "exports", "uses", "references"] : []),
           // M14 xml (2026-10-17): `contains` joins the compared set. The oracle is
           // script/m14/oracles/xml.ts and derives ONLY containment; every other label the
           // analyzer emits stays OUT of the compared set until its derivation is proven.

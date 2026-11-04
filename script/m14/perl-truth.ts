@@ -347,14 +347,49 @@ function fatKeysOf(n: any): any[] {
     const paren = byType(n, "parenthesized_expression")
     if (paren) list = byType(paren, "list_expression")
   }
+  // THE BRACE FORM NESTS THE PAIRS ONE LEVEL DEEPER, AND THE FALLBACK ABOVE NEVER RAN.
+  //
+  // "use constant { WS_TEXT => 1, WS_BINARY => 2 }" puts a list_expression around an
+  // anonymous_hash_expression, so the FIRST lookup finds a list and the hash fallback
+  // (guarded by "if (!list)") is skipped. The "=>" scan below then walks a list whose
+  // only child is the hash and finds no pairs, so the WHOLE table was underived while
+  // the analyzer published every key. MEASURED (2026-10-26, canonical-sample
+  // differential on mojo, 60 files): 11 unexplained "contains" rows, all block-form
+  // constants (Mojo::WebSocket's WS_* set and the rest of the same shape). Descending
+  // when the list WRAPS a hash reads the same spelling at the same depth as the
+  // analyzer's symbol pass.
+  const wrapped = byType(list, "anonymous_hash_expression")
+  if (wrapped) list = byType(wrapped, "list_expression") ?? list
   if (!list) return []
+  // EVERY PAIR IS `KEY => VALUE`, AND THE VALUE IS NOT A KEY.
+  //
+  // The scan used to set `pending` to ANY named child, so after a pair's `=>` it
+  // adopted the VALUE, and the next `=>` pushed that value instead of the next key:
+  // a table of six pairs yielded [K1, V1, V2, V3, ...] — the FIRST key plus every
+  // value — and every later key was dropped. A value like `0x1` is then rejected by
+  // isWrittenName, so the loss was silent: the table contributed exactly its first
+  // constant. MEASURED (2026-10-26, canonical-sample differential on mojo, 60 files):
+  // 11 unexplained "contains" rows, all block-form constants (Mojo::WebSocket's
+  // WS_* set and the rest of the same shape). A `,` ENDS a pair, so the node after
+  // a `=>` is consumed as the VALUE and the scan resumes at the next key.
   const keys: any[] = []
   let pending: any = null
+  let afterFatComma = false
   for (let i = 0; i < (list.childCount ?? 0); i++) {
     const c = list.child(i)
     if (!c) continue
-    if (c.type === "=>" ) { if (pending) keys.push(pending); pending = null; continue }
-    if (pending === null && c.isNamed) pending = c
+    if (c.type === "=>") {
+      if (pending) keys.push(pending)
+      pending = null
+      afterFatComma = true
+      continue
+    }
+    if (!c.isNamed) {
+      if (c.type === ",") { pending = null; afterFatComma = false }
+      continue
+    }
+    if (afterFatComma) { afterFatComma = false; pending = null; continue }
+    pending = c
   }
   return keys
 }
