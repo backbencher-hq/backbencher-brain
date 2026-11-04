@@ -1,11 +1,11 @@
 {
   "note": "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence.",
   "lanes": {
-    "otp:bash": {
+    "mojo:perl": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "93dbe4539798b0ca",
+      "sampleSetHash": "87fbbb53c2a11ada",
       "pinned": true,
       "dirtyCorpus": false
     }
