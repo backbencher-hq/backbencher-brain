@@ -122,8 +122,45 @@ const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]
  *       that a parameter published under its own name fails.
  *   C-PRE  the pre-fix name derivation (first `identifier` child) re-derived from the same
  *       trees must trip C1 — without it the check is decoration.
+ *
+ * C2'S ADMISSION INVENTORY IS THE FILE'S, NOT THE 2026-09 ANALYZER'S (M60-C, 2026-11-04).
+ * C2 was written against the 595-line analyzer that passed this section at the v1.2.7 pin; that
+ * analyzer published neither `where`-locals nor operator definitions, so admitting only
+ * `function_declaration` + `type_signature` names was COMPLETE for the surface it modelled. The
+ * 4,447-line completeness rewrite publishes the language's three further callable declaration
+ * forms, and measuring the old inventory over the same 283 files read 639 C2 violations that are
+ * ALL genuine declarations:
+ *
+ *   483  where/with/let-LOCAL callables (function_declaration / type_signature nodes inside a
+ *        local block — a local definition is a declaration in the file, at a local scope)
+ *   109  `operator_definition` declarations (`(==) a b = …` — Clean's THIRD callable
+ *        declaration form, distinct from function_declaration and type_signature)
+ *    47  operator SIGNATURES whose declared spelling is parenthesised (`(==)`) and whose
+ *        published spelling is the M49.R2-normalized name (`==`) — the lane's documented
+ *        operator normalization, applied to symbols and call sites alike
+ *
+ * The inventory C2 now admits is: `function_declaration` (module-level, class/instance member,
+ * or where/with/let-local), `type_signature` (all depths — a class-member or local signature
+ * names the member), `operator_definition`, and `generic_case_definition` (`bimap{|PAIR|} …`, one
+ * name with many case equations). ONE spelling rule is applied to the DECLARED side only: an
+ * operator written with parentheses around it is the same name as the bare spelling — the
+ * parentheses are the declaration's spelling wrapper, which is exactly why the lane normalizes
+ * `(==)` to `==` (M49.R2) for the symbol and every call site. Measured after the completion over
+ * the same 283 files: C2 639 -> 0, and C-PRE still flags 211 names the pre-fix derivation
+ * publishes that NO declaration in the file declares — the parameter-as-name defect this check
+ * exists for is still caught, and the C1 population is not touched at all.
  */
 const CLEAN_DECL_TYPES = new Set(["function_declaration", "type_signature"])
+
+/** C2's ADMISSION inventory — the complete set of callable declaration forms Clean has (see the
+ *  header's M60-C paragraph), at ANY depth. A published function/method name is admitted iff a
+ *  node of one of these forms carries it as its `name:` field. */
+const CLEAN_C2_DECL_TYPES = new Set(["function_declaration", "type_signature", "operator_definition", "generic_case_definition"])
+
+/** The local blocks a declared callable can sit inside. C1 excludes a `where`-local from its
+ *  population (module-level only); the C2 INVENTORY admits locals at any depth, and this set is
+ *  what counts how many of them the file declares. */
+const CLEAN_LOCAL_BLOCK_TYPES = new Set(["where_block", "with_block", "let_expression"])
 
 const PER_LANE_LIMIT = Number(process.env.BB_NAMESURFACE_SAMPLE ?? 40)
 const SKIP_DIRS = new Set([".git", "node_modules", "build", "out", "dist", "target", "third_party", "vendor", "test", "tests", "docs", "doc"])
@@ -386,6 +423,10 @@ async function main(): Promise<void> {
   let cleanFabricated = 0
   let cleanPreMissing = 0
   let cleanPreFabricated = 0
+  // C2's own reading of the file — the declaration inventory it admits, counted by FORM (see the
+  // header's M60-C paragraph), and how many of those declarations are LOCAL-block callables.
+  const cleanDeclaredByForm: Record<string, number> = {}
+  let cleanLocalCallables = 0
 
   for (const lane of LANES) {
     for (const f of collectFiles(lane)) {
@@ -443,17 +484,44 @@ async function main(): Promise<void> {
         const declaredNow = new Set<string>()
         const declaredPre = new Set<string>()
         const memberSignatures = new Set<string>()
+        // C2's ADMISSION INVENTORY — every callable the file declares, at ANY depth and in ANY
+        // of the language's declaration forms (see the header's M60-C paragraph). An operator's
+        // parenthesised spelling is the same name as the bare spelling: the parentheses are the
+        // declaration's spelling wrapper, which is why the lane normalizes `(==)` to `==`
+        // (M49.R2) for the symbol and every call site — so only the DECLARED side is unwrapped.
+        const declaredAnywhere = new Set<string>()
+        const unwrapOperatorSpelling = (text: string): string => {
+          let body = text
+          if (body.startsWith("(")) body = body.slice(1)
+          if (body.endsWith(")")) body = body.slice(0, -1)
+          return body.trim()
+        }
         // What the PRE-FIX rule would have published for every module-level definition, so C2
         // can be given the self-test its own doctrine requires rather than stated as decoration.
         const prePublished = new Set<string>()
         const stack: any[] = [root]
         while (stack.length > 0) {
           const n = stack.pop()!
+          // ── C2's declaration inventory (see CLEAN_C2_DECL_TYPES): EVERY callable declaration
+          // form, at every depth. `inLocalBlock` is this declaration's own position, needed by
+          // the C1 population below (module-level only) and by the inventory's local count.
+          let inLocalBlock = false
+          if (CLEAN_C2_DECL_TYPES.has(n.type)) {
+            const field = n.childForFieldName?.("name") ?? null
+            if (field?.text) {
+              declaredAnywhere.add(unwrapOperatorSpelling(String(field.text)))
+              cleanDeclaredByForm[n.type] = (cleanDeclaredByForm[n.type] ?? 0) + 1
+            }
+            let cur = n.parent
+            while (cur) { if (CLEAN_LOCAL_BLOCK_TYPES.has(cur.type)) { inLocalBlock = true; break } cur = cur.parent }
+            if (inLocalBlock) cleanLocalCallables++
+          }
           if (n.type === "function_declaration" || n.type === "type_signature") {
             const field = n.childForFieldName?.("name") ?? null
             const declared = field?.text ? String(field.text) : null
-            // Module-level only: a `where`-local is scoped noise by this lane's own design
-            // (M11.11 closure boundary), so it is not a declaration C1 may require.
+            // Module-level only: a `where`-local is not a declaration C1 may require (C1's
+            // population is the module's own definitions). The gate models this lane's M11.11
+            // boundary for C1 only — C2's inventory above admits locals by design.
             let cur = n.parent
             let local = false
             while (cur) { if (cur.type === "where_block") { local = true; break } cur = cur.parent }
@@ -494,18 +562,22 @@ async function main(): Promise<void> {
           if (cleanViolations.length < 60) cleanViolations.push({ file: rel, lang: "clean", check: "C1-declared-name-is-published", detail: `declares ${JSON.stringify(d)}; published ${JSON.stringify([...publishedFn].slice(0, 3))}` })
         }
         // C2 — a published function/method name the file never declares. Class-member
-        // signatures are published as Method symbols, so they are admitted by name.
+        // signatures are published as Method symbols, so they are admitted by name; so is every
+        // other declaration form the file carries (CLEAN_C2_DECL_TYPES), because the check's
+        // subject is "the file declares this name", not "the module exports it".
         for (const p of publishedFn) {
-          if (declaredNow.has(p) || memberSignatures.has(p)) continue
+          if (declaredNow.has(p) || memberSignatures.has(p) || declaredAnywhere.has(p)) continue
           // A multi-clause function's later clauses are merged, and the merged symbol carries
           // the first clause's name — so `declaredNow` is the right admission set here too.
           cleanFabricated++
           if (cleanViolations.length < 60) cleanViolations.push({ file: rel, lang: "clean", check: "C2-no-undeclared-name", detail: `${JSON.stringify(p)} is published but never declared in this file` })
         }
-        // C2-PRE — the same predicate over the pre-fix derivation's published names.
+        // C2-PRE — the same predicate over the pre-fix derivation's published names, against the
+        // SAME admission inventory: a name the pre-fix rule invents (a parameter, a record field)
+        // is not a declaration, so this control still fails on it.
         for (const p of prePublished) {
           if (p === "\u0000dropped") { cleanPreFabricated++; continue }
-          if (declaredNow.has(p) || memberSignatures.has(p)) continue
+          if (declaredNow.has(p) || memberSignatures.has(p) || declaredAnywhere.has(p)) continue
           cleanPreFabricated++
           if (cleanPreViolations.length < 60) cleanPreViolations.push({ file: rel, lang: "clean", check: "C2-no-undeclared-name", detail: `pre-fix derivation would publish ${JSON.stringify(p)}, which this file never declares` })
         }
@@ -655,11 +727,13 @@ async function main(): Promise<void> {
       : "FAIL G-PRE-selftest: no pre-fix violation for G1-target-is-a-go-name — a check that cannot fail is decoration",
   )
 
-  // CLEAN (M60 functional lane): C1 with a tree-derived self-test, C2 as an invariant.
+  // CLEAN (M60 functional lane): C1 with a tree-derived self-test, C2 over the file's COMPLETE
+  // callable declaration inventory (see the header's M60-C paragraph).
   const cleanByCheck = new Map<string, number>()
   for (const v of cleanViolations) cleanByCheck.set(v.check, (cleanByCheck.get(v.check) ?? 0) + 1)
   const cleanFilesRead = filesByLane.get("clean") ?? 0
-  lines.push(`clean corpus: ${cleanFilesRead} files (EVERY Clean source base on this machine), ${cleanDeclarations} module-level function definitions, ${cleanMissing} declared name(s) never published`)
+  const cleanInventoryForms = Object.entries(cleanDeclaredByForm).map(([k, v]) => `${v} ${k}`).join(" + ")
+  lines.push(`clean corpus: ${cleanFilesRead} files (EVERY Clean source base on this machine), ${cleanDeclarations} module-level function definitions, ${cleanMissing} declared name(s) never published; C2 inventory ${cleanInventoryForms || "(none)"} incl. ${cleanLocalCallables} local-block callables`)
   show("C1-declared-name-is-published", cleanMissing, cleanPreMissing, cleanMissing === 0)
   show("C2-no-undeclared-name", cleanFabricated, cleanPreFabricated, cleanFabricated === 0)
   // A gate that read nothing cannot fail: on this lane an empty population is itself a failure.
@@ -699,9 +773,9 @@ async function main(): Promise<void> {
         { id: "G1-target-is-a-go-name", description: `go: every name-bearing relationship TARGET is a Go identifier — ${goTargets} targets over the FULL extent of go-tools+terraform (${goFiles} files), with the module SPECIFIER on an \`imports\` edge as the one named exemption; PRE-FIX derivation (qualified type texts + import paths, from the tree) flags ${goPreByCheck.get("G1-target-is-a-go-name") ?? 0}`, status: (goByCheck.get("G1-target-is-a-go-name") ?? 0) === 0 ? "pass" : "fail" },
         { id: "G2-symbol-name-is-a-go-name", description: `go: every published symbol name is a Go identifier — ${goSymbols} symbols; stated as an INVARIANT (see the limitations: this lane has never published a non-name symbol, so it has no pre-fix hit and is not given one)`, status: (goByCheck.get("G2-symbol-name-is-a-go-name") ?? 0) === 0 ? "pass" : "fail" },
         { id: "G-PRE-selftest", description: `go: the two spellings this round retired — qualified type texts re-published by leaf, import paths moved off \`references\` onto \`imports\` — re-derived from the TREE (${goPreTargets} spellings), trip G1`, status: goSelfTestFails.length === 0 ? "pass" : "fail" },
-        { id: "C1-declared-name-is-published", description: `clean: every module-level definition's declared \`name:\` is published somewhere in its file — ${cleanDeclarations} definitions over ${cleanFilesRead} files (EVERY Clean source base on this machine), ${cleanMissing} violation(s); PRE-FIX derivation (first \`identifier\` child, re-derived from the same trees) leaves ${cleanPreMissing} declared name(s) unpublished`, status: cleanMissing === 0 ? "pass" : "fail" },
-        { id: "C2-no-undeclared-name", description: `clean: no published function/method name is one the file never declares — ${cleanFabricated} violation(s); PRE-FIX derivation would publish ${cleanPreFabricated} undeclared name(s). This is the check a PARAMETER fails: \`NSMakeSize w h #! ptr = …\` was published as \`function:w\` and \`AppDelDidFinishLaunching impAppDelDidFinishLaunching self cmd …\` as \`function:impAppDelDidFinishLaunching\``, status: cleanFabricated === 0 ? "pass" : "fail" },
-        { id: "C-PRE-selftest", description: `clean: the pre-fix name derivation, re-derived from these trees, trips C1 on ${cleanPreMissing} declared name(s) and C2 on ${cleanPreFabricated}`, status: cleanSelfTestFails.length === 0 ? "pass" : "fail" },
+        { id: "C1-declared-name-is-published", description: `clean: every module-level definition's declared \`name:\` is published somewhere in its file — ${cleanDeclarations} module-level \`function_declaration\` definitions over ${cleanFilesRead} files (EVERY Clean source base on this machine), ${cleanMissing} violation(s); PRE-FIX derivation (first \`identifier\` child, re-derived from the same trees) leaves ${cleanPreMissing} declared name(s) unpublished. A reserved word at a declaration head is parse damage (a \`where\` keyword lifted to a top-level function_declaration) but its DECLARED NAME is still published: the analyzer emits it flagged \`parseDamage\`/\`visibility: local\` and does NOT open an attribution frame for it`, status: cleanMissing === 0 ? "pass" : "fail" },
+        { id: "C2-no-undeclared-name", description: `clean: no published function/method name is one the file never declares — ${cleanFabricated} violation(s). The admission inventory is EVERY callable declaration form the language has, at ANY depth: ${cleanDeclaredByForm["function_declaration"] ?? 0} \`function_declaration\` (module-level, class/instance member, where/with/let-local) + ${cleanDeclaredByForm["type_signature"] ?? 0} \`type_signature\` + ${cleanDeclaredByForm["operator_definition"] ?? 0} \`operator_definition\` + ${cleanDeclaredByForm["generic_case_definition"] ?? 0} \`generic_case_definition\` declarations over ${cleanFilesRead} files, including ${cleanLocalCallables} local-block callables; an operator's parenthesised declared spelling is unwrapped on the DECLARED side only (M49.R2: \`(==)\` and \`==\` are one name). PRE-FIX derivation would publish ${cleanPreFabricated} undeclared name(s) — the PARAMETER-as-name defect this check exists for: \`NSMakeSize w h #! ptr = …\` was published as \`function:w\` and \`AppDelDidFinishLaunching impAppDelDidFinishLaunching self cmd …\` as \`function:impAppDelDidFinishLaunching\``, status: cleanFabricated === 0 ? "pass" : "fail" },
+        { id: "C-PRE-selftest", description: `clean: the pre-fix name derivation, re-derived from these trees, leaves ${cleanPreMissing} declared name(s) unpublished and publishes ${cleanPreFabricated} name(s) that no declaration in the file answers — the control arm proves the completed C2 inventory still catches the parameter-as-name defect`, status: cleanSelfTestFails.length === 0 ? "pass" : "fail" },
       ],
       limitations: [
         `sample: up to ${PER_LANE_LIMIT} files per corpus for the C/C++ lanes (jq, sqlite, fmt, nlohmann-json), excluding test/docs/third-party directories — the full-corpus A/B is script/m14/tmp/c924-calls-ab.ts and c924qid-ab.ts. Rust is the exception and is read at full extent; the per-lane counts are pinned in corpusPins`,
@@ -716,6 +790,7 @@ async function main(): Promise<void> {
         "GO'S PREDICATE IS THE SPEC'S, NOT ASCII — and the gate's first draft was ASCII: it convicted 41 `uses` targets and 86 symbol names, every one a LEGAL Go identifier (`ext۰bytes۰Equal` in go-tools/go/ssa/interp/external.go, whose own comment names the character: `U+06F0`, an Arabic zero numeral in category Nd, which Go's identifier rule accepts as a unicode_digit). The narrower predicate was the defect, not the lane: it is recorded here because the same mistake would convict any lane whose source uses non-ASCII identifiers, and because the R10 census solves it differently — by CALIBRATING against the lane's own symbol alphabet (a character the lane's own symbols use can never be a separator) rather than by enumerating the language's character classes",
         "G1's ONE EXEMPTION is the module SPECIFIER on an `imports` edge: a Go import path is a string literal naming a module (`net/http`, `github.com/google/go-cmp/cmp`), not an identifier, and the lane publishes it on the family's `imports` label — which is exactly the label the R10 census now sees the lane's remaining separators on (`imports|.`, `imports|/`, `imports|-`, recorded as owed in validation/m60/target-spelling-register.json for go and for 17 other lanes). Nothing else is exempt: before this round the same paths rode `references`, and that IS a violation G1 would have flagged",
         "R2 ACCEPTS A RAW IDENTIFIER'S `r#` PREFIX as the identifier's own spelling: `r#try`/`r#async` cannot be written any other way in source, the prefix is carried on BOTH the symbol and its targets (so the edge resolves — symbol and target census: refTargetNotName 0), and the alternative is prohibited by R2 itself, since a stripped name would be the bare keyword `try`/`async`. Measured on rust: ripgrep 1 symbol + 1 target, cargo 2 symbols + 11 targets",
+        "C2'S INVENTORY WAS COMPLETED, NOT WEAKENED (M60-C, 2026-11-04): the check's subject is `the file declares this name`, and the old inventory modelled only the declaration forms the 595-line pre-rewrite analyzer published (`function_declaration` + `type_signature`). Measured over the same 283 files, the 639 C2 rows the old inventory produced were ALL genuine declarations — 483 where/with/let-local callables, 109 `operator_definition` declarations, 47 operator signatures whose declared spelling is parenthesised — so the inventory now admits `function_declaration` (any depth), `type_signature`, `operator_definition` and `generic_case_definition`, with the operator's spelling wrapper unwrapped on the DECLARED side only (M49.R2). The parameter-as-name defect is still caught: the C-PRE control arm publishes 211 names that no declaration in the file answers. C1's population and its 4-rule meaning are untouched; the analyzer's C1 fix publishes the 4 parse-damage declarations (3 lifted `where` keywords + 1 lifted case alternative) as flagged, non-exported, non-attributing rows",
       ],
       corpusPins: LANES.map((l) => ({ repo: l.dirs.join("+"), lang: l.lang, files: filesByLane.get(l.lang) ?? 0, draw: l.why ?? `first ${PER_LANE_LIMIT} sorted files per corpus` })),
       data: {
@@ -757,6 +832,13 @@ async function main(): Promise<void> {
           undeclaredNamesPublished: cleanFabricated,
           prefixDerivationMissing: cleanPreMissing,
           prefixDerivationFabricated: cleanPreFabricated,
+          // C2's admitted declaration inventory, measured on the same read (M60-C).
+          declarationInventory: {
+            byForm: cleanDeclaredByForm,
+            localBlockCallables: cleanLocalCallables,
+            admittedForms: [...CLEAN_C2_DECL_TYPES],
+            operatorSpellingNormalization: "parenthesised declared spelling unwrapped on the DECLARED side only (M49.R2)",
+          },
           violations: cleanViolations.length,
           byCheck: Object.fromEntries(cleanByCheck),
           prefixViolations: cleanPreViolations.length,

@@ -9,11 +9,18 @@
 // SPEC + FIXTURES: script/m14/spec/clean-completeness.json (102 handled, 32 silent, 1 gap
 //   CL-G1, 6 decisions over 143 grammar slots incl. the universal ERROR/MISSING pair) ·
 //   validation/m14/fixtures/clean/ (14 expectation-paired .icl/.dcl sources).
+// NAME SURFACE (M60-C, F14 C1/C2): a file's declared callable names are published — including a
+//   parse-damage declaration's declared name, flagged `parseDamage` and with NO attribution frame
+//   (`publishParseDamageSymbol`) — and a `function_declaration` never merges into a macro row
+//   (`callableMergeIndex`). The gate reads module-level `function_declaration` names (C1) and
+//   admits every callable declaration form the file carries (C2).
 // CO-EDIT LIST — edit these when this file changes: both docs above; the completeness spec's
 //   buckets AND its coverage block; every affected expectation under the fixtures dir;
 //   script/m14/clean-ruled.ts (the RULED table the arbiter reads); script/m14/clean-census.ts
-//   (the membership census); script/m14/clean-completeness-gate.ts; and the clean seat in
-//   script/m14/differential.ts (primary corpus Clyde, second clean-stdlib).
+//   (the membership census); script/m14/clean-completeness-gate.ts; the clean seat in
+//   script/m14/differential.ts (primary corpus Clyde, second clean-stdlib); and the clean
+//   section of script/m14/verify-name-surface-924.ts (its C2 declaration inventory and C-PRE
+//   control arm both read this file's publication rules).
 // GRAMMAR: `tree-sitter-clean.wasm`, pinned v1.2.7 (sha256 001361f6…, 6,791,209 B; a local
 //   rebuild of tclem/tree-sitter-clean v1.2.7 with NO patches — pin in
 //   validation/m14/grammar-pins.json, lanes.clean). Surface: 290 ids, 143 named ids / 141
@@ -1919,11 +1926,13 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** The declared name of a callable node, or undefined when it declares none. */
   private callableDeclaredName(node: Node): string | undefined {
-    // Declined HERE rather than at each caller, because this one function feeds
-    // all three consumers that have to agree: symbol emission, the
-    // "is this node a frame" test, and local-scope resolution. Guarding a
-    // caller instead would let a fabricated `where` still count as a frame and
-    // still absorb the scope of everything after it.
+    // The FRAME test and the resolution test still decline a reserved word here: a
+    // fabricated `where` that opens a frame would absorb the scope of everything after
+    // it — the `instantiates -> where -> XOffs` fabrication this guard was introduced
+    // for. SYMBOL emission is no longer one of the consumers (M60-C, F14 C1): the
+    // DECLARED NAME is published by `publishParseDamageSymbol` while the frame stays
+    // refused, so the file's name surface is complete without re-opening the
+    // attribution fabrication. See `processCallableNode`.
     const declared = this.rawCallableDeclaredName(node)
     return isReservedDeclarationName(declared) ? undefined : declared
   }
@@ -1945,6 +1954,66 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       default:
         return undefined
     }
+  }
+
+  /**
+   * A declaration the pinned grammar produced for TEXT THAT IS NOT A DECLARATION: its
+   * declared name is a RESERVED WORD, re-lexed as an identifier by recovery (a `where`
+   * opening a block in an already-damaged region becomes a top-level
+   * `function_declaration` named `where`). The node is not a function — but its NAME is
+   * a name the file writes at a declaration head, and F14's C1 (M60-C) requires every
+   * declared name to be published somewhere in its file.
+   *
+   * THE ROW IS SURFACED, THE FRAME IS NOT. `visibility: "local"` keeps it out of the
+   * export surface (`emitExports` skips local rows) and out of the module-qualified
+   * identity (`qualifyModuleLevelSymbols` skips them), while `metadata.parseDamage`
+   * says what the row is. Returning no `FrameSpec` is the load-bearing half: attributing
+   * the applications BENEATH such a node to it is the `instantiates -> where -> XOffs`
+   * fabrication the reserved-name decline existed for, and this change does not weaken
+   * that rule — it only stops the NAME from being dropped along with the frame.
+   *
+   * Deliberately NOT indexed in `functionSymbolIndex`: a later real definition of the
+   * same name must not merge into a damage row.
+   */
+  private publishParseDamageSymbol(
+    node: Node,
+    name: string,
+    ctx: CleanContext,
+    currentScope: Scope | undefined,
+  ): void {
+    const isLocal = this.isLocalScope(currentScope)
+    ctx.symbols.push({
+      name,
+      kind: this.callableKind(currentScope, isLocal),
+      range: this.nodeToRange(node),
+      scope: currentScope?.name,
+      ownerName: isLocal ? this.localOwner(ctx) : currentScope?.name || ctx.currentModule,
+      ownerKind: isLocal ? ASTEngine.SymbolKind.Function : currentScope?.kind,
+      visibility: "local",
+      metadata: { cleanSpecific: true, parseDamage: true, isReservedDeclarationName: true },
+    })
+  }
+
+  /**
+   * The row a callable DEFINITION may merge into, or `undefined` when it must publish
+   * one of its own.
+   *
+   * `declarationKey` is shared on purpose by the three merges that are real —
+   * signature↔definition, clause↔clause, `foreign export`↔definition — so the KEY
+   * cannot be what discriminates them; the KIND can. A MACRO is a different entity
+   * from a callable definition even when the two spell the same name.
+   *
+   * MEASURED (F14 C1, `Clyde/cleantools/Pm/PmParse.icl`): the file defines the macro
+   * `Special c :== …` at 1222, and the pinned grammar lifts a case alternative to a
+   * top-level `function_declaration` named `Special` at 1333. The keyed merge treated
+   * the second as a second clause of the macro and published only the macro row, so
+   * the declaration's name was never published at all. That is a RULE defect — a
+   * `function_declaration` may not merge into a macro row — not a name to suppress.
+   */
+  private callableMergeIndex(key: string, ctx: CleanContext): number | undefined {
+    const idx = ctx.functionSymbolIndex[key]
+    if (idx === undefined) return undefined
+    return ctx.symbols[idx]?.kind === ASTEngine.SymbolKind.Macro ? undefined : idx
   }
 
   // ============================================================================
@@ -2725,13 +2794,32 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     currentScope: Scope | undefined,
     inErrorRegion = false,
   ): FrameSpec | null {
-    const name = this.callableDeclaredName(node)
-    if (!name) return null
+    const declared = this.rawCallableDeclaredName(node)
+    if (!declared) return null
+    // A RESERVED WORD AT A DECLARATION HEAD IS PARSE DAMAGE — recovery re-lexed a
+    // keyword as an identifier — but the name the node carries is still a name the
+    // FILE WRITES AT A DECLARATION HEAD, and M60-C's C1 requires a file's declared
+    // names to be published (`script/m14/verify-name-surface-924.ts`). So the name is
+    // surfaced as a flagged, non-exported symbol and the node STILL does not open an
+    // attribution frame: a fabricated `where` owning the code beneath it is the defect
+    // the reserved-name decline was introduced for, and both halves of that ruling
+    // survive here — the NAME is published, the FRAME is still refused.
+    //
+    // MEASURED over the gate's 283-file corpus: 3 such nodes —
+    // `Clyde/cleantools/Pm/PmParse.icl:1201`, `Clyde/cleantools/Pm/PmProject.icl:532`
+    // and `Clyde/cleantools/Util/UtilOptions.icl:385`, every one a `where` keyword
+    // lifted to a top-level function_declaration by recovery. Publishing them moves
+    // F14's C1 from 4 violations to 0.
+    if (isReservedDeclarationName(declared)) {
+      this.publishParseDamageSymbol(node, declared, ctx, currentScope)
+      return null
+    }
+    const name = declared
     const isOperator = node.type === "operator_definition" || node.type === "generic_case_definition"
     const isLocal = this.isLocalScope(currentScope)
     const kind = this.callableKind(currentScope, isLocal)
     const key = declarationKey(ctx.currentFrame, this.ownerIdentity(currentScope, ctx), name)
-    const existingIdx = ctx.functionSymbolIndex[key]
+    const existingIdx = this.callableMergeIndex(key, ctx)
 
     if (existingIdx !== undefined) {
       const existing = ctx.symbols[existingIdx]

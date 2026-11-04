@@ -79,7 +79,7 @@ None.
 | --- | --- | --- | --- |
 | bash | `calls uses imports exports contains references overrides part_of` | import-site: ImportInfo[] | line 75, 14 rows |
 | c | `calls uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[] | line 469, 14 rows |
-| clean | `calls implements uses imports exports contains references overrides instantiates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 513, 14 rows |
+| clean | `calls implements uses imports exports contains references overrides instantiates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 555, 14 rows |
 | clojure | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 96, 12 rows |
 | cpp | `calls extends implements uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 265, 14 rows |
 | csharp | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 55, 14 rows |
@@ -93,7 +93,7 @@ None.
 | groovy | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 136, 11 rows |
 | haskell | `calls extends implements uses imports exports contains references overrides instantiates decorates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 14 rows |
 | hcl | `calls extends uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 14 rows |
-| html | `extends uses imports contains references overrides` | import-site: ImportInfo[], export-site: ExportInfo[] | line 182, 14 rows |
+| html | `extends uses imports contains references overrides` | import-site: ImportInfo[], export-site: ExportInfo[] | line 184, 14 rows |
 | java | `calls extends implements uses imports exports contains references overrides instantiates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 12 rows |
 | javascript | `calls extends uses imports exports contains references overrides instantiates decorates renders mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 13 rows |
 | json | `calls extends implements uses imports exports contains references overrides` | import-site: ImportInfo[], export-site: ExportInfo[] | line 70, 10 rows |

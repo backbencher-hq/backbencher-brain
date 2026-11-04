@@ -473,8 +473,11 @@ The haskell lane solved this exact construct with scoped local identity
 - a binder's identity is `${owner}.${name}`, so it can never collide with a
   module-level callable of the same name;
 - the identity rides the symbol's `qualifiedName` (so an edge endpoint resolves to
-  the right row) while `name` stays the bare declared name (so the C1/C2
-  name-surface gate sees the name the source declares);
+  the right row) while `name` stays the bare declared name — and the F14 name-surface
+  gate's C2 admits a local-block callable BY NAME since the M60-C round completed its
+  declaration inventory (see [The name surface](#the-name-surface-f14s-c1c2-and-the-m60-c-round));
+  C1's population is module-level definitions by its own rule, so a local is not a
+  name C1 demands;
 - call resolution walks the scope stack, so a local is only ever a target from
   inside its own scope;
 - it is `visibility: "local"` and NOT exported — M11.11 §2 is unchanged, and it is
@@ -505,6 +508,45 @@ distinct, and resolution also matches `qualifiedName` (`:2734-2736`). The
 type and the three instances with correct owners but no module→`Target` edge.
 That is the name-keyed `contains`/export dedupe, which is deliberate and pinned by
 `instance-target-name-collision.icl`.
+
+### The name surface: F14's C1/C2 and the M60-C round
+
+`script/m14/verify-name-surface-924.ts` (`audit:name-surface`, gate 46) reads this lane's
+283 gate-visible files and asks two questions of the published names, computed from the
+grammar's own `name:` FIELDS and never imported from this analyzer:
+
+- **C1** — every module-level definition's DECLARED name is published somewhere in its file;
+- **C2** — no published function/method name is one the file never declares (the check a
+  parameter published as the function's name fails).
+
+Measured at HEAD before the round: **C1 4 / C2 639**. Both classes were adjudicated, and
+none of the 643 names is a fabricated name.
+
+**C1's four are parse damage, and the fix is two publication rules in this analyzer.**
+
+| site | what the tree is | rule it broke |
+| --- | --- | --- |
+| `Pm/PmParse.icl:1201`, `Pm/PmProject.icl:532`, `Util/UtilOptions.icl:385` | the `where` keyword re-lexed as a top-level `function_declaration` (the node absorbs the next local's body as its child) | the reserved-name decline dropped the declaration's NAME along with its frame. `publishParseDamageSymbol` now publishes that name as a flagged row (`metadata.parseDamage`, `visibility: "local"`), and the node STILL opens no attribution frame: the name surface is complete, and the `instantiates -> where -> …` fabrication stays refused |
+| `Pm/PmParse.icl:1333` | a case alternative lifted to a top-level `function_declaration` named `Special`, colliding by key with the file's macro `Special c :== …` (line 1222) | the keyed merge let a `function_declaration` merge into a MACRO row. `callableMergeIndex` refuses that merge — a macro is a different entity, not a second clause — so the declaration publishes its own row |
+
+**C2's 639 are all genuine declarations, and the gate's inventory — not the analyzer — was
+the incomplete half.** 483 are `where`/`with`/`let`-LOCAL callables (this lane publishes
+them by design since the completeness rewrite, and each one is a declaration in the file at
+a local scope), 109 are `operator_definition` declarations (Clean's third callable
+declaration form, distinct from `function_declaration`), and 47 are operator signatures
+whose DECLARED spelling is parenthesised — `(==)`, `(%.)` — while the published spelling is
+the M49.R2-normalized `==`/`%.`. The gate's C2 admission set was written against the
+595-line pre-rewrite analyzer (which published neither locals nor operators, and passed this
+section at the v1.2.7 pin), so admitting only `function_declaration` + `type_signature`
+names was complete for the surface it modelled. The inventory now admits every callable
+declaration form at any depth — `function_declaration`, `type_signature`,
+`operator_definition`, `generic_case_definition` — and unwraps the parenthesised operator
+spelling on the DECLARED side only (the parens are the declaration's spelling wrapper, which
+is why the symbol and every call site use the bare name). Measured after the completion:
+**C2 639 → 0, C1 4 → 0, and the C-PRE control arm still publishes 211 names no declaration
+in the file answers**, so the parameter-as-name defect the check exists for is still caught.
+The gate now reads `PASS — c/cpp 3/3 + rust 2/2 + go 2/2 + clean 2/2 + 4 self-tests`, and
+its emitted evidence records the C2 inventory it modelled (`declarationInventory.byForm`).
 
 ## Relationship ontology
 
@@ -1579,6 +1621,7 @@ was clean before the doc edits and after them.
 | command | result | exit |
 | --- | --- | --- |
 | `npx tsc --noEmit -p tsconfig.json` | no output | 0 |
+| `bun run script/m14/verify-name-surface-924.ts` (2026-11-04, M60-C) | **`PASS — c/cpp 3/3 + rust 2/2 + go 2/2 + clean 2/2 + 4 self-tests`**; the clean section reads 283 files / 3,156 module-level `function_declaration` definitions with **C1 0 / C2 0**, C2's inventory 4,328 `function_declaration` + 3,323 `type_signature` + 244 `operator_definition` + 18 `generic_case_definition` declarations incl. 1,537 local-block callables, and the C-PRE control arm still flags **529 declared names unpublished / 211 undeclared names published** — see [The name surface](#the-name-surface-f14s-c1c2-and-the-m60-c-round) | 0 |
 | `npx tsx script/m14/ontology-coverage-gate.ts clean --fresh` | `walk: 312/312 files (100.0%)  newly walked 312, resumed 0` then `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` — **re-run at this commit, `--fresh` is mandatory, see [the arbiter's false 0/10](#what-the-arbiter-reported-and-why-it-was-wrong)** | **0** |
 | `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
 | `npx tsx script/m14/coverage-block-gate.ts clean` | **9 implemented / 9 applicable / 5 excluded, 0 problems** — the four extended values are now RULED in the 14-value table (pass 6) | 0 |
