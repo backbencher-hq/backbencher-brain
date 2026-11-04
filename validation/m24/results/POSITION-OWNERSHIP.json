@@ -2,8 +2,8 @@
   "issue": "M24.lane4-position-ownership",
   "code": "POSITION-OWNERSHIP",
   "status": "verified",
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
-  "sourceFingerprint": "d18145d6e6828da10a7e3da147b2f33672243567ab482edaf6ff818961686a8a",
+  "currentCommit": "5253fc535f040ce29e4169d4fc5be69e9bbb8d94",
+  "sourceFingerprint": "148e9ccf5031c7da87406caf344ef7938dab64444dc98c879750bd329429fd0b",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-position-arithmetic.ts",
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-position-arithmetic.ts",
   "evidenceFile": "POSITION-OWNERSHIP.json",
-  "generatedAt": "2026-10-05T22:29:32.056Z",
+  "generatedAt": "2026-11-01T23:02:38.493Z",
   "passed": 7,
   "failed": 0,
   "failures": [],
@@ -33,6 +33,7 @@
     "src/lsp/annotation_ui.ts",
     "src/lsp/call_hierarchy.ts",
     "src/lsp/cross_language_hover.ts",
+    "src/lsp/doc_comment.ts",
     "src/lsp/document_highlight.ts",
     "src/lsp/enrichment.ts",
     "src/lsp/evidence_tier.ts",
@@ -40,6 +41,7 @@
     "src/lsp/graph_request.ts",
     "src/lsp/graph_usages.ts",
     "src/lsp/hover.ts",
+    "src/lsp/hover_cache.ts",
     "src/lsp/hub_protocol.ts",
     "src/lsp/identity.ts",
     "src/lsp/impact.ts",
@@ -51,13 +53,36 @@
     "src/lsp/rich_hover.ts",
     "src/lsp/server.ts",
     "src/lsp/signature.ts",
-    "src/lsp/symbols.ts"
+    "src/lsp/symbols.ts",
+    "src/lsp/type_inference_surface.ts"
   ],
   "ownedFiles": [
     "src/lsp/navigation.ts"
   ],
   "ownedFindings": [],
-  "reportedElsewhere": [],
+  "reportedElsewhere": [
+    {
+      "file": "src/lsp/hover_cache.ts",
+      "line": 321,
+      "rule": "P1",
+      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
+      "text": "const bytes = Buffer.byteLength(content, \"utf8\")"
+    },
+    {
+      "file": "src/lsp/type_inference_surface.ts",
+      "line": 509,
+      "rule": "P1",
+      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
+      "text": "if (Buffer.byteLength(content, \"utf8\") > MAX_WITNESS_BYTES) {"
+    },
+    {
+      "file": "src/lsp/type_inference_surface.ts",
+      "line": 510,
+      "rule": "P1",
+      "law": "byte arithmetic (Buffer.byteLength) belongs to the position mapper; feature code reads positions through it",
+      "text": "const kib = (Buffer.byteLength(content, \"utf8\") / 1024).toFixed(0)"
+    }
+  ],
   "reportedElsewhereNote": "Findings in modules this lane does not own are reported, not failed: other lanes are editing those files concurrently and a gate that fails on their in-flight work gets disabled rather than fixed. Each is a §5 rule 1 bypass to route through src/lsp/positions.ts.",
   "determinism": {
     "declaredVolatileFields": [
@@ -75,7 +100,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:29:32.057Z",
-    "contentSha256": "620d52b4347786c1361efe445e7a6f192b17f35a6b5f4f8f20262902d2d78adb"
+    "sealedAt": "2026-11-01T23:02:38.494Z",
+    "contentSha256": "c821d493712504ea05582069ce1f2352adad533911a5dd7bf2c67f72cff2dc2f"
   }
 }

@@ -1,15 +1,15 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "4ec43636ea0d8fa096f94686c2c7630fb43303a73cb3624a92e7000e4aeae4f1",
-    "sealedAt": "2026-11-01T16:56:02.000Z"
+    "contentSha256": "b0b33037feffb035792dabc336b7d7680c6529a5df15d5c553150f7da251a4b7",
+    "sealedAt": "2026-11-04T00:19:12.000Z"
   },
   "checks": [
     {
       "description": "vb adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "5/6 fixtures pass",
       "id": "fixtures-vb",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "vba adversarial fixtures",
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b1947a2f67a5bcc2acfd83a7de0be17537ea1269",
-  "committedAt": "2026-11-01T11:56:02-05:00",
+  "commit": "ab57a70d483fbc3de42109b37b86e6378344b1d7",
+  "committedAt": "2026-11-03T19:19:12-05:00",
   "data": {
     "details": [
       {
@@ -333,8 +333,8 @@
       },
       {
         "fixture": "vb/member-read-and-construction",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "reason": "missing expectation file"
       },
       {
         "fixture": "vb/ontology-exports-instantiates-uses",
@@ -9335,8 +9335,8 @@
         "pass": 120
       },
       "vb": {
-        "fail": 0,
-        "pass": 6
+        "fail": 1,
+        "pass": 5
       },
       "vba": {
         "fail": 0,
@@ -9373,8 +9373,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-01T11:56:02-05:00",
-  "regeneratedAtCommit": "b1947a2f67a5bcc2acfd83a7de0be17537ea1269",
+  "regeneratedAt": "2026-11-03T19:19:12-05:00",
+  "regeneratedAtCommit": "ab57a70d483fbc3de42109b37b86e6378344b1d7",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

@@ -79,12 +79,12 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 184,
-    "spawnSitesJudged": 680,
+    "filesScanned": 188,
+    "spawnSitesJudged": 690,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 272,
-      "localWrapperCallSitesArgumentScanned": 360,
-      "commandComputedAtRuntimeNotJudgedByName": 48
+      "directCallSitesResolvedByName": 275,
+      "localWrapperCallSitesArgumentScanned": 365,
+      "commandComputedAtRuntimeNotJudgedByName": 50
     },
     "findings": [],
     "plantedDefectsCaught": 14,
@@ -93,52 +93,52 @@
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 1386 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1388 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 1386 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1388 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 1386 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1388 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 1386 (non-portable-binary: timeout)"
+        "detail": "caught at line 1388 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 1386 (platform-only-path: /proc)"
+        "detail": "caught at line 1388 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 1386 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1388 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 1386 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1388 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 1386 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1388 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 1386 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1388 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 1387 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1389 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -177,6 +177,22 @@
         "reason": "GNU coreutils CPU counter; absent on macOS, which also has no /proc/cpuinfo."
       },
       {
+        "file": "script/m14/elixir-declaration.ts",
+        "line": 224,
+        "kind": "gnu-only-command-form",
+        "matched": "stat -c",
+        "api": "execFileSync",
+        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
+      },
+      {
+        "file": "script/m14/kotlin-declaration.ts",
+        "line": 227,
+        "kind": "gnu-only-command-form",
+        "matched": "stat -c",
+        "api": "execFileSync",
+        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
+      },
+      {
         "file": "script/m14/tmp/c-audit/census.ts",
         "line": 445,
         "kind": "non-portable-binary",
@@ -193,12 +209,36 @@
         "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
       },
       {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/claim-refutation-census.mts",
+        "line": 77,
+        "kind": "gnu-only-command-form",
+        "matched": "stat -c",
+        "api": "execFileSync",
+        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
+      },
+      {
         "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/incoming-split.mts",
         "line": 780,
         "kind": "non-portable-binary",
         "matched": "sha256sum",
         "api": "execFileSync",
         "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/refutation-row-probe.mts",
+        "line": 55,
+        "kind": "gnu-only-command-form",
+        "matched": "stat -c",
+        "api": "execFileSync",
+        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
+      },
+      {
+        "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/powershell/runtime-variable-disposition.mts",
+        "line": 77,
+        "kind": "gnu-only-command-form",
+        "matched": "stat -c",
+        "api": "execFileSync",
+        "reason": "GNU stat's --format/-c; BSD stat has no -c (measured: `stat: illegal option -- c`)."
       },
       {
         "file": "script/m14/tmp/elixir-274/validation/m14/fixtures/sql/hang-isolate.mts",
@@ -275,8 +315,8 @@
     ],
     "ok": true
   },
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
-  "sourceFingerprint": "8f156b68257952e2e20aa72585047fe6348c926646522ea0eb7e08a2899e1ed9",
+  "currentCommit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
+  "sourceFingerprint": "61efe6c9c627a2b3c8f6df000a0fcbabe1c3a1cc350902f55db907c0b2097aea",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-positions.ts",
@@ -286,7 +326,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-17T17:00:02.530Z",
+  "generatedAt": "2026-11-04T01:15:45.295Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -300,7 +340,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:00:02.543Z",
-    "contentSha256": "126bce92cc32394a2b989cc19beeab87872b00935c19bf96e4d2fa0057b03c9b"
+    "sealedAt": "2026-11-04T01:15:45.295Z",
+    "contentSha256": "db3cf452b0ee05d20c827d4d33b8c5a729765db20cf9efeb43ad76bf5d9b1a76"
   }
 }

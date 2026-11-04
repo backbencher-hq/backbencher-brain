@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "7aa43c0787ef82cab1c5215d103e3b7c98390837",
+  "currentCommit": "94d9b3497fb38ce34689770c95cf85dcd981f6cf",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
   "evidenceFile": "C1-bb_cross_language.json",
-  "generatedAt": "2026-11-04T01:45:20.266Z",
+  "generatedAt": "2026-11-04T01:47:49.991Z",
   "tools": [
     "bb_cross_language"
   ],
@@ -29,7 +29,7 @@
       "repo": "graphql-js",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 3,
+      "ms": 2,
       "args": "{\"symbol\":\"toDeepEqual\"}",
       "outHead": "{\"symbol\":\"toDeepEqual\",\"language\":\"typescript\",\"languages\":[\"typescript\"],\"copies\":[{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
     },
@@ -45,7 +45,7 @@
       "repo": "lodash",
       "ok": true,
       "declaredAbsent": false,
-      "ms": 3,
+      "ms": 4,
       "args": "{\"symbol\":\"map\"}",
       "outHead": "{\"symbol\":\"map\",\"language\":\"javascript\",\"languages\":[\"javascript\"],\"copies\":[{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"symbol\":\"map\","
     }

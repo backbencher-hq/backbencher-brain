@@ -142,7 +142,97 @@
     {
       "name": "public file mode refuses a path escape with an error envelope",
       "pass": true,
-      "detail": "isError=true text=bb_search mode=file: path escapes project root: /private/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/outside.ts"
+      "detail": "isError=true text=bb_search mode=file: path escapes project root: /tmp/outside.ts"
+    },
+    {
+      "name": "content search reaches a body-only phrase",
+      "pass": true,
+      "detail": "results=1"
+    },
+    {
+      "name": "content declares matchMode on the phrase route",
+      "pass": true,
+      "detail": "phrase"
+    },
+    {
+      "name": "content declares bodyCoverage with stored bodies",
+      "pass": true,
+      "detail": "{\"withBody\":11,\"symbols\":13,\"ratio\":0.8461538461538461}"
+    },
+    {
+      "name": "content terms route reports matchMode=terms",
+      "pass": true,
+      "detail": "terms"
+    },
+    {
+      "name": "content language filter is case-insensitive (uppercase value matches)",
+      "pass": true,
+      "detail": "results=1"
+    },
+    {
+      "name": "content symbolKind filter is case-insensitive (uppercase value matches)",
+      "pass": true,
+      "detail": "results=1"
+    },
+    {
+      "name": "content read adds no schema objects to the index database [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before=(none) after=(none)"
+    },
+    {
+      "name": "public symbols answer carries the machine-readable match-set line",
+      "pass": true,
+      "detail": "handleRequest [function] src/app.ts:2 (typescript)\nshowing 1 of 2 matches\n[match-set] searchMode=symbols totalMatches=2 returned=1 truncated=false staleCount=0"
+    },
+    {
+      "name": "door accepts limit/offset on symbol mode (paging contract)",
+      "pass": true,
+      "detail": "door rejected symbol-mode paging"
+    },
+    {
+      "name": "public boundary refuses limit above 2000 with the declared ceiling [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "no refusal"
+    },
+    {
+      "name": "public boundary refuses exact combined with regex [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_search symbols mode: exact and regex cannot be combined — exact asks for a whole-name match, regex asks for a pattern"
+    },
+    {
+      "name": "public boundary refuses refresh in file mode (manual-only staleness) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_search file mode does not accept: refresh — accepted for file: mode, filePath (file mode never auto-refreshes; its st"
+    },
+    {
+      "name": "symbol mode returns the COMPLETE match set when no limit is given",
+      "pass": true,
+      "detail": "{\"total\":2,\"returned\":2,\"truncated\":false}"
+    },
+    {
+      "name": "symbol mode pages with a declared total and distinct offsets",
+      "pass": true,
+      "detail": "{\"p1\":1,\"p2\":1,\"total\":2}"
+    },
+    {
+      "name": "symbol mode offset past the end is an empty page with a declared total, not an absent symbol [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"total\":2,\"returned\":0,\"found\":true}"
+    },
+    {
+      "name": "symbol mode match shape carries language on the filePath fallback path",
+      "pass": true,
+      "detail": "[\"typescript\"]"
+    },
+    {
+      "name": "regex scan is deterministic across 5 warm calls",
+      "pass": true,
+      "detail": "handle,handleRequest | handle,handleRequest | handle,handleRequest | handle,handleRequest | handle,handleRequest"
     },
     {
       "name": "symbol search flags stale rows after modification",
@@ -163,12 +253,18 @@
       "name": "file mode reports stale after modification",
       "pass": true,
       "detail": ""
+    },
+    {
+      "name": "file mode's stale remediation does NOT claim auto-refresh or name refresh=false [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index \"src/app.ts\" (or the bb_index tool with that file path)"
     }
   ],
-  "negativeCases": 3,
+  "negativeCases": 9,
   "summary": {
-    "total": 30,
-    "passed": 30,
+    "total": 48,
+    "passed": 48,
     "failed": 0
   },
   "decisions": {
@@ -180,5 +276,5 @@
     "This evidence does not establish analyzer completeness or semantic-answer quality.",
     "S2 (e2e) and S3 (real-repo corpus) are separate M13 issues."
   ],
-  "generatedAt": "2026-09-29T07:43:16.905Z"
+  "generatedAt": "2026-11-04T02:56:50.124Z"
 }

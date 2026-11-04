@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "1aa73c33ef60c6515e5b431d09674d1117e72e2855b6ece2f4cba4f0d3feab06",
-    "sealedAt": "2026-10-31T04:58:57.000Z"
+    "contentSha256": "6dce5cf4c8a1f5264002d22235f4f1a40ffb9a9f31ee491f315bd696d3876b41",
+    "sealedAt": "2026-11-04T00:28:30.000Z"
   },
   "checks": [
     {
@@ -18,7 +18,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (34/47 languages pass)",
+      "description": "per-literal shrink-only register with reasons (35/47 languages pass)",
       "detail": "unregistered cpp type \"unique_ptr\"; unregistered cpp type \"shared_ptr\"; unregistered cpp type \"weak_ptr\"; unregistered cpp type \"auto_ptr\"; unregistered cpp type \"optional\"; unregistered cpp type \"reference_wrapper\"; unregistered cpp type \"atomic\"; unregistered dart type \"mixes_in\"; unregistered dart type \"mixes_in\"; unregistered dart type \"mixes_in\"",
       "id": "dead-literal-gate",
       "status": "fail"
@@ -30,8 +30,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "8a3358879aa75ff01c8eaa799f0705904dfe14c8",
-  "committedAt": "2026-10-31T00:58:57-04:00",
+  "commit": "f58832eb1bdb7d5d7ebedbbfcd586734d447359e",
+  "committedAt": "2026-11-03T19:28:30-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -49,7 +49,7 @@
           {
             "from": 0,
             "lang": "vb",
-            "to": 1
+            "to": 3
           },
           {
             "from": 0,
@@ -84,11 +84,6 @@
           {
             "from": 0,
             "lang": "ruby",
-            "to": 2
-          },
-          {
-            "from": 0,
-            "lang": "rust",
             "to": 2
           },
           {
@@ -208,8 +203,22 @@
             "context": "real-vb-analyzer.ts:comparison",
             "kind": "type",
             "lang": "vb",
-            "line": 2858,
+            "line": 2878,
             "literal": "local_declaration_statement"
+          },
+          {
+            "context": "real-vb-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "vb",
+            "line": 3268,
+            "literal": "attribute_argument"
+          },
+          {
+            "context": "real-vb-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "vb",
+            "line": 3268,
+            "literal": "argument"
           },
           {
             "context": "real-javascript-analyzer.ts:comparison",
@@ -1836,20 +1845,6 @@
             "literal": "mixes_in"
           },
           {
-            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "rust",
-            "line": 4486,
-            "literal": "token_tree"
-          },
-          {
-            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "rust",
-            "line": 4571,
-            "literal": "token_tree"
-          },
-          {
             "context": "real-sql-analyzer.ts:comparison",
             "kind": "type",
             "lang": "sql",
@@ -2476,7 +2471,7 @@
         "fieldless": false,
         "oracleFieldCount": 24,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 176,
+        "oracleNodeTypeCount": 178,
         "referencedFieldLiterals": 1,
         "referencedTypeLiterals": 7,
         "status": "pass",
@@ -3839,21 +3834,10 @@
         "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
-        "referencedFieldLiterals": 17,
-        "referencedTypeLiterals": 87,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
-            "line": 4486,
-            "literal": "token_tree"
-          },
-          {
-            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
-            "line": 4571,
-            "literal": "token_tree"
-          }
-        ],
+        "referencedFieldLiterals": 16,
+        "referencedTypeLiterals": 88,
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -4137,14 +4121,24 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 451,
         "referencedFieldLiterals": 18,
-        "referencedTypeLiterals": 52,
+        "referencedTypeLiterals": 54,
         "status": "fail",
         "unknownFields": [],
         "unknownNodeTypes": [
           {
             "context": "real-vb-analyzer.ts:comparison",
-            "line": 2858,
+            "line": 2878,
             "literal": "local_declaration_statement"
+          },
+          {
+            "context": "real-vb-analyzer.ts:comparison",
+            "line": 3268,
+            "literal": "attribute_argument"
+          },
+          {
+            "context": "real-vb-analyzer.ts:comparison",
+            "line": 3268,
+            "literal": "argument"
           }
         ],
         "waivedFindings": [],
@@ -4256,9 +4250,9 @@
       }
     },
     "summary": {
-      "fail": 13,
+      "fail": 12,
       "languagesAudited": 47,
-      "pass": 34,
+      "pass": 35,
       "totalUnknownReferences": 254
     }
   },
@@ -4287,8 +4281,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-31T00:58:57-04:00",
-  "regeneratedAtCommit": "8a3358879aa75ff01c8eaa799f0705904dfe14c8",
+  "regeneratedAt": "2026-11-03T19:28:30-05:00",
+  "regeneratedAtCommit": "f58832eb1bdb7d5d7ebedbbfcd586734d447359e",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

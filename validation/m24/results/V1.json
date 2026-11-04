@@ -1,8 +1,8 @@
 {
   "issue": "495",
   "code": "V1",
-  "status": "known-gap",
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "status": "verified",
+  "currentCommit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
   "sourceFingerprint": "115d5d1ad87e92e79617478f0600ed6829c5b2d73db91f70a740b336d8fcb2c8",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -12,31 +12,23 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-17T17:06:34.035Z",
-  "passed": 19,
-  "failed": 6,
-  "failures": [
-    "G3: node-source leg verified (all harness checks pass)",
-    "G3: node-source harness reports 0 failures",
-    "G2: node-dist meets all warm budgets (7 ops)",
-    "G2: bun-source meets all warm budgets (7 ops)",
-    "G4: gate rejects a hidden hover budget violation (2x budget) [negative]",
-    "G4: real gate and mutant (hidden-violation) gate produce different verdicts"
-  ],
+  "generatedAt": "2026-11-04T01:15:26.116Z",
+  "passed": 26,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 6,
   "verdict": {
-    "realComponentFailures": 6,
-    "ok": false,
+    "realComponentFailures": 0,
+    "ok": true,
     "note": "`failed` counts real gate failures only; blocked runtime legs are recorded with reason, never silently skipped."
   },
   "runs": [
     {
       "runtime": "node-source",
-      "status": "failed",
-      "reason": "timeout waiting for initialize response",
-      "commit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "status": "verified",
+      "commit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
       "machine": {
-        "kernel": "Linux 7.1.5-76070105-generic",
+        "kernel": "Linux 7.2.6-76070206-generic",
         "kernelSource": "os.type() + os.release()",
         "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "cpuSource": "os.cpus()[0].model",
@@ -51,14 +43,57 @@
         "symbols": 3,
         "relationships": 1
       },
-      "features": []
+      "features": [
+        {
+          "op": "hover",
+          "p95WarmMs": 6.868899000000056,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "definition",
+          "p95WarmMs": 1.8627160000000913,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "references",
+          "p95WarmMs": 2.3033619999996517,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "documentSymbol",
+          "p95WarmMs": 1.865146999999979,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "workspaceSymbol",
+          "p95WarmMs": 1.9680299999999988,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "prepareCallHierarchy",
+          "p95WarmMs": 2.8249150000001464,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "callHierarchyExpand",
+          "p95WarmMs": 2.49221099999977,
+          "samples": 60,
+          "passed": true
+        }
+      ]
     },
     {
       "runtime": "node-dist",
       "status": "verified",
-      "commit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "commit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
       "machine": {
-        "kernel": "Linux 7.1.5-76070105-generic",
+        "kernel": "Linux 7.2.6-76070206-generic",
         "kernelSource": "os.type() + os.release()",
         "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "cpuSource": "os.cpus()[0].model",
@@ -76,43 +111,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 74.45034099999611,
+          "p95WarmMs": 5.273129999999583,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 42.479153000000224,
+          "p95WarmMs": 1.7575109999997949,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 61.539552000002004,
+          "p95WarmMs": 1.8369430000002467,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 56.27808200000436,
+          "p95WarmMs": 1.6326490000001286,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 79.7286030000032,
+          "p95WarmMs": 1.7055329999993774,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 91.55812799999694,
+          "p95WarmMs": 1.71516900000006,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 156.92583100000047,
+          "p95WarmMs": 3.1231079999997746,
           "samples": 60,
           "passed": true
         }
@@ -121,9 +156,9 @@
     {
       "runtime": "bun-source",
       "status": "verified",
-      "commit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+      "commit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
       "machine": {
-        "kernel": "Linux 7.1.5-76070105-generic",
+        "kernel": "Linux 7.2.6-76070206-generic",
         "kernelSource": "os.type() + os.release()",
         "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "cpuSource": "os.cpus()[0].model",
@@ -141,43 +176,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 227.53089099999488,
+          "p95WarmMs": 6.67103600000155,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 184.37142100000347,
+          "p95WarmMs": 2.81998300000123,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 109.17152599999099,
+          "p95WarmMs": 3.5480769999994664,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 129.91773800000374,
+          "p95WarmMs": 2.9270639999995183,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 97.79002400000172,
+          "p95WarmMs": 2.5820569999996223,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 186.8800959999935,
+          "p95WarmMs": 2.4558150000011665,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 219.33430000000226,
+          "p95WarmMs": 3.4413729999996576,
           "samples": 60,
           "passed": true
         }
@@ -188,13 +223,13 @@
     "rule": "every §3 machine fact is a measurement with declared provenance; a fact that cannot be determined is a DECLARED ABSENCE (null) WITH a reason — never 0, never \"\"",
     "owner": "script/m24/lsp_harness.ts machineFacts() — node:os only (os.type/os.release, os.cpus, os.totalmem), no uname, no /proc, no shell",
     "liveReference": {
-      "kernel": "Linux 7.1.5-76070105-generic",
+      "kernel": "Linux 7.2.6-76070206-generic",
       "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
       "ramGb": 16.6
     },
     "measuredOs": {
       "platform": "linux",
-      "release": "7.1.5-76070105-generic",
+      "release": "7.2.6-76070206-generic",
       "arch": "x64"
     },
     "declaredAbsentOses": [
@@ -256,7 +291,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:06:34.128Z",
-    "contentSha256": "18b6f58257189ed4fa122cc8142d280865b090f8a88ba5f532c663a9ec8ad465"
+    "sealedAt": "2026-11-04T01:15:26.119Z",
+    "contentSha256": "717aae04ab5ff22a938946b4072c95265f4b71a2f6e61e0247e9c07aa96f40a6"
   }
 }

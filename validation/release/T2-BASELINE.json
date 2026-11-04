@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "what": "Campaign T2 baseline — all read tools against the shared 3.6 GB reference index, in-process handler calls, warm runs.",
-  "generatedAt": "2026-11-03T20:39:00.536Z",
+  "generatedAt": "2026-11-04T03:06:46.993Z",
   "head": "ref: re",
   "referenceIndex": {
     "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
     "projectPath": "$HOME/mcp/backbencher-brain",
     "dbPath": ".bb-data/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
     "dbBytes": 3885883392,
-    "dbMtimeMs": 1793725551029.1978
+    "dbMtimeMs": 1793749442893.4658
   },
   "protocol": {
     "env": "BB_DATA_DIR=<repo>/.bb-data, BB_NO_AUTO_REFRESH=1",
@@ -18,16 +18,16 @@
       "dbBytesBefore": 3885883392,
       "dbBytesAfter": 3885883392,
       "dbMtimeUnchanged": true,
-      "edgeHashBefore": "8a2358697d2eed7a",
-      "edgeHashAfter": "8a2358697d2eed7a",
+      "edgeHashBefore": "2e697320f38adcd0",
+      "edgeHashAfter": "2e697320f38adcd0",
       "toolWriters": [],
       "noToolWrote": true,
       "wholeRunUnchanged": true
     },
     "loadavg": [
-      4.27,
-      5.91,
-      4.17
+      0.74,
+      1.74,
+      4.87
     ]
   },
   "skippedWriteTools": [
@@ -45,25 +45,25 @@
       "mutability": "read",
       "budgetMs": 2000,
       "runs": [
-        663,
-        650
+        564,
+        564
       ],
-      "p50Ms": 657,
-      "p95Ms": 663,
+      "p50Ms": 564,
+      "p95Ms": 564,
       "withinBudget": true,
       "isError": false,
-      "outputBytes": 1541
+      "outputBytes": 1539
     },
     {
       "tool": "bb_search",
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        263,
-        262
+        218,
+        224
       ],
-      "p50Ms": 263,
-      "p95Ms": 263,
+      "p50Ms": 221,
+      "p95Ms": 224,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 277
@@ -73,11 +73,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        1650,
-        1750
+        887,
+        993
       ],
-      "p50Ms": 1700,
-      "p95Ms": 1750,
+      "p50Ms": 940,
+      "p95Ms": 993,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2613
@@ -87,11 +87,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3009,
-        3033
+        2513,
+        2579
       ],
-      "p50Ms": 3021,
-      "p95Ms": 3033,
+      "p50Ms": 2546,
+      "p95Ms": 2579,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 35118
@@ -101,11 +101,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3497,
-        4031
+        2786,
+        2756
       ],
-      "p50Ms": 3764,
-      "p95Ms": 4031,
+      "p50Ms": 2771,
+      "p95Ms": 2786,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1190
@@ -115,11 +115,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        443,
-        410
+        201,
+        235
       ],
-      "p50Ms": 427,
-      "p95Ms": 443,
+      "p50Ms": 218,
+      "p95Ms": 235,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2897
@@ -129,11 +129,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        339,
-        422
+        228,
+        227
       ],
-      "p50Ms": 381,
-      "p95Ms": 422,
+      "p50Ms": 228,
+      "p95Ms": 228,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1491
@@ -143,11 +143,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        991,
-        1002
+        869,
+        866
       ],
-      "p50Ms": 997,
-      "p95Ms": 1002,
+      "p50Ms": 868,
+      "p95Ms": 869,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 2856
@@ -157,11 +157,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        253,
-        267
+        199,
+        197
       ],
-      "p50Ms": 260,
-      "p95Ms": 267,
+      "p50Ms": 198,
+      "p95Ms": 199,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 6827
@@ -171,11 +171,11 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3006,
-        3396
+        3279,
+        3261
       ],
-      "p50Ms": 3201,
-      "p95Ms": 3396,
+      "p50Ms": 3270,
+      "p95Ms": 3279,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 25928
@@ -185,25 +185,25 @@
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        2201,
-        2274
+        2213,
+        2218
       ],
-      "p50Ms": 2238,
-      "p95Ms": 2274,
+      "p50Ms": 2216,
+      "p95Ms": 2218,
       "withinBudget": true,
       "isError": false,
-      "outputBytes": 164662
+      "outputBytes": 164664
     },
     {
       "tool": "bb_cross_language",
       "mutability": "read",
       "budgetMs": 5000,
       "runs": [
-        3,
-        6
+        2,
+        2
       ],
-      "p50Ms": 5,
-      "p95Ms": 6,
+      "p50Ms": 2,
+      "p95Ms": 2,
       "withinBudget": true,
       "isError": false,
       "outputBytes": 1274

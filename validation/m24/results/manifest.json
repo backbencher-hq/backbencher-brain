@@ -40,13 +40,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+        "currentCommit": "286ec3ffaffe6205975e5e37bdd88a17ad3329f9",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
         "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: package.json, script/m24/verify-navigation.ts"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+        "currentCommit": "5253fc535f040ce29e4169d4fc5be69e9bbb8d94",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -140,7 +140,7 @@
       "code": "L2",
       "githubIssue": 491,
       "tool": "lsp-hover",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "hover with signature, usage count, evidence class, stale marker",
       "acceptanceCriteria": [
         "hover returns signature plus usage count plus evidence class",
@@ -153,15 +153,15 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+        "status": "verified",
+        "currentCommit": "5253fc535f040ce29e4169d4fc5be69e9bbb8d94",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
-        "passed": 57,
-        "failed": 1,
+        "passed": 58,
+        "failed": 0,
         "negativeCases": 14,
         "blockedReason": "index-sourced only; no compiler-backed types (complement stance)",
-        "realFailed": 1,
+        "realFailed": 0,
         "mutantsCaught": 6,
         "mutantsTotal": 6
       }
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+        "currentCommit": "6a584e8a271724200d76bfcc0e4d3526c6706df9",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+        "currentCommit": "5253fc535f040ce29e4169d4fc5be69e9bbb8d94",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+        "currentCommit": "48396fb6e9c010833421c3b0d3137070ee657028",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 46,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:22:55.039Z",
-    "contentSha256": "4d6d5a62b9c1dda06176641fc81cdd154cf6feb5a28a3a19a842dbf0bbfbc423"
+    "sealedAt": "2026-11-04T00:27:43.076Z",
+    "contentSha256": "57d8381ce27f1bd594183a15a7b0c6ccbe7213a886fd2fde35fd99f8c0451ee5"
   }
 }

@@ -13,11 +13,11 @@
     "caught": 8
   },
   "anchorDrift": 0,
-  "currentCommit": "88e2d9f4494c0c3738e5f262807a3ff7dc87f03d",
+  "currentCommit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-type-inference.ts",
   "evidenceFile": "T6.json",
-  "generatedAt": "2026-10-05T23:11:33.116Z",
+  "generatedAt": "2026-11-04T01:19:15.631Z",
   "volatileFields": [
     "generatedAt — the wall clock of the run",
     "bbSeal — seals generatedAt, so it moves with it",
@@ -27,8 +27,8 @@
     "machine.loadavg — the machine's load at run time"
   ],
   "fixture": {
-    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t6-ws-IqDYyH",
-    "projectId": "876d70f8380415268b5ad7b8037d42a82dc2d070",
+    "workspace": "/tmp/m55-t6-ws-3eKVhz",
+    "projectId": "2ec263651a13b2db69e3e160b2b9b7221ed70098",
     "symbols": 10
   },
   "observed": {
@@ -345,51 +345,51 @@
   "latency": {
     "perShape": {
       "ts-literal": {
-        "p95": 10.737961999999243,
-        "p50": 8.272726000002876,
+        "p95": 4.335229999996955,
+        "p50": 2.6917840000023716,
         "n": 200
       },
       "ts-void": {
-        "p95": 11.817124000008334,
-        "p50": 8.027618000007351,
+        "p95": 4.170895000002929,
+        "p50": 2.52848300000187,
         "n": 200
       },
       "scala": {
-        "p95": 11.175125000008848,
-        "p50": 8.180479000002379,
+        "p95": 4.400991999995313,
+        "p50": 2.8281170000118436,
         "n": 200
       },
       "kotlin": {
-        "p95": 9.921575999993365,
-        "p50": 6.275121000013314,
+        "p95": 4.803994000001694,
+        "p50": 2.7854389999993145,
         "n": 200
       },
       "over-ceiling": {
-        "p95": 31.017106999992393,
-        "p50": 24.10772500000894,
+        "p95": 8.652338999992935,
+        "p50": 3.350558000005549,
         "n": 200
       }
     },
     "loadAtStart": [
-      5.80810546875,
-      3.96435546875,
-      3.8994140625
+      1.11,
+      4.35,
+      9.39
     ],
     "loadAtEnd": [
-      6.41259765625,
-      4.943359375,
-      4.31640625
+      0.49,
+      2.86,
+      8.09
     ]
   },
   "machine": {
-    "platform": "darwin",
-    "release": "23.6.0",
-    "cpus": 12,
-    "ramGB": 17.2,
+    "platform": "linux",
+    "release": "7.2.6-76070206-generic",
+    "cpus": 8,
+    "ramGB": 16.6,
     "loadavg": [
-      6.41,
-      4.94,
-      4.32
+      0.49,
+      2.86,
+      8.09
     ]
   },
   "failures": [],
@@ -403,7 +403,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T23:11:33.124Z",
-    "contentSha256": "eae782b9e218c94f2a4f74e7949564b1c04a497c9c15eccb4efd19ada9fb94df"
+    "sealedAt": "2026-11-04T01:19:15.666Z",
+    "contentSha256": "c0d4f1a6397774a8d72a2c6018f1e5decabd1be73a8db6cbb8c61474b5546a86"
   }
 }

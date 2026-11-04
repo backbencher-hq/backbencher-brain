@@ -1,8 +1,8 @@
 {
   "code": "CALLSITE-AGREEMENT",
-  "status": "verified",
-  "currentCommit": "268586a6a659ca3f6f9c8ee36659fccc68c19ef2",
-  "sourceFingerprint": "5617e505984b280ab73e1d04b41c27f040cc7df992968c3f62bd500e3f80f302",
+  "status": "known-gap",
+  "currentCommit": "55df89c3e52009b0ee09d50c20103b37ee6cc964",
+  "sourceFingerprint": "ff1bb8d6cebebe7ad15f8113207f551235b8526014e47736cbefe515b20e081b",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-callsite-agreement.ts",
@@ -14,92 +14,63 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-callsite-agreement.ts",
   "evidenceFile": "CALLSITE-AGREEMENT.json",
-  "generatedAt": "2026-10-05T22:18:34.061Z",
-  "passed": 13,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-11-01T23:31:32.641Z",
+  "passed": 10,
+  "failed": 3,
+  "failures": [
+    "A1: every served position EQUALS the index-stored line for its own row (differential against the store, not a recomputation)",
+    "A1: the measurement is not vacuous — the real index served EXACT call sites, differentially checked against their own stored rows",
+    "A1-SOURCE: the served line's own text usually NAMES the callee — a rate near zero would mean the store's lines are unrelated to their rows and the differential above would be arithmetically right and semantically empty"
+  ],
   "index": {
-    "path": "$HOME/.bb/projects/818db37d8f54173ad1357ab24627373da2e9418c/brain.db",
-    "mtime": "2026-10-03T04:50:06.672Z",
-    "selectionRule": "most relationship rows (766227), ties broken by path",
+    "path": "$HOME/.bb/projects/php-store-census-1791476878516-641485/brain.db",
+    "mtime": "2026-10-08T16:30:42.331Z",
+    "selectionRule": "most relationship rows (326968), ties broken by path",
     "selectionCaveat": "machine-local: these numbers describe ONE index on ONE machine. Reproducing them elsewhere needs `--db` pointed at an equivalent index. The rule is declared and deterministic (most relationship rows, ties by path) so two runs on an unchanged store read the same input — the first version of this harness picked the NEWEST index by mtime and two consecutive runs read different stores (601 checked positions vs 7), which is the §8.2 failure one level up: a byte-stable record carrying an unstable claim."
   },
   "measured": {
-    "symbolsWithIncomingRows": 493,
-    "positionsChecked": 46,
-    "exactCallSitesServed": 46,
+    "symbolsWithIncomingRows": 598,
+    "positionsChecked": 0,
+    "exactCallSitesServed": 0,
     "sourceTextCheck": {
-      "linesChecked": 46,
-      "linesNamingTheCallee": 42
+      "linesChecked": 0,
+      "linesNamingTheCallee": 0
     },
     "labelledDeclarationSubstitutes": 0,
     "sourcesUnreadable": 0,
     "surfaceAgreement": {
-      "agree": 61,
+      "agree": 398,
       "differ": 0,
-      "declarationsObserved": 1,
+      "declarationsObserved": 0,
       "examples": []
     },
     "rowAccountability": {
-      "agreements": 2,
+      "agreements": 0,
       "disagreements": 0,
-      "behindLaunchGate": 491,
+      "behindLaunchGate": 598,
       "declaredAbsentForOtherReasons": 0,
       "examples": [],
       "harnessDefectFoundAndFixed": "The first version of A2-STORE ignored the §11.7 launch gate and reported 73 'unaccounted rows' on the 765k-row index — every one a yaml/python file the launch set had refused on purpose. Reading a declared absence as a missing row is precisely what §11.7 calls a violation, and the harness was committing it against the component. The gate is now counted as declared absence."
     },
     "nameTestDisagreements": {
-      "checked": 46,
-      "containTheCalleeName": 42,
-      "reported": [
-        {
-          "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:website/src/app/docs/page.tsx:DocsPage:117:Database:uses:152",
-          "relationshipType": "uses",
-          "callee": "Database",
-          "servedLine": 152,
-          "storedLine": 152,
-          "text": ""
-        },
-        {
-          "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:website/src/app/docs/page.tsx:DocsPage:117:Database:uses:166",
-          "relationshipType": "uses",
-          "callee": "Database",
-          "servedLine": 166,
-          "storedLine": 166,
-          "text": ""
-        },
-        {
-          "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:script/m14/run-fixtures.ts:runLang:442:constructor:uses:474",
-          "relationshipType": "uses",
-          "callee": "constructor",
-          "servedLine": 474,
-          "storedLine": 474,
-          "text": "const ParserClass = wts.Parser ?? wts.default ?? wts"
-        },
-        {
-          "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:src/ast/engine.ts:parseRaw:1303:constructor:uses:1436",
-          "relationshipType": "uses",
-          "callee": "constructor",
-          "servedLine": 1436,
-          "storedLine": 1436,
-          "text": "}> {"
-        }
-      ]
+      "checked": 0,
+      "containTheCalleeName": 0,
+      "reported": []
     },
     "plantedDefects": {
       "caught": 2,
       "total": 2,
       "blocked": 1,
-      "detail": "served line points at the caller's DECLARATION while the payload keeps the store's line (only a source-text check sees this): caught by A2-STORE | a served position is attributed to a rowId the store does not hold: caught by A2-STORE | an omission counter is zeroed, so a row vanishes with nothing declared: BLOCKED — among the rows this surface actually serves on this index, 0 are unpositionable (the index holds 625 NULL-line rows, all behind the launch gate or the relation vocabulary), so zeroing an already-zero counter is a no-op and the gate was never engaged. Judged on the fixture instead (verify-navigation.ts U4/U5 and their mutants).",
+      "detail": "served line points at the caller's DECLARATION while the payload keeps the store's line (only a source-text check sees this): caught by A2-STORE | a served position is attributed to a rowId the store does not hold: caught by A2-STORE | an omission counter is zeroed, so a row vanishes with nothing declared: BLOCKED — among the rows this surface actually serves on this index, 0 are unpositionable (the index holds 0 NULL-line rows, all behind the launch gate or the relation vocabulary), so zeroing an already-zero counter is a no-op and the gate was never engaged. Judged on the fixture instead (verify-navigation.ts U4/U5 and their mutants).",
       "declarationPlantCaughtBy": "A2-STORE",
       "blockedNote": "A plant whose precondition the real index does not meet is BLOCKED with its reason and excluded from the denominator, rather than counted as a survivor. The omission-counter law is exercised on the fixture instead (verify-navigation.ts U4/U5 and their mutants).",
       "discriminationNote": "The served-line name test (A1-SOURCE) does NOT, on this index, discriminate a declaration position from a call-site position: the caller's declaration line of a multi-line function often contains the callee's name further down, so the text test passes. The accounting law (A2-STORE) is what catches that plant here. The name test's discriminating power is proven on the FIXTURE instead, where the caller's declaration is a single line with no call sites on it (verify-navigation.ts, mutant 'the old declaration position is served for a stored call site')."
     },
     "storeCoverage": {
-      "relationshipRows": 766227,
-      "realLine": 765602,
+      "relationshipRows": 326968,
+      "realLine": 326968,
       "legacyZero": 0,
-      "nullOrAbsent": 625
+      "nullOrAbsent": 0
     }
   },
   "§15.1": {
@@ -122,7 +93,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:18:34.061Z",
-    "contentSha256": "c6e58775d26c3a2e8fdfa63344c0e98472e66ecd8bbbebbcb93a14f048c62fa5"
+    "sealedAt": "2026-11-01T23:31:32.642Z",
+    "contentSha256": "d396b2898f43b7f2e186f3aadd7cc4b7d73b1af0d18f710ab7a648af3903e2c9"
   }
 }

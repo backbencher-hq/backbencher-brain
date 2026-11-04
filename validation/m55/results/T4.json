@@ -12,7 +12,7 @@
     "total": 4,
     "caught": 4
   },
-  "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
+  "currentCommit": "55df89c3e52009b0ee09d50c20103b37ee6cc964",
   "sourceFingerprint": "03828d4cd92006e370bd3c762c62a4fb407a277f923d7b249b8731c62e94f34c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -24,10 +24,10 @@
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-signatures.ts",
   "evidenceFile": "T4.json",
-  "generatedAt": "2026-10-16T19:35:37.301Z",
+  "generatedAt": "2026-11-01T23:29:44.359Z",
   "fixture": {
-    "workspace": "/tmp/m55-t4-ws-WNeAWs",
-    "projectId": "a66b89a54a80f94905e344e2888586bd0cb5fecc",
+    "workspace": "/tmp/m55-t4-ws-Co1b8N",
+    "projectId": "13f4d5a98051e2e02d983dbbc0613173e752d495",
     "symbols": 10,
     "storedShapes": [
       "null",
@@ -75,7 +75,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-16T19:35:37.314Z",
-    "contentSha256": "da633284f00172e8e69c546716837dd1bedc6d3b8bb37e6061f0933a29414bed"
+    "sealedAt": "2026-11-01T23:29:44.360Z",
+    "contentSha256": "41060bd17e188456f89e6915758449406d972d2a096bc3b1bc0fafa7cb49724a"
   }
 }
