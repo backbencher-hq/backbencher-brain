@@ -4,7 +4,7 @@
   "issue": "M13.21",
   "code": "S4",
   "tool": "bb_search",
-  "title": "bb_search: honesty audit (AST vs lexical; freshness truthfulness)",
+  "title": "bb_search: honesty audit (AST vs lexical; freshness truthfulness; body coverage)",
   "verifiedState": "verified",
   "layers": [
     "unit",
@@ -22,9 +22,9 @@
       "detail": "readFileSync present"
     },
     {
-      "name": "content mode: searches the indexed symbol corpus (name+qualified_name+docstring)",
+      "name": "content mode: searches the indexed symbol corpus (name+qualified_name+docstring+body)",
       "pass": true,
-      "detail": "not index-backed"
+      "detail": "not index-backed or the body column is missing"
     },
     {
       "name": "content mode: documented as not full-text file contents (no false claim)",
@@ -35,6 +35,11 @@
       "name": "content mode: no raw source-file reads",
       "pass": true,
       "detail": "readFileSync present"
+    },
+    {
+      "name": "read boundary: content search creates no schema on the read path",
+      "pass": true,
+      "detail": "read path still installs the FTS schema"
     },
     {
       "name": "symbol mode: handler delegates to ASTEngine.findSymbol (indexed records)",
@@ -67,6 +72,27 @@
       "detail": "no stale flagging"
     },
     {
+      "name": "runtime: body-only word is reachable in content mode",
+      "pass": true,
+      "detail": "results=1"
+    },
+    {
+      "name": "runtime: content declares matchMode",
+      "pass": true,
+      "detail": "phrase"
+    },
+    {
+      "name": "runtime: bodyCoverage.withBody counts stored bodies",
+      "pass": true,
+      "detail": "{\"withBody\":3,\"symbols\":3,\"ratio\":1}"
+    },
+    {
+      "name": "runtime: a content read adds no schema objects to the index database [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "before=(none) after=(none)"
+    },
+    {
       "name": "runtime: symbols-mode results all resolve to indexed brain_file rows",
       "pass": true,
       "detail": "results=2"
@@ -89,32 +115,30 @@
       "detail": "returned 0 results"
     },
     {
-      "name": "runtime: file mode refuses unindexed path [negative]",
+      "name": "runtime: file mode refuses unindexed path through an error envelope [negative]",
       "pass": true,
       "negative": true,
-      "detail": "Error: file is not indexed: src/b.ts"
+      "detail": "isError=true text=bb_search mode=file: file is not indexed: src/b.ts"
     }
   ],
-  "negativeCases": 3,
+  "negativeCases": 4,
   "summary": {
-    "total": 16,
-    "passed": 16,
+    "total": 21,
+    "passed": 21,
     "failed": 0
   },
   "decisions": {
     "symbolsMode": "searchSymbols runs SQL over brain_symbol JOIN brain_file — the indexed corpus, never a raw filesystem or git scan",
-    "contentMode": "searchContent runs FTS5/LIKE over the indexed symbol corpus (name+qualified_name+docstring); the source header documents that this is NOT full-text file contents",
-    "symbolMode": "findSymbol reads indexed AST records from the brain database",
-    "fileMode": "requires a brain_file row; throws 'file is not indexed' when the row is absent — disk content is only read for indexed paths",
-    "freshness": "every search engine calls checkResultsFreshness, which compares the stored SHA-256 file_hash against on-disk bytes; changed files are flagged stale, never fresh"
+    "contentMode": "searchContent runs bounded SQL/FTS phases over the indexed symbol corpus (name, qualified name, docstring and the stored bounded body); the source header documents that this is NOT full-text file contents",
+    "symbolMode": "findSymbol reads indexed AST records from the brain database and noise-classifies by RELATIVE path",
+    "fileMode": "requires a brain_file row; refuses 'file is not indexed' when the row is absent — disk content is only read for indexed paths",
+    "freshness": "every search engine calls checkResultsFreshness, which compares the stored SHA-256 file_hash against on-disk bytes; changed files are flagged stale, never fresh",
+    "bodyCoverage": "bodyCoverage.withBody counts symbols whose stored body is non-empty; it is the disclosure that separates 'nothing matched' from 'nothing could match'",
+    "readBoundary": "a content read must not create schema in the index database (proven on a fresh fixture by listing sqlite_master before/after)"
   },
   "limitations": [
-    "The audit proves the index-backed claim statically (query shape) and dynamically (row-deletion probe); it does not re-verify analyzer symbol extraction (that is the M12 analyzer work)."
+    "The audit proves the index-backed claim statically (query shape) and dynamically (row-deletion probe); it does not re-verify analyzer symbol extraction.",
+    "Body reachability is proven on a TypeScript fixture whose analyzer stores symbol bodies; an analyzer that does not store bodies is represented by bodyCoverage, not repaired here."
   ],
-  "generatedAt": "2026-09-05T20:56:33.919Z",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.299Z",
-    "contentSha256": "5764bb14f68f936a5fcbed94f7090c49cdf72cd5832f8298826bc0e6e66a9b0e"
-  }
+  "generatedAt": "2026-11-04T00:44:14.961Z"
 }

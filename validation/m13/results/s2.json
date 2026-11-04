@@ -13,72 +13,72 @@
     {
       "name": "CLI symbols mode returns the symbol",
       "pass": true,
-      "detail": "handleRequest [function] src/app.ts:1 (typescript)\n"
+      "detail": "handleRequest [function] src/app.ts:1 (typescript)\n[match-set] searchMode=symbols totalMatches=1 returned=1 truncated=false staleCount=0\n"
     },
     {
       "name": "CLI content mode returns JSON with searchMode=content",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness"
+      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"pageStaleCount\": 0,\n  \"truncate"
     },
     {
       "name": "CLI symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/var/folders/4j/11tssyqj4kj0f8dfz06js"
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"9fe8c7106749d6aa6c5e8cb8253aff05ab9a78e7:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-2Vzsi6/src/dup.ts\""
     },
     {
       "name": "CLI file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"9fe8c7106749d6aa6c5e8cb8253aff05ab9a78e7:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "CLI rejects empty query [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search symbols mode requires a non-empty query\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-brain/"
+      "detail": "error: bb_search symbols mode requires a non-empty query\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --"
     },
     {
       "name": "CLI rejects file mode without filePath [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search file mode requires filePath\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-brain/bin/bb tool "
+      "detail": "error: bb_search file mode requires filePath\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-"
     },
     {
       "name": "CLI rejects unindexed file [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: file is not indexed: src/not-indexed.ts\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-br"
+      "detail": "bb_search mode=file: file is not indexed: src/not-indexed.ts\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_searc"
     },
     {
       "name": "CLI rejects path escape [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: path escapes project root: /private/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/escape.ts\nCommand failed: node /Use"
+      "detail": "bb_search mode=file: path escapes project root: /tmp/escape.ts\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_sea"
     },
     {
       "name": "CLI rejects non-string query [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search: query must be string\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-brain/bin/bb tool bb_sea"
+      "detail": "error: bb_search: query must be string\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-search"
     },
     {
       "name": "MCP symbols mode returns the symbol",
       "pass": true,
-      "detail": "handleRequest [function] src/app.ts:1 (typescript)"
+      "detail": "handleRequest [function] src/app.ts:1 (typescript)\n[match-set] searchMode=symbols totalMatches=1 returned=1 truncated=false staleCount=0"
     },
     {
       "name": "MCP content mode returns JSON with searchMode=content",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness"
+      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"pageStaleCount\": 0,\n  \"truncate"
     },
     {
       "name": "MCP symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/var/folders/4j/11tssyqj4kj0f8dfz06js"
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"9fe8c7106749d6aa6c5e8cb8253aff05ab9a78e7:src/dup.ts:duplicateName:1\",\n      \"fileId\": \"/tmp/bb-search-e2e-2Vzsi6/src/dup.ts\""
     },
     {
       "name": "MCP file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"9fe8c7106749d6aa6c5e8cb8253aff05ab9a78e7:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "MCP rejects empty query [negative]",
@@ -102,19 +102,52 @@
       "name": "MCP rejects path escape [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: path escapes project root: /private/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/escape.ts"
+      "detail": "bb_search mode=file: path escapes project root: /tmp/escape.ts"
     },
     {
       "name": "MCP rejects non-string query [negative]",
       "pass": true,
       "negative": true,
       "detail": "error: bb_search: query must be string"
+    },
+    {
+      "name": "MCP refuses exact combined with regex [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_search symbols mode: exact and regex cannot be combined — exact asks for a whole-name match, regex asks for a pattern; pass one"
+    },
+    {
+      "name": "MCP refuses limit above 2000 [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_search: limit must be between 0 and 2000 — refused rather than clamped, so a returned page always means the page asked for"
+    },
+    {
+      "name": "MCP symbol mode pages over a complete match set (declared total, distinct pages)",
+      "pass": true,
+      "detail": "p1={\n  \"matches\": [\n    {\n      \"id\": \"9fe8c7106749d6aa6c5e8cb8253aff05ab9a78e7:src/dup.ts:du p2={\n  \"matches\": [\n    {\n      \"id\": \"9fe8c7106749d6aa6c5e8cb8253aff05ab9a78e7:src/app.ts:du"
+    },
+    {
+      "name": "MCP symbols answer declares its match set",
+      "pass": true,
+      "detail": "handleRequest [function] src/app.ts:1 (typescript)\n[match-set] searchMode=symbols totalMatches=1 returned=1 truncated=false staleCount=0"
+    },
+    {
+      "name": "MCP content answer declares matchMode and bodyCoverage",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"pageStaleCount\": 0,\n  \"truncate"
+    },
+    {
+      "name": "MCP file mode refuses refresh (manual-only staleness) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_search file mode does not accept: refresh — accepted for file: mode, filePath"
     }
   ],
-  "negativeCases": 10,
+  "negativeCases": 13,
   "summary": {
-    "total": 18,
-    "passed": 18,
+    "total": 24,
+    "passed": 24,
     "failed": 0
   },
   "decisions": {
@@ -126,5 +159,5 @@
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
     "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
   ],
-  "generatedAt": "2026-09-29T07:49:30.591Z"
+  "generatedAt": "2026-11-04T00:44:13.200Z"
 }

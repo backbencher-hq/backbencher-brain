@@ -11,6 +11,11 @@
   ],
   "checks": [
     {
+      "name": "corpus rake/lib/rake (Ruby): sampled into a writable copy",
+      "pass": true,
+      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/rake/lib/rake"
+    },
+    {
       "name": "corpus rake/lib/rake (Ruby): symbols-mode finds Application",
       "pass": true,
       "detail": "got 3"
@@ -40,6 +45,11 @@
       "pass": true,
       "negative": true,
       "detail": "stale=true"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): sampled into a writable copy",
+      "pass": true,
+      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/graphql-js/src"
     },
     {
       "name": "corpus graphql-js/src (TypeScript): symbols-mode finds graphql",
@@ -73,6 +83,11 @@
       "detail": "stale=true"
     },
     {
+      "name": "corpus rebar3/apps (Erlang): sampled into a writable copy",
+      "pass": true,
+      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/rebar3/apps"
+    },
+    {
       "name": "corpus rebar3/apps (Erlang): symbols-mode finds rebar_config_dir",
       "pass": true,
       "detail": "got 1"
@@ -90,7 +105,7 @@
     {
       "name": "corpus rebar3/apps (Erlang): content-mode finds rebar_config_dir",
       "pass": true,
-      "detail": "got 1"
+      "detail": "got 2"
     },
     {
       "name": "corpus rebar3/apps (Erlang): pagination offset honored (distinct pages)",
@@ -104,32 +119,37 @@
       "detail": "stale=true"
     },
     {
-      "name": "corpus go_tools/go/analysis/passes (Go): symbols-mode finds unreachable",
+      "name": "corpus go-tools/go/analysis/passes (Go): sampled into a writable copy",
       "pass": true,
-      "detail": "got 2"
+      "detail": "$HOME/mcp/backbencher-brain/validation/tools/bb_search/work/corpus-copy/go-tools/go/analysis/passes"
     },
     {
-      "name": "corpus go_tools/go/analysis/passes (Go): result carries a real file path",
-      "pass": true,
-      "detail": "unreachable/doc.go"
-    },
-    {
-      "name": "corpus go_tools/go/analysis/passes (Go): result carries a language",
-      "pass": true,
-      "detail": "go"
-    },
-    {
-      "name": "corpus go_tools/go/analysis/passes (Go): content-mode finds unreachable",
+      "name": "corpus go-tools/go/analysis/passes (Go): symbols-mode finds unreachable",
       "pass": true,
       "detail": "got 3"
     },
     {
-      "name": "corpus go_tools/go/analysis/passes (Go): pagination offset honored (distinct pages)",
+      "name": "corpus go-tools/go/analysis/passes (Go): result carries a real file path",
+      "pass": true,
+      "detail": "unreachable/doc.go"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): result carries a language",
+      "pass": true,
+      "detail": "go"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): content-mode finds unreachable",
+      "pass": true,
+      "detail": "got 5"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): pagination offset honored (distinct pages)",
       "pass": true,
       "detail": "p1=unreachable@14 p2=unreachable@5"
     },
     {
-      "name": "corpus go_tools/go/analysis/passes (Go): modified file's result is flagged stale (never fresh) [negative]",
+      "name": "corpus go-tools/go/analysis/passes (Go): modified file's result is flagged stale (never fresh) [negative]",
       "pass": true,
       "negative": true,
       "detail": "stale=true"
@@ -137,8 +157,8 @@
   ],
   "negativeCases": 4,
   "summary": {
-    "total": 24,
-    "passed": 24,
+    "total": 28,
+    "passed": 28,
     "failed": 0
   },
   "decisions": {
@@ -150,5 +170,5 @@
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed)."
   ],
-  "generatedAt": "2026-10-11T19:08:57.754Z"
+  "generatedAt": "2026-11-04T00:43:49.146Z"
 }

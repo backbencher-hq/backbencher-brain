@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "7b33171722e7a2e4dca81777336060131a3f9bfb",
+  "currentCommit": "8f449a26e9badb54503abd55edcc6adec1b2e015",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-c1-corpus.ts",
   "evidenceFile": "C1-bb_cross_language.json",
-  "generatedAt": "2026-10-11T15:58:49.369Z",
+  "generatedAt": "2026-11-04T01:42:41.482Z",
   "tools": [
     "bb_cross_language"
   ],
@@ -13,41 +13,41 @@
       "repo": "rake",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 0,
+      "ms": 3,
       "args": "{\"symbol\":\"join\"}",
-      "outHead": "{\"symbol\":\"join\",\"language\":\"ruby\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — absence declare"
+      "outHead": "{\"symbol\":\"join\",\"language\":\"ruby\",\"languages\":[\"ruby\"],\"copies\":[{\"id\":\"132aab0103080d56a8ce5ef28cf2034710b21a80:lib/rake/thread_pool.rb:join:44\",\"symbol\":\"joi"
     },
     {
       "repo": "ripgrep",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 1,
+      "ms": 3,
       "args": "{\"symbol\":\"unwrap\"}",
-      "outHead": "{\"symbol\":\"unwrap\",\"language\":\"rust\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — absence decla"
+      "outHead": "{\"symbol\":\"unwrap\",\"language\":\"rust\",\"languages\":[\"rust\"],\"copies\":[{\"id\":\"a65e53f2a2b3113027192b7bd846d8b5ca38a33a:crates/index/src/literal.rs:unwrap:57\",\"symb"
     },
     {
       "repo": "graphql-js",
       "ok": true,
-      "declaredAbsent": false,
+      "declaredAbsent": true,
       "ms": 3,
-      "args": "{\"symbol\":\"Node\"}",
-      "outHead": "{\"symbol\":\"Node\",\"language\":\"graphql\",\"facts\":[{\"pair\":\"graphql → yaml\",\"direction\":\"callee\",\"bridge\":\"name-resolution\",\"tier\":\"inferred\",\"confidence\":1,\"relati"
+      "args": "{\"symbol\":\"toDeepEqual\"}",
+      "outHead": "{\"symbol\":\"toDeepEqual\",\"language\":\"typescript\",\"languages\":[\"typescript\"],\"copies\":[{\"id\":\"18b0d5567b84edcae6dec4bfcc1faf8ac965e01e:src/__testUtils__/expectJSO"
     },
     {
       "repo": "tree-sitter-clean",
       "ok": true,
       "declaredAbsent": true,
-      "ms": 2,
-      "args": "{\"symbol\":\"Scanner\"}",
-      "outHead": "{\"symbol\":\"Scanner\",\"language\":\"c\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — absence declare"
+      "ms": 3,
+      "args": "{\"symbol\":\"is_newline\"}",
+      "outHead": "{\"symbol\":\"is_newline\",\"language\":\"c\",\"languages\":[\"c\"],\"copies\":[{\"id\":\"235ad9d82c3da4698f454f7ec2af4bc043b36694:src/scanner.c:is_newline:171\",\"symbol\":\"is_new"
     },
     {
       "repo": "lodash",
       "ok": true,
-      "declaredAbsent": true,
-      "ms": 1,
-      "args": "{\"symbol\":\"getIteratee\"}",
-      "outHead": "{\"symbol\":\"getIteratee\",\"language\":\"javascript\",\"facts\":[],\"pairCount\":0,\"declaredAbsent\":true,\"absenceNote\":\"no stored cross-language rows for this symbol — ab"
+      "declaredAbsent": false,
+      "ms": 4,
+      "args": "{\"symbol\":\"map\"}",
+      "outHead": "{\"symbol\":\"map\",\"language\":\"javascript\",\"languages\":[\"javascript\"],\"copies\":[{\"id\":\"f9a8a05427a9c1a48971d679fbd420028dcfb0f6:lodash.js:map:9651\",\"symbol\":\"map\","
     }
   ],
   "crossChecks": [
@@ -55,43 +55,37 @@
       "repo": "rake",
       "label": "cross_language names the symbol or declares absence",
       "pass": true,
-      "detail": "{\n  \"symbol\": \"join\",\n  \"language\": \"ruby\",\n  \"facts\": [],\n  \"pairCount\": 0,\n  \"declaredAbsent\": tru"
+      "detail": "{\n  \"symbol\": \"join\",\n  \"language\": \"ruby\",\n  \"languages\": [\n    \"ruby\"\n  ],\n  \"copies\": [\n    {\n   "
     },
     {
       "repo": "ripgrep",
       "label": "cross_language names the symbol or declares absence",
       "pass": true,
-      "detail": "{\n  \"symbol\": \"unwrap\",\n  \"language\": \"rust\",\n  \"facts\": [],\n  \"pairCount\": 0,\n  \"declaredAbsent\": t"
+      "detail": "{\n  \"symbol\": \"unwrap\",\n  \"language\": \"rust\",\n  \"languages\": [\n    \"rust\"\n  ],\n  \"copies\": [\n    {\n "
     },
     {
       "repo": "graphql-js",
       "label": "cross_language names the symbol or declares absence",
       "pass": true,
-      "detail": "{\n  \"symbol\": \"Node\",\n  \"language\": \"graphql\",\n  \"facts\": [\n    {\n      \"pair\": \"graphql → yaml\",\n  "
+      "detail": "{\n  \"symbol\": \"toDeepEqual\",\n  \"language\": \"typescript\",\n  \"languages\": [\n    \"typescript\"\n  ],\n  \"c"
     },
     {
       "repo": "tree-sitter-clean",
       "label": "cross_language names the symbol or declares absence",
       "pass": true,
-      "detail": "{\n  \"symbol\": \"Scanner\",\n  \"language\": \"c\",\n  \"facts\": [],\n  \"pairCount\": 0,\n  \"declaredAbsent\": tru"
+      "detail": "{\n  \"symbol\": \"is_newline\",\n  \"language\": \"c\",\n  \"languages\": [\n    \"c\"\n  ],\n  \"copies\": [\n    {\n   "
     },
     {
       "repo": "lodash",
       "label": "cross_language names the symbol or declares absence",
       "pass": true,
-      "detail": "{\n  \"symbol\": \"getIteratee\",\n  \"language\": \"javascript\",\n  \"facts\": [],\n  \"pairCount\": 0,\n  \"declare"
+      "detail": "{\n  \"symbol\": \"map\",\n  \"language\": \"javascript\",\n  \"languages\": [\n    \"javascript\"\n  ],\n  \"copies\": "
     }
   ],
   "passed": 5,
   "failed": 0,
   "negativeCases": 5,
-  "failures": [
-    "rake: worker failed (exit 1) — ",
-    "ripgrep: worker failed (exit 1) — ",
-    "graphql-js: worker failed (exit 1) — ",
-    "repo dir missing: $HOME/Documents/Default Project/ishaq/fixtures/repositories/tree-sitter-clean",
-    "lodash: worker failed (exit 1) — "
-  ],
+  "failures": [],
   "summary": {
     "realReposSuccessful": 5,
     "tools": [
