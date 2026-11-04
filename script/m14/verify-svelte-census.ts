@@ -538,9 +538,13 @@ const nsDoc = `<script>\n  import Child from "./Child.svelte"\n</script>\n<Child
 const nsFile = path.join("/tmp", `svelte-census-ns-${Math.random().toString(36).slice(2)}.svelte`)
 fs.writeFileSync(nsFile, nsDoc)
 const nsResult: any = await ASTEngine.parseFile(nsFile, nsDoc)
-const nsInst = (nsResult.relationships ?? []).filter((e: any) => e.type === "instantiates").map((e: any) => e.target)
+// The template relation is `renders` since the 2026-10-23 relabel (commit 03b776294), so collect
+// BOTH labels: a probe that filters one label would let the reserved-namespace assertions pass vacuously.
+const nsTemplate = (nsResult.relationships ?? [])
+  .filter((e: any) => e.type === "instantiates" || e.type === "renders")
+  .map((e: any) => e.target)
 try { fs.unlinkSync(nsFile) } catch {}
-note(!nsInst.includes("svelte:bogus"), `an undeclared member of the reserved namespace was PUBLISHED as a component: ${nsInst.join(", ")}`)
+note(!nsTemplate.includes("svelte:bogus"), `an undeclared member of the reserved namespace was PUBLISHED as a component: ${nsTemplate.join(", ")}`)
 
 // Carrier probes: run the analyzer over ONE document carrying every declared family
 // and assert the obligation each one declares. The read half and the call half are
@@ -596,7 +600,7 @@ for (const t of CARRIER_PROBE.invoked) {
 for (const t of CARRIER_PROBE.silent) {
   note(!cUses.has(t) && !cCalls.has(t), `carrier family that DECLARES silence published an edge for ${t} — a declared no-obligation family must stay quiet`)
 }
-note(nsInst.includes("Child"), "the reserved-namespace rule suppressed real components — it must reject undeclared svelte:* only, not the whole neighbourhood")
+note(nsTemplate.includes("Child"), "the reserved-namespace rule suppressed real components — it must reject undeclared svelte:* only, not the whole neighbourhood")
 
 // --- REPORT ----------------------------------------------------------------
 if (failures.length > 0) {
