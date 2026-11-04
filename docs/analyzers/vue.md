@@ -44,18 +44,21 @@
 | kind | ✅ | component → Class; const → Constant; let/var → Variable; function → Function; props/computed → Property; emits → Event; methods/hooks/data → Method |
 | qualified/container name | ✅ | `ownerName`/`ownerKind` set for Options-API members (owner = component name); setup-scope symbols are module-scope (owner empty) |
 | range (start/end line + column) | ✅ | script-content nodes offset to SFC line numbers via the script block's start position |
-| parameters | ✅ | from the JS analyzer (recorded, never symbols) |
-| returnType / type | — | Vue SFCs are not type-analyzed (script always parsed as JS — documented decision above) |
-| documentation/comments | ✅ | via the JS analyzer (JSDoc / `//` comments on script symbols) |
-| complexity metrics | ✅ | via the JS analyzer |
+| parameters | ✅ | from the JS/TS delegate that analyzed the block (recorded, never symbols) |
+| returnType / type | ✅ on `lang="ts"`/`"tsx"` blocks | the TypeScript delegate's `returnType` / `genericParameters` / `hasTypeInference`; — on a plain `<script>` block, which the JS delegate analyzes |
+| documentation/comments | ✅ | via the JS/TS delegate (JSDoc / `//` comments on script symbols) |
+| complexity metrics | ✅ | via the JS/TS delegate |
 | syntax errors | ✅ | ERROR/missing nodes surfaced; `parseErrors` counted in the differential |
-| decorators/attributes | — | n/a |
+| decorators/attributes | ✅ on `lang="ts"`/`"tsx"` blocks | the TypeScript delegate's decorator metadata on script symbols, emitted as `decorates` rows through the seam; 0 corpus instances (see the construct census in the ontology section) |
 
 ## Relationship ontology
 
-**How to read this table.** Every row carries a MEASUREMENT taken through the
-production entry (`src/ast/pool-worker.ts parseFile`, i.e. `getParser → parse →
-analyze` with the SFC seam live) on one of three real corpora: `vuejs` (11 `.vue`,
+**How to read this section.** The claim table states what the analyzer emits, in the
+analyzer's own terms; the counts behind it are the 2026-10-25 whole-population arm.
+The historical census further down (2026-10-04) carries the three-corpora
+MEASUREMENTs, taken through the production entry (`src/ast/pool-worker.ts parseFile`,
+i.e. `getParser → parse → analyze` with the SFC seam live) on one of three real
+corpora: `vuejs` (11 `.vue`,
 the corpus the handoff assigned this lane), `vue-element-admin` (131, the Options-API
 corpus) and `element-plus` (1,009 — the FULL draw, because this lane's own history
 records that a 200-file draw reported clean while the full draw reported 5 MISSING
@@ -70,10 +73,57 @@ each `<script>` body with the JS/TS grammar and hands the trees over on the anal
 context (`engine.ts:1562-1593`). **A measurement that constructs the analyzer
 directly — `new RealVueAnalyzer().analyze(root, content, file)`, which is what
 `script/m14/firing-check-v2.mjs:167` does — reads 1/10 on the same 11 files,
-because the script loop then runs zero times.** Both numbers are in this table and
-the difference is a measurement, not a defect: on `vuejs`'s 11 files the same
+because the script loop then runs zero times.** Both numbers are in the census
+table below and the difference is a measurement, not a defect: on `vuejs`'s 11 files the same
 analyzer emits 169 relationships + 25 `imports[]` through the seam and 10
 relationships + 0 `imports[]` without it.
+
+**The claim table below is the page's one claim table.** Every one of the fourteen
+register kinds is `✅` for this lane, and that is a measured consequence of the SFC
+seam rather than a convenience: the seam hands each `<script>` body to
+`RealJavaScriptAnalyzer` or `RealTypeScriptAnalyzer` (`lang="ts"`/`"tsx"` → TS,
+#903/M60) and forwards every row they produce, so the delegates' kinds are this
+lane's kinds. **A kind with 0 corpus rows is still emitted** — the construct census
+further down says the corpus writes none — because emitted and corpus-unexercised
+are different facts. `❌` is reserved for a kind nothing in this analyzer
+publishes, and there is none.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| calls | ✅ emitted | script calls through the JS/TS delegate's leaf identities; source = the enclosing function/method leaf, re-pointed at the component identity by the F8 seam; `$emit` kept as a `$`-prefixed target; console/Object builtins filtered. **Template decision points do NOT emit calls** — a measured GAP (497 call expressions inside 8,526 template expressions), not a scope boundary | 0.9 (`usage_contextual`) |
+| extends | ✅ emitted | Options-API heritage: `mixins: [M]` → `extends` with `metadata.isMixin: true`, `extends: Base` → `isMixin: false`, so the two stay distinguishable (F1); plus the delegated class heritage `class X extends Base` (`meta.sourceKind: "class"`). The Options-API base is a runtime lookup — nothing in the file states its members — so that row is a declaration, not a structural fact | 0.9 Options-API · 1.0 delegated class heritage |
+| implements | ✅ emitted | the TS delegate's class heritage `class X implements I` inside a `<script lang="ts">`/`"tsx"` block, forwarded by the seam. **Corpus 0**: 0 classes of any kind across 897 script blocks in 1,151 `.vue` files (construct census below). Live branch pinned by fixture `vue/ts-class-heritage-seam` through production `parseFile` | 1.0 |
+| uses | ✅ emitted | script-side identifier reads from the delegate PLUS template-expression reads (`{{ count }}`, `:label`, `@click`, `v-model`, `v-if`) emitted from the component to its member; template tokens are a hand-written stack machine, chain roots only, v-for/slot locals shadow same-named members (V4), an object-literal key is not a read (F10) | 0.95 template · 0.6–0.95 delegate; **sub-floor rows store `inferred`** (the 0.7 evidence floor, 2026-10-25 — `classifyEvidenceTier` applies it before the stored-class skip, because `src/lsp/evidence_tier.ts` rule 1 makes a stored class final downstream) |
+| imports | ✅ emitted | the JS/TS delegates' import rows, carried by the seam; target is the `${modulePath}:${item}` pair (an external specifier keeps its colon, a path-shaped target is never re-glued); `ParseResult.imports[]` (`ImportInfo[]`) is the SECOND channel and carries the same rows | 1.0 |
+| exports | ✅ emitted | a NAMED export → `module -> name`, target a real symbol (the two corpus rows are `export interface StepItemState` / `export interface IStepsInject` in `packages/components/steps/src/item.vue`, both resolving 100%); a DEFAULT export → `module -> default` where the declaration is real: the JS delegate's marked row (`meta.isDefault`) and the seam's own `meta.sfcDefaultExport` row for the TS dispatch's anonymous expression — the **2026-10-25 F19 repair**, 144 rows = 121 JS + 23 TS, exactly the census F19's rationale recorded. `ParseResult.exports[]` (`ExportInfo[]`) is the SECOND channel | 1.0 (`structural`) |
+| contains | ✅ emitted | Options-API/script members owned by the component (`ownerName`), plus every shape a `provide(key, …)` publishes and the delegate's own class/member contains; setup-scope top-levels stay module-scope. Template elements are NEVER symbols, so template structure is not contained | 1.0 (`structural`) |
+| references | ✅ emitted | the component-contract family: `defineProps`/`defineEmits` naming a declaration, `provide`/`inject` naming a key, plus the delegate's type-level rows (`declared_type`, `type_argument`, `cast_target`, `instanceof_check`, …) | 0.9–1.0 (contract family 1.0/0.8 by resolution; type-level rows per the delegate) |
+| overrides | ✅ emitted | two producers: (a) Options-API merge — a same-file `const` mixin literal + the component's same-named member → `overrides` with `meta.reasonCode: verified-in-file` (fixture `vue/options-mixin-overrides`); (b) the TS delegate's class-heritage member overrides, forwarded by the seam. **Corpus 0**: 9 mixin bases, all imported bindings, 0 classes-with-superclass, 0 `override` modifiers | 0.95 |
+| instantiates | ✅ emitted | **DELEGATE-ONLY after the 2026-10-24 relabel**: the JS/TS sub-analyzer's script `new Widget()` rows — the only `instantiates` this language's source contains (16 rows over the whole population). The 2,235 template component-tag rows moved to `renders` with the two-label total unchanged at 2,277 | 0.95–1.0 |
+| decorates | ✅ emitted | the TS delegate's decorator rows inside `<script lang="ts">`/`"tsx"` blocks, forwarded by the seam. **Corpus 0**: 0 decorator nodes in 897 script blocks (parse-tree census, not a text scan); the live branch is pinned by the census's `script-decorator-emits-decorates` control (PASS) | 1.0 |
+| renders | ✅ emitted | template pass: every non-builtin element tag → leaf tag name; builtin HTML/SVG tags and Vue builtins (`component`, `transition`, `keep-alive`, `teleport`, `suspense`) filtered; a known namespace (`svg:circle`) is markup, an unknown one is a component; plus the delegate's `<script lang="tsx">` JSX rows. **RENDERED, NOT INSTANTIATED (2026-10-24 relabel, the svelte precedent, Lead-ruled)**: the host mounts the component, nothing is `new`ed — the types.ts Renders contract. Cross-check EXACT: pre `instantiates 2,251 + renders 26` = post `instantiates 16 + renders 2,261` = 2,277 for the two labels, no edge gained or lost | 0.95 template · 0.9 delegate JSX |
+| mixes_in | ✅ emitted | the TS/JS delegates' call-shaped heritage (`class X extends mix(Base)`, `mixin({...})`), forwarded by the seam. **Vue's own `mixins:` option is NOT this relation**: it merges each mixin's options into a FLAT options object by per-option strategy (vue-core `mergeOptions`, no supertype chain), which is why the completeness config rules it `adjudication` and publishes the 9 corpus sites as `extends{isMixin:true}` under VSD28 | 0.9–1.0 |
+| part_of | ✅ emitted | the TS delegate's triple-slash reference directive `/// <reference path=…>`, forwarded by the seam with the mandatory `metadata.partRole: "path"` (fleet §8: a fragment has no symbol, so the target is the PATH); the served patched TS build produces a real `reference_directive` node. **Corpus 0** directives in 1,151 SFCs; live branch pinned by the census's `reference-directive-emits-partof` control (PASS) | 0.95 |
+
+**The counts behind these claims are the 2026-10-25 whole-population arm**
+(`validation/m14/measurements/vue-head-incoming-table1-20261025.txt`: 1,155 admitted
+`.vue` files, TOTAL 24,909 edges, eleven-term closure EXACT, 0 extFAIL / 0 bindFAIL /
+0 causeFAIL): calls 7,956 · uses 5,584 · contains 1,469 · imports 3,898 ·
+references 3,569 · exports 146 · renders 2,261 · instantiates 16 · extends 10 ·
+implements 0 · overrides 0 · decorates 0 · mixes_in 0 · part_of 0. The residual gate
+over the same population closes the same total
+(`validation/m14/measurements/vue-head-residual-gate-20261025.txt`). The
+three-corpora verdict table that stood here through 2026-10-04 is kept verbatim
+below as the historical census.
+
+### The 2026-10-04 per-type census, three corpora (historical)
+
+Verdicts: **EMITTED** = produced by production `parseFile` on a real corpus, with
+the count and the files. **RULED (corpus)** = the construct does not occur on the
+corpus, with the measurement that shows it. **CONSTRUCTIBLE, 0 corpus** = the
+language has it, production `parseFile` emits it when it is present (pinned by a
+fixture), and the corpus has no instance — the only honest label for a
+construct the corpus cannot produce.
 
 Verdicts: **EMITTED** = produced by production `parseFile` on a real corpus, with
 the count and the files. **RULED (corpus)** = the construct does not occur on the
@@ -96,6 +146,16 @@ construct the corpus cannot produce.
 | implements | **CONSTRUCTIBLE, 0 corpus** | `class X implements I` inside a `<script lang="ts">` block → the TypeScript delegate's row, carried by the seam. **0 classes-with-implements across 897 script blocks in 1,151 corpus `.vue` files** — and 0 classes with a superclass either, so element-plus and vue-element-admin contain no class declaration of any kind inside any SFC. Re-verified 2026-10-05 by reachability probe through production `parseFile`: `class Widget implements Renderable` → `implements: Widget -> Renderable` conf 1.0, `structural`, `sfcDelegated`, plus `overrides: Widget.draw -> Renderable.draw` conf 0.95. Pinned by fixture `vue/ts-class-heritage-seam` | 1.0 |
 | overrides | EMITTED on the in-file shape, **CONSTRUCTIBLE/0 corpus** for class heritage | two producers. (a) Options-API merge: a same-file `const` mixin literal + the component's same-named member → `overrides`, `meta.reasonCode: verified-in-file` (fixture `vue/options-mixin-overrides`). (b) delegated TypeScript class heritage → the delegate's row (same fixture). Corpus: 9 mixin bases, **all imported bindings**, 0 classes-with-superclass, 0 `override` modifiers → 0 corpus rows | 0.95 |
 | depends | not emitted (covered by `imports`) | — | — |
+
+**Three rows of this historical table are superseded by later measurements, and
+the current statement of each is in the claim table above:** `exports` (the F19
+repair of 2026-10-25 publishes the default-export rows again with markers — 146
+rows over the whole population, no longer "0 / 2 / 0"); `renders` and
+`instantiates` (the 2026-10-24 relabel moved 2,235 template rows from
+`instantiates` to `renders`); and `uses`' confidence model (the 2026-10-25
+evidence floor stores `inferred` on every sub-floor row instead of a confident
+class). The census numbers themselves are the 2026-10-04 measurement and are kept
+as measured.
 
 ### The two channel names, and why a ten-row enum table hides imports
 
@@ -200,12 +260,12 @@ no oracle exists, that is stated rather than papered over. Counts are
 | type | fires? | oracle agrees? | labelled right? | both ends resolve? | evidenceClass / confidence | R7 |
 | --- | --- | --- | --- | --- | --- | --- |
 | calls | YES — 781 / 7,130 / 69 | YES for the script half: the vue `calls` oracle derives from the embedded script trees and `calls` is in the compared-label allowlist. **NOT audited for template calls**, because the analyzer emits none (see the template-call gap below) | YES — leaf targets; `sfcDelegated` on every delegated row | source 100% (the component identity); target 21.3% / 15.3% / 8.7% per-file, 26.1% / 25% corpus-wide — the JS family's convention is the callee LEAF, so `ref`, `slice`, `json` name no symbol in this or any file | `usage_contextual`, confidence 0.9 (≥0.7, deterministic per family contract) | 0 empty, 0 placeholder, 66 self-loops (recursion — `calls setData → setData`) |
-| uses | YES — 2,080 / 3,216 / 32 | **NO.** `uses` is NOT in the vue compared-label allowlist, so the differential never sees a single row of it; the template half is asserted only by fixtures. 2,080 rows stored and compared against nothing | YES — template rows carry `isTemplateExpression`, delegated rows the JS family's own labels | 41.6% / 94.8% / 100% per-file | `usage_contextual`; **0.6 on 1,616 of the vue-element-admin rows** (the delegate's `isFieldAccess`/`bareRead` reads) — below 0.7, therefore a heuristic, with machine-readable reasons in metadata | 0 empty, 0 placeholder (after correcting my own word list — below), 18 self-loops |
+| uses | YES — 2,080 / 3,216 / 32 | **NO.** `uses` is NOT in the vue compared-label allowlist, so the differential never sees a single row of it; the template half is asserted only by fixtures. 2,080 rows stored and compared against nothing | YES — template rows carry `isTemplateExpression`, delegated rows the JS family's own labels | 41.6% / 94.8% / 100% per-file | `usage_contextual` at 0.95 for the template reads; the delegate's sub-floor reads (0.6, the `isFieldAccess`/`bareRead` rows) now store **`inferred`** — the 0.7 floor applied in `classifyEvidenceTier` since 2026-10-25, because `src/lsp/evidence_tier.ts` rule 1 makes a stored class final downstream (F20: 1,628 corpus rows were stored confident at 0.6) | 0 empty, 0 placeholder (after correcting my own word list — below), 18 self-loops |
 | contains | YES — 826 / 631 / 12 | **YES, measured, 88.5%**: the lane-owned oracle derives 470 component-owned rows over the 1,151-file draw and the analyzer agrees on 416. The 54 disagreements are the ORACLE's false positives (a nested `name:` key read as the component identity), not the analyzer's. element-plus 253/253 and vuejs 12/12 | YES — `structural`, owner-derived | **100% / 99.8% / 100%** per-file and corpus-wide | `structural`, 1.0 | 0 empty, 0 placeholder, 0 self-loops |
 | references | YES — 0 / 3,621 / 21 | **PARTIAL.** Only the component-contract family (F12/F2) is mirrored; the delegate's other producers (`declared_type`, `type_argument`, `cast_target`, `instanceof_check`, …) are audited for typescript/javascript, not for this lane | YES — `reference_qualified` | 59.1% / 60% on the full element-plus draw; per-file source 99.5%, target 59.1% | `reference_qualified`, 0.8 / 0.9 / 0.95 (all ≥0.7) | 0 empty, 0 placeholder, 18 self-loops |
 | renders | YES — 2,235 template rows over the whole 1,155-file population (2026-10-24 census; + 26 delegate JSX rows from `<script lang="tsx">` docs files) | YES — the F1/F5 oracle (deriveVueComponentUsages) moved to `renders` WITH the analyzer's 2026-10-24 relabel, and `renders` is in the compared-label allowlist. The oracle-vs-analyzer normalization seam (oracle target as-written `el-button`, analyzer target the registry name `ElButton`, F31) predates the relabel: same rows, same counts, before and after — the three-arm cross-check is in validation/m14/measurements/vue-extended-census.json relabel.differentialCrossCheck | YES — leaf tag name; `member`/`componentPath` in metadata for a dotted tag; a known namespace (`svg:circle`) is markup; target normalized by Vue's registry rule (F31) with `resolution: "registry-name"` + `tagAsWritten` kept | source 100%; target low in both denominators (most targets are globally registered in a `components: {}` map or a UI library, so they resolve in neither) | `usage_contextual` 0.95 template · 0.9 delegate JSX | 0 empty, 0 placeholder |
 | instantiates | YES — 16 rows over the whole population (2026-10-24 census), **DELEGATE-ONLY after the renders relabel**: script `new` constructions, the only `instantiates` the language's source contains; the 2,235 template rows moved to `renders` with the two-label total UNCHANGED (pre 2,251+26 = post 16+2,261 = 2,277) | audited as before — the delegates' own rows through the seam | YES — the JS/TS family's construction rows | source 100% | `structural` 1.0 | 0 empty, 0 placeholder |
-| exports | YES — 0 / 2 / 0 after F19 (was 121 on vue-element-admin, every one `-> default`) | NO oracle derives it for this lane; `exports` is not in the compared-label allowlist | YES after F19: the surviving rows name real symbols and resolve 100%. Before F19, 121 of 121 targeted the keyword `default` | before F19 **0 of 121**, per-file AND corpus-wide; after F19 the 2 surviving corpus rows resolve 100% | `structural`, 1.0 | F19 removed 121 keyword endpoints |
+| exports | YES — **146 over the whole population** (2026-10-25 arm): 2 NAMED + 144 DEFAULT-EXPORT rows (121 JS-delegate `meta.isDefault` rows + 23 seam `meta.sfcDefaultExport` rows for the TS dispatch's anonymous expression) — the 2026-10-25 F19 repair restored the 144 rows the blanket drop had removed | NO oracle derives it for this lane; `exports` is not in the compared-label allowlist | YES: the 2 named rows (`StepItemState`, `IStepsInject`) name real symbols and resolve 100%; the default rows carry their producer marker so the two are distinguishable | named rows 2 of 2 = 100%; default rows: 23 unresolved + 121 bindOK (the keyword `default` has no declaration in any file, which is why F19 removed them and why the repair keeps them MARKED rather than unmarked) | `structural`, 1.0 | F19 removed 121 keyword endpoints on 2026-10-04; the repair (2026-10-25) republished them with markers after the fleet record called the blanket drop a real analyzer gap |
 | extends | YES — 9 / 1 / 0 | **NO in practice, and the harness says so.** The differential prints `COMPARED WITH NO TRUTH: extends (N comparable, 0 truth)` and then `unexplained-by-label: extends=N` (2 on one run, 6 on another — the lane's file sample rotates, so the count moves). Reproduced through production `parseFile` (`script/vue-fix/vue-extends-unexplained.ts`): all 9 vue-element-admin rows are `BarChart -> resize`, `SidebarItem -> FixiOSBug`, `Layout -> ResizeMixin` …, every one a `mixins:`/`extends:` option naming an IMPORTED module. The vue oracle reads the embedded script trees only, and in those trees the fact is an identifier plus the word `mixins` — no `class_heritage`, no `extends X` clause, nothing that states what the base declares. **The rows are correct**; the oracle cannot see them, because the fact lives in another file | YES — `isMixin` distinguishes the two forms (mutant `vue/mixin-label-swap` proves the distinction is pinned, not just present) | 77.8% corpus-wide on vue-element-admin (the mixin modules live outside the 131-file draw, so per-file 0% is expected); the element-plus row resolves 0% because `Partial` is a TypeScript built-in utility type with no symbol in any file | `usage_contextual` 0.9 / `structural` 1.0 | 0 |
 | imports | YES — 197 relationship rows + 209 `imports[]` (vue-element-admin); 3,685 + 3,685 (element-plus full) | NO for this lane. The typescript/javascript oracle derives imports/exports from the DECLARED name while the delegate publishes the LOCAL BINDING, so switching it on would report every aliased import as MISSING. Aliasing is rare (4 of 622 on the 400-file draw) but the convention mismatch is a harness artefact, not a defect | YES — target is `${modulePath}:${item}` | n/a — a module-path endpoint is external by design | `import_based`, 1.0 | 0 |
 | implements | **YES when the construct is present, 0 on this corpus.** Re-measured 2026-10-05: `script/class-with-implements` = 0 across 897 script blocks, and `class-with-superclass` = 0 too, so there is no class declaration of any kind inside any corpus SFC. Production `parseFile` on a written case emits `implements: Widget -> Renderable` conf 1.0 `structural` **and** `overrides: Widget.draw -> Renderable.draw` conf 0.95 — so the branch is LIVE, not dead, and a 0/0/0 census row cannot distinguish the two | the delegated shape is audited by the typescript lane's own oracle; nothing to audit here at 0 corpus rows | YES — `structural` | n/a at 0 corpus rows | 1.0 | 0 |
@@ -217,7 +277,7 @@ HEAD reports `vue 4 un-audited: ["contains","exports","references","uses"]`, plu
 `imports`, which is invisible to that check because it rides `ParseResult.imports[]`
 — a channel the gate does not read. The differential's compared-label allowlist
 for `vue` is `["extends", "implements", "instantiates", "renders", "overrides", "calls"]`
-(`differential.ts:23153`), so **five of the ten types sit outside it.**
+(`differential.ts:25628`), so **five of the ten types sit outside it.**
 
 As a fraction of this lane's real payload (production `parseFile`, every tracked
 `.vue` file, population derived by `git ls-files`):
@@ -299,7 +359,11 @@ wrong and are corrected there:
   `vue/options-mixin-overrides` since 2026-10-03.
 - `exports` was recorded as "via JS analyzer (`export default`)" without saying
   what the row pointed at. It pointed at the keyword `default`, resolving 0 of 121
-  on vue-element-admin. F19 removed that row on 2026-10-04.
+  on vue-element-admin. F19 removed that row on 2026-10-04; **F19 was REPAIRED
+  2026-10-25** (Lead-ruled): the delegate's marked row (`meta.isDefault`) is kept and
+  the seam publishes its own `meta.sfcDefaultExport` row for the TS dispatch's
+  anonymous default expression — 144 rows over the whole population (121 JS + 23
+  TS), exactly the census F19's rationale recorded, `exports` 146 in total.
 
 ## What is and is not verified — the 2026-10-04 re-measurement
 
@@ -312,7 +376,7 @@ one and the reason is given.
 `MISSING=0 / unexplained=0` on its compared labels (200-file draw, 2026-09-30),
 and the compared-label set is only
 `["extends", "implements", "instantiates", "renders", "overrides", "calls"]`
-(`differential.ts:23153`). Everything else this lane emits is outside the
+(`differential.ts:25628`). Everything else this lane emits is outside the
 comparison, which is the DERIVATION debt quantified above.
 
 **`bun script/m14/differential.ts --lang vue` did NOT run on this machine**, and
@@ -328,7 +392,7 @@ decision; the gate is untouched.
 
 | gate | result |
 | --- | --- |
-| `bun script/m14/run-fixtures.ts --lang vue` | pass **53**, fail **1** — `vue/decorator-metadata-868`, pre-existing at HEAD and caused by the shared matcher (below), not by the analyzer: the row's `decoratorLine` is the file's line 24, which is correct |
+| `bun script/m14/run-fixtures.ts --lang vue` | at 2026-10-04: pass **53**, fail **1** — `vue/decorator-metadata-868`, caused by the shared matcher (below), not by the analyzer. **Current (2026-10-25): pass 64, fail 0** — the ontology wave closed every red fixture (relabel pins converted, F19 repaired, evidence floor applied); fresh run evidence is the gate run for task-61 |
 | `bun script/vue-fix/vue-mutation-proof.ts` | **6 mutants, 6 CAUGHT, 0 survived** |
 | `bun script/m60/verify-vue-no-regex.ts` | **PASS** — 0 regex literals, 788 generated v-for shapes equivalent, header consistent |
 | `bun script/m14/audit-analyzer-grammar.ts` | **vue PASS**, refs 45, unknown 0, unknownFields 0 (cpp/rust FAIL on 4 unregistered literals — pre-existing, recorded in the workstream) |
@@ -349,7 +413,7 @@ permanent false MISSINGs, 11.5% of that corpus's oracle truth. The oracle is
 marked "READ, never modified" and lives under the shared `script/m14` tree, so
 this is reported rather than fixed.
 
-**The one failing fixture is a shared-matcher defect, not an analyzer one.**
+**The 2026-10-04 failing fixture was a shared-matcher defect, not an analyzer one** (the branch described here is retained as reported; no vue fixture is currently red):
 `run-fixtures.ts:345` intercepts a `null` constraint before the `meta.` branch at
 `:369`, and unlike the array branch at `:331` it does not exclude `meta.` keys — so
 `{"meta.decoratorLine": null}` compares against the non-existent top-level key
@@ -398,12 +462,11 @@ items in this lane, in order: (1) the template `calls` mirror in the vue oracle,
 
 ## Unsupported / explicit-unknown constructs
 
-- `lang="ts"` scripts are parsed with the **JS** analyzer, not the TS one —
-  deliberate family-consistency decision (the TS analyzer lacks
-  method_definition scope resolution, so Options-API call sources degraded to
-  `module`; M12.12 verified the JS analyzer handles TS syntax with
-  `rootHasError: false` on every fixture). Type annotations are ignored, not
-  synthesized.
+- `lang="ts"`/`"tsx"` blocks are dispatched to the **TypeScript** analyzer (#903/M60);
+  the JS analyzer is the default only for a plain `<script>` block, where it resolves
+  `method_definition` scopes inside the Options-API default-export object (the TS
+  analyzer emitted those call sources as `module`, M12.12). Type annotations ride the
+  TS delegate as metadata; they are not synthesized as symbols by the seam.
 - Template event bindings (`@click="handler"`) do not emit calls — only
   component instantiation is extracted from the template pass. **This is a
   measured GAP, not a scope boundary, and it is not closed here:** 497 of 8,526
@@ -493,11 +556,15 @@ own per-file JSON serialisation in the loop — that serialisation is **not** in
 production path, so the figure is an upper bound on the payload measurement and
 the documented 7.9 s for 400 files is the like-for-like latency number.
 
-**This lane ADDED no edges in this round** (the only commit touching
-`src/ast/real-vue-analyzer.ts` in this branch is a revert to byte-identical, see
-the duplicate-symbol entry below), so no budget is regressed and none is
-re-baselined. The figures above are recorded because the workstream requires the
-check to be re-run after adding edges and this is the state that check found.
+**Edge changes since the figures above, measured.** The 2026-10-24 relabel moved
+2,235 template rows from `instantiates` to `renders` with the two-label total
+UNCHANGED (2,277), so it added no edges; the 2026-10-25 F19 repair added 144
+default-export rows (`exports` 2 → 146), taking the whole-population total from
+24,765 to **24,909 edges over 1,155 files** (`validation/m14/measurements/
+vue-head-incoming-table1-20261025.txt`; the residual gate closes the same total).
+The declared budgets — fixtures < 2 s, 400-file corpus < 60 s — are unchanged and
+still met; the whole-population arm (1,155 files, one process) is the current
+latency/payload record.
 
 Hot-path audit: SFC tree walked once (explicit stack); script subtree
 delegated to the JS analyzer (single iterative traversal, scope per-frame
@@ -521,6 +588,19 @@ O(1) name lookups (import map + builtin-tag set); containment from
   2026-10-04 lane gates are the current evidence. The measured substitute is
   `bun script/m14/vue-contains-oracle-run.mts` (470 oracle rows, 88.5%
   agreement) plus the fixture and mutation runs recorded above.
+- **2026-10-24 relabel cross-check, run three ways on the same 200-file draw**
+  (`validation/m14/measurements/vue-extended-census.json`,
+  `relabel.renders.differentialCrossCheck`): pre-relabel both sides `instantiates`
+  (element-plus unexplained-by-label 448, imports 150 · vue-element-admin 297,
+  extends 9, imports 8); post-relabel oracle-only-reverted prints `renders`
+  COMPARED WITH NO TRUTH (492 comparable), proving the oracle move is load-bearing;
+  post-relabel both-moved gives `renders` 458 / 297. **The same rows, the same
+  counts, the label moved on both sides** (448→458 on element-plus are the
+  delegate-JSX rows that were already `renders` and already uncompared; 297→297
+  EXACT on vue-element-admin). The oracle-vs-analyzer normalization seam
+  (`differential.ts`'s as-written `el-button` vs the analyzer's registry name
+  `ElButton`, F31) predates the relabel and is unchanged by it — the lane's known
+  open resolution seam, not a regression.
 - **Re-run 2026-10-05 with `--repo vue-element-admin`, which scopes the corpus
   precondition to one repo and gets past the abort.** The vue lane reports:
 
@@ -575,8 +655,10 @@ So the duplicate is produced by the **JavaScript delegate** and the vue seam
 forwards it faithfully. A fix here would have suppressed a row the javascript
 lane owns, masked the defect at its source for every other consumer of that
 delegate, and regressed this lane's contract — which is not to filter rows another
-analyzer is responsible for emitting. The fix that was written was reverted;
-`src/ast/real-vue-analyzer.ts` is byte-identical to the commit before the hunt.
+analyzer is responsible for emitting. The fix that was written was reverted at the
+time of the hunt (2026-10-04); the file has since changed for the 2026-10-24
+relabel and the 2026-10-25 F19 repair / evidence-floor work, so the revert is a
+record of that decision, not a claim about HEAD.
 
 Corpus prevalence is 0, which is why 54 passing fixtures did not catch it — the
 same trap this lane's own zero-regex gate records (47 fixtures passed while a
@@ -599,6 +681,14 @@ hand-written parser disagreed with its removed regex on 170 of 799 shapes).
   `script/m12/vue-corpus-errors.ts`)
 - The previous corpus target `vue_core@f8975657` had only 11 `.vue` files —
   retained as a candidate, replaced by the real corpus measurement
+- **2026-10-25, the whole admitted population, one process, index=no** (the arm the
+  completion gates read): 1,155 `.vue` files across 6 repos (element-plus 1,008 ·
+  vue-element-admin 131 · vue-core 11 · nvim-treesitter 3 · gql-graphql-eslint 1 ·
+  snacks.nvim 1), **0 parse failures**, TOTAL **24,909 edges**, eleven-term closure
+  EXACT, 0 extFAIL / 0 bindFAIL / 0 causeFAIL
+  (`validation/m14/measurements/vue-head-incoming-table1-20261025.txt`, residual
+  gate beside it; the declaration derived from it is
+  `validation/m14/instruments/vue/incoming-declaration.json`).
 - **2026-10-04, all three corpora, production `parseFile`, 0 parse failures and 0
   crashes on every one**: element-plus FULL 1,009 files → 6,154 symbols /
   20,632 relationships / 3,685 `imports[]` / 25 `exports[]` / 734 files carrying a
@@ -611,13 +701,22 @@ hand-written parser disagreed with its removed regex on 170 of 799 shapes).
 ## Evidence pointers
 
 - Fixtures: `validation/m12/fixtures/vue/` (M12 hand audit) and
-  `validation/m14/fixtures/vue/` (53 passing at HEAD)
+  `validation/m14/fixtures/vue/` (**64 passing, 0 failing at HEAD 2026-10-25**)
 - Ground truth: `validation/m12/ground-truth/vue.json`
 - Differential: `validation/m12/results/vue-differential.json` — NOT re-run on
   2026-10-04; see the corpus-precondition note above
 - Complexity: `validation/m12/results/vue-complexity.json`
 - Corpus sample: `validation/m12/results/vue-corpus-sample.txt`
 - Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer)
+- **Whole-population arm (2026-10-25):** `validation/m14/measurements/
+  vue-head-incoming-table1-20261025.txt` (TABLE 1, fourteen types, closure EXACT),
+  `validation/m14/measurements/vue-head-residual-gate-20261025.txt` (same total
+  CLOSED), `validation/m14/measurements/vue-extended-census.json` (emission +
+  construct legs, five control arms PASS, the relabel three-arm cross-check), and
+  the declaration `validation/m14/instruments/vue/incoming-declaration.json`
+  (DERIVED from the arm by `script/m14/vue-declaration.ts`, which refuses a
+  non-closure). Construct census: 0 decorators / 0 reference directives / 0 classes
+  in 897 script blocks; 9 `mixins:` sites in 9 files (all imported bindings).
 - **Lane instruments (2026-10-04, lane-owned, re-runnable):**
   - `script/vue-fix/vue-ontology-census.ts` — per-type census through production
     `parseFile`, with `--mode prod|engine|direct` so the SFC-seam difference is a
@@ -637,3 +736,7 @@ hand-written parser disagreed with its removed regex on 170 of 799 shapes).
 Closes M12.12 (GitHub issue #151).
 VUE_FIX lane (2026-10-04): F19 `exports → default` at the SFC seam, F20's
 class-heritage seam fixture, and the per-type re-measurement recorded above.
+Ontology wave (2026-10-24/25): the `renders` relabel (2,235 rows, total unchanged),
+the F19 repair (144 default-export rows, task-61), the 0.7 evidence floor, and the
+fourteen-type whole-population arm (24,909 edges, closure EXACT) with the derived
+declaration.
