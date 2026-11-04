@@ -275,6 +275,86 @@ const RULED_NOT_A_CARRIER: Record<string, string> = {
   // `data-*` is application state by definition. These particular values are a URL
   // and a dotted module id, and both are read by the application rather than
   // fetched by the browser.
+
+  // ── THE 2026-10-28 SWEEP — 30 rulings, each a decision about what the pair MEANS ──────────────
+  // A 4,000-file census found 149 reference-shaped pairs, of which 31 had no ruling. ONE was a real
+  // carrier (`td@background`, which moved into RESOURCE_RULES and the oracle's table instead of
+  // here — see the note at the end of this block); the other 30 are below, grouped by the reason
+  // they are not a dependency rather than listed alphabetically, because a reader auditing this
+  // table is asking "what KIND of thing did you decide this was".
+  //
+  // (1) MICRODATA / RDFa TYPE URIs — `itemtype`, `prefix`, and the `xmlns:*` family. These name a
+  // VOCABULARY, not a document the browser fetches. `itemtype="http://schema.org/Offer"` is an
+  // identifier the page asserts about an element; emitting an edge would put a constant like
+  // `http://schema.org/Offer` in the graph as if it were a subresource of a car listing. Same class
+  // as `html@xmlns`, already ruled above, and the ruling is stated once per attribute NAME so a
+  // future census of a different corpus does not have to re-derive it.
+  "table@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "tbody@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "tr@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "div@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "a@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "li@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "span@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "p@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "body@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "header@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "footer@itemtype": "microdata vocabulary URI (schema.org), never dereferenced",
+  "head@prefix": "an RDFa prefix DECLARATION (prefix -> namespace CURIE), a mapping, not a document",
+  "html@xmlns:fb": "a namespace declaration, never dereferenced",
+  "html@xmlns:og": "a namespace declaration, never dereferenced",
+  "html@xmlns:https": "a namespace declaration, never dereferenced",
+  "svg@xmlns:xlink": "a namespace declaration, never dereferenced",
+  "svg@xmlns:serif": "a namespace declaration, never dereferenced",
+  "strong@xmlns:dct": "a namespace declaration, never dereferenced",
+  "a@xmlns:cc": "a namespace declaration, never dereferenced",
+  // (2) `href` ON AN ELEMENT THAT HAS NO `href` IN HTML. This is the shape that costs a lane most:
+  // the attribute NAME is a carrier elsewhere, so a table keyed only on the attribute would emit.
+  // `strong@href` is RDFa's general link attribute (bulma's author.html asserts
+  // `href="http://purl.org/dc/dcmitype/Text"` under `xmlns:dct`), and a `<strong>` has no
+  // navigation and no fetch. The rules are keyed on (tag, attr), which is why this needs a ruling
+  // rather than a global exclusion.
+  "strong@href": "RDFa link attribute on an element with no href in HTML; a type URI, not a fetch",
+  // (3) TEMPLATE SYNTAX THAT BROKE THE ATTRIBUTE NAME. `form@%}enctype`, `nav@{{`,
+  // `button@%}data-workflow-action-modal-url` and `progress@value` are not HTML attributes at all —
+  // a Django/Jinja/Handlebars delimiter landed in the name or the value because the template was
+  // scanned as markup (this lane's known template-dialect gap: 2,070 files of the admitted
+  // population, none of them modelled). Their values contain quotes, braces and pipes, which is
+  // exactly what made the census ask. Recording the ruling keeps the ASK honest without pretending
+  // the construct is understood: what the template would RENDER is unknown to a byte-level read.
+  "form@%}enctype": "a template delimiter broke the attribute NAME; not an HTML attribute",
+  "nav@{{": "a template delimiter replaced the attribute name; not an HTML attribute",
+  "button@%}data-workflow-action-modal-url": "a template delimiter broke the attribute NAME; not an HTML attribute",
+  "progress@value": "a template expression, not a URL",
+  // (4) A MEDIA TYPE, NOT A URL. `input@accept` lists MIME types and extensions.
+  "input@accept": "a media-type / extension list, not a URL",
+  // (5) A NON-SPEC ATTRIBUTE. `img@imgurl` is eBay's own field name inside scraped
+  // product data; it is not an HTML attribute, so nothing defines it as fetched.
+  "img@imgurl": "a non-spec attribute in scraped product data; not a resource carrier",
+  // (6) A BASE, NOT A SUBRESOURCE. `base@href` names the URL every RELATIVE reference on the page is
+  // resolved against — the same ruling this lane already publishes for `<base href>` in
+  // docs/analyzers/html.md, where it is listed as a deliberate non-emission. Emitting it would add
+  // an edge to the base itself, which no browser fetches. `applet@codebase` is the same shape on the
+  // removed `<applet>` element: a directory the applet's classes resolve from, not a file fetched.
+  "base@href": "a resolution BASE, not a subresource — the doc publishes this as a deliberate non-emission",
+  "applet@codebase": "a resolution base on the OBSOLETE <applet>; a directory, not a fetched file",
+  // (7) NOT AN HTML ELEMENT AT ALL. `include@import` and `include@path` come from the dart-sdk's own
+  // API-spec documents, where `<include>` is that toolchain's directive — the template/include
+  // family that this lane RULES undecidable for `part_of` rather than modelling (see
+  // script/m14/spec/html-completeness.json). The grammar gives these bytes as `text`.
+  "include@import": "a toolchain include DIRECTIVE in an API-spec doc, not an HTML element/attribute",
+  "include@path": "a toolchain include DIRECTIVE in an API-spec doc, not an HTML element/attribute",
+  // (8) THE TWO THAT CAME BACK AS CARRIERS — recorded here because a HANDLED pair still owes the
+  // report a written ruling (the gate says so itself: "Not defects — undocumented rulings"). These
+  // are not ruled OUT; they are ruled IN, and the ruling names where the rule lives.
+  "td@background": "a DEPENDENCY, claimed by the legacy-background rule in RESOURCE_RULES (added 2026-10-28 with `th`, because `body`/`table`/`td`/`th` are the four owners of the legacy `background` attribute)",
+  "th@background": "a DEPENDENCY, claimed by the legacy-background rule in RESOURCE_RULES (same construct as `td@background`; no corpus witness yet, which is why the ruling says construct rather than count)",
+  //
+  // AND THE ONE THAT WAS A CARRIER: `td@background` (1 occurrence, a real image path in
+  // FSharp.Data/tests/FSharp.Data.Tests/Data/MarketDepth.htm) MOVED into RESOURCE_RULES and into the
+  // oracle's ORACLE_HTML_FETCHERS — `body`, `table`, `td`, `th` are the four owners of the legacy
+  // `background` attribute, and both tables had described two. It is NOT ruled here: a ruling would
+  // have made the gate green while the dependency stayed missing.
 }
 
 interface CorpusHit {

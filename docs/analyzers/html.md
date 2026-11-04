@@ -14,7 +14,7 @@
 | Grammar | `wasm/tree-sitter-html.wasm`, sha256 `11b3405c1543fb012f5ed7f8…`, 18,468 bytes, vendored under `grammars/tree-sitter-html/` with provenance |
 | Node types | 19 distinct named types (the grammar exposes 26 `nodeTypeForId` slots; `start_tag`/`script_start_tag`/`style_start_tag` and `tag_name`/`erroneous_end_tag_name` are aliases onto shared names) |
 | Completeness | `script/m14/spec/html-completeness.json` — **21/21 classified, gap list empty**: 19 grammar node types (13 handled, 5 `internal_silent`, 1 design decision) plus the universal `ERROR`/`MISSING` recovery pair the gate injects for every language (ERROR handled, MISSING silent) |
-| Analyzer | `src/ast/real-html-analyzer.ts` — **2,078 lines** |
+| Analyzer | `src/ast/real-html-analyzer.ts` — **2,739 lines** |
 | Family | `web` (M60.LCM) |
 
 ## Symbol contract
@@ -58,7 +58,9 @@ with no value at EOF, a stray end tag, `<>>><<></` soup) and tree-sitter-html
 recovered from every one without inserting a token. That split — `ERROR` handled,
 `MISSING` silent — is what `bash` already records, reached independently.
 
-## Relationship ontology — all 10 types, each with a number
+## Emission census, per origin — the numbers behind the claim table
+
+**This section is the MEASUREMENT; the claim table is the `## Relationship ontology` section below.** It keeps its own `type | verdict` shape on purpose: the emission gate compares the first ontology-shaped table it finds, and a second table with an `Emitted?` column would be a second place to keep the same fact true.
 
 Measured on the production `ASTEngine.parseFile` path over **1,652 `.html`/`.htm`
 files enumerated by readdir** from `$HOME/fixtures/repositories`
@@ -291,8 +293,9 @@ because a differential cannot contradict a premise it shares.
 
 ## Supported constructs
 
-37 rules over 28 tags. The full table is `RESOURCE_RULES` in the analyzer; this is
-what it covers.
+40 rules over 30 tags. The full table is `RESOURCE_RULES` in the analyzer; this is
+what it covers. The count is read from the table, not recalled: a `{ attr:` count over
+the literal gives 40 rules across 30 tag keys.
 
 | Group | Carriers |
 |---|---|
@@ -307,7 +310,7 @@ what it covers.
 | navigation pragma | `meta@content` under `http-equiv=refresh` — a navigation, same class as a form action |
 | fetch lists | `a@ping` — whitespace-separated, one row per URL |
 | citations | `cite` on `q`/`blockquote`/`del`/`ins` — a reference out of the document, graded `usage_contextual` because it is not a fetch |
-| legacy | `body@background`, `table@background` — deprecated, still fetched by every shipping browser, so the `legacy-` resourceType says so at the edge |
+| legacy | `body@background`, `table@background`, **`td@background`, `th@background`** — deprecated, still fetched by every shipping browser, so the `legacy-` resourceType says so at the edge. The two cell elements were added 2026-10-28: the legacy `background` attribute has four owners and this table described two, which a carrier census caught by finding a real `td@background` image (`FSharp.Data/…/MarketDepth.htm`) in no table |
 | manifest | `html@manifest` |
 
 **Scope barriers.** `<template>` and `<slot>` are scope boundaries: an addressable
@@ -490,9 +493,13 @@ Part 1 of the ontology workstream. Source derivation answers only Q1, so each
 question below carries its own measurement. All figures over the 1,652-document
 population above unless stated.
 
-**Q1 EXISTS.** Counted from source: this analyzer's own code constructs
-`RelationshipType.Contains` and `RelationshipType.Uses` and nothing else. Every
-other type it publishes arrives through the seam. That is the limit of
+**Q1 EXISTS.** Counted from source: this analyzer's own code constructs exactly three
+kinds — `RelationshipType.Contains` (`:1312`, `:2151`), `RelationshipType.Uses`
+(`:1615`, `:1629`, `:1876`, `:1894`, `:1914`, `:1949`) and `RelationshipType.References`
+(`:1590`). The previous text said "Contains and Uses and nothing else", which is what
+made the IDREF class invisible to this whole section. Every other type it publishes
+arrives through the seam — and `extends`/`imports`/`overrides` are additionally *read* by
+it (`:2219`/`:2230`/`:2245`) to re-spell the delegate's endpoints. That is the limit of
 derivation, and it is why the rest of this section exists.
 
 **Q2 FIRES.** The table above. `contains` 12,174 / `uses` 74,919 /
@@ -504,8 +511,10 @@ rulings table, not because their code is dead.
 **Q3 CORRECT — and the harness's declared limit, stated rather than exceeded.**
 `deriveHtmlEdges` is a separate walker over the *same* grammar, so a grammar bug
 shared by both paths is invisible to it by construction; 60 files is a sample,
-not a sweep. What it does cover: `contains` and `uses` only, at 329/329 (`otp`)
-and 349/349 (`sqlite`), 100%, MISSING 0, unexplained 0, heuristic 0.
+not a sweep. What it does cover: `contains` and `uses` only, at **341/341** (`otp`, 60 files) and **351/351**
+(`sqlite`, 21 files), 100%, MISSING 0, unexplained 0, heuristic 0. Re-measured
+2026-10-28 with the two new legacy-background carriers in both tables; the figures
+before this round were 329/329 and 349/349.
 **It derives no `calls`, no `references`, no `instantiates` and no `exports`, and
 it drives the analyzer through `analyzer.analyze(root, content, relPath)`
 (`differential.ts:22092`) with no `htmlEmbeddedTrees` — so the seam never runs
@@ -519,8 +528,8 @@ audited by nothing.
 `script/m60/rel-type-coverage-gate.ts --langs=html` reports CHECK 1 DERIVATION
 **clean**, and that is not a contradiction: the check reads the analyzer's SOURCE
 (`RelationshipType.X` usages) and evaluates `differential.ts`'s filter
-expression, so it sees the two types html constructs and cannot see the four the
-seam contributes. **html is DERIVATION-clean by source scan and
+expression, so it sees the three types html constructs and cannot see the six the seam
+contributes. **html is DERIVATION-clean by source scan and
 DERIVATION-blind by measurement.** The gate cannot tell the difference, and the
 workstream's own list of 100 DERIVATION findings was built by the source scan, so
 this lane is a member of the *substance* of that list without appearing in it.

@@ -740,8 +740,24 @@ const RESOURCE_RULES: Record<string, ResourceRule[]> = table<ResourceRule[]>({
   // fetched by every shipping browser, so the dependency is real; the
   // `legacy-` resourceType says so at the edge, which is the difference between
   // a recorded fact and an implied one.
+  //
+  // `td`/`th` ARE THE SAME ATTRIBUTE ON THE SAME SPEC LIST, AND THIS TABLE WAS
+  // MISSING THEM (carrier census, 2026-10-28). The legacy `background`
+  // attribute is defined on `body`, `table`, `td` and `th`; the two cell
+  // elements are not a variant this analyzer invented, they are the other half
+  // of the same construct, so `body` and `table` without them described two of
+  // four owners. Measured consequence: the census found `td@background`
+  // carrying a real image path
+  // (`FSharp.Data/tests/FSharp.Data.Tests/Data/MarketDepth.htm`,
+  // `/bwx_drop_shadow_900_300.gif`) with no table claiming it, so an edge the
+  // browser really fetches was absent from the graph. `th` is added in the same
+  // commit rather than after a census reports it: the two cells differ in
+  // nothing the attribute is concerned with, and a ruling that names one and
+  // not the other is a ruling about the corpus that happened to run.
   body: [{ attr: "background", resourceType: "legacy-background", import: true }],
   table: [{ attr: "background", resourceType: "legacy-background", import: true }],
+  td: [{ attr: "background", resourceType: "legacy-background", import: true }],
+  th: [{ attr: "background", resourceType: "legacy-background", import: true }],
 })
 
 /** `<input type=submit|image formaction=…>` is a form endpoint, and `type` decides

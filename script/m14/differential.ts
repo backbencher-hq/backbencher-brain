@@ -21166,8 +21166,21 @@ const ORACLE_HTML_FETCHERS: Record<string, string[]> = {
   // fetch, not a navigation, so it belongs here rather than in the link table.
   a: ["ping"],
   // Legacy presentational background images: deprecated, still fetched.
+  //
+  // `td`/`th` ARE DERIVED FROM THE SPEC'S OWN OWNER LIST, NOT COPIED FROM THE
+  // ANALYZER'S TABLE (carrier census, 2026-10-28). The two tables are supposed
+  // to be independent derivations, so the reason this row exists is that the
+  // legacy `background` attribute is defined on `body`, `table`, `td` and `th`
+  // — four owners, and the oracle had described two. The census supplied the
+  // witness rather than the rule: a `td@background` in
+  // FSharp.Data/tests/FSharp.Data.Tests/Data/MarketDepth.htm whose value is a
+  // real image path. If this row were copied from the analyzer the differential
+  // would stop being able to contradict it, which is the failure the census is
+  // designed to prevent.
   body: ["background"],
   table: ["background"],
+  td: ["background"],
+  th: ["background"],
 }
 
 /** `cite` names where a quotation or change came FROM. Nothing fetches it and
