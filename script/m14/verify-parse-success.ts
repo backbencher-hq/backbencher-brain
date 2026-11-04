@@ -194,10 +194,19 @@ function candidates(repoDir: string, lang: string, detectedId: string): string[]
   const hits: string[] = []
   for (const f of all) {
     const ext = f.slice(f.lastIndexOf(".") + 1).toLowerCase()
-    // Only the ambiguous header needs its content; every other extension routes
-    // on the name alone, so the walk stays cheap on large corpora.
+    // `.h`/`.hpp` ARE NOT THE ONLY CONTENT-AMBIGUOUS EXTENSIONS, and this comment used to claim
+    // they were. `.m` is shared by MATLAB and Objective-C: `EXTENSION_LANGUAGE["m"]` keeps
+    // objective-c as the bare-extension default, and only the router's own 64 KiB content test
+    // (`function `/`classdef `) can attribute a file to matlab — the product always detects with
+    // content (`pool-worker.parseFile` reads the file), so a candidate set built from the PATH
+    // ALONE is not the product's routing. MEASURED 2026-11-03 on the matlab lane's dedicated root
+    // (467 tracked `.m`): path-only detection routes 467/467 to objective-c — this gate saw 0
+    // matlab candidates and aborted the lane as a silent zero — while the product's content-aware
+    // rule routes 365 to matlab and 102 to objective-c. Reading the head is the same test the
+    // router applies; it does not widen a lane's population, it makes the population the
+    // product's.
     let detected = detectLanguageFromPath(f)
-    if (ext === "h" || ext === "hpp") {
+    if (ext === "h" || ext === "hpp" || ext === "m") {
       let head = ""
       try {
         head = readFileSync(f, "utf8").slice(0, 65536)
