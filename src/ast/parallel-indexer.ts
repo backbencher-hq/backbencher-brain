@@ -5561,6 +5561,47 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_idx ON _res_name(name)`)
     rawDb.run(`CREATE INDEX IF NOT EXISTS _res_name_uniq_idx ON _res_name(name, cnt)`)
 
+    // ── CONTAINS LINE-HINT PASS (#612 follow-up; measured by the M14 systems e2e).
+    //
+    // A `contains` edge takes the CHILD's own naming line as `line_number` (#921), and among
+    // same-file, same-name candidates the one written on that line is the intended target — the
+    // eager insert-time statement (`resolveContainsTargetStmt`, above) orders by exactly that hint.
+    // But a worker-pool index sets `skipResolution` and defers EVERY row to this pass, and the
+    // own-file NAME pass below picks `MIN(id)` per (name, file): ids are
+    // `${projectId}:${path}:${name}:${line}`, compared as TEXT, so `…:width:11` beats `…:width:6`
+    // and BOTH same-named members land on the lexicographically smaller line, not on their own.
+    //
+    // MEASURED (script/m14/verify-systems-cluster-e2e.ts, the polyglot systems project): RED at
+    // HEAD with `contains target resolved on the edge's own line (Engine contains width: edge line
+    // 6, resolved target line 11)` and `the two same-named members resolved to DIFFERENT symbols
+    // (got lines 11,11)`, GREEN with eager resolution forced (`BB_TEST_FORCE_EDGE_RESOLVE=1`) —
+    // i.e. the eager statement is right and the deferred pass was the defect. So the hint is
+    // applied HERE too, before the name passes can claim a contains row by id order.
+    rawDb.run(`DROP TABLE IF EXISTS _res_contains_targets`)
+    rawDb.prepare(`
+      CREATE TEMP TABLE _res_contains_targets AS
+      SELECT rel_id, symbol_id FROM (
+        SELECT r.id AS rel_id, s.id AS symbol_id,
+               ROW_NUMBER() OVER (PARTITION BY r.id ORDER BY (s.file_id = rf.id) DESC,
+                                  (s.line_start = r.line_number) DESC,
+                                  COALESCE(s.is_declaration, 0) ASC, s.id) AS rn
+        FROM brain_relationship r
+        JOIN brain_symbol rs ON rs.id = r.source_symbol_id
+        JOIN brain_file rf ON rf.id = rs.file_id
+        JOIN brain_symbol s ON s.project_id = r.project_id AND s.name = r.target_external
+        WHERE r.relationship_type = 'contains' AND r.target_symbol_id IS NULL
+          AND r.target_external IS NOT NULL AND r.line_number > 0 AND r.project_id = ?
+      ) WHERE rn = 1
+    `).run(projectId)
+    rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = (SELECT t.symbol_id FROM _res_contains_targets t WHERE t.rel_id = brain_relationship.id),
+          is_cross_file = 0
+      WHERE brain_relationship.id IN (SELECT rel_id FROM _res_contains_targets)
+        AND brain_relationship.target_symbol_id IS NULL
+    `)
+    rawDb.run(`DROP TABLE IF EXISTS _res_contains_targets`)
+
     // ── OWN-FILE PREFERENCE (M14 clause 4). Both lookup tables below collapse every name
     // and every dotted suffix to ONE global winner via `MIN(id)` — the lexicographically
     // smallest symbol id in the PROJECT. File paths sort, so an edge written in

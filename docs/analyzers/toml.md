@@ -59,7 +59,7 @@ identity, and source text is not one.
 
 | Input | Result |
 |---|---|
-| the file itself | one `module`, named from the file **stem** — `Cargo.toml` is `Cargo`, never `Cargo.toml` |
+| the file itself | one `module`, named from the file **stem** under its document scope — `Cargo.toml` is `Cargo` and `src/seam.toml` is `src.seam`, never `Cargo.toml` (the scope is what makes the identity unique per directory; `src/ast/project-scoped-identity.ts`) |
 | `[table]` or `[[array-of-tables]]` | a `namespace` |
 | `key = value` | a `property`, owned by the table that declares it |
 | `class`/`kind` of a VALUE | **nothing** — a value is data, recorded as `metadata.valueType` on its key |

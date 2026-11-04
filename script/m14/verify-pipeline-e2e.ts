@@ -480,12 +480,12 @@ async function main() {
            JOIN brain_symbol src ON src.id = r.source_symbol_id
            JOIN brain_file f ON f.id = src.file_id
            JOIN brain_symbol tgt ON tgt.id = r.target_symbol_id
-           WHERE f.path LIKE '%.md' AND r.relationship_type = 'uses' AND tgt.name = 'Install Now!'`)
+           WHERE f.path LIKE '%.md' AND r.relationship_type = 'references' AND tgt.name = 'Install Now!'`)
   expect(mdAnchor === 1, `markdown same-document anchor BOUND to the heading's row (got ${mdAnchor}, want 1: the link resolves to a symbol, not to a string)`)
   const mdAnchorRaw = count(`SELECT COUNT(*) c FROM brain_relationship r
            JOIN brain_symbol s ON s.id = r.source_symbol_id
            JOIN brain_file f ON f.id = s.file_id
-           WHERE f.path LIKE '%.md' AND r.relationship_type = 'uses' AND r.target_external LIKE '#%'`)
+           WHERE f.path LIKE '%.md' AND r.relationship_type = 'references' AND r.target_external LIKE '#%'`)
   expect(mdAnchorRaw === 0, `no markdown uses edge targets a raw fragment (got ${mdAnchorRaw}, want 0: MD-14 published the fragment verbatim before this round)`)
 
   // MD-5, THE SEAM ITSELF. The worker carries a CSS-only key allowlist, so these are
@@ -564,8 +564,11 @@ async function main() {
   // half the manifest and no count would notice — the row counts DISTINCT names.
   const tomlSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml'`)
   expect(tomlSymbols >= 9, `toml symbols persisted (got ${tomlSymbols}, want >=9: module + package + 2 package keys + target + libc + 2 bin elements + 1 bin name each + dotted + dotted.a.b)`)
-  const tomlStem = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'seam' AND symbol_type = 'module'`)
-  expect(tomlStem === 1, `toml module named from the file STEM (got ${tomlStem}, want 1: 'seam', not 'seam.toml')`)
+  // The published module is the file STEM under its DOCUMENT SCOPE (`src/seam.toml` -> `src.seam`),
+  // which is the identity rule in src/ast/project-scoped-identity.ts — the assertion pins both facts:
+  // the name is built from the stem (ends `.seam`) and never from the filename (`seam.toml`).
+  const tomlStem = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND symbol_type = 'module' AND (name = 'seam' OR name LIKE '%.seam')`)
+  expect(tomlStem === 1, `toml module named from the file STEM under its document scope (got ${tomlStem}, want 1: 'seam' or '<scope>.seam', not 'seam.toml')`)
   const tomlNoFileName = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'seam.toml'`)
   expect(tomlNoFileName === 0, `toml module is NOT named after the filename (got ${tomlNoFileName}, want 0)`)
   const tomlQuoted = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'target."cfg(unix)".dependencies'`)
@@ -618,10 +621,16 @@ async function main() {
   const svReactive = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name = 'doubled'`)
   expect(svReactive >= 1, `svelte $: reactive target persisted (got ${svReactive}, want >=1)`)
   // instantiates: a template component usage.
-  const svInstantiates = count(`SELECT COUNT(*) c FROM brain_relationship r
+  // A template component usage is `renders`, not `instantiates`, since the SFC relabel of
+  // 2026-10-23 (commit 03b776294); the census probe was fixed for the same stale label this
+  // round. Pin the CURRENT relation (either label is accepted only so an older store cannot
+  // silently pass by not emitting), with the negative control that the reserved namespace
+  // publishes nothing.
+  const svTemplate = count(`SELECT COUNT(*) c FROM brain_relationship r
            JOIN brain_symbol s ON s.id = r.source_symbol_id
-           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.relationship_type = 'instantiates'`)
-  expect(svInstantiates >= 1, `svelte template component usage persisted as instantiates (got ${svInstantiates}, want >=1)`)
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte'
+             AND r.relationship_type IN ('renders','instantiates')`)
+  expect(svTemplate >= 1, `svelte template component usage persisted as renders (got ${svTemplate}, want >=1)`)
   // calls: BOTH new call sources must survive the seam — the D8 template event
   // handler and the D7 rune invocation. They are the same relationship_type, so
   // they cannot be told apart by kind alone; the line is what separates them, and

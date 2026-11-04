@@ -1123,7 +1123,27 @@ export function filterNoiseRelationships(
     const isDeclaredSignature =
       DECLARED_SIGNATURE.test(leaf) &&
       ((declaredNames?.has(leaf) ?? false) || (declaredNames?.has(target) ?? false))
-    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf) && !DERIVED_TEMPLATE_ID.test(target) && !isDeclaredSignature) return false
+    // ★ THE GENERAL DECLARATION RULE (markdown lane, 2026-11-04). The solidity arm above proved
+    // the shape test is answerable by EVIDENCE: a target that equals a name THIS call declared is
+    // a name the analyzer published, and a published name cannot be a source fragment. That arm
+    // stopped at the `name()` spelling because admitting arguments would have weakened the ban
+    // for one lane — but the same argument applies UNRESTRICTED to a document language, where the
+    // NAME ITSELF carries spaces: markdown publishes a heading as the symbol `Install Now!`, and
+    // the two edges that target it (`contains Seam -> Install Now!`, `references Registry ->
+    // Install Now!`) were both eaten by the whitespace rule before storage, so a same-document
+    // link silently bound to nothing. MEASURED through the real pipeline (the M14 pipeline e2e):
+    // analyzer parseFile emits 8 edges, this filter kept 6, dropping exactly the two whose target
+    // is the multi-word heading; whitespace-free headings were unaffected, which is why only that
+    // one assertion failed. The control is the store's own re-derived `contains Seam -> Install
+    // Now!` row, which binds fine — the loss is here, not in the binding.
+    //
+    // The rule is a DECLARATION test, not a whitespace exemption: a snippet (`foo (a, b)`) that
+    // nothing declares is still refused, and every other rule in this filter still applies. Only
+    // the shape test is answered by "this is a name the analyzer published", which is exactly the
+    // posture the solidity arm established.
+    const isDeclaredName =
+      (declaredNames?.has(leaf) ?? false) || (declaredNames?.has(target) ?? false)
+    if (/[\s'"(),=]/.test(leaf) && !OPERATOR_NAME.test(leaf) && !SETTER_NAME.test(leaf) && !CALLABLE_REF.test(leaf) && !DERIVED_TEMPLATE_ID.test(target) && !isDeclaredSignature && !isDeclaredName) return false
     // THE ANGLE-BRACKET BAN, AND WHY IT MUST NOT BE UNCONDITIONAL (ruby lane, 2026-10-21).
     //
     // `<` and `>` are banned because a target carrying them is usually a SNIPPET or a template
