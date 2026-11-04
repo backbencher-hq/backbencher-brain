@@ -36,7 +36,7 @@
   `reviews/functional-family/m60-grammar-pins.md`. Tree:
   `-module`/`-export`/`-import`/`-include`/`-include_lib`/`-behaviour`/
   `-define`/`-record`/`-type` are `attribute` nodes; functions are
-  functions are `fun_decl` → `function_clause` → `expr_args` + `clause_body`
+  `fun_decl` → `function_clause` → `expr_args` + `clause_body`
   (a NEW `fun_decl` opens at every semicolon-separated clause, so merging
   clauses into one symbol is the analyzer's job — measured 2026-09-25); calls
   are `call` (`Module:func(...)` → `remote` → `remote_module` (atom) + the
@@ -68,15 +68,27 @@
 
 ## Relationship ontology
 
-| Relationship | Supported? | How extracted (AST node/field) | Weight |
+| Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| contains | ✅ | real ownership only: module → its records/macros/types/functions (`contains service -> handle_call`), record → its fields (`contains person -> id`). Sources the RECORD symbol, never the `#state` field text. | 1.0 |
-| implements | ✅ | `-behaviour(gen_server)` → `implements service -> gen_server` (behaviour = the Erlang interface analog) | 0.9 |
-| calls | ✅ | `call` nodes in EVALUATION contexts (a clause head is a pattern; type syntax is DECL-ONLY — ER-D3). Source = the named function, else the enclosing `-record` (a field default, ER-D12), else the module. Remote calls keep `module:function` (ER-D1) with STRUCTURAL extraction (the module atom of `remote_module`, the function atom of `remote`) and `?MODULE:` expands to the current module (ER-D14, `meta.macroModule`); local calls resolve against the file's declared name/ARITY set (forward references included). Self-recursion IS emitted. `meta.callArity` is the call's `expr_args` named-child count, comments excluded, and it is part of the edge identity: `f/1` and `f/2` sites are distinct edges (ER-D2) | 0.9 |
-| instantiates | ✅ | `record_expr` (`#state{...}`) in BODY/guard position only → `instantiates run -> state`. Record literals in PATTERN position (function heads, `expr_args` before the guard/body) emit NOTHING. `record_update_expr` (`State#state{...}`) is a member WRITE, not a construction — no instantiates (ER-D4) | 1.0 |
-| uses | ✅ | record member READ (`State#state.q`, `#state.label` index reads) → `uses -> <record>` AND `uses -> <field>`; record member UPDATE (`State#state{count = X}`) → `uses -> <record>` and → each assigned field. Evaluation contexts only: a head pattern emits nothing (ER-D7, closes ER-G4). `meta.context` is `record member read` or `record field update` | 1.0 |
-| references | ✅ | the `-import` module mention (ER-D41); macro USES (`?TIMEOUT`, `?MODULE`, `?SERVER_HEADER` — emitted whether or not the macro is defined here, ER-D8, closes ER-G1); fun VALUES (`fun f/1` bare, `fun lists:map/2` qualified — a value is not an invocation, ER-D9, closes ER-G2); type dependencies from `-type`/`-opaque` to every type name the expression APPLIES (ER-D10 narrowed by ER3, closes ER-G5). Body variable uses emit NOTHING. `-include`/`-include_lib` moved OUT of this row to `part_of` by ER-D46 — a mention cannot say the file became part of this unit | 1.0 |
-| part_of | ✅ | `-include("x.hrl")` / `-include_lib("kernel/…")` — FILE INCLUSION (ER-D46): the header is spliced into this module's single compilation scope, cannot be compiled as a unit of its own, and imports nothing, which is the vocabulary's `part_of` contract. Direction is the directive's own: source = the file carrying the directive (its module symbol, else its path, ER-D32), target = the path as written; `metadata.partRole:"library"` (this file is the including library and names the part) and `metadata.isFileInclusion:true` are MANDATORY on every row. Tier follows the construct: 1.0 / `import_based`. The `-import` module stays `imports` + `references` — a name import creates binding scope, an include splices text | 1.0 |
+| calls | ✅ yes | `call` nodes in EVALUATION context (a clause head is a pattern; type syntax is DECL-ONLY, ER-D3). Local `f(...)` resolves only against the file's declared `(name, arity)` set — the forward-reference prepass (`ctx.declaredFnKeys`), BIFs excluded exactly by arity (ER-D45); remote `m:f(...)` keeps the module qualifier (`module:function`, ER-D1), extracted structurally from `remote_module` + the function atom, and `?MODULE:f(...)` expands to the current module (ER-D14). `metadata.callArity` is part of the edge identity (ER-D2). Per-site line is the callee's name node (src/ast/real-erlang-analyzer.ts:1605, 1632, 1674) | 0.9 — name-resolved: `usage_contextual` for a local target, `reference_qualified` for a qualified remote one. No heuristic tier: every target is read from a node |
+| extends | ❌ no | No inheritance construct exists. The analyzer has **0** `RelationshipType.Extends` sites; the pinned grammar declares **0** inheritance productions (0 of 137 named node types and 0 of the 173 anonymous tokens; of 23 inheritance-shaped probes — `class_declaration`, `extends_clause`, `superclass`, `subclass`, … — 0 are in the grammar's table and 0 are produced by 3,939 corpus files, `script/m60/erlang-construct-probe.ts`), and **0** of the `-extends`/`-inherits`/`-subclass`/… attribute spellings occur. RULED grammar-absence (ER-D34; the ruling carries the corpus instrument) — Erlang's module composition is `-behaviour` → `implements` and `-include` → `part_of` | n/a — no edge to resolve |
+| implements | ✅ yes | `-behaviour(B)` → the behaviour ATOM, one edge per directive, never a standalone symbol (ER-D6): a behaviour is a cross-module contract, so the edge is the whole claim. Line = the behaviour atom (src/ast/real-erlang-analyzer.ts:951) | 1.0 — `structural`: the claim IS the syntax |
+| uses | ✅ yes | record member READ (`S#r.f`, `#r.f`) emits `uses` to the RECORD and to the FIELD; record UPDATE (`S#r{f = …}`) emits to the record and to each assigned field. EVALUATION contexts only — a head pattern emits nothing (ER-D7); `metadata.context` names `record member read` / `record field update` (sites: src/ast/real-erlang-analyzer.ts:1740, 1752, 1775, 1790) | 1.0 — `usage_contextual`: resolved against this module's declared record/field set |
+| imports | ✅ yes — relationship edge **and** `import-site: ImportInfo[]` payload | `-import(Module, [f/a, …])` → the MODULE name, one edge per directive (ER-D41); `metadata.importedFunctions` carries the names and `metadata.isExternal:true` is ER-D20's classification (an OTP module cannot be declared in this file). The same fact is published through the **`import-site: ImportInfo[]` channel** (`ctx.imports.push`, `importType:"named"`, `isExternal:true`, `importedNames`/`items`) — and that payload channel ALSO carries `-include`/`-include_lib` paths with `importType:"include"`/`"include_lib"` and their own `isExternal`, while the include RELATION is `part_of` (ER-D46). Edge site src/ast/real-erlang-analyzer.ts:1052, payload :1024, include-payload :1123 | 1.0 — `import_based`: the directive is the syntax |
+| exports | ✅ yes — relationship edge **and** `export-site: ExportInfo[]` payload | `-export([f/a])` and `-export_type([t/0])` → ONE `exports` edge per `fa` in the attribute (ER-D40): source = the module (else the file path, ER-D32), target = the bare name with the arity in `metadata.arity`, `metadata.exportForm` = `export`/`export_type`, line = the `fa`'s own name line (M59 #825). `-export([?MODULE/0])` resolves `?MODULE` to the module (ER-D28) and an UPPERCASE name is read as the grammar's `var` (ER-D42). ALSO published through the **`export-site: ExportInfo[]` channel** (`ctx.exports.push`, name + arity + kind, `metadata.isTypeExport` for `-export_type`; src/ast/real-erlang-analyzer.ts:975 payload, :1001 edge) | 1.0 — `structural`: an `-export` list is a public-surface declaration |
+| contains | ✅ yes | declaration OWNERSHIP only: module → its records/macros/types/functions/callbacks, record → its fields (ER-D6, ER-D33). Source = the owning container (module symbol, else the file path for a module-less header, ER-D32); target = the member identity as the member's declaration publishes it; line = the member's NAME line, never the construct's (ER-D33; site src/ast/real-erlang-analyzer.ts:2066) | 1.0 — `structural`: a member's declaration list is the syntax |
+| references | ✅ yes | four mention classes: the `-import` MODULE mention (ER-D41); macro USES (`?MACRO`, emitted whether or not defined here, ER-D8); fun VALUES (`fun f/1`, `fun m:f/2` — a value is not an invocation, ER-D9); type dependencies from `-type`/`-opaque`/`-nominal`/`-spec`/`-callback` bodies and record field types, APPLIED names only (ER-D10/ER-D31; the leaf-qualifier of a remote type is kept, ER-D1). `-include`/`-include_lib` are `part_of` since ER-D46 — a mention cannot say the file became part of this unit. Sites: src/ast/real-erlang-analyzer.ts:899, 1061, 1699, 1828, 1855, 1872, 1886, 2002 | 1.0 for the `-import` mention and record-type references; 0.9 for the module-name macro use, fun values, and applied type references inside a declaration (name-resolved across the file). `evidenceClass: reference_qualified` on every `references` row |
+| overrides | ❌ no | No member can redefine a member it INHERITS: Erlang has no inheritance, nothing is inherited, and `-behaviour` is CONFORMANCE (`implements`, above). **0** `RelationshipType.Overrides` sites; the pinned grammar declares no override production; the 33 in-file `-callback`+definition pairs collapse to ONE symbol (ER-D30), so the edge would be a self-loop; the 2,548 callback-supply identities are the OPPOSITE direction from overriding and are already published as `implements`; the preprocessor's own `'redefine'` marker is declared 88 times and exercised 0 times in one file. RULED grammar-absence, reconciled against the contract's DIRECTION (ER-D50) | n/a — no edge to resolve |
+| instantiates | ✅ yes | `record_expr` (`#state{…}`) in BODY/guard position only → the record name (ER-D4); a record literal in PATTERN position (clause head, `expr_args` before the guard/body) emits nothing; `record_update_expr` (`State#state{…}`) is a member WRITE (`uses`) and never a construction (site src/ast/real-erlang-analyzer.ts:1716) | 1.0 — `structural`: `#r{}` in evaluation position is the construction syntax |
+| decorates | ❌ no | An Erlang attribute is COMPILE-TIME ANNOTATION or a compiler directive, and the vocabulary's contract requires an APPLIED CALLABLE the runtime applies to a declaration (src/ast/types.ts). Measured whole population: 36,352 annotation-attribute sites (`doc` 34,423 · `moduledoc` 1,381 · `dialyzer` 329 · `vsn` 87 · `author` 80 · `nifs` 27 · `on_load` 20 · `copyright` 5) plus 16,686 `-spec` and 429 `-callback` — passive metadata or contracts, never an applied callable; 0 decorator productions in the served grammar. RULED ontological (ER-D47; the proposal deliberately left annotations on existing values) | n/a — no edge to resolve |
+| renders | ❌ no | 0 of the served build's 137 named node-type ids is a component-element production (`jsx_element`/`jsx_self_closing_element`/`jsx_opening_element`/`element` match zero; `bin_element` is a binary segment, adjudicated), 0 render sites over the 4,465-file population; the nearest thing Erlang has — 31,256 `wx`/`wxe` widget-construction sites — is `calls` (module:function), not a component render. RULED grammar-absence (ER-D48; the javascript inventory is the cross-grammar positive control) | n/a — no edge to resolve |
+| mixes_in | ❌ no | 0 of the 137 named node-type ids is a mixin/with-clause/class production, 0 corpus sites; `try_class` (4,830 sites) is the exception CLASS of `try … catch C:R ->` (adjudicated, not a class declaration); Erlang has no classes and no supertype chain, and its composition constructs are counted elsewhere — `-behaviour` → `implements`, `-include` → `part_of`. RULED grammar-absence (ER-D49; groovy `trait_declaration` and scala `trait_definition` are the positive controls) | n/a — no edge to resolve |
+| part_of | ✅ yes | `-include("x.hrl")` / `-include_lib("kernel/…")` — FILE INCLUSION (ER-D46): the header is spliced into this module's single compilation scope, cannot be compiled as a unit of its own, imports nothing. Source = the file carrying the directive (its module symbol, else its path, ER-D32); target = the path AS WRITTEN; `metadata.partRole:"library"` and `metadata.isFileInclusion:true` are MANDATORY on every row; line = the path STRING's line, not the keyword's (M59 #825; site src/ast/real-erlang-analyzer.ts:1138) | 1.0 — `import_based`: the tier follows the construct (a file-inclusion directive), not the old mention reading |
+
+**This is the single claim table.** The measured per-type bodies below are kept, under
+non-claim headings, because they carry the numbers and the probes this table cites:
+`## Ontology measurements — …`. Where a measured body still describes the pre-ER-D46
+reading of an include (it was a `references` row), the ER-D46 note beside it is current.
 
 ### Type dependencies: an applied name, never a bare one (ER3, 2026-09-25)
 
@@ -180,13 +192,16 @@ emitted by 8 analyzers — and emitted by no Erlang symbol at all until ER-D39.
 The same pass over the relationship enum found two more (`exports`, `imports`).
 Reading the analyzer for what looks missing finds none of those three; comparing
 it against the enum finds all three.
-## Symbol contract
+## Symbol contract — the measured additions (2026-10-04)
+
+This is the measured companion to the contract table above; the rows the older body
+repeated twice are collapsed to one each, and the last one's "three declaration forms"
+now names the FOUR metadata flags it lists (`isMacro` was the missing fourth).
 
 | field | supported | how it is derived |
 |---|---|---|
 | `name` | yes | `-module` -> module · `-record` -> record · `-define` -> macro (`var` child of `macro_lhs`) · `-type`/`-opaque`/`-nominal` -> type · `-callback` -> method · clause head -> function, **including a `?MODULE()` head** (ER-D25/D28) |
 | `kind` | yes | `module`, `struct` (a record), `property` (a record field), `macro` (a FUNCTION-LIKE `-define`), `constant` (an OBJECT-LIKE `-define`, which really is a compile-time value), `type`, `method` (a callback), `function` (ER-D39) |
-| `kind` | yes | `module`, `struct` (a record), `property` (a record field), `constant` (a macro), `type`, `method` (a callback), `function` |
 | `ownerName` | yes | the module for functions/methods/types/records/macros; **the record** for its fields |
 | `range` | yes | the declaration node; a function's range spans every clause of that (name, arity) |
 | `parameters` | yes | one per clause-head element. A head is a PATTERN, so each carries `name` (only for a plain variable) and always `pattern`, plus `type` when a `-spec` supplies it (ER-D21) |
@@ -195,27 +210,30 @@ it against the enum finds all three.
 | `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists: recorded on `ExportInfo` AND emitted as `exports` edges (ER-D40) |
 | `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
 | `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
-| `isCallback` / `isOpaque` / `isNominal` / `isMacro` / `isFunctionLike` | yes (metadata) | the declaration forms that are easy to lose; `isFunctionLike` is what splits `macro` from `constant` (ER-D39) |
-| `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists, recorded on `ExportInfo` |
-| `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
-| `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
-| `isCallback` / `isOpaque` / `isNominal` / `isMacro` | yes (metadata) | the three declaration forms that are easy to lose |
+| `isCallback` / `isOpaque` / `isNominal` / `isMacro` / `isFunctionLike` | yes (metadata) | the FOUR declaration/annotation flags that are easy to lose; `isFunctionLike` is what splits `macro` from `constant` (ER-D39) |
 
 **Function identity is (name, arity).** `pick/0` and `pick/1` are two functions;
 the second clause of either is the same function. A module that both declares
 and defines a callback yields ONE symbol whose kind and line are the
 **definition's** — the contract's line stays in `metadata.callbackLine` (ER-D30).
 
-## Relationship ontology
+## Ontology measurements — the ten-type table (2026-10-04, pre-ER-D46 — kept as measured evidence)
 
-| relationship | emitted for | notes |
-|---|---|---|
+> **Scope.** This table is the 2026-10-04 ten-type reading, kept because it is the measured
+> body the claim table above cites. The current vocabulary is FOURTEEN values, and the
+> canonical claim table is at the top of this page; four values are not rows here —
+> `part_of` (emitted since ER-D46, measured below under the ten-type corpus reading) and the
+> three ruled `decorates`/`renders`/`mixes_in`. Where a row still spells the pre-ER-D46
+> reading of an include, the note beside it is current.
+
+| relationship | derived from (per ER ruling) | notes |
+| --- | --- | --- |
 | `contains` | module -> function/method/type/record/macro, record -> field | the member's own declaration line |
 | `implements` | `-behaviour(b)` | the edge only, never a symbol (ER-D6) |
 | `calls` | local `f(...)` when `f` is declared in the file; remote `m:f(...)` with the module KEPT (ER-D1) | per-site, keyed by `metadata.callArity` (ER-D2). `?MODULE:f()` expands to this module (ER-D9) |
 | `uses` | record member read (`S#r.f`, `#r.f`) and record update (`S#r{f=…}`) | java/kotlin member-read parity (ER-D24) |
 | `instantiates` | a record construction outside pattern position | an UPDATE is `uses`, never `instantiates` (ER-D4) |
-| `references` | include / include_lib / import; a `?MACRO` use; a fun VALUE (`fun f/1`, `fun m:f/2`); a type dependency from a `-type`/`-opaque`/`-nominal`/`-spec`/`-callback` body, from a record field's type, and a record named in a type | a qualified TYPE keeps its module (ER-D31) |
+| `references` | import; a `?MACRO` use; a fun VALUE (`fun f/1`, `fun m:f/2`); a type dependency from a `-type`/`-opaque`/`-nominal`/`-spec`/`-callback` body, from a record field's type, and a record named in a type | a qualified TYPE keeps its module (ER-D31). **This row's `include`/`include_lib` half is historical**: since ER-D46 an include is `part_of`, not a reference |
 | `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name (ER-D28) and an UPPERCASE name is read as the `var` the grammar types it to be (ER-D42) |
 | `imports` | `-import(Mod, [f/a])` (ER-D41) | the dependency the module pass reads (`brain_import` rows, `dependencies.ts:27-28`), alongside the `references` mention of the same atom |
 | `extends` | **never** | RULED with a measurement — see "The two ruled types, and what rules them" below. ER-D34 recorded it as N/A; the ruling now carries a corpus instrument and a corpus number, which N/A did not |
@@ -247,7 +265,7 @@ edge is a heuristic guess** — the corpus dual lens reports a heuristic class o
   boundary as calls).
 - Params/locals never become symbols.
 
-## The ten relationship types, with a number behind each (re-measured 2026-10-04)
+## Ontology measurements — the ten-type corpus reading (re-measured 2026-10-04; superseded by the 2026-10-23 campaign)
 
 The ontology workstream (`docs/analyzers/ONTOLOGY-WORKSTREAM.md`) asks for one
 verdict per (analyzer × type), each carried by a MEASUREMENT, and for the types
@@ -310,7 +328,20 @@ commit: exit 2, 3,939 admitted files, no RULING TABLE.
 | `implements` | **EMITTED** | 572 | 550 | `-behaviour(B)` |
 | `imports` | **EMITTED** | 300 | 238 | `-import(Mod, [f/a])` (ER-D41) |
 | `extends` | **RULED** | 0 | 0 | instrument A + instrument B, below |
-| `overrides` | **GAP** — construct real, 2,548 identities, not derivable from one file | 0 | 0 | the cross-file channel does not exist for `.erl`; the in-file and preprocessor tiers measure 0 replacements (probes below). **This is a correction**: the previous version of this row read `RULED in-file · REPORTED cross-file`, and `RULED` is the wrong verdict by the workstream's own definition — a type is RULED only when the construct **never occurs**, and this one occurs 2,548 times |
+| `overrides` | **RULED — grammar-absence** (ER-D50, reconciled against the CONTRACT'S DIRECTION) | 0 | 0 | nothing is INHERITED in Erlang, so no member can redefine one; `-behaviour` is CONFORMANCE and is published as `implements` (572 rows on this population); the 33 in-file `-callback`+definition pairs collapse to ONE symbol (a self-loop); the 2,548 callback-supply identities are the OPPOSITE direction from overriding; the preprocessor's own `'redefine'` marker is declared 88 times and exercised 0 times in one file (probes below). The pinned grammar declares no override production. This row previously read GAP and then `RULED in-file · REPORTED cross-file` — see `### overrides — RULED GRAMMAR-ABSENCE, reconciled against the contract's DIRECTION` |
+
+**The campaign wave added the NINTH emitted type, `part_of` (ER-D46), measured on a
+different — larger — population.** The ten-type table above predates the relabel and must
+not be read as current for includes: `-include`/`-include_lib` are `part_of` now,
+**4,340 rows over 2,464 files on the 4,465-file admitted population** (otp 4,148 +
+rebar3 269 + elixir 48; `validation/m14/measurements/erlang-extended-census.json`), which
+is exactly the 4,340 include sites (plain 2,133 · lib 2,207) — a 1:1 relabel, so the row
+this population carried as `references` fell by exactly that. The campaign also re-measured
+every emitted type on that population through the production entry
+(`pool-worker.ts:parseFile`), and the closure arm over the same 4,465 files closed at
+**1,023,190 edges = resolved 667,137 + amb(decl) 90,324 + unresolved 265,727 + extOK 2 + 0**
+(`validation/m14/measurements/erlang-gate-whole-2026-10-23.log`); see
+`validation/m14/verification/ERLANG-STATE.md` for the supersession table.
 
 ### `overrides` — RULED GRAMMAR-ABSENCE, reconciled against the contract's DIRECTION
 
@@ -507,9 +538,11 @@ instantiates 1:12,798
 ```
 
 So no erlang edge is a heuristic, and none needs a reason code under the confidence
-rule. The 0.9 on `calls` and on include-style `references` is the name-resolved tier
-(a remote callee is a real name in the source, but the module half is not resolved
-to a symbol here) — a declared tier, not a guess.
+rule. The 0.9 on `calls` and on the name-resolved `references` rows (macro uses, fun
+values and applied type references inside a declaration) is the name-resolved tier — the
+census-era include rows were 0.9 too and are `part_of` since ER-D46; a remote callee is a
+real name in the source, but the module half is not resolved to a symbol here. A declared
+tier, not a guess.
 
 **(f) R7 — no placeholder endpoints.** 0 unknown symbol kinds, 0 empty names, 0
 invented sentinel names, 0 ownerless members across 185,818 symbols. On the
@@ -597,9 +630,9 @@ names only). Publishing it as `extends` would put a fabricated edge on every map
 key and every atom literal — the pre-ER3 rule produced 4,043 such rows on OTP whose own
 site line does not apply the name it cites.
 
-**`overrides` — RULED in-file, REPORTED cross-file, NOT EMITTED.** This is the type
-the ontology gate exists for, so the ruling is stated as a set of measurements with the
-construct that would overturn each one:
+**`overrides` — RULED GRAMMAR-ABSENCE, NOT EMITTED.** This is the type the ontology gate
+exists for, so the ruling is stated as a set of measurements with the construct that would
+overturn each one; the reconciliation against the contract's DIRECTION (ER-D50) is above:
 
 | candidate construct | measurement | why it is not an `overrides` edge |
 |---|---|---|
@@ -693,7 +726,15 @@ OTP's binary-replacement operator too: under a `pp_define` the three-argument fo
 only producer (`-define(A, (1 andalso 2)).` gives `paren_expr`, `-define(A, r(<<1:8>>) andalso <<2>>).`
 gives `binary_op_expr`), so 88 is the marker and not the binary syntax.
 
-### The one thing that has to change first (master-owned, each verified by reading it)
+### Why no cross-file member channel exists (measured; ER-D50 rules it unnecessary for `overrides`)
+
+This section is the GAP reading's remedy list, kept because every limitation it measures is
+REAL and verified by reading the code — the project index is registered for `.sol` only, the
+two channels that exist carry bare NAMES, and the companion pass runs for perl/python. What
+changed on 2026-10-23 is the RULING, not the measurement: ER-D50 rules the cross-file
+callback-supply tier CONFORMANCE (`implements`), so these edits would not manufacture an
+`overrides` edge and are reported to the owner rather than required by this lane. The table
+below is the measured channel state:
 
 Three files, all outside this lane:
 
@@ -729,7 +770,7 @@ colon where Elixir writes a dot:
 `evidenceClass` at all (probe over every fixture source), so section D could not be satisfied and the
 tier was left to the consumer's fall-through. The stamping is a terminal pass and additive: a site that
 sets its own class keeps it. Pinned by fixtures: `attrs-er3` (all four tiers across one file — import,
-include reference, remote call, local call, contains) and `arity-distinct-calls` (remote calls
+include `part_of`, remote call, local call, contains) and `arity-distinct-calls` (remote calls
 `reference_qualified` vs local calls `usage_contextual`, at the same arity-distinct call sites it
 already pins).
 
@@ -779,7 +820,7 @@ comment is what a reader would have checked instead of the code.
   this oracle deliberately derives only `exports`/`imports`) and `-compile({parse_transform, …})`
   (nothing comes into scope by name).
 * `script/m14/verify-erlang-ontology-oracle.ts` — what makes it an instrument rather
-  than an assertion. Three checks over the lane's 27 fixtures plus a stride-sampled 253
+  than an assertion. Three checks over the lane's fixture suite (27 at that measurement; 30 today) plus a stride-sampled 253
   corpus files: **agreement**, **reachability** (the oracle emits rows, so agreement is
   not vacuous — the state `overrides` was in for haskell), and **ability to fail**
   (three deliberately broken copies of the derivation, each of which must turn the same
@@ -790,13 +831,16 @@ comment is what a reader would have checked instead of the code.
   `pool-worker` sanitizer deleting `'\x{aaa}memory'` and `'func-\x{400}'`, so this lane
   gate is reporting a defect outside the lane rather than hiding it.
 
-**The wiring is master's and is not done here.** Two edits in `script/m14/differential.ts`
-clear CHECK 1 for erlang: the `lang === "erlang" ? ["contains"] : []` term in the
-audited-label filter at line 23238 needs `["exports","imports"]` added, and
-`deriveErlangExportsTruth` needs importing and calling beside the existing
-`deriveErlangEdges(root)` at line 22969. Until both land, CHECK 1 keeps reporting the
-two labels, and that report is CORRECT — the lane has the derivation and the shared
-harness does not consume it.
+**The wiring HAS since landed (2026-10-23), so the quoted CHECK 1 above is the BEFORE
+state.** Both edits are in `script/m14/differential.ts` at HEAD: `deriveErlangExportsTruth`
+is imported at line 171 and its rows are pushed in the erlang block at line 25430, and the
+erlang audited-label allowlist carries `["exports","imports"]` at line 25828. The same change
+that landed the include relabel's mirror (`deriveErlangEdges`'s include branch → `part_of`,
+the erlang `["part_of"]` allowance, and path-like exact matching for `part_of` so a header
+path is not leaf-collapsed to `hrl`). Re-running CHECK 1 is NOT done here: that gate is
+master-owned and a scoped run rewrites its shared evidence file (the warning below), so this
+page records the source state and does not claim the gate's current output.
+
 ### And the third: `contains`, audited by an allowlist entry with nothing behind it
 
 Not a DERIVATION finding — `rel-type-coverage-gate.ts` reports erlang `contains` as
@@ -862,11 +906,12 @@ absent (`setelement/3`). The middle row is the one that failed 618 times.
 `endColumn` pins read off the pinned grammar's `fun_decl` extents, so the range cannot
 silently regress to the `function_clause` that is one character shorter.
 
-`script/m14/erlang-ontology-mutants.ts` holds **11** mutants — nine prefixed
-`ontology/` for the ten relationship types and what would manufacture an edge the
-language cannot express, two prefixed `symbols/` for the lane's symbol-surface defects —
-each a faithful reproduction of a reading a reasonable reader would reach for, and all
-**11** are caught. A twelfth was REMOVED because it did not reproduce its own defect; the
+`script/m14/erlang-ontology-mutants.ts` holds **11** mutants — TEN prefixed
+`ontology/` for the emitted and ruled relationship values and what would manufacture an
+edge the language cannot express, and ONE prefixed `symbols/` for the lane's symbol-surface
+defect — each a faithful reproduction of a reading a reasonable reader would reach for, and
+all **11** are caught (the registry in the script is the count: 10 `ontology/` names and 1
+`symbols/` name). A twelfth was REMOVED because it did not reproduce its own defect; the
 removal and the new harness that replaced it are below.
 
 `script/m14/erlang-source-revert.ts` holds **3** source reverts for the mutation class a
@@ -963,7 +1008,8 @@ line it does not start, and **three** clauses of one `(name, arity)`, with every
 off the pinned grammar's `fun_decl` extents rather than off analyzer output —
 `pick/1` [1038,1078) endColumn 10, `head/1` [1218,1267) endColumn 15, `wide/2`
 [1360,1431) endColumn 12, and `expectSymbolCount` = 1 each so a reader asking for `wide`
-finds one function rather than three. 28/28 lane fixtures pass with it.
+finds one function rather than three. **30/30** lane fixtures pass with it (28 at that wave;
+the campaign wave added `extended-part-of` and the ER-D46 relabel).
 
 ## What produces NO edge (the noise contract)
 
@@ -1127,10 +1173,12 @@ point` (`metadata.complexity`).
 
 ## Regex inventory
 
-**0 regexes.** No `RegExp`, no `.match(`, `.replace(`, `.test(`, `.search(` in
-the file. The four regexes the pre-rewrite analyzer used (record-paren strip,
-arity strip, function-name strip, parse-type strip) are pure char scans:
-`stripQuotes`, `keepDigits`, `stripFirstParen`, `digitsOf`.
+**0 regexes in CODE.** No `RegExp` constructor, no regex literal, no `.match(`, `.replace(`,
+`.test(`, `.search(`, `.matchAll(` anywhere in `src/ast/real-erlang-analyzer.ts`; the only two
+occurrences of the word "RegExp" in the file are the header comments saying so (lines 4 and 40).
+The four regexes the pre-rewrite analyzer used (record-paren strip, arity strip, function-name
+strip, parse-type strip) are pure char scans: `stripQuotes`, `keepDigits`, `stripFirstParen`,
+`digitsOf`.
 
 ## Complexity envelope
 
@@ -1142,7 +1190,7 @@ cowboy@c965d1a, 4,326 `.erl` files — not a sample.
 | files | 4,617 read (`.erl` AND `.hrl`), 4,617 examined, 139 grammar errors (3.01%), **0 unexamined** |
 | symbols | 209,247 |
 | relationships | 1,032,785 |
-| relationship types emitted | `calls`, `references`, `contains`, `uses`, `exports`, `instantiates`, `implements`, `imports` — 8 of the ontology's 10, counted through `parseFile` over 3,939 corpus files (see "The ten relationship types, with a number behind each") |
+| relationship types emitted | `calls`, `references`, `contains`, `uses`, `exports`, `instantiates`, `implements`, `imports` — 8 of the CURRENT 14-value register (and of the ten-value reading this envelope was measured against). This envelope predates ER-D46: `part_of` is the NINTH emitted type since 2026-10-23, at 4,340 rows over the whole 4,465-file population (`validation/m14/measurements/erlang-extended-census.json`); the canonical per-type claim table is at the top of this page |
 | dual lens vs an independently written oracle | **0** unexplained, **0** missing, **0** line mismatches, **0** symbol mismatches |
 | unknown symbols through the production entry | 4,617 files, **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members, all 26 symbol-free files accounted for with 0 suspect |
 | parse-error taxonomy | **20 named causes, 0 unclassified**; 112 of the 139 failing files are not defects in anything |
@@ -1293,7 +1341,7 @@ number a run produced.
 
 ## What the line-by-line read found (M14 §6 dual lens, item 1)
 
-A full read of all 2,293 lines found **two members that nothing reads**, both removed:
+A full read of all 2,293 lines (the file is 2,400 lines today) found **two members that nothing reads**, both removed:
 
 | member | what it was | how it survived |
 | --- | --- | --- |
@@ -1308,7 +1356,7 @@ than against the deleted field — a revert that reintroduced `declaredNames` wo
 typecheck rather than to reproduce the defect, which is a red harness measuring nothing.
 
 No behavioural change: the census reproduced all ten per-type counts and the corpus
-totals across the edit, and 28/28 fixtures pass.
+totals across the edit, and **30/30** fixtures pass today.
 
 ## Corpus validation
 
@@ -1318,6 +1366,21 @@ totals across the edit, and 28/28 fixtures pass.
 | rebar3 | 264 | — | — | 15 (5.68%) | **0** |
 | cowboy | 188 | — | — | **0** | **0** |
 | **total** | **4,326** | — | — | **132 (3.05%)** | **0** |
+
+**The campaign wave re-measured the population this table's corpus no longer is.** The ER3
+corpus above contains **cowboy**, which is not in `.corpus` today, while today's checkout adds
+elixir (48 `.erl`) and an otp at a different revision. The current measurement, through the
+production entry over the whole admitted set (2026-10-23):
+
+| corpus (rev) | admitted | parsed | failed | symbols | relationships | grammar-error files | crash files |
+|---|---|---|---|---|---|---|---|
+| otp `9e84d463ac` + rebar3 `0c947d3b86` + elixir `024beb1bfc` | **4,465** | **4,465** | **0** | **203,984** | **1,023,190** | **138 (3.09%)** | **0** |
+
+The population rule is the gate's own (per-repository `git ls-files`, 1 MiB cap, 0 absent, 6
+over cap over 4,471 tracked paths; 199 symlinked directories followed) and the artifact is
+`validation/m14/measurements/erlang-extended-census.json`; the closure arm over the same set is
+`validation/m14/measurements/erlang-gate-whole-2026-10-23.log`. The current lane fixture suite
+is **30/30** (`bun script/m14/run-fixtures.ts --lang erlang`).
 
 - Fixtures: `Service.erl` (positive) + `Negative.erl` (negative)
 - **86/86 facts, precision 1.000, recall 1.000, 0 FP, 0 FN, 0 unknown**
@@ -1398,6 +1461,15 @@ limitations), pattern-position record literals and member reads.
 - Ground truth: `validation/m12/ground-truth/erlang.json` — `truthSource: manual_audit`, source `Service.erl` (positive) + `Negative.erl` (negative), inputs digest `d9f612f17026`, 62 files.
 - Result `validation/m12/results/erlang-differential.json`: `passed: true`, expected 69, truePositive 69, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
 - 86/86 facts on the live corpus, precision 1.000 recall 1.000 (69 pre-ER2; the 17 added facts are justified from Erlang semantics in the truth's own `source` prose — `uses` for record member reads/updates, references for `?MACRO` uses, fun values and applied type names — never copied from the analyzer's output).
+- **This is a HISTORICAL artifact, not a measurement of the current analyzer.** The committed
+  result's own `inputs` digest names a 20,347-byte `real-erlang-analyzer.ts` (the pre-ER1/ER2
+  bytes) and it is sealed `2026-09-28`; the analyzer today is 2,400 lines. Re-running the m12
+  differential needs the ground truth re-audited first: `validation/m12/ground-truth/erlang.json`
+  still classifies `-include`/`-include_lib` as `references` in its truthSource prose (and carries
+  `references` facts for `service.hrl` and `kernel/include/logger.hrl`), which ER-D46 relabelled to
+  `part_of` — so a re-run against today's analyzer would report those rows MISSING and the
+  `part_of` rows UNEXPLAINED until the truth is updated. That update is an OWNER action, outside
+  this docs lane; the numbers above are not re-baselined and are not offered as current.
 
 ## Restoration record (ER1 + ER2, 2026-09-25)
 
@@ -1418,9 +1490,9 @@ The contract above was therefore re-implemented against its own surviving spec
 
 | Witness | Result |
 | --- | --- |
-| `bun script/m14/run-fixtures.ts --lang erlang` | **9/9 PASS** (was 0/9) |
+| `bun script/m14/run-fixtures.ts --lang erlang` | **9/9 PASS** at this wave (was 0/9) — **30/30 today**: the campaign wave added `extended-part-of` and relabelled the three include rows |
 | `bun script/m14/verify-erlang-identity.ts` | **FAILING AT HEAD, and it was already failing before this wave** — `checkIdentity` asserts `source.slice(startIndex, endIndex) === "pick(0) -> zero;\npick(X) -> X."`, but `endIndex` is tree-sitter's EXCLUSIVE end and every analyzer's `nodeToRange` publishes it that way (`real-erlang-analyzer.ts:2254`, and identically in `real-elixir-analyzer.ts:1881`), so the correct expectation excludes the final `.`. Re-measured with only that one assertion corrected: PASS, **19/19 output mutations CAUGHT** (this table said 13). The script is master-owned and is reported, not fixed |
-| `BB_MUTANT_ONLY="erlang/" bun script/m14/mutate-analyzer.ts` | **54/54 CAUGHT** at this wave (this table said 20/20 — the registry has grown since), each by its intended fixture. A further **10/10** ontology mutants live lane-side in `script/m14/erlang-ontology-mutants.ts`, with a `--self-test` that inverts one expectation and requires the runner to report it as a SURVIVOR |
+| `BB_MUTANT_ONLY="erlang/" bun script/m14/mutate-analyzer.ts` | **54/54 CAUGHT** at this wave (this table said 20/20 — the registry has grown since), each by its intended fixture. A further **11/11** ontology mutants live lane-side in `script/m14/erlang-ontology-mutants.ts` (10 at this wave; the `ontology/extends-from-include` mutant was moved to the `part_of` label after it survived as a stale filter), with a `--self-test` that inverts one expectation and requires the runner to report it as a SURVIVOR |
 | `bun script/m60/lane-surface-audit.ts --lang erlang --limit 60` | **0 unlined of 8,645 edges** (was 5,951/5,951 unlined); labels calls/contains/references/uses/instantiates/implements; 0 ghosts |
 | `bun script/m14/differential.ts --lang erlang` | **rebar3 3,328/3,328 covered, MISSING 0, unexplained 0** · **otp 4,585/4,585, MISSING 0, unexplained 0** — with `uses` and `references` now COMPARED kinds |
 | `bun script/m14/verify-corpus-census.ts --lang erlang` | PASS files=60 err=1 types=102 blind=0 |
