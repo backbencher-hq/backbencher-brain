@@ -22,7 +22,7 @@ ERROR nodes. It now has its own grammar, its own analyzer and its own fixtures.
 | symbols / relationships / imports | 5,170 / 2,829 / 714 |
 | `contains` both-ends resolve | 2,225 / 2,225 (100%) |
 | `uses` both-ends resolve | 41 / 41 (100%) |
-| fixtures | 12 / 12 |
+| fixtures | **15 / 15** (12 when this row was written; 3 added with the 2026-10-23 extended-value work; gate re-run 2026-11-03: `all fixtures pass`) |
 | mutants | 26 / 26 caught (2 independent runners, below) |
 | M12 ground truth | precision **1.000**, recall **1.000** (9/9), `truthSource: manual_audit` |
 | M12 manifest | H1–H7 clean; `grammarErrorFiles` 72 backed by a full-corpus artifact |
@@ -70,42 +70,204 @@ their nesting chains and nothing for any SCSS statement, because `mixin_statemen
 ## Language
 
 - Analyzer file: `src/ast/real-scss-analyzer.ts`
-- Parser: `tree-sitter-scss`; delegates to the CSS analyzer
-- Language detection: extensions `.scss`
-- Wired in: `engine.ts` `getAnalyzer` → `RealScssAnalyzer`
+- Parser: `tree-sitter-scss@1.0.0`, vendored at `grammars/tree-sitter-scss/` with **two local
+  patches** (both strictly additive: widening list/parenthesised value rules and one delimiter
+  relaxation; neither adds a named node type). The grammar is a superset of CSS —
+  `grammar(require('tree-sitter-css/grammar'), {…})` — built on tree-sitter-css **0.20.0**.
+- Served bytes: `wasm/tree-sitter-scss.wasm`, sha256
+  `67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5`, **207,571 B**, pinned in
+  `validation/m14/grammar-pins.json`; the pinned surface is **195 ids / 90 named ids (84 unique
+  named) / 7 fields**, digest `0d460eca8c4c3c7a…`.
+- Language detection: `.scss` → `scss` in `src/ast/language-detection.ts` (extension map line 78;
+  `scss` is its own language, not a css dialect — the alias line records that). `.sass` is **not**
+  this lane: `script/m14/language-extensions.ts` gives this analyzer the extension list `{scss}`
+  only, and `validation/m14/measurements/scss-population.json` notes the 67 corpus `.sass` files
+  this analyzer is never given.
+- Wired in: `src/ast/engine.ts` `getAnalyzer` → `case "scss"` → `RealScssAnalyzer` (line 2370).
+- **Delegates to the CSS analyzer by construction:** `analyze()` instantiates
+  `new RealCssAnalyzer().analyze(rootNode, content, filePath)` and takes the returned
+  symbols/relationships/imports/exports as its base, then adds the Sass-specific rules
+  (`real-scss-analyzer.ts:528-529`). The boundary is node-type, not guesswork: the CSS walk
+  publishes selectors, nesting chains and structural at-rule scopes, and sees nothing for
+  `mixin_statement`, `include_statement`, `use_statement`, `forward_statement` or the control-flow
+  statements (see `## Architecture: it delegates to the CSS analyzer, and that is the design`).
+- Pure AST: symbols and relationships derive from Tree-sitter nodes and fields, never from
+  source-text scanning. The only string processing is on values already extracted from AST nodes
+  (leaf names, quote stripping, path/specifier normalisation) — see `## Regex inventory`.
 
 ## Supported constructs
 
-SCSS delegates to the CSS analyzer; see its supported-constructs table for the construct inventory. SCSS-specific nesting and variable rules are handled by the CSS lane's parser.
+- Fixtures: `validation/m14/fixtures/scss/` — **15 fixture pairs, all passing** (measured
+  2026-11-03: `bun script/m14/run-fixtures.ts --lang scss` → 15 pass / 0 fail). The M12
+  `validation/m12/fixtures/scss/Theme.scss` is the hand-audited ground-truth fixture read by
+  `script/m12/verify-analyzer.ts`.
+- **Rules, nesting and interpolation:** rule sets, `&` chains and comma groups become selector
+  symbols; a nested selector is owner-scoped to the enclosing published symbol
+  (`identically-named-scopes-are-distinct` pins `.card .b-#{$size}` with `ownerName: ".card"`), and
+  a repeated `$var` under two scopes stays distinct by scope.
+- **Variables:** `$x: …` declarations, `!default` and `!global` flags, and `$x` reads
+  (`variables-flags-and-identity`, `module-exports-and-global-overrides`,
+  `self-referential-assignment-reads-itself`). Reads are `references` edges; a `!global` re-assignment
+  of a top-level variable is an `overrides` edge; a read inside a region the grammar damaged is
+  marked `scssRecoveredFromError` (`reads-recovered-from-error-regions` pins the contrast, not a
+  count).
+- **Mixins:** `@mixin name($a, $b: default)` declarations; every COMPLETE `@include` statement
+  publishes a `mixes_in` row — including the two forms a `hasError` subtree test misreads
+  (`@include f();` with an empty list, and `@include m { … }` with a content block), pinned by
+  `include-foreign-mixin-mixes-in`. An include whose mixin this file does not declare is published
+  UNRESOLVED rather than dropped or invented.
+- **Functions:** `@function` declarations and `f(x)` value invocations (`calls`); `@return` is
+  recorded as a fact on the function (`metadata.scssReturns`) and emits **no edge** — the
+  `functions-return-and-undeclared-uses` fixture pins both halves, including that a builtin call
+  emits nothing.
+- **`@extend`:** `@extend .selector` and `@extend %placeholder` (`extends`), with the target read
+  from the selector node; a statement the grammar rebuilt across a damaged region carries
+  `scssRecoveredFromError` and `scssExtendShape: "recovered"`
+  (`extend-target-recovered-from-broken-node` pins the recovered form against a clean control).
+- **Modules:** `@use`/`@forward` publish namespace symbols and an `ImportInfo[]` payload
+  (`module-system-and-mixins` pins `sass:map` as `map`, `sass:list` as `*`, `src/list`); the
+  module's public members become the file's `exports` surface, Sass's `-`/`_` privacy rule
+  excludes private names, and rule/block-local assignments are not exported
+  (`module-exports-and-global-overrides` pins the exclusions with `forbidRelationships`).
+- **`@import` split, pinned in both directions** (`import-statement-emits-imports-edge`): the Sass
+  file-inclusion form (`@import "theme";` — one `string_value` child that is not a stylesheet URL)
+  is `part_of`; the stylesheet-loading forms (`@import url("reset.css")`, a media query, a `.css`
+  specifier, a protocol URL) stay `imports`.
+- **Control flow:** `@if`/`@else`, `@each`, `@for`, `@while` become `interface` scope symbols whose
+  name is the construct's own collapsed text and whose complexity is 1 + condition + branch count
+  (`control-flow-and-extend` pins `@if $dark` at complexity 6, `@each …` at 8, `@for …` at 5).
+- **Delegated CSS constructs:** everything in `docs/analyzers/css.md` — rule sets, `&` nesting,
+  `@media`/`@layer`/`@container`/`@scope`/`@supports`, `@keyframes`, `@font-face`, `@property`,
+  `var()` reads and stylesheet `@import` — occurs in `.scss` because a Sass file is a CSS superset,
+  and is published by the shared CSS walk with this lane's file-scoped identities.
+- **Negative contract the fixtures pin:** an `@include` of a mixin the file does not declare
+  produces no `calls` row and no phantom symbol (it is `mixes_in` UNRESOLVED, with
+  `mixinDeclaredInFile: false`); `@return` emits no edge; private and local names are not exported.
+- Mutation: **26 / 26 mutants caught by two independent runners** (see `## Measured state` and
+  `## Three defects the fixtures found in the first implementation`).
 
 ## Regex inventory
 
-**Zero.** No source-text regex doing syntax work; names come from grammar fields and node positions.
+Measured with the repository's own scanner (`script/m12/regex-census-core.ts`, driven through
+`script/m12/census-truth.ts scanHeadAnalyzers()`, which scans the **committed** analyzer blobs) and
+read from `validation/m12/results/regex-census.json` (HEAD-anchored), re-run 2026-11-03:
+
+| File | HEAD regex usages | Census entries |
+| --- | --- | --- |
+| `real-scss-analyzer.ts` | **0** | 0 |
+
+Zero unclassified regex is therefore satisfied vacuously: the analyzer holds no regex literal at
+all. The one remaining occurrence of a regex in the file is a **comment** that quotes the old
+expression it replaced (`real-scss-analyzer.ts:130`), and the census is an AST census, so it reads
+code rather than prose — the distinction the old text-scanning gate could not make.
+
+History, recorded rather than erased: the analyzer carried **13** regex literals (the last `calls`
+measurement before 2026-10-23 was taken with them in place), and commit `8e983a34f` replaced every
+one with the string operation it stood for — scheme-head validation, `node_modules` segment test,
+scoped-package test, `./`/`../` prefix strips, path split + extension/underscore strip, the
+include-statement terminator test, `.css` suffix scan, protocol and `sass:`/`data:` prefix tests.
+What survives is that comment; `bash script/m14/no-regex-gate.sh` reports **TOTAL 0 whole tree**
+(exit 0) on this branch.
 
 ## Complexity envelope
 
-No in-tree `scss-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here.
+**UNKNOWN — the envelope artifact does not exist, and none is invented here.**
+`validation/m12/results/scss-complexity.json` is absent from this tree, so the template's run
+table (files / symbols / relationships / wall ms / symbols-per-second / relationships-per-second /
+peak RSS) has no measured row to quote and no budget is declared.
+
+What IS measured, and is therefore quotable with its population named:
+
+| measurement | value | artifact |
+| --- | --- | --- |
+| M12 differential fixture run | wall **38.077 ms**, user CPU 13.659 ms, sys CPU 3.395 ms, peak RSS **219,484,160 B** | `validation/m12/results/scss-differential.json` → `measurements[0]` (`verify-analyzer:scss`) |
+| M12 corpus-errors run (160 measured element-plus files) | wall **4,738 ms** (≈29.6 ms/file), symbols 1,402, relationships 803, 0 crash files | `validation/m12/results/scss-corpus-errors.json` |
+| M14 whole-population arm (4,433 admitted files, index-assisted) | 4,433 parsed, 0 failed, 0 degraded | `validation/m14/instruments/scss/incoming-declaration.json` → `meta.population` |
+
+Those are single-run wall times on their stated populations, **not** a complexity envelope, and
+they are not added into one: the differential run measures one fixture, the corpus-errors run
+measures a 160-file sample of one repository, and the whole-population arm measures a different
+instrument's parse path.
+
+Hot-path shape, read from the source rather than profiled: the SCSS walk is a single stack-based
+pass over named children (`processScssNode`), owner lookup goes through the per-file published-symbol
+range index by binary search (`real-scss-analyzer.ts:947` — "no entry at or before i can end after
+the node"), and name lookups use the per-file `ctx.mixinNames` / `functionNames` / `variableNames`
+maps. The one place that scales with the PROJECT rather than the file is cross-file module
+resolution (`resolveModuleImports`, line 1381), which iterates the project index's module names per
+`@use`/`@forward`; that is per module import, not per symbol. A profile and a budget artifact are
+the missing instruments — this section records the absence rather than converting it into a claim.
 
 ## Differential ground truth
 
-- Result `validation/m12/results/scss-differential.json`: `passed: true`, expected 9, truePositive 9, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Ground truth: `validation/m12/ground-truth/scss.json` — authority **`manual_audit`** (the artifact
+  records `truthSource: "manual_audit"`). It is an independent hand audit of
+  `validation/m12/fixtures/scss/Theme.scss`, written from the fixture source and NOT from analyzer
+  output, and it covers only the constructs that are **Sass-specific**; the shared CSS subset has
+  its own audit (`validation/m12/ground-truth/css.json`), because auditing the CSS forms twice
+  would test one code path under two names.
+- Result: `validation/m12/results/scss-differential.json` — **passed: true**; metrics
+  `expected 9 · observedResolved 9 · truePositive 9 · falsePositive 0 · falseNegative 0 ·
+  unknown 0 · unsupported 0 · correctlyClassifiedUnknown 0 · correctlyClassifiedUnsupported 0`;
+  precision **1.0**, recall **1.0**, FP-rate 0, FN-rate 0, unknown-rate 0; `earliestFailingLayer:
+  null`; `minimizedFailure: null`. The measurement record is the 38 ms run quoted in
+  `## Complexity envelope`.
+- Scope of that green: it is a **9-assertion fixture differential**, not a corpus-scan verdict. The
+  per-corpus differential over element-plus 40 files reads
+  `TR=231 cov=122 (52.8%) MISSING=109 unexplained=11 (9.6%)` and is NOT green, with both divergence
+  classes measured as the **CSS oracle's** (comma-group nesting not resolved through a nesting
+  parent; `var()` reads the oracle only derives when the property is declared in-file) — see
+  `### The differential runs, and it is NOT green — with a measured cause` below.
+- Relabelling cost, recorded rather than netted out: the 2026-10-04 relabels (`@include` → `mixes_in`
+  is the 2026-10-23 successor; `@extend` → `extends`) move rows OUT of the differential's compared
+  set, because `deriveScssEdges` still derives the pre-relabel labels. The analyzer's own comment
+  records the measured effect on the 149-file element-plus sample: `covered=1558 (96.5%) MISSING=56`
+  becomes `covered=1514 (93.8%) MISSING=100`, while `unexplained` stays 13 — the 44 new MISSING rows
+  are oracle labels, not analyzer recall loss (the compared-label allowlist drops the relabelled
+  analyzer rows from comparison). The oracle change is a shared-machinery item, not applied here.
 
 ## Corpus validation
 
-- Corpus `validation/m12/results/scss-corpus-errors.json`: corpus `element-plus`, extensions `*.scss`, 72 error files, 0 crash files.
-- Differential `validation/m12/results/scss-differential.json`: `passed: true`, expected 9, truePositive 9, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1.
+- Pinned corpus (M12, `validation/m12/results/scss-corpus-errors.json`): `element-plus` @
+  `1b45ace0a08d77b3fc1807c5688b42f7d7362ab7`, `dirty: false`, extensions `*.scss`,
+  `mode: full-corpus`; `trackedFilesInCorpus: 170`, `measuredFiles: 160` (10 empty files excluded by
+  name in the artifact), `cleanFiles: 88`, `errorFiles: 72` (`errorFilesOfMeasured: 0.45`,
+  `recoveredOfErrorFiles: 0.9167`), `crashFiles: 0`, `passed: true`; symbols 1,402, relationships
+  803, wall 4,738 ms.
+- The lane's own admitted population (M14, `validation/m14/measurements/scss-population.json`) — the
+  population every whole-population number in this page's claim table is taken over: **4,435
+  git-tracked `.scss` paths → 4,433 admitted** over **25 repositories carrying admitted files**;
+  `extensions: ["scss"]`, `capBytes: 1048576`; **0 tracked-but-absent**, **2 over the 1 MiB cap
+  carried by name** (`consul/ui/packages/consul-ui/app/styles/base/icons/debug.scss` at ~1.6 MiB and
+  `sass-spec/benchmarks/large_empty.scss` at ~9.5 MiB), deduplicated by realpath. The population rule
+  is the git-tracked set, never the disk.
+- Whole-population parse guard (the arm behind `validation/m14/instruments/scss/incoming-declaration.json`):
+  `parsed=4433/4433 admitted=4433 exts=scss index=yes` — **0 failed, 0 degraded**, 37,682
+  relationships classified over 14 types.
+- **CORRECTION (2026-11-03): the "116 repositories" figure repeated in the census sections below is
+  SUPERSEDED.** The measured population artifact says the admitted 4,433 files are carried by **25**
+  repositories; the 116 figure is not reproduced by `scss-population.ts` and is not quoted as current
+  here. The **file count 4,433 is unaffected** and is the same population the census used — only the
+  repository label was wrong. Recorded beside the old text rather than deleted, so a reader comparing
+  the 2026-10-17 census with this page can see which half changed.
 
 ## Symbol contract
 
 | Field | Supported? | How extracted |
 | --- | --- | --- |
-| name | yes | `$var` for a variable, `@mixin name` / `@function name` with the keyword KEPT (a bare `button` could collide with a class), the construct's own collapsed text for a control-flow scope, the module path for a namespace |
-| kind | yes | `variable` (`$x`), `function` (`@mixin`/`@function`), `interface` (`@if`/`@each`/`@for`/`@while` — the same shape `@supports` gets in the CSS lane), `namespace` (`@use … as ns`) |
+| name | yes | `$var` for a variable, `@mixin name` / `@function name` with the keyword KEPT (a bare `button` could collide with a class), the construct's own collapsed text for a control-flow scope (`@if $dark`, `@each $key, $value in $palette`), the namespace for `@use … as ns` |
+| kind | yes | `variable` (`$x`), `function` (`@mixin`/`@function`), `interface` (`@if`/`@each`/`@for`/`@while` — the same shape `@supports` gets in the CSS lane), `namespace` (`@use … as ns`), plus the delegated CSS kinds for selectors and structural at-rules |
+| qualified/container name | yes | `qualifiedName` is always the file-scoped `<file-root>::<name>` (`publishScssFileScopedIdentities`); the CONTAINER is the `scope`/`ownerName` field, not a second naming scheme |
+| ownerName / ownerKind | yes | published for nested symbols: `.card .b-#{$size}` carries `ownerName: ".card"` (`identically-named-scopes-are-distinct`); a top-level symbol carries `""`, which is the absence of an owner rather than a fabricated name |
+| range (start/end line) | yes | `startLine` / `endLine` plus `startIndex` / `endIndex` of the declaring node (`@function double` → 1–3). The generic M12 `range` object is NOT populated on this path and **no column is published** — line and offset yes, column no |
 | parameters | yes | from the `parameter` nodes; `defaultValue` read from the `default` **field**, so a default that is itself an expression keeps the expression |
-| range | yes | the declaring node's own span; a repeated `$var` keeps the **first** occurrence, so the symbol points where the variable is introduced, not at its last override |
-| complexity | yes | 1 + parameters for a callable; 1 + binary expressions / calls / maps / lists for a variable; 1 + condition + branch count for a control flow |
-| scope | yes | the innermost enclosing published symbol, resolved by **range** |
-| documentation/comments | n/a | declared absent rather than pinned with a fabricated value |
+| returnType / type | n/a | Sass has no type or return annotations. A `@return` is recorded as a fact on the function (`metadata.scssReturns`) and emits NO edge (`functions-return-and-undeclared-uses`), so there is no type to publish |
+| visibility | yes | `public` for every symbol this lane publishes; Sass's privacy rule is a NAME rule (`-`/`_` prefix, evaluated for `exports`, not a visibility field) |
+| complexity | yes | 1 + parameters for a callable; 1 + binary expressions / calls / maps / lists for a variable; 1 + condition + branch count for a control flow (measured: `@mixin button($bg, $size)` 4, `@if $dark` 6, `@each …` 8, `@for …` 5) |
+| scope | yes | the innermost enclosing published symbol, resolved by **range**; a nested selector keeps the enclosing selector (`.card`), a second non-enclosing scope does not leak into it |
+| syntax errors | yes | the delegated CSS base's `errors[]` is KEPT (measured: the `error-recovery-is-reported` fixture returns 11 errors, `severity: "warning"`, each carrying a start/end line+column span). A file can carry an ERROR span the analyzer recovers through without reporting — both counts are published separately in `## Measured state` |
+| documentation/comments | n/a | declared absent rather than pinned with a fabricated value (`docstring: null`, `comments: null` on every published symbol) |
+| decorators/attributes | n/a | the language has no decorator or attribute construct and the grammar produces no such node; `decorates` is ruled in the claim table rather than mapped onto a node that means something else |
 
 ### Identity
 
@@ -116,7 +278,49 @@ ONE symbol. `variables-flags-and-identity` pins `$brand` at exactly 1.
 
 ## Relationship ontology
 
-SCSS delegates its relationship emission to the CSS analyzer for shared types and adds Sass-specific rules for `@use`/`@forward`/`@import` and `@extend`. The table below is the lane's own census over the element-plus corpus.
+ONE claim table, in the canonical register order of `src/ast/types.ts`, derived from
+`src/ast/real-scss-analyzer.ts` (`RelationshipType.` sites, opened) and from the lane's committed
+measurement (`validation/m14/instruments/scss/incoming-declaration.json` — one whole-population arm,
+`parsed=4433/4433 admitted=4433 exts=scss index=yes`, 37,682 edges; plus
+`script/m14/spec/scss-completeness.json` for the four excluded kinds). **Eight of the fourteen are
+emitted** (`calls`, `extends`, `uses`, `imports`, `exports`, `contains`, `references`, `overrides`,
+`mixes_in`, `part_of` — ten, including the two extended values), and **four are ruled** with their
+evidence in the row: `implements` and `instantiates` by grammar absence, `decorates` ontologically,
+`renders` by grammar absence that the near-miss census sizes. The 2026-10-17 ten-type census follows
+below as measured history, with the corrected and superseded parts stated beside it.
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ | Two file-local syntaxes. `f(x)` in a value, where `x` resolves through `ctx.functionNames` to the `@function <name>` THIS FILE declares (`real-scss-analyzer.ts:2422`, target respelled to the file-scoped identity); and the defensive `@include f()` branch where `f` is ONLY a function this file declares (`:1719`; measured 0 sites on the 247-file screen, kept so an include is never a phantom). A builtin call emits nothing by the both-ends-resolve rule. | `evidenceClass: "usage_contextual"`, `isScssFunctionCall: true` (`isScssInclude` on the defensive branch); no explicit `confidence` field on the row (engine default). Committed whole-population arm: 120 edges, 120 resolved. |
+| `extends` | ✅ | `@extend .selector` and `@extend %placeholder` — `@extend` IS Sass's inheritance (`extends`, not `uses`, relabelled 2026-10-04). Target is the extended selector read from the selector/placeholder node (`:1904`); when the grammar rebuilt the statement across a damaged region the row is marked `scssRecoveredFromError` + `scssExtendShape: "recovered"` (`extend-target-recovered-from-broken-node` pins recovered against a clean control). | `evidenceClass: "structural"`, `isScssExtend: true`; no explicit `confidence` (default). Committed arm: 426 edges — 231 resolved, 40 ambiguous, 155 unresolved (cross-file target reach is the wall, counted in `## Resolution per type`). |
+| `implements` | ❌ | NOT EMITTED — **grammar absence**, measured. Instrument A ran over the 4,433 admitted files (1,000 sampled) and read 137 distinct node types PRODUCED by the pinned wasm: 0 of 30 supertype names present (`class_declaration`, `interface_declaration`, `implements_clause`, `base_list`, …), while the calibration arm read 15 of 15 must-appear names present — so the zero is a measurement, not a broken probe. Whole run committed at `validation/m14/fixtures/scss/grammar-vocabulary.txt`; 0 `RelationshipType.Implements` references in the analyzer. | No edge and no payload. Ruled in `script/m14/spec/scss-completeness.json` → `coverage.excluded` (`label: implements, evidence: grammar-absence`). |
+| `uses` | ✅ | A rule DRAWS ON a declared construct without invoking or inheriting it. The surviving class is a rule consuming a `@keyframes` the file declares — `animation: <name>` (fixture `invocation-and-inheritance-labels`, `.fade`, metadata `isAnimationRef: true`) — plus the delegated CSS `var()`-style uses. SCSS adds no `uses` emission of its own: the rows come from the delegated CSS analyzer and are file-scope respelled in the `REWRITABLE` pass (`:780-790`). | `evidenceClass: "usage_contextual"` (assigned by the CSS walk's kind mapping); no explicit `confidence` (default). Committed arm: 85 edges, 85 resolved. |
+| `imports` | ✅ | Stylesheet-loading forms only: `@import url(...)`, `@import 'x.css'`, `@import 'x' screen`, protocol URLs — emitted by the delegated CSS walk with the `importProjectFile` claim (`evidenceClass: import_based`), target as written. `@use`/`@forward` publish an **`ImportInfo[]` payload** (module namespace imports; `module-system-and-mixins` pins `sass:map` → `map`, `sass:list` → `*`, `src/list`) and measured **0 `imports` relationship edges** (0 across all 13 fixture sources and the 149-file element-plus sample, 2026-10-17) — an ImportInfo-only channel, not claimed as an edge. The Sass file-inclusion form is `part_of` (below). | `evidenceClass: "import_based"`, `isCssImport: true`; explicit `confidence: 1.0` on the delegated row. Committed arm: 289 edges — 230 resolved, 55 unresolved, 4 external claim. Payload: `import-site: ImportInfo[]`. |
+| `exports` | ✅ | A `.scss` file IS a Sass module. Its top-level `$var` / `@mixin` / `@function` declarations are exported by their published name (`emitModuleExports`, `:1105-1115`); a name beginning `-` or `_` is private and excluded, and an assignment inside a rule, mixin, function or control-flow block is local and excluded. `@use './x' as ns` members resolved from the project index are exported under `<scope>::<member>` (`:1559`). | Explicit `confidence: 1.0`, `evidenceClass: "structural"`, `isScssModuleMember: true`. Committed arm: 11,377 edges, 11,377 resolved. Payload: `export-site: ExportInfo[]` (also carries the delegated CSS selector exports). |
+| `contains` | ✅ | A scope CONTAINS the symbols attributed to it — but only the structural scopes the delegated CSS walk publishes: `@media`, `@layer`, `@supports`, `@container`, `@scope` (metadata `isMediaScope` / `isLayerScope` / …) and nested-selector chains, target = the file-scoped `<file>::<symbol>` identity (`real-css-analyzer.ts` emits; fixture `scope-containment-and-complexity` pins the `@media` row). **MEASURED CORRECTION: SCSS-specific block statements emit NO `contains` row** — `@mixin` bodies and `@if`/`@each`/`@for` blocks produced 0 contains edges across the 15-fixture set (1 contains total: the `@media` row) and on `control-flow-and-extend.scss`, despite the 2026-10-17 table below claiming those scopes; that membership claim is corrected here rather than carried. | `evidenceClass: "structural"`; no explicit `confidence` (default). Committed arm: 10,218 edges, 10,218 resolved (100% both-ends). **Delegation note:** the row is EMITTED BY THIS LANE through the delegated `RealCssAnalyzer` whose result `real-scss-analyzer.ts` returns; that file holds no `RelationshipType.Contains` reference of its own, so a source scan of the file alone sees none. `dte` gate: reported as FALSE_POSITIVE — gate defect, see report. |
+| `references` | ✅ | A `$var` READ naming a `$var` this file declares (`:2376`, `isScssVarRef: true`), plus the delegated CSS `var()` / declaration-value reads republished under the file-scoped identity. A read inside a region the grammar lost is marked `scssRecoveredFromError` (`reads-recovered-from-error-regions` pins a recovered read beside a clean one). | `evidenceClass: "usage_contextual"`; no explicit `confidence` (default). Committed arm: 9,358 edges — 4,911 resolved, 714 ambiguous, 3,733 external claim (the delegated `var()` half). |
+| `overrides` | ✅ | One declaration REPLACES a prior one. In Sass the only case that means it is `$x: … !global` where `$x` was already assigned at this file's top level (`recordGlobalOverride`, `:1181`); the three candidate readings (`!default`, plain re-assignment, `@extend`) are counted apart in `### overrides: the three candidate classes, counted apart`. | Explicit `confidence: 1.0`, `evidenceClass: "structural"`, `isScssGlobalOverride: true`, with `overridesLine` (the prior line) and `scssFlagGlobal: true`. Committed arm: 32 edges, 32 resolved. |
+| `instantiates` | ❌ | NOT EMITTED — **grammar absence**, measured by the same instrument-A run: over 137 produced node types, 0 of 10 constructor-shaped names present, calibration 15/15; whole run committed at `validation/m14/fixtures/scss/grammar-vocabulary.txt`; 0 `RelationshipType.Instantiates` references in the analyzer (`grep`). | No edge and no payload. Ruled in `script/m14/spec/scss-completeness.json` → `coverage.excluded` (`label: instantiates, evidence: grammar-absence`). |
+| `decorates` | ❌ | NOT EMITTED — **ontological ruling** after the full ladder (2026-10-23). R1 is UNAVAILABLE and measured: the served build's own node inventory (`validation/m14/measurements/scss-grammar-nodes.json`, 90 named types / 195 ids) contains 0 decorator/annotation stems. R2 is unavailable because a patch would have to INVENT SYNTAX the language does not have. R3 has no named target: the near miss is 1,270 `!important` nodes (0 naming a callable), 26 `!global`, 1,857 `!default` — declaration modifiers, no applied named callable (`validation/m14/measurements/scss-extended-census.json`). | No edge and no payload. Ruled in `script/m14/spec/scss-completeness.json` → `coverage.excluded` (`label: decorates, evidence: ontological`); ladder in `validation/m14/verification/SCSS-EXTENDED-TYPES.md`. |
+| `renders` | ❌ | NOT EMITTED — **grammar-absence ruling** after the same ladder. R1 measured: 0 render / component / jsx / template / markup stems in the served inventory (the only `element` match is `pseudo_element_selector`, a selector). The near miss is value generation, not component rendering: 5,120 `content:` declarations over 790 files — **0 component-shaped** (the 5 capitalised quoted strings are counted beside and never as names) — and 1,144 pseudo-elements over 303 files (`scss-extended-census.json`). | No edge and no payload. Ruled in `script/m14/spec/scss-completeness.json` → `coverage.excluded` (`label: renders, evidence: grammar-absence`); falsifier `contentCapitalizedComponentShape = 0`. |
+| `mixes_in` | ✅ | Every COMPLETE `@include` statement (`include_statement`) publishes the composition: target is the written mixin in the published spelling `@mixin <name>`; a mixin THIS FILE declares is respelled to the file-scoped `<file>::@mixin <name>` by `publishScssFileScopedIdentities`; a mixin declared elsewhere is published UNRESOLVED with `mixinDeclaredInFile: false` — measured 2,201 of 2,438 clean include sites name a mixin the file does not declare, the class the old file-local rule produced NOTHING for. Completeness = the statement reaching its own terminator (`;` or a content block), so `@include f();` and `@include m { … }` are included (`include-foreign-mixin-mixes-in` pins both). Namespaced `@include ns.mixin` is a MEASURED site wall: 299 sites, because the served build splits the node at the dot; R2 (grammar patch) is the named available remedy, NOT taken. | `evidenceClass: "structural"`, `mixinComposition: true`, `isScssInclude: true`; no explicit `confidence` (default). Committed arm: 2,438 edges — 2,247 resolved, 25 ambiguous, 166 unresolved (cause class M1, `mixin-not-declared-in-this-file`). |
+| `part_of` | ✅ | The Sass FILE-INCLUSION form of `@import` — `@import 'theme';`, exactly one `string_value` child whose specifier is not a stylesheet URL, `sass:` module or `data:` URI. A **LABEL MOVE**, not a new edge: `relabelSassPartImports` (`:1785`) rewrites the delegated `imports` row in place, carrying source, target, line and the delegate's `importProjectFile` claim unchanged, and adds the mandatory `metadata.partRole: "library"`. `imports` keeps the stylesheet-loading forms only (`import-statement-emits-imports-edge` pins the split in both directions). | `evidenceClass: "structural"`, `isSassPartImport: true`, `partRole: "library"`; the row inherits the delegated import row's `import_based` claim (explicit `confidence: 1.0` on the fixture row). Committed arm: 3,339 edges — 1 resolved, 177 unresolved, 3,161 external claim (verified file claim); cause class P1. |
+
+Two channel notes a consumer needs. **Payload-only channels are named in their rows:** `@use` and
+`@forward` publish `ImportInfo[]` and no `imports` edge, and `exports` rides both an edge and
+`ExportInfo[]` — a table that only counted edge references would call the import channel absent,
+which is the bug class this table exists to avoid. **And one emitted kind is delegated:** `contains`
+(and the shared half of `uses` / `imports` / `references`) is produced by the CSS analyzer this lane
+instantiates and returns the relationships of; `real-scss-analyzer.ts` holds no
+`RelationshipType.Contains` reference of its own. The row is emitted by this lane, and the source
+scan of the single file cannot see it — reported as a defect of that instrument, not resolved by
+weakening this row.
+
+The census below is the **2026-10-17** measurement (run F, over the admitted corpus); it is kept
+because it is measured text and because its counts are a different run from the 2026-10-23 arm the
+claim table cites. Where the two disagree, the claim table above is the committed declaration and
+the census is history — the counts were re-measured when the extended values landed (`mixes_in` and
+`part_of` did not exist in the 2026-10-17 table at all).
 
 ### What each of the ontology's ten types means IN SASS
 
@@ -135,6 +339,29 @@ company for four of the ten.
 | `overrides` | one declaration REPLACES a prior one. In Sass the only case that means it is `$x: … !global` where `$x` was already assigned at this file's top level | EMITTED | **32** in 12 files, **100%** both-ends resolved | `structural` |
 | `implements` | nothing in Sass is a supertype clause. Instrument A, 134 node types, 0 of 30 | RULED-SOUND | 0 | — |
 | `instantiates` | nothing in Sass constructs a value. Instrument A, 134 node types, 0 of 10 | RULED-SOUND | 0 | — |
+
+**CORRECTIONS TO THIS 2026-10-17 TABLE (2026-11-03), stated here rather than by editing the
+measured rows:**
+
+1. **`contains` scope list is wrong above.** It claims `@mixin` bodies and control-flow blocks are
+   among the containing scopes. MEASURED on the 15-fixture set and on `control-flow-and-extend.scss`:
+   those block statements produce **0** `contains` edges; the only scope rows measured are the
+   structural CSS ones (`@media`/`@layer`/`@supports`/`@container`/`@scope`, nested-selector chains).
+   The claim table above now carries that correction.
+2. **"116 repositories" is SUPERSEDED.** MEASURED population (`validation/m14/measurements/scss-population.json`):
+   4,433 admitted files over **25** repositories carrying admitted files. The 4,433 file count is
+   unchanged; only the repository label was wrong. See `## Corpus validation`.
+3. **The counts are a different run from the claim table's.** This table is the 2026-10-17 run-F
+   census (`contains 12,375 · references 9,350 · exports 4,019 · imports 3,621 · extends 427 ·
+   calls 304 · uses 91 · overrides 32`, ten types). The claim table quotes the 2026-10-23
+   whole-population arm (`contains 10,218 · references 9,358 · exports 11,377 · imports 289 ·
+   extends 426 · calls 120 · uses 85 · overrides 32`, plus the new `mixes_in 2,438` and
+   `part_of 3,339`). Neither is deleted; they are two measured runs over the same admitted file
+   set with different instruments, and a reader should not add them together.
+4. **`imports` 3,621 is not an `@use`/`@forward` count.** That row's own text says the `@use`
+   form emits nothing, and the measurement has since been repeated on this branch: 0 `imports`
+   edges for `@use`/`@forward` across the fixture sources (they publish `ImportInfo[]` only).
+   The 3,621 rows are the delegated stylesheet `@import` forms.
 
 **8 of 10 EMITTED, 2 RULED-SOUND, 0 GAP.** Reproduce with
 `npx tsx validation/m14/fixtures/scss/scss-relationship-census.ts 5000`, which takes the
@@ -228,8 +455,9 @@ without that sentence would read as a defect that does not exist.
 The three verdicts are the workstream's, and each carries its measurement below. Counts
 come from the production entry point — `parseFile` from `src/ast/pool-worker.ts`, never
 `analyze()`. **The population every figure below is measured on is the gate's own: 4,433
-admitted `.scss` tracked files across 116 repositories, all of them, no sampling**, so a
-count cannot be a rotation of a sample. `consul` dominates it at 3,042 files with `bulma`
+admitted `.scss` tracked files, all of them, no sampling** (carried by **25** repositories —
+the "116 repositories" wording this sentence used is superseded, see `## Corpus validation`),
+so a count cannot be a rotation of a sample. `consul` dominates it at 3,042 files with `bulma`
 179 and `element-plus` 170 behind it.
 
 An earlier revision of this paragraph quoted a DIFFERENT population for the same claims —
@@ -575,7 +803,7 @@ been identified.
 
 ## What is measured, and what is not
 
-### The production census, 4,433 files / 116 repositories — the whole admitted corpus
+### The production census, 4,433 files — the whole admitted corpus (2026-10-17 run; repository label corrected below)
 
 Every count below comes from `parseFile` (`src/ast/pool-worker.ts`), over **every** admitted
 file rather than a sample: `admitted .scss 4433 tracked files`, `sampled 4433`, `repos
@@ -586,6 +814,13 @@ narrower walk and it disagreed with the arbiter on `uses` (799 edges there, 91 h
 four other types, so the arbiter's numbers and these are now the same population. Where this
 document quotes a census figure and an arbiter figure as a pair, the residual difference is
 the degraded-file class below.
+
+**CORRECTION (2026-11-03): the repository half of that heading is SUPERSEDED.** The admitted set is
+carried by **25** repositories (`validation/m14/measurements/scss-population.json`,
+`repositoriesCarrying: 25`), not 116. The 4,433 file count is the same population and is unaffected;
+`scss-population.ts` does not reproduce 116 and no section of this page should be read as claiming
+it. Kept beside the original sentence rather than replacing it, so the change is visible to a reader
+who meets the old figure elsewhere.
 
 Symbol hygiene, which the standing rules make non-negotiable and which no count in this lane
 had been reporting:
@@ -739,8 +974,9 @@ resolution does not.
 The questions fail independently, so the table has a column each and none of the columns is
 derived from another. "Exists" is read off the source; "Fires" is measured through production
 `parseFile`; "Resolved" and "Confident" come from the full-corpus census above. Populations
-are named per the honesty contract §2: census figures are run F over 4,433 admitted files /
-116 repos; firing figures are `firing-check.ts --files 120 scss` re-run on this branch, which
+are named per the honesty contract §2: census figures are run F over 4,433 admitted files
+(carried by 25 repositories — the 116 label in that sentence is superseded, see
+`## Corpus validation`); firing figures are `firing-check.ts --files 120 scss` re-run on this branch, which
 reads **7 of 10 types firing** over its 120-file stride where the supervisor's 26-lane sweep
 recorded 5 of 10 — the two extra are `calls` and `extends`, which exist because of the
 2026-10-04 relabelling.
@@ -944,8 +1180,9 @@ claim than the instrument behind that row.
   The A/B evidence for the two grammar patches is unchanged and independent of all of this:
   `validation/m12/results/scss-grammar-ab.json`, 76 files fixed, 0 regressed, 3 regression
   controls unchanged-clean.
-- **fixtures**: **12 / 12** in `run-fixtures.ts --lang scss`, exit 0, `fixture baseline
-  gate: no regressions`. Expectations are authored
+- **fixtures**: **15 / 15** in `run-fixtures.ts --lang scss` (12 when this bullet was written;
+  3 added with the 2026-10-23 extended-value work; re-run 2026-11-03: exit 0, `all fixtures
+  pass`, `fixture baseline gate: no regressions`). Expectations are authored
   from the rulings, never transcribed from analyzer output — which is the only reason they
   could fail. The unscoped invocation **cannot** verify them: it exits 6 on the orphan-lane
   gate having run nothing, because the `r` and `lua` fixture directories are not in `LANGS`

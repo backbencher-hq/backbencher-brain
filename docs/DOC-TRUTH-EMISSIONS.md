@@ -14,7 +14,7 @@ For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/<lang>.md`: the a
 | FALSE_POSITIVE — doc says "emitted", nothing emits it | 0 | **yes** |
 | UNDOCUMENTED — live channel, no checkable claim | 20 | no (measured here) |
 | MISSING_DOC — no canonical doc | 0 | no (owned by verify-analyzer-docs.ts) |
-| NO_CLAIM_TABLE — no ontology table to compare | 10 | no |
+| NO_CLAIM_TABLE — no ontology table to compare | 6 | no |
 | NON_ENGINE_KIND — row is not a RelationshipType alias | 21 | no |
 | MIXED_ROW — engine and non-kind names share one cell | 1 | no |
 | COMPOUND_ROW — verdict from a multi-name row | 0 | no |
@@ -63,7 +63,7 @@ None.
 
 ## Docs with no ontology claim table (nothing was comparable)
 
-`markdown`, `php`, `r`, `scss`, `solidity`, `svelte`, `toml`, `vb`, `vue`, `yaml`
+`r`, `svelte`, `toml`, `vb`, `vue`, `yaml`
 
 ## Docs with more than one ontology-shaped table (only the first is compared)
 
@@ -124,12 +124,12 @@ None.
 | kotlin | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 10 rows |
 | lua | `calls extends uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 112, 24 rows |
 | makefile | `calls uses imports exports contains references overrides part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 61, 14 rows |
-| markdown | `uses imports contains references part_of` | import-site: ImportInfo[] | absent |
+| markdown | `uses imports contains references part_of` | import-site: ImportInfo[] | line 154, 14 rows |
 | matlab | `calls extends implements uses imports exports contains references overrides instantiates part_of` | — | line 96, 16 rows |
 | nim | `calls extends implements uses imports exports contains references overrides instantiates decorates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 694, 11 rows |
 | objective-c | `calls extends implements uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 91, 11 rows |
 | perl | `calls extends implements uses imports exports contains references overrides instantiates mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 61, 14 rows |
-| php | `calls extends implements uses imports exports contains references overrides instantiates mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| php | `calls extends implements uses imports exports contains references overrides instantiates mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 60, 14 rows |
 | powershell | `calls extends implements uses imports exports contains references overrides instantiates part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 266, 12 rows |
 | protobuf | `imports exports contains references overrides` | import-site: ImportInfo[] | line 182, 16 rows |
 | python | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 14 rows |
@@ -137,16 +137,16 @@ None.
 | ruby | `calls extends uses imports exports contains references overrides instantiates mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 95, 14 rows |
 | rust | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 50, 14 rows |
 | scala | `calls extends implements uses imports exports contains references overrides instantiates mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 12 rows |
-| scss | `calls extends uses imports exports references overrides mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| solidity | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| scss | `calls extends uses imports exports contains references overrides mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 292, 14 rows |
+| solidity | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[], export-site: ExportInfo[] | line 82, 14 rows |
 | sql | `calls extends uses imports contains references overrides instantiates` | import-site: ImportInfo[] | line 101, 14 rows |
-| svelte | `calls extends uses imports contains overrides renders` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| svelte | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | swift | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 10 rows |
 | toml | `imports exports contains references` | — | absent |
 | typescript | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 14 rows |
 | vb | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[] | absent |
 | vba | `calls implements uses imports exports contains references instantiates decorates` | — | line 100, 14 rows |
-| vue | `extends uses imports exports contains references overrides renders` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| vue | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | xml | `calls extends uses imports contains references overrides mixes_in part_of` | import-site: ImportInfo[] | line 381, 11 rows |
 | yaml | `calls extends uses imports exports contains references overrides` | import-site: ImportInfo[] | absent |
 | zig | `calls uses imports exports contains references instantiates mixes_in` | import-site: ImportInfo[], export-site: ExportInfo[] | line 54, 14 rows |

@@ -376,7 +376,48 @@ export function stripComments(src: string): string {
 }
 
 /** Read one analyzer file and reduce it to the surface it emits. */
-export function readSurface(file: string): Surface {
+/**
+ * A LANE THAT DELEGATES ITS WALK STILL EMITS (scss 2026-11-03).
+ *
+ * `RealScssAnalyzer.analyze()` constructs `new RealCssAnalyzer().analyze(...)` and returns its
+ * relationships; the `contains` rows for CSS structural scopes are the CSS walk's. Scanning only
+ * real-scss-analyzer.ts therefore concluded "no channel publishes contains" and graded a truthful
+ * `✅` row FALSE_POSITIVE, while production emits 10,218 contains edges through the same route.
+ *
+ * The principle this gate already applies to payload channels — a doc row is a fact about the
+ * ANALYZER, not about one channel — applies one level up: the surface of a lane is the surface of
+ * the analyzer modules it CONSTRUCTS, recursively. The index is built from the same directory's
+ * `export class …` declarations so a renamed class fails closed (no index entry → no union), and a
+ * visited set stops a cycle.
+ */
+const DELEGATE_INDEX = new Map<string, Map<string, string>>()
+function delegateIndexFor(dir: string): Map<string, string> {
+  const cached = DELEGATE_INDEX.get(dir)
+  if (cached) return cached
+  const idx = new Map<string, string>()
+  let entries: string[] = []
+  try {
+    entries = fs.readdirSync(dir)
+  } catch {
+    /* an unreadable directory is an empty index, never a thrown gate */
+  }
+  for (const name of entries) {
+    if (!name.endsWith(".ts")) continue
+    let text = ""
+    try {
+      text = fs.readFileSync(path.join(dir, name), "utf8")
+    } catch {
+      continue
+    }
+    for (const m of text.matchAll(/export\s+class\s+(\w+)/g)) idx.set(m[1], path.join(dir, name))
+  }
+  DELEGATE_INDEX.set(dir, idx)
+  return idx
+}
+
+export function readSurface(file: string, visited: Set<string> = new Set()): Surface {
+  if (visited.has(file)) return { kinds: new Set(), payload: new Set(), commentOnly: [] }
+  visited.add(file)
   const raw = fs.readFileSync(file, "utf8")
   const code = stripComments(raw)
   const kinds = new Set<string>()
@@ -417,6 +458,17 @@ export function readSurface(file: string): Surface {
   for (const ch of PAYLOAD_CHANNELS) {
     // PUSH, or a value-bearing expression — never a bare annotation (see PAYLOAD_CHANNELS).
     if (ch.push.test(code) || (ch.type.test(code) && ch.filled.test(code))) payload.add(ch.kind)
+  }
+  // The modules this analyzer CONSTRUCTS contribute their own surface — see the DELEGATE note.
+  const dir = path.dirname(file)
+  const idx = delegateIndexFor(dir)
+  for (const m of code.matchAll(/new\s+([A-Z][A-Za-z0-9_]*)\s*\(/g)) {
+    const target = idx.get(m[1])
+    if (!target) continue
+    const sub = readSurface(target, visited)
+    for (const k of sub.kinds) kinds.add(k)
+    for (const p of sub.payload) payload.add(p)
+    for (const c of sub.commentOnly) commentOnly.push(c)
   }
   return { kinds, payload, commentOnly }
 }
