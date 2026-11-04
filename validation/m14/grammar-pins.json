@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-01T11:29:31.041Z",
-  "commit": "8841e0862539b814bd0aff36860085ebae14ca82",
+  "generatedAt": "2026-11-04T04:19:17.595Z",
+  "commit": "6759da3550316761fd311a449a90c4a7d417f8ab",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -1094,8 +1094,8 @@
             "bytes": 1159
           },
           "PIN.md": {
-            "sha256": "5596c87c1bffb0ea51d61400915323144954f587a0c9a8f19c61b85f7b34dbba",
-            "bytes": 7430
+            "sha256": "63835ab2f4038148df4e58fba501450e06257ccae9472946551bcfa5f1029f93",
+            "bytes": 8917
           },
           "recipeprefix/grammar.patch": {
             "sha256": "797f31f60d59b62828f5d64893af2293fad6b2ec89d47a1a15ba2f2d4723b9d0",
@@ -1146,7 +1146,7 @@
             "bytes": 646
           }
         },
-        "digest": "c741f162db0a7f5081527ac1fd2215951c324cc322c1407e80e106f9d60da89c",
+        "digest": "e4657cdd512a9fb0a90aa31e3ceb5a0a31c2c2cbd64e520ac697572cc06dd3db",
         "fileCount": 19
       },
       "sourceVsWasm": {
@@ -1579,8 +1579,8 @@
             "bytes": 795
           },
           "PIN.md": {
-            "sha256": "54b947612291a159238e63ff707386e30373a584dc346c7b6890928cb6ae3f84",
-            "bytes": 10547
+            "sha256": "8c696910fe2c9904412ab0cee94fc144806c2c939d92ecd134ec22f9716c09fe",
+            "bytes": 10533
           },
           "queries/highlights.scm": {
             "sha256": "feda18993ae651016a36a3d9e936715e6bc31626ecad9ae29006996d597256a8",
@@ -1643,7 +1643,7 @@
             "bytes": 952
           }
         },
-        "digest": "0f2841dcaf585123374821bab4021bc6a2b37a1ef10bc7a5a62b9ace5abc5dc3",
+        "digest": "300d77fe963c632b07bff9bf1e6298ecc77200ab2e57429c00bce9b1fd487d42",
         "fileCount": 19
       },
       "sourceVsWasm": {
