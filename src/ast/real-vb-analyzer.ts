@@ -2875,7 +2875,12 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         let fieldOwned = false
         for (let guard = 0; guard < 8 && p; guard++, p = p.parent) {
           if (p.type === "field_declaration") { fieldOwned = true; break }
-          if (p.type === "local_declaration_statement" || p.type === "using_statement" || p.type === "for_each_statement") break
+          // A local declarator's container is `declaration_statement` -- measured
+          // against the pinned wasm, where `Dim x As New T()` is
+          // `declaration_statement(local_declaration_modifier, variable_declarator)`
+          // and there is no `local_declaration_statement` node type at all. Naming
+          // a node that does not exist made this stop condition a no-op.
+          if (p.type === "declaration_statement" || p.type === "using_statement" || p.type === "for_each_statement") break
         }
         if (!fieldOwned) {
           const asClause = this.namedChildrenOfType(n, "as_clause")[0]
@@ -3254,18 +3259,20 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // THE CLIMB MUST CROSS MEMBER-ACCESS CHAINS AND THE ARGUMENT WRAPPER, not only name nodes.
     // Measured on the restored DISMTools corpus (`Tools/BDELib/My Project/Settings.Designer.vb:31`):
     //   <Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)>
-    // The read `Advanced` is a `member_access_expression`; its parents are four more member accesses, then the
-    // argument, then `attribute_argument_list`. The old climb returned false at the FIRST member access, so
-    // the read was published as `uses` although the lane's contract says an attribute argument is not a read
-    // (`vb/attributes-as-decorations` and `vb/member-read-and-construction` forbid exactly that shape). The
-    // oracle refused the rows and the differential charged 3 unexplained `uses` on every DISMTools draw.
+    // The read `Advanced` is a `member_access_expression`; its parents are four more member accesses, then
+    // `attribute_argument_list`. There is no wrapper node between them -- measured on the pinned wasm,
+    // `argument` and `attribute_argument` are not node types this grammar produces; an argument of an
+    // attribute is either an `_expression` or a `named_argument`, and a member read is published from the
+    // expression itself. So the climb skips the name wrappers and lands on the argument LIST. The old
+    // climb also named two node types that do not exist, which is why the descent had to list them at all
+    // rather than rely on the list being complete.
     for (let i = 0; a !== null && i < 12; i++) {
       if (a.type === "attribute_list" || a.type === "attribute" ||
           a.type === "attribute_argument_list" || a.type === "global_attribute_section") return true
       if (a.type === "identifier" || a.type === "simple_name" || a.type === "qualified_name" ||
           a.type === "global_qualified_name" || a.type === "generic_name" ||
           a.type === "member_access_expression" || a.type === "with_member_access_expression" ||
-          a.type === "attribute_argument" || a.type === "argument") { a = a.parent; continue }
+          a.type === "named_argument") { a = a.parent; continue }
       return false
     }
     return false

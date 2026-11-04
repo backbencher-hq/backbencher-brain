@@ -157,6 +157,37 @@ is marked `isRest`.
 
 ## Relationship ontology
 
+### The canonical claim table — fourteen values, every row checkable
+
+The fourteen-value register of `src/ast/types.ts`, each row derived from an emission
+site in `src/ast/real-r-analyzer.ts` (the `RelationshipType.` grep and the code beside it)
+and from the lane's committed measurements. The current whole-population arm is
+`parsed=2184/2184 admitted=2184`, **80,123 relationships** (`TOTAL` row,
+`validation/m14/fixtures/r/measurements/r-arm-whole.txt`); this table states the CONSTRUCT
+and the resolution rule, not a per-run count, because the parser's intermittent
+`memory access out of bounds` moves the totals by a few edges between runs (see *The
+wobble is measured*).
+
+| Relationship type | Emitted? | How resolved | Confidence model |
+| --- | --- | --- | --- |
+| `calls` | ✅ emitted | `call` node whose callee is a name; source is the nearest enclosing named symbol (function, S4 method, R6/R5 member), target the callee as written (`pkg::fn`, `obj$method`) | `attribution.confidence`: 1.0 when the owner is named directly, 0.7 when attributed through an anonymous closure (`closure_call`) |
+| `extends` | ✅ emitted | R6 `R6Class(inherit=)`, S7 `new_class(parent=)`, and the ONE-class shape of S4 `setClass(contains=)` / R5 `setRefClass(contains=)`; target is the bare class name (a package qualifier is dropped) | 1.0 (`r6_inherits`, `s7_parent`, `s4_inherits`, `r5_inherits`) |
+| `implements` | ✅ emitted | S3 method registration `generic.class <- function`; target is the generic prefix | 0.8 (`s3_method`, `s3_dotted_name_convention`) |
+| `uses` | ✅ emitted | member READ: `obj$member`, `obj@slot`, `obj[[...]]` without a call, attributed to the enclosing symbol | `attribution.confidence`: 1.0, 0.7 through an anonymous closure (`member_read`) |
+| `imports` | ✅ emitted | `library()`/`require()` (payload `ImportInfo[]`), `pkg::fn`/`pkg:::fn` namespace access, and `source()`/`sourceCpp()` paths | 1.0 string literal, namespace access and source path · 0.8 bare identifier (`library_dependency`/`library_import` reason `library_bare_identifier`) |
+| `exports` | ✅ emitted | roxygen `#' @export` on a declaration; payload `ExportInfo[]` | 1.0 (`roxygen_export`) |
+| `contains` | ✅ emitted | owning symbol → declared member: file-level `global` → top-level declaration, class → slot/property/field/method, function → its body's owner; one deduplicated set pass closes what member extraction opens | 1.0 |
+| `references` | ✅ emitted | `pkg::fn`/`pkg:::fn` dependency, `library()` dependency, `source()` path, and the binding edges `X <- setClass(...)` (`s4_binding`) / `X <- S7::new_class(...)` (`s7_class_binding`) | 1.0 namespace access, source path and binding · 0.8 bare `library()` identifier |
+| `overrides` | ✅ emitted | a member declared in the derived class AND in its base, where the base is declared earlier in the same file | 0.95 (`object_system_method_override`) |
+| `instantiates` | ✅ emitted | `Cls$new()` for a class declared in the file (R6/R5) and `new("Cls")` for an S4 class declared in the file | 0.9 (`isRConstructor` / `isS4Constructor`, reason `declared_class_constructor`) |
+| `decorates` | ❌ not emitted — RULED | RULED UNDECIDABLE (ontological). 0 `RelationshipType.Decorates` sites. Roxygen `#'` tags are COMMENTS a tool reads from source text at build time, not applied callables: the served grammar carries 0 annotation/decorator-family named types among 41. Measured: 59,334 roxygen sites in 779 files, 45,830 of them preceding a declaration; they publish as `exports` (3,695 `@export` sites, 718 files) and as the declaration's `docstring`. Instrument `validation/m14/fixtures/r/census-decorates-falsifier.ts`; artifact `validation/m14/fixtures/r/measurements/r-decorates-falsifier.txt` | — |
+| `renders` | ❌ not emitted — RULED | RULED UNDECIDABLE (ontological). 0 `RelationshipType.Renders` sites; no component model. Measured over 7 `*Output` widget call sites: 0 name a component (5 carry a string output ID the server wires at runtime, 1 an argument object). 0 render/component-family named types among the served 41; `.Rmd`/`.Rnw` = 0 on the corpus tree (the router's table admits `.r` only). Instrument `census-renders-falsifier.ts`; artifact `r-renders-falsifier.txt` | — |
+| `mixes_in` | ✅ emitted | R's LIST-shaped composition clause `contains = c("A", "B")` (two or more entries) on both `setClass` (S4) and `setRefClass` (R5); one row per composed class, target = the class SYMBOL; the ONE-class shape stays `extends` | 1.0 (`s4_composes` / `r5_composes`) |
+| `part_of` | ❌ not emitted — RULED | RULED UNDECIDABLE (ontological). 0 `RelationshipType.PartOf` sites; R has no inclusion directive. Measured over 38 `source()`/`sys.source()` sites: 0 are BOTH a literal path AND scope-sharing (`local=FALSE`/`globalenv()`). The runtime dependency stays published as `r_source` `imports`/`references`. 0 include/part-family named types among the served 41. Instrument `census-partof-falsifier.ts`; artifact `r-partof-falsifier.txt` | — |
+
+The `Emitted?` cells open with the glyph the doc-truth gate reads; a `❌` row carries the
+ruling and its counted falsifier rather than a confidence, because nothing is published.
+
 Every number in this section comes from **production `parseFile`**
 (`src/ast/pool-worker.ts`), never from `analyze()`. `analyze()` is a per-file
 unit that skips the noise filter, the relationship filters, truncation and the
@@ -165,6 +196,7 @@ exactly that difference (see *An audit whose baseline cannot be named*). The
 harness is `validation/m14/fixtures/r/census.ts`; its committed output is
 `validation/m14/fixtures/r/census-evidence.json`; its per-type verdicts with the
 instrument behind each are in `validation/m14/fixtures/r/rulings.json`.
+
 
 **Corpus.** 13 repositories, **1,890 files**, sampled as every git-tracked file
 the ROUTER (`src/ast/language-detection.ts` `detectLanguageFromPath` — the same
@@ -184,7 +216,7 @@ than it measured.
 | at handover | 4 (`dplyr`, `ggplot2`, `usethis`, `nvim-treesitter`) | 637 |
 | this pass | 13 | **1,890** |
 
-### The ten verdicts
+### The ten verdicts — measured history (the census behind the numbers above)
 
 Every type is **EMITTED**. `uses` was not, at handover, and the reason it was
 believed inapplicable is the most useful thing in this document — see

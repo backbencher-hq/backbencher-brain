@@ -3601,6 +3601,16 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         //     Path` is the same fact twice — the F5 oracle states the identical rule.
         case "type_literal": {
           if (this.withinRecovery(node)) break
+          // `class_property_parameter` used to sit in this list and was a DEAD READ: the
+          // pinned grammar (154 named types, validation/m14/measurements/
+          // powershell-grammar-nodes.json) declares `class_property_definition` and
+          // `class_method_parameter` but NO `class_property_parameter`, so the comparison
+          // could never match. It is deleted rather than re-spelled: a class property's
+          // type literal is a DIRECT child of `class_property_definition` (probed:
+          // `class C { [MyType] $X }` -> class_property_definition > type_literal), and the
+          // direct-parent check below already suppresses it, so this spelling bought
+          // nothing and its removal changes no emission. The audit's own enumeration is
+          // the evidence, not this comment.
           let p: Node | null = node.parent
           let metadata = false
           for (let d = 0; p && d < 10; d++) {
@@ -3608,7 +3618,6 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
               p.type === "attribute" ||
               p.type === "script_parameter" ||
               p.type === "class_method_parameter" ||
-              p.type === "class_property_parameter" ||
               p.type === "param_block" ||
               p.type === "class_method_definition"
             ) { metadata = true; break }
