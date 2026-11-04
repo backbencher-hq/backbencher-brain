@@ -99,6 +99,26 @@ function startsUpperAscii(s: string): boolean {
 }
 
 /**
+ * THE MACRO INVOCATION'S TOKEN TREE, read as the NAMED CHILD it is.
+ *
+ * `macro_invocation` carries its argument list as a `token_tree` CHILD; the pinned grammar declares
+ * NO `token_tree` FIELD on it — measured 2026-11-03 with a parse probe (`include!("a.rs")` and
+ * `view! { <X/> }` both give `childForFieldName("token_tree") === null` and named children
+ * `[identifier, token_tree]`). Two 2026-10-23 emitters (`part_of`, `renders`) read the field anyway
+ * and were carried by a `namedChild(1)` fallback, so the grain was invisible in behaviour and
+ * visible only to the grammar audit, which registered both sites as UNREGISTERED field literals and
+ * took rust from 0 to 2 unknown field refs. The finder below replaces that dead read: it is
+ * node-type driven, positional-assumption free, and was behaviour-identical on the fixture suite.
+ */
+function macroTokenTreeOf(inv: Node): Node | null {
+  for (let i = 0; i < inv.namedChildCount; i++) {
+    const c = inv.namedChild(i)
+    if (c && c.type === "token_tree") return c
+  }
+  return null
+}
+
+/**
  * `A::b` — exactly TWO identifier segments joined by ONE `::`.
  *
  * This is `^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$`, written as a scan. It is used on
@@ -4483,7 +4503,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // part's file OR ITS MODULE SYMBOL" names a file here), with the `importProjectFile` claim
     // `confirmModuleFile` computes, so a confirmed row lands `extOK` — php's §8 form.
     if (macroName === "include") {
-      const tt = node.childForFieldName("token_tree") ?? node.namedChild(1)
+      const tt = macroTokenTreeOf(node)
       let includePath: string | null = null
       if (tt) {
         for (let k = 0; k < tt.namedChildCount; k++) {
@@ -4568,7 +4588,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     //     impostor-stopping test) — a bare HTML tag name (`div`, `span`) renders a VALUE,
     //     not a component, and emits nothing.
     if (macroName === "view" || macroName === "html" || macroName === "rsx" || macroName === "render" || macroName === "maud" || macroName === "markup") {
-      const ttR = node.childForFieldName("token_tree") ?? node.namedChild(1)
+      const ttR = macroTokenTreeOf(node)
       if (ttR) {
         // All children INCLUDING anonymous tokens: an angle tag is `< Ident … [/] >` where the
         // angle brackets are anonymous `token` nodes in this grammar.

@@ -3,13 +3,20 @@
 ## Language
 
 - Analyzer file: `src/ast/real-rust-analyzer.ts`
-- Parser: `tree-sitter-rust` **0.24.0** (npm, latest — upgraded from the
-  previously pinned grammar in this milestone; `source_file` →
-  `mod_item`/`struct_item`/`trait_item`/`enum_item`/`impl_item`/
-  `function_item`/`use_declaration`/`call_expression`/`field_expression`/
-  `struct_expression`/`macro_invocation` tree; `impl_item` → `trait` +
-  `type` fields + `declaration_list`; `call_expression` → `function` (→
-  `field_expression`/`scoped_identifier`/`generic_function`) + `arguments`)
+- Parser: the wired `wasm/tree-sitter-rust.wasm`, sha256
+  `f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57` (1,102,547
+  bytes; binding table `validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md`,
+  served digest = wired digest). Measured 2026-11-03 through `getParser("rust")`:
+  **355 type ids, 185 named ids, 163 unique named types**. The npm package
+  version this wasm was built from is **not recorded in the tree — unknown**; the
+  former "0.24.0 npm" claim is kept only as unverified history. Node shapes in
+  use: `source_file` → `mod_item`/`struct_item`/`trait_item`/`enum_item`/
+  `impl_item`/`function_item`/`use_declaration`/`call_expression`/
+  `field_expression`/`struct_expression`/`macro_invocation`; `impl_item` →
+  `trait` + `type` fields + `declaration_list`; `call_expression` → `function`
+  (→ `field_expression`/`scoped_identifier`/`generic_function`) + `arguments`;
+  `macro_invocation` → macro name + a `token_tree` **child** (there is no
+  `token_tree` field — a dead field read was removed on 2026-11-03).
 - Language detection: `.rs` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealRustAnalyzer`
 - Pure AST — symbols and relationships derive from Tree-sitter nodes/fields,
@@ -27,29 +34,35 @@
 | parameters | ✅ | function `parameters` → name/type pairs (`self_parameter` → `self`) |
 | returnType | ✅ | function `return_type` node text |
 | documentation/comments | — | n/a (Rust doc comments not extracted as doc) |
-| complexity metrics | ✅ | cyclomatic complexity (match/if/while/loop/for); patterns (`Unsafe Code`, `Error Propagation (?)`, `Explicit Lifetimes`, `Auto Traits`, `Re-exports`, `Testing`, `Derive Macros`, `Must Use`, `Deprecated API`, panic macros) — pure-String scans |
+| complexity metrics | ✅ | cyclomatic complexity (match/if/while/loop/for branches); patterns are AST-node driven (`Unsafe Code` from `unsafe_block`, `Error Propagation (?)` from `try_expression`, `Explicit Lifetimes` from `lifetime`, `Auto Traits`/`Re-exports` from declared trait bounds and `use` clauses) EXCEPT the four attribute-marker patterns (`Testing`, `Derive Macros`, `Must Use`, `Deprecated API`), which scan the attribute TEXT already extracted from the AST — never source text |
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
-| decorators/attributes | ✅ | `pub`/`pub(crate)`/`pub(super)` visibility; `const fn`/`async fn`/`unsafe fn` modifiers; `#[get("/path")]` axum route → Exports edge (pure-String `extractRoutePath`) |
+| decorators/attributes | ✅ | `pub`/`pub(crate)`/`pub(super)` visibility; `const fn`/`async fn`/`unsafe fn` modifiers; an outer attribute applied to a declaration → `decorates` edge (both classes via `metadata.attributeKind`); `#[derive(…)]` → `mixes_in` per derived trait; `#[get("/path")]` axum route → `Exports` edge (pure-String `extractRoutePath`); inner `#![…]` and nameless-target attributes are refused and counted (`metadata.unattributedEdges`) |
 
 ## Relationship ontology
 
+The single canonical claim table for this analyzer: one row per value of the 14-value register,
+in register order (`src/ast/types.ts`). Emission sites measured against
+`src/ast/real-rust-analyzer.ts` at HEAD 2026-11-03; the current whole-population counts are the
+2026-10-23 arm (`validation/m14/measurements/rust-gate-whole-2026-10-23.txt`, 2,532 files, 326,101
+edges, closure exact — see `## Corpus validation`). `evidenceClass` is the value the shared tier
+classifier (`classifyEvidenceTier`) writes onto the edge.
+
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| contains | ✅ | REAL container ownership only: trait→method, struct→property, impl→method, enum→variant (post-loop over `ownerName`). Never `global contains X` / `root contains X`. | 1.0 |
-| calls | ✅ | `call_expression` → callee leaf name (member calls `self.repository.add` → `add`, chains `values.iter().map()...` → one edge per call, macros `println!` → macro name, `::new()` → `new` for the CALL while the paired `instantiates` names the receiver type); source = enclosing function/method name — the single emission path (the legacy per-function trace walk that double-emitted every call with a qualified `owner.method` source was removed) | 1.0 |
-| uses | ✅ | non-call field access only (`self.counter`, `u.id` — `field_identifier` only; tuple indices `tuple.0` are not symbols and emit nothing); call-target field expressions skip the uses walk (the `calls` edge is the fact) — one edge per pair | 0.9 |
-| instantiates | ✅ | struct literals (`User { id, name }` → `instantiates User`), constructors naming the **RECEIVER TYPE** (`MemoryStorage::new()` → `instantiates MemoryStorage`, paired with `calls -> new`), and — new 2026-10-04 — a BARE callee that constructs a TUPLE SHAPE the file declares and that is VISIBLE where the call is written. A receiver not declared in the same file stays silent (the deferred in-file rule), so `Vec::new()` emits `calls` and no `instantiates`. `metadata.constructorSpelling` records which of the three forms carried the evidence: `path_new` 325 / `bare_tuple_shape` 48 / `struct_literal` 288 | 0.8 |
-| implements | ✅ | trait impls: `impl super::Repository<User> for MemoryStorage` → `implements MemoryStorage -> Repository` (leaf trait name via `extractTraitName` — the full generic text was dropped by the production noise filter) | 1.0 |
-| extends | ✅ | trait bounds: `trait Foo: Bar` → `extends Foo -> Bar` (leaf name). A **higher-ranked** bound is a bound (RUST-D15): `trait DeserializeOwned: for<'de> Deserialize<'de>` publishes `extends DeserializeOwned -> Deserialize` on the bound's own line, and the `for<…>` binder is not a name (the F5 oracle used to fabricate `extends -> "for"` from it) | 1.0 |
-| imports | ✅ | `use` declarations (incl. `pub use`, `use super::`, scoped lists) → imports array — **no references edge** (Java-family contract; unlike C/C++ where `#include` targets header files). This channel, not a relationship: see INCOMING_RUST below | 1.0 |
-| exports | ✅ (array) / ✅ (edge, route attributes only) | the exports[] array carries every unrestricted-`pub` item at file top level; the ONLY site that projects a `RelationshipType.Exports` **edge** is a web route attribute (`#[get("/users")]` → `exports handler -> /users`), so on a CLI corpus the edge count is 0 while the array has rows. Measured: 105 pub items / 150 array rows / **0 edges** on ripgrep | — |
-| overrides | ✅ | a trait method an impl block supplies: `ImplType.method -> Trait.method`, and **only** when the trait is declared in this file and the implementing type is a real type name rather than a generic parameter. See INCOMING_RUST below — this was a GAP until 2026-10-04 | 1.0 |
-
-The `overrides` row used to read "n/a (Rust trait impls are captured as
-implements)". That was a ruling with no measurement behind it, and it was wrong
-in the same way `overrides`-in-bash was: `implements` carries the TYPE-level
-relation, and nothing carried the METHOD-level one. 48 sites of the construct
-exist in ripgrep's 110 files.
+| calls | ✅ | `call_expression` → callee LEAF read from the tree (bare identifier; `field_expression` field → `self.repository.add` gives `add`; `scoped_identifier` name → `cap.parse::<u32>()` gives `parse`; turbofish `::<T>` unwrapped). A macro invocation is a callee too (`macro_invocation` → macro name, one edge per site). Source = enclosing function/method; `Self(…)` resolves to the enclosing impl type; a file-scope invocation has no owner and is REFUSED, counted in `metadata.unattributedEdges`. Qualified targets are re-spelled `T::m` only when the file declares the member (`publishQualifiedCallTargets`). | 1.0 (`usage_contextual` fallthrough) |
+| extends | ✅ | `trait Foo: Bar` supertrait bounds → `extends(trait Foo -> Bar)`; a `higher_ranked_trait_bound` is unwrapped to its inner type node; `metadata.traitBound`. Generic parameters are skipped. | 1.0 (`structural`) |
+| implements | ✅ | `impl Trait for Type` → `implements(Type leaf -> trait leaf)`; source is the implemented TYPE (nominal leaf), target the trait's leaf name. | 1.0 (`structural`) |
+| uses | ✅ | Two sites. (a) non-call `field_expression` field reads (`self.counter`, `u.id`; tuple indices are not symbols) → `uses(owner -> field)`, one edge per pair. (b) bare `identifier` reads that resolve to a file-visible VALUE owner (fn/const/static/local binding) → `uses(owner -> name)`; declaration positions are never reads (macro names, trait-method signatures, fn-pointer parameters, attributes, `use` paths, where-bounds), and a name bound inside an UNEXPANDED macro argument is published at 0.6 with `reasonCode: "unexpanded-macro-argument"`. | 0.9 field reads · 1.0 identifier reads · 0.6 macro-argument reads (`usage_contextual`) |
+| imports | ✅ | `use_declaration` at file, module or function scope → `imports(scope symbol -> written module PATH)`: the path is the import's dependency (`use std::io::{Read, W}` → `std::io`), the bindings ride `metadata.items`; file scope sources the edge as `(file)` (`fileLevel: true`). Claims: `importProjectFile` (a project-relative file statted before it is written) and `languageNamespace` (`std`/`core`/`alloc`). Payload channel: `import-site: ImportInfo[]` is populated too (`ctx.imports`). | 1.0 (`import_based`, declared in metadata) |
+| exports | ✅ | Two sites. (a) `publishExport`: every file-scope `pub` item, `pub use` re-export and `#[macro_export]` macro → `exports(module -> name)`, one row per published unit, file-scope source = `(file)` (`fileLevel: true`). (b) an actix/axum route attribute (`#[get("/path")]`) → `exports(handler fn -> route path)`. Payload channel: `export-site: ExportInfo[]` is populated too (`ctx.exports`). | (a) 1.0 (`structural`); (b) no confidence written (tier classifier reads 1.0; `structural`) |
+| contains | ✅ | Post-loop over the symbol table: REAL container ownership only, from `ownerName`/`scope` — trait → method, struct/union → field (`property`), impl → method (owned by the IMPLEMENTED type), enum → variant, enclosing module → member. No `global`/`root` synthetic source: a file-scope declaration publishes no contains edge. | 1.0 (`structural`) |
+| references | ✅ | Two sites. (a) declared-type surface — fn params/returns, struct/union field types, enum-variant field types, type-alias right-hand sides, const/static types → `references(declaration -> type leaf)`, `metadata.relationshipType: "declared_type"`, generic params and primitives skipped, `Self` resolves to the enclosing impl type. (b) where-clause bounds (`where T: Trait`) → `references(declaration -> bound leaf)`, `metadata.whereBound`. | (a) 0.9 (`import_based` per the classifier's references branch) · (b) no confidence written (`reference_qualified`) |
+| overrides | ✅ | `impl Trait for Type` methods → `overrides("Type.m" -> "m")`, target the MEMBER LEAF. For a trait declared IN THIS FILE, only methods the trait declares emit (`reasonCode: "local-trait-signature"`, 1.0); when the trait is declared outside the file, the impl's methods emit for the named trait (`"cross-file-trait-signature"`, 0.85). No signature comparison: a same-named method is paired. | 1.0 local · 0.85 cross-file (`structural` at 1.0, `usage_contextual` at 0.85) |
+| instantiates | ✅ | Three sites, all `metadata.isConstructor: true`. (a) `struct_expression` `User { … }` → `instantiates(owner -> type leaf)` (scoped enum-variant literal targets the VARIANT leaf; `Self` resolves to the enclosing impl type). (b) constructor calls naming the RECEIVER TYPE (`MemoryStorage::new()`) → `instantiates(owner -> receiver type)`, deferred until the file declares that type (the `inFile` filter). (c) a BARE tuple-shape constructor `Unit()` only when the file declares a tuple-shape struct of that name visible at the call site. Nothing std/foreign is fabricated. | 0.8 (`usage_contextual`) |
+| decorates | ✅ | An OUTER `attribute_item` applied to its following named declaration → `decorates(declaration name -> attribute name as written)`, e.g. `Config -> derive`, `run -> tokio::main`; `metadata.attributeKind` splits `builtin_directive` from `applied_callable_candidate`, `isQualifiedPath` keeps the path fact. An inner `#![…]` attribute (no declaration sibling) and an attribute whose sibling is not a nameable declaration are REFUSED AND COUNTED (`decorates:inner_attribute`, `decorates:unnamed_declaration`, …). Whole population: 16,195 outer sites = 15,930 rows + 265 counted; 202 inner sites all counted (`validation/m14/measurements/rust-extended-census.json`). | 1.0 (`usage_contextual` fallthrough) |
+| renders | ✅ | UI-framework macros `view!`/`html!`/`rsx!`/`render!`/`maud!`/`markup!` whose `token_tree` carries an angle-tag shape (`<` identifier … `>`/`/>`) whose tag identifier names a SAME-FILE callable or type → `renders(enclosing fn -> component)`; `metadata.renderMacro`, `isComponentTag`. Bare HTML tags (`div`) and undeclared tags are refused and counted. IMPLEMENTED AND CORPUS-UNEXERCISED: 0 render-macro invocations over the whole admitted population. | 1.0 (`usage_contextual` fallthrough) |
+| mixes_in | ✅ | `#[derive(A, B)]` → one `mixes_in(declaration name -> derived trait)` per derive ARGUMENT; the derived trait is the RIGHTMOST segment of a qualified path (`serde::Serialize` → `Serialize`), because `::` flattening puts the segments in the token_tree as sibling identifiers. `metadata.isMixin`, `deriveComposition`. Whole population: 11,176 rows = the census's `derive_args_total` 11,176 exactly. The measured alternative `use Trait as _` (431 `use_as_clause`, 132 `as _`) is a SCOPE import, not a type's chain, and is not this relation. | 1.0 (`usage_contextual` fallthrough) |
+| part_of | ✅ | `include!("path.rs")` — TEXTUAL file inclusion: the fragment's tokens land in the INCLUDING file's scope and it has no module identity. `part_of(enclosing scope -> written PATH, quotes stripped)`; file scope sources as `(file)` (`fileLevel: true`); `metadata.partRole: "library"`, `isFileInclusion`. The target is a PATH because a fragment has no symbol, and the `importProjectFile` claim is statted before it is written, so a confirmed row lands `extOK`. `include_str!`/`include_bytes!` are data inclusion, not textual splicing, so they publish only their macro-call edge (census: 20 + 2 sites), never `part_of`; a non-literal `include!` argument is refused and counted (`part_of:include_non_literal`). NOT `mod x;` (fleet ruling L-2026-10-21-06: ownership/split — a resolvable module is the opposite of a fragment; the census counts 1,898 file-declarations + 227 inline as the rejected near miss). Whole population: 3 rows, all extOK = the census's 3 single-string-literal sites. | 1.0 (`usage_contextual` fallthrough) |
 
 ## Supported constructs
 
@@ -84,6 +97,11 @@ exist in ripgrep's 110 files.
   enclosing function), while a function-local `let` publishes nothing (M11.11's
   closure boundary: a local binding declares nothing outside its body).
 - Closures: `values.iter().map(|v| v * 2)` — closure parameters are execution artifacts (no symbols); field access inside closures still resolves (`u.id == id` → `uses find -> id`)
+- Type aliases and trait associated types (`type_item` / `associated_type`): publish `Type` symbols; the alias right-hand side and associated-type bounds are `references` — there is no `type_alias_declaration` node to defend
+- Unions: `pub union Pixel { … }` (`union_item`) → a struct-kinded symbol with its fields
+- Attributes (2026-10-23): an OUTER attribute applied to a declaration → `decorates` (declaration name → attribute name as written, e.g. `Config -> derive`, `run -> tokio::main`), both classes published via `metadata.attributeKind`; `#[derive(A, B)]` → one `mixes_in` per derived trait, the RIGHTMOST segment of a qualified path. An inner `#![…]` attribute and an attribute whose sibling is not a nameable declaration are refused AND COUNTED (`metadata.unattributedEdges`, keys `decorates:*`) — 16,195 outer sites = 15,930 edges + 265 counted, 202 inner sites all counted
+- File inclusion (2026-10-23): `include!("path.rs")` → `part_of` — textual splice: the fragment shares the including file's scope and has no module identity. Source = enclosing scope (`(file)` at file scope), target = the written PATH with an `importProjectFile` claim statted before it is written; `include_str!`/`include_bytes!` are data inclusion (they publish only their macro-call edge — census 20 + 2 sites), and a non-literal `include!` argument is refused and counted (`part_of:include_non_literal`). `mod x;` is OWNERSHIP, not `part_of` (fleet ruling L-2026-10-21-06: a resolvable module is the opposite of a fragment)
+- UI-framework render macros (2026-10-23): `view!`/`html!`/`rsx!`/`render!`/`maud!`/`markup!` whose `token_tree` carries an angle-tag shape naming a SAME-FILE callable or type → `renders` (enclosing fn → component); bare HTML tags and undeclared tags are refused and counted. IMPLEMENTED, CORPUS-UNEXERCISED: 0 render-macro sites over the whole 2,532-file admitted population
 - Negative fixture: function-local `let` bindings → NO symbols; primitive types (`i32`, `String`, `&[T]`), generic params (`T`), lifetimes (`'a`) → NO type-reference edges; tuple indices (`tuple.0`) → NO uses edge; closure params → NO symbols
 
 ## Unsupported / explicit-unknown constructs
@@ -101,12 +119,20 @@ exist in ripgrep's 110 files.
   both three characters, so every line and offset survives. Still valid Rust,
   still recorded honestly in the manifest (precedent: C 122, C++ 124, kotlin 51,
   fsharp 108). See `RUST-D23`.
-- `type Foo = Bar;` aliases, `if let`/`while let` (cyclomatic counter), and
-  trait-bound node names are referenced defensively under names absent from
-  both grammars (`type_alias_declaration`, `if_let_expression`,
-  `while_let_expression`, `trait_bound`) — pre-existing dead conditions, not
-  regressions (`type_item`/`if_let`/`while_let`/`type_identifier` are the real
-  node names)
+- **Dead grammar spellings are GONE, not defended (measured 2026-11-03).**
+  The former bullet here claimed `type Foo = Bar;` aliases, `if let`/`while let`
+  and trait-bound names were "referenced defensively" under
+  `type_alias_declaration` / `if_let_expression` / `while_let_expression` /
+  `trait_bound`. All four are deleted from the analyzer and the grammar-audit
+  register records rust at **0 dead literals**
+  (`validation/m14/grammar-audit-baseline.json`); the real node names are
+  `type_item`/`associated_type`, `if_let`/`while_let`, and `trait_bounds` (a
+  direct `type_identifier` child — no `trait_bound` node exists). This wave
+  removed the last two dead reads: `childForFieldName("token_tree")` on
+  `macro_invocation` (the grammar declares no such field; the `token_tree` is a
+  named CHILD) in the `part_of`/`renders` emitters. The audit at HEAD is
+  **PASS refs=88 unknown=0 unknownFields=0**; before the fix it was
+  `unknownFields=2` and FAIL.
 - Cross-file resolution (`User` declared in service.rs, used in storage.rs) is
   per-file by design — the analyzer signature does not consume the engine's
   companion index (production wiring of the cross-file context tracked by
@@ -114,16 +140,27 @@ exist in ripgrep's 110 files.
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the Rust analyzer has **0
-regex usages** (the 2 baseline regexes eliminated — census 99 → 97 total
-across all analyzers). Replaced with pure-String scans: `extractRoutePath`
-(axum method-attribute route extraction — the legacy
-`/\[(?:get|post|put|delete)\("([^"]+)"\)\]/`) and `stripGenerics` (first-`<`
-slice — the legacy `/<.*$/`).
+The Rust analyzer has **0 regex literals at HEAD**: the AST census over the
+committed blobs (`validation/m12/results/regex-census.json`, "HEAD blobs") has
+no `real-rust-analyzer.ts` row, and the fleet total at that artifact is **0** —
+not the 97 this section used to quote. The last ten literals this analyzer
+carried (six `Cargo.toml` manifest reads, two `^[A-Z]` leaf tests, a `-`→`_`
+replacement and one two-segment path-shape test) were removed on 2026-10-23:
+the manifest reads became the section-aware TOML reader `rustManifestFacts`,
+proved equal to the served `wasm/tree-sitter-toml.wasm` over **746 tracked
+`Cargo.toml` files with 0 disagreements**
+(`script/m14/rust-manifest-ast-verify.ts`); the rest became code-point helpers
+(`startsUpperAscii`, `isTwoSegmentIdentPath`). Earlier removal history: the two
+baseline regexes were replaced by the pure-String `extractRoutePath` and
+`stripGenerics`.
 
 ## Complexity envelope
 
-From `validation/m12/results/rust-complexity.json`:
+From `validation/m12/results/rust-complexity.json` — the **2026-08-28 M12
+measurement, kept as history**: the "fixtures" row is the three-file perf
+fixture, not today's 34-fixture `validation/m14/fixtures/rust/` suite, so it is
+not a current whole-suite timing and the current arm has not been re-benchmarked
+on this box (unknown).
 
 | Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -150,8 +187,43 @@ post-loop is one pass over the symbol list. No O(n²) or per-symbol O(n) scans.
 - Precision 1.000 / recall 1.000 / FP 0 / FN 0 / unknown 0, `passed: true`,
   `earliestFailingLayer: none`, `parseErrors: 0` — verified both before and
   after the grammar upgrade (node shapes unchanged for the contract)
+- **Current wire (2026-11-03).** The M14 differential's rust arm now pushes
+  independently derived truth for `calls`, `uses`, `declared-type references`,
+  `where-bound references`, `contains`, `imports`, `exports`, `overrides`, and
+  the four extended labels (the attribute/derive/include!/render branches in
+  `deriveRustEdges`), plus rust's 14-label allowlist — `script/m14/differential.ts`,
+  the `if (lang === "rust")` arm. The two historical harness gaps this page used
+  to report are CLOSED: `contains` truth is pushed (it was imported and never
+  called) and `overrides` truth is pushed (it was unwired); both derivations are
+  in the current file.
 
 ## Corpus validation
+
+Two measurements live here and they are NOT comparable: the CURRENT one over the
+admitted population (2026-10-23, 2,532 files, closure exact) and the HISTORICAL
+M12 / full-extent sweeps, which predate the admitted-population rule (the disk
+sweeps counted every `.rs` present, the arm counts the git-tracked ≤ 1 MiB set).
+Each block names its own scope and artifact.
+
+### Current admitted population (2026-10-23 arm) — 2,532 `.rs` files, closure exact
+
+The current measurement is the lane's ONE whole-population arm over the ADMITTED
+set (per-checkout `git ls-files`, `.rs`, present on disk, ≤ 1 MiB; **never the
+disk alone**): **parsed=2,532/2,532 admitted=2,532, 9 repositories, 0 parse
+failures, 0 degraded**, **326,101 edges** = 130,039 resolved + 110,581
+ambiguous(decl) + 77,932 unresolved + 7,549 extOK (imports 7,546 + `part_of` 3),
+unclassed 0. Closure is exact at every level. Artifacts: arm log
+`validation/m14/measurements/rust-gate-whole-2026-10-23.txt`; per-type closure
+and cause rulings `validation/m14/instruments/rust/incoming-declaration.json`;
+extended-types construct census
+`validation/m14/measurements/rust-extended-census.json`. The analyzer bytes the
+arm measured are `sha256:d8f03293…` (the declaration's `analyzerDigest`); the
+only later analyzer changes were refusal counters and a derive line-index
+correction, which the declaration records as moving no edge. The M12 400-file
+record and the 13,101-file full-extent sweep below are HISTORY — they predate
+the admitted-population rule and are not comparable with this number.
+
+### Historical M12 pass (2026-08-28) — 400 tracked `.rs` files
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `cargo@94faf917`
   (clean; 1373 tracked `.rs` files — 261 src + 101 crates + 993 tests of the
@@ -280,19 +352,40 @@ and `rust/raw-use-list-import`), all caught (suite 122/122; 8 rust
 fixtures). The floor `ripgrep:rust {missing:0, unexplained:0}` is
 enforced in `validation/m14/differential-baseline.json`.
 
-### Completeness contract (#419) — 185 types, A–H 8/8
+### Completeness contract (#419) — 163 unique named types, A–H 8/8
 
-`script/m14/spec/rust-completeness.json` classifies every named node type
-of the pinned grammar (42 handled_verified, 121 internal_silent, 0 gaps,
-3 RULED decisions: RUST-D1 trait-hierarchy semantics, RUST-D2 opaque
-macro_rules! bodies, RUST-D3 grammar-scoped scope). Registered in
+`script/m14/spec/rust-completeness.json` classifies the served grammar's
+**163 unique named types** plus the universal `ERROR`/`MISSING` pair = 165
+accounted rows: **43 handled_verified, 122 internal_silent, 0 gaps**, and a
+**43-entry design-decision register** (RUST-D1…RUST-D43: 33 RULED, 8 FIXED, 2
+mixed/superseded — e.g. RUST-D1 trait-hierarchy semantics, RUST-D2 opaque
+`macro_rules!` bodies, RUST-D3 grammar-scoped scope). The spec's `coverage`
+block lists the **14 implemented relationship types**, with `renders` declared
+implemented-and-corpus-unexercised (never an exclusion). Registered in
 `completeness-inventory.ts` with requiredKinds (uses/references/exports/
 contains/calls/extends/implements/instantiates), payload pins
 (complexity + qualified_calls via `rust/payload-parity`), and the
-`ripgrep:rust` floor. Grammar audit PASS (329 node types, 63 referenced,
-0 unknown).
+`ripgrep:rust` floor. **Grammar audit at HEAD 2026-11-03: PASS refs=88,
+unknown=0, unknownFields=0** (`npx tsx script/m14/audit-analyzer-grammar.ts
+--lang rust`); the register records rust at 0 dead literals. (The former
+"185 types / 42 / 121 / 3 RULED / 329 node types / 63 referenced" numbers were
+stale-era counts from before the vocabulary grew; corrected here.)
 
-## INCOMING_RUST — the relationship-type ontology, measured (2026-10-04)
+## Ontology measurements — INCOMING_RUST census (2026-10-04)
+
+> **SUPERSEDED IN FOUR PLACES (corrected 2026-11-03).** The ONE canonical claim
+> table for this analyzer is `## Relationship ontology` above; this section is the
+> 2026-10-04 nine-type census (ripgrep@3fce3b5), kept as measured history. What
+> changed after it: (1) `imports` and `exports` now emit RELATIONSHIP edges as
+> well as their payload channels — the "0 relationship edges"/"dormant" cells
+> below are annotated; (2) `contains` and `overrides` differential truth IS now
+> pushed (the §2(3) "compared with no truth" harness gap is closed); (3) the
+> census-era claim "no edge below 0.7, no reasonCode" is contradicted by the
+> current analyzer (0.6 macro-argument reads, 0.85 cross-file overrides) and is
+> corrected in §2(6); (4) the four extended labels
+> (`decorates`/`renders`/`mixes_in`/`part_of`) were implemented on 2026-10-23
+> and are not part of this nine-type census. Every other number here is the
+> census's own measurement and is kept.
 
 Lane: `analyzer/INCOMING_RUST2`. Corpus: `ripgrep@3fce3b5` — 110 tracked `.rs`,
 110 parsed, 0 parse errors, 5,150 symbols, 27,963 relationships, via
@@ -311,16 +404,19 @@ getAnalyzer → analyze).
 | implements | EMITTED | 252 | 44 | `impl Trait for Type`, trait leaf |
 | overrides | EMITTED (new) | 16 | 3 | a trait method an impl block supplies |
 | extends | EMITTED | 7 | 3 | trait bounds, incl. higher-ranked |
-| imports | EMITTED **as a channel** | 449 rows / 404 `use` declarations | — | `imports[]` → `brain_import`; **0 relationship edges**, and the family is split on this (22 of 48 analyzers project the edge, 26 do not, including java/kotlin/ruby/csharp/scala/elixir) |
-| exports | EMITTED **as a channel**, edge is constructible and dormant | 150 rows / 105 `pub` items | **0** | `exports[]`; the only `RelationshipType.Exports` edge is a web route attribute, and ripgrep has 0 of them (measured: 0 route attributes) |
+| imports | EMITTED **as a channel** at this census → **relationship edges also emitted since 2026-10-23** | 449 rows / 404 `use` declarations | — | `imports[]` → `brain_import` AND `RelationshipType.Imports` rows (`use_declaration` → written module path, 1.0, `evidenceClass: import_based`, with `importProjectFile`/`languageNamespace` claims); current whole-population count 11,822 edges — see the canonical table above |
+| exports | EMITTED **as a channel** at this census → **edges also emitted since 2026-10-23** | 150 rows / 105 `pub` items | **0** | `exports[]`; relationship edges now published for every file-scope `pub` item / `pub use` re-export / `#[macro_export]` (`publishExport`, 1.0, `structural`) in addition to the web-route attribute edge; current whole-population count 6,185 edges |
 
-Nothing is RULED for rust. The two types with no edge on this corpus are not
-ruled — `imports` and `exports` are the two channels the store reads directly
+Nothing is RULED for rust at this census, and STILL NOTHING IS EXCLUDED at HEAD:
+the completeness spec's `excluded` list is empty and all fourteen types are
+implemented (`renders` as implemented-and-corpus-unexercised, which is a count,
+never an exclusion). The two types with no edge at this census were not ruled:
+`imports` and `exports` are the two channels the store reads directly
 (`brain_import`, `brain_file`/`brain_symbol` visibility), and their relationship
 projection is a family choice, not a language fact. A ruling needs a measurement
 of the CONSTRUCT, and the construct is plentiful in both cases (404 `use`
-declarations, 105 `pub` items); what is absent is a decision, and it belongs to
-the master.
+declarations, 105 `pub` items) — the 2026-10-23 lane paid that measurement and
+now emits both edges.
 
 ### 2. The six questions, per already-emitted type
 
@@ -332,8 +428,10 @@ placeholder scan.
 
 **(1) Exists** — all nine constructible types are constructed in the source.
 
-**(2) Fires** — see the table above; every one of the nine produced edges on
-ripgrep except `exports`, whose single relationship site needs a web framework.
+**(2) Fires** — see the table above; at this census every one of the nine
+produced edges on ripgrep except `exports`, whose single relationship site then
+needed a web framework (since 2026-10-23 the `pub`-item export edge fires
+without one, and ripgrep's 105 `pub` items would produce it).
 
 **(3) Oracle agrees** — measured on the F5 differential's own 60-file ripgrep draw
 (`bun script/m14/differential.ts --repo ripgrep --lang rust`, rotated sample, so
@@ -356,13 +454,13 @@ Two disclosures the harness itself demands:
   bug is invisible to it. Nothing here claims more than the harness supports:
   the rule behind an agreeing label is evidenced by the fixtures and the mutants,
   not by the oracle.
-- `contains` and `overrides` have **no** derivation wired. `contains` is
-  allowlisted (`differential.ts:23239`) while `deriveRustContainsTruth` is
-  imported at `differential.ts:57` and never called, so 1,127 correct edges are
-  reported as fabrications and the run exits 6. `overrides` was already
-  allowlisted and the analyzer did not emit it until today; its derivation now
-  exists as `script/lanes/incoming-rust/oracle/overrides.ts` and needs one import
-  and one loop in `differential.ts` (the master's file).
+- **CLOSED 2026-11-03: both derivations are now pushed.** At this census
+  `contains` was allowlisted while `deriveRustContainsTruth` was imported and
+  never called (1,127 correct edges reported as fabrications, run exits 6), and
+  `overrides` had no derivation wired. The current `differential.ts` rust arm
+  (`if (lang === "rust")`) pushes `deriveRustContainsTruth` and
+  `deriveRustOverridesTruth`, so those two rows no longer mean "compared with no
+  truth"; the numbers remain this census's own harness state.
 
 **(4) Labelled** — no mislabelling found. `instantiates` names the constructed
 TYPE (never the constructor function), `calls` names the callee, `implements`
@@ -397,14 +495,17 @@ Two things that census column cannot say on its own, so they are said here:
   `Display`, `Send`). Publishing the name is the honest record; inventing a
   symbol for it would not be.
 
-**(6) Confident** — no edge is below 0.7, so nothing in the lane's graph is a
-heuristic by that definition. The distribution: `calls` 1.0 (17,083),
-`contains` 1.0, `implements` 1.0, `extends` 1.0, `overrides` 1.0,
-`uses` 1.0 (1,497 identifier reads) + 0.9 (1,710 field reads), `references` 0.9
-(2,928), `instantiates` 0.8 (661). Nothing under 0.7 exists, and nothing carries
-a `reasonCode` because nothing needs one — the honesty contract's §4 applies to
-sub-1.0-with-suspicion edges, and the 0.8/0.9 bands here are stated facts about
-construction and field reads, not inferences.
+**(6) Confident (CORRECTED 2026-11-03).** At this census no edge was below 0.7
+and none carried a `reasonCode`; that is no longer true and the analyzer says so.
+The current sub-0.7 class is the bare identifier read inside an UNEXPANDED macro
+argument: **0.6** with `reasonCode: "unexpanded-macro-argument"` and
+`metadata.macroArgument` (the analyzer's own comment records 36 of 29,660
+ripgrep edges when introduced — a macro argument is not an expression the file
+evaluates). `overrides` also pairs a cross-file trait method at **0.85** with
+`reasonCode: "cross-file-trait-signature"`. The census-era distribution is kept
+as the 2026-10-04 record: `calls` 1.0 (17,083), `contains` 1.0, `implements` 1.0,
+`extends` 1.0, `overrides` 1.0, `uses` 1.0 (1,497 identifier reads) + 0.9 (1,710
+field reads), `references` 0.9 (2,928), `instantiates` 0.8 (661).
 
 **(7) R7 — placeholders and empties** — 0 empty targets and 0 empty sources in
 all 27,963 edges. The R7 scan also flags literal placeholder strings
@@ -467,6 +568,11 @@ one-line fix are in the lane report.
 | F5 draw: MISSING | 13 | 1 |
 | F5 draw: coverage | 99.5% | 100% (2,658 / 2,659) |
 | F5 draw: unexplained | 112 (all `contains`) | 1,164 (`contains` 1,127 + `overrides` 37) — both harness gaps, §2 |
+
+The two counts that GROW are current at HEAD 2026-11-03: the rust fixture suite is
+**34 fixtures** in `validation/m14/fixtures/rust/` (34 pass / 0 fail,
+`bun script/m14/run-fixtures.ts --lang rust`), not 25; and
+`script/m14/mutate-analyzer.ts` registers **45** rust mutants, not 10.
 
 The 1 remaining MISSING row is an **oracle** defect, not an analyzer one: an
 impl-level `type Err = Error;` puts `Err` into the oracle's in-file declared-type
@@ -614,6 +720,12 @@ so a namespace claim can only reach PATH-shaped targets, and the shared matcher 
 - Corpus scan: `script/m12/rust-corpus-errors.ts`
 - Grammar compare: `script/m12/rust-wasm-compare.ts` / `script/m12/rust-node-types-compare.ts`
 - Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer)
+- Current whole-population arm (2026-10-23): `validation/m14/measurements/rust-gate-whole-2026-10-23.txt`
+- Extended-types construct census: `validation/m14/measurements/rust-extended-census.json`
+- Whole-population declaration, per-type closure + cause rulings: `validation/m14/instruments/rust/incoming-declaration.json`
+- Completeness spec: `script/m14/spec/rust-completeness.json`
+- Served-grammar binding table: `validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md`
+- Grammar audit register: `validation/m14/grammar-audit-baseline.json` (rust: 0 dead literals)
 - Docs: this file
 
 ## Issue
