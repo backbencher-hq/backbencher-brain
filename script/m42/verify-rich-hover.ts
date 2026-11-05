@@ -1363,7 +1363,7 @@ function doubleGroundOf(r: Record<string, unknown>): RowGround | null {
     DOUBLE_ROW_ID,
   )
   if (far === null) return null
-  return groundOf({ id: String(r.id), relType: String(r.relationship_type), storedLine: (r.line_number as number | null) ?? null, far })
+  return groundOf({ id: String(r.id), relType: String(r.relationship_type), storedLine: (r.bb_stored_call_line as number | null) ?? null, far })
 }
 const MUTANT_ROWS = [
   // A call row whose stored line IS the call site: the link must open line 15.
