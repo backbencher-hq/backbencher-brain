@@ -1310,8 +1310,21 @@ export function isCppSpelledName(text: string | null | undefined): boolean {
  */
 export function isPublishableFunctionName(name: string | null | undefined): boolean {
   if (!name) return false
-  if (/^operator/.test(name)) return true
-  return /^[A-Za-z_~][A-Za-z0-9_]*$/.test(name)
+  // NO REGEX: src/ast is held to `script/m14/no-regex-gate.sh` — regex over source
+  // text matches comments and string literals, misses nested syntax and breaks
+  // silently on the next grammar version, so every analyzer predicate must be
+  // stated in character/image terms or read off the AST. These two tests are the
+  // predicate's own declaration: an `operator` name is a name by its PREFIX; every
+  // other C++ identifier starts with a letter, `_` or `~` and continues with those
+  // plus digits. Both are O(length) scans over the string the analyzer already
+  // holds, with no pattern compilation and no backtracking.
+  if (name.startsWith("operator")) return true
+  const isStart = (c: number): boolean =>
+    (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 /* _ */ || c === 126 /* ~ */
+  const isContinue = (c: number): boolean => isStart(c) || (c >= 48 && c <= 57)
+  if (!isStart(name.charCodeAt(0))) return false
+  for (let i = 1; i < name.length; i++) if (!isContinue(name.charCodeAt(i))) return false
+  return true
 }
 
 /**
