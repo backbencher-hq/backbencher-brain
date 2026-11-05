@@ -377,3 +377,33 @@ defect with a very small search space: the row IS stored, the line IS exact, the
 file IS long enough, and the card still substitutes. The suspect is the collector's
 own classification (`servesCallSite` / `incoming` / `declarationRow` and the
 `addressLine0(address)` result), not the store and not the SQL.
+
+**The wiring is correct, so the refusal happens inside the address derivation.**
+Checked end to end in `src/lsp/rich_hover.ts`:
+
+```
+only ONE .prepare() in the file            -> no second query can drop the alias
+STORED_LINE_SELECT present in that query   -> r.line_number AS bb_stored_call_line
+storedLineFromRow imported and called      -> line 798, reading that alias
+the row type declares bb_stored_call_line  -> line 742
+```
+`addressLine0()` returns a line only when `kind === "call-site"`, so the row is
+reaching `deriveCallSiteAddress` and coming back as a declaration substitute
+*despite* the alias being present. The remaining inputs to that call are:
+
+```
+storedLine: storedLineFromRow(row)        <- the store's non-zero integer
+file:       sourceRel ?? ""               <- src_rel from the query's LEFT JOIN
+callerDeclaration: { line: sourceDeclLine }
+```
+**Prime suspect:** `file: sourceRel ?? ""`. If the row's source file is not
+resolved by the join, `sourceRel` is null, the address is handed an empty file,
+and a call-site address cannot be formed — so it degrades to the declaration
+substitute and the card prints "the index stores no call-site line for these",
+which is false and misattributes the cause. That single `?? ""` would explain all
+five failing predicates at once.
+
+**Confirm in one step:** log `{ storedLine, sourceRel, sourceDeclLine, address.kind }`
+at line 798 for the fixture's three usage rows during a run. If `address.kind` is
+`declaration-substitute` while `storedLine` is a number, the premise is proved and
+the fix is the empty-file fallback, not the store.
