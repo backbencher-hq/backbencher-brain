@@ -459,3 +459,37 @@ Everything else about this defect is now accounted for, including why the card
 prints a false cause: with `"not-stored"` the derivation faithfully reports "the
 index stores no call-site line", because the row it was handed genuinely carries
 no such property. **The lie is upstream of the sentence.**
+
+**RETRACTION — my elimination chain was wrong.** I reasoned from
+`classifyStoredLine` that the state must be `"not-stored"`, therefore the alias
+must be absent from the row. Reading the query that feeds line 798 refutes the
+premise:
+
+```sql
+SELECT r.id, r.relationship_type, ..., ${STORED_LINE_SELECT}, ...
+FROM brain_relationship r
+LEFT JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+...
+WHERE r.source_symbol_id = ? OR r.target_symbol_id = ?
+```
+
+`STORED_LINE_SELECT` **is** in that query, and the row type declares
+`bb_stored_call_line: number | null`. So the property is selected and the reader
+is called on it. The derivation should be seeing a real integer.
+
+That leaves the other half of the branch condition, which I had not examined:
+
+```ts
+const servesCallSite = callLine0 !== null && incoming && !declarationRow
+```
+
+**`incoming` is the untested term.** If these rows are being classified as NOT
+incoming, then even a perfectly real stored line never reaches the call-site path,
+the row falls through to the declaration location, and the card's substitute note
+and false cause follow from that — no missing property required.
+
+**Stop inferring; instrument.** Five round of hypotheses here have each been
+retired by reading one more layer. The next action is a single instrumented run
+that logs, for the fixture's three usage rows at line 798:
+`{ storedLine, typeof storedLine, callLine0, incoming, declarationRow, address.kind, sourceRel }`.
+That prints the actual decision instead of one more theory about it.
