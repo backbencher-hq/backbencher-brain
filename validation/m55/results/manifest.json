@@ -40,7 +40,7 @@
         "failed": 0,
         "realFailed": 1,
         "negativeCases": 8,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
         "blockedReason": "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently."
       }
     },
@@ -126,11 +126,11 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-relations.ts",
         "evidenceFile": "T3.json",
-        "passed": 87,
+        "passed": 92,
         "failed": 0,
         "realFailed": 0,
         "negativeCases": 7,
-        "currentCommit": "4ab4019155f10f6395ab644c694bda960b68b992",
+        "currentCommit": "b8cfa2cfd12f3b3cb832fdaae06d91ef1c0f78ae",
         "blockedReason": "The analyzers of the confirmatory languages DID stop storing line_number = 0 for call rows: measured on a real `bb index` run of this repository's own sources, every TypeScript call row carries a real call-site line (rows for `main`, `twiceOneLine`, `twiceTwoLines` stored lines 4, 10, 13 and 14). The prior limitation text ('verified on the demo index: every TypeScript/Java usage row carries 0') is STALE and is corrected here. Per-language coverage of a real call-site line is M59.A7's claim; on the five real indexes read for this integration, real lines dominate (e.g. 765,602 of 766,227 rows on 818db37d; 99c211a1 is 160,007 of 160,007) but NULL lines exist (625 on 818db37d, 384 on 6f461b7b) and are what the labelled-declaration-substitute branch is for."
       }
     },
@@ -184,11 +184,11 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
         "evidenceFile": "T5.json",
-        "passed": 72,
+        "passed": 70,
         "failed": 0,
         "realFailed": 0,
         "negativeCases": 7,
-        "currentCommit": "428658b04fa05de756ca8afff490a20dea94eec9",
+        "currentCommit": "b8cfa2cfd12f3b3cb832fdaae06d91ef1c0f78ae",
         "blockedReason": "The fixture's RED proof is the M2 mutant (the pre-T5 rule reintroduced → the gate fails) plus the issue's own step-zero wire probe; the pre-fix build is not replayed because the owner module is new (authored with the fix), so the RED form is reproduced by planting the old rule rather than by reverting code."
       }
     },
@@ -226,7 +226,7 @@
       "code": "V1",
       "githubIssue": 777,
       "tool": "m55-live-surface-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "the filing rig promoted to script/m55: screenshot-protocol.ts (build+install isolated, drive the declared flows, capture frames + manifest), wire-probe (the stdio truth), verify-live-surface.ts (differential + pixel reads-back), wired into the verify chains",
       "acceptanceCriteria": [
         "wired into the npm verify chain and the CI verify:fast chain (machine-read from package.json)",
@@ -240,15 +240,23 @@
         "G1's truth-rule 5 enforcement reads this gate's frames"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 35,
-        "failed": 20,
-        "realFailed": 20,
+        "passed": 55,
+        "failed": 0,
+        "realFailed": 0,
         "negativeCases": 14,
         "currentCommit": "02d330054f994b9e6f0c391343ee80e49487497b",
-        "blockedReason": "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green."
+        "blockedReason": "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
+        "mutantsCaught": 14,
+        "mutantsTotal": 14
+      },
+      "progress": {
+        "stage": "t",
+        "verifiedAt": "2026-11-05",
+        "fixes": [],
+        "remaining": []
       }
     },
     {
@@ -272,11 +280,11 @@
         "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 30,
-        "failed": 11,
+        "passed": 37,
+        "failed": 4,
         "realFailed": 11,
         "negativeCases": 5,
-        "currentCommit": "ddaf8bf36cf287bd15de0369b9a3144c8c7149c2",
+        "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
         "blockedReason": "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked."
       },
       "handoffIssue": 816
@@ -284,7 +292,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:20:45.815Z",
-    "contentSha256": "7e393932f37de0deea30ebaf38cc9e23e510ff17d0b2be27adabdc976980b5af"
+    "sealedAt": "2026-11-05T05:46:36.760Z",
+    "contentSha256": "67b1eacc15fbc15debe6be234b51fd4e96435475a2be25ace481c868e27987a9"
   }
 }

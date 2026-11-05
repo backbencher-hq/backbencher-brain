@@ -12,8 +12,8 @@
   "negatives": 0,
   "currentHost": "linux",
   "focusLeg": "pending — column count + active editor are asserted in-editor by V1's rig (closure requirement)",
-  "currentCommit": "32074f3beaa0ef2e2c18665b5cb54a58ff8c4550",
-  "sourceFingerprint": "436084c540c71dafbd557dd24ca90b5f3a100ed4286956fac3849dd39bf93549",
+  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
+  "sourceFingerprint": "733af0d23b0f946128ddded20cd503bf2f7afc16c2a209e4aa9ff37f4abe19d2",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-panel-placement.ts",
@@ -24,17 +24,15 @@
     "ide/vscode/src/panel-placement.ts"
   ],
   "workingTreeRelevantChanges": [
-    "ide/vscode/package.json",
-    "ide/vscode/src/extension.ts",
-    "script/m55/verify-relations.ts"
+    "ide/vscode/README.md"
   ],
   "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-11-05T00:13:21.969Z",
+  "generatedAt": "2026-11-05T14:25:39.030Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T00:13:21.970Z",
-    "contentSha256": "1a11d94e90f152e58b660af9b4b33472ceb89287d26c0ec367c20002ba6301d3"
+    "sealedAt": "2026-11-05T14:25:39.030Z",
+    "contentSha256": "a71862657f2edd7fff6fa2b864015e689f0e4efc10d1135ccdaceb6bfa237960"
   }
 }

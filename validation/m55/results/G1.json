@@ -3,34 +3,41 @@
   "code": "G1",
   "milestone": "M55",
   "status": "known-gap",
-  "checks": 15,
+  "checks": 17,
   "passed": 14,
   "failed": 0,
-  "realFailed": 1,
+  "realFailed": 3,
   "negativeCases": 8,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
   "workingTreeRelevantChanges": [
-    "docs/m55/M55-MASTER-PLAN.md",
     "docs/m55/VERDICT-PACK.md",
-    "script/m55/verify-governance.ts",
-    "validation/m55/results/G1.json",
+    "validation/m55/results/EVID-TREE.json",
+    "validation/m55/results/HOV-COVERAGE.json",
+    "validation/m55/results/HOV-REDTEAM.json",
     "validation/m55/results/P1.json",
     "validation/m55/results/T1.json",
     "validation/m55/results/T2.json",
     "validation/m55/results/T3.json",
     "validation/m55/results/T4.json",
+    "validation/m55/results/T5.json",
+    "validation/m55/results/T6.json",
     "validation/m55/results/V1-action-args.json",
+    "validation/m55/results/V1-blocked-path.json",
+    "validation/m55/results/V1-probe.json",
     "validation/m55/results/V1-status-panel.json",
+    "validation/m55/results/V1.json",
     "validation/m55/results/X1.json",
     "validation/m55/results/manifest.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-04T23:56:57.385Z",
+  "generatedAt": "2026-11-05T05:46:36.746Z",
   "ledger": {
     "issues": 9,
     "verified": [
       "T1",
+      "T2",
+      "T3",
       "T4",
       "T5",
       "P1",
@@ -45,12 +52,25 @@
     "rules": 6
   },
   "bar": {
-    "status": "blocked",
-    "reason": "BB_M55_SKIP_LADDER=1 — the ladder's own gates are run individually by the shared verify chain in this mode (declared, never a silent pass)",
-    "ladder": []
+    "status": "failed",
+    "reason": "m53-ladder exit=1, m53-closure exit=1",
+    "ladder": [
+      {
+        "gate": "m53-ladder",
+        "exit": 1,
+        "lastLine": "  ✓ m28-closure rc=0 :: VERIFIED (31/31 passed, 4 negative)"
+      },
+      {
+        "gate": "m53-closure",
+        "exit": 1,
+        "lastLine": "Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
+      }
+    ]
   },
   "failures": [
-    "G1: the M55 ledger is structurally valid at HEAD — evidence-stale:G1(docs/m55/M55-MASTER-PLAN.md,script/m55/verify-governance.ts); evidence-file-status:T2; evidence-file-failed:T2; evidence-file-status:T3; evidence-file-failed:T3; evidence-stale:T5(script/m26/graph-core.ts,src/lsp/cross_language_hover.ts,src/lsp/hover.ts)"
+    "G1: the M55 ledger is structurally valid at HEAD — evidence-commit-not-ancestor:G1",
+    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD —   ✓ m28-closure rc=0 :: VERIFIED (31/31 passed, 4 negative)",
+    "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
   ],
   "limitations": [
     "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
@@ -59,7 +79,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:56:57.396Z",
-    "contentSha256": "dfcab36e894a579088ca4337325dbcc9793613d59f0c0d702619ab6addf0da59"
+    "sealedAt": "2026-11-05T05:46:36.761Z",
+    "contentSha256": "058d1084706d77fdfff619cb9540e8eb906297514d5654be77d01befc4552052"
   }
 }

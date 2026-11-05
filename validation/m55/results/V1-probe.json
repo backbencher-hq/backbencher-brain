@@ -4,11 +4,11 @@
   "serverPath": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
   "blockedFlows": [],
   "flows": {},
-  "generatedAt": "2026-11-05T04:11:55.503Z",
+  "generatedAt": "2026-11-05T05:08:27.392Z",
   "reason": "declared fixture workspace is absent: $HOME/bb-demo-hub",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:11:55.504Z",
-    "contentSha256": "27f796b6365b152c393a1977023ea245994bd0c1e926d21d23de97ad4f08612e"
+    "sealedAt": "2026-11-05T05:08:27.392Z",
+    "contentSha256": "6a8b9fc1ec336f5c852fc177cec48ff75a5024ca2791ec06df05689b34d2058d"
   }
 }

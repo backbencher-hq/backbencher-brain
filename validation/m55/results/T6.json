@@ -13,16 +13,11 @@
     "caught": 8
   },
   "anchorDrift": 0,
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
-  "workingTreeRelevantChanges": [
-    "script/m55/verify-call-hierarchy.ts",
-    "script/m55/verify-evidence-tree-clean.ts",
-    "script/m55/verify-hover-coverage.ts",
-    "script/m55/verify-relations.ts"
-  ],
+  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-type-inference.ts",
   "evidenceFile": "T6.json",
-  "generatedAt": "2026-11-05T04:41:58.338Z",
+  "generatedAt": "2026-11-05T14:25:36.263Z",
   "volatileFields": [
     "generatedAt — the wall clock of the run",
     "bbSeal — seals generatedAt, so it moves with it",
@@ -32,8 +27,8 @@
     "machine.loadavg — the machine's load at run time"
   ],
   "fixture": {
-    "workspace": "/tmp/m55-t6-ws-ZCIh3o",
-    "projectId": "71ef7cf16cf07cb274b335e29636e2580eb449f2",
+    "workspace": "/tmp/m55-t6-ws-tXRihh",
+    "projectId": "144b7a59bcd01e6b270e0a9de7303bf6a5afe961",
     "symbols": 10
   },
   "observed": {
@@ -350,40 +345,40 @@
   "latency": {
     "perShape": {
       "ts-literal": {
-        "p95": 4.28620800000499,
-        "p50": 2.715492000002996,
+        "p95": 6.961842999997316,
+        "p50": 4.1574300000065705,
         "n": 200
       },
       "ts-void": {
-        "p95": 7.6959029999998165,
-        "p50": 5.880713999998989,
+        "p95": 9.855806999999913,
+        "p50": 4.805578999992576,
         "n": 200
       },
       "scala": {
-        "p95": 5.5118340000044554,
-        "p50": 3.5451150000008056,
+        "p95": 10.432245000003604,
+        "p50": 6.5019910000119125,
         "n": 200
       },
       "kotlin": {
-        "p95": 7.299406000005547,
-        "p50": 3.061361999978544,
+        "p95": 7.859224000014365,
+        "p50": 4.940724999993108,
         "n": 200
       },
       "over-ceiling": {
-        "p95": 12.04007200000342,
-        "p50": 5.390937000018312,
+        "p95": 10.041946999990614,
+        "p50": 4.034500999987358,
         "n": 200
       }
     },
     "loadAtStart": [
-      5.61,
-      6.27,
-      8.97
+      4.59,
+      4.24,
+      3.74
     ],
     "loadAtEnd": [
-      2.96,
-      4.87,
-      8.01
+      4.11,
+      4.16,
+      3.79
     ]
   },
   "machine": {
@@ -392,9 +387,9 @@
     "cpus": 8,
     "ramGB": 16.6,
     "loadavg": [
-      2.96,
-      4.87,
-      8.01
+      4.11,
+      4.16,
+      3.79
     ]
   },
   "failures": [],
@@ -408,7 +403,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:41:58.370Z",
-    "contentSha256": "fd6a2f30b01841fd773447a070151aede13acb7542f4c43711fecf4681e189e8"
+    "sealedAt": "2026-11-05T14:25:36.315Z",
+    "contentSha256": "9084308338d5245e12176753b1a767919f898fad050da517cdd6fa1aedba55f5"
   }
 }

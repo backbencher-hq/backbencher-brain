@@ -4,23 +4,16 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 41,
-  "passed": 36,
-  "failed": 5,
-  "realFailed": 5,
+  "passed": 37,
+  "failed": 4,
+  "realFailed": 4,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
   "workingTreeRelevantChanges": [
-    "docs/m55/M55-MASTER-PLAN.md",
-    "docs/m55/SCREENSHOT-PROTOCOL.md",
-    "docs/m55/VERDICT-PACK.md",
-    "script/m55/verify-call-hierarchy.ts",
-    "script/m55/verify-evidence-tree-clean.ts",
-    "script/m55/verify-hover-coverage.ts",
-    "script/m55/verify-relations.ts",
     "validation/m55/results/EVID-TREE.json",
     "validation/m55/results/HOV-COVERAGE.json",
     "validation/m55/results/HOV-REDTEAM.json",
@@ -35,14 +28,13 @@
     "validation/m55/results/V1-blocked-path.json",
     "validation/m55/results/V1-probe.json",
     "validation/m55/results/V1-status-panel.json",
-    "validation/m55/results/V1.json",
-    "validation/m55/results/X1.json"
+    "validation/m55/results/V1.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-05T04:05:09.931Z",
+  "generatedAt": "2026-11-05T05:08:51.835Z",
   "audit": {
-    "head": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+    "head": "24a48142f5d0b399a7a955354de9cce815726ee4",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
@@ -384,9 +376,8 @@
     "handoffIssue": 816
   },
   "failures": [
-    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=a0ed9eade700 realFailed=1 stale(docs/m55/M55-MASTER-PLAN.md,script/m55/verify-governance.ts)",
-    "C1: V1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=922b4f883f3c realFailed=1",
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=0dbafd74ef4f green=41/41 lane-changed=149",
+    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=a0ed9eade700 realFailed=1 stale(docs/m55/M55-MASTER-PLAN.md,docs/m55/SCREENSHOT-PROTOCOL.md,script/m55/verify-governance.ts)",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=0dbafd74ef4f green=41/41 lane-changed=150",
     "C2: G1's bar re-audit records the ladder gates it ran: []",
     "C2: G1's bar re-audit records every ladder gate green: []"
   ],
@@ -397,7 +388,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:05:09.941Z",
-    "contentSha256": "596ea423e7305f03e45b3842338e2a4eb06c42eb1e0abfd28ca48089f0d51025"
+    "sealedAt": "2026-11-05T05:08:51.838Z",
+    "contentSha256": "1525e4428c41ec0225cb58ffbba9c504691e29ab85c8c7c22de3fb36a7862014"
   }
 }

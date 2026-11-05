@@ -10,8 +10,8 @@
   "mutantsCaught": 7,
   "mutantsTotal": 7,
   "negatives": 23,
-  "currentCommit": "32074f3beaa0ef2e2c18665b5cb54a58ff8c4550",
-  "sourceFingerprint": "90e075fb2282b06262725135475d2ea3baab70750ff09fbfb5ea5c677a5a70f4",
+  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
+  "sourceFingerprint": "c290f812265d879af7f4e9ae00bdfb278eb81a4e0d43547ec306b8ab41f5d533",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-action-args.ts",
@@ -20,19 +20,17 @@
     "src/lsp/rich_hover.ts"
   ],
   "workingTreeRelevantChanges": [
-    "ide/vscode/package.json",
-    "ide/vscode/src/extension.ts",
-    "script/m55/verify-relations.ts"
+    "ide/vscode/README.md"
   ],
   "foundBy": "the V1 rig's own frames (flows 4 and 5 captured the error toast: validation/m55/frames/live-6/4-open-in-graph.png, 5-impact.png)",
   "owner": "ide/vscode/src/hover-action-args.ts (pure) + ide/vscode/src/hover-commands.ts (IO)",
   "verifierCommand": "npx tsx script/m55/verify-action-args.ts",
   "evidenceFile": "V1-action-args.json",
-  "generatedAt": "2026-11-05T00:14:20.622Z",
+  "generatedAt": "2026-11-05T14:25:45.880Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T00:14:20.623Z",
-    "contentSha256": "824d1fb3c30dcc7c565c0e054b00b1d01d52d1681595d415b4ea84c58d465eef"
+    "sealedAt": "2026-11-05T14:25:45.880Z",
+    "contentSha256": "d4979f501a5500a2926773a078ea9aa7f46f742a36829f9a319b962550901a97"
   }
 }

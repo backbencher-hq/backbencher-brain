@@ -10,8 +10,8 @@
   "mutantsCaught": 11,
   "mutantsTotal": 11,
   "negatives": 0,
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
-  "sourceFingerprint": "c9e65a30324e1691de84c64fd4c6b68e95fabc03b443a7ddf4d4aeddb759f556",
+  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
+  "sourceFingerprint": "e3b7ee609b0f25bb6f5336795bc203c4bfffab4ac4e437ccb32b8c83a56ed200",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-status-panel.ts",
@@ -20,27 +20,18 @@
     "ide/vscode/src/status-markup.ts"
   ],
   "workingTreeRelevantChanges": [
-    "ide/vscode/CHANGELOG.md",
-    "ide/vscode/README.md",
-    "ide/vscode/esbuild-extension.mjs",
-    "ide/vscode/package.json",
-    "ide/vscode/src/extension.ts",
-    "ide/vscode/src/status-model.ts",
-    "script/m55/verify-call-hierarchy.ts",
-    "script/m55/verify-evidence-tree-clean.ts",
-    "script/m55/verify-hover-coverage.ts",
-    "script/m55/verify-relations.ts"
+    "ide/vscode/README.md"
   ],
   "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
   "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
-  "generatedAt": "2026-11-05T04:09:38.256Z",
+  "generatedAt": "2026-11-05T14:25:43.861Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:09:38.257Z",
-    "contentSha256": "5e68b5c17a0cd5c56287819976e58eedf6219220f981a222b16e10436c0a0ce1"
+    "sealedAt": "2026-11-05T14:25:43.861Z",
+    "contentSha256": "b5c426e32f5940cc4066bc519a4dddb7779734ee0f0160f0c3119f367766850b"
   }
 }

@@ -10,8 +10,8 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negatives": 0,
-  "currentCommit": "32074f3beaa0ef2e2c18665b5cb54a58ff8c4550",
-  "sourceFingerprint": "f60a6f8800fcc7939f532fdd530d883452c2b95aaa7582fc26ff1e2752cb4c1b",
+  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
+  "sourceFingerprint": "f2582b23ff84e8fd7df542fc0e2abd7e3ff9800ab809ec6a726eb318b24df64a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-identity.ts",
@@ -22,19 +22,14 @@
     "script/m55/lsp-wire.ts",
     "script/m55/t1-fixture.ts"
   ],
-  "workingTreeRelevantChanges": [
-    "ide/vscode/src/extension.ts",
-    "script/m55/verify-hover-coverage.ts",
-    "script/m55/verify-relations.ts",
-    "src/lsp/call_hierarchy.ts"
-  ],
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-identity.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-11-05T00:23:22.837Z",
+  "generatedAt": "2026-11-05T14:22:10.702Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T00:23:22.838Z",
-    "contentSha256": "d2aaa1e75f4a82b8350595c2e908ce9953b0687d9d26d18a0a34754409696d55"
+    "sealedAt": "2026-11-05T14:22:10.703Z",
+    "contentSha256": "e938e6ad9d09bf959235f0a847788c4d4b5d827b68b1d955ef16b88c36cab9b1"
   }
 }
