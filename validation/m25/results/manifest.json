@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7e2d721695941830af182f06e33c7e7b397cea36",
+        "currentCommit": "1776da3ad121cda0e761f07712435c501b029ae7",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 86,
         "failed": 0,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "2 check(s) failed: G1: ledger status matches issue states (mechanical closed/open); G1: all 11 issue entries are unique and structurally complete — the relevant tree was clean at measure time"
       }
     },
     {
@@ -235,7 +235,7 @@
           "E5: fresh marker clears the badge"
         ],
         "negativeCases": 4,
-        "blockedReason": "in-editor run threw: Error: Test run failed with code 1"
+        "blockedReason": ""
       }
     },
     {
@@ -390,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T23:05:40.911Z",
-    "contentSha256": "eb87140ab69fa53a868380b9430bfcd7e9323406a3fa8ab35e2348e4bd06fa7a"
+    "sealedAt": "2026-11-05T23:25:19.444Z",
+    "contentSha256": "3447c63615af8a80dd825aeb555cf5c0bc7c6ef9f19dda7b80861d4e45ebd4d4"
   }
 }
