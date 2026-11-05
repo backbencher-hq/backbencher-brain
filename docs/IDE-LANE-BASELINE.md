@@ -434,3 +434,28 @@ column is a non-zero integer. So exactly one of these is true:
 `typeof row[bb_stored_call_line]` and `classifyStoredLine(row[bb_stored_call_line])`
 at line 798 for the fixture's usage rows. That distinguishes (1) from (2) and is
 the whole remaining search.
+
+**Answer, by elimination from `classifyStoredLine` alone.** The card's note is
+`ADDRESS_NOTES.substitute`, and `deriveCallSiteAddress` emits the `declaration`
+branch only when `state !== "unusable"` AND the caller's declaration line is
+`real`. The store's value is a non-zero integer, which `classifyStoredLine` maps
+to `"real"` — so:
+
+- it is **not** `"real"`, or the card would be a call site;
+- it is **not** `"unusable"`, or the note would be `ADDRESS_NOTES.unusable` and
+  there would be no declaration substitute at all.
+
+Therefore the state the derivation actually sees is **`"not-stored"`** — i.e.
+`storedLineFromRow(row)` returned `null`/`undefined`, i.e. **`row[bb_stored_call_line]`
+is absent on the object that reaches line 798**, while the query demonstrably
+selects it and the database demonstrably holds a non-zero integer.
+
+So this is hypothesis (1), not (2): not a type problem — a **missing property**.
+The row that reaches the address derivation is not the row the query produced, or
+it is a rebuilt object that omits the alias. The search is now "what object is
+passed to `deriveCallSiteAddress` at line 798" — one variable, one line.
+
+Everything else about this defect is now accounted for, including why the card
+prints a false cause: with `"not-stored"` the derivation faithfully reports "the
+index stores no call-site line", because the row it was handed genuinely carries
+no such property. **The lie is upstream of the sentence.**
