@@ -277,3 +277,31 @@ a comparison to accommodate an off-by-one is how a gate stops being able to fail
 **Next step:** print the raw `CardLink.key` and the raw stored `containmentRowGrounds[].key` side by side with their base conventions, and see which one moves
 when the declaration line moves. One of them is wrong and the gate is the only
 thing that noticed.
+
+### 14.1 What is left in `m42-rich-hover` (70/71): the oracle, not the card
+
+The card is correct and both section laws pass. The one red check is `H2/M`, the
+meta-check that the mutant oracle HOLDS on the correct component — it fails
+because five of the oracle's own predicates are still written to the PRE-Law-A
+world, the same mistake §14 records on the section law:
+
+```
+position:false  containmentInItsOwnBlock:false  label:false
+sectionUsage:false  sectionConnected:false      (count/edge/sectionContainment: true)
+```
+
+`position` is the clearest: it requires the usages links to include
+`App.java:${appCallLine - 1}:0` — a **line-start column 0** — while the component
+correctly serves the precise call site `App.java:12:23`. Law A (the source-side
+address rule) is what moved every link from a stored line-start to a real call
+site, so a predicate that pins column `0` on a stored line is asserting the defect
+the rule removed.
+
+**Do not fix this by loosening the predicates.** They are the thing that convicts
+M4/M6/M7, and an oracle that stops convicting is worse than a red gate. The edit
+is to re-state each predicate in the address rule's terms and re-check which
+mutants each one catches — `containmentInItsOwnBlock`'s comment already records
+one precedent where the old one-sided form went false on a CORRECT component and
+"marked every mutant caught for free".
+
+This is the last mile of the last IDE-lane product gate.
