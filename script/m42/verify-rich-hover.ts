@@ -271,6 +271,17 @@ function groundOf(row: GroundInput): RowGround {
       declarationKey = `${far.path}:${lsp.start.line}:${lsp.start.character}`
     }
   }
+  const declaration = isDeclarationRelationship(row.relType)
+  // LAW A (the source-side address rule): a DECLARATION row opens the far end's
+  // DECLARATION, not the line the row happens to store. MEASURED DEFECT this
+  // closes: a `contains` row stores line 6 (1-based) while the component served
+  // the declared identifier at 0-based line 5, column 6 — the correct position
+  // under Law A — and comparing against the stored key made R4-LAW-CONTAIN report
+  // 0/1 on a card that was right. The gate had the correct position in hand as
+  // `declarationKey` and chose `stored` regardless. A non-declaration row keeps
+  // the stored line, because for a usage the stored call-site line IS the
+  // governing position.
+  const key = declaration ? (declarationKey ?? stored) : (stored ?? declarationKey)
   const branch: RowGround["branch"] = stored !== null ? "stored-line" : declarationKey !== null ? "declaration-substitute" : "unpositionable"
   return {
     id: row.id,
@@ -278,8 +289,8 @@ function groundOf(row: GroundInput): RowGround {
     relPath: far.path ?? "",
     farName: far.name ?? "",
     farLine1: typeof far.lineStart === "number" ? far.lineStart : null,
-    declaration: isDeclarationRelationship(row.relType),
-    key: stored ?? declarationKey,
+    declaration,
+    key,
     branch,
   }
 }

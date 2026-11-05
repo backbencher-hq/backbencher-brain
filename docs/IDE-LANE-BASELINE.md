@@ -222,8 +222,22 @@ Both defects were measured and fixed by the vscode-client lane:
 
 ## 14. Open decision: what position a `contains` link must open
 
-**Status: unresolved. It is the last thing between `m42-rich-hover` and green.**
-Recorded with its measurements so it is decided on facts.
+**Status: RESOLVED — the gate was wrong, not the component.**
+
+**Resolution.** `groundOf()` already computed the far end's declaration position
+(`declarationKey`, LSP 0-based, identifier column) but then chose `stored` for
+every row: `key: stored ?? declarationKey`. Under Law A a declaration row's
+governing position IS the declaration, so the gate was comparing a correct card
+against the wrong reference. The grounding now reads
+`declaration ? (declarationKey ?? stored) : (stored ?? declarationKey)` — a usage
+row keeps the stored call-site line (that IS its governing position), a
+declaration row uses the declaration. Measured: `m42-rich-hover` 68/71 → **70/71**,
+and the oracle's own `sectionContainment` predicate flipped to true.
+
+**The rule this leaves behind:** when a card is right and a gate says it is wrong,
+check which REFERENCE the gate chose before touching either. Every comparison has
+two sides and only one of them was reviewed.
+
 
 Two laws govern the `contained` block of a hover card:
 
@@ -242,7 +256,7 @@ rendered link     App.java:5:6
 stored row key    App.java:6:0
 callSite record   {"kind":"declaration","file":"…/App.java","line":6,"note":"this is the calling symbol's declaration, not the call site"}
 ```
-**These disagree by a whole LINE, not by a column.** An earlier reading of this
+**These disagreed by a whole LINE, not by a column.** An earlier reading of this
 table — that `5` and `6` were the same line in different bases — was tested and
 is WRONG: narrowing the comparison to `file:line` still reports `0/1`, so the two
 keys name different lines under whatever base each one uses.
