@@ -6,7 +6,7 @@
 // (.tsx); the code is shared and only the wasm grammar differs.
 // RELATIONSHIP TYPES IT EMITS — TWELVE of the canonical vocabulary: the ten stored values
 // (calls, uses, contains, imports, exports, references, extends, implements, overrides,
-// instantiates) plus the two the owner admitted BECAUSE the ten could not spell them honestly —
+// instantiates) plus two additional types the canonical ten could not spell honestly —
 // `decorates` (a decorator is applied TO a declaration; `references` claimed the body mentioned it)
 // and `renders` (a JSX element renders a component; `uses` claimed a mention). The remaining two
 // of the fourteen are NOT emitted, and they are NOT the same kind of absence — stating that they
