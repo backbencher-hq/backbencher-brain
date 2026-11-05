@@ -3,7 +3,7 @@
   "milestone": "M28",
   "githubMilestone": 39,
   "title": "M28: The Union (MCP + agent)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m28/M28-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 623,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M27 completion bar re-verified inside this gate before any M28 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,12 +29,12 @@
         "Evidence persisted at validation/m28/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "8c6d5da1f14e5c0df184134276cbfb994c780dc7",
+        "status": "verified",
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 4,
+        "passed": 74,
+        "failed": 0,
         "negativeCases": 14,
         "blockedReason": "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify MCP tools or annotations."
       }
@@ -56,7 +56,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
         "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
         "evidenceFile": "T1.json",
         "passed": 26,
@@ -89,7 +89,7 @@
         "failed": 0,
         "mutantsCaught": 6,
         "mutantsTotal": 6,
-        "currentCommit": "df6bc516b51bf4b33f734faf5bf2d99587af4ad2",
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
         "blockedReason": "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."
       }
     },
@@ -114,9 +114,46 @@
         "evidenceFile": "A1.json",
         "passed": 50,
         "failed": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
-        "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648"
+        "mutantsCaught": 7,
+        "mutantsTotal": 7,
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
+        "negativeCases": [
+          {
+            "name": "A1 negative control: the pre-fix independent-halves rule disagrees with the joint answer (it would have claimed a render)",
+            "caught": true,
+            "detail": "pre-fix rule = nameMatched && pathMatched"
+          },
+          {
+            "name": "A1 negative control: a renderer that preserved newlines would produce a second bullet from the hostile body",
+            "caught": true,
+            "detail": "2 bullets unflattened"
+          },
+          {
+            "name": "A1 mutant: a handler that copies the caller's author class is caught (row must stay 'agent')",
+            "caught": true,
+            "detail": "row=human"
+          },
+          {
+            "name": "A1 mutant: a location key that ignores the path is caught (two files must be two rows)",
+            "caught": true,
+            "detail": "rows=1"
+          },
+          {
+            "name": "A1 mutant: a handler that ANDs the two independent halves is caught by the joint rule",
+            "caught": true,
+            "detail": "editor=true"
+          },
+          {
+            "name": "A1 mutant: a widened body bound is caught by the declared refusal",
+            "caught": true,
+            "detail": "accepted=true mentionsLimit=false"
+          },
+          {
+            "name": "A1 mutant: a disabled control-character refusal is caught",
+            "caught": true,
+            "detail": "isError=false"
+          }
+        ]
       }
     },
     {
@@ -140,11 +177,37 @@
         "evidenceFile": "A2.json",
         "passed": 23,
         "failed": 0,
-        "mutantsCaught": 5,
-        "mutantsTotal": 5,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
         "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload",
-        "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
-        "blockedReason": "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing"
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
+        "blockedReason": "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing",
+        "negativeCases": [
+          {
+            "name": "A2 mutant: author-label-dropping renderer is caught by the label rule",
+            "caught": true
+          },
+          {
+            "name": "A2 mutant: badge attached to a nameless node is rejected by the pairing rule",
+            "caught": true
+          },
+          {
+            "name": "A2 mutant: label/author disagreement is rejected by the pairing rule",
+            "caught": true
+          },
+          {
+            "name": "A2 mutant: escaper-skipping renderer is caught (real escaper transforms, real section contains only the escaped form)",
+            "caught": true
+          },
+          {
+            "name": "A2 mutant: annotation-less model renders NO badge, annotated model renders exactly one author-labeled badge (real DOM rules)",
+            "caught": true
+          },
+          {
+            "name": "A2 mutant: lying in-editor driver is caught by the assertion set",
+            "caught": true
+          }
+        ]
       }
     },
     {
@@ -170,7 +233,7 @@
         "failed": 0,
         "mutantsCaught": 2,
         "mutantsTotal": 2,
-        "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
         "blockedReason": "V1: union claim cites the real U1 numbers —  verified via [U1.json](../../validation/m28/results/U1.json) (30/30 checks, 4/4 mutants).\n\n## Annotations (D-3/D-6)\n\nProvenance is schema-enforced (`author_cla"
       }
     },
@@ -178,7 +241,7 @@
       "code": "X1",
       "githubIssue": 629,
       "tool": "closure-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v4 completion-bar audit with negative probes (differential equality, provenance enforcement, no silent legs, M27 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -190,21 +253,21 @@
         "Evidence persisted at validation/m28/results/X1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m28/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 29,
-        "failed": 2,
+        "passed": 31,
+        "failed": 0,
         "negativeCases": 4,
-        "currentCommit": "7d7a2ed8657a1ec321b85214ca1e56904812c648",
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
         "blockedReason": "X1: A2 verifier passes at HEAD — exit=1"
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-03T16:21:32.914Z",
-    "contentSha256": "48fc06a392d1081f438033ccf0dd4b8b65f2f4cc124ce318e54db44e28f9c7bc"
+    "sealedAt": "2026-11-05T23:36:57.861Z",
+    "contentSha256": "c40ddec6f0e2d49cdea8fc36018a855226d0d36dfb0f4b0d4f63c385165412a1"
   },
-  "updatedAt": "2026-11-03T16:21:32.914Z"
+  "updatedAt": "2026-11-05T23:36:57.861Z"
 }
