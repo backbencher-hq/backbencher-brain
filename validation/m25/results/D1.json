@@ -2,21 +2,18 @@
   "issue": "506",
   "code": "D1",
   "milestone": "M25",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 22,
-  "passed": 20,
-  "failed": 2,
-  "failures": [
-    "G1: listing has zero banned-vocabulary violations — banned:\\bcomplete(ly|d|ness)?\\b",
-    "G2: listing claim levels == ledger + per-fork evidence (zero drift) — antigravity: claimed I4 without a verified pinned run; antigravity: blocked in evidence but not declared blocked on the listing"
-  ],
+  "passed": 22,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 4,
-  "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
-  "readmeFingerprint": "6657be437507f98557e8fa7f11cc85c42e08255fa1388e6e37c84d0960d5cde9",
+  "currentCommit": "59f30ca2bf5068b87fdb968010bc9d181a389a8f",
+  "readmeFingerprint": "cc53b8b47924689b5907a9a77b5b1aac928cedf108b87d68a970f98030b4e524",
   "listingPath": "ide/vscode/README.md",
   "verifierCommand": "npx tsx script/m25/verify-listing.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-11-05T13:34:12.888Z",
+  "generatedAt": "2026-11-05T16:50:19.286Z",
   "limitations": [
     "The lint is lexical: it proves the listing avoids banned phrasing, not that every sentence is strategically perfect (that word is banned too).",
     "Claim drift is checked against the ledger and F-*.json evidence at run time; a re-run after any evidence change re-derives the allowed claims.",
@@ -24,7 +21,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T13:34:12.889Z",
-    "contentSha256": "ac4e4fa8c9aee262f7ecb4ef94a0667aa1ee88087442c1b1d38d0bb305963986"
+    "sealedAt": "2026-11-05T16:50:19.286Z",
+    "contentSha256": "70df85e299ad7f8ca44c6a0817522f8757a40abd03d0337e98d8fc366da355c5"
   }
 }
