@@ -357,3 +357,23 @@ substitution with a sentence that is untrue.
 **Next action:** find why the collector classifies these rows as having no stored
 line when `brain_relationship.line_number` is set for them — the M62 owner is
 `STORED_LINE_COLUMN`, so a row reading another column would produce exactly this.
+
+**The two obvious causes are ruled out.** `STORED_LINE_IS_ABSENT_SQL` in
+`src/intelligence/graph/line-address.ts` treats a stored line as absent when it is
+`NULL` **or `0`**; a stored line past the end of its file is the other way a real
+row becomes unresolvable. Neither applies here:
+
+```
+App.java      18 lines      stored calls line 15, uses line 16   -> in range
+Main2.java     8 lines      stored calls line  6                 -> in range
+```
+and the fixture query showed every `calls`/`uses`/`contains` row has a non-zero
+integer `line_number` with a real `source_symbol_id`. Only `exports` carry `NULL`.
+
+So the component is converting these rows to **declaration substitutes for a third
+reason**, and the sentence it prints — "the index stores no call-site line for
+these" — is false in all three cases. That makes this a `src/lsp/rich_hover.ts`
+defect with a very small search space: the row IS stored, the line IS exact, the
+file IS long enough, and the card still substitutes. The suspect is the collector's
+own classification (`servesCallSite` / `incoming` / `declarationRow` and the
+`addressLine0(address)` result), not the store and not the SQL.
