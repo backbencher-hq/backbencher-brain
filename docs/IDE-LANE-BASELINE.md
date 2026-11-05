@@ -328,3 +328,32 @@ row's `line_number` (and `source_symbol_id`) for those two relationships and rea
 which of the two statements is lying. The fixture index is rebuilt in a temporary
 directory per run, so inspect it during a run rather than looking for it
 afterwards.
+
+**ANSWERED — the store is the lie's victim, not its source.** I indexed the H2
+fixture into my own isolated `BB_DATA_DIR` and read the rows:
+
+```
+rel        line_number   source_symbol_id
+calls      6, 15         set
+uses       16            set
+contains   4, 7, 13      set
+exports    3, 3, 6, 12   NULL      <- only exports have no stored line
+```
+
+The store **does** hold call-site lines for `calls`, `uses` and `contains`. So:
+
+- `doubleGrounds`' `branch: "stored-line", key App.java:14:0` is **right** — stored
+  line 15 is 0-based 14. The gate is telling the truth.
+- The **card is wrong**, and not merely in its link: it *tells the user* "the index
+  stores no call-site line for these, so each opens the referencing declaration"
+  while the index stores exactly that line. A surface stating a false fact about
+  the index is the precise defect class this campaign exists to remove.
+
+So `m42-rich-hover`'s last red is a **component defect in `src/lsp/rich_hover.ts`**,
+not gate staleness and not a law conflict: the collector is serving the declaration
+substitute for rows that have a real stored line, and then explaining the
+substitution with a sentence that is untrue.
+
+**Next action:** find why the collector classifies these rows as having no stored
+line when `brain_relationship.line_number` is set for them — the M62 owner is
+`STORED_LINE_COLUMN`, so a row reading another column would produce exactly this.
