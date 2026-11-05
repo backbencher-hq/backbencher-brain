@@ -3,7 +3,7 @@
   "milestone": "M26",
   "githubMilestone": 26,
   "title": "The Graph (IDE Program v2)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m26/M26-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-09-03T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 508,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M26 ledger, closure gate, verify wiring; standing M25 completion-bar re-audit automated; contract vocabulary lint over M26 artifacts",
       "acceptanceCriteria": [
         "ledger + gate + verify wiring as in M24/M25 G1",
@@ -39,12 +39,12 @@
         "clean rerun recorded"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "b3ba88e1279cc3e7d470eb400d821ed657e4ffe0",
+        "status": "verified",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m26/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 66,
-        "failed": 4,
+        "passed": 70,
+        "failed": 0,
         "negativeCases": 10,
         "blockedReason": "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features."
       }
@@ -271,7 +271,7 @@
         "negativeCases": 3,
         "mutantsCaught": 3,
         "mutantsTotal": 3,
-        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
+        "currentCommit": "7c37fd811df07338880af653407f34ba720dc951",
         "blockedReason": "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
         "mutants": [
           {
@@ -355,7 +355,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T22:40:17.660Z",
-    "contentSha256": "d8b5a076bec85f2b1b08b846874a41deec93d2181b24e5dd82930e0548d73008"
+    "sealedAt": "2026-11-05T23:13:18.812Z",
+    "contentSha256": "8f5ae68c9664f5197f6e7cce3291719a439e1e6e45e1bad6695a037bea9e24ff"
   }
 }

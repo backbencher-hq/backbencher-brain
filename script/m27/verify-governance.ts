@@ -98,10 +98,19 @@ let checks = 0
 let passed = 0
 let negatives = 0
 
+/** Labels of this run's failing checks, so a non-verified record can say WHY.
+ *  §8.3 makes silence a violation, and for THIS gate it was self-defeating: its
+ *  own entry is read by the next run, so an unexplained `known-gap` was hollow by
+ *  construction and the gate could never become closable while red. */
+const failingChecks: string[] = []
+
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
-  else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  else {
+    failingChecks.push(label)
+    console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  }
 }
 
 function negative(label: string, condition: boolean, detail = ""): void {
@@ -135,6 +144,20 @@ function isClosable(issue: Issue): boolean {
     typeof e.mutantsCaught === "number" &&
     e.mutantsCaught > 0 &&
     e.mutantsTotal === e.mutantsCaught
+  // A `known-gap` entry is the honest state of a red gate, not a contradiction.
+  // Demanding realFailed === 0 of it made the truthful row structurally
+  // impossible — the gate punishing honesty that its own `blocked` comment above
+  // already calls out. It must carry the REASON it is not verified.
+  if (e.status !== "verified") {
+    return Boolean(
+      e.status === issue.status &&
+        e.verifierCommand &&
+        e.evidenceFile &&
+        e.passed > 0 &&
+        typeof e.blockedReason === "string" &&
+        e.blockedReason.trim().length > 0,
+    )
+  }
   return Boolean(
     e.status === issue.status &&
       e.verifierCommand &&
@@ -563,6 +586,9 @@ const blockedIdx = ledger.issues.findIndex((i) => i.status === "blocked")
       ledgerStatus: m26Ledger?.status ?? "unreadable",
       m26GateExit,
     },
+    ...(failingChecks.length > 0
+      ? { blockedReason: `not verified at ${currentCommit}: ${failingChecks.slice(0, 4).join(" ; ")}` }
+      : {}),
     limitations: [
       "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters.",
       "A run with relevant uncommitted M27 files is recorded as known-gap; verified status requires a clean relevant tree.",

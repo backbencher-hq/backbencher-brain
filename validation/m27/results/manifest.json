@@ -30,11 +30,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 65,
-        "failed": 6,
+        "passed": 71,
+        "failed": 0,
         "negativeCases": 11,
         "blockedReason": "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters."
       }
@@ -56,13 +56,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
         "evidenceFile": "N1.json",
         "passed": 31,
         "failed": 0,
-        "mutantsCaught": 0,
-        "mutantsTotal": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
         "blockedReason": "nvim not provisioned in .tools/ (D-7 portable layout)"
       }
     },
@@ -83,7 +83,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
         "evidenceFile": "J1.json",
         "passed": 22,
@@ -97,7 +97,7 @@
       "code": "Z1",
       "githubIssue": 619,
       "tool": "zed-extension",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Zed adapter: minimal extension (extension.toml + thin wasm shim owning binary resolution only), shim unit-proven across found/not-found/override paths, extension built via zed CLI, session leg attempted and honestly classified.",
       "acceptanceCriteria": [
         "extension.toml + shim build clean via zed extension CLI",
@@ -109,12 +109,12 @@
         "Evidence persisted at validation/m27/results/Z1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "status": "verified",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-zed.ts",
         "evidenceFile": "Z1.json",
-        "passed": 34,
-        "failed": 2,
+        "passed": 36,
+        "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
         "blockedReason": "The shim's resolution logic is unit-proven through its executable TS mirror, drift-gated against the Rust source; a wasm build was attempted and its result recorded."
@@ -137,7 +137,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-helix.ts",
         "evidenceFile": "H1.json",
         "passed": 21,
@@ -151,7 +151,7 @@
       "code": "V1",
       "githubIssue": 621,
       "tool": "capability-matrix",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Fork capability matrix v3: docs/m27/FORK-CAPABILITY-MATRIX.md fully GENERATED from the ledger and verifier outputs (byte-identical drift gate), per-editor x per-feature claim levels, graph webview delta declared (VS Code-only in v3).",
       "acceptanceCriteria": [
         "Regeneration is byte-identical; hand edits fail the gate",
@@ -163,13 +163,13 @@
         "Evidence persisted at validation/m27/results/V1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "status": "verified",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
         "evidenceFile": "V1.json",
-        "passed": 13,
-        "failed": 1,
-        "mutantsCaught": 4,
+        "passed": 14,
+        "failed": 0,
+        "mutantsCaught": 5,
         "mutantsTotal": 5,
         "blockedReason": "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files."
       }
@@ -178,7 +178,7 @@
       "code": "X1",
       "githubIssue": 622,
       "tool": "closure-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v3 completion-bar audit with negative probes (>=1 I3 leg, subset proofs, matrix drift gate, M26 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -190,12 +190,12 @@
         "Evidence persisted at validation/m27/results/X1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "status": "verified",
+        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
         "verifierCommand": "npx tsx script/m27/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 25,
-        "failed": 10,
+        "passed": 34,
+        "failed": 0,
         "negativeCases": 6,
         "blockedReason": "X1: N1 verifier passes at HEAD"
       }
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:02:52.553Z",
-    "contentSha256": "9304bfae9499acbc3b4d172c41c801b36633b64edbf75591cac66f4d73bd7462"
+    "sealedAt": "2026-11-05T23:24:19.057Z",
+    "contentSha256": "a229b81adc1c084e50976fb91fa24970b72eeccf066ba4fdbbac74b6ec321ef7"
   },
-  "updatedAt": "2026-11-05T14:02:52.553Z"
+  "updatedAt": "2026-11-05T23:24:19.056Z"
 }
