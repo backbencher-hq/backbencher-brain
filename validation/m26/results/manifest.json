@@ -271,7 +271,7 @@
         "negativeCases": 3,
         "mutantsCaught": 3,
         "mutantsTotal": 3,
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "currentCommit": "32e23ec9da68b138aef11e92d4fca1b40d138ce8",
         "blockedReason": "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate."
       }
     },
@@ -308,7 +308,7 @@
       "code": "X1",
       "githubIssue": 516,
       "tool": "closure-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Full mutation set over the graph surface + v2 completion-bar audit at current HEAD; clean rerun",
       "acceptanceCriteria": [
         "per-mutant records",
@@ -321,20 +321,21 @@
         "ledger clean"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m26/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 48,
+        "passed": 50,
         "failed": 2,
         "negativeCases": 3,
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
-        "blockedReason": "X1: W3 verifier passes at HEAD"
+        "currentCommit": "32e23ec9da68b138aef11e92d4fca1b40d138ce8",
+        "blockedReason": "X1: W3 verifier passes at HEAD",
+        "checks": 50
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:53:30.949Z",
-    "contentSha256": "75c63c246ed5c7803fc637d8ec0a2fce4a05192d6a71c6f6d395b6b7b32be8ae"
+    "sealedAt": "2026-11-05T22:06:48.537Z",
+    "contentSha256": "ab7f07670ffe8c4deb7ea3586a77967839bda9ea984a00650c021db03682396d"
   }
 }
