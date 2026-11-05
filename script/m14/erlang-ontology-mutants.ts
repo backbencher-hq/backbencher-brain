@@ -137,7 +137,7 @@ const MUTANTS: Mutant[] = [
   {
     id: "ontology/extends-from-type-dependency",
     reads: "A type declaration whose body APPLIES another type is a subtype relation, so it is an `extends` edge and not a `references` one.",
-    measured: "2,992 such sites in 279 corpus files. In Erlang type syntax a bare unquoted atom is the ATOM LITERAL of that name (`-type day() :: monday | tuesday.` declares two literals) and a map/record field key is a DECLARATION, so an applied name is a type USE. The pre-ER3 rule counted every bare atom and produced 4,043 OTP / 244 rebar3 type-dependency edges whose own site line does not apply the name it cites; after the narrowing both are 0 (validation/m14/results/erlang-er3-corpus-census.json). Relabelling them `extends` would put a fabricated edge on every record field key and every atom literal.",
+    measured: "2,992 such sites in 279 corpus files. In Erlang type syntax a bare unquoted atom is the ATOM LITERAL of that name (`-type day() :: monday | tuesday.` declares two literals) and a map/record field key is a DECLARATION, so an applied name is a type USE. The pre-ER3 rule counted every bare atom and produced 4,043 OTP / 244 rebar3 type-dependency edges whose own site line does not apply the name it cites; after the narrowing both are 0 (validation/m14/results/archive/erlang-er3-corpus-census.json). Relabelling them `extends` would put a fabricated edge on every record field key and every atom literal.",
     transform: (r) => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) =>

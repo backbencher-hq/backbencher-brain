@@ -12,12 +12,17 @@
  *   - banned-vocabulary lint over every string in the artifact (contract §1)
  *   - deterministic output: sorted keys + commit-time timestamp =>
  *     regeneration at the same HEAD is byte-identical (drift = tampering)
+ *   - MEASUREMENT_RECORDS: a NAMED allowlist of canonical results files that are live MEASUREMENT
+ *     REGISTERS with consumers rather than schemaVersion-2 claims. They are validated as parseable
+ *     JSON only, listed by name in `validate` output, and never treated as claims. The list is
+ *     exported so any reader can audit it; adding a file requires naming its role and consumer.
  *
  * CLI:
  *   bun run script/m14/evidence-harness.ts validate            # gate all results
  *   bun run script/m14/evidence-harness.ts selftest            # prove rejections work
  */
 import * as fs from "fs"
+import * as os from "os"
 import * as path from "path"
 import { execSync } from "child_process"
 import { canonicalizeKeys, sealFor } from "../lib/evidence.ts"
@@ -27,6 +32,43 @@ const RESULTS_DIR = path.join(ROOT, "validation", "m14", "results")
 
 export const CLAIM_LEVELS = ["L0", "L1", "L2", "L3", "L4", "L5"] as const
 export type ClaimLevel = (typeof CLAIM_LEVELS)[number]
+
+/**
+ * MEASUREMENT_RECORDS — the NAMED allowlist of canonical `validation/m14/results/*.json` files that
+ * are MEASUREMENT REGISTERS, not schemaVersion-2 claims.
+ *
+ * The gate's contract is "claims only": every schemaVersion-2 artifact is written by `emitEvidence`
+ * and carries an issueId/claimLevel/checks/limitations envelope. Some records live in the same
+ * directory because a LIVE CONSUMER reads or writes them at this canonical path (a lane declaration,
+ * the fleet guard, the docs gate, a merge source), so relocating them breaks the consumer, and
+ * inventing a claim envelope around a measurement would fabricate the claim. They are listed here
+ * BY BASENAME with the role, the consumer and why they are not claims; `validateFile` accepts them
+ * as parseable JSON only (shape-free), and `validate` prints each one by name and counts it valid.
+ * This is a visible adjudicated allowlist, never a silent skip: deleting an entry turns that file
+ * back into a schemaVersion error, and adding one requires writing its reason here.
+ */
+export const MEASUREMENT_RECORDS: Record<string, string> = {
+  "M14.0.F5.lane-measurements.json":
+    "per-lane differential verdict record written by differential.ts (a scoped run MERGES into it) and read by verify-fleet.ts to decide every lane's differential status; missing/unexplained counts + pin disposition, no claim envelope.",
+  "analyzer-docs.json":
+    "repo-wide analyzer-doc coverage measurement written by verify-analyzer-docs.ts (audit:analyzer-docs) and quoted by docs/analyzers; per-page section/cell counts, no claim envelope.",
+  "inbound-fleet.json":
+    "per-lane inbound census memory written by verify-fleet.ts; the partition of declared edges per lane, a measurement, not a claim.",
+  "mutants-fleet.json":
+    "fleet mutation-battery result (per-lane caught/survived/survivor ids) written by the battery and read by verify-fleet.ts; a count record, no claim envelope.",
+  "go-baseline-chunks.json":
+    "per-chunk go-population baseline measurements + aggregate written by go-baseline-driver.ts; a row record, no claim envelope.",
+  "fsharp-error-repro.json":
+    "the 24 minimal fsharp reproducers written by the lane's record instrument and read by script/m60/fsharp-0312-repro-battery.ts as its test input; measurement input, not a claim.",
+  "go-whole-population-closure.json":
+    "go whole-population arm closure (slice list + eleven-term arithmetic) written by merge-arm-slices.ts via go-arm-runner.sh and read by go-declaration.ts; a measurement, not a claim.",
+  "kotlin-whole-population-closure.json":
+    "kotlin whole-population arm closure written by merge-arm-slices.ts via kotlin-arm-runner.sh and read by kotlin-declaration.ts; a measurement, not a claim.",
+  "json-whole-population-closure.json":
+    "json whole-population arm closure written by merge-arm-slices.ts via finish-populations.sh; a measurement, not a claim.",
+  "cpp-whole-population-closure.json":
+    "cpp whole-population arm closure written by merge-arm-slices.ts via finish-populations.sh; a measurement, not a claim.",
+}
 
 // Contract §1 — banned verdict vocabulary. Word-boundary matched, case-insensitive.
 export const BANNED_TERMS = [
@@ -73,8 +115,9 @@ export interface EvidenceInput {
   limitations: LimitationInput[]
   reviewers?: string[]
   /** repo -> commit SHA, OR the wider per-lane pin ROW shape. Two committed artifacts in
-   *  `validation/m14/results` carry rows (`M14.0.F14.json` = {repo, lang, files, draw};
-   *  `yaml-f5-differential.json` = {corpus, pin, available, drawn, stride}) and the
+   *  `validation/m14/results` (and the results/archive it is beside) carry rows
+   *  (`M14.0.F14.json` = {repo, lang, files, draw}; `results/archive/yaml-f5-differential.json`
+   *  = {corpus, pin, available, drawn, stride}) and the
    *  harness has always spread whatever it is given into the artifact unchanged — the
    *  declaration named only the object form, so those two producers had to be wrong. */
   corpusPins?: Record<string, string> | Array<Record<string, string | number>>
@@ -298,6 +341,13 @@ export function validateFile(file: string): Validation {
   } catch (e) {
     return { ok: false, errors: [`unparseable JSON: ${(e as Error).message}`], warnings: [] }
   }
+  // REGISTERED MEASUREMENT RECORD: a live consumer reads/writes this canonical path, so it cannot be
+  // relocated; it is also not a claim (no issueId/claimLevel/checks/limitations envelope). Shape-free
+  // by design — the only requirement is parseable JSON — but NAMED here so the exception is visible.
+  const registration = MEASUREMENT_RECORDS[path.basename(file)]
+  if (registration) {
+    return { ok: true, errors: [], warnings: [`registered measurement record, not evidence: ${registration}`] }
+  }
   // legacy schema (schemaVersion 1, e.g. pre-harness F1 output) is rejected: migrate
   if (parsed?.schemaVersion !== 2) {
     return { ok: false, errors: [`unsupported schemaVersion (${parsed?.schemaVersion}) — regenerate via harness v2`], warnings: [] }
@@ -315,7 +365,10 @@ export function selftest(): boolean {
     checks: [{ id: "s1", description: "synthetic check", status: "pass" }],
     limitations: [{ description: "selftest fixture limitation" }],
   }
-  const tmp = fs.mkdtempSync("/tmp/opencode/m14-selftest-")
+  // The scratch dir is /tmp/opencode when that exists (the harness's historical convention on the
+  // development host) and the OS temp dir otherwise — a selftest that cannot run because a scratch
+  // directory was cleaned is not a passing selftest, and it proves nothing about the validator.
+  const tmp = fs.mkdtempSync(path.join(fs.existsSync("/tmp/opencode") ? "/tmp/opencode" : os.tmpdir(), "m14-selftest-"))
 
   // 1. valid artifact passes
   const goodFile = path.join(tmp, "good.json")
@@ -343,6 +396,16 @@ export function selftest(): boolean {
   // 7. L5 without mutationLog rejected
   const bad5 = buildArtifact({ ...base, claimLevel: "L5" })
 
+  // 8. a REGISTERED measurement record is accepted shape-free (it is not a claim), and a registered
+  //    record that is not parseable JSON is still rejected — registration waives the CLAIM envelope,
+  //    never the JSON requirement.
+  const registeredFile = path.join(tmp, "analyzer-docs.json")
+  fs.writeFileSync(registeredFile, '{"any":"shape"}\n')
+  const rRegistered = validateFile(registeredFile)
+  const badRegisteredFile = path.join(tmp, "mutants-fleet.json")
+  fs.writeFileSync(badRegisteredFile, "this is not json")
+  const rBadRegistered = validateFile(badRegisteredFile)
+
   const results: [string, Validation][] = [
     ["valid artifact accepted", rGood],
     ["determinism (byte-identical)", { ok: fs.readFileSync(goodFile, "utf8") === fs.readFileSync(goodFile2, "utf8"), errors: [], warnings: [] }],
@@ -351,6 +414,8 @@ export function selftest(): boolean {
     ["banned vocabulary rejected", invert(validateArtifact(bad3))],
     ["empty limitations rejected", invert(validateArtifact(bad4))],
     ["L5 without mutations rejected", invert(validateArtifact(bad5))],
+    ["registered measurement record accepted shape-free", rRegistered],
+    ["unparseable registered record rejected", invert(rBadRegistered)],
   ]
   let allOk = true
   for (const [name, r] of results) {
@@ -396,13 +461,29 @@ if (import.meta.main) {
       : []
     if (!files.length) { console.error("no evidence files found"); process.exit(2) }
     let failed = 0
+    let registeredCount = 0
+    let registeredFailed = 0
+    let claimFailed = 0
     for (const f of files) {
+      const base = path.basename(f)
+      const registration = MEASUREMENT_RECORDS[base]
       const r = validateFile(f)
-      console.log(`${r.ok ? "PASS" : "FAIL"}  ${path.basename(f)}${r.warnings.length ? "  (warnings: " + r.warnings.length + ")" : ""}`)
-      if (!r.ok) { failed++; r.errors.forEach(e => console.log("      ", e)) }
+      if (registration) {
+        // NAMED, VISIBLE, COUNTED: registered measurement records are not claims and are not schema
+        // checked, but they are listed by name with their reason and counted in the N/N total.
+        registeredCount++
+        console.log(`${r.ok ? "PASS" : "FAIL"}  ${base}  (registered measurement record, not evidence)`)
+        if (!r.ok) { failed++; registeredFailed++; r.errors.forEach(e => console.log("      ", e)) }
+        else console.log(`      why registered: ${registration}`)
+        continue
+      }
+      console.log(`${r.ok ? "PASS" : "FAIL"}  ${base}${r.warnings.length ? "  (warnings: " + r.warnings.length + ")" : ""}`)
+      if (!r.ok) { failed++; claimFailed++; r.errors.forEach(e => console.log("      ", e)) }
       else r.warnings.forEach(w => console.log("   warn:", w))
     }
-    console.log(`\n${files.length - failed}/${files.length} evidence files valid`)
+    const claims = files.length - registeredCount
+    console.log(`\nregistered measurement records: ${registeredCount} of ${files.length} (listed by basename in MEASUREMENT_RECORDS; parseable JSON, not claims)`)
+    console.log(`${files.length - failed}/${files.length} evidence files valid (${registeredCount - registeredFailed} registered measurement record(s) + ${claims - claimFailed} schemaVersion-2 claim artifact(s))`)
     process.exit(failed ? 3 : 0)
   } else {
     console.log("usage: evidence-harness.ts validate|selftest")

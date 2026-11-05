@@ -1779,7 +1779,7 @@ nothing — parse the whole corpus.
 
    | kind | count | which |
    |---|---|---|
-   | banned term in an artifact | **12** | `validation/m14/fixtures/{c,clean,csharp,html,php,sql}/*.expectation.json`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `validation/m14/results/fsharp-shape-census.json` |
+   | banned term in an artifact | **12** | `validation/m14/fixtures/{c,clean,csharp,html,php,sql}/*.expectation.json`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `validation/m14/results/archive/fsharp-shape-census.json` |
    | declared inputs changed since the named commit | 9 | `M14.0.F1`…`F9` |
    | a milestone check not passing | 1 | `M14.0.F7 has 2 non-passing check(s): analyzer-hygiene-cpp, analyzer-hygiene-elixir` |
    | the freshness rule itself cannot discriminate | 1 | `freshness rule flags every artifact` |
@@ -2882,7 +2882,7 @@ reproduced exactly**. What did not:
   fixtures were fixed by the 504 commits the merge brought in. The 10 that remain are
   `fixtures/{c,clean,csharp,html}` (2 rows in `csharp` and `html`), `grammar-pins.json`
   (2 rows, `perfect` and `complete`) and `results/{M14.0.F11.fsharp,M14.0.F5,
-  M14.0.JS-CENSUS,fsharp-shape-census}.json`. **Zero name a dart file** — the only
+  M14.0.JS-CENSUS}.json`, `results/archive/fsharp-shape-census.json`. **Zero name a dart file** — the only
   `dart` string anywhere in the output is `dart-http` in the passing `corpus pins
   present` line, which is a corpus repo name and not a finding. The declared-input
   counts are large (F2 alone reports 2,549) and are a property of the merge, since

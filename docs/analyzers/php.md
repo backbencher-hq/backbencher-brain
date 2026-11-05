@@ -6,7 +6,7 @@
 - Parser: served WASM `wasm/tree-sitter-php.wasm`, **sha256 `d4df6a6ff08c…`, 1,058,041 B**. The
   bytes are byte-identical to two local copies — the `~/.bb/wasm` mirror and the npm
   `tree-sitter-php@0.24.2` package's wasm in the bun install cache — per
-  `validation/m14/results/wasm-provenance-census.json` (verdict: "byte-identical to 2 local
+  `validation/m14/results/archive/wasm-provenance-census.json` (verdict: "byte-identical to 2 local
   copy/copies"). The grammar surface measured FROM THE LIVE PARSER is **432 type ids · 177 named
   ids · 157 distinct named type names** (`validation/m14/measurements/php-grammar-nodes.json`,
   measured 2026-10-26; 20 names are aliased to more than one id, so 177 named ids are 157 distinct

@@ -9,12 +9,12 @@
 // diagnosed it?" is answerable by measurement rather than by guess, and it decides
 // whether the fsharp lane owes a patch at all.
 //
-// A co-agent A/B already exists (validation/m14/results/fsharp-grammar-ab.json)
+// A co-agent A/B already exists (validation/m14/results/archive/fsharp-grammar-ab.json)
 // and it is NOT this comparison: it adjudicates our PATCHED 0.3.11 against
 // UNPATCHED 0.3.11, which justifies the patch we already carry. Nobody has
 // compared against 0.3.12.
 //
-// THE BATTERY, and why controls dominate it. fsharp-error-repro.json holds 24
+// THE BATTERY, and why controls dominate it. validation/m14/results/fsharp-error-repro.json holds 24
 // minimal reproducers: 8 that BREAK under the pinned grammar and 16 that parse.
 // The 16 are not filler — they are what rules out the neighbouring hypotheses (the
 // triage records that ordinary `and`-joined constraints parse, which is how the

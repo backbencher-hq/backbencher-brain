@@ -2977,7 +2977,7 @@ A member-name bug that keeps the name and corrupts the ownership needs an
 
 **The C grammar is now pinned, and it was the load-bearing omission in every
 number above.** `wasm/tree-sitter-c.wasm` (650,175 B, sha256 `f9a2d771…`) was
-recorded in `validation/m14/results/wasm-provenance-census.json` with *no*
+recorded in `validation/m14/results/archive/wasm-provenance-census.json` with *no*
 byte-identical local copy and the verdict "provenance cannot be re-derived
 offline", and `grammars/tree-sitter-c/` carried only `grammar.js`, `LICENSE`,
 `package.json` and `tree-sitter.json` — so the pin verifier's source↔wasm check
@@ -3033,7 +3033,7 @@ rather than remembered.
   `grammars/tree-sitter-c/PIN.md` and the `c` entry in
   `validation/m14/grammar-pins.json`
 - re-runnable: `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` →
-  `validation/m14/results/c-grammar-pin.json`
+  `validation/m14/results/archive/c-grammar-pin.json`
 - the pristine and rebuilt wasms are kept at `$HOME/ishaq/fixtures/c/grammar/`
   with a `SHA256SUMS.txt`, so the A/B survives the network copy disappearing
 

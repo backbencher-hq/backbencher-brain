@@ -79,6 +79,11 @@ cd "$ROOT" || { echo "KOTLIN ARM RUNNER: cannot cd to $ROOT" >&2; exit 2; }
 
 # ── arguments ────────────────────────────────────────────────────────────────────────────────
 WAIT=0; WIDTH=1000; FALLBACK=500; POP_OVERRIDE=""; DIR=".tmp-kotlin-arm/slices"
+# CANONICAL PATH, REGISTERED MEASUREMENT RECORD. The closure is the arm's MEASUREMENT (meta +
+# the eleven-term arithmetic), not a harness-v2 claim: claims in `validation/m14/results/*.json` are
+# written only by evidence-harness `emitEvidence`. It has a live consumer (`kotlin-declaration.ts`),
+# so it is a NAMED registration in the harness's MEASUREMENT_RECORDS allowlist (validate() accepts
+# it as parseable JSON, lists it by name, and never as a claim). See results/archive/README.md.
 OUT="validation/m14/results/kotlin-whole-population-closure.json"
 DRY=0; CHECK=0; RELEASE=1; MERGE=1
 while [ $# -gt 0 ]; do

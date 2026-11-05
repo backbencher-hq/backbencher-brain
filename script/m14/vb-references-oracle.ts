@@ -49,11 +49,12 @@
  * CLI: npx tsx script/m14/vb-references-oracle.ts [--sample N] [--out f.json]
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 import { decodeSourceText } from "../../src/util/source-text"
+import { emitEvidence } from "./evidence-harness"
 
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
@@ -186,12 +187,36 @@ for (const s of samples.slice(0, 15)) {
 }
 
 if (OUT) {
-  writeFileSync(OUT, JSON.stringify({
-    corpusRoot: CR, drawn: draw.length, total, tally,
-    byRole: Object.fromEntries([...byRole].sort((a, b) => (a[0] < b[0] ? -1 : 1))),
-    notInFileTargets: Object.fromEntries([...notInFile].sort((a, b) => b[1] - a[1])),
-    samples,
-  }, null, 2))
-  console.log(`\nwrote ${OUT}`)
+  // HARNESS v2. results/*.json is emitted only by `emitEvidence`; the raw `writeFileSync`
+  // this replaces left the artifact without a `schemaVersion`, which the evidence gate
+  // rejects. The tally (including the printed WRONG-LINE sample set) is unchanged and
+  // rides in `data`; the check is the oracle's own pass condition.
+  const ok = tally["NOT-IN-FILE"] === 0
+  emitEvidence({
+    // A LITERAL id, not a computed one: the artifact identity is `M14.0.VB-REFERENCES-ORACLE` and the
+    // filename must equal it. A computed id makes the artifact an ORPHAN to script/m49/verify-evidence-identity.ts
+    // (a producer is found by the literal inside the emitEvidence call), which this register does not allow.
+    issueId: "M14.0.VB-REFERENCES-ORACLE",
+    title: `VB references oracle over the derived VB corpus (${draw.length} files, ${total} edges)`,
+    claimLevel: "L1",
+    layers: ["differential"],
+    checks: [{
+      id: "vb-references-targets-are-in-file",
+      description: "no published references target is absent from the file that publishes it",
+      status: ok ? "pass" : "fail",
+      detail: `drawn=${draw.length} edges=${total} NOT-IN-FILE=${tally["NOT-IN-FILE"] ?? 0} WRONG-LINE=${tally["WRONG-LINE"] ?? 0} SUPPORTED=${tally["SUPPORTED"] ?? 0}`,
+    }],
+    limitations: [
+      { description: "a text oracle: a string literal or comment can supply a token (overcounts SUPPORTED) and a name split across a line continuation is missed (overcounts WRONG-LINE); both directions push toward the analyzer looking worse, which is the safe direction for a gate" },
+      { description: "the sample is drawn from the checkouts under the configured corpus root; the population is stated in `data.drawn`, not assumed" },
+    ],
+    data: {
+      corpusRoot: CR, drawn: draw.length, total, tally,
+      byRole: Object.fromEntries([...byRole].sort((a, b) => (a[0] < b[0] ? -1 : 1))),
+      notInFileTargets: Object.fromEntries([...notInFile].sort((a, b) => b[1] - a[1])),
+      samples,
+    },
+  })
+  console.log(`\nwrote ${OUT} (harness v2)`)
 }
 process.exitCode = tally["NOT-IN-FILE"] === 0 ? 0 : 1

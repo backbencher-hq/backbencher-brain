@@ -335,9 +335,21 @@ export function sweepWorkRoot(env: string | undefined, fallback: string): string
  * corpus is a DEDICATED root (matlab, vba — the shared corpus carries no genuine file for either)
  * cannot be reached through CORPUS_ROOT, and a plain `path.join` would mangle an absolute path
  * into `CORPUS_ROOT/<absolute>` and report the repo missing. Measured 2026-11-01 on both lanes.
+ *
+ * A REPO ABSENT FROM THE SHARED SHELF FALLS BACK TO THE WORKSPACE-LOCAL CORPUS ROOT (`$ROOT/.corpus`),
+ * which is where a lane restores a corpus whose upstream checkout cannot be materialized on the
+ * host it is measured on (gitignored; the same root the vba/matlab entries above point into). The
+ * fallback is by checkout presence, so the shared root stays authoritative: a repo present there is
+ * always the one measured, and a repo present in NEITHER root is still reported missing and still
+ * refused by the canonical precheck. Measured on this host 2026-11-04: P3D-Legacy and DISMTools
+ * were absent from the shared shelf and restored there at their recorded pins.
  */
 function corpusRepoDir(repo: string): string {
-  return path.isAbsolute(repo) ? repo : path.join(CORPUS_ROOT, repo)
+  if (path.isAbsolute(repo)) return repo
+  const shared = path.join(CORPUS_ROOT, repo)
+  if (fs.existsSync(shared)) return shared
+  const local = path.join(ROOT, ".corpus", repo)
+  return fs.existsSync(local) ? local : shared
 }
 
 const WORK_ROOT = sweepWorkRoot(process.env[M14_WORK_ENV], os.tmpdir())
@@ -18185,7 +18197,7 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
 // ---------------------------------------------------------------------------
 // M60 fsharp lane: the F5 seat the lane never had. Rules are FSD1..FSD12 of
 // script/m14/spec/fsharp-completeness.json, written against the measured shapes
-// in validation/m14/results/fsharp-shape-census.json (a 120-file draw of the
+// in validation/m14/results/archive/fsharp-shape-census.json (a 120-file draw of the
 // fsharp corpus through this same wired wasm) — not by importing the analyzer's
 // walk. Audited labels for this lane: extends, implements, instantiates,
 // overrides, calls, references (the harness allowlist); symbols/contains are
@@ -25504,7 +25516,7 @@ async function main() {
       if (lang === "fsharp") {
         // M60 fsharp lane: the seat the lane never had. Rules are FSD1..FSD12
         // of script/m14/spec/fsharp-completeness.json, written from the
-        // measured shapes in validation/m14/results/fsharp-shape-census.json —
+        // measured shapes in validation/m14/results/archive/fsharp-shape-census.json —
         // including the rulings the current analyzer cannot satisfy (no dead
         // branches, the `args:`-field method split, `val` declarations, the
         // `new`-prefix instantiates, `inherit` is always extends), which is
@@ -26815,6 +26827,12 @@ async function main() {
       for (const [k, v] of Object.entries<any>(zeroTruthUnmeasured)) {
         measurements[k] = { missing: 0, unexplained: 0, heuristic: 0, sampleSetHash: null, pinned: false, unmeasured: true, reason: v.reason }
       }
+      // CANONICAL PATH, REGISTERED MEASUREMENT RECORD. This is a per-lane MEASUREMENT RECORD
+      // (merged across runs), not a harness-v2 CLAIM: claims in `validation/m14/results/*.json` are
+      // written only by evidence-harness `emitEvidence`, which requires an issueId/claimLevel/
+      // checks/limitations envelope this record has none of — inventing one would turn a measurement
+      // into a claim. It has a live consumer (verify-fleet.ts) and is a NAMED registration in the
+      // harness's MEASUREMENT_RECORDS allowlist (see results/archive/README.md).
       const outPath = path.join(ROOT, "validation", "m14", "results", "M14.0.F5.lane-measurements.json")
       fs.mkdirSync(path.dirname(outPath), { recursive: true })
       // A SCOPED RUN MUST NOT SHRINK A CANONICAL MEASUREMENT RECORD (2026-11-03).

@@ -29,6 +29,10 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 const CORPUS = process.env.BB_CORPUS_ROOT ?? path.join(ROOT, ".corpus")
 const WORK = path.join(ROOT, ".tmp-go")
 const DUMPS = path.join(WORK, "dumps")
+// REGISTERED MEASUREMENT RECORD, CANONICAL PATH: this driver records per-chunk MEASUREMENTS of the go
+// population (and their aggregate), not a harness-v2 claim; claims in `validation/m14/results/*.json`
+// are written only by evidence-harness `emitEvidence`. Its basename is a NAMED registration in the
+// harness's MEASUREMENT_RECORDS allowlist. See validation/m14/results/archive/README.md.
 const RESULT = path.join(ROOT, "validation/m14/results/go-baseline-chunks.json")
 const MAX_SIZE = 1024 * 1024
 

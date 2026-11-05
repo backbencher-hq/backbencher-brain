@@ -35,7 +35,14 @@
 // that LOSES a section fails; a language that was already short does not.
 //
 // Usage: bun run script/m14/verify-analyzer-docs.ts [--lang X] [--json]
-// Writes: validation/m14/results/analyzer-docs.json
+// Writes: validation/m14/results/analyzer-docs.json — a REGISTERED MEASUREMENT RECORD.
+//
+// The payload is a repo-wide MEASUREMENT (counts/rows/baseline), not a harness-v2 claim: claims in
+// `validation/m14/results/*.json` are written only by evidence-harness `emitEvidence`, which
+// requires an issueId/claimLevel/checks/limitations envelope this record has none of. It is written
+// at its canonical path because it has a live reader role, and its basename is a NAMED registration
+// in the harness's MEASUREMENT_RECORDS allowlist: validate() accepts it as parseable JSON, lists it
+// by name, and never as a schemaVersion-2 claim. See results/archive/README.md.
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs"
 import * as path from "node:path"
 

@@ -151,7 +151,7 @@ for (const target of targets) {
     // it, is `qualifiedName` — measuring `s.id` here read `undefined` for every row and
     // reported 274,509 "duplicate ids" across 1,212 files, which was this script's bug
     // and not the analyzer's. The direct-analyzer census
-    // (validation/m14/results/yaml-post-rewrite-census.json) reports 0 over the same
+    // (validation/m14/results/archive/yaml-post-rewrite-census.json) reports 0 over the same
     // corpora, and the two now agree.
     const ids = syms.map((s) => String(s.qualifiedName))
     const dup = ids.length - new Set(ids).size

@@ -1038,7 +1038,7 @@ claim than the instrument behind that row.
   `include_statement` 5.2% in-error, `use_statement` 16.6%, `if_statement` 7.8%,
   `extend_statement` 7.7% — so most of what the lane needs is modelled cleanly and the loss
   is concentrated in `@use`/`@include` inside damaged regions. Evidence:
-  `validation/m14/results/scss-grammar-ab.json`.
+  `validation/m14/results/archive/scss-grammar-ab.json`.
 - **`@forward 'x' as prefix-*;`** — the *prefix* form of the `as` clause. Supporting it
   needs `repeat1(seq('-', …))` after the name, which tree-sitter reports as an
   unresolved conflict with `binary_expression`. It occurs **zero** times in 40,521 lines
@@ -1235,7 +1235,7 @@ claim than the instrument behind that row.
   `script/m14/tmp/scss-uses-resolution.ts`; the `@extend` cross-file witness in
   `script/m14/tmp/scss-extend-tree-witness.ts`.
 - **census**: `script/m14/tmp/scss-analyzer-census.ts` →
-  `validation/m14/results/scss-analyzer-census.json`.
+  `validation/m14/results/archive/scss-analyzer-census.json`.
 - **firing check**: `npx tsx script/m14/firing-check.ts --files 120 scss` → **`7/10` fired,
   2,245 edges, 120/120 files, degraded 0**, exit 0. Re-run on this branch; an earlier
   revision of this line read 2,151 edges on the same invocation, which is inside this lane's

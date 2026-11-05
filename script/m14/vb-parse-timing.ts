@@ -38,10 +38,11 @@
  * CLI: npx tsx script/m14/vb-parse-timing.ts [--slow-ms 1000] [--sample N] [--out f.json]
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { emitEvidence } from "./evidence-harness"
 
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
@@ -120,7 +121,14 @@ if (slow.length > 25) {
 }
 
 if (OUT) {
-  writeFileSync(OUT, JSON.stringify({
+  // HARNESS v2, not raw JSON. `validation/m14/results/*.json` is written only by
+  // `emitEvidence` (evidence-harness's own header: "The ONLY sanctioned way to write
+  // validation/m14/results/*.json"). This producer used `writeFileSync`, so its artifact
+  // carried no `schemaVersion` and the evidence gate reported it schemaVersion-invalid.
+  // The measurement rides in `data` unchanged; the check is this script's own exit
+  // condition, so a reader (and the gate) can see the verdict without re-deriving it.
+  const ok = trapped.length === 0 && overBudget.length === 0
+  const payload = {
     corpusRoot: CR, admitted: files.length, drawn: draw.length, slowThresholdMs: SLOW_MS,
     engineBombMs: ENGINE_BOMB_MS,
     totalWallMs: totalMs, meanMs: +(totalMs / n).toFixed(1),
@@ -129,7 +137,27 @@ if (OUT) {
     trappedFiles: trapped.map((r) => ({ file: r.file, ms: r.ms, threw: r.threw })),
     fallbackFileCount: fellBack.length,
     rows: rows.sort((a, b) => b.ms - a.ms),
-  }, null, 2))
-  console.log(`\nwrote ${OUT}`)
+  }
+  emitEvidence({
+    // A LITERAL id, not a computed one: the artifact identity is `M14.0.VB-PARSE-TIMING` and the
+    // filename must equal it. A computed id makes the artifact an ORPHAN to script/m49/verify-evidence-identity.ts
+    // (a producer is found by the literal inside the emitEvidence call), which this register does not allow.
+    issueId: "M14.0.VB-PARSE-TIMING",
+    title: `VB parse timing over the derived VB corpus (${files.length} files)`,
+    claimLevel: "L1",
+    layers: ["performance"],
+    checks: [{
+      id: "vb-parse-timing-no-trap-no-overbudget",
+      description: "no parse trapped the engine's self-destruct timer and no file exceeded the slow threshold",
+      status: ok ? "pass" : "fail",
+      detail: `trapped=${trapped.length} overBudget=${overBudget.length} slow=${slow.length} fallback=${fellBack.length} meanMs=${+(totalMs / n).toFixed(1)} medianMs=${sorted[Math.floor(sorted.length / 2)]?.ms ?? 0}`,
+    }],
+    limitations: [
+      { description: "wall-clock timings on one host under live load; the counts are the claim, the milliseconds are context" },
+      { description: "the sample is derived from the checkouts present under the configured corpus root, so the population is stated in `data.admitted`/`drawn` rather than assumed" },
+    ],
+    data: payload,
+  })
+  console.log(`\nwrote ${OUT} (harness v2)`)
 }
 process.exitCode = trapped.length === 0 && overBudget.length === 0 ? 0 : 1

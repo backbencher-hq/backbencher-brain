@@ -2256,7 +2256,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * and the `data` factory. A cross-file resolution built on the old rule would
    * have emitted 21 fabricated `overrides` rows and 0 true ones
    * (`script/m14/vue-overrides-crossfile-probe.mts`; evidence in
-   * `validation/m14/results/vue-verify8-overrides-crossfile.json`). Under this
+   * `validation/m14/results/archive/vue-verify8-overrides-crossfile.json`). Under this
    * rule the same corpus supports 0, which is the correct answer and not a gap.
    *
    * A fabricated edge is the most expensive mistake available in this programme

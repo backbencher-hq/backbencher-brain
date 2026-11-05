@@ -1201,7 +1201,7 @@ export const CPP_NON_CLASS_STANDARD_TYPES: Set<string> = new Set([
  * `if` (25), `for` (4) and `switch` (6) as CALL TARGETS — a control-flow keyword
  * is not a callee in any language, so those are not a near-miss but a fabrication
  * with no reading at all. Measured per name in
- * `validation/m14/results/cpp-defect-register.json`.
+ * `validation/m14/results/archive/cpp-defect-register.json`.
  *
  * The ruling is the C lane's (`C_KEYWORDS`), and it is the same sentence: C++ has
  * no identifier spelled `static_cast`, so a name that is spelled that way names

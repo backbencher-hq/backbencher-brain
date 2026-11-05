@@ -104,10 +104,15 @@ vendored grammar's real error profile — nothing excluded), `passed: false`.
 The analysis is a single pre-order walk with containment resolved in one trailing
 pass and a per-file relationship dedupe, so the envelope is
 O(nodes + emitted facts) with no per-symbol rescan of the tree.
-`validation/m14/results/vb-visual-basic-parse-timing.json` measures the same
-production path at scale: 2,658 files admitted and 2,658 drawn, mean **134.6 ms**,
-median **58 ms**, 134 files over the 500 ms slow threshold, **0 over budget,
-0 trapped, 0 regex fallbacks**. The payload/latency cost of the two added edge
+`validation/m14/results/M14.0.VB-PARSE-TIMING.json` (harness v2) measures the same
+production path over the lane's two restored corpora at their recorded pins
+(P3D-Legacy `e9342bb`, DISMTools `dc802e6`): **2,378 files admitted and 2,378
+drawn**, mean **57.6 ms**, median **14 ms**, 18 files over the 1,000 ms slow
+threshold, **0 over budget, 0 trapped, 0 regex fallbacks**. The earlier
+5-repository sample (2,658 files, mean 134.6 ms) is kept as the archived raw
+record `validation/m14/results/archive/vb-visual-basic-parse-timing.json`; the
+two differ in population and host load, so the milliseconds are not comparable
+across them. The payload/latency cost of the two added edge
 types is reported in the AFTER section below and is a REGRESSION, not
 re-baselined.
 

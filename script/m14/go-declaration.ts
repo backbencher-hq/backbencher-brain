@@ -15,7 +15,7 @@
  *
  * ## What it reads (every field below is a measurement, not a narrative)
  *
- *   1. THE MERGED CLOSURE — `go-whole-population-closure.json`: the eleven-term closure, its
+ *   1. THE MERGED CLOSURE — `validation/m14/results/go-whole-population-closure.json`: the eleven-term closure, its
  *      `exact` flag, the declared population, and the slice list the merge accepted.
  *   2. THE ARM'S OWN 51 SLICE LOGS — each one's `TABLE 1` (per-type eleven terms) and its
  *      `BINDING INTENT` table (the per-type intent census the gate prints beside the closure).

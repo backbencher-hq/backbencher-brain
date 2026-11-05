@@ -83,7 +83,9 @@ for (const [k, v] of Object.entries(diffBaseline.unmeasured ?? {})) {
 }
 // A lane the canonical sweep MEASURED but the pin gate refused to pin (it carries its own
 // missing/unexplained rows, #870). That is a VERDICT, not an absence: the numbers are recorded in
-// validation/m14/results/M14.0.F5.lane-measurements.json by the sweep itself.
+// validation/m14/results/M14.0.F5.lane-measurements.json by the sweep itself (a MEASUREMENT
+// RECORD, registered by basename in the harness's MEASUREMENT_RECORDS allowlist — read here, never
+// a schemaVersion-2 claim; see results/archive/README.md).
 const diffMeasuredLangs = new Map<string, { missing: number; unexplained: number }>()
 try {
   const measured = JSON.parse(fs.readFileSync(V("validation/m14/results/M14.0.F5.lane-measurements.json"), "utf8")) as {
@@ -97,7 +99,9 @@ try {
 } catch { /* not written yet: every lane then reads from the baseline alone */ }
 // ITEM 1 — the fleet mutation battery artifact. Every lane must have been executed (unmeasured is not a pass)
 // and must have ZERO survivors: a mutant that changes nothing the fixtures pin is a no-op, and a no-op mutant
-// is coverage that cannot fail.
+// is coverage that cannot fail. The battery's output is a MEASUREMENT RECORD (per-lane counts); it is a
+// NAMED registration in the harness's MEASUREMENT_RECORDS allowlist, read here and never a claim — see
+// validation/m14/results/archive/README.md.
 const mutantsBattery = new Map<string, { measured: boolean; caught: number; survived: number; survivorIds: string[] }>()
 let mutantsBatteryTotals = { mutantsRun: 0, caught: 0, survived: 0 }
 try {
@@ -254,9 +258,11 @@ const inboundTotals = lanes.reduce(
 )
 const inboundPct = (n: number) => (inboundTotals.edges > 0 ? ((n / inboundTotals.edges) * 100).toFixed(1) : "0.0")
 // Durable memory of the census. Deterministic content: no timestamp, lane order is the guard's own order, so
-// the file only changes when a lane's measurement does.
+// the file only changes when a lane's measurement does. It is a REGISTERED MEASUREMENT RECORD (basename in the
+// harness's MEASUREMENT_RECORDS allowlist): a measurement, not a harness-v2 claim (see
+// validation/m14/results/archive/README.md).
 try {
-  fs.mkdirSync(V("validation/m14/results"), { recursive: true })
+  fs.mkdirSync(V("validation/m14/results/archive"), { recursive: true })
   fs.writeFileSync(
     V("validation/m14/results/inbound-fleet.json"),
     JSON.stringify({

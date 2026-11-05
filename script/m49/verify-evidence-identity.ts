@@ -24,7 +24,10 @@
 //
 //   1. UNIQUE PRODUCER — no two scripts may claim one `issueId`.
 //   2. NO ORPHANS — every `M14*.json` in the results dir must be claimed by some
-//      producer, so an artifact can never appear that no gate explains.
+//      producer, so an artifact can never appear that no gate explains. A file listed
+//      by basename in the harness's `MEASUREMENT_RECORDS` allowlist is a measurement
+//      register with a live consumer, not a claim, and is EXEMPT — disclosed by name
+//      on every run rather than skipped silently.
 //   3. EVERY PRODUCER'S ARTIFACT EXISTS — a gate that names an identity and never
 //      writes it is a gate with no evidence. (The harness's own self-test id is
 //      exempt: it is written only under `selftest`.)
@@ -53,6 +56,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { basename, dirname, extname, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+// The harness's NAMED measurement-record allowlist. A registered record is a MEASUREMENT with a
+// live consumer, not a claim, so it has no `emitEvidence` producer by design — it is exempt from
+// rule 2 below (an exemption that is DISCLOSED, never silent: the ids are printed each run).
+import { MEASUREMENT_RECORDS } from "../m14/evidence-harness"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const argValue = (flag: string) => {
@@ -162,6 +169,15 @@ export function stripCommentLines(source: string): string {
       inBlock = false
       line = line.slice(end + 2)
     }
+    // A LINE COMMENT THAT STARTS BEFORE A BLOCK OPENER WINS. In `// results/*.json` the `/*` is
+    // prose, but the previous order read it as a block-comment OPENER and swallowed every line
+    // after it (measured: the three VB producers carried such a comment above their
+    // `emitEvidence` call, so the producer scan saw nothing and their valid artifacts read as
+    // ORPHANS). A real block opener has no `//` before it, so this cut is exact for the comment
+    // forms the scanner accepts; the block scan below still handles the rest.
+    const commentAt = line.indexOf("//")
+    const blockAt = line.indexOf("/*")
+    if (commentAt !== -1 && (blockAt === -1 || commentAt < blockAt)) line = line.slice(0, commentAt)
     for (;;) {
       const start = line.indexOf("/*")
       if (start === -1) break
@@ -169,10 +185,9 @@ export function stripCommentLines(source: string): string {
       if (end === -1) { line = line.slice(0, start); inBlock = true; break }
       line = line.slice(0, start) + line.slice(end + 2)
     }
-    const trimmed = line.trimStart()
-    if (trimmed.startsWith("//")) { out.push(""); continue }
-    const inline = line.indexOf("//")
-    out.push(inline === -1 ? line : line.slice(0, inline))
+    // A line comment after a CLOSED block comment is still a comment.
+    const trailing = line.indexOf("//")
+    out.push(trailing === -1 ? line : line.slice(0, trailing))
   }
   return out.join("\n")
 }
@@ -239,6 +254,16 @@ function main(): void {
     : []
   check("evidence artifacts were found", artifactIds.length > 0, `${artifactIds.length} in ${RESULTS_DIR}`)
 
+  // REGISTERED MEASUREMENT RECORDS: named in the harness allowlist, not claims. They are excluded
+  // from the producer rules below (a measurement has no claim identity to produce) and DISCLOSED.
+  const registeredIds = Object.keys(MEASUREMENT_RECORDS).map((f) => basename(f, ".json"))
+  const presentIds = new Set(artifactIds)
+  const registeredPresent = registeredIds.filter((id) => presentIds.has(id)).sort()
+  const claimArtifactIds = artifactIds.filter((id) => !(id + ".json" in MEASUREMENT_RECORDS))
+  if (registeredPresent.length > 0) {
+    console.log(`disclosure: ${registeredPresent.length} registered measurement record(s) are NOT claims and are exempt from the producer rule: ${registeredPresent.join(", ")}`)
+  }
+
   // 1. Unique producer per identity.
   const clash = collisions(producers)
   check("every evidence identity has exactly one producer", clash.length === 0,
@@ -247,9 +272,9 @@ function main(): void {
   // 2. No orphan artifacts. Superseded archival copies are attributed to the producer of the
   //    identity they preserve (see `supersededCopies`), and the attribution is DISCLOSED rather
   //    than silent: silence is what this gate exists to remove.
-  const sup = supersededCopies(artifactIds, producers)
+  const sup = supersededCopies(claimArtifactIds, producers)
   const archival = new Set(sup.attributed)
-  const orphans = orphanArtifacts(artifactIds.filter((id) => !archival.has(id)), producers)
+  const orphans = orphanArtifacts(claimArtifactIds.filter((id) => !archival.has(id)), producers)
   check("every evidence artifact is claimed by a producer (no orphans)", orphans.length === 0,
     orphans.length ? `${orphans.length}: ${orphans.slice(0, 6).join(", ")}` : "")
   if (sup.attributed.length > 0) {
@@ -337,6 +362,12 @@ function main(): void {
   negative("an issueId inside a plain string is not counted as a producer",
     producersInSource("x.ts", testData).length === 0,
     "a test-data literal registered as a producer")
+  // The scanner bug measured 2026-11-04: a line comment mentioning a glob (`results/*.json`) was
+  // read as a block-comment opener, swallowing every producer below it.
+  const globComment = "// validation/m14/results/*.json is written only by the harness\n" + ANCHOR + '{ issueId: "M14.0.F7" })'
+  negative("a line comment containing a glob does not swallow the producers below it",
+    producersInSource("x.ts", globComment).map((p) => p.id).join() === "M14.0.F7",
+    "a line comment containing /* hid every producer below it")
   negative("a file that never calls the harness is not a producer",
     producersInSource("x.ts", 'const ISSUE = { issueId: "M14.0.F7" }').length === 0,
     "a non-harness file registered as a producer")

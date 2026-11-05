@@ -56,6 +56,10 @@ done
 run_slice json 14000 115 .tmp-json/slices 115
 
 echo "===================== JSON MERGE ====================="
+# REGISTERED MEASUREMENT RECORD, CANONICAL PATH: a merged closure is a MEASUREMENT (meta + closure
+# arithmetic), not a harness-v2 claim; claims in `validation/m14/results/*.json` are written only by
+# evidence-harness `emitEvidence`. The closure basenames are NAMED registrations in the harness's
+# MEASUREMENT_RECORDS allowlist (see results/archive/README.md).
 bun script/m14/merge-arm-slices.ts --dir .tmp-json/slices --population 14115 \
   --write validation/m14/results/json-whole-population-closure.json 2>&1 | tail -8
 

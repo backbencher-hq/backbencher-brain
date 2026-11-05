@@ -1270,7 +1270,7 @@ do not:
   so its existing 182 rows were themselves pinned at ~5× load.)
 
 Both sections stay red deliberately, and the full measurement is in
-`validation/m14/results/powershell-lane-record.json` and in the 2026-10-27 run below. A red
+`validation/m14/results/archive/powershell-lane-record.json` and in the 2026-10-27 run below. A red
 section here is a statement the lane stands behind: for E it now means the residual was
 MEASURED and cannot be pinned without burying it, and for F it means no honest perf figure
 exists yet — either is cheaper than a green one that measures the machine.

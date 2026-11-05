@@ -285,7 +285,7 @@ share (`bareShadowed = 0`).
 
 **Before/after, one instrument, the same draw** (full hledger 186 + cabal
 2,150 `.hs`, **2,356 files, 0 parse failures**; artifact
-`validation/m14/results/haskell-local-identity.json`, machine-composed
+`validation/m14/results/archive/haskell-local-identity.json`, machine-composed
 `before` + `after` blocks over one basis):
 
 | Side | Before (analyzer @35e80314) | After |
@@ -310,7 +310,7 @@ reconciles to the same 6,398 on both sides.
 out-of-scope negative, the do-let bind case) with **6 scoped pins + 8 bare-form
 forbids**; mutants `haskell/local-identity-flat` and
 `haskell/local-scope-blind` are both caught (16/16 haskell mutants), and
-`validation/m14/results/haskell-local-mutant-pins.json` records WHICH pin
+`validation/m14/results/archive/haskell-local-mutant-pins.json` records WHICH pin
 breaks under each (identity-flat: 8 pins missing + 7 forbids tripped;
 scope-blind: the `calls outOfScope -> hop` forbid). M12 truth moved in lockstep
 (`rel:Negative.hs:calls:helper:helper.go`, `…:helper.go:helper.go`; 77/77,
@@ -342,8 +342,8 @@ The delta 5,240 → 6,235 is the per-site expansion: edges that the pre-round
 `source|type|target` key swallowed.
 
 **Full extents** (`script/m14/tmp/hs-line-coverage.ts`, artifacts
-`validation/m14/results/haskell-line-coverage.json` and
-`haskell-line-coverage-cabal.json`):
+`validation/m14/results/archive/haskell-line-coverage.json` and
+`validation/m14/results/archive/haskell-line-coverage-cabal.json`):
 
 | Corpus | Files | Edges now | Pre-change (same draw) | Expansion | Worst multi-site group |
 | --- | --- | --- | --- | --- | --- |
@@ -366,7 +366,7 @@ fixture (`recount→signed` = 2, `Data.User→UserId` = 2), so no group can
 collapse unnoticed. Mutants `haskell/edge-line-absent` (strips every
 `line_number`) and `haskell/edge-line-per-set` (reverts the key to the pre-fix
 `source|type|target`) — **14/14 caught**; per-pin catch evidence in
-`validation/m14/results/haskell-line-mutant-pins.json` (absent fails 12/12
+`validation/m14/results/archive/haskell-line-mutant-pins.json` (absent fails 12/12
 line pins; per-set fails exactly the two second-site pins + both count pins).
 M12 identity unaffected: **77/77, precision/recall 1.000, earliest failing
 layer `none`** (the line is payload, not identity —
@@ -640,7 +640,7 @@ was falsified.
 
 **Mutation proof — 12 mutants, 12 caught**
 (`script/m14/tmp/hs9-mutants.ts`, artifact
-`validation/m14/results/haskell-verify-hs9-mutants.json`). One mutant per
+`validation/m14/results/archive/haskell-verify-hs9-mutants.json`). One mutant per
 behaviour, each description naming the pin that must kill it:
 
 | mutant | what it breaks | problems |
@@ -701,7 +701,7 @@ Note also what the same run prints, and that it is not new:
 harness's own words for the DERIVATION finding below.
 
 **Oracle agreement, measured: precision 1.000, recall 1.000 on 1,069 edges**
-(200-file draw, artifact `validation/m14/results/haskell-verify-hs9-oracle-200.json`).
+(200-file draw, artifact `validation/m14/results/archive/haskell-verify-hs9-oracle-200.json`).
 
 Getting there took two corrections, and **both were defects in my oracle, not in
 the analyzer** — which is the dual-lens lesson applied to my own instrument:

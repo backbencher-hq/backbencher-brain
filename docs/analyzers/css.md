@@ -1776,7 +1776,7 @@ dependency on another stylesheet, not a mistake. Sampled target names are Bootst
 at 98.8% rather than excluded from the denominator.
 
 **The reference point this milestone was given — `references` resolving at both ends on
-66.8% of its edges — does not reproduce on this corpus.** `validation/m14/results/
+66.8% of its edges — does not reproduce on this corpus.** `validation/m14/results/archive/
 css-ontology-census-after.json` records 66.8% over 457 files from 13 corpora; the same
 measurement over 1,131 files from 65 repositories is 98.8% (159,204 of 161,217), and
 pass 2's adversarial reading of the 2,013 unresolved edges found **0** of them name a

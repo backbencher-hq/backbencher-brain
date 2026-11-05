@@ -273,7 +273,7 @@ export const LANES: Record<string, LaneDecision> = {
         "P2 (#743b, grammar.js): a header name in a PREPROCESSOR-ARGUMENT position -- `__has_include(<vector>)`, `__has_include(\"meta\")` and the wrapper form `FMT_HAS_INCLUDE(<string_view>)`. Upstream parses every one of these as an ERROR node, because `<string_view>` is not a preproc expression: `<` would have to be a binary operator with a missing left operand. The shape reaches 16 files across the two cpp corpora, in the guard of every portable header. Scoped to the ARGUMENT position deliberately: `<` cannot BEGIN a `_preproc_expression` (the unary operators are `! ~ - +`), so there is no competing `<` token to lose the tie to at the start of an argument.",
       ],
       patchEvidence:
-        "Surface and behaviour A/B over three builds, re-runnable via `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` (artifact: validation/m14/results/c-grammar-pin.json). WIRED vs a REBUILD of this committed patched source: named-type surface IDENTICAL in both directions (128 named types, zero difference either way) -- the byte sha256s differ, as they must, because a wasm build carries its emscripten version, compiler flags and section order; identity is claimed on surface and behaviour, which is what this gate measures. WIRED vs pristine tree-sitter-c@0.24.1's own published wasm: 3 named types present in WIRED and absent from pristine -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and ZERO the other way, which is the statement that the patch is live in the bytes this lane loads and is purely additive at the node-type level. 10-construct behavioural battery, WIRED == REBUILD on all 10, and the 3 `#743b` shapes are `damaged` under pristine and `clean` under both WIRED and REBUILD, while the two comparison shapes the patch could have broken (`#if A < B && C > D`, `#if MAX(A < B, C < D)`) and all 5 controls are `clean` under all three. The pristine and rebuilt wasms are kept at fixtures/c/grammar/ with a SHA256SUMS.txt so the A/B survives any network copy disappearing.",
+        "Surface and behaviour A/B over three builds, re-runnable via `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` (artifact: validation/m14/results/archive/c-grammar-pin.json). WIRED vs a REBUILD of this committed patched source: named-type surface IDENTICAL in both directions (128 named types, zero difference either way) -- the byte sha256s differ, as they must, because a wasm build carries its emscripten version, compiler flags and section order; identity is claimed on surface and behaviour, which is what this gate measures. WIRED vs pristine tree-sitter-c@0.24.1's own published wasm: 3 named types present in WIRED and absent from pristine -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and ZERO the other way, which is the statement that the patch is live in the bytes this lane loads and is purely additive at the node-type level. 10-construct behavioural battery, WIRED == REBUILD on all 10, and the 3 `#743b` shapes are `damaged` under pristine and `clean` under both WIRED and REBUILD, while the two comparison shapes the patch could have broken (`#if A < B && C > D`, `#if MAX(A < B, C < D)`) and all 5 controls are `clean` under all three. The pristine and rebuilt wasms are kept at fixtures/c/grammar/ with a SHA256SUMS.txt so the A/B survives any network copy disappearing.",
     },
     source: {
       state: "vendored",
@@ -282,30 +282,30 @@ export const LANES: Record<string, LaneDecision> = {
         "grammar.js -- the PATCHED upstream 0.24.1 grammar, carrying this repository's own #743/#743b edits and their measured rationale in comments, not a pristine copy -- plus src/grammar.json and src/node-types.json REGENERATED from that patched grammar.js by `tree-sitter generate` (tree-sitter CLI 0.25.10) on 2026-09-29, plus package.json, tree-sitter.json and LICENSE byte-identical to npm tree-sitter-c@0.24.1. The generated src/ is the point of the exercise: before it, the vendored tree carried no node-types.json/grammar.json pair, so this gate's source<->wasm check could not run for C at all and the lane had no offline proof that its bytes were a build of its own source. src/parser.c (3.9 MB) is deliberately NOT vendored -- `tree-sitter generate` rebuilds it from grammar.js, and the check runs on the generated JSONs.",
     },
     decision:
-      "Pin as a LOCAL REBUILD OF THE PATCHED VENDORED SOURCE, and the reason is that the prior question had to be answered before provenance could be stated at all. `wasm/tree-sitter-c.wasm` (650,175 B, sha256 f9a2d771...) was recorded in validation/m14/results/wasm-provenance-census.json with NO byte-identical local copy and the verdict \"provenance cannot be re-derived offline\", while grammars/tree-sitter-c/ carried only grammar.js/LICENSE/package.json/tree-sitter.json, so this gate could not compare the source to the bytes either. `byte-identical-to-npm-tarball` -- the kind every other lane in this file uses -- was therefore unavailable: the vendored grammar.js differs from npm tree-sitter-c@0.24.1's by 75 diff lines and carries this repository's #743/#743b markers. So the real question was whether the WIRED bytes are a build of the PATCHED source or a pristine build predating the patch, and it decides what every C measurement means, because the F1 oracle, the 2,498-file census, the clang layout probe and all 28 mutants are all measurements of a parse produced by these bytes. Measured answer: the patch IS live. A rebuild of the committed patched source is surface-identical to WIRED in both directions (128 named types) and behaviourally identical on all 10 constructs, while pristine upstream differs by exactly the 3 node types the patch adds and fails all 3 `#743b` shapes. The consequence is the useful one: the incumbent was already a verified build, so no C measurement needs re-baselining, and had the wired bytes matched pristine the #743b fix would not have been live and the whole lane would have needed re-measuring. This also retires a live hazard recorded in this wave's own review: the #936 defect was a node-type literal (`attributed_type_specifier`) written from memory of a different tree-sitter-c release, which F1 caught only because the vocabulary happened to be checked -- the pin makes the release explicit rather than remembered.",
+      "Pin as a LOCAL REBUILD OF THE PATCHED VENDORED SOURCE, and the reason is that the prior question had to be answered before provenance could be stated at all. `wasm/tree-sitter-c.wasm` (650,175 B, sha256 f9a2d771...) was recorded in validation/m14/results/archive/wasm-provenance-census.json with NO byte-identical local copy and the verdict \"provenance cannot be re-derived offline\", while grammars/tree-sitter-c/ carried only grammar.js/LICENSE/package.json/tree-sitter.json, so this gate could not compare the source to the bytes either. `byte-identical-to-npm-tarball` -- the kind every other lane in this file uses -- was therefore unavailable: the vendored grammar.js differs from npm tree-sitter-c@0.24.1's by 75 diff lines and carries this repository's #743/#743b markers. So the real question was whether the WIRED bytes are a build of the PATCHED source or a pristine build predating the patch, and it decides what every C measurement means, because the F1 oracle, the 2,498-file census, the clang layout probe and all 28 mutants are all measurements of a parse produced by these bytes. Measured answer: the patch IS live. A rebuild of the committed patched source is surface-identical to WIRED in both directions (128 named types) and behaviourally identical on all 10 constructs, while pristine upstream differs by exactly the 3 node types the patch adds and fails all 3 `#743b` shapes. The consequence is the useful one: the incumbent was already a verified build, so no C measurement needs re-baselining, and had the wired bytes matched pristine the #743b fix would not have been live and the whole lane would have needed re-measuring. This also retires a live hazard recorded in this wave's own review: the #936 defect was a node-type literal (`attributed_type_specifier`) written from memory of a different tree-sitter-c release, which F1 caught only because the vocabulary happened to be checked -- the pin makes the release explicit rather than remembered.",
     alternatives: [
       {
         option: "Adopt npm tree-sitter-c@0.24.1's own published wasm (sha c852c2a8..., 625,918 B) as the wired bytes",
         measured:
           "REJECTED, and this is the load-bearing measurement of the lane: it DELETES capability. It is 3 named types short of the wired bytes -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and it parses all three `#743b` shapes as ERROR nodes where the wired build parses them clean. The first is a node the C analyzer itself names (the `macro_prefixed_type_specifier` note in the vendored grammar.js is a #743 record, and the analyzer's member/enumerator rules key on macro names), and the second is 16 files across the two cpp corpora whose portable-header guards would move from clean to damaged.",
-        artifact: "validation/m14/results/c-grammar-pin.json (constructs[], patchAddsNamedTypes[])",
+        artifact: "validation/m14/results/archive/c-grammar-pin.json (constructs[], patchAddsNamedTypes[])",
       },
       {
         option: "Pin the wired bytes as `unnamed-build-sha-only`",
         measured:
           "REJECTED as insufficient, not as wrong. It would record the sha256 and stop, which does protect against future drift -- but it leaves the central question open, and the answer turned out to be available and cheap: the patch is live, the source is in-tree, and a rebuild reproduces the bytes' surface and behaviour exactly. A sha-only pin on bytes that are demonstrably a build of committed source understates what is actually known.",
-        artifact: "validation/m14/results/c-grammar-pin.json (verdict.patchIsLiveInWiredBytes)",
+        artifact: "validation/m14/results/archive/c-grammar-pin.json (verdict.patchIsLiveInWiredBytes)",
       },
       {
         option: "Regenerate the wired bytes from the patched source and adopt the rebuild",
         measured:
           "NOT NEEDED, and worth recording as a negative result. The rebuild is 630,720 B against the wired 650,175 B -- a toolchain difference, not a grammar difference -- with identical surface and identical behaviour on all 10 constructs. Swapping would have churned every C measurement for no observable gain, and the pin does not require byte identity: it requires that the committed source and the committed bytes agree, which the gate now re-measures on every run.",
-        artifact: "validation/m14/results/c-grammar-pin.json (builds.surfaceDiff.wiredVsRebuiltPatched)",
+        artifact: "validation/m14/results/archive/c-grammar-pin.json (builds.surfaceDiff.wiredVsRebuiltPatched)",
       },
     ],
     evidence: [
-      "validation/m14/results/c-grammar-pin.json",
-      "validation/m14/results/wasm-provenance-census.json",
+      "validation/m14/results/archive/c-grammar-pin.json",
+      "validation/m14/results/archive/wasm-provenance-census.json",
       "grammars/tree-sitter-c/PIN.md",
     ],
     copies: [],
@@ -373,8 +373,8 @@ export const LANES: Record<string, LaneDecision> = {
       "Pin as-is: the wired wasm is byte-identical to the wasm published in tree-sitter-haskell@0.23.1, which is the newest release of tree-sitter/tree-sitter-haskell (the grammar is dormant at 0.23.1), and that tarball's source is now vendored in-tree with per-file hashes. No better candidate exists, locally or upstream.",
     alternatives: [],
     evidence: [
-      "validation/m14/results/wasm-provenance-census.json",
-      "validation/m14/results/family-grammar-fingerprints.json",
+      "validation/m14/results/archive/wasm-provenance-census.json",
+      "validation/m14/results/archive/family-grammar-fingerprints.json",
     ],
     copies: [
       { label: "mirror", path: path.join(MIRROR, "tree-sitter-haskell.wasm") },
@@ -411,7 +411,7 @@ export const LANES: Record<string, LaneDecision> = {
         "plain_value: allow a LEADING `.` — an unquoted relative url() could not lex at all, because the token ended at the first `.` and the `..` became two ERROR nodes; `.` was already legal in the token's BODY, so only the leading repeat lacked it. The required /[a-zA-Z]/ is deliberately RETAINED so a value made only of punctuation still cannot match and the token cannot swallow structure. Repro: .a { background-image: url(../img/x.svg); }",
       ],
       patchEvidence:
-        "validation/m14/results/css-grammar-ab-url-float.json (A/B over 533 corpus files across 4 repos: 19 files fixed, 0 regressed, 0 node-count delta on files that already parsed clean, 0 node-type and 0 field change), plus reviews/m49-css-review.md. Both hunks carry their own repro in grammar.js under a `LOCAL PATCH` marker, and the file's header states the rebuild command and the sha-is-not-reproducible measurement so the next editor is not misled by a hash comparison.",
+        "validation/m14/results/archive/css-grammar-ab-url-float.json (A/B over 533 corpus files across 4 repos: 19 files fixed, 0 regressed, 0 node-count delta on files that already parsed clean, 0 node-type and 0 field change), plus reviews/m49-css-review.md. Both hunks carry their own repro in grammar.js under a `LOCAL PATCH` marker, and the file's header states the rebuild command and the sha-is-not-reproducible measurement so the next editor is not misled by a hash comparison.",
     },
     source: {
       state: "vendored",
@@ -426,19 +426,19 @@ export const LANES: Record<string, LaneDecision> = {
         option: "wire upstream tree-sitter-css@0.25.0's prebuilt wasm (sha 8a23977f, 128668 bytes)",
         measured:
           "Rejected on measurement: 19 corpus files stay unparsed across 4 repos (grails-core 16, scala3 2, svelte 1). Available in 20+ local copies, so this was the cheap option and it was still the wrong one — the defect class is the largest single parse-failure class in the CSS corpus after `progid:`.",
-        artifact: "validation/m14/results/css-grammar-ab-url-float.json",
+        artifact: "validation/m14/results/archive/css-grammar-ab-url-float.json",
       },
       {
         option: "the older 98133-byte build shipped in tree-sitter-wasms@0.1.13 (sha 5fc61546), also vendored at backbencher/packages/brain-core/wasm/",
         measured:
           "Rejected: an older grammar surface, and brain-core's vendored copy is the one already wired in that package, so adopting it here would silently regress this lane behind it. Not A/B'd file-by-file because the surface is strictly older and the 0.25.0 prebuilt already fails on 19 files.",
-        artifact: "validation/m14/results/wasm-provenance-census.json",
+        artifact: "validation/m14/results/archive/wasm-provenance-census.json",
       },
     ],
     evidence: [
-      "validation/m14/results/css-grammar-ab-url-float.json",
-      "validation/m14/results/wasm-provenance-census.json",
-      "validation/m14/results/family-grammar-fingerprints.json",
+      "validation/m14/results/archive/css-grammar-ab-url-float.json",
+      "validation/m14/results/archive/wasm-provenance-census.json",
+      "validation/m14/results/archive/family-grammar-fingerprints.json",
       "reviews/m49-css-review.md",
     ],
     copies: [
@@ -467,17 +467,17 @@ export const LANES: Record<string, LaneDecision> = {
         option: "keep the 2024 prebuilt (tree-sitter-wasms@0.1.13)",
         measured:
           "identical trees on 773/773 corpus files; carries a legacy `^^` token upstream removed, which mis-parses `x = ^^y` into an ERROR node",
-        artifact: "validation/m14/results/elixir-grammar-ab.json",
+        artifact: "validation/m14/results/archive/elixir-grammar-ab.json",
       },
       {
         option: "upstream v0.3.5 (npm tarball wasm)",
         measured: "identical trees on 773/773 corpus files, 0 damaged files under both; cleaner `^^` handling; named release + vendored source",
-        artifact: "validation/m14/results/elixir-grammar-ab.json",
+        artifact: "validation/m14/results/archive/elixir-grammar-ab.json",
       },
     ],
     evidence: [
-      "validation/m14/results/elixir-grammar-ab.json",
-      "validation/m14/results/family-grammar-fingerprints.json",
+      "validation/m14/results/archive/elixir-grammar-ab.json",
+      "validation/m14/results/archive/family-grammar-fingerprints.json",
       "script/m14/tmp/elixir-grammar-token-probe.ts",
     ],
     copies: [
@@ -505,7 +505,7 @@ export const LANES: Record<string, LaneDecision> = {
       "P7 (2026-09-27): LANGUAGE with a quoted string value - present in 156 of 387 extension files where the bare-identifier-only rule left a trailing ERROR in every one.",
       "P8 (2026-09-27): a C-language function body `AS 'modulename', 'symbolname'` - the two-literal form, present in 156 extension files where the single-literal alternative left a trailing ERROR.",
       ],
-      patchEvidence: "validation/m14/results/family-grammar-fingerprints.json",
+      patchEvidence: "validation/m14/results/archive/family-grammar-fingerprints.json",
     },
     source: {
       state: "vendored",
@@ -514,24 +514,24 @@ export const LANES: Record<string, LaneDecision> = {
         "fsharp/grammar.js (the patched grammar — the npm tarball ships no grammar.js, so its vintage is fixed by hash here rather than by byte-identity to a tarball) + common/scanner.h (byte-identical to the npm 0.3.11 tarball) + package.json + tree-sitter.json + LICENSE + README.md. The vendored src/ holds only tree_sitter/ headers, which is why the source↔wasm check cannot run for this lane.",
     },
     decision:
-      "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING → 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) — so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
+      "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (validation/m14/results/archive/fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING → 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) — so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (validation/m14/results/archive/fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
     alternatives: [
       {
         option: "npm tree-sitter-fsharp@0.3.11 (unpatched)",
         measured: "surface is a strict subset of the wired wasm's: missing module_val_declaration and nullable_type, carrying no type the wired one lacks",
-        artifact: "validation/m14/results/family-grammar-fingerprints.json",
+        artifact: "validation/m14/results/archive/family-grammar-fingerprints.json",
       },
       {
         option: "npm tree-sitter-fsharp@0.1.0 (2019 vintage)",
         measured: "21 named types missing vs the wired wasm, 0 extra",
-        artifact: "validation/m14/results/family-grammar-fingerprints.json",
+        artifact: "validation/m14/results/archive/family-grammar-fingerprints.json",
       },
     ],
     evidence: [
-      "validation/m14/results/family-grammar-fingerprints.json",
-      "validation/m14/results/fsharp-pin-evidence.json",
-      "validation/m14/results/fsharp-grammar-ab.json",
-      "validation/m14/results/fsharp-corpus-census.json",
+      "validation/m14/results/archive/family-grammar-fingerprints.json",
+      "validation/m14/results/archive/fsharp-pin-evidence.json",
+      "validation/m14/results/archive/fsharp-grammar-ab.json",
+      "validation/m14/results/archive/fsharp-corpus-census.json",
     ],
     copies: [
       { label: "npm tree-sitter-fsharp@0.3.11 (unpatched)", path: path.join(CACHE, "tree-sitter-fsharp@0.3.11@@@1/tree-sitter-fsharp.wasm") },
@@ -557,8 +557,8 @@ export const LANES: Record<string, LaneDecision> = {
       "Pin the bytes with the strongest provenance available offline: the wired wasm is byte-identical to @lumis-sh/wasm-erlang@0.26.0, whose package metadata names WhatsApp/tree-sitter-erlang v0.15.0 at rev f21023bb built by tree-sitter CLI 0.26.7. Upstream is further along than v0.15.0, but no newer source or build exists locally, so an upgrade cannot be measured here and is not claimed.",
     alternatives: [],
     evidence: [
-      "validation/m14/results/wasm-provenance-census.json",
-      "validation/m14/results/family-grammar-fingerprints.json",
+      "validation/m14/results/archive/wasm-provenance-census.json",
+      "validation/m14/results/archive/family-grammar-fingerprints.json",
     ],
     copies: [
       { label: "mirror", path: path.join(MIRROR, "tree-sitter-erlang.wasm") },
@@ -590,8 +590,8 @@ export const LANES: Record<string, LaneDecision> = {
       },
     ],
     evidence: [
-      "validation/m14/results/wasm-provenance-census.json",
-      "validation/m14/results/family-grammar-fingerprints.json",
+      "validation/m14/results/archive/wasm-provenance-census.json",
+      "validation/m14/results/archive/family-grammar-fingerprints.json",
     ],
     copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-clojure.wasm") }],
   },
@@ -822,7 +822,7 @@ export const LANES: Record<string, LaneDecision> = {
       },
     ],
     evidence: [
-      "validation/m14/results/cpp-defect-register.json",
+      "validation/m14/results/archive/cpp-defect-register.json",
       "script/cpp-review/grammar-provenance.ts",
       "script/m12/cpp-node-types-compare.ts",
       "script/m12/cpp-wasm-compare.ts",
@@ -1606,7 +1606,7 @@ export const LANES: Record<string, LaneDecision> = {
         "DECLARED, NOT PATCHED: `@forward 'x' as prefix-*;`, the PREFIX form of the `as` clause. It requires `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression` (a `$._value` can itself be `a - b`). It occurs ZERO times in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. The A/B carries it as `forward-as-dashed-prefix` with verdict `unchanged-broken` rather than omitting it, so the unsupported form is named in the evidence instead of absent from it. A grammar conflict taken on for a construct with no evidence is a risk incurred on somebody else's behalf.",
       ],
       patchEvidence:
-        "validation/m14/results/scss-grammar-ab.json — an A/B over the 244 non-empty .scss files in 4 corpora (element-plus, phpmyadmin, vue-core, vue-element-admin), instrument script/m14/tmp/scss-grammar-ab.ts. Both patches together: 73 -> 149 files parsing clean (29.9% -> 61.1%), 76 FIXED, 0 REGRESSED, ERROR nodes 5,624 -> 3,900, and all 3 regression controls (`!important`, mixin+include, `#{$p}` interpolation) unchanged-clean; and the byte-reproducibility check that the locally generated parser matches the package's own shipped src/parser.c exactly (73/244 and 5,624 ERROR nodes on both) — which is the measurement that identifies the base dependency version rather than assuming it. Per corpus: element-plus 16 -> 90, phpmyadmin 50 -> 52, vue-core 1 -> 1, vue-element-admin 6 -> 6, which is why the instrument reports per-repo rather than an aggregate — 17.6% average is element-plus at 16/160 and phpmyadmin at 50/74 wearing the same number. This is the FIRST grammar lane whose win is measured on a corpus the grammar was not written for: 0.20.0 is the version the package declares, not one chosen for the corpus.",
+        "validation/m14/results/archive/scss-grammar-ab.json — an A/B over the 244 non-empty .scss files in 4 corpora (element-plus, phpmyadmin, vue-core, vue-element-admin), instrument script/m14/tmp/scss-grammar-ab.ts. Both patches together: 73 -> 149 files parsing clean (29.9% -> 61.1%), 76 FIXED, 0 REGRESSED, ERROR nodes 5,624 -> 3,900, and all 3 regression controls (`!important`, mixin+include, `#{$p}` interpolation) unchanged-clean; and the byte-reproducibility check that the locally generated parser matches the package's own shipped src/parser.c exactly (73/244 and 5,624 ERROR nodes on both) — which is the measurement that identifies the base dependency version rather than assuming it. Per corpus: element-plus 16 -> 90, phpmyadmin 50 -> 52, vue-core 1 -> 1, vue-element-admin 6 -> 6, which is why the instrument reports per-repo rather than an aggregate — 17.6% average is element-plus at 16/160 and phpmyadmin at 50/74 wearing the same number. This is the FIRST grammar lane whose win is measured on a corpus the grammar was not written for: 0.20.0 is the version the package declares, not one chosen for the corpus.",
       buildRequires: [
         "`npm install --no-save tree-sitter-css@0.20.0` inside grammars/tree-sitter-scss/ before `tree-sitter generate`. grammar.js line 9 is `const CSS = require('tree-sitter-css/grammar')`, so the build is NOT self-contained and fails with `Cannot find module 'tree-sitter-css/grammar'` without it.",
         "tree-sitter.json is REQUIRED for ABI 15 and is NOT in the npm tarball. Without it `tree-sitter generate` warns and silently emits ABI 14. It was authored here, and the wired bytes are ABI 15.",
@@ -1625,24 +1625,24 @@ export const LANES: Record<string, LaneDecision> = {
         option: "leave .scss routed to the CSS lane and declare the dialect unsupported",
         measured:
           "Rejected on measurement: 43/244 clean (17.6%) and 30,767 ERROR nodes, and the lane would carry a routing claim for a dialect its grammar cannot read. This is the status quo and it is the thing the SCSS lane exists to replace.",
-        artifact: "validation/m14/results/scss-grammar-ab.json",
+        artifact: "validation/m14/results/archive/scss-grammar-ab.json",
       },
       {
         option: "wire tree-sitter-scss@1.0.0's shipped src/parser.c as-is, unpatched",
         measured:
           "Rejected on measurement: 73/244 clean (29.9%). It is 1.4x better than the CSS grammar and still leaves 171 files failing, dominated by the `as` clause at 277 error spans. Its value was as the BASE — and it did establish something worth keeping, since the locally generated parser reproduces its shipped parser.c exactly (73/244, 5,624 ERROR nodes both), which is how the 0.20.0 dependency was identified rather than assumed.",
-        artifact: "validation/m14/results/scss-grammar-ab.json",
+        artifact: "validation/m14/results/archive/scss-grammar-ab.json",
       },
       {
         option: "rebuild SCSS on top of this repo's patched tree-sitter-css 0.25.0 instead of the 0.20.0 it declares",
         measured:
           "NOT POSSIBLE as written, and worth recording because it was the more attractive option — it would have inherited all four CSS patches for free. tree-sitter-scss 1.0.0 is CommonJS (`module.exports = grammar(require('tree-sitter-css/grammar'), {...})`) and tree-sitter-css 0.25.0 ships an ES-module grammar.js, so `require` of it fails with `ReferenceError: grammar is not defined` under the CLI's loader. Bridging it needs either a CJS shim that re-exports the ESM grammar or a port of the SCSS extension to ESM, and the port would also have to reconcile rule-name drift between 0.20 and 0.25 across the ~20 rules the extension overrides. That is a real project with a real risk of silent shape change, and it was declined in favour of two measured patches. The cost of declining is that SCSS does not inherit the CSS lane's `url(../)`, float-keyframe, IE-`progid:` or at-rule-ident fixes; measured cost is unquantified, which is itself the honest statement.",
-        artifact: "validation/m14/results/scss-grammar-ab.json",
+        artifact: "validation/m14/results/archive/scss-grammar-ab.json",
       },
     ],
     evidence: [
-      "validation/m14/results/scss-grammar-ab.json",
-      "validation/m14/results/wasm-provenance-census.json",
+      "validation/m14/results/archive/scss-grammar-ab.json",
+      "validation/m14/results/archive/wasm-provenance-census.json",
       "reviews/m49-css-review.md",
     ],
     // Deliberately EMPTY, and that is a fact rather than an omission. Every other

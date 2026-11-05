@@ -553,7 +553,7 @@ have touched `real-typescript-analyzer.ts` since F2's recorded commit
 `a943047e5c`, so this lane is 1 of 26 there), banned terms in OTHER lanes'
 artifacts (`validation/m14/grammar-pins.json`, `fixtures/clean/`, `fixtures/c/`,
 `fixtures/csharp/`, `fixtures/html/`, `results/M14.0.F5.json`,
-`results/fsharp-shape-census.json`), and `analyzer-hygiene-cpp` /
+`results/archive/fsharp-shape-census.json`), and `analyzer-hygiene-cpp` /
 `analyzer-hygiene-elixir`. Regenerating F1-F9 and fixing those artifacts is
 master-owned. Not one of the 21 names a file under
 `src/ast/real-typescript-analyzer.ts`, `docs/analyzers/typescript-ambiguity-sweep.md`,

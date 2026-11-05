@@ -4508,7 +4508,7 @@ does not have to re-derive it:
 
 | count | what | names bash? |
 | --- | --- | --- |
-| 14 | banned-term hits in `validation/m14/fixtures/{c,clean,csharp,html,sql}/…`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `fsharp-shape-census.json` | **no** |
+| 14 | banned-term hits in `validation/m14/fixtures/{c,clean,csharp,html,sql}/…`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `validation/m14/results/archive/fsharp-shape-census.json` | **no** |
 | 1 | `M14.0.F7` non-passing checks `analyzer-hygiene-cpp`, `analyzer-hygiene-elixir` | **no** |
 | 9 | evidence-freshness for F1–F9: "N declared input(s) changed since <commit>" | **structurally yes** |
 | 1 | the derived "freshness rule flags every artifact" — a consequence of the 9 above | no |

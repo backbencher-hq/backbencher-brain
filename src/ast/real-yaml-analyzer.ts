@@ -402,7 +402,7 @@ const MAPPING_TYPES = new Set(["block_mapping", "flow_mapping"])
 const MAPPING_PAIR_TYPES = new Set(["block_mapping_pair", "flow_pair"])
 const SEQUENCE_TYPES = new Set(["block_sequence", "flow_sequence"])
 // `flow_sequence_item` is deliberately absent: it is NOT one of this grammar's 36
-// named types (the full vocabulary is in validation/m14/results/yaml-f8-corpus-census.json),
+// named types (the full vocabulary is in validation/m14/results/archive/yaml-f8-corpus-census.json),
 // so a branch testing it could never match. M14.0.F1 caught it as an unregistered
 // literal, which is the dead-branch detector doing its job.
 const SEQUENCE_ITEM_TYPES = new Set(["block_sequence_item"])

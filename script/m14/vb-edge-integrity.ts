@@ -62,10 +62,11 @@
  * CLI: npx tsx script/m14/vb-edge-integrity.ts [--sample N] [--workers 4] [--out f.json]
  */
 import { execFileSync } from "node:child_process"
-import { readFileSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { emitEvidence } from "./evidence-harness"
 
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
@@ -371,12 +372,36 @@ for (const t of ALL_TYPES) {
 }
 
 if (OUT) {
-  writeFileSync(OUT, JSON.stringify({
-    corpusRoot: CR, admitted: files.length, drawn: draw.length, workers: WORKERS,
-    filesRead, symbols: symbolsTotal, emptyNameSymbols, unknownKindSymbols, unknownKindSamples,
-    filesWithNonAscii: nonAsciiFiles.size, heritageInNonAsciiFiles: Object.fromEntries(nonAsciiHeritage),
-    types: report,
-  }, null, 2))
-  console.log(`\nwrote ${OUT}`)
+  // HARNESS v2. results/*.json is written only by `emitEvidence`; the raw
+  // `writeFileSync` this replaces produced an artifact with no `schemaVersion`, which
+  // the evidence gate rejects by name. The measurement is unchanged and rides in
+  // `data`; the check is the script's own pass condition.
+  const ok = unknownKindSymbols + emptyNameSymbols === 0
+  emitEvidence({
+    // A LITERAL id, not a computed one: the artifact identity is `M14.0.VB-EDGE-INTEGRITY` and the
+    // filename must equal it. A computed id makes the artifact an ORPHAN to script/m49/verify-evidence-identity.ts
+    // (a producer is found by the literal inside the emitEvidence call), which this register does not allow.
+    issueId: "M14.0.VB-EDGE-INTEGRITY",
+    title: `VB relationship-edge endpoint integrity over the derived VB corpus (${draw.length} drawn of ${files.length})`,
+    claimLevel: "L1",
+    layers: ["differential"],
+    checks: [{
+      id: "vb-edge-endpoints-name-shaped",
+      description: "every published symbol carries a readable name and a known kind",
+      status: ok ? "pass" : "fail",
+      detail: `filesRead=${filesRead} symbols=${symbolsTotal} emptyName=${emptyNameSymbols} unknownKind=${unknownKindSymbols}`,
+    }],
+    limitations: [
+      { description: "the sample is drawn from the checkouts under the configured corpus root; the population is stated in `data.admitted`/`drawn`, not assumed" },
+      { description: "endpoint shape is checked against this analyzer's own symbol and relationship records, not against an independent oracle for every label" },
+    ],
+    data: {
+      corpusRoot: CR, admitted: files.length, drawn: draw.length, workers: WORKERS,
+      filesRead, symbols: symbolsTotal, emptyNameSymbols, unknownKindSymbols, unknownKindSamples,
+      filesWithNonAscii: nonAsciiFiles.size, heritageInNonAsciiFiles: Object.fromEntries(nonAsciiHeritage),
+      types: report,
+    },
+  })
+  console.log(`\nwrote ${OUT} (harness v2)`)
 }
 process.exitCode = unknownKindSymbols + emptyNameSymbols === 0 ? 0 : 1

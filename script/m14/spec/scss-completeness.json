@@ -606,13 +606,13 @@
       "id": "SCSS-L1",
       "construct": "the residual parse classes the grammar cannot represent",
       "measured": "95 of 244 non-empty .scss files still fail. The residual is a LONG TAIL — largest class 24 error spans, most under 20 — against a single 277-span class before patch 1/2. The largest coherent group left is a namespaced function call, `map.merge($a, $b)`, at 12 spans.",
-      "artifact": "validation/m14/results/scss-grammar-ab.json"
+      "artifact": "validation/m14/results/archive/scss-grammar-ab.json"
     },
     {
       "id": "SCSS-L2",
       "construct": "`@forward 'x' as prefix-*;` — the PREFIX form of the `as` clause",
       "measured": "0 occurrences in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. Supporting it needs `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression`. Carried in the A/B as `forward-as-dashed-prefix` with verdict `unchanged-broken`.",
-      "artifact": "validation/m14/results/scss-grammar-ab.json"
+      "artifact": "validation/m14/results/archive/scss-grammar-ab.json"
     },
     {
       "id": "SCSS-L3",
@@ -636,7 +636,7 @@
       "id": "SCSS-L6",
       "construct": "delegated CSS `var()` reads of externally-provided custom properties",
       "measured": "14 of 220 resolve (6%) in the element-plus corpus, which consumes Element Plus theme tokens defined in another file. The behaviour is the CSS lane's own — verified by running identical input through both lanes — and this lane's own `$var` reads are 223/223 = 100%.",
-      "artifact": "validation/m14/results/scss-analyzer-census.json"
+      "artifact": "validation/m14/results/archive/scss-analyzer-census.json"
     },
     {
       "id": "SCSS-L7",

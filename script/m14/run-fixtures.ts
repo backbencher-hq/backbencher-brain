@@ -114,11 +114,11 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex" },
   // M14.7-DataConfigDocs.yaml (#286): yaml joins the fixture lane with 24 fixtures, each
   // authored from re-probed emission (script/m14/tmp/yaml-fixture-dump.ts ->
-  // validation/m14/results/yaml-fixture-emission.json) and each paired with a NEGATIVE
+  // validation/m14/results/archive/yaml-fixture-emission.json) and each paired with a NEGATIVE
   // twin where a channel could over-fire. Six of the twelve grammar node types the lane
   // did not name are reachable only from a fixture, not from any corpus: a 400-file draw
   // over eight pinned repositories contains 19 `tag` nodes (all `!vault`/`!unsafe` cipher
-  // markers), ZERO directives, and 2 anchors (script/m14/results/yaml-f8-corpus-census.json).
+  // markers), ZERO directives, and 2 anchors (validation/m14/results/archive/yaml-f8-corpus-census.json).
   // Without this lane the tags, directives, anchors and merge-key contracts would have had
   // no evidence at all.
   yaml: { wasm: "tree-sitter-yaml.wasm", analyzerFile: "real-yaml-analyzer", className: "RealYamlAnalyzer", ext: "yaml,yml" },

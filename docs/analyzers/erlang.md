@@ -113,7 +113,7 @@ the record properties of the same name. On the two pinned corpora the old rule
 produced **4,043 type-dependency edges whose own site line does not apply the
 name it cites** (OTP, 4,154 files) and **244** (rebar3, 269 files); after the
 narrowing both are **0**, measured per edge against the site line
-(`validation/m14/results/erlang-er3-corpus-census.json`).
+(`validation/m14/results/archive/erlang-er3-corpus-census.json`).
 
 The same DECL-ONLY boundary now covers record types: a `record_expr` inside
 `-type`/`-opaque`/`-spec` is a declaration of the record's SHAPE and emits no
@@ -471,7 +471,7 @@ a defect class open.
 4. **`references`, 177 MISSING / 7,458 unexplained.** The unexplained bulk is the ER3
    narrowing itself: the shared oracle derives a type dependency for every atom it
    meets, and the analyzer emits only APPLIED names.
-   `validation/m14/results/erlang-er3-corpus-census.json` measured the old rule at
+   `validation/m14/results/archive/erlang-er3-corpus-census.json` measured the old rule at
    4,043 OTP / 244 rebar3 rows whose own site line does not apply the name it cites,
    and 0 after the narrowing. The MISSING 177 are macro-body calls and include-path
    targets the filter drops (below).
@@ -1409,7 +1409,7 @@ is **30/30** (`bun script/m14/run-fixtures.ts --lang erlang`).
 under a corpus, one parse per file, and compares the analyzer's edges against
 the mirrored F5 oracle on the same tree — no sampling, and both sides of the
 ER3 change are recorded in one artifact
-(`validation/m14/results/erlang-er3-corpus-census.json`):
+(`validation/m14/results/archive/erlang-er3-corpus-census.json`):
 
 | Corpus (rev) | files | oracle edges | analyzer edges | MISSING | UNEXPLAINED | type-ref sites that do not apply their name | record-type instantiates |
 | --- | --- | --- | --- | --- | --- | --- | --- |

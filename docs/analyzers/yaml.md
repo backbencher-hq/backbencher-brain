@@ -626,7 +626,7 @@ payload, not a worse algorithm.
   file authored by the same hand as the analyzer is a **mirror**, not a differential, and
   eleven lanes' hand-authored truth files were rejected on exactly that ground.
   Only the key tree is compared (see *Unsupported* for why scalar resolution is excluded).
-- Result: `validation/m14/results/yaml-f5-differential.json`
+- Result: `validation/m14/results/archive/yaml-f5-differential.json`
 - Draw: 8 pinned corpora × 200 files = **1,004 files, 357,304 oracle paths**
 - **Unexplained: 0.** Every disagreement is adjudicated into a declared bucket; anything a
   bucket cannot explain is reported as a defect.
@@ -697,7 +697,7 @@ analyzer, and 0/0 in both directions is what a fitted referee looks like.
 - Independent oracle: `script/m14/tmp/yaml-f5-oracle.py`,
   `script/m14/tmp/yaml-f5-differential.ts`
 - Differential: `validation/m12/results/yaml-differential.json` (M12) and
-  `validation/m14/results/yaml-f5-differential.json` (independent oracle)
+  `validation/m14/results/archive/yaml-f5-differential.json` (independent oracle)
 - Contract probe: `validation/m12/results/yaml-contract.json` (27/27)
 - Corpus census: `validation/m12/results/yaml-corpus-errors.json`
 - Complexity: `validation/m12/results/yaml-complexity.json`

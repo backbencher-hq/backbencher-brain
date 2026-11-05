@@ -184,7 +184,7 @@ string split. No O(n²) or per-symbol O(n) scans.
 ### Corpus census, 2026-09-25 (full extent, sharded and merged)
 
 `script/m14/tmp/fsharp-corpus-census.ts` (chunker: `fsharp-census-chunks.ts`),
-rows in `validation/m14/results/fsharp-corpus-census.json` with the five shard
+rows in `validation/m14/results/archive/fsharp-corpus-census.json` with the five shard
 artifacts kept beside it in `fsharp-corpus-census.shards/`. Full extent, no
 sample: **6,627 files**, 0 analyzer throws, 5,192 dangling sources / 189,824
 dangling targets (the dangling targets are the **leaf-target contract** doing its
@@ -230,7 +230,7 @@ recorded in the artifact's note.
 ### Parse-health triage, 2026-09-25 — the constructs the pinned grammar rejects
 
 Instruments: `script/m14/tmp/fsharp-error-triage.ts` (rows in
-`validation/m14/results/fsharp-error-triage.json`) and
+`validation/m14/results/archive/fsharp-error-triage.json`) and
 `script/m14/tmp/fsharp-error-repro.ts` (rows in
 `validation/m14/results/fsharp-error-repro.json` — 24 cases, 8 breaking, 16
 controls). The triage walks every ERROR node in the compiler's `src` and clusters
@@ -281,8 +281,8 @@ whose bodies are invisible. Quantifying relationship loss per gap is owed.
 - Ground truth: `validation/m12/ground-truth/fsharp.json`
 - Differential: `validation/m12/results/fsharp-differential.json`
 - Complexity: `validation/m12/results/fsharp-complexity.json`
-- Corpus census (2026-09-25, full extent): `validation/m14/results/fsharp-corpus-census.json` (+ `fsharp-corpus-census.shards/`)
-- Parse-health triage: `validation/m14/results/fsharp-error-triage.json`; grammar-gap reproducers: `validation/m14/results/fsharp-error-repro.json`
+- Corpus census (2026-09-25, full extent): `validation/m14/results/archive/fsharp-corpus-census.json` (+ `fsharp-corpus-census.shards/`)
+- Parse-health triage: `validation/m14/results/archive/fsharp-error-triage.json`; grammar-gap reproducers: `validation/m14/results/fsharp-error-repro.json`
 - Corpus sample: `validation/m12/results/fsharp-corpus-sample.txt`
 - Grammar source: `grammars/tree-sitter-fsharp/` (patched scanner + grammar)
 - Docs: this file
@@ -3301,7 +3301,7 @@ summary. A reader who disagrees with the verdict has something to run.
 |---|---|---|---|
 | 1 | every emitted relationship type is compared against truth | **met** | `verify-label-coverage.ts` -> fsharp `5386 / 5386`, un-audited column empty; `script/m60/rel-type-coverage-gate.ts` -> no fsharp row in CHECK 1 and no `DERIVATION\|fsharp\|` line; `verify-truth-existence.ts` -> fsharp absent from its un-declared list; `verify-oracle-coverage.ts` -> PASS with fsharp's compared set recorded in `validation/m14/oracle-coverage-baseline.json` |
 | 2 | the differential agrees on the lane's corpus draws | **met, with two DECLARED residue classes** | `differential.ts --lang fsharp --sample 200` -> 99.9% covered, MISSING 15, unexplained 234, `heuristic=0`; every residual row is `calls` (no calls oracle exists — `declared_no_truth`) or `overrides` (the bare-target spelling where the base is not in the same file). This is NOT `MISSING=0`: two classes are declared rather than closed, and they are declared rather than tuned out of the allowlist |
-| 3 | no oracle is derived from the implementation it checks | **met** | `script/m14/fsharp-truth-oracle.ts` has **zero imports** — it takes the tree and the symbol list as arguments, and the two arms of pass 19 are written from the grammar's nodes and fields (the shape census `validation/m14/results/fsharp-shape-census.json`), not from the analyzer's walk |
+| 3 | no oracle is derived from the implementation it checks | **met** | `script/m14/fsharp-truth-oracle.ts` has **zero imports** — it takes the tree and the symbol list as arguments, and the two arms of pass 19 are written from the grammar's nodes and fields (the shape census `validation/m14/results/archive/fsharp-shape-census.json`), not from the analyzer's walk |
 | 4 | the pins can FAIL | **met** | `mutate-analyzer.ts` (fsharp's 36 mutants, spread from `script/m14/fsharp-mutants.ts`) -> 36 caught; and for pass 19's own claim, disabling the arms makes the harness's own guard fire: `COMPARED WITH NO TRUTH: imports (115 comparable, 0 truth), uses (44 comparable, 0 truth)` |
 | 5 | the lane's fixtures pass and nothing else regresses | **met** | `script/m14/run-fixtures.ts fsharp` -> `{"fsharp":{"pass":15,"fail":0}}` and `fixture baseline gate: no regressions`; `npx tsc --noEmit` clean |
 | 6 | in-project identity and containment are wired to the project index | **met at the level measured** | the index is registered for `.fs` in `parallel-indexer.ts` (pass 16) and read by the analyzer; a multi-file F# fixture pins all seven refinement classes and their forbids; the store reading on `Argu` shows 600 refined edges (319 before the scope/binding channels), of which **471 attach to a symbol** — `in-project-type` 260/260, `in-project-name` 126/126, `in-project-namespace` 36/36, and `in-project-type-or-module` 49/178, the one class whose owner is a name the store may hold under a module rather than a type |

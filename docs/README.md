@@ -145,6 +145,9 @@ relationship-ontology table; the measured worklist is on the analyzer index). Ol
 - `reviews/` — per-lane review records and resolution evidence.
 - `archive/` — recovered code from branches removed on 2026-11-01 (`archive/unmerged-pre-merge-2026-11-01/`),
   and pre-consolidation handoff/process pages (`archive/docs-pre-consolidation/`) that tracked evidence cites by path.
+- [`validation/languages/results/tool-matrix.json`](../validation/languages/results/tool-matrix.json) — the language × tool
+  matrix evidence: every analyzer language indexed from a real fixture and exercised through the public tools.
+  Contract and extension steps: [`LANGUAGE-TOOL-MATRIX.md`](./LANGUAGE-TOOL-MATRIX.md).
 
 ### Superseded copies
 
@@ -161,7 +164,11 @@ If a doc tells you something and you have reason to doubt it, check rather than 
 npx tsx script/verify-docs-indexing.ts          # indexing pages, against src/
 npx tsx script/verify-tool-docs.ts              # regenerates and compares the tool references
 npx tsx script/m14/verify-analyzer-docs.ts      # analyzer pages, sections and ontology cells
+npm run verify:language-matrix                  # every analyzer language × the public tool layer
 ```
+
+The matrix's contract page ([LANGUAGE-TOOL-MATRIX.md](./LANGUAGE-TOOL-MATRIX.md)) also explains how to add a
+language or a new tool check without rewriting the gate.
 
 Docs that assert behaviour the code does not implement are worse than no docs: they cost time while looking
 authoritative.
