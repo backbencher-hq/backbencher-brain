@@ -166,7 +166,13 @@ const SHARED_RELEVANT_FILES = [
   "docs/m24/M24-MASTER-PLAN.md",
   "docs/IDE-HONESTY-CONTRACT.md",
   "docs/IDE-PROGRAM-DECISIONS.md",
-  "validation/m24/results/manifest.json",
+  // manifest.json is DELIBERATELY NOT here. It is the ledger — the OUTPUT of
+  // the evidence cycle, not an input to what a verifier run proves. Keeping it
+  // relevant caused infinite regress: every evidence pin updates the ledger,
+  // which staled every leg's evidence, which required another pin…
+  // (M25-M29 already carry this rule; M24 was never back-ported, and it was
+  //  found live here too: 29/29 checks with the ledger committed on top and
+  //  the whole milestone went red purely from committing its own evidence.)
   // The gate script itself is deliberately NOT shared-relevant: it is a
   // consumer of evidence, not part of any component's behavior, and its own
   // correctness is re-proven on every run by the negative mutations below.
