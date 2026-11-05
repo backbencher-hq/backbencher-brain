@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "3ea307e68ec832edecefbd8d233d93b24de71458",
+        "currentCommit": "77e8851b2686d1cb01ac92bfabebd2813ca099b6",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 85,
@@ -158,7 +158,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
+        "currentCommit": "3ea307e68ec832edecefbd8d233d93b24de71458",
         "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
         "evidenceFile": "E4.json",
         "passed": 56,
@@ -346,7 +346,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b162d2e260a24e75024f7189a0467db2129e17b9",
+        "currentCommit": "3ea307e68ec832edecefbd8d233d93b24de71458",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
         "passed": 22,
@@ -390,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T22:54:03.721Z",
-    "contentSha256": "84e6d42bfe140eb868031415f4f1c7526705a8cdb7a9910df74ba749ea286229"
+    "sealedAt": "2026-11-05T22:54:49.704Z",
+    "contentSha256": "d798c6f69af5f161c25ee8b0241a740b1544bd7c54bbf80567f923a32b0d2a19"
   }
 }
