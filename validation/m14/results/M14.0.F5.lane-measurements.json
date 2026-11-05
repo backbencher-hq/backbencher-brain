@@ -1,5 +1,5 @@
 {
-  "note": "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned \u2014 #870). `pinned:false` is a verdict, not an absence.",
+  "note": "Per-lane differential verdict for every lane the sweep measured, including the lanes the pin gate refuses to pin (a lane carrying its own missing/unexplained is never pinned — #870). `pinned:false` is a verdict, not an absence. MERGED across runs: a scoped run updates its own lanes and carries every other lane's last verdict.",
   "lanes": {
     "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web:vba": {
       "missing": 0,
@@ -10,58 +10,58 @@
       "dirtyCorpus": false
     },
     "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab:matlab": {
-      "missing": 834,
-      "unexplained": 94,
-      "heuristic": 816,
-      "sampleSetHash": "b21c90671b755238",
+      "missing": 406,
+      "unexplained": 27,
+      "heuristic": 687,
+      "sampleSetHash": "fd22afedaf2fb63a",
       "pinned": false,
       "dirtyCorpus": false
     },
     "Clyde:clean": {
-      "missing": 136,
-      "unexplained": 506,
+      "missing": 780,
+      "unexplained": 777,
       "heuristic": 0,
-      "sampleSetHash": "978c5398ef710288",
+      "sampleSetHash": "fc95c118941fce6c",
       "pinned": false,
       "dirtyCorpus": false
     },
     "DISMTools:vb": {
-      "missing": 27,
+      "missing": 35,
       "unexplained": 1,
-      "heuristic": 25,
-      "sampleSetHash": "b7668c006e2a5997",
+      "heuristic": 15,
+      "sampleSetHash": "d114c1d6d8fb73af",
       "pinned": false,
       "dirtyCorpus": false
     },
     "Exposed:kotlin": {
       "missing": 0,
-      "unexplained": 0,
-      "heuristic": 87,
-      "sampleSetHash": "f39e30d3648bd4a2",
-      "pinned": true,
+      "unexplained": 2,
+      "heuristic": 95,
+      "sampleSetHash": "77246e9a7d7a46e5",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "FSharp.Data:fsharp": {
-      "missing": 5,
-      "unexplained": 100,
+      "missing": 11,
+      "unexplained": 155,
       "heuristic": 0,
-      "sampleSetHash": "eb130f595cf5269c",
+      "sampleSetHash": "d9b5982594499588",
       "pinned": false,
       "dirtyCorpus": false
     },
     "P3D-Legacy:vb": {
-      "missing": 2,
+      "missing": 1,
       "unexplained": 0,
-      "heuristic": 9,
-      "sampleSetHash": "d092e10cc54c3af0",
+      "heuristic": 12,
+      "sampleSetHash": "82147b214f4eada6",
       "pinned": false,
       "dirtyCorpus": false
     },
     "afnetworking:objc": {
-      "missing": 5,
-      "unexplained": 39,
-      "heuristic": 256,
-      "sampleSetHash": "c11ef488d519be41",
+      "missing": 4,
+      "unexplained": 33,
+      "heuristic": 297,
+      "sampleSetHash": "8190561311e77983",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -69,15 +69,15 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "0052e892f6e0d27b",
+      "sampleSetHash": "ecdb25b00584cf23",
       "pinned": true,
       "dirtyCorpus": false
     },
     "ansible:powershell": {
-      "missing": 157,
+      "missing": 156,
       "unexplained": 78,
       "heuristic": 0,
-      "sampleSetHash": "b316cd3dd025ab43",
+      "sampleSetHash": "9ef5dc9f565f92e5",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -85,23 +85,23 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "c9d0e1b59b1676f8",
+      "sampleSetHash": "08fe537258f4217c",
       "pinned": true,
       "dirtyCorpus": false
     },
     "cabal:haskell": {
       "missing": 0,
-      "unexplained": 13,
+      "unexplained": 15,
       "heuristic": 0,
-      "sampleSetHash": "2040e3ad57636818",
+      "sampleSetHash": "f0bc0febaf91d611",
       "pinned": false,
       "dirtyCorpus": false
     },
     "cargo:rust": {
-      "missing": 0,
-      "unexplained": 4,
+      "missing": 2,
+      "unexplained": 5,
       "heuristic": 0,
-      "sampleSetHash": "e09029111a6cc4ec",
+      "sampleSetHash": "bd30d7dbb85c464a",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -109,47 +109,47 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "2887280c3e2a105b",
+      "sampleSetHash": "82f47ef54f28fec8",
       "pinned": true,
       "dirtyCorpus": false
     },
     "cats-effect:scala": {
-      "missing": 96,
+      "missing": 80,
       "unexplained": 0,
-      "heuristic": 84,
-      "sampleSetHash": "8e07cd86346c004a",
+      "heuristic": 11,
+      "sampleSetHash": "ddf7a481f629fa25",
       "pinned": false,
       "dirtyCorpus": false
     },
     "clean-stdlib:clean": {
       "missing": 40,
-      "unexplained": 474,
+      "unexplained": 455,
       "heuristic": 0,
-      "sampleSetHash": "cb9a513e3948c179",
+      "sampleSetHash": "f5a5e9dfe9b7793c",
       "pinned": false,
       "dirtyCorpus": false
     },
     "clj-kondo:clojure": {
-      "missing": 0,
-      "unexplained": 0,
+      "missing": 5,
+      "unexplained": 12,
       "heuristic": 0,
-      "sampleSetHash": "93bd5239a044ad6d",
-      "pinned": true,
+      "sampleSetHash": "d8f2814a78f48c19",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "clojure:clojure": {
-      "missing": 0,
-      "unexplained": 0,
+      "missing": 29,
+      "unexplained": 9,
       "heuristic": 0,
-      "sampleSetHash": "e0395ac2bf495bf0",
-      "pinned": true,
+      "sampleSetHash": "4bf80c2df22d5495",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "clojure:java": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 64,
-      "sampleSetHash": "86f37ca7cf27bbd4",
+      "heuristic": 26,
+      "sampleSetHash": "c9d6a3b4b3fb8eb6",
       "pinned": true,
       "dirtyCorpus": false
     },
@@ -164,72 +164,72 @@
     "cython:python": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 127,
-      "sampleSetHash": "d44b4e45b381caec",
+      "heuristic": 104,
+      "sampleSetHash": "2f1c96734046b556",
       "pinned": true,
       "dirtyCorpus": false
     },
     "dart-http:dart": {
       "missing": 0,
-      "unexplained": 3,
+      "unexplained": 77,
       "heuristic": 0,
-      "sampleSetHash": "549143339f0cfaa9",
+      "sampleSetHash": "f5f66e68c50d0eb3",
       "pinned": false,
       "dirtyCorpus": false
     },
     "dplyr:r": {
-      "missing": 31,
-      "unexplained": 5,
+      "missing": 35,
+      "unexplained": 13,
       "heuristic": 0,
-      "sampleSetHash": "d03edb1b1921e704",
+      "sampleSetHash": "065d2155b321a229",
       "pinned": false,
       "dirtyCorpus": false
     },
     "duckdb:sql": {
       "missing": 0,
-      "unexplained": 0,
+      "unexplained": 7,
       "heuristic": 0,
-      "sampleSetHash": "8378a1275fc0b970",
-      "pinned": true,
+      "sampleSetHash": "7ab9f494d72e2849",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "element-plus:scss": {
-      "missing": 58,
-      "unexplained": 4,
+      "missing": 48,
+      "unexplained": 5,
       "heuristic": 0,
-      "sampleSetHash": "09fd97de2a99a550",
+      "sampleSetHash": "c1f7327e57c81002",
       "pinned": false,
       "dirtyCorpus": false
     },
     "element-plus:typescript": {
-      "missing": 59,
-      "unexplained": 76,
+      "missing": 48,
+      "unexplained": 46,
       "heuristic": 0,
-      "sampleSetHash": "02f7248d60f646f7",
+      "sampleSetHash": "992ce7e26be955e3",
       "pinned": false,
       "dirtyCorpus": false
     },
     "element-plus:vue": {
-      "missing": 181,
-      "unexplained": 181,
+      "missing": 165,
+      "unexplained": 164,
       "heuristic": 0,
-      "sampleSetHash": "31404f2ddefaec87",
+      "sampleSetHash": "bd8f28da2eef59d2",
       "pinned": false,
       "dirtyCorpus": false
     },
     "elixir:elixir": {
-      "missing": 0,
-      "unexplained": 0,
+      "missing": 3,
+      "unexplained": 3,
       "heuristic": 0,
-      "sampleSetHash": "96895fbad6c5eabd",
-      "pinned": true,
+      "sampleSetHash": "c3f7296cf156ac35",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "fmt:cpp": {
-      "missing": 285,
-      "unexplained": 2146,
+      "missing": 279,
+      "unexplained": 2018,
       "heuristic": 0,
-      "sampleSetHash": "89b51095c4659906",
+      "sampleSetHash": "8797063f41dd5263",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -237,79 +237,79 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "ff6eeb46eef5e9d4",
+      "sampleSetHash": "3203ce3a828bd8aa",
       "pinned": true,
       "dirtyCorpus": false
     },
     "fsharp:fsharp": {
-      "missing": 11,
-      "unexplained": 67,
+      "missing": 9,
+      "unexplained": 60,
       "heuristic": 0,
-      "sampleSetHash": "2143f8bdc90fe3f1",
+      "sampleSetHash": "1eff34aed46c7b70",
       "pinned": false,
       "dirtyCorpus": false
     },
     "geb:groovy": {
-      "missing": 1,
-      "unexplained": 16,
-      "heuristic": 15,
-      "sampleSetHash": "64fae4a36e5f2d8a",
+      "missing": 2,
+      "unexplained": 7,
+      "heuristic": 27,
+      "sampleSetHash": "ff810ce2ea28d601",
       "pinned": false,
       "dirtyCorpus": false
     },
     "go-tools:go": {
-      "missing": 8,
+      "missing": 17,
       "unexplained": 0,
-      "heuristic": 8,
-      "sampleSetHash": "ae9449eb50c1f68f",
+      "heuristic": 16,
+      "sampleSetHash": "f2d2792c0399f014",
       "pinned": false,
       "dirtyCorpus": false
     },
     "gql-graphql-platform:graphql": {
-      "missing": 80,
-      "unexplained": 426,
+      "missing": 1,
+      "unexplained": 321,
       "heuristic": 0,
-      "sampleSetHash": "1f61dc3ef8597e2b",
+      "sampleSetHash": "34fc1d2e2f606986",
       "pinned": false,
       "dirtyCorpus": false
     },
     "grails-core:css": {
       "missing": 0,
-      "unexplained": 0,
+      "unexplained": 2,
       "heuristic": 0,
-      "sampleSetHash": "b1a764a028ab54fa",
-      "pinned": true,
+      "sampleSetHash": "9367d4150c1fb0a5",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "grails-core:groovy": {
-      "missing": 0,
-      "unexplained": 4,
-      "heuristic": 33,
-      "sampleSetHash": "05f479fd007b734c",
+      "missing": 1,
+      "unexplained": 9,
+      "heuristic": 29,
+      "sampleSetHash": "866371c53bcb23fd",
       "pinned": false,
       "dirtyCorpus": false
     },
     "grails-core:java": {
       "missing": 0,
-      "unexplained": 0,
-      "heuristic": 81,
-      "sampleSetHash": "2fff892462bb64ee",
-      "pinned": true,
+      "unexplained": 2,
+      "heuristic": 107,
+      "sampleSetHash": "c25c334ab86246df",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "grails-core:xml": {
       "missing": 0,
-      "unexplained": 4,
+      "unexplained": 3,
       "heuristic": 0,
-      "sampleSetHash": "c2ee15031bcf970a",
+      "sampleSetHash": "67dbe6abb1fc1d39",
       "pinned": false,
       "dirtyCorpus": false
     },
     "hledger:haskell": {
       "missing": 0,
-      "unexplained": 36,
+      "unexplained": 35,
       "heuristic": 0,
-      "sampleSetHash": "d1c3ed0e861d118d",
+      "sampleSetHash": "d1fbaa76b5d046c8",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -323,41 +323,41 @@
     },
     "julia:julia": {
       "missing": 2,
-      "unexplained": 4,
+      "unexplained": 27,
       "heuristic": 0,
-      "sampleSetHash": "1ab6b77fd0181926",
+      "sampleSetHash": "4871115a765f2b7f",
       "pinned": false,
       "dirtyCorpus": false
     },
     "kong:lua": {
-      "missing": 189,
-      "unexplained": 1139,
+      "missing": 127,
+      "unexplained": 1015,
       "heuristic": 0,
-      "sampleSetHash": "340a66783dcf3790",
+      "sampleSetHash": "9a63f6c751a594aa",
       "pinned": false,
       "dirtyCorpus": false
     },
     "kotlinx-coroutines:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 87,
-      "sampleSetHash": "d2351846d054edea",
+      "heuristic": 85,
+      "sampleSetHash": "2e3e5893781d2da9",
       "pinned": true,
       "dirtyCorpus": false
     },
     "kubernetes:markdown": {
-      "missing": 434,
-      "unexplained": 4,
+      "missing": 685,
+      "unexplained": 8,
       "heuristic": 0,
-      "sampleSetHash": "e6daa535a3109a5c",
+      "sampleSetHash": "6f9b5db43d44bab3",
       "pinned": false,
       "dirtyCorpus": false
     },
     "kubernetes:yaml": {
       "missing": 0,
-      "unexplained": 9,
+      "unexplained": 79,
       "heuristic": 0,
-      "sampleSetHash": "e16a7ffe72767537",
+      "sampleSetHash": "e19a173ea5980b54",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -373,31 +373,31 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "87fbbb53c2a11ada",
+      "sampleSetHash": "e5f2c5fb033ae2d6",
       "pinned": true,
       "dirtyCorpus": false
     },
     "nim-lang-nimble:nim": {
-      "missing": 1,
-      "unexplained": 2,
+      "missing": 0,
+      "unexplained": 1,
       "heuristic": 0,
-      "sampleSetHash": "78e85e478d4f8eec",
+      "sampleSetHash": "1c721fce9a426dba",
       "pinned": false,
       "dirtyCorpus": false
     },
     "nim:nim": {
-      "missing": 4,
-      "unexplained": 0,
+      "missing": 14,
+      "unexplained": 3,
       "heuristic": 0,
-      "sampleSetHash": "fd6837c766748fae",
+      "sampleSetHash": "41994c67dfb5519e",
       "pinned": false,
       "dirtyCorpus": false
     },
     "nlohmann-json:cpp": {
-      "missing": 18,
-      "unexplained": 40,
+      "missing": 35,
+      "unexplained": 212,
       "heuristic": 0,
-      "sampleSetHash": "8a5dd461fa134b39",
+      "sampleSetHash": "107844702eb33a7b",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -405,15 +405,15 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "93dbe4539798b0ca",
+      "sampleSetHash": "1f1650b534d9196b",
       "pinned": true,
       "dirtyCorpus": false
     },
     "otp:erlang": {
-      "missing": 3,
-      "unexplained": 175,
+      "missing": 4,
+      "unexplained": 120,
       "heuristic": 0,
-      "sampleSetHash": "c3632c972f79c9a2",
+      "sampleSetHash": "4513e7bffb24fe58",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -421,31 +421,31 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "30e4242514acef78",
+      "sampleSetHash": "7e9c67d715a71a25",
       "pinned": true,
       "dirtyCorpus": false
     },
     "pb-googleapis:protobuf": {
       "missing": 0,
-      "unexplained": 326,
+      "unexplained": 298,
       "heuristic": 0,
-      "sampleSetHash": "1e3fce8d817064ba",
+      "sampleSetHash": "016caa1bf3592494",
       "pinned": false,
       "dirtyCorpus": false
     },
     "phoenix:elixir": {
-      "missing": 0,
+      "missing": 1,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "5c95656137506145",
-      "pinned": true,
+      "sampleSetHash": "9b1ddac85ebf5054",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "phpmyadmin:php": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "a6ec6aafaf16080e",
+      "sampleSetHash": "a3e0e08dcfbe34f0",
       "pinned": true,
       "dirtyCorpus": false
     },
@@ -453,15 +453,15 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "4be02ca7685ed414",
+      "sampleSetHash": "4f813a27036d1331",
       "pinned": true,
       "dirtyCorpus": false
     },
     "plack:perl": {
-      "missing": 351,
-      "unexplained": 0,
+      "missing": 5,
+      "unexplained": 1,
       "heuristic": 0,
-      "sampleSetHash": "1590d2f7ff4d704b",
+      "sampleSetHash": "ebca92e0d2a5209a",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -469,47 +469,47 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "3b3dd5e9fc860788",
+      "sampleSetHash": "14efe1f05cdb934e",
       "pinned": true,
       "dirtyCorpus": false
     },
     "powershell:powershell": {
-      "missing": 142,
-      "unexplained": 49,
-      "heuristic": 10,
-      "sampleSetHash": "00d5982e5cf1f4c6",
+      "missing": 146,
+      "unexplained": 40,
+      "heuristic": 9,
+      "sampleSetHash": "a9846fb21e53d96f",
       "pinned": false,
       "dirtyCorpus": false
     },
     "proxicall:dart": {
-      "missing": 0,
-      "unexplained": 42,
+      "missing": 2,
+      "unexplained": 30,
       "heuristic": 0,
-      "sampleSetHash": "fb6aa92e8421a989",
+      "sampleSetHash": "d69aaf8142c00060",
       "pinned": false,
       "dirtyCorpus": false
     },
     "rack:ruby": {
-      "missing": 7,
-      "unexplained": 15,
+      "missing": 2,
+      "unexplained": 16,
       "heuristic": 0,
-      "sampleSetHash": "cbf9b090af441408",
+      "sampleSetHash": "88db9858f8f6cc79",
       "pinned": false,
       "dirtyCorpus": false
     },
     "rake:ruby": {
-      "missing": 5,
-      "unexplained": 31,
+      "missing": 3,
+      "unexplained": 43,
       "heuristic": 0,
-      "sampleSetHash": "0c505b9b4aeda127",
+      "sampleSetHash": "fe07dde1e0b6ec80",
       "pinned": false,
       "dirtyCorpus": false
     },
     "rebar3:erlang": {
-      "missing": 9,
-      "unexplained": 200,
+      "missing": 6,
+      "unexplained": 171,
       "heuristic": 0,
-      "sampleSetHash": "346c26d74ea36d84",
+      "sampleSetHash": "9a9b3ff055bf8c4b",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -530,10 +530,10 @@
       "dirtyCorpus": false
     },
     "ripgrep:rust": {
-      "missing": 0,
+      "missing": 1,
       "unexplained": 5,
       "heuristic": 0,
-      "sampleSetHash": "3726f83d65a6e09a",
+      "sampleSetHash": "076f8a01febdccf4",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -546,50 +546,50 @@
       "dirtyCorpus": false
     },
     "scala3:markdown": {
-      "missing": 2,
+      "missing": 6,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "3e7de98a887db464",
+      "sampleSetHash": "667f180a59dd91dd",
       "pinned": false,
       "dirtyCorpus": false
     },
     "scala3:scala": {
-      "missing": 50,
-      "unexplained": 1,
-      "heuristic": 55,
-      "sampleSetHash": "807ae633353d4d0f",
+      "missing": 56,
+      "unexplained": 7,
+      "heuristic": 22,
+      "sampleSetHash": "c30a6a19c8b6f4bb",
       "pinned": false,
       "dirtyCorpus": false
     },
     "sdwebimage:objc": {
-      "missing": 1,
-      "unexplained": 18,
-      "heuristic": 87,
-      "sampleSetHash": "34ae730653481ed1",
+      "missing": 7,
+      "unexplained": 10,
+      "heuristic": 38,
+      "sampleSetHash": "a7bc921a515441ce",
       "pinned": false,
       "dirtyCorpus": false
     },
     "shadcn-svelte:svelte": {
       "missing": 69,
-      "unexplained": 69,
+      "unexplained": 70,
       "heuristic": 0,
-      "sampleSetHash": "ed416fc8cc76ca47",
+      "sampleSetHash": "a45282e1f018bd91",
       "pinned": false,
       "dirtyCorpus": false
     },
     "solidity:solidity": {
-      "missing": 0,
+      "missing": 3,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "e9708e750546e983",
-      "pinned": true,
+      "sampleSetHash": "8de361440b750429",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "sqlite:c": {
-      "missing": 113,
-      "unexplained": 22,
+      "missing": 91,
+      "unexplained": 12,
       "heuristic": 0,
-      "sampleSetHash": "ef6794727cd236d8",
+      "sampleSetHash": "e52a5ac6f258b799",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -603,41 +603,41 @@
     },
     "svelte:css": {
       "missing": 0,
-      "unexplained": 1,
+      "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "e91f17bb6c98ffe3",
-      "pinned": false,
+      "sampleSetHash": "af9df135a261420f",
+      "pinned": true,
       "dirtyCorpus": false
     },
     "svelte:javascript": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 0,
-      "sampleSetHash": "b3f5ca3dabe585c8",
+      "heuristic": 1,
+      "sampleSetHash": "efa1a7c14f64d91c",
       "pinned": true,
       "dirtyCorpus": false
     },
     "svelte:svelte": {
-      "missing": 0,
-      "unexplained": 0,
+      "missing": 2,
+      "unexplained": 2,
       "heuristic": 0,
-      "sampleSetHash": "c1c6f9e95bf02a6b",
-      "pinned": true,
+      "sampleSetHash": "14f9492b5b7592f4",
+      "pinned": false,
       "dirtyCorpus": false
     },
     "swift-nio:swift": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "ea2ac2a489ca0853",
+      "sampleSetHash": "787bd05ef81fe68c",
       "pinned": true,
       "dirtyCorpus": false
     },
     "terraform:go": {
-      "missing": 2,
+      "missing": 1,
       "unexplained": 0,
-      "heuristic": 2,
-      "sampleSetHash": "9c09cea779eb5ca6",
+      "heuristic": 1,
+      "sampleSetHash": "02a579e69b89e1b7",
       "pinned": false,
       "dirtyCorpus": false
     },
@@ -645,47 +645,47 @@
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "sampleSetHash": "a3d0513e0c1e2d44",
+      "sampleSetHash": "35ac58ec7c90abfa",
       "pinned": true,
       "dirtyCorpus": false
     },
     "tf-aws-components:hcl": {
       "missing": 0,
-      "unexplained": 40,
+      "unexplained": 11,
       "heuristic": 0,
-      "sampleSetHash": "1bae8a312cc9c4a2",
+      "sampleSetHash": "22ba04d87ada8af8",
       "pinned": false,
       "dirtyCorpus": false
     },
     "vue-core:typescript": {
-      "missing": 197,
-      "unexplained": 221,
+      "missing": 183,
+      "unexplained": 198,
       "heuristic": 0,
-      "sampleSetHash": "771c854fefb7fcdc",
+      "sampleSetHash": "b89c77ae8d58207b",
       "pinned": false,
       "dirtyCorpus": false
     },
     "vue-element-admin:vue": {
-      "missing": 132,
-      "unexplained": 138,
+      "missing": 153,
+      "unexplained": 155,
       "heuristic": 0,
-      "sampleSetHash": "b38e2e502caa0f35",
+      "sampleSetHash": "f7b5dc11259725e2",
       "pinned": false,
       "dirtyCorpus": false
     },
     "zig:zig": {
-      "missing": 48,
-      "unexplained": 41,
+      "missing": 87,
+      "unexplained": 75,
       "heuristic": 0,
-      "sampleSetHash": "053fa67f6663fddb",
+      "sampleSetHash": "7971432146767b08",
       "pinned": false,
       "dirtyCorpus": false
     },
     "zls:zig": {
-      "missing": 252,
-      "unexplained": 45,
+      "missing": 273,
+      "unexplained": 36,
       "heuristic": 0,
-      "sampleSetHash": "c1285552d459a43a",
+      "sampleSetHash": "371b7fba64b1ac3b",
       "pinned": false,
       "dirtyCorpus": false
     }
