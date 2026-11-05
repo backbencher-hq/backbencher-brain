@@ -4,23 +4,22 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 37,
-  "passed": 27,
-  "failed": 10,
+  "passed": 28,
+  "failed": 9,
   "failures": [
+    "X1: E1 verifier passes at HEAD — E1: KNOWN-GAP (43/44 passed, 3/3 mutants caught)  (exit=1)",
     "X1: E4 verifier passes at HEAD — exit=1",
-    "X1: E5 verifier passes at HEAD — E5: building extension…  (exit=1)",
+    "X1: E5 verifier passes at HEAD — E5: KNOWN-GAP (0/0 in-editor checks passed)  (exit=1)",
     "X1: D1 verifier passes at HEAD — D1: KNOWN-GAP (20/22 passed, 4 negative)  (exit=1)",
     "X1: D1i verifier passes at HEAD — exit=1",
-    "X1: v1 completion bar audited item-by-item — zero violations — bar1: VS Code I3 (pinned in-editor run) not verified; bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)",
+    "X1: v1 completion bar audited item-by-item — zero violations — bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded); bar4: cross-platform record not verified",
+    "X1: E1 regeneration run passes — E1: KNOWN-GAP (43/44 passed, 3/3 mutants caught)  (exit=1)",
     "X1: E4 regeneration run passes — exit=1",
-    "X1: V1 regeneration run passes — V1: KNOWN-GAP (25/26 passed, 6/6 mutants caught)  (exit=1)",
-    "X1: V1 evidence byte-identical modulo generatedAt",
-    "X1: E7 regeneration run passes — G4 — platform mutation suite on ide/vscode/src/auto-index.ts  (exit=1)",
     "X1: D1 regeneration run passes — D1: KNOWN-GAP (20/22 passed, 4 negative)  (exit=1)"
   ],
   "negativeCases": 3,
   "suiteExits": {
-    "E1": 0,
+    "E1": 1,
     "E2": 0,
     "E3": 0,
     "E4": 1,
@@ -73,10 +72,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
+  "currentCommit": "a0a71ac0bfd43aea29bd1f4831ff85c2be869492",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-10-16T19:56:26.670Z",
+  "generatedAt": "2026-11-05T13:34:12.927Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -84,7 +83,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-16T19:56:26.671Z",
-    "contentSha256": "c59486c893680358c19d9354e57307371df16d38f0cca6de0801584f79cb1713"
+    "sealedAt": "2026-11-05T13:34:12.928Z",
+    "contentSha256": "1f9c5f1e12807f95bac5f9d4308e315bac7ef0c8f145f6393fb9554affbadea2"
   }
 }

@@ -4,27 +4,29 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 91,
-  "passed": 86,
-  "failed": 5,
+  "passed": 85,
+  "failed": 6,
   "negativeCases": 21,
-  "currentCommit": "286ec3ffaffe6205975e5e37bdd88a17ad3329f9",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "0d9394a24cef231e8aa49a397dd254957eeff983",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/README.md"
+  ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-04T00:28:05.950Z",
+  "generatedAt": "2026-11-05T14:46:03.768Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
-    "ledgerStatus": "open",
+    "ledgerStatus": "closed",
     "m24GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "5 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — closure-gate evidence verified at an ancestor-or-equal commit; G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit ... - the relevant tree was clean at measure time",
+  "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) ... - relevant uncommitted files at measure time: ide/vscode/README.md",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-04T00:28:05.973Z",
-    "contentSha256": "86eea9dfbaf647a74fce4e64d303776a3e938d806d24478a4c4ffc87e949ee6d"
+    "sealedAt": "2026-11-05T14:46:03.785Z",
+    "contentSha256": "d14a339bb7027a57d7d30056ef002a2de9a5bccdd971ec86bc998eedd1d239ce"
   }
 }

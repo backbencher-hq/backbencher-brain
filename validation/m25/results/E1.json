@@ -3,16 +3,16 @@
   "code": "E1",
   "milestone": "M25",
   "status": "verified",
-  "checks": 44,
-  "passed": 44,
+  "checks": 46,
+  "passed": 46,
   "failed": 0,
   "mutantsCaught": 3,
   "mutantsTotal": 3,
   "negativeCases": 0,
-  "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
+  "currentCommit": "f00fdab0ce2d03287867defc3b13589d6f7e2ae2",
   "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
   "evidenceFile": "E1.json",
-  "generatedAt": "2026-10-16T19:53:28.926Z",
+  "generatedAt": "2026-11-05T15:32:32.452Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-16T19:53:28.928Z",
-    "contentSha256": "7eab3d27994c63164096e18c1b4b7a4c2097e00973c0d249cfafc82b4075811b"
+    "sealedAt": "2026-11-05T15:32:32.453Z",
+    "contentSha256": "da99036a93111b5512dd0cca47d2ff2134221867d5dcfb244f5406a867570648"
   }
 }

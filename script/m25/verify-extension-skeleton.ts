@@ -194,9 +194,29 @@ try {
   }
 
   // --- G4: thin client — complement stance (source lint) --------------------
+  // The selector must COVER the launch languages, and the way it covers them is
+  // by being DERIVED from their single owner rather than by repeating literals.
+  // The old form asserted seven literal `language: "x"` strings, which the
+  // derived selector does not contain — so it went red on a CORRECT extension,
+  // while a genuinely narrow selector that listed exactly those seven literals
+  // would have passed it. Assert the property, not the spelling.
+  const LAUNCH_OWNER = path.join(ROOT, "src/lsp/launch_languages.ts")
+  const launchSource = readFileSync(LAUNCH_OWNER, "utf8")
+  const WAVE1_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "python"]
   check(
-    "G4: documentSelector covers the launch languages (M29 wave-1 set)",
-    ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "python"].every((lang) => extSource.includes(`language: "${lang}"`)),
+    "G4: the documentSelector is derived from LAUNCH_LANGUAGES, not restated as literals",
+    extSource.includes("documentSelector: LAUNCH_LANGUAGES.map("),
+    "selector does not derive from the launch list — a literal copy can drift from it",
+  )
+  check(
+    "G4: every M29 wave-1 launch language is in the owner list",
+    WAVE1_LANGS.every((lang) => launchSource.includes(`"${lang}"`)),
+    "a wave-1 language is missing from src/lsp/launch_languages.ts",
+  )
+  check(
+    "G4: every launch language maps to a VS Code language id (total by type, not by list)",
+    extSource.includes("VSCODE_LANGUAGE_ID: Record<LaunchLanguage, string>"),
+    "the id map is not a total Record over LaunchLanguage, so a new language can be unmapped",
   )
   const bannedProviderPatterns: Array<[RegExp, string]> = [
     [/registerCompletion/, "completion provider (contract §7.1 bans it)"],
