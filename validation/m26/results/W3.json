@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "e40f51a16be5e62a444d794b6161c89e3f40f7e2",
+  "currentCommit": "32e23ec9da68b138aef11e92d4fca1b40d138ce8",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "sourceFingerprint": "6f28bcca3f5abd110067543da12d45d9ae75dd753871e8b035725a8961057609",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -19,7 +19,7 @@
   ],
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-11-05T21:44:49.755Z",
+  "generatedAt": "2026-11-05T21:57:00.880Z",
   "fixturePairs": [
     {
       "source": "kotlin",
@@ -188,7 +188,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:44:49.755Z",
-    "contentSha256": "3f93cd8df577bdc23b2c4d5cc61d63c317c7f56d2de70eb658a98da999f6b982"
+    "sealedAt": "2026-11-05T21:57:00.880Z",
+    "contentSha256": "7083f15c61de97246677457869ba59c91d3fd05cfc51c4ff76126483146c976e"
   }
 }

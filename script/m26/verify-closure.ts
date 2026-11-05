@@ -82,6 +82,19 @@ function fingerprint(file: string): string | null {
     // regeneration); parseSealedRecord has already VERIFIED the seal, so the
     // equivalence check compares content only (same rule as m24's closure).
     delete j.bbSeal
+    // Fields that measure the HOST, not the product. machineReality scans
+    // ~/.bb/projects, and that project count moves whenever another agent
+    // indexes a repository; the realDbs* counters are derived from the same scan.
+    // Requiring byte-identity on them asserts that the machine held still between
+    // two runs, which is not a property of D1 and is why the docs leg failed
+    // inside this closure while passing standalone. Everything else — status,
+    // passed, failed, mutants caught, source fingerprint — stays compared
+    // strictly, so this narrows what is compared rather than loosening the check.
+    delete j.machineReality
+    delete j.realDbsScanned
+    delete j.realDbsSkipped
+    delete j.realCrossLanguagePairs
+    delete j.realPairRows
     return JSON.stringify(j)
   } catch {
     return null

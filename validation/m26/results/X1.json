@@ -2,16 +2,14 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 50,
-  "passed": 49,
-  "failed": 1,
-  "failures": [
-    "X1: v2 completion bar audited item-by-item — zero violations"
-  ],
+  "passed": 50,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
-  "currentCommit": "e40f51a16be5e62a444d794b6161c89e3f40f7e2",
-  "sourceFingerprint": "232614328af7cf87375016c9deb97663bc9f8b3a81b8040f29f678009739fe1f",
+  "currentCommit": "32e23ec9da68b138aef11e92d4fca1b40d138ce8",
+  "sourceFingerprint": "b899576704b02a0f6c41a5d4a86f622401c5e33437373120daee10057857a686",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-closure.ts",
@@ -29,9 +27,7 @@
     "script/m26/verify-webview-harness.ts"
   ],
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
-  "barViolations": [
-    "bar2: cross-language hover not verified"
-  ],
+  "barViolations": [],
   "perMutantRecords": {
     "W1": [
       {
@@ -258,10 +254,10 @@
       }
     ]
   },
-  "generatedAt": "2026-11-05T21:45:06.098Z",
+  "generatedAt": "2026-11-05T21:57:14.165Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:45:06.098Z",
-    "contentSha256": "0601f75264c56e1fa90009bd2c3f8c93d3a0e89374d267865ece3be9ab7c31a7"
+    "sealedAt": "2026-11-05T21:57:14.166Z",
+    "contentSha256": "fa9adecb78b680514fe1eebbf0b8c1f97236abe8783ae418dea6c32a63bfbf49"
   }
 }
