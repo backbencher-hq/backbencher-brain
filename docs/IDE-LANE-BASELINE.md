@@ -222,55 +222,44 @@ Both defects were measured and fixed by the vscode-client lane:
 
 ## 14. Open decision: what position a `contains` link must open
 
-**Status: unresolved, and it is the only thing standing between `m42-rich-hover`
-and green.** Recorded here with its measurements so the decision can be made on
-facts rather than on whichever code happens to run.
+**Status: unresolved. It is the last thing between `m42-rich-hover` and green.**
+Recorded with its measurements so it is decided on facts.
 
-Two laws now govern the `contained` block of a hover card and they disagree about
-**one field**.
+Two laws govern the `contained` block of a hover card:
 
-**Law A — the address rule (adopted this campaign, gated in T3 and §6).** An
-outgoing or declaration row opens the far end's *index-stored declaration*; a
-stored call-site line is never turned into a link in another file's coordinate
-system. This is what ended the defect where `instantiates [Greeter]` opened
-`greeter.ts:4` for a site in `app.ts`.
+**Law A — the address rule (adopted this campaign, gated in T3/§6).** An outgoing
+or declaration row opens the far end's index-stored declaration; a stored
+call-site line is never turned into a link in another file's coordinate system.
+This ended the defect where `instantiates [Greeter]` opened `greeter.ts:4` for a
+site in `app.ts`.
 
-**Law B — `H2/R4-LAW-CONTAIN` (written before Law A existed).** Every `contained`
-link equals "the index-stored location of the `contains`/`exports` row it
-renders — the position that row STORES, which `textDocument/references` excludes
-by law".
+**Law B — `H2/R4-LAW-CONTAIN` (written before Law A).** Every `contained` link
+equals the index-stored location of the `contains`/`exports` row it renders.
 
-**The measured disagreement, on the H2 fixture (`Greeter` in `App.java`):**
+**Measured on the H2 fixture, `Greeter` contained in `App.java`:**
 ```
-rendered link        App.java:5:6      (0-based line 5, column 6)
-stored row key       App.java:6:0      (1-based line 6, column 0)
-callSite record      {"kind":"declaration","file":"…/App.java","line":6,
-                      "note":"this is the calling symbol's declaration, not the call site"}
+rendered link     App.java:5:6
+stored row key    App.java:6:0
+callSite record   {"kind":"declaration","file":"…/App.java","line":6,"note":"this is the calling symbol's declaration, not the call site"}
 ```
-**They name the same line.** The rendered link is 0-based line 5 = 1-based line 6,
-which is exactly the declaration line the record stores. The only difference is
-the **column**: the store carries `0`, a line-start placeholder, because a
-containment row stores a line and not an identifier column; the component now
-carries `6`, the column of the declared identifier.
+**These disagree by a whole LINE, not by a column.** An earlier reading of this
+table — that `5` and `6` were the same line in different bases — was tested and
+is WRONG: narrowing the comparison to `file:line` still reports `0/1`, so the two
+keys name different lines under whatever base each one uses.
 
-**Why this is a decision and not a bug fix.** The gate's comparison is not wrong,
-and the component's output is not wrong — the store's column was never
-meaningful, so `R4-LAW-CONTAIN` was asserting a placeholder while believing it
-was asserting a position. Two honest resolutions:
+That leaves exactly two possibilities, and they are cheap to distinguish:
 
-1. **Narrow the law to (file, line) for containment rows** and keep asserting
-   coverage (one link per stored row, which `R4-LAW-CONTAIN-ROWS` already does).
-   Justification: the stored column is a placeholder `0`, so the column clause
-   never discriminated; the new link is strictly more precise and on the same
-   line. Cost: the gate no longer asserts any column for containment, and it
-   should say so out loud rather than silently comparing fewer fields.
-2. **Keep the law and make the component emit the stored column** for
-   containment rows. Cost: it reintroduces a line-start position for a link whose
-   useful target is an identifier, and it re-opens the class of defect Law A
-   closed for every other row kind.
+1. **the gate's stored key is off by one** for containment rows (the `callSite`
+   record says line 6 and the key says 6, so if the component's key is 1-based it
+   is rendering line 5 — one BEFORE the declaration), or
+2. **the component's containment link is off by one** — it points at the line
+   before the declaration it means to open.
 
-**Recommendation: resolution 1**, with the limitation stated in the gate — the
-stored column is not evidence, so asserting it was theatre. Not applied
-unilaterally because it changes what a law claims about the product, and the
-third failing check (`H2/M`, the mutant oracle) is built on the same expectation
-and would need the same revision.
+**Do not "fix" this by relaxing the law.** The first attempt at that — matching
+containment on `file:line` because the stored column is a placeholder `0` — was
+reverted after measurement showed the line itself was the disagreement. Relaxing
+a comparison to accommodate an off-by-one is how a gate stops being able to fail.
+
+**Next step:** print the raw `CardLink.key` and the raw stored `containmentRowGrounds[].key` side by side with their base conventions, and see which one moves
+when the declaration line moves. One of them is wrong and the gate is the only
+thing that noticed.
