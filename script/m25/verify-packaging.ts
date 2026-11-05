@@ -36,6 +36,13 @@ import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+
+// HOME is mounted read-only in this sandbox, so npx cannot write its default
+// cache (~/.npm/_cacache) and EVERY vsce invocation dies with EROFS before it
+// runs — which made E4 report like a missing-token failure when it is an
+// environment one. Redirect the npm cache once, for every child process.
+process.env["npm_config_cache"] = path.join(ROOT, ".tmp-npm-cache")
+mkdirSync(process.env["npm_config_cache"]!, { recursive: true })
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
 const RESULTS = path.join(ROOT, "validation/m25/results")
 
