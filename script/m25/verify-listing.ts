@@ -108,7 +108,11 @@ function forkEvidence(): Record<string, string> {
   const forks: Record<string, string> = {}
   if (!existsSync(RESULTS_DIR)) return forks
   for (const f of readdirSync(RESULTS_DIR)) {
-    if (!f.startsWith("F-") || !f.endsWith(".json")) continue
+    // Superseded records are ARCHIVE, not evidence. readdir order decides which
+    // record wins when both are read, so an archived "blocked" file could
+    // overwrite a live "verified" one and make the listing gate report a claim
+    // drift that does not exist — the ledger was right and the reader was wrong.
+    if (!f.startsWith("F-") || !f.endsWith(".json") || f.includes(".superseded-")) continue
     try {
       const rec = parseSealedRecord(join(RESULTS_DIR, f)) as Record<string, unknown>
       const name = String(rec["fork"] ?? f.slice(2, -5))

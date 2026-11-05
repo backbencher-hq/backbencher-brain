@@ -59,13 +59,11 @@ floors behind this table.
 The CONTRACT is the governing document; this table summarizes it. See `docs/IDE-HONESTY-CONTRACT.md` §2 for the authoritative definitions.
 
 Currently shipped claims are I1 (protocol level) for every feature on every
-launched language. Editor-level claims exist for the one editor that has a
-pinned recorded run — VS Code, in the matrix below — and it is
+launched language. Editor-level claims exist for the two editors that have a
+pinned recorded run — VS Code and Antigravity, in the matrix below — and each is
 a claim about **the bundle that run installed**, per contract §15 Truth Rule 5.
-The extension source changed on 2026-11-04 (fourteen-language activation and the
-status-bar command path), so both runs predate the current bundle: re-capturing
-their frames against it is the remaining step before either is cited as a claim
-about HEAD. Cursor and Windsurf have no pinned run on this machine,
+Both runs were re-captured against the current bundle, so each is a claim about
+HEAD rather than about an older build. Cursor and Windsurf have no pinned run on this machine,
 and no platform beyond Linux has one.
 
 **No claim is inherited.** A fork with no pinned run carries no claim, and a run
@@ -80,7 +78,7 @@ from per-fork evidence and drift-gated by the D1 verifier:
 |--------|-------|----------|
 | VS Code | I3 — in-editor run at pinned 1.85.0, 91/91 checks (recorded 2026-10-17; the run predates the 2026-11-04 bundle, so frames must be re-captured before this is cited at HEAD) | `validation/m25/results/E5.json` |
 | Cursor | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-CURSOR.json` |
-| Antigravity | blocked — the fork launches at 1.107.0 but its extension host returns no results, so 0 checks ran. The earlier 90/90 run predates the 2026-11-04 bundle and is not cited at HEAD | `validation/m25/results/F-ANTIGRAVITY.json` |
+| Antigravity | I4 — pinned fork run at 1.107.0, 90/90 in-editor checks against the current bundle | `validation/m25/results/F-ANTIGRAVITY.json` |
 | Windsurf | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-WINDSURF.json` |
 | Zed | blocked — no pinned run on this machine. The integration ships as an LSP config (`ide/zed/bb-lsp/`) whose shape is validated by `script/m27/verify-zed.ts`; a validated config is not a recorded editor run, so no claim is made | `script/m27/verify-zed.ts` |
 | JetBrains (LSP4IJ) | blocked — no pinned run on this machine. The integration ships as an LSP4IJ descriptor (`ide/lsp4ij/bb-lsp/`), validated by the M27 config family; a validated descriptor is not a run | `script/m27/verify-closure.ts` (M27 family) |
@@ -90,8 +88,8 @@ from per-fork evidence and drift-gated by the D1 verifier:
 Seven editors are named here because seven are what this project ships an
 integration for. **Five of them carry no claim**, and that is the honest state
 rather than a gap in the table: a config that parses, and a protocol that
-answers, are not an editor run. Only VS Code has a pinned,
-recorded run, and it predates the current bundle.
+answers, are not an editor run. Only VS Code and Antigravity have a pinned,
+recorded run, and both are captured against the current bundle.
 
 ## Complement stance (contract §7)
 

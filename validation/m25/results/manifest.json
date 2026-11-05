@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "b3ba88e1279cc3e7d470eb400d821ed657e4ffe0",
+        "currentCommit": "b162d2e260a24e75024f7189a0467db2129e17b9",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 85,
-        "failed": 1,
+        "passed": 84,
+        "failed": 2,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) — the relevant tree was clean at measure time"
       }
     },
     {
@@ -255,29 +255,30 @@
         "owner spot-check scheduled"
       ],
       "evidence": {
-        "status": "blocked",
-        "currentCommit": "6cc8f5c37fef481891172aaccc6269869aa6a889",
+        "status": "verified",
+        "currentCommit": "b007e12db69b0d5c55a72ca4b5f0ccbd3f8ddb84",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
           "cursor": {
-            "status": "verified",
-            "version": "3.18.9",
-            "passed": 26,
-            "total": 26,
-            "evidenceFile": "F-CURSOR.json"
+            "status": "blocked",
+            "version": null,
+            "total": 0,
+            "evidenceFile": "F-CURSOR.json",
+            "reason": "cursor not found — looked at: legacy: /usr/bin/cursor"
           },
           "antigravity": {
             "status": "verified",
             "version": "1.107.0",
-            "passed": 26,
-            "total": 26,
+            "total": 91,
             "evidenceFile": "F-ANTIGRAVITY.json"
           },
           "windsurf": {
             "status": "blocked",
-            "reason": "windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
-            "evidenceFile": "F-WINDSURF.json"
+            "version": null,
+            "total": 0,
+            "evidenceFile": "F-WINDSURF.json",
+            "reason": "windsurf not found — looked at: legacy: /usr/bin/windsurf"
           }
         },
         "perForkEvidence": true,
@@ -288,8 +289,7 @@
           "L3: definition outside index is honest empty (per fork)",
           "G1: forged fork claim in the capability matrix is detected (mutation proof)"
         ],
-        "total": 52,
-        "blockedReason": "cursor not found — looked at: legacy: /usr/bin/cursor"
+        "total": 91
       }
     },
     {
@@ -389,7 +389,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T22:40:30.369Z",
-    "contentSha256": "7bbbc74673bb7e9c187d918383553cfda51fdde7e3d4e09f312aedb13ca96d5b"
+    "sealedAt": "2026-11-05T22:51:56.087Z",
+    "contentSha256": "e123a42b31b479a47a72aaad04059a6e128ead16bdfc1bf07de3dae1b72e8f98"
   }
 }
