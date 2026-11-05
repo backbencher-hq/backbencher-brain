@@ -64,6 +64,23 @@ function runVerifier(script: string): { exit: number; stdout: string } {
  *  passed, …)` — is the number a work queue needs; the exit code stays beside it. The stdout was
  *  ALREADY captured here and thrown away; this uses it. MESSAGE ONLY: no check, boolean or counter
  *  in this file changes. */
+/** The NAMES of a sub-verifier's failing checks.
+ *
+ * A closure that prints only `D1: FAILED (33/34)` costs a debugging round per
+ * occurrence: the count says a check failed but not which one, and this campaign
+ * has already paid eight times for inferring a cause from a summary line. The
+ * stdout is captured and was being thrown away; this keeps the first few failing
+ * check names so the next reader starts from a fact. MESSAGE ONLY: no check,
+ * boolean or counter changes. */
+function failingCheckNames(s: string): string {
+  const names = s
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => /^FAIL:|^✗/.test(l))
+    .map((l) => l.replace(/^FAIL:\s*/, "").replace(/^✗\s*/, ""))
+  return names.length === 0 ? "" : ` | failing: ${names.slice(0, 3).join(" ; ")}`
+}
+
 function lastSummary(s: string): string {
   return (
     s
@@ -166,7 +183,7 @@ for (const { code, script } of SUITE) {
   const run = runVerifier(script)
   suiteStdout[code] = run.stdout
   const s1 = lastSummary(run.stdout)
-  check(`X1: ${code} verifier passes at HEAD`, run.exit === 0, s1 ? `${s1}  (exit=${run.exit})` : `exit=${run.exit}`)
+  check(`X1: ${code} verifier passes at HEAD`, run.exit === 0, (s1 ? `${s1}  (exit=${run.exit})` : `exit=${run.exit}`) + failingCheckNames(run.stdout))
 }
 
 // --- Pass 2: per-mutant records -----------------------------------------------------
@@ -265,7 +282,7 @@ for (const { code, script, evidence } of SUITE) {
   const run = runVerifier(script)
   const after = fingerprint(fp)
   const s2 = lastSummary(run.stdout)
-  check(`X1: ${code} regeneration run passes`, run.exit === 0, s2 ? `${s2}  (exit=${run.exit})` : `exit=${run.exit}`)
+  check(`X1: ${code} regeneration run passes`, run.exit === 0, (s2 ? `${s2}  (exit=${run.exit})` : `exit=${run.exit}`) + failingCheckNames(run.stdout))
   check(`X1: ${code} evidence byte-identical (modulo generatedAt/currentCommit)`, before !== null && before === after)
 }
 
