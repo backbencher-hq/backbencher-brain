@@ -8,7 +8,8 @@
     "pinned": true,
     "source": "installed CLI --version at preflight"
   },
-  "status": "known-gap",
+  "status": "blocked",
+  "blockedReason": "the fork launches and accepts the full VS Code test CLI (it warns only about --nologo) but starts no extension host, so zero checks ran; nothing is claimed for this fork and no evidence is implied",
   "os": "linux",
   "machine": {
     "kernel": "Linux 7.2.6-76070206-generic",
@@ -17,23 +18,23 @@
     "node": "v22.22.1",
     "runtime": "fork-run"
   },
-  "currentCommit": "2b56a8d53e84cd8a4b7272dfe8e6cf7dce48f58e",
-  "commit": "2b56a8d53e84cd8a4b7272dfe8e6cf7dce48f58e",
+  "currentCommit": "ea3df5350b69b5997aea609edd7f81c3e411bb73",
+  "commit": "ea3df5350b69b5997aea609edd7f81c3e411bb73",
   "failed": 0,
   "checks": [],
   "checksPassed": 0,
   "checksTotal": 0,
   "activation": null,
-  "elapsedMs": 420176,
+  "elapsedMs": 420188,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-11-05T16:38:01.712Z",
+  "generatedAt": "2026-11-05T17:26:09.859Z",
   "limitations": [
     "editor did not reach a terminal suite state within 420 s (elapsed 420 s) — partial results recorded honestly"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T16:38:01.712Z",
-    "contentSha256": "aef39fe1349161091bc6cd00d49165f5e28759bd9efd0ca329cd3a3146b7aa57"
+    "sealedAt": "2026-11-05T17:26:09.859Z",
+    "contentSha256": "8549e2ea9bfda1df0ccf8dda66c075865f2f40144c7bddb1461176f80fbf26bd"
   }
 }

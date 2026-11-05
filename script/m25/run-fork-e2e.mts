@@ -221,7 +221,17 @@ async function main() {
       code: "E6",
       fork: fork.name,
       editor: { name: fork.name, version: fork.version, pinned: true, source: "installed CLI --version at preflight" },
-      status: verified ? "verified" : "known-gap",
+      // A fork that ran ZERO checks is not a "known gap with known extent" — it is
+      // a blocked leg, and the contract asks for a blocked leg to carry a REAL
+      // reason rather than a status with nothing behind it. Recording it as
+      // known-gap is what made the ledger entry read as hollow.
+      status: verified ? "verified" : checks.length === 0 ? "blocked" : "known-gap",
+      ...(checks.length === 0
+        ? {
+            blockedReason:
+              "the fork launches and accepts the full VS Code test CLI (it warns only about --nologo) but starts no extension host, so zero checks ran; nothing is claimed for this fork and no evidence is implied",
+          }
+        : {}),
       os: process.platform,
       machine,
       currentCommit: commit,
