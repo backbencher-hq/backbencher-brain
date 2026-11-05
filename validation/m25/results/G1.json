@@ -7,11 +7,11 @@
   "passed": 90,
   "failed": 1,
   "negativeCases": 21,
-  "currentCommit": "6cc8f5c37fef481891172aaccc6269869aa6a889",
+  "currentCommit": "b3ba88e1279cc3e7d470eb400d821ed657e4ffe0",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-05T21:33:50.217Z",
+  "generatedAt": "2026-11-05T22:40:30.359Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
@@ -24,7 +24,7 @@
   "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:33:50.239Z",
-    "contentSha256": "e61b06c8ace65dd10fbb01c31101a3e86cbe37fa8be314808eef6a6483bca2a0"
+    "sealedAt": "2026-11-05T22:40:30.370Z",
+    "contentSha256": "3b10b79b1935ce0cdf6361ff251879112c5decb85b1f8373e2ab9cc50a1c215c"
   }
 }

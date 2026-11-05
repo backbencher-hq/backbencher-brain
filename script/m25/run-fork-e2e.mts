@@ -10,13 +10,46 @@
 // Evidence: validation/m25/results/F-<FORK>.json (machine-emitted, per fork)
 //           docs/m25/FORK-CAPABILITY-MATRIX.md (generated FROM the evidence)
 import { spawn } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, chmodSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, statSync, writeFileSync, chmodSync } from "node:fs"
 import { writeSealed } from "../lib/evidence.ts"
+import { resolveEditorCli } from "../lib/editor-cli.ts"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
+
+/**
+ * The ELECTRON BINARY a fork actually runs, not the shell wrapper on its PATH.
+ *
+ * A VS Code fork installs `bin/<name>` as a shell script that runs
+ * `ELECTRON_RUN_AS_NODE=1 "$ELECTRON" cli.js "$@"` — the CLI shim, which starts
+ * the editor and DETACHES. Spawning that from here returns a process whose exit
+ * tells us nothing about the editor, and the extension host that runs
+ * `--extensionTestsPath` never gets a caller it can report to: the leg sits for
+ * its full timeout and records 0 checks.
+ *
+ * @vscode/test-electron (E5) does not use the shim — it spawns the Electron
+ * binary directly. That is the whole difference between E5 passing in-editor and
+ * E6 recording 0/0 for a fork that is demonstrably installed and launchable.
+ *
+ * Resolution: realpath the wrapper, take its install root (`bin/..`), and use the
+ * binary of the same name if it is the real thing (large ELF). Falls back to the
+ * resolved path, so a layout that does not match keeps its previous behaviour.
+ */
+function forkExecutable(cliName: string): string {
+  const resolved = resolveEditorCli(cliName)
+  const candidate = resolved.path
+  if (!candidate) return cliName
+  try {
+    const real = realpathSync(candidate)
+    const exe = path.join(path.resolve(path.dirname(real), ".."), cliName)
+    if (existsSync(exe) && statSync(exe).size > 1_000_000) return exe
+  } catch {
+    // unreadable wrapper — fall through to the resolved path
+  }
+  return candidate
+}
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
 const RESULTS = path.join(ROOT, "validation/m25/results")
 const MATRIX = path.join(ROOT, "docs/m25/FORK-CAPABILITY-MATRIX.md")
@@ -132,7 +165,7 @@ async function main() {
     process.env["XDG_DATA_HOME"] = path.join(xdgRoot, "data")
     process.env["XDG_STATE_HOME"] = path.join(xdgRoot, "state")
     chmodSync(process.env["XDG_RUNTIME_DIR"], 0o700)
-    const child = spawn(fork.cli, [
+    const child = spawn(forkExecutable(fork.cli), [
       fx.workspaceDir,
       "--user-data-dir", path.join(forkOut, "user-data"),
       "--extensionDevelopmentPath", EXT_ROOT,
@@ -144,6 +177,12 @@ async function main() {
       // results, which is exactly what 0/0 looked like.
       "--no-sandbox",
       "--disable-dev-shm-usage",
+      // This machine runs COSMIC, so WAYLAND_DISPLAY points at a compositor the
+      // sandbox cannot reach. Chromium's Ozone tries Wayland first and, when the
+      // connection fails, prints "The platform failed to initialize. Exiting."
+      // and quits BEFORE any extension host exists — which the runner then
+      // reported as a fork that launched and produced 0 checks. Force X11.
+      "--ozone-platform=x11",
       "--nologo",
     ], {
       detached: true,
@@ -155,6 +194,9 @@ async function main() {
       stdio: "inherit",
       env: {
         ...process.env,
+        // Unset, not overridden: an empty WAYLAND_DISPLAY still counts as
+        // "Wayland was asked for" to some Chromium versions.
+        ...(delete (process.env as Record<string, string | undefined>)["WAYLAND_DISPLAY"], {}),
         DISPLAY: process.env.DISPLAY ?? ":0",
         E5_OUT: resultsPath,
         E5_WS: fx.workspaceDir,
