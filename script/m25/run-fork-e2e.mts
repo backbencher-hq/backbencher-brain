@@ -134,6 +134,11 @@ async function main() {
       "--extensionTestsPath", innerPath,
       "--disable-workspace-trust",
       "--disable-gpu",
+      // Electron under bwrap has no user namespaces and often refuses to start a
+      // renderer silently; the launcher accepts the CLI and exits 0 with no
+      // results, which is exactly what 0/0 looked like.
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
       "--nologo",
     ], {
       detached: true,
