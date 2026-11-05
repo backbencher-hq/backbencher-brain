@@ -32,7 +32,7 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | v5 | M29 | Precision Waves | **CLOSED** (2/9 verified) | wave-1 languages owner-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant-repo budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
 | v6 | M42 | The Interactive Hover | **CLOSED** (2/8 verified) | rich hover + actions live in-editor (E5 70/70, E6 cursor/antigravity); click-throughs and panels verified in real VS Code | [m42 ledger](../validation/m42/results/manifest.json) |
 | v7 | M44 | The Understandable Hub | **CLOSED on GitHub**; closure gate X1 43/53 at HEAD (48/48 at its closing commit), owner spot check pending — **governance record reads `known-gap` at HEAD `a0ed9eade`** | — (no claim level published from a red governance record) | [m44/M44-MASTER-PLAN.md](./m44/M44-MASTER-PLAN.md), [G1](../validation/m44/results/G1.json) |
-| v8 | M55 | The Hub That Tells the Truth | **CLOSED on GitHub**; **12 of 14 records verified at HEAD `24a48142f`** — G1 `known-gap` (the 41-gate M53 ladder must complete on a quiet machine), X1 `known-gap` (downstream of G1). T6, HOV-COVERAGE, V1 and HOV-REDTEAM have all since gone **verified** | I1 for protocol-level gates; T1/T2/T3/T4/T5/P1/EVID-TREE/V1-* /T6/HOV-COVERAGE/HOV-REDTEAM verified | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
+| v8 | M55 | The Hub That Tells the Truth | **CLOSED on GitHub**; **12 of 14 records verified at HEAD `24a48142f`** — G1 `known-gap` (the 41-gate M53 ladder must finish its full run on a quiet machine), X1 `known-gap` (downstream of G1). T6, HOV-COVERAGE, V1 and HOV-REDTEAM have all since gone **verified** | I1 for protocol-level gates; T1/T2/T3/T4/T5/P1/EVID-TREE/V1-* /T6/HOV-COVERAGE/HOV-REDTEAM verified | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
 | v9 | M62 | Address Truth | **CLOSED**; ledger closed, G1/A1/A2/A3/X1 `verified`, pinned at commit `a943047e5c` (2026-09-28) and **not re-earned since** | I1 (machine-level address truth); the editor-visible half is the owner's I3 spot-check, which is scheduled, not recorded | [m62/M62-MASTER-PLAN.md](./m62/M62-MASTER-PLAN.md), [ledger](../validation/m62/results/manifest.json) |
 
 Nothing on this page is a fork- or editor-verified claim until a milestone's
@@ -195,7 +195,7 @@ red bars are, in dependency order:
    the red records (M27.N1 `blocked` — no nvim; M28 T1/U1/A2/V1 `known-gap`).
    These lanes are honest-red, not drifting.
 3. **M55** — **12 of 14 records verified at HEAD `24a48142f`**; the two `known-gap` records are:
-   - G1: the M44/M53 bar needs the 41-gate M53 ladder to complete uninterrupted on a
+   - G1: the M44/M53 bar needs the 41-gate M53 ladder to run uninterrupted to the end on a
      quiet machine. Its ledger check is down to a single item, and the two gate
      defects that made it un-passable (recording another lane's dirty files as its own
      relevant changes; demanding its own last verdict, which made one failure permanent)
