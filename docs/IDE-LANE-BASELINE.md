@@ -305,3 +305,26 @@ one precedent where the old one-sided form went false on a CORRECT component and
 "marked every mutant caught for free".
 
 This is the last mile of the last IDE-lane product gate.
+
+**The five predicates reduce to one data question.** Following `sectionUsage` and
+`sectionConnected` (`usageVerdict.ok` / `connectedVerdict.ok`, both judged through
+`judgeSection(blocks.usages, allowed(doubleUsageGrounds))`) back to their
+grounding gives a direct contradiction about the SAME rows:
+
+```
+the CARD says   "the index stores no call-site line for these, so each opens
+                 the referencing declaration"      -> link App.java:12:23
+doubleGrounds   branch: "stored-line", key App.java:14:0
+```
+
+Both cannot be true. Either the store DOES hold a call-site line for those rows
+(and the card's sentence is false, and the link should open 14:0), or it does not
+(and `doubleGrounds` is mislabelling the branch and dreaming up 14:0). Whichever
+it is, it is the bug behind `position`, `sectionUsage` and `sectionConnected` at
+once, and `label` and `containmentInItsOwnBlock` inherit it.
+
+**This is the next thing to do, and it is a query, not a guess:** dump the fixture
+row's `line_number` (and `source_symbol_id`) for those two relationships and read
+which of the two statements is lying. The fixture index is rebuilt in a temporary
+directory per run, so inspect it during a run rather than looking for it
+afterwards.
