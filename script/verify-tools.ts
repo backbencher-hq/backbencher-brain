@@ -226,6 +226,10 @@ const LIST_ONLY = args.has("--list")
 const SKIP_DOCS = args.has("--skip-docs")
 const SKIP_BUILD = args.has("--no-build")
 const ONLY = [...args].find((a) => a.startsWith("--only="))?.slice("--only=".length)
+// Segment runs (CI / a memory-constrained host): run the gates without re-running the
+// expensive phases; the phases are still recorded as skipped in the evidence so a
+// segmented run can never be mistaken for the full launch gate.
+const SKIP_PHASES = args.has("--skip-phases")
 
 function head(): string {
   try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" }
@@ -294,12 +298,14 @@ console.log("\nDeclared environment-dependent gates (not run here; condition sta
 for (const gate of EXCLUDED) console.log(`  SKIP ${gate.script}\n       ${gate.reason}`)
 
 const phases: Array<{ name: string; ok: boolean; ms: number }> = []
-if (!LIST_ONLY) {
+if (!LIST_ONLY && !SKIP_PHASES) {
   console.log("\nPHASES")
   if (!SKIP_BUILD) phases.push({ name: "build", ...runPhase("build (npm run build)", "npm run build") })
   phases.push({ name: "typecheck-src", ...runPhase("typecheck src (tsc --noEmit)", "npx tsc --noEmit") })
   phases.push({ name: "script-typecheck-ratchet", ...runPhase("script typecheck ratchet", "bun run script/m14/verify-script-typecheck-baseline.ts") })
   if (!SKIP_DOCS) phases.push({ name: "docs", ...runPhase("docs chain (npm run docs:verify)", "npm run docs:verify", 2_700_000) })
+} else if (SKIP_PHASES) {
+  console.log("\nPHASES: skipped (--skip-phases segmented run; not a launch-gate verdict)")
 }
 
 const selected = ONLY ? GATES.filter((g) => g.script.includes(ONLY) || g.group === ONLY) : GATES
@@ -316,6 +322,7 @@ const payload = {
   commit,
   generatedAt: new Date().toISOString(),
   phases,
+  phasesSkipped: SKIP_PHASES,
   gates: results.map((r) => ({ ...r.gate, ok: r.ok, ms: r.ms })),
   excluded: EXCLUDED,
   totals: { gates: results.length, failed: failedGates.length, phases: phases.length, failedPhases: failedPhases.length },
