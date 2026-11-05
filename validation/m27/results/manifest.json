@@ -30,13 +30,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "1c92fad84abc968f5f2787df3e8566cf34b8785d",
+        "currentCommit": "13ca0d846d7ba88f64de5e83baa200805a030ef3",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 71,
-        "failed": 0,
+        "passed": 70,
+        "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters."
+        "blockedReason": "not verified at 13ca0d846d7ba88f64de5e83baa200805a030ef3: G1: every non-planned ledger item has matching persisted evidence at the current commit"
       }
     },
     {
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T23:24:19.057Z",
-    "contentSha256": "a229b81adc1c084e50976fb91fa24970b72eeccf066ba4fdbbac74b6ec321ef7"
+    "sealedAt": "2026-11-05T23:24:50.714Z",
+    "contentSha256": "1ea32dfd0a01bfe87f28ff2a907706b9246ec24c0148e64bfd8fc8f764e1b7a2"
   },
-  "updatedAt": "2026-11-05T23:24:19.056Z"
+  "updatedAt": "2026-11-05T23:24:50.714Z"
 }
