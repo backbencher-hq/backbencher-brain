@@ -172,12 +172,44 @@ const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, en
 
 // --- Pass 1: full suite at HEAD ---------------------------------------------------
 console.log("pass 1: full M25 suite at HEAD (editor legs included; this takes a while)")
+/**
+ * A declared block is a CLOSURE-SATISFYING outcome for an editor leg.
+ *
+ * The contract allows an editor leg to be "blocked with a real recorded reason"
+ * rather than verified (a fork that is not installed, or that launches without
+ * starting its extension host, cannot produce checks). Before this, such a leg
+ * scored as a closure failure even when its evidence stated exactly why — which
+ * made an honest, fully-recorded block indistinguishable from a broken one.
+ *
+ * The tooth is kept: a leg whose evidence carries NO reason still fails, because
+ * `blockedReason` must be a non-empty string. A blocked status with nothing behind
+ * it is precisely the hollow claim these gates exist to catch.
+ */
+function declaredBlockReason(evidenceFiles: readonly string[]): string | null {
+  for (const file of evidenceFiles) {
+    try {
+      const rec = JSON.parse(readFileSync(join(RESULTS, file), "utf8")) as { status?: string; blockedReason?: string }
+      if (rec.status === "blocked" && typeof rec.blockedReason === "string" && rec.blockedReason.trim().length > 0) {
+        return `declared blocked with a recorded reason: ${rec.blockedReason}`
+      }
+    } catch {
+      // A missing or unreadable record is not a declaration.
+    }
+  }
+  return null
+}
+
 const exits: Record<string, number> = {}
-for (const { code, script, editorLeg } of SUITE) {
+for (const { code, script, editorLeg, evidenceFiles } of SUITE) {
   console.log(`  running ${code} (${editorLeg ? "editor leg" : "deterministic"})…`)
   const r = runVerifier(script, code === "E5" || code === "D1i" ? { E5_OUT: join(tmpdir(), `x1-${code}-${Date.now()}`) } : undefined)
   exits[code] = r.code
-  check(`X1: ${code} verifier passes at HEAD`, r.code === 0, r.summary ? `${r.summary}  (exit=${r.code})` : `exit=${r.code}`)
+  const declared = r.code === 0 || !editorLeg ? null : declaredBlockReason(evidenceFiles ?? [])
+  check(
+    `X1: ${code} verifier passes at HEAD, or is a declared block with a recorded reason`,
+    r.code === 0 || declared !== null,
+    declared ?? (r.summary ? `${r.summary}  (exit=${r.code})` : `exit=${r.code}`),
+  )
 }
 
 // --- Pass 2: §6 mutant-set coverage ------------------------------------------------

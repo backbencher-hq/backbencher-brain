@@ -18,23 +18,23 @@
     "node": "v22.22.1",
     "runtime": "fork-run"
   },
-  "currentCommit": "ea3df5350b69b5997aea609edd7f81c3e411bb73",
-  "commit": "ea3df5350b69b5997aea609edd7f81c3e411bb73",
+  "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
+  "commit": "b780e1342d33e7d7305b528894d4834cd0952b96",
   "failed": 0,
   "checks": [],
   "checksPassed": 0,
   "checksTotal": 0,
   "activation": null,
-  "elapsedMs": 420188,
+  "elapsedMs": 420191,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-11-05T17:26:09.859Z",
+  "generatedAt": "2026-11-05T17:36:57.688Z",
   "limitations": [
     "editor did not reach a terminal suite state within 420 s (elapsed 420 s) — partial results recorded honestly"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T17:26:09.859Z",
-    "contentSha256": "8549e2ea9bfda1df0ccf8dda66c075865f2f40144c7bddb1461176f80fbf26bd"
+    "sealedAt": "2026-11-05T17:36:57.688Z",
+    "contentSha256": "b9ecddd062cb1d7230cac961ca89bed0cedfc2b1edd5952ee4d135075006636c"
   }
 }
