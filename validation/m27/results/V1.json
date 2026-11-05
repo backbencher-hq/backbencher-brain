@@ -2,16 +2,16 @@
   "issue": "M27.V1",
   "code": "V1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 14,
-  "passed": 13,
-  "failed": 1,
-  "mutantsCaught": 4,
+  "passed": 14,
+  "failed": 0,
+  "mutantsCaught": 5,
   "mutantsTotal": 5,
   "mutantRecords": [
     {
       "name": "V1 mutant: forged evidence (stripped blockedLegs) produces a lying I3 row and fails the byte-gate",
-      "caught": false
+      "caught": true
     },
     {
       "name": "V1 mutant: a missing evidence file degrades the row to unset and says the file is missing",
@@ -30,8 +30,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
-  "sourceFingerprint": "b36a3589ddb08520e5e815fcf85c2064d0273db91c8c4b795afae98192f49796",
+  "currentCommit": "9bc9cec9de025eed41a435fa449396d575f37aa1",
+  "sourceFingerprint": "f2bb277bb838f4890c2365809ad348548985e50359e900f2c7f2c4ed20da89ca",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m27/verify-matrix.ts",
@@ -40,7 +40,7 @@
   ],
   "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-17T15:38:55.973Z",
+  "generatedAt": "2026-11-05T14:05:21.905Z",
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
     "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files.",
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:38:55.977Z",
-    "contentSha256": "ebd989bd003873377bc3df222bd1596965c04606bc593a6d982f08cdc8b2ed25"
+    "sealedAt": "2026-11-05T14:05:21.906Z",
+    "contentSha256": "2b3d09b2e839d2d10386e103a3eb70737e03c7cb6b30078c7404aa48f5db71e6"
   }
 }

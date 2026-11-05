@@ -14,19 +14,140 @@
       "edgeCount": 1,
       "sampleBridge": null,
       "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "c",
+      "target": "cpp",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "38efa84d12ab7f95e13e5caf90bdf3dffce81cb4",
+      "origin": "real project index"
+    },
+    {
+      "source": "go",
+      "target": "yaml",
+      "edgeCount": 40,
+      "sampleBridge": "name-resolution",
+      "database": "3cc416747a0082a80b42b89928cb8c909e09e371",
+      "origin": "real project index"
+    },
+    {
+      "source": "javascript",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9",
+      "origin": "real project index"
+    },
+    {
+      "source": "vue",
+      "target": "typescript",
+      "edgeCount": 2,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9",
+      "origin": "real project index"
+    },
+    {
+      "source": "groovy",
+      "target": "java",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "5beed1b97e35797710f9e6bed37356d751da06be",
+      "origin": "real project index"
+    },
+    {
+      "source": "go",
+      "target": "yaml",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e",
+      "origin": "real project index"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 22,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 361,
+      "sampleBridge": "name-resolution",
+      "database": "b750c2644e0f50449cd827105bcd2a22fce791dd",
+      "origin": "real project index"
     }
   ],
-  "realPairRows": [],
+  "realPairRows": [
+    {
+      "source": "c",
+      "target": "cpp",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "38efa84d12ab7f95e13e5caf90bdf3dffce81cb4"
+    },
+    {
+      "source": "go",
+      "target": "yaml",
+      "edgeCount": 40,
+      "sampleBridge": "name-resolution",
+      "database": "3cc416747a0082a80b42b89928cb8c909e09e371"
+    },
+    {
+      "source": "javascript",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9"
+    },
+    {
+      "source": "vue",
+      "target": "typescript",
+      "edgeCount": 2,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9"
+    },
+    {
+      "source": "groovy",
+      "target": "java",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "5beed1b97e35797710f9e6bed37356d751da06be"
+    },
+    {
+      "source": "go",
+      "target": "yaml",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 22,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 361,
+      "sampleBridge": "name-resolution",
+      "database": "b750c2644e0f50449cd827105bcd2a22fce791dd"
+    }
+  ],
   "machineReality": {
-    "dir": "$HOME/mcp/backbencher-brain/.tmp-m26h/.bb/projects",
-    "present": false,
-    "scanned": 0,
-    "skipped": 0
+    "dir": "$HOME/.bb/projects",
+    "present": true,
+    "scanned": 949,
+    "skipped": 31
   },
-  "generatedAt": "2026-11-04T22:58:12.954Z",
+  "generatedAt": "2026-11-05T13:36:20.534Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-04T22:58:12.956Z",
-    "contentSha256": "70f63a058be11fe63295e84578ce5bb8bc919dd7f89b56c86741fa0f11bb1087"
+    "sealedAt": "2026-11-05T13:36:20.537Z",
+    "contentSha256": "3b24e7e2aea167163d21340c05e4cd621e5bce93a760c5fad596e1a2efbeb90d"
   }
 }

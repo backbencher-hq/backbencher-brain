@@ -3,31 +3,19 @@
   "code": "X1",
   "milestone": "M27",
   "status": "known-gap",
-  "checks": 35,
-  "passed": 24,
-  "failed": 11,
+  "checks": 34,
+  "passed": 32,
+  "failed": 2,
   "failures": [
-    "X1: N1 verifier passes at HEAD",
-    "X1: Z1 verifier passes at HEAD",
-    "X1: V1 verifier passes at HEAD",
-    "X1: N1 evidence carries a per-mutant record",
-    "X1: V1 named record count agrees with the evidence aggregate",
-    "X1: V1 every mutant caught (0/1)",
     "X1: v3 completion bar audited item-by-item — zero violations",
-    "[negative] X1: negative — a leg honestly blocked WITH a reason is NOT reported as a leg violation",
-    "X1: N1 regeneration run passes",
-    "X1: Z1 regeneration run passes",
-    "X1: V1 regeneration run passes"
+    "[negative] X1: negative — a leg honestly blocked WITH a reason is NOT reported as a leg violation"
   ],
-  "failureCount": 11,
+  "failureCount": 2,
   "negativeCases": 6,
-  "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+  "currentCommit": "9bc9cec9de025eed41a435fa449396d575f37aa1",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [
     "bar1: an adapter leg is neither verified nor blocked-with-reason (Z1=known-gap)",
-    "bar1-declared-absence: N1 is blocked with a reason — nvim not provisioned in .tools/ (D-7 portable layout)",
-    "bar1: capability subset proofs not all present",
-    "bar2: no I3 leg (N1 is the declared slot)",
     "bar3: capability matrix not verified"
   ],
   "perMutantRecords": {
@@ -35,17 +23,12 @@
     "J1": [],
     "Z1": [],
     "H1": [],
-    "V1": [
-      {
-        "name": "V1 mutant: forged evidence (stripped blockedLegs) produces a lying I3 row and fails the byte-gate",
-        "caught": false
-      }
-    ]
+    "V1": []
   },
-  "generatedAt": "2026-10-17T15:38:56.410Z",
+  "generatedAt": "2026-11-05T14:05:21.956Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:38:56.415Z",
-    "contentSha256": "6c3d5b90b9195bcba2e7846a265f0b066d460ffd2c472520a9c16ccacb35de7e"
+    "sealedAt": "2026-11-05T14:05:21.957Z",
+    "contentSha256": "2fd2403ff367f0349b9288831c136eadf1514cabc56539d69811ff77a9727c12"
   }
 }

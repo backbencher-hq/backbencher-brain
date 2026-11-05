@@ -29,10 +29,17 @@ SERVER="$DIR/dist/lsp/server.js"
 [ -f "$SERVER" ] || SERVER="$DIR/../../../dist/lsp/server.js"
 [ -f "$SERVER" ] || { echo "bb_lsp: server not found next to the extension ($SERVER)" >&2; exit 1; }
 
+# The absolute fallback list is DECLARED and overridable so the "no node
+# anywhere" path is actually testable. Without this, stripping PATH and HOME does
+# not construct that scenario on any host with a system node at /usr/bin/node:
+# the launcher legitimately finds it, exits 0, and the gate reads that as a
+# launcher that "did not fail loudly" — a test that can only ever see the happy
+# path. Emptying BB_ZED_NODE_FALLBACKS is how the gate proves the loud error.
+FALLBACK_NODE_PATHS="${BB_ZED_NODE_FALLBACKS-$HOME/.local/node/bin/node $HOME/.nvm/current/bin/node $HOME/.volta/bin/node $HOME/.bun/bin/node /usr/local/bin/node /opt/homebrew/bin/node /usr/bin/node}"
+
 find_node() {
   if command -v node >/dev/null 2>&1; then command -v node; return 0; fi
-  for c in "$HOME/.local/node/bin/node" "$HOME/.nvm/current/bin/node" "$HOME/.volta/bin/node" \
-           "$HOME/.bun/bin/node" /usr/local/bin/node /opt/homebrew/bin/node /usr/bin/node; do
+  for c in $FALLBACK_NODE_PATHS; do
     [ -x "$c" ] && { echo "$c"; return 0; }
   done
   return 1

@@ -4,15 +4,17 @@
   "milestone": "M26",
   "status": "known-gap",
   "checks": 50,
-  "passed": 48,
-  "failed": 2,
+  "passed": 46,
+  "failed": 4,
   "failures": [
-    "X1: W3 verifier passes at HEAD",
-    "X1: W3 regeneration run passes"
+    "X1: W5 verifier passes at HEAD",
+    "X1: the in-editor graph-leg evidence exists (E5 records the panel render)",
+    "X1: v2 completion bar audited item-by-item — zero violations",
+    "X1: W5 regeneration run passes"
   ],
   "negativeCases": 3,
-  "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
-  "sourceFingerprint": "0963f4adabb87387de51f72d657cd8ffd9dd48697421b157eb88d1395ad8686e",
+  "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "sourceFingerprint": "c852e7e0762b985f6fed987808d2f67e2125f436e4c6a0112c4a2d63fd118833",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-closure.ts",
@@ -30,7 +32,10 @@
     "script/m26/verify-webview-harness.ts"
   ],
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
-  "barViolations": [],
+  "barViolations": [
+    "bar1: graph panel not verified rendering in-editor (E5 leg)",
+    "bar2: cross-language hover not verified"
+  ],
   "perMutantRecords": {
     "W1": [
       {
@@ -142,15 +147,7 @@
         "caught": true
       },
       {
-        "name": "M4 differential break (cascade dropped from the total count)",
-        "caught": true
-      },
-      {
         "name": "M4b kinds dropped from the total count (a contains row counts as a dependency)",
-        "caught": true
-      },
-      {
-        "name": "M4c transitive collapse (the count stops at depth 0)",
         "caught": true
       },
       {
@@ -179,6 +176,10 @@
       },
       {
         "name": "M8 non-exact name rendered as an exact hit (silent substitution in the panel)",
+        "caught": true
+      },
+      {
+        "name": "M8b an exempt-by-kind exact hit rendered as a substitution (self-refuting note)",
         "caught": true
       },
       {
@@ -253,10 +254,10 @@
       }
     ]
   },
-  "generatedAt": "2026-10-15T07:46:17.775Z",
+  "generatedAt": "2026-11-05T13:36:37.791Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T07:46:17.776Z",
-    "contentSha256": "1eb712518d380d5f0fbf1888dd965e0f85a2cd63937a40d9f79084a5473aa328"
+    "sealedAt": "2026-11-05T13:36:37.792Z",
+    "contentSha256": "8d97df999b09b1013fbe24507927ed51b01a731c19d8f2b5914f73580ecb3577"
   }
 }

@@ -187,9 +187,16 @@ function main(): void {
       mkdirSync(path.join(home, ".local", "node", "bin"), { recursive: true })
       writeFileSync(path.join(home, ".local", "node", "bin", "node"), '#!/bin/sh\necho "HIT_HOME_NODE: $*"\n')
       chmodSync(path.join(home, ".local", "node", "bin", "node"), 0o755)
-      const env = {
+      const env: Record<string, string> = {
         PATH: opts.withNodeOnPath ? stub : "/nonexistent-gate-path",
         HOME: opts.withNodeInHome ? home : path.join(dir, "empty-home"),
+        // The launcher searches ABSOLUTE node paths after PATH and HOME, and
+        // /usr/bin/node exists on this host, so stripping PATH+HOME alone does not
+        // produce "no node anywhere" — the launcher honestly found node, exited 0,
+        // and both the R3 loud-error check and the M4 mutant control failed on a
+        // scenario the probe had not actually created. Clearing the DECLARED
+        // fallback list is what creates it.
+        ...(opts.withNodeOnPath || opts.withNodeInHome ? {} : { BB_ZED_NODE_FALLBACKS: "" }),
       }
       mkdirSync(env.HOME, { recursive: true })
       const r = spawnSync("/bin/sh", [lp], { encoding: "utf8", env })
@@ -311,7 +318,7 @@ function main(): void {
     },
     {
       name: "M3: the $HOME prefix list dropped (PATH-only node search)",
-      text: realLauncher.replace(/for c in "\$HOME[^;]*; do/, 'for c in ; do # MUTANT: no prefixes'),
+      text: realLauncher.replace('for c in $FALLBACK_NODE_PATHS; do', 'for c in ; do # MUTANT: no prefixes'),
       run: { ...GOOD, withServerBeside: false, withNodeOnPath: false },
       caught: (r) => r.code !== 0,
     },

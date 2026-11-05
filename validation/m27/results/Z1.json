@@ -2,10 +2,10 @@
   "issue": "M27.Z1",
   "code": "Z1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 36,
-  "passed": 34,
-  "failed": 2,
+  "passed": 36,
+  "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "mutantRecords": [
@@ -30,8 +30,8 @@
       "caught": true
     }
   ],
-  "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
-  "sourceFingerprint": "ced3b72e75e4ee7f619cf7a2442658076408ac84077fb656a7effe78ca759599",
+  "currentCommit": "9bc9cec9de025eed41a435fa449396d575f37aa1",
+  "sourceFingerprint": "b9f687ac1315ee4d8b6d99a1dc7d252d731c87ae023865737d94cd446fad4473",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m27/verify-zed.ts",
@@ -46,7 +46,7 @@
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-10-17T15:37:03.165Z",
+  "generatedAt": "2026-11-05T14:05:09.369Z",
   "claimLevel": "I2 — the shipped launcher was EXECUTED for real (server-beside, ../../../dist fallback, both declared-error paths, node via $HOME prefix with an empty PATH; 4 launcher mutants caught); the in-editor session leg is blocked-with-reason",
   "blockedLegs": [
     {
@@ -60,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:37:03.179Z",
-    "contentSha256": "8194f6ec66526ccea4ca618eb9bae64e9fba3511f11f1e4950096b8fe9b62b08"
+    "sealedAt": "2026-11-05T14:05:09.370Z",
+    "contentSha256": "2c7267d3aff01867503e15e68ce00b77d21510ae6cd41fbe376181049d67690f"
   }
 }

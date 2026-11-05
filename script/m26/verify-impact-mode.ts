@@ -541,8 +541,8 @@ async function main(): Promise<void> {
         // stored owner can satisfy because the prefix ends in a colon) instead
         // of deleting the clause. The parameter count is unchanged, so the
         // mutation is the cascade and nothing else.
-        from: 'new Array(ranges).fill(" OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?)")',
-        to: 'new Array(ranges).fill(" OR (m.owner_symbol_id = ? AND m.owner_symbol_id = ?)")',
+        from: 'owner_symbol_id >= ? AND owner_symbol_id < ?',
+        to: 'owner_symbol_id = ? AND owner_symbol_id = ?',
         // sym:klass is reached only through its member (other → mem): with
         // the cascade gone the declared total of a class drops from 1 to 0.
         probe: (m) => m.countImpactDependents(fx.raw, fx.projectId, "sym:klass").total !== 1
@@ -568,8 +568,8 @@ async function main(): Promise<void> {
       {
         name: "M4c transitive collapse (the count stops at depth 0)",
         home: "component",
-        from: "if (frontier[0]!.depth + 1 < maxDepth) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })",
-        to: "if (false) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })",
+        from: "if (levelDepth + 1 < maxDepth) next.push({ id: row.id, depth: levelDepth + 1 })",
+        to: "if (false) next.push({ id: row.id, depth: levelDepth + 1 })",
         // hub2 has one direct dependent and one through it: a depth-0 count
         // answers 1 where the set is 2. This is the defect that made the
         // surface say "showing 200 of 145".
