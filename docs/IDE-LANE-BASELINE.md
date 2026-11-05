@@ -570,3 +570,37 @@ per round.
 The fix is unchanged and still one line: whichever statement it turns out to be
 must select the owner's alias rather than the bare column, so the projection and
 `storedLineFromRow` agree by construction.
+
+**ROOT CAUSE FOUND — and the component is innocent.** A stack-trace probe named
+`richSitesForSymbol` at `rich_hover.ts:818`; the only `rows` binding in that
+function is a real SQL statement, so the row shape should have matched that
+statement — it did not. It matched the gate's own **synthetic row builder** instead:
+
+```ts
+// script/m42/verify-rich-hover.ts:1334
+const row = (o) => ({
+  id: "r", relationship_type: "calls", ..., line_number: 0, ...
+  src_name: null, ..., tgt_rel: H2_REL_APP, metadata: null, time_updated: null, ...o,
+})
+```
+
+`line_number: 0` is the DEFAULT, and `0` is exactly what `STORED_LINE_IS_ABSENT_SQL`
+and `classifyStoredLine` define as a **legacy placeholder = absent**. The double
+therefore tells the component "this row stores no call-site line"; the component
+faithfully refuses to serve one, falls back to the declaration, and prints
+"the index stores no call-site line for these" — **which is true of the row it was
+given**. Meanwhile the gate's expectation (`doubleGrounds`, `14:0`) comes from a
+REAL query over the real fixture DB (`r.line_number AS storedLine`, value 15), and
+so predicts a call site.
+
+Two views of the same row, one synthetic with a placeholder 0 and one real with 15.
+The gate compares them and blames the card.
+
+**The fix is in the gate, not the product:** every caller of `row()` that feeds a
+usage row must pass the row's real stored line (or `row()` must require
+`line_number` explicitly rather than defaulting it to the placeholder), so the
+double and the expectation describe the same row. The component needs no change —
+it has been correct throughout, and its sentence was true about its input.
+
+**This retires nine hypotheses across nine rounds.** The last seven all assumed the
+product was wrong; the measurement says the test double was.
