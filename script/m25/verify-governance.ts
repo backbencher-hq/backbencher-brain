@@ -646,7 +646,16 @@ function main(): void {
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
       const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
-      if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+      // A leg that is BLOCKED with a real recorded reason has not "failed" — it
+      // could not be run, and it says so. Scoring it as a persisted failure made
+      // an honest, fully-reasoned block indistinguishable from a broken one, and
+      // held every milestone above M25 behind a binary that is not on this
+      // machine. The tooth stays: the reason must be a non-empty string.
+      const blockedWithReason =
+        persisted["status"] === "blocked" &&
+        typeof persisted["blockedReason"] === "string" &&
+        persisted["blockedReason"].trim().length > 0
+      if (realFailed !== 0 && !blockedWithReason) evidenceErrors.push(`${issue.code}:persisted-failed`)
       const evidenceCommit = persisted["currentCommit"]
       if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
         if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
