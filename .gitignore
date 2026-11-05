@@ -331,6 +331,7 @@ ide/zed/bb-lsp/target/
 # Scratch project + data dir for script/m12/verify-language-coverage.ts (self-cleaning,
 # but a --keep run leaves ~50 MB of fixture copies and a brain DB behind).
 .langcov/
+.langmatrix/
 
 # Scratch projects for script/perf/verify-discovery-overrides.ts. Contains a synthetic
 # `.git` FILE to model a submodule boundary, which must never be committed.

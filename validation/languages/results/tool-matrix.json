@@ -1,0 +1,3755 @@
+{
+  "probe": "language-tool-matrix",
+  "what": "one real fixture per derived language, indexed for real, then every public tool's language-neutral path exercised over it",
+  "generatedAt": "2026-11-05T00:27:34.956Z",
+  "head": "32074f3beaa0ef2e2c18665b5cb54a58ff8c4550",
+  "derivedFrom": "src/ast/engine.ts SUPPORTED_LANGUAGES via ASTEngine.supportedLanguageNames(); extensions via languageExtensionEntries()",
+  "languages": 53,
+  "fixtures": 53,
+  "indexMs": 11287,
+  "indexStats": {
+    "totalFiles": 53,
+    "symbolsExtracted": 881,
+    "relationshipsFound": 1983
+  },
+  "checks": 548,
+  "passed": 548,
+  "failed": 0,
+  "negativeCases": 5,
+  "editSupport": {
+    "dry-run-planned": 15,
+    "refused": 38
+  },
+  "migrateShapes": {
+    "plans/unsupported arrays": 53
+  },
+  "nichePairs": [
+    {
+      "pair": "typescript→haskell",
+      "plans": 1,
+      "unsupported": 0,
+      "gapNamed": true,
+      "sampleReason": "declared gap in the plan output"
+    },
+    {
+      "pair": "haskell→typescript",
+      "plans": 0,
+      "unsupported": 1,
+      "gapNamed": true,
+      "sampleReason": "ambiguous-symbol"
+    }
+  ],
+  "failures": [],
+  "rows": [
+    {
+      "language": "bash",
+      "extension": "sh",
+      "fixture": "validation/m12/fixtures/bash/Common.sh",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "bash",
+      "indexedLanguage": "bash",
+      "symbols": 19,
+      "relationships": 37,
+      "probeSymbol": "log",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=bash symbols=19",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"log\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:bash/Common.sh:log:9\",\n    \"name\": \"log\",\n    \"file\": \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"log\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": tr",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/bash/Common.sh\",\n      \"be",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "c",
+      "extension": "c",
+      "fixture": "validation/m12/fixtures/c/Module.c",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "c",
+      "indexedLanguage": "c",
+      "symbols": 10,
+      "relationships": 19,
+      "probeSymbol": "clamp",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=c symbols=10",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"clamp\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:c/Module.c:clamp:9\",\n    \"name\": \"clamp\",\n    \"file\":",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"clamp\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": ",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/c/Module.c\",\n      \"before",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "clean",
+      "extension": "icl",
+      "fixture": "validation/m12/fixtures/clean/Service.icl",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "clean",
+      "indexedLanguage": "clean",
+      "symbols": 22,
+      "relationships": 71,
+      "probeSymbol": "addBid",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=clean symbols=22",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"addBid\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:clean/Service.icl:addBid:23\",\n    \"name\": \"addBid\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"addBid\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol addBid is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\"",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "clojure",
+      "extension": "clj",
+      "fixture": "validation/m12/fixtures/clojure/Service.clj",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "clojure",
+      "indexedLanguage": "clojure",
+      "symbols": 15,
+      "relationships": 28,
+      "probeSymbol": "format-value",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=clojure symbols=15",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"format-value\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:clojure/Service.clj:format-value:12\",\n    \"nam",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"format-value\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInd",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol format-value is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"a",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "cpp",
+      "extension": "cc",
+      "fixture": "validation/m12/fixtures/cpp/Shape.h",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "cpp",
+      "indexedLanguage": "cpp",
+      "symbols": 27,
+      "relationships": 30,
+      "probeSymbol": "~Shape",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=cpp symbols=27",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"~Shape\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:cpp/Shape.h:~Shape:24\",\n    \"name\": \"~Shape\",\n    \"f",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"~Shape\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update ~Shape: newContent does not declare the symbol and no replaceable body block was found; pass the full de",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "csharp",
+      "extension": "cs",
+      "fixture": "validation/m12/fixtures/csharp/Features.cs",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "csharp",
+      "indexedLanguage": "csharp",
+      "symbols": 28,
+      "relationships": 54,
+      "probeSymbol": "Distance",
+      "probeKind": "method",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=csharp symbols=28",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Distance\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:csharp/Features.cs:Distance:17\",\n    \"name\": \"Dist",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Distance\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/csharp/Features.cs\",\n     ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "css",
+      "extension": "css",
+      "fixture": "validation/m12/fixtures/css/Theme.css",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "css",
+      "indexedLanguage": "css",
+      "symbols": 17,
+      "relationships": 14,
+      "probeSymbol": "fade-in",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=css symbols=17",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"fade-in\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:css/Theme.css:fade-in:28\",\n    \"name\": \"fade-in\",\n ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"fade-in\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\"",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/css/Theme.css\",\n      \"bef",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "dart",
+      "extension": "dart",
+      "fixture": "validation/m12/fixtures/dart/Services.dart",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "dart",
+      "indexedLanguage": "dart",
+      "symbols": 8,
+      "relationships": 45,
+      "probeSymbol": "load",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=dart symbols=8",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"load\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:dart/Services.dart:load:13\",\n    \"name\": \"load\",\n    \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"load\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": t",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update load: newContent does not declare the symbol and no replaceable body block was found; pass the full decl",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "elixir",
+      "extension": "ex",
+      "fixture": "validation/m12/fixtures/elixir/Service.ex",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "elixir",
+      "indexedLanguage": "elixir",
+      "symbols": 24,
+      "relationships": 47,
+      "probeSymbol": "new",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=elixir symbols=24",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"new\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:elixir/Service.ex:new:12\",\n    \"name\": \"new\",\n    \"file",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"new\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": tr",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol new is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": t",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "erlang",
+      "extension": "erl",
+      "fixture": "validation/m12/fixtures/erlang/Service.erl",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "erlang",
+      "indexedLanguage": "erlang",
+      "symbols": 22,
+      "relationships": 64,
+      "probeSymbol": "start_link",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=erlang symbols=22",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"start_link\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:erlang/Service.erl:start_link:19\",\n    \"name\": \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"start_link\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndex",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update start_link: newContent does not declare the symbol and no replaceable body block was found; pass the ful",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "fsharp",
+      "extension": "fs",
+      "fixture": "validation/m12/fixtures/fsharp/Features.fs",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "fsharp",
+      "indexedLanguage": "fsharp",
+      "symbols": 22,
+      "relationships": 53,
+      "probeSymbol": "(|Even|Odd|)",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=fsharp symbols=22",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"(|Even|Odd|)\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:fsharp/Features.fs:(|Even|Odd|):36\",\n    \"name",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"(|Even|Odd|)\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInd",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update (|Even|Odd|): newContent does not declare the symbol and no replaceable body block was found; pass the f",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "go",
+      "extension": "go",
+      "fixture": "validation/m12/fixtures/go/service.go",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "go",
+      "indexedLanguage": "go",
+      "symbols": 23,
+      "relationships": 45,
+      "probeSymbol": "NewUser",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=go symbols=23",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"NewUser\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:go/service.go:NewUser:37\",\n    \"name\": \"NewUser\",\n ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"NewUser\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\"",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/go/service.go\",\n      \"bef",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "graphql",
+      "extension": "gql",
+      "fixture": "validation/m12/fixtures/graphql/Schema.graphql",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "graphql",
+      "indexedLanguage": "graphql",
+      "symbols": 27,
+      "relationships": 57,
+      "probeSymbol": "@deprecated",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=graphql symbols=27",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"@deprecated\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:graphql/Schema.graphql:@deprecated:33\",\n    \"na",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"@deprecated\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInde",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update @deprecated: newContent does not declare the symbol and no replaceable body block was found; pass the fu",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "groovy",
+      "extension": "groovy",
+      "fixture": "validation/m12/fixtures/groovy/UserService.groovy",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "groovy",
+      "indexedLanguage": "groovy",
+      "symbols": 11,
+      "relationships": 44,
+      "probeSymbol": "format",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=groovy symbols=11",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"format\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:dart/Services.dart:format:25\",\n    \"name\": \"format\",",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"format\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol format is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\"",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "haskell",
+      "extension": "hs",
+      "fixture": "validation/m12/fixtures/haskell/Service.hs",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "haskell",
+      "indexedLanguage": "haskell",
+      "symbols": 22,
+      "relationships": 38,
+      "probeSymbol": "addBid",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=haskell symbols=22",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"addBid\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:clean/Service.icl:addBid:23\",\n    \"name\": \"addBid\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"addBid\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol addBid is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\"",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "hcl",
+      "extension": "hcl",
+      "fixture": "validation/m12/language-coverage/hcl/Config.hcl",
+      "fixtureOrigin": "validation/m12/language-coverage",
+      "routed": "hcl",
+      "indexedLanguage": "hcl",
+      "symbols": 11,
+      "relationships": 23,
+      "probeSymbol": "remote_state",
+      "probeKind": "class",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=hcl symbols=11",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"remote_state\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:hcl/Config.hcl:remote_state:25\",\n    \"name\": \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"remote_state\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInd",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update remote_state: newContent does not declare the symbol and no replaceable body block was found; pass the f",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "html",
+      "extension": "j2",
+      "fixture": "validation/m12/fixtures/html/Page.html",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "html",
+      "indexedLanguage": "html",
+      "symbols": 13,
+      "relationships": 29,
+      "probeSymbol": "site-header",
+      "probeKind": "class",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=html symbols=13",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"site-header\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:html/Page.html:site-header:11\",\n    \"name\": \"si",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"site-header\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInde",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update site-header: newContent does not declare the symbol and no replaceable body block was found; pass the fu",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "java",
+      "extension": "java",
+      "fixture": "validation/m12/fixtures/java/AdvancedFeatures.java",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "java",
+      "indexedLanguage": "java",
+      "symbols": 24,
+      "relationships": 65,
+      "probeSymbol": "distance",
+      "probeKind": "method",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=java symbols=24",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"distance\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:java/AdvancedFeatures.java:distance:14\",\n    \"name",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"distance\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/java/AdvancedFeatures.java",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "javascript",
+      "extension": "js",
+      "fixture": "validation/m12/fixtures/javascript/Domain.js",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "javascript",
+      "indexedLanguage": "javascript",
+      "symbols": 13,
+      "relationships": 28,
+      "probeSymbol": "findById",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=javascript symbols=13",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"findById\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:javascript/Domain.js:findById:36\",\n    \"name\": \"fi",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"findById\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol findById is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomi",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "json",
+      "extension": "json",
+      "fixture": "validation/m12/fixtures/json/api-contract.json",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "json",
+      "indexedLanguage": "json",
+      "symbols": 34,
+      "relationships": 67,
+      "probeSymbol": "properties",
+      "probeKind": "class",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=json symbols=34",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"properties\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:json/api-contract.json:properties:24\",\n    \"name",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"properties\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndex",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol properties is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"ato",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "julia",
+      "extension": "jl",
+      "fixture": "validation/m12/language-coverage/julia/Service.jl",
+      "fixtureOrigin": "validation/m12/language-coverage",
+      "routed": "julia",
+      "indexedLanguage": "julia",
+      "symbols": 4,
+      "relationships": 6,
+      "probeSymbol": "coverage_add",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=julia symbols=4",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"coverage_add\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:julia/Service.jl:coverage_add:13\",\n    \"name\":",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"coverage_add\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInd",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update coverage_add: newContent does not declare the symbol and no replaceable body block was found; pass the f",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "kotlin",
+      "extension": "kt",
+      "fixture": "validation/m12/fixtures/kotlin/Extensions.kt",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "kotlin",
+      "indexedLanguage": "kotlin",
+      "symbols": 6,
+      "relationships": 25,
+      "probeSymbol": "shout",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=kotlin symbols=6",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"shout\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:kotlin/Extensions.kt:shout:14\",\n    \"name\": \"shout\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"shout\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": ",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/kotlin/Extensions.kt\",\n   ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "lua",
+      "extension": "lua",
+      "fixture": "validation/m12/fixtures/lua/Module.lua",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "lua",
+      "indexedLanguage": "lua",
+      "symbols": 9,
+      "relationships": 23,
+      "probeSymbol": "helper",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=lua symbols=9",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"helper\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:elixir/Service.ex:helper:60\",\n    \"name\": \"helper\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"helper\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol helper is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\"",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "make",
+      "extension": "mk",
+      "fixture": "validation/m12/fixtures/make/Build.mk",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "make",
+      "indexedLanguage": "make",
+      "symbols": 25,
+      "relationships": 81,
+      "probeSymbol": "HELP",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=make symbols=25",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"HELP\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:make/Build.mk:HELP:10\",\n    \"name\": \"HELP\",\n    \"file\"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"HELP\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": t",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update HELP: newContent does not declare the symbol and no replaceable body block was found; pass the full decl",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "markdown",
+      "extension": "md",
+      "fixture": "validation/m12/fixtures/markdown/Docs.md",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "markdown",
+      "indexedLanguage": "markdown",
+      "symbols": 18,
+      "relationships": 21,
+      "probeSymbol": "code_block.python",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=markdown symbols=18",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"code_block.python\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:markdown/Docs.md:code_block.python:31\",\n ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"code_block.python\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symb",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update code_block.python: newContent does not declare the symbol and no replaceable body block was found; pass ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "matlab",
+      "extension": "matlab",
+      "fixture": "validation/m12/fixtures/matlab/Service.m",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "matlab",
+      "indexedLanguage": "matlab",
+      "symbols": 5,
+      "relationships": 16,
+      "probeSymbol": "helper",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=matlab symbols=5",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"helper\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:elixir/Service.ex:helper:60\",\n    \"name\": \"helper\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"helper\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol helper is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\"",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "nim",
+      "extension": "nim",
+      "fixture": "validation/m12/fixtures/nim/Contract.nim",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "nim",
+      "indexedLanguage": "nim",
+      "symbols": 44,
+      "relationships": 66,
+      "probeSymbol": "area",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=nim symbols=44",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"area\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:nim/Contract.nim:area:41\",\n    \"name\": \"area\",\n    \"fi",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"area\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": t",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol area is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "objective-c",
+      "extension": "m",
+      "fixture": "validation/m12/fixtures/objective-c/UserService.m",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "objective-c",
+      "indexedLanguage": "objective-c",
+      "symbols": 10,
+      "relationships": 27,
+      "probeSymbol": "initWithName:",
+      "probeKind": "method",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=objective-c symbols=10",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"initWithName:\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:objective-c/UserService.m:initWithName::12\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"initWithName:\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIn",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/objective-c/UserService.m\"",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "perl",
+      "extension": "t",
+      "fixture": "validation/m12/fixtures/perl/Service.pm",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "perl",
+      "indexedLanguage": "perl",
+      "symbols": 6,
+      "relationships": 19,
+      "probeSymbol": "fetch",
+      "probeKind": "method",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=perl symbols=6",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"fetch\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:perl/Service.pm:fetch:15\",\n    \"name\": \"fetch\",\n    \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"fetch\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": ",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/perl/Service.pm\",\n      \"b",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "php",
+      "extension": "php",
+      "fixture": "validation/m12/fixtures/php/BaseService.php",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "php",
+      "indexedLanguage": "php",
+      "symbols": 6,
+      "relationships": 7,
+      "probeSymbol": "__construct",
+      "probeKind": "method",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=php symbols=6",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"__construct\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:php/BaseService.php:__construct:5\",\n    \"name\":",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"__construct\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInde",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/php/BaseService.php\",\n    ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "powershell",
+      "extension": "ps1",
+      "fixture": "validation/m12/fixtures/powershell/Module.ps1",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "powershell",
+      "indexedLanguage": "powershell",
+      "symbols": 25,
+      "relationships": 61,
+      "probeSymbol": "Get-ConfigPath",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=powershell symbols=25",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Get-ConfigPath\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:powershell/Module.ps1:Get-ConfigPath:5\",\n   ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Get-ConfigPath\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolI",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update Get-ConfigPath: newContent does not declare the symbol and no replaceable body block was found; pass the",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "protobuf",
+      "extension": "proto",
+      "fixture": "validation/m12/language-coverage/protobuf/Service.proto",
+      "fixtureOrigin": "validation/m12/language-coverage",
+      "routed": "protobuf",
+      "indexedLanguage": "protobuf",
+      "symbols": 6,
+      "relationships": 11,
+      "probeSymbol": "Add",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=protobuf symbols=6",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Add\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:protobuf/Service.proto:Add:17\",\n    \"name\": \"Add\",\n    ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Add\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": tr",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol Add is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": t",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "python",
+      "extension": "py",
+      "fixture": "validation/m12/fixtures/python/Service.py",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "python",
+      "indexedLanguage": "python",
+      "symbols": 33,
+      "relationships": 51,
+      "probeSymbol": "logged",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=python symbols=33",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"logged\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:python/Service.py:logged:9\",\n    \"name\": \"logged\",\n ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"logged\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update logged: newContent does not declare the symbol and no replaceable body block was found; pass the full de",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "r",
+      "extension": "r",
+      "fixture": "validation/m12/fixtures/r/Service.R",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "r",
+      "indexedLanguage": "r",
+      "symbols": 12,
+      "relationships": 13,
+      "probeSymbol": "add",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=r symbols=12",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"add\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:nim/Contract.nim:add:77\",\n    \"name\": \"add\",\n    \"file\"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"add\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": tr",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol add is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": t",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "ruby",
+      "extension": "rb",
+      "fixture": "validation/m12/fixtures/ruby/Service.rb",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "ruby",
+      "indexedLanguage": "ruby",
+      "symbols": 10,
+      "relationships": 18,
+      "probeSymbol": "audit",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=ruby symbols=10",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"audit\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:ruby/Service.rb:audit:6\",\n    \"name\": \"audit\",\n    \"f",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"audit\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": ",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update audit: newContent does not declare the symbol and no replaceable body block was found; pass the full dec",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "rust",
+      "extension": "rs",
+      "fixture": "validation/m12/fixtures/rust/service.rs",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "rust",
+      "indexedLanguage": "rust",
+      "symbols": 22,
+      "relationships": 45,
+      "probeSymbol": "make_default_service",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=rust symbols=22",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"make_default_service\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:rust/service.rs:make_default_service:5",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"make_default_service\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"s",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/rust/service.rs\",\n      \"b",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "sass",
+      "extension": "sass",
+      "fixture": "validation/m12/language-coverage/sass/Theme.sass",
+      "fixtureOrigin": "validation/m12/language-coverage",
+      "routed": "sass",
+      "indexedLanguage": "sass",
+      "symbols": 1,
+      "relationships": 0,
+      "probeSymbol": "Theme.sass",
+      "probeKind": "module",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=sass symbols=1",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "bb_impact: symbol 'Theme.sass' is not a traversable root (module) — no impact set exists (declared error: the symbol was not found as a trav",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Theme.sass\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndex",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update Theme.sass: newContent does not declare the symbol and no replaceable body block was found; pass the ful",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "scala",
+      "extension": "sc",
+      "fixture": "validation/m12/fixtures/scala/UserService.scala",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "scala",
+      "indexedLanguage": "scala",
+      "symbols": 14,
+      "relationships": 35,
+      "probeSymbol": "save",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=scala symbols=14",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"save\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:php/BaseService.php:save:7\",\n    \"name\": \"save\",\n    \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"save\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": t",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol save is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "scss",
+      "extension": "scss",
+      "fixture": "validation/m12/fixtures/scss/Theme.scss",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "scss",
+      "indexedLanguage": "scss",
+      "symbols": 7,
+      "relationships": 9,
+      "probeSymbol": "@mixin card",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=scss symbols=7",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"@mixin card\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:scss/Theme.scss:@mixin card:5\",\n    \"name\": \"@m",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"@mixin card\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInde",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/scss/Theme.scss\",\n      \"b",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "solidity",
+      "extension": "sol",
+      "fixture": "validation/m12/language-coverage/solidity/Vault.sol",
+      "fixtureOrigin": "validation/m12/language-coverage",
+      "routed": "solidity",
+      "indexedLanguage": "solidity",
+      "symbols": 7,
+      "relationships": 13,
+      "probeSymbol": "deposit",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=solidity symbols=7",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"deposit\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:solidity/Vault.sol:deposit:18\",\n    \"name\": \"deposi",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"deposit\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\"",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol deposit is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "sql",
+      "extension": "sql",
+      "fixture": "validation/m12/fixtures/sql/Queries2.sql",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "sql",
+      "indexedLanguage": "sql",
+      "symbols": 2,
+      "relationships": 8,
+      "probeSymbol": "trg_orders_audit",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=sql symbols=2",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"trg_orders_audit\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:sql/Queries2.sql:trg_orders_audit:41\",\n   ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"trg_orders_audit\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbo",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update trg_orders_audit: newContent does not declare the symbol and no replaceable body block was found; pass t",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "svelte",
+      "extension": "svelte",
+      "fixture": "validation/m12/fixtures/svelte/App.svelte",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "svelte",
+      "indexedLanguage": "svelte",
+      "symbols": 4,
+      "relationships": 14,
+      "probeSymbol": "nextPage",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=svelte symbols=4",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"nextPage\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:svelte/App.svelte:nextPage:9\",\n    \"name\": \"nextPa",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"nextPage\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update nextPage: newContent does not declare the symbol and no replaceable body block was found; pass the full ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "swift",
+      "extension": "swift",
+      "fixture": "validation/m12/fixtures/swift/UserService.swift",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "swift",
+      "indexedLanguage": "swift",
+      "symbols": 28,
+      "relationships": 35,
+      "probeSymbol": "find",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=swift symbols=28",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"find\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:elixir/Service.ex:find:46\",\n    \"name\": \"find\",\n    \"f",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"find\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": t",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol find is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "terraform",
+      "extension": "tf",
+      "fixture": "validation/m12/fixtures/hcl/Infrastructure.tf",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "terraform",
+      "indexedLanguage": "terraform",
+      "symbols": 51,
+      "relationships": 117,
+      "probeSymbol": "backend.s3",
+      "probeKind": "class",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=terraform symbols=51",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"backend.s3\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:terraform/Infrastructure.tf:backend.s3:3\",\n    \"",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"backend.s3\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndex",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update backend.s3: newContent does not declare the symbol and no replaceable body block was found; pass the ful",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "toml",
+      "extension": "toml",
+      "fixture": "validation/m12/fixtures/toml/Page.toml",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "toml",
+      "indexedLanguage": "toml",
+      "symbols": 21,
+      "relationships": 40,
+      "probeSymbol": "toml.Page",
+      "probeKind": "module",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=toml symbols=21",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "bb_impact: symbol 'toml.Page' is not a traversable root (module) — no impact set exists (declared error: the symbol was not found as a trave",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"toml.Page\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexe",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update toml.Page: newContent does not declare the symbol and no replaceable body block was found; pass the full",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "tsx",
+      "extension": "tsx",
+      "fixture": "validation/m11/fixtures/typescript/view.tsx",
+      "fixtureOrigin": "validation/m11/fixtures",
+      "routed": "tsx",
+      "indexedLanguage": "tsx",
+      "symbols": 1,
+      "relationships": 3,
+      "probeSymbol": "UserView",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=tsx symbols=1",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"UserView\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:tsx/view.tsx:UserView:3\",\n    \"name\": \"UserView\",\n",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"UserView\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/tsx/view.tsx\",\n      \"befo",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "typescript",
+      "extension": "ts",
+      "fixture": "validation/m12/fixtures/typescript/Features.ts",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "typescript",
+      "indexedLanguage": "typescript",
+      "symbols": 18,
+      "relationships": 38,
+      "probeSymbol": "sealed",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=typescript symbols=18",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"sealed\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:typescript/Features.ts:sealed:12\",\n    \"name\": \"seal",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"sealed\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\":",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/typescript/Features.ts\",\n ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "vb",
+      "extension": "vb",
+      "fixture": "validation/m12/language-coverage/vb/CoverageService.vb",
+      "fixtureOrigin": "validation/m12/language-coverage",
+      "routed": "vb",
+      "indexedLanguage": "vb",
+      "symbols": 4,
+      "relationships": 6,
+      "probeSymbol": "Add",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=vb symbols=4",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Add\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:protobuf/Service.proto:Add:17\",\n    \"name\": \"Add\",\n    ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"Add\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": tr",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol Add is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": t",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "vba",
+      "extension": "vba",
+      "fixture": "validation/m14/fixtures/vba/adversarial.bas",
+      "fixtureOrigin": "validation/m14/fixtures",
+      "routed": "vba",
+      "indexedLanguage": "vba",
+      "symbols": 12,
+      "relationships": 17,
+      "probeSymbol": "GetTickCount",
+      "probeKind": "function",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=vba symbols=12",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"GetTickCount\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:vba/adversarial.bas:GetTickCount:15\",\n    \"nam",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"GetTickCount\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInd",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update GetTickCount: newContent does not declare the symbol and no replaceable body block was found; pass the f",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "vue",
+      "extension": "vue",
+      "fixture": "validation/m12/fixtures/vue/Card.vue",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "vue",
+      "indexedLanguage": "vue",
+      "symbols": 10,
+      "relationships": 15,
+      "probeSymbol": "data",
+      "probeKind": "method",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=vue symbols=10",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"data\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:vue/Card.vue:data:16\",\n    \"name\": \"data\",\n    \"file\":",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"data\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": t",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol data is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": ",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "xml",
+      "extension": "xml",
+      "fixture": "validation/m12/fixtures/xml/TypeGraph.xsd",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "xml",
+      "indexedLanguage": "xml",
+      "symbols": 31,
+      "relationships": 48,
+      "probeSymbol": "xs:schema",
+      "probeKind": "class",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=xml symbols=31",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"xs:schema\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:xml/TypeGraph.xsd:xs:schema:2\",\n    \"name\": \"xs:s",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"xs:schema\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexe",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update xs:schema: newContent does not declare the symbol and no replaceable body block was found; pass the full",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "yaml",
+      "extension": "yml",
+      "fixture": "validation/m12/fixtures/yaml/Kubernetes.yaml",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "yaml",
+      "indexedLanguage": "yaml",
+      "symbols": 21,
+      "relationships": 38,
+      "probeSymbol": "services",
+      "probeKind": "class",
+      "editSupport": "refused",
+      "migrateShape": "plans=0 unsupported=1",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=yaml symbols=21",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"services\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:yaml/Kubernetes.yaml:services:4\",\n    \"name\": \"ser",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"services\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"symbol services is ambiguous; provide filePath and lineStart\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomi",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=0 unsupported=1",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "language": "zig",
+      "extension": "zig",
+      "fixture": "validation/m12/fixtures/zig/storage.zig",
+      "fixtureOrigin": "validation/m12/fixtures",
+      "routed": "zig",
+      "indexedLanguage": "zig",
+      "symbols": 15,
+      "relationships": 44,
+      "probeSymbol": "GenericStack",
+      "probeKind": "function",
+      "editSupport": "dry-run-planned",
+      "migrateShape": "plans=1 unsupported=0",
+      "checks": [
+        {
+          "name": "indexed: file row exists with this language and symbols",
+          "ok": true,
+          "detail": "file=zig symbols=15",
+          "strict": true
+        },
+        {
+          "name": "search: bb_search finds the language's symbol (declared match-set)",
+          "ok": true,
+          "detail": "no match-set line",
+          "strict": true
+        },
+        {
+          "name": "graph: bb_graph answers with the canonical root record",
+          "ok": true,
+          "detail": "response is not the declared graph JSON",
+          "strict": true
+        },
+        {
+          "name": "impact: bb_impact answers or declines with its declared refusal",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"GenericStack\",\n  \"root\": {\n    \"id\": \"dea73d6a0799e1011db35035aa3d85c1dcd4a238:zig/storage.zig:GenericStack:37\",\n    \"name\": ",
+          "strict": true
+        },
+        {
+          "name": "doc: bb_doc file mode cites the file it documents",
+          "ok": true,
+          "detail": "answer does not name the target file",
+          "strict": true
+        },
+        {
+          "name": "annotations: bb_annotations answers with a declared set",
+          "ok": true,
+          "detail": "{\n  \"symbol\": \"GenericStack\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolInd",
+          "strict": true
+        },
+        {
+          "name": "edit: bb_edit dry-run plans or refuses typed (never crashes)",
+          "ok": true,
+          "detail": "{\n  \"mode\": \"update\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"$HOME/mcp/backbencher-brain/.langmatrix/project/zig/storage.zig\",\n      \"b",
+          "strict": true
+        },
+        {
+          "name": "migrate: bb_migrate answers plans/unsupported (declared gaps)",
+          "ok": true,
+          "detail": "plans=1 unsupported=0",
+          "strict": true
+        },
+        {
+          "name": "cross_language: bb_cross_language answers the stored-fact shape",
+          "ok": true,
+          "detail": "response is not JSON",
+          "strict": true
+        }
+      ]
+    }
+  ]
+}

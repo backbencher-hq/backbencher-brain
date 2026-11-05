@@ -120,7 +120,8 @@
     "verify:security": "npx tsx script/m15/verify-security-regressions.ts && npx tsx script/m15/verify-security-precision.ts && npx tsx script/m15/verify-security-deep.ts && npx tsx script/verify-security.ts && npx tsx script/m20/verify-security-flow-boundary.ts && npx tsx script/m20/verify-security-adversarial.ts && npx tsx script/m20/verify-security-history.ts",
     "parse:check": "bun run script/m14/parse-check.ts",
     "verify:health-deep": "bun run script/m64/verify-sample-coverage.ts && bun run script/m64/verify-refresh-integrity.ts && bun run script/m64/verify-coverage-and-partial.ts && bun run script/m64/verify-freshness-reasons.ts && bun run script/m64/verify-actionability.ts && bun run script/m64/verify-unindexed.ts && bun run script/m64/verify-paths.ts && bun run script/m64/verify-embed-scan.ts && bun run script/m64/verify-wire.ts && bun run script/m64/verify-health-deep.ts && bun run script/m64/verify-evidence.ts",
-    "verify:tools": "bun run script/verify-tools.ts"
+    "verify:tools": "bun run script/verify-tools.ts",
+    "verify:language-matrix": "bun run script/verify-language-tool-matrix.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

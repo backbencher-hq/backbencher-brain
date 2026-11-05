@@ -186,6 +186,7 @@ const GATES: Gate[] = [
   { group: "surface", runner: "bun run", script: "script/verify-analysis-history.ts" },
   { group: "surface", runner: "bun run", script: "script/verify-freshness.ts" },
   { group: "surface", runner: "bun run", script: "script/verify-cli-surface.ts" },
+  { group: "languages", runner: "bun run", script: "script/verify-language-tool-matrix.ts" },
   { group: "m28", runner: "bun run", script: "script/m28/verify-mcp-stdout.ts" },
 ]
 
