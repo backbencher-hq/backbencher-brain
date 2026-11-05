@@ -1,5 +1,6 @@
 // src/lsp/doc_comment.ts — the ONE owner of "what documentation belongs to this
 // symbol".
+// Author: Muhammad Ishaq Khan
 //
 // WHY THIS IS NOT A STORAGE CHANGE (measured 2026-10-07). `brain_symbol
 // .docstring` EXISTS and is empty: 0 of 10,263 symbols in the owner's real

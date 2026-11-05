@@ -1,4 +1,5 @@
 // src/lsp/positions.ts — M24.P1 (blood-tested foundation #2).
+// Author: Muhammad Ishaq Khan
 //
 // The single owner of all position conversion between the index format and
 // the LSP wire format. No other M24 code may convert positions inline

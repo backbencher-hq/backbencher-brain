@@ -1,5 +1,6 @@
 // src/lsp/hub_protocol.ts — M42.H6 (issue #654): the SINGLE owner of the
 // versioned webview→editor postMessage contract.
+// Author: Muhammad Ishaq Khan
 //
 // The webview-to-editor direction is the last unbuilt direction of the hub
 // flow ("click any usage → the editor reveals that symbol at that line").

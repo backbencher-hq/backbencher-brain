@@ -1,4 +1,5 @@
 // src/lsp/server.ts — M24.L1: bb_lsp server skeleton.
+// Author: Muhammad Ishaq Khan
 //
 // A standalone LSP 3.18 server over stdio. This module owns the protocol
 // layer: lifecycle (initialize/initialized/shutdown/exit), capabilities

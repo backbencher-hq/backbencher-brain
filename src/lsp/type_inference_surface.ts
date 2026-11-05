@@ -1,5 +1,6 @@
 // src/lsp/type_inference_surface.ts — the ONE place a type shown on an IDE
 // surface gets its provenance decided.
+// Author: Muhammad Ishaq Khan
 //
 // WHY THIS FILE EXISTS
 // --------------------

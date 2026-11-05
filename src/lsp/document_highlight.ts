@@ -1,5 +1,6 @@
 // src/lsp/document_highlight.ts — M42.H1 (issue #649): semantic in-file
 // document highlights.
+// Author: Muhammad Ishaq Khan
 //
 // Contract §12.1 (nothing unclickable / nothing falsely highlighted): the
 // highlight set is SEMANTIC, built in two independent layers, each of which

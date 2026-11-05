@@ -1,4 +1,5 @@
 // src/lsp/enrichment.ts — M42.H3 (issue #651): enrichment reads.
+// Author: Muhammad Ishaq Khan
 //
 // The SINGLE owner of enrichment on the LSP surface. Enrichment (role,
 // pattern, layerFlow, criticality, frequency, flags) is COMPUTED BY THE

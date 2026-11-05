@@ -1,4 +1,5 @@
 // src/lsp/launch_languages.ts — the SINGLE owner of the bb_lsp launch set.
+// Author: Muhammad Ishaq Khan
 //
 // History: the set was "the five #419-CONFORMANT languages" (M24) and lived
 // duplicated in hover.ts and server.ts (a drift hazard found by M29.R2's wave

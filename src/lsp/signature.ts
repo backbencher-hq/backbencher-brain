@@ -1,5 +1,6 @@
 // src/lsp/signature.ts — M55.T4 (issue #772 sibling, §14 Truth Rule 4: human
 // text is human).
+// Author: Muhammad Ishaq Khan
 //
 // The analyzers store parameters as STRUCTURED data (`parameters` is a JSON
 // array — verified across every brain.db on this machine: 148 rows, six key

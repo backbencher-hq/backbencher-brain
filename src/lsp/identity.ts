@@ -1,4 +1,5 @@
 // src/lsp/identity.ts — M55.T1 (issue #770): the ONE identity resolver.
+// Author: Muhammad Ishaq Khan
 //
 // Truth Rule 2 (docs/IDE-HONESTY-CONTRACT.md §15): identity is stated. Every
 // surface that names a symbol to the server — the hover's action args,

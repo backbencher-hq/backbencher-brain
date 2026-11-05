@@ -1,4 +1,5 @@
 // src/lsp/freshness.ts — M24.P2 (blood-tested foundation #1).
+// Author: Muhammad Ishaq Khan
 //
 // Freshness for the LSP surface: the server reads a persisted index while the
 // user edits files. This component owns the watch → debounce → incremental

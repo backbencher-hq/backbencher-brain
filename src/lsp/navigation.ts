@@ -1,4 +1,5 @@
 // src/lsp/navigation.ts — M24.L3.
+// Author: Muhammad Ishaq Khan
 //
 // textDocument/definition and textDocument/references over the persisted
 // brain.db index (IDE Honesty Contract §2 claim levels: every response

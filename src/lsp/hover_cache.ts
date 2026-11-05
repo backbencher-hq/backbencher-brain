@@ -1,6 +1,7 @@
 // src/lsp/hover_cache.ts — the ONE parse cache the LSP read surfaces share,
 // and the ONE owner of the targeted identifier lookup that replaced the
 // full-file occurrence extraction.
+// Author: Muhammad Ishaq Khan
 //
 // ===========================================================================
 // WHAT THIS FILE IS FOR (the measured defect it closes)
