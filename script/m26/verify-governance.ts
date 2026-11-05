@@ -96,10 +96,19 @@ let checks = 0
 let passed = 0
 let negatives = 0
 
+/** Labels of the checks that failed in THIS run. A record that says only
+ *  "known-gap" without a reason is the hollow entry the contract bans (§8.3:
+ *  silence is guilt) — and it is self-defeating for this gate, whose own entry is
+ *  judged by the next run. Collecting the labels lets the record state why. */
+const failingChecks: string[] = []
+
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
-  else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  else {
+    failingChecks.push(label)
+    console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+  }
 }
 
 function negative(label: string, condition: boolean, detail = ""): void {
@@ -120,6 +129,21 @@ function isClosable(issue: Issue): boolean {
     typeof e.mutantsCaught === "number" &&
     e.mutantsCaught > 0 &&
     e.mutantsTotal === e.mutantsCaught
+  // A NON-verified entry is not a contradiction: it is the honest state of a gate
+  // that is red. Demanding realFailed === 0 here made the truthful entry
+  // structurally impossible and reported `hollow-known-gap` for exactly the row a
+  // candid ledger must contain — the same defect M24 fixed when it refined this
+  // rule. What such an entry must carry is the REASON it is not verified.
+  if (e.status !== "verified") {
+    return Boolean(
+      e.status === issue.status &&
+        e.verifierCommand &&
+        e.evidenceFile &&
+        e.passed > 0 &&
+        typeof e.blockedReason === "string" &&
+        e.blockedReason.trim().length > 0,
+    )
+  }
   return Boolean(
     e.status === issue.status &&
       e.verifierCommand &&
@@ -274,7 +298,17 @@ function validateM25Bar(m25Ledger: Ledger): string[] {
         .join(", ")}`,
     )
   }
-  if (m25Ledger.status !== (allClosed ? "closed" : "open")) errors.push("m25-status")
+  // The lane status is derived from its entries by the SHARED projection
+  // (`laneStatusOf`): "closed" only when every entry is verified. This check used
+  // to demand "closed" whenever allClosed — but allClosed deliberately accepts a
+  // `blocked` row WITH a reason (the relaxation documented above), and a lane
+  // holding such a row can never derive "closed". The two rules were
+  // contradictory, so an honestly blocked platform made this bar unpassable no
+  // matter what the ledger said. Compare against the same derivation the
+  // projection uses; a forged "closed" over anything not fully verified still
+  // fails, which is what this check exists for.
+  const allVerified = issues.length > 0 && issues.every((i) => i.status === "verified")
+  if (m25Ledger.status !== (allVerified ? "closed" : "open")) errors.push("m25-status")
   return errors
 }
 
@@ -572,6 +606,9 @@ function main(): void {
       ledgerStatus: m25Ledger?.status ?? "unreadable",
       m25GateExit,
     },
+    ...(failingChecks.length > 0
+      ? { blockedReason: `not verified at ${currentCommit}: ${failingChecks.slice(0, 4).join(" ; ")}` }
+      : {}),
     limitations: [
       "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features.",
       "A run with relevant uncommitted M26 files is recorded as known-gap; verified status requires a clean relevant tree.",
