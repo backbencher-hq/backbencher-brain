@@ -1549,8 +1549,8 @@ function rewriteRelativeImports(source: string, componentDir: string): string {
 const MUTANTS: Array<{ name: string; from: string; to: string }> = [
   {
     name: "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
-    from: "        ? { path: loc.path, line: callLine0, character: 0, endLine: callLine0, endCharacter: 0 }",
-    to: "        ? { path: loc.path, line: callLine0 + 1, character: 0, endLine: callLine0 + 1, endCharacter: 0 }",
+    from: "        ? { path: loc.path, line: callLine0 as number, character: 0, endLine: callLine0 as number, endCharacter: 0 }",
+    to: "        ? { path: loc.path, line: (callLine0 as number) + 1, character: 0, endLine: (callLine0 as number) + 1, endCharacter: 0 }",
   },
   {
     name: "M2: wrong count — the usages header is one more than the list it headlines",
