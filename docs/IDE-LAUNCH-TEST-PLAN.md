@@ -110,3 +110,28 @@ evidence" (its ledger was listed as relevant to itself).
 
 Instrument before theorising. Printing the actual value ended nine rounds of wrong
 hypotheses on one defect in a single run.
+
+## 7. Known flake: composed runs are not isolation-tolerant
+
+Three gates pass standalone and fail when another gate runs them in a sweep. This is
+the last piece of real engineering in the chain, recorded here so it is not
+rediscovered:
+
+| Gate | Standalone | Inside a sweep | Sweep |
+|---|---|---|---|
+| E5 (M25) | 91/91 in-editor | died on a read-only socket in a ten-gate batch | batch |
+| A1 (M26) | 12/12 | exit 1 | M26 batch |
+| D1 (M26) | 34/34 | 33/34, and evidence not byte-identical | `script/m26/verify-closure.ts` pass 1 |
+
+D1 is the clearest case and the one to fix first, because it reproduces inside a
+single gate rather than a shell loop: the closure's pass 1 runs the docs verifier
+after preceding verifiers and their mutants, and it fails there while passing alone.
+Two plausible causes to test in order — (a) the docs verifier is not idempotent for
+the mutant regeneration it performs, so a prior sweep leaves state that its next run
+reads; (b) the closure compares evidence byte-identity and D1 embeds something
+machine- or timing-dependent beyond `generatedAt`/`currentCommit`, in which case it
+belongs in the same exemption class M25 already applies to its editor legs
+("re-runs green at the same HEAD", not byte-identity).
+
+The wrong fix is to loosen the closure. The right fix is to make each verifier
+idempotent and self-contained, and to compare only what is genuinely deterministic.
