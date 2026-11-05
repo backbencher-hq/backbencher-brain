@@ -140,8 +140,8 @@
         "bytes": 6400
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "f2281baa18523241fc6665727812818768bf294f76870e7facdd06cdceda4340",
-        "bytes": 386130
+        "sha256": "e77a35a62e584d3eaf81e17370c4c670d7997d0a1540cfa4222cc2c4cbcaed4e",
+        "bytes": 388184
       },
       "src/ast/scoped-path.ts": {
         "sha256": "8e54ddcf083dcfe07a10ff621981232f555ac2681a2fd2cfe2dde458cf16c842",
@@ -312,7 +312,7 @@
         "bytes": 43542
       }
     },
-    "digest": "4c8a397df5c1929b40fcb3c5174445ba422500843630421a59921be3d3f669f2",
+    "digest": "2f95399d3ac7a3a2fba2e5b11bde9e3242140057e9d7f3911c5e2ae6a4c2e683",
     "parser": null,
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
@@ -696,11 +696,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:cpp",
-      "wallTimeMs": 232.442002,
-      "userCpuMs": 203.812,
-      "systemCpuMs": 23.236,
-      "peakRssBytes": 294023168,
-      "rssDeltaBytes": 13926400,
+      "wallTimeMs": 33.279554,
+      "userCpuMs": 103.234,
+      "systemCpuMs": 10.886,
+      "peakRssBytes": 331300864,
+      "rssDeltaBytes": 17358848,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 4.24,
-    "loadAvgEnd": 3.94,
+    "loadAvgStart": 1.8,
+    "loadAvgEnd": 4.27,
     "sliceCount": 11
   },
   "counts": {
@@ -25,11 +25,11 @@
     "grails-core:java": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 81,
+      "heuristic": 143,
       "perf": {
-        "avgMsPerFile": 10.9
+        "avgMsPerFile": 5.8
       },
-      "sampleSetHash": "2fff892462bb64ee"
+      "sampleSetHash": "1da19a8b90a8bc00"
     },
     "grails-core:groovy": {
       "missing": 0,
@@ -43,11 +43,11 @@
     "Exposed:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 100,
+      "heuristic": 159,
       "perf": {
-        "avgMsPerFile": 41.8
+        "avgMsPerFile": 26.2
       },
-      "sampleSetHash": "71abaa67437c73e2"
+      "sampleSetHash": "629c733e2506ff93"
     },
     "Exposed:java": {
       "missing": 0,
@@ -309,7 +309,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 279.4
+        "avgMsPerFile": 205.2
       },
       "sampleSetHash": "494e1b94766e8ade"
     },
@@ -432,9 +432,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 8.9
+        "avgMsPerFile": 5.3
       },
-      "sampleSetHash": "e42073660726e95b"
+      "sampleSetHash": "c43885f33a89e8fe"
     },
     "svelte:typescript": {
       "missing": 0,
@@ -489,9 +489,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 11.3
+        "avgMsPerFile": 13.8
       },
-      "sampleSetHash": "c1c6f9e95bf02a6b"
+      "sampleSetHash": "8b9dc0f432e388c6"
     },
     "grails-core:svelte": {
       "missing": 0,
@@ -1137,9 +1137,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 91.2
+        "avgMsPerFile": 115.1
       },
-      "sampleSetHash": "01881882815aab70"
+      "sampleSetHash": "191d24c78e4748b9"
     },
     "proxicall:dart": {
       "missing": 0,
@@ -1155,18 +1155,18 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 38.8
+        "avgMsPerFile": 54.2
       },
-      "sampleSetHash": "011b086821f630a5"
+      "sampleSetHash": "1594290a5ff72864"
     },
     "phpunit:php": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 8.7
+        "avgMsPerFile": 5.1
       },
-      "sampleSetHash": "0af8f28866a8e29b"
+      "sampleSetHash": "5c39eaca8b3fa5d4"
     },
     "rake:c": {
       "missing": 0,
@@ -1275,9 +1275,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 27.7
+        "avgMsPerFile": 11.6
       },
-      "sampleSetHash": "e0395ac2bf495bf0"
+      "sampleSetHash": "c114119a1d9833dc"
     },
     "kotlinx-coroutines:kotlin": {
       "missing": 0,
@@ -1291,11 +1291,11 @@
     "clojure:java": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 26,
+      "heuristic": 53,
       "perf": {
-        "avgMsPerFile": 39.1
+        "avgMsPerFile": 19
       },
-      "sampleSetHash": "c9d6a3b4b3fb8eb6"
+      "sampleSetHash": "2b31ba5e4741e5b5"
     },
     "geb:groovy": {
       "missing": 0,
@@ -1356,9 +1356,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 39.8
+        "avgMsPerFile": 25.9
       },
-      "sampleSetHash": "51fe9fdd63b9ce45"
+      "sampleSetHash": "d511b40d108e5957"
     },
     "dart-http:dart": {
       "missing": 0,
@@ -1374,9 +1374,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 55.6
+        "avgMsPerFile": 90.7
       },
-      "sampleSetHash": "0052e892f6e0d27b"
+      "sampleSetHash": "4415692613fbbad0"
     },
     "afnetworking:objc": {
       "missing": 0,
@@ -1392,9 +1392,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 25.9
+        "avgMsPerFile": 14.5
       },
-      "sampleSetHash": "b3562a4039b50cf9"
+      "sampleSetHash": "8239e8c1a0b38c53"
     },
     "rack:ruby": {
       "missing": 0,
@@ -1410,7 +1410,7 @@
       "unexplained": 0,
       "heuristic": 50,
       "perf": {
-        "avgMsPerFile": 38.2
+        "avgMsPerFile": 41.7
       },
       "sampleSetHash": "e3679fa2131e9b78"
     },
@@ -1428,9 +1428,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 17.3
+        "avgMsPerFile": 17.8
       },
-      "sampleSetHash": "0667bcac204cb43e"
+      "sampleSetHash": "a6e2d54567244be4"
     },
     "otp:erlang": {
       "missing": 0,
@@ -1455,18 +1455,18 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 6.4
+        "avgMsPerFile": 3.3
       },
-      "sampleSetHash": "af9df135a261420f"
+      "sampleSetHash": "5f1aa11d7465f9cb"
     },
     "grails-core:css": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 8.9
+        "avgMsPerFile": 11.8
       },
-      "sampleSetHash": "2dc59a0c51b427ad"
+      "sampleSetHash": "4dc649da8fb47699"
     },
     "kubernetes:yaml": {
       "missing": 0,
@@ -1579,9 +1579,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.8
+        "avgMsPerFile": 1.3
       },
-      "sampleSetHash": "435ca129b2b2ed47"
+      "sampleSetHash": "b19110a8afc44356"
     },
     "cargo:toml": {
       "missing": 0,
@@ -1590,14 +1590,14 @@
       "perf": {
         "avgMsPerFile": 0.1
       },
-      "sampleSetHash": "d5d30b99f18fbf2c"
+      "sampleSetHash": "149b8c39fbae0fe9"
     },
     "sqlite:html": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.9
+        "avgMsPerFile": 1.4
       },
       "sampleSetHash": "3316e7bdc525d7af"
     },
@@ -1606,7 +1606,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 0.8
+        "avgMsPerFile": 1.5
       },
       "sampleSetHash": "c5e515b54f5e915c"
     },
@@ -1624,34 +1624,34 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.3
+        "avgMsPerFile": 8.9
       },
-      "sampleSetHash": "8cb5822a2ad61716"
+      "sampleSetHash": "c299c7f9d5d8fe9a"
     },
     "grails-core:xml": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.1
+        "avgMsPerFile": 2.8
       },
-      "sampleSetHash": "b0a525cf8aa49d27"
+      "sampleSetHash": "8fa422e4c80a2611"
     },
     "terraform:json": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.6
+        "avgMsPerFile": 1.4
       },
-      "sampleSetHash": "934031cbd42fdaf0"
+      "sampleSetHash": "022593ba369dff00"
     },
     "redis:make": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 5.8
+        "avgMsPerFile": 4.6
       },
       "sampleSetHash": "e1b49ce25608c189"
     },
@@ -1660,16 +1660,16 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4.3
+        "avgMsPerFile": 2.9
       },
-      "sampleSetHash": "8378a1275fc0b970"
+      "sampleSetHash": "ac2e49bb85ca0dfc"
     },
     "consul:make": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4.4
+        "avgMsPerFile": 2.2
       },
       "sampleSetHash": "abac0ebd75471c84"
     },
@@ -1678,26 +1678,26 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.6
+        "avgMsPerFile": 4.2
       },
-      "sampleSetHash": "49f9724aeb4f219b"
+      "sampleSetHash": "c702d451a42ba71a"
     },
     "mojo:perl": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 17
+        "avgMsPerFile": 34.3
       },
-      "sampleSetHash": "b977bc925cacf6aa"
+      "sampleSetHash": "69163cb35ddc7b72"
     }
   },
   "hashes": {
     "grails-core:javascript": "32c4318f0f3db775",
     "vue-core:typescript": "771c854fefb7fcdc",
-    "Exposed:kotlin": "71abaa67437c73e2",
+    "Exposed:kotlin": "629c733e2506ff93",
     "scala3:scala": "49b947fefb290066",
-    "grails-core:java": "2fff892462bb64ee",
+    "grails-core:java": "1da19a8b90a8bc00",
     "grails-core:groovy": "3a9248865d3bbbd9",
     "element-plus:vue": "ac4d0a05fa0c0ec0",
     "fmt:cpp": "89b51095c4659906",
@@ -1705,63 +1705,63 @@
     "ripgrep:rust": "3726f83d65a6e09a",
     "go-tools:go": "ae9449eb50c1f68f",
     "zig:zig": "053fa67f6663fddb",
-    "powershell:csharp": "01881882815aab70",
+    "powershell:csharp": "191d24c78e4748b9",
     "proxicall:dart": "0e484c4b04addfbd",
-    "swift-nio:swift": "011b086821f630a5",
+    "swift-nio:swift": "1594290a5ff72864",
     "sdwebimage:objc": "8234cb008232a69b",
-    "phpunit:php": "0af8f28866a8e29b",
+    "phpunit:php": "5c39eaca8b3fa5d4",
     "rake:ruby": "0c505b9b4aeda127",
     "cython:python": "2f1c96734046b556",
     "cabal:haskell": "2040e3ad57636818",
     "elixir:elixir": "96895fbad6c5eabd",
     "rebar3:erlang": "346c26d74ea36d84",
-    "clojure:clojure": "e0395ac2bf495bf0",
+    "clojure:clojure": "c114119a1d9833dc",
     "lodash:javascript": "494e1b94766e8ade",
     "element-plus:typescript": "258bbdbad4d0a7bc",
     "kotlinx-coroutines:kotlin": "f29e2833d7eb2758",
     "cats-effect:scala": "45c0a06542ed9f1a",
-    "clojure:java": "c9d6a3b4b3fb8eb6",
+    "clojure:java": "2b31ba5e4741e5b5",
     "geb:groovy": "afddb7a7aeb00bd8",
     "vue-element-admin:vue": "ceda7eae9ea97e76",
     "nlohmann-json:cpp": "88dc095dd86d8301",
     "cargo:rust": "e09029111a6cc4ec",
     "terraform:go": "9c09cea779eb5ca6",
     "zls:zig": "c1285552d459a43a",
-    "fsharp:csharp": "51fe9fdd63b9ce45",
+    "fsharp:csharp": "d511b40d108e5957",
     "dart-http:dart": "549143339f0cfaa9",
-    "alamofire:swift": "0052e892f6e0d27b",
+    "alamofire:swift": "4415692613fbbad0",
     "afnetworking:objc": "29684f4b8391be9f",
-    "phpmyadmin:php": "b3562a4039b50cf9",
+    "phpmyadmin:php": "8239e8c1a0b38c53",
     "rack:ruby": "cbf9b090af441408",
     "requests:python": "e3679fa2131e9b78",
     "hledger:haskell": "d1c3ed0e861d118d",
-    "phoenix:elixir": "0667bcac204cb43e",
+    "phoenix:elixir": "a6e2d54567244be4",
     "otp:erlang": "c3632c972f79c9a2",
     "clj-kondo:clojure": "7c28f82f48a98384",
-    "svelte:svelte": "c1c6f9e95bf02a6b",
+    "svelte:svelte": "8b9dc0f432e388c6",
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
     "jq:c": "2b743b65d0eac283",
-    "svelte:css": "af9df135a261420f",
-    "grails-core:css": "2dc59a0c51b427ad",
+    "svelte:css": "5f1aa11d7465f9cb",
+    "grails-core:css": "4dc649da8fb47699",
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
     "solidity:solidity": "e9708e750546e983",
     "julia:julia": "0b7c135add6ea602",
-    "otp:html": "435ca129b2b2ed47",
-    "cargo:toml": "d5d30b99f18fbf2c",
+    "otp:html": "b19110a8afc44356",
+    "cargo:toml": "149b8c39fbae0fe9",
     "sqlite:html": "3316e7bdc525d7af",
     "ripgrep:toml": "c5e515b54f5e915c",
     "tf-aws-components:hcl": "1bae8a312cc9c4a2",
-    "ansible:yaml": "8cb5822a2ad61716",
-    "grails-core:xml": "b0a525cf8aa49d27",
-    "terraform:json": "934031cbd42fdaf0",
-    "svelte:javascript": "e42073660726e95b",
+    "ansible:yaml": "c299c7f9d5d8fe9a",
+    "grails-core:xml": "8fa422e4c80a2611",
+    "terraform:json": "022593ba369dff00",
+    "svelte:javascript": "c43885f33a89e8fe",
     "redis:make": "e1b49ce25608c189",
-    "duckdb:sql": "8378a1275fc0b970",
+    "duckdb:sql": "ac2e49bb85ca0dfc",
     "consul:make": "abac0ebd75471c84",
-    "otp:bash": "49f9724aeb4f219b",
-    "mojo:perl": "b977bc925cacf6aa"
+    "otp:bash": "c702d451a42ba71a",
+    "mojo:perl": "69163cb35ddc7b72"
   },
   "floorMoves": {
     "solidity:solidity": {
