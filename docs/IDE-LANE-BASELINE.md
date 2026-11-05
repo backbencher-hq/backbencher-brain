@@ -407,3 +407,30 @@ five failing predicates at once.
 at line 798 for the fixture's three usage rows during a run. If `address.kind` is
 `declaration-substitute` while `storedLine` is a number, the premise is proved and
 the fix is the empty-file fallback, not the store.
+
+**The empty-file suspect is DISPROVEN.** `deriveCallSiteAddress` decides on the
+stored line alone:
+
+```ts
+const state = classifyStoredLine(input.storedLine)
+if (state === "real") return { kind: "call-site", file, line: input.storedLine }
+```
+
+`file` is carried, never consulted. So `sourceRel ?? ""` cannot be the cause, and
+no `?? ""` fix would change anything — withdrawing that hypothesis.
+
+The consequence is sharper: the row **does** reach `deriveCallSiteAddress` and the
+stored line it receives is **not classified `real`**, even though the database
+column is a non-zero integer. So exactly one of these is true:
+
+1. `row[bb_stored_call_line]` is absent at runtime (the alias is not on the object
+   that reaches line 798 — the query selects it, but the row passed there may be a
+   different object than the query's row), or
+2. the value arrives in a type `classifyStoredLine` rejects — `classifyStoredLine`
+   is the M62 owner of that judgement, so a string or a float from SQLite affinity
+   would land in `legacy-placeholder` / `unusable` and produce exactly this card.
+
+**The one-step test is now a type check, not a fallback check:** log
+`typeof row[bb_stored_call_line]` and `classifyStoredLine(row[bb_stored_call_line])`
+at line 798 for the fixture's usage rows. That distinguishes (1) from (2) and is
+the whole remaining search.
