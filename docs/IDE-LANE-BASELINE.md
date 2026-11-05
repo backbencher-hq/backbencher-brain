@@ -522,3 +522,32 @@ the statement and the loop.
 that the fixture node is the ONLY caller of this path that exercises it, and that
 `keys: []` means the alias and every other `bb_`-prefixed column are absent
 together — which points at the projection, not at the alias name.
+
+**SOLVED — the row carries `line_number`, the reader asks for
+`bb_stored_call_line`.** Second instrumented run printed the row's actual keys:
+
+```
+["id","relationship_type","confidence","source_symbol_id","target_symbol_id",
+ "line_number","src_name",...,"tgt_rel","metadata","time_updated"]
+```
+
+`line_number` is present; `bb_stored_call_line` is not. `STORED_LINE_SELECT` is
+`r.line_number AS bb_stored_call_line`, so a query that used it would produce the
+alias — this query produced the raw column instead. The reader
+(`storedLineFromRow`, which reads the alias by owner constant) therefore returns
+`undefined`, `classifyStoredLine` says `"not-stored"`, `addressLine0` returns
+`null`, `servesCallSite` is false, the row degrades to a declaration substitute,
+and the card prints "the index stores no call-site line for these" — a true
+statement about the object it was handed and a false one about the index.
+
+**The fix is one line, and it is not in any of the seven layers examined:** make
+this query's projection use the owner's alias (`${STORED_LINE_SELECT}`, which the
+file already imports and uses elsewhere) rather than the bare column, so the
+reader and the projection agree by construction. The alternative — teaching the
+reader to also accept `line_number` — would put a second spelling of the M62
+owner's column name into the codebase, which is exactly what
+`STORED_LINE_COLUMN` exists to prevent.
+
+**Method note:** seven rounds of reading produced seven wrong answers. Two
+instrumented runs produced the right one. The keys printed are unambiguous in a
+way no amount of source reading was.
