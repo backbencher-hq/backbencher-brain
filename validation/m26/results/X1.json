@@ -4,17 +4,14 @@
   "milestone": "M26",
   "status": "known-gap",
   "checks": 50,
-  "passed": 46,
-  "failed": 4,
+  "passed": 49,
+  "failed": 1,
   "failures": [
-    "X1: W5 verifier passes at HEAD",
-    "X1: the in-editor graph-leg evidence exists (E5 records the panel render)",
-    "X1: v2 completion bar audited item-by-item — zero violations",
-    "X1: W5 regeneration run passes"
+    "X1: v2 completion bar audited item-by-item — zero violations"
   ],
   "negativeCases": 3,
-  "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
-  "sourceFingerprint": "c852e7e0762b985f6fed987808d2f67e2125f436e4c6a0112c4a2d63fd118833",
+  "currentCommit": "e40f51a16be5e62a444d794b6161c89e3f40f7e2",
+  "sourceFingerprint": "232614328af7cf87375016c9deb97663bc9f8b3a81b8040f29f678009739fe1f",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-closure.ts",
@@ -33,7 +30,6 @@
   ],
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [
-    "bar1: graph panel not verified rendering in-editor (E5 leg)",
     "bar2: cross-language hover not verified"
   ],
   "perMutantRecords": {
@@ -147,7 +143,15 @@
         "caught": true
       },
       {
+        "name": "M4 differential break (cascade dropped from the total count)",
+        "caught": true
+      },
+      {
         "name": "M4b kinds dropped from the total count (a contains row counts as a dependency)",
+        "caught": true
+      },
+      {
+        "name": "M4c transitive collapse (the count stops at depth 0)",
         "caught": true
       },
       {
@@ -254,10 +258,10 @@
       }
     ]
   },
-  "generatedAt": "2026-11-05T13:36:37.791Z",
+  "generatedAt": "2026-11-05T21:45:06.098Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T13:36:37.792Z",
-    "contentSha256": "8d97df999b09b1013fbe24507927ed51b01a731c19d8f2b5914f73580ecb3577"
+    "sealedAt": "2026-11-05T21:45:06.098Z",
+    "contentSha256": "0601f75264c56e1fa90009bd2c3f8c93d3a0e89374d267865ece3be9ab7c31a7"
   }
 }
