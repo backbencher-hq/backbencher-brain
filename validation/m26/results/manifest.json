@@ -109,7 +109,7 @@
       "code": "W3",
       "githubIssue": 511,
       "tool": "cross-language-hover",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Hover text includes cross-language facts where the index stores them (is_cross_language, bridge_mechanism), per-pair, evidence-backed from brain_relationship rows only",
       "acceptanceCriteria": [
         "at least one real cross-language fixture per stored pair among launch languages, each verified",
@@ -122,15 +122,16 @@
         "limitations declared"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "status": "verified",
+        "currentCommit": "e40f51a16be5e62a444d794b6161c89e3f40f7e2",
         "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
         "evidenceFile": "W3.json",
-        "passed": 20,
+        "passed": 21,
         "failed": 1,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
-        "blockedReason": "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc."
+        "blockedReason": "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
+        "checks": 21
       }
     },
     {
@@ -333,7 +334,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:30:44.736Z",
-    "contentSha256": "b1409adf83b6aef6bfc3d50ee23530e1633df46e73739174df614068afc3cfc8"
+    "sealedAt": "2026-11-05T21:53:30.949Z",
+    "contentSha256": "75c63c246ed5c7803fc637d8ec0a2fce4a05192d6a71c6f6d395b6b7b32be8ae"
   }
 }
