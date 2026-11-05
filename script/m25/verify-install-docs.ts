@@ -182,6 +182,25 @@ const innerPath = join(outDir, "d1-inner.js")
 writeFileSync(innerPath, innerSrc)
 
 const testElectronUrl = pathToFileURL(join(EXT_ROOT, "node_modules/@vscode/test-electron/out/index.js")).href
+// Same sandbox constraint as E5: $HOME and /run/user/<uid> are mounted read-only,
+// so Electron cannot create its singleton socket and the editor exits before one
+// check runs. That surfaced as "S2: pinned editor host ran the clean-profile
+// session - Error: Test run failed with code 1" attributed to S4, i.e. a socket
+// error wearing an install-step label. Pin every XDG location writable.
+const { mkdtempSync: mkTmp, mkdirSync: mkDir, chmodSync: chMod } = await import("node:fs")
+const { join: joinP } = await import("node:path")
+const { tmpdir: tmpDir } = await import("node:os")
+const xdgRoot = mkTmp(joinP(tmpDir(), "m25-d1i-xdg-"))
+for (const d of ["runtime", "config", "cache", "data", "state"]) {
+  mkDir(joinP(xdgRoot, d), { recursive: true })
+}
+process.env["XDG_RUNTIME_DIR"] = joinP(xdgRoot, "runtime")
+process.env["XDG_CONFIG_HOME"] = joinP(xdgRoot, "config")
+process.env["XDG_CACHE_HOME"] = joinP(xdgRoot, "cache")
+process.env["XDG_DATA_HOME"] = joinP(xdgRoot, "data")
+process.env["XDG_STATE_HOME"] = joinP(xdgRoot, "state")
+chMod(process.env["XDG_RUNTIME_DIR"], 0o700)
+
 const { runTests } = await import(testElectronUrl)
 let innerError: string | null = null
 try {
