@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a9981a343b6d5ae24ff859a135238ea8fa8109fa",
+        "currentCommit": "6cc8f5c37fef481891172aaccc6269869aa6a889",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 85,
         "failed": 1,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m25/run-fork-e2e.mts"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -345,7 +345,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
+        "currentCommit": "6cc8f5c37fef481891172aaccc6269869aa6a889",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
         "passed": 22,
@@ -389,7 +389,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:33:25.187Z",
-    "contentSha256": "77239f5f282d2cc3e4ac1ab42164e7c8ac695acbd4e79bb5310008f774a7fcea"
+    "sealedAt": "2026-11-05T21:33:50.238Z",
+    "contentSha256": "d5bfca699fec40a4e78fda6f40cde9b94d758703ff3521f439d3679776ad397a"
   }
 }
