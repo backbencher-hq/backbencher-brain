@@ -87,6 +87,11 @@ async function main() {
         fork: fork.name,
         status: "blocked",
         reason: fork.reason,
+        // The contract asks a blocked leg to carry a REAL reason. This branch
+        // recorded one under `reason` while every reader of a blocked leg looks
+        // for `blockedReason`, so a fork that was honestly unavailable read as a
+        // status with nothing behind it — indistinguishable from a forged block.
+        blockedReason: fork.reason,
         os: process.platform,
         machine,
         currentCommit: commit,

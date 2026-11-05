@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+        "currentCommit": "a9981a343b6d5ae24ff859a135238ea8fa8109fa",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 85,
         "failed": 1,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m25/run-fork-e2e.mts"
       }
     },
     {
@@ -68,7 +68,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
         "evidenceFile": "E1.json",
         "passed": 46,
@@ -98,7 +98,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
         "evidenceFile": "E2.json",
         "passed": 43,
@@ -128,7 +128,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
         "evidenceFile": "E3.json",
         "passed": 32,
@@ -158,7 +158,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "127e6ac185706a0b5bc7377e2d40d9339a772a3a",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
         "evidenceFile": "E4.json",
         "passed": 56,
@@ -188,7 +188,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
         "evidenceFile": "V1.json",
         "passed": 26,
@@ -218,7 +218,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
         "evidenceFile": "E5.json",
         "passed": 91,
@@ -256,7 +256,7 @@
       ],
       "evidence": {
         "status": "blocked",
-        "currentCommit": "2b56a8d53e84cd8a4b7272dfe8e6cf7dce48f58e",
+        "currentCommit": "a9981a343b6d5ae24ff859a135238ea8fa8109fa",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -310,7 +310,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "d3eb734b0228ca2d1c41ce8910458bdae2642721",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
         "evidenceFile": "E7-linux.json",
         "os": "linux",
@@ -345,7 +345,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "62f036e4ba2b6e8aed15844c6cdf13bab4b35df7",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
         "passed": 22,
@@ -377,11 +377,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a0a71ac0bfd43aea29bd1f4831ff85c2be869492",
+        "currentCommit": "b780e1342d33e7d7305b528894d4834cd0952b96",
         "verifierCommand": "npx tsx script/m25/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 28,
-        "failed": 9,
+        "passed": 35,
+        "failed": 2,
         "negativeCases": 3,
         "blockedReason": "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract."
       }
@@ -389,7 +389,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T16:51:22.686Z",
-    "contentSha256": "b5ed51e9ee280dab9b2887d866d1dcdd8d778723938fe7a11190e93523ce36d0"
+    "sealedAt": "2026-11-05T21:33:25.187Z",
+    "contentSha256": "77239f5f282d2cc3e4ac1ab42164e7c8ac695acbd4e79bb5310008f774a7fcea"
   }
 }
