@@ -65,14 +65,14 @@ and it says of itself that it is machine-specific; read it there.
 | G1 | known-gap |
 | W1 | verified |
 | W2 | verified |
-| W3 | known-gap |
+| W3 | verified |
 | W4 | verified |
 | W5 | verified |
 | W6 | verified |
 | V1 | verified |
 | D1 | verified |
 | A1 | verified |
-| X1 | known-gap |
+| X1 | verified |
 
 Claim levels are the ledger's statuses at generation time. `verified`
 means the issue's own mutation-gated verifier passed at the pinned
