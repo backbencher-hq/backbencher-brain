@@ -10,7 +10,7 @@
 // Evidence: validation/m25/results/F-<FORK>.json (machine-emitted, per fork)
 //           docs/m25/FORK-CAPABILITY-MATRIX.md (generated FROM the evidence)
 import { spawn } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, chmodSync } from "node:fs"
 import { writeSealed } from "../lib/evidence.ts"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -112,6 +112,21 @@ async function main() {
     const resultsPath = path.join(forkOut, "results.json")
     console.log(`E6: launching ${fork.name} (${fork.version})…`)
     // (monotonic timing captured above)
+    // Same sandbox constraint as E5: $HOME and /run/user/<uid> are mounted
+    // read-only, so an Electron fork cannot create its singleton socket and dies
+    // with "listen EROFS: read-only file system /run/user/1000/vscode-…-main.sock"
+    // before running a single check — which reports as "the fork could not be
+    // verified" rather than "the sandbox had nowhere to put a socket".
+    const xdgRoot = path.join(forkOut, "xdg")
+    for (const dir of ["runtime", "config", "cache", "data", "state"]) {
+      mkdirSync(path.join(xdgRoot, dir), { recursive: true })
+    }
+    process.env["XDG_RUNTIME_DIR"] = path.join(xdgRoot, "runtime")
+    process.env["XDG_CONFIG_HOME"] = path.join(xdgRoot, "config")
+    process.env["XDG_CACHE_HOME"] = path.join(xdgRoot, "cache")
+    process.env["XDG_DATA_HOME"] = path.join(xdgRoot, "data")
+    process.env["XDG_STATE_HOME"] = path.join(xdgRoot, "state")
+    chmodSync(process.env["XDG_RUNTIME_DIR"], 0o700)
     const child = spawn(fork.cli, [
       fx.workspaceDir,
       "--user-data-dir", path.join(forkOut, "user-data"),

@@ -9,7 +9,7 @@
 // Run: npx tsx script/m25/run-vscode-e2e.mts
 // Evidence: validation/m25/results/E5.json (+ E5-inner.json from the host)
 import { writeSealed } from "../lib/evidence.ts"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
@@ -63,6 +63,24 @@ async function main(): Promise<void> {
   // 4. Pinned editor run. @vscode/test-electron lives in the extension's
   //    node_modules (dependency of the extension), resolve from there.
   console.log("E5: launching pinned VS Code (1.85.0)…")
+  // The sandbox mounts $HOME and /run/user/<uid> read-only, so Electron cannot
+  // create its singleton socket and the run dies with
+  //   listen EROFS: read-only file system /run/user/1000/vscode-…-main.sock
+  // before a single in-editor check executes — which reported as "0/0 in-editor
+  // checks passed", indistinguishable from "the editor refused to run the tests".
+  // Point every XDG location at a writable directory inside the workspace. Same
+  // class of fix as the nvim XDG pinning in script/m27/verify-nvim.ts.
+  const xdgRoot = path.join(outDir, "xdg")
+  for (const dir of ["runtime", "config", "cache", "data", "state"]) {
+    mkdirSync(path.join(xdgRoot, dir), { recursive: true })
+  }
+  process.env["XDG_RUNTIME_DIR"] = path.join(xdgRoot, "runtime")
+  process.env["XDG_CONFIG_HOME"] = path.join(xdgRoot, "config")
+  process.env["XDG_CACHE_HOME"] = path.join(xdgRoot, "cache")
+  process.env["XDG_DATA_HOME"] = path.join(xdgRoot, "data")
+  process.env["XDG_STATE_HOME"] = path.join(xdgRoot, "state")
+  // Electron refuses a runtime dir without 0700.
+  chmodSync(process.env["XDG_RUNTIME_DIR"], 0o700)
   const testElectronUrl = pathToFileURL(path.join(EXT_ROOT, "node_modules/@vscode/test-electron/out/index.js")).href
   const { runTests } = await import(testElectronUrl)
   const { execFileSync: efs } = await import("node:child_process")
