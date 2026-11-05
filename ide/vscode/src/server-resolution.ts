@@ -1,4 +1,5 @@
 // ide/vscode/src/server-resolution.ts — M25.E1 core (pure, headless-testable).
+// Author: Muhammad Ishaq Khan
 //
 // The single owner of two E1 decisions:
 //   1. Server launch resolution order — how the extension finds and launches

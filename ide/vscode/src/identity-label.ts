@@ -1,5 +1,6 @@
 // ide/vscode/src/identity-label.ts — M55.T1 (issue #770): the ONE
 // substitution-label rule, vscode-free so the truth gate can read it.
+// Author: Muhammad Ishaq Khan
 //
 // Truth Rule 2 (§15): identity is stated. When the server rooted a MEMBER
 // through its owning declaration, every surface that names the result must say

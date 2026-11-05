@@ -1,5 +1,6 @@
 // ide/vscode/src/impact-panel.ts — M42.H4 (issue #652): the impact webview
 // panel behind the hover's "Impact analysis" action.
+// Author: Muhammad Ishaq Khan
 //
 // THIN CLIENT, same law as graph-panel.ts (M26.X1): no per-IDE renderer.
 //   1. sends the versioned bb/impact request over the extension's REAL

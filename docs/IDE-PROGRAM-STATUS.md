@@ -32,7 +32,7 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | v5 | M29 | Precision Waves | **CLOSED** (2/9 verified) | wave-1 languages owner-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant-repo budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
 | v6 | M42 | The Interactive Hover | **CLOSED** (2/8 verified) | rich hover + actions live in-editor (E5 70/70, E6 cursor/antigravity); click-throughs and panels verified in real VS Code | [m42 ledger](../validation/m42/results/manifest.json) |
 | v7 | M44 | The Understandable Hub | **CLOSED on GitHub**; closure gate X1 43/53 at HEAD (48/48 at its closing commit), owner spot check pending — **governance record reads `known-gap` at HEAD `a0ed9eade`** | — (no claim level published from a red governance record) | [m44/M44-MASTER-PLAN.md](./m44/M44-MASTER-PLAN.md), [G1](../validation/m44/results/G1.json) |
-| v8 | M55 | The Hub That Tells the Truth | **CLOSED on GitHub**; **10 of 14 records verified at HEAD `b0a0e4d2e`** — G1 `known-gap` (bar blocked by `BB_M55_SKIP_LADDER=1`), T6 `known-gap` (1 latency budget miss), HOV-COVERAGE `known-gap` (1 latency budget), V1 `known-gap` (frames re-capture in flight), X1 `known-gap` (downstream of G1/V1), HOV-REDTEAM `refused` (dirty tree) | I1 for protocol-level gates; T1/T2/T3/T4/T5/P1/EVID-TREE/V1-status-panel/V1-action-args verified — no I3/I5 claim survives the `known-gap` records | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
+| v8 | M55 | The Hub That Tells the Truth | **CLOSED on GitHub**; **12 of 14 records verified at HEAD `24a48142f`** — G1 `known-gap` (the 41-gate M53 ladder must complete on a quiet machine), X1 `known-gap` (downstream of G1). T6, HOV-COVERAGE, V1 and HOV-REDTEAM have all since gone **verified** | I1 for protocol-level gates; T1/T2/T3/T4/T5/P1/EVID-TREE/V1-* /T6/HOV-COVERAGE/HOV-REDTEAM verified | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
 | v9 | M62 | Address Truth | **CLOSED**; ledger closed, G1/A1/A2/A3/X1 `verified`, pinned at commit `a943047e5c` (2026-09-28) and **not re-earned since** | I1 (machine-level address truth); the editor-visible half is the owner's I3 spot-check, which is scheduled, not recorded | [m62/M62-MASTER-PLAN.md](./m62/M62-MASTER-PLAN.md), [ledger](../validation/m62/results/manifest.json) |
 
 Nothing on this page is a fork- or editor-verified claim until a milestone's
@@ -194,15 +194,26 @@ red bars are, in dependency order:
 2. **M27 / M28** — `known-gap`, correctly: their ledger projections now publish
    the red records (M27.N1 `blocked` — no nvim; M28 T1/U1/A2/V1 `known-gap`).
    These lanes are honest-red, not drifting.
-3. **M55** — **10 of 14 records verified at HEAD `b0a0e4d2e`**; the `known-gap` records are:
-   - G1: bar blocked by `BB_M55_SKIP_LADDER=1` (governance re-audit needs quiet machine)
-   - T6: 1 latency budget miss (type inference warm p95 59.49ms vs 50ms)
-   - HOV-COVERAGE: 1 latency budget miss (busy-shape p95 51.31ms vs 50ms)
-   - V1: frames re-capture in flight (Truth Rule 5)
-   - X1: downstream of G1 and V1 (no independent defect)
-   - HOV-REDTEAM: refused (mutation harness requires clean tree)
+3. **M55** — **12 of 14 records verified at HEAD `24a48142f`**; the two `known-gap` records are:
+   - G1: the M44/M53 bar needs the 41-gate M53 ladder to complete uninterrupted on a
+     quiet machine. Its ledger check is down to a single item, and the two gate
+     defects that made it un-passable (recording another lane's dirty files as its own
+     relevant changes; demanding its own last verdict, which made one failure permanent)
+     are fixed. The last attempt's ladder died after `m28-closure` without re-sealing
+     `validation/m53/results/R1.json`, which still carries a 2026-09-20 pass.
+   - X1: downstream of G1; no independent defect.
    
-   **None is blocked on a known product defect.** The honest summary: *"Ten of fourteen M55 records are verified at HEAD; the remainder are blocked on a quiet-machine governance re-audit, one latency shape, and re-captured frames — none is blocked on a known product defect."*
+   **None is blocked on a known product defect.** The honest summary: *"Twelve of
+   fourteen M55 records are verified at HEAD; the remaining two are the governance bar
+   and its closure — a quiet-machine re-audit, not an unfixed defect."*
+   
+   Detail worth keeping, because each of these flipped from red to verified by FIXING
+   the thing rather than by re-running it: T6 (type-inference warm p95 59.49ms) and
+   HOV-COVERAGE (busy-shape p95 51.31ms) both cleared when the hover collector stopped
+   resolving a location it then discarded — measured 51.31ms → 9.82ms under load 20.7.
+   V1 cleared when the gate stopped failing a frames leg it had itself declared blocked
+   (the declared external fixture is by owner decision not vendored). HOV-REDTEAM
+   cleared when its mutation target became committed rather than dirty.
 4. **Every lane's governance gate whose bar depends on the above** — M25, M26,
    M29 and M44 all report RED for `stale-commit` pins and inherited bar
    failures, which is the correct answer for a program whose lower bars are red.

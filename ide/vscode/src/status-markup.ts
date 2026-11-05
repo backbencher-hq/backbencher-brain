@@ -1,4 +1,5 @@
 // ide/vscode/src/status-markup.ts — M55.V1 component: the status SURFACE.
+// Author: Muhammad Ishaq Khan
 //
 // FOUND BY THE FRAMES (owner live test, 2026-09-13). `Backbencher: Show status`
 // claims "every fact carries its claim level", but it rendered through

@@ -2,18 +2,18 @@
   "issue": "M55.V1",
   "code": "V1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 55,
-  "passed": 54,
-  "failed": 1,
-  "realFailed": 1,
+  "passed": 55,
+  "failed": 0,
+  "realFailed": 0,
   "negativeCases": 14,
   "mutants": {
     "total": 14,
     "caught": 14
   },
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
-  "sourceFingerprint": "8bf97f0771bb583cf4aceff682da435e4d34a360e1714a93240bab7f7c202ba7",
+  "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
+  "sourceFingerprint": "31c9335549e8d86619a48acd911f5f5a050e3a95b6d07ddc90390b71caf07df8",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-live-surface.ts",
@@ -26,21 +26,10 @@
     "script/m55/screenshot-protocol.ts",
     "script/m55/wire-probe.ts"
   ],
-  "workingTreeRelevantChanges": [
-    "script/m55/verify-call-hierarchy.ts",
-    "script/m55/verify-evidence-tree-clean.ts",
-    "script/m55/verify-hover-coverage.ts",
-    "script/m55/verify-relations.ts",
-    "src/lsp/call_hierarchy.ts",
-    "src/lsp/graph_usages.ts",
-    "src/lsp/hover.ts",
-    "src/lsp/relations.ts",
-    "src/lsp/rich_hover.ts",
-    "src/lsp/symbols.ts"
-  ],
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-11-05T04:12:19.896Z",
+  "generatedAt": "2026-11-05T05:08:43.672Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": false,
@@ -325,9 +314,7 @@
       "frame": "4-open-in-graph.png"
     }
   ],
-  "failures": [
-    "R3: the recorded bundle hash equals the bundle built at this HEAD: recorded 9880439da695 vs built b4f44dde7085"
-  ],
+  "failures": [],
   "limitations": [
     "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
     "The protocol declares a PINNED VS Code 1.85.0 from .vscode-test; that pin is not present on this machine, so the session runs the system `code` and records its exact version in the evidence. The pin's comparability guarantee is therefore declared but not honored here — recorded, not hidden.",
@@ -336,7 +323,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:12:19.896Z",
-    "contentSha256": "622334d2905bbeeb469f681d5f5712dda498359a4fc85955fff9775dcfc8bca7"
+    "sealedAt": "2026-11-05T05:08:43.672Z",
+    "contentSha256": "579c63aae388016b32c0bf04f949ea2e82afc55de6e4adafb4a814ac875976b3"
   }
 }

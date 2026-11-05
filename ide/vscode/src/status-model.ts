@@ -1,4 +1,5 @@
 // ide/vscode/src/status-model.ts — M25.E3 core (pure, headless-testable).
+// Author: Muhammad Ishaq Khan
 //
 // The single owner of what the status surface may say (issue #501). Every
 // rendered fact is derived from declared inputs; the render laws below ARE

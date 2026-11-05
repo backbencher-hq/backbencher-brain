@@ -1,4 +1,5 @@
 // ide/vscode/src/auto-index.ts — M25.E2 core (pure, headless-testable).
+// Author: Muhammad Ishaq Khan
 //
 // The single owner of the open-workspace auto-index flow (issue #500):
 //   detect -> estimate scale -> consent -> index with progress -> ready.

@@ -1,4 +1,5 @@
 // ide/vscode/src/usage-fallback.ts — M44.U6 pure decision core (issue #693).
+// Author: Muhammad Ishaq Khan
 //
 // The SINGLE owner of the "show all usages" fallback decision (Understanding
 // Rule 6: dead ends are defects). VS Code-free and headless-testable — the

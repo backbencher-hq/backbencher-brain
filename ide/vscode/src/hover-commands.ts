@@ -1,5 +1,6 @@
 // ide/vscode/src/hover-commands.ts — M42.H2 + M42.H4 (issues #650, #652):
 // hover link actions.
+// Author: Muhammad Ishaq Khan
 //
 // The rich hover body composes command URIs — bb.openUsage, bb.openDefinition,
 // bb.showAllUsages (H2, location args {file, line, character}) and the H4

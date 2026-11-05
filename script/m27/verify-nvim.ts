@@ -105,12 +105,28 @@ async function seedIndex(workspaceDir: string, dataDir: string): Promise<void> {
 function runNvimSession(driverPath: string, workspaceDir: string, outPath: string): { ok: boolean; result: DriverResult | null; stderr: string } {
   let stderr = ""
   if (existsSync(outPath)) rmSync(outPath)
+  // Neovim creates its state/data/cache/config directories on startup and REFUSES
+  // TO RUN when it cannot (`Vim:E739: Cannot create directory
+  // /home/<user>/.local/state/nvim: read-only file system`). On a sandboxed host
+  // with a read-only HOME that surfaces here as "the headless session did not
+  // complete and wrote no results" — a red gate about the environment, not about
+  // the editor integration this gate exists to check. Measured: 3/4 with the
+  // default HOME, 4/4 once every XDG dir is pinned inside a writable temp tree.
+  // Same class as the missing BB_DATA_DIR in the M24/M44 gates.
+  const xdgBase = path.join(os.tmpdir(), "bb-m27-nvim-xdg")
+  const xdg = {
+    XDG_STATE_HOME: path.join(xdgBase, "state"),
+    XDG_DATA_HOME: path.join(xdgBase, "data"),
+    XDG_CACHE_HOME: path.join(xdgBase, "cache"),
+    XDG_CONFIG_HOME: path.join(xdgBase, "config"),
+  }
+  for (const d of Object.values(xdg)) mkdirSync(d, { recursive: true })
   try {
     execFileSync(NVIM, ["--headless", "--clean", "-u", "NONE", "-i", "NONE", "-n", "-l", driverPath], {
       cwd: ROOT,
       encoding: "utf8",
       timeout: 120_000,
-      env: { ...process.env, BB27_OUT: outPath, BB27_WS: workspaceDir, BB_LSP_ROOT: ROOT },
+      env: { ...process.env, ...xdg, BB27_OUT: outPath, BB27_WS: workspaceDir, BB_LSP_ROOT: ROOT },
       stdio: ["ignore", "pipe", "pipe"],
     })
   } catch (error) {

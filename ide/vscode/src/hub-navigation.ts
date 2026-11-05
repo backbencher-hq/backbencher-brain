@@ -1,5 +1,6 @@
 // ide/vscode/src/hub-navigation.ts — M42.H6 (issue #654): the vscode
 // bindings over the PURE decision core (hub-navigation-core.ts).
+// Author: Muhammad Ishaq Khan
 //
 // Thin by design: every decision (version validation, fabricated-path guard,
 // stale labeling, ack discipline) lives in the core and is exercised

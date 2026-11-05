@@ -1,5 +1,6 @@
 // ide/vscode/src/panel-placement.ts — M55.P1 (issue #776): the ONE
 // panel-placement decision, vscode-free so the truth gate can execute it.
+// Author: Muhammad Ishaq Khan
 //
 // Truth Rule 6 (§15): space is the user's. Before M55 every panel hardcoded
 // `ViewColumn.Beside` and no panel set `preserveFocus`, so two hover actions in

@@ -1,4 +1,5 @@
 // ide/vscode/src/webview-dom.ts — the ONE escaping DOM port + serializer.
+// Author: Muhammad Ishaq Khan
 //
 // Extracted from graph-panel.ts (M55.V1). It was already declared "no vscode
 // import" there — but it lived in a file that imports vscode, so any module

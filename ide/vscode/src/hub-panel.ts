@@ -1,6 +1,7 @@
 // ide/vscode/src/hub-panel.ts — M42.H5 (issue #653) / M44.U1 (issue #688):
 // the hub webview panel — the surface behind the hover's "Open in graph"
 // action (H4).
+// Author: Muhammad Ishaq Khan
 //
 // THIN CLIENT, same law as graph-panel / impact-panel:
 //   1. ONE bb/graph request in the declared usages mode (schemaVersion 2,

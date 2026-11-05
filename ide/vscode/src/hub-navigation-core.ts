@@ -1,5 +1,6 @@
 // ide/vscode/src/hub-navigation-core.ts — M42.H6 (issue #654): the PURE,
 // headless-testable decision core of the hub→editor navigation handler.
+// Author: Muhammad Ishaq Khan
 //
 // ZERO editor imports (only the ONE protocol owner). The vscode bindings
 // live in hub-navigation.ts; this core is what the verifier + the mutation

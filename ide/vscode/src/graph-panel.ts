@@ -1,5 +1,6 @@
 // ide/vscode/src/graph-panel.ts — M26.X1: the graph webview panel (bar item 1:
 // "Graph webview live in VS Code at I3").
+// Author: Muhammad Ishaq Khan
 //
 // THIN CLIENT (the one-library rule): no per-IDE renderer fork. This panel
 //   1. sends the versioned bb/graph request over the extension's REAL

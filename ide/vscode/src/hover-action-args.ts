@@ -1,5 +1,6 @@
 // ide/vscode/src/hover-action-args.ts — M55.V1: the PURE argument core of the
 // hover actions (vscode-free, headless-gateable — script/m55/verify-action-args.ts).
+// Author: Muhammad Ishaq Khan
 //
 // Why this file exists (owner live test, 2026-09-13): the actions worked from
 // the hover's own link, but a PALETTE / context-menu invocation — VS Code
