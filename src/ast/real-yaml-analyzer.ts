@@ -334,6 +334,15 @@ interface YamlContext {
   sensitiveDocuments: Set<string>
   /** `metadata.name` of every document in this file -> that document's identity. */
   declaredNames: Map<string, string>
+  /**
+   * NAME -> the `kind` its declaring document carries. A resource reference names a KIND as well as
+   * a name (`configMapKeyRef` names a ConfigMap, `secretRef` a Secret), so a name-only index can
+   * bind it to a same-named declaration of the WRONG kind — measured on kubernetes v1.35.0 testdata,
+   * where every manifest declares `metadata.name: nameValue` and a ConfigMap reference resolved to a
+   * Deployment. This index is what lets the in-file route apply the same kind test the
+   * same-directory route already applies.
+   */
+  documentKinds: Map<string, string>
   /** `%TAG` handle -> prefix, so `!e!thing` resolves to a real URI. */
   tagHandles: Map<string, string>
   /** Duplicate-key disambiguation counters, keyed by document + base path. */
@@ -359,7 +368,7 @@ interface YamlContext {
    */
   pendingSchemaPublications: { document: string; container: string; name: string; path: string; line: number }[]
   /** Sibling-name references awaiting the post-pass that can resolve them. */
-  pendingReferences: { source: string; target: string; kind: string; line: number; document?: string }[]
+  pendingReferences: { source: string; target: string; kind: string; line: number; document?: string; resourceKind?: string }[]
   frameworks: string[]
   frameworkPatterns: string[]
 }
@@ -944,6 +953,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       trailingIndex: new Map(),
       sensitiveDocuments: new Set(),
       declaredNames: new Map(),
+      documentKinds: new Map(),
       tagHandles: new Map(),
       duplicateCounters: new Map(),
       pendingActionUses: [],
@@ -1260,7 +1270,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addPattern(ctx, "Secret Manifest")
     }
     const declaredName = this.topLevelScalar(node, "metadata.name") ?? this.topLevelScalarFromMapping(node, "metadata", "name")
-    if (declaredName) ctx.declaredNames.set(declaredName, documentName)
+    if (declaredName) {
+      ctx.declaredNames.set(declaredName, documentName)
+      if (kind) ctx.documentKinds.set(declaredName, kind)
+    }
 
     this.pushChildren(stack, node, {
       parent: document,
@@ -1608,7 +1621,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // and it was invented 4 times in one file alone.
     if (RESOURCE_REF_WRAPPERS.has(key)) {
       for (const name of this.wrapperRefNames(valueNode)) {
-        ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
+        ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line, resourceKind: RealYamlAnalyzer.KIND_FOR_RESOURCE_KEY[key] })
       }
     } else if (RESOURCE_REF_SOURCES.has(key)) {
       const nameKey = RESOURCE_REF_SOURCES.get(key)!
@@ -1623,7 +1636,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const direct = valueNode ? this.scalarNode(valueNode) : null
       if (direct && SCALAR_TYPES.has(direct.type)) {
         const name = this.scalarText(direct)
-        if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
+        if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line, resourceKind: RealYamlAnalyzer.KIND_FOR_RESOURCE_KEY[key] })
       } else {
         const named = this.mappingEntryScalar(valueNode, nameKey)
         if (named) ctx.pendingReferences.push({ source: path, target: named, kind: "yaml_resource_ref", line })
@@ -1637,7 +1650,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const direct = valueNode ? this.scalarNode(valueNode) : null
       if (direct && SCALAR_TYPES.has(direct.type)) {
         const name = this.scalarText(direct)
-        if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
+        if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line, resourceKind: RealYamlAnalyzer.KIND_FOR_RESOURCE_KEY[key] })
       }
     }
 
@@ -2855,7 +2868,25 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private resolveSiblingReferences(ctx: YamlContext): void {
     for (const ref of ctx.pendingReferences) {
-      const resolved = this.resolveDeclaredName(ref.target, ctx) ?? this.resolveJobInDocument(ref, ctx) ?? this.resolveSameDirectoryResource(ref, ctx)
+      // ★ A RESOURCE REFERENCE RESOLVES BY KIND OR NOT AT ALL (2026-11-05, the F5 sweep's 9 rows).
+      //
+      // `resolveDeclaredName` and `resolveJobInDocument` match a NAME with no kind test, which is
+      // right for a `depends_on` sibling service and for a workflow job — both are names in the
+      // document's own space. It is NOT right for a Kubernetes resource reference: a
+      // `configMapKeyRef: {name: X}` names a **ConfigMap**, and the corpus's placeholder manifests
+      // declare `metadata.name: nameValue` on a **Deployment**, so the name-only route bound the
+      // reference to the file's OWN document and published `references` at confidence 1 across two
+      // different kinds. MEASURED on kubernetes v1.35.0 testdata: 4 such self-edges, all of them
+      // confidence 1, `resolved: true`, target = the document the edge lives in.
+      //
+      // The same-directory route is the ONE route that carries a kind: it scans the directory for a
+      // sibling whose own `kind`/`metadata.name` declare the kind the referring key names. So a
+      // resource reference takes that route only, and an unresolvable one is published as unresolved
+      // (0.8, `isExternal: true`, the written name) instead of being bound to a same-named
+      // declaration of the wrong kind.
+      const resolved = ref.kind === "yaml_resource_ref"
+        ? this.resolveDeclaredName(ref.target, ctx, ref.resourceKind) ?? this.resolveSameDirectoryResource(ref, ctx)
+        : this.resolveDeclaredName(ref.target, ctx) ?? this.resolveJobInDocument(ref, ctx) ?? this.resolveSameDirectoryResource(ref, ctx)
       if (resolved) {
         this.addRelationship(ctx, ref.source, resolved, ASTEngine.RelationshipType.References, {
           relationshipType: ref.kind,
@@ -2875,8 +2906,16 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private resolveDeclaredName(name: string, ctx: YamlContext): string | null {
-    if (ctx.declaredNames.has(name)) return ctx.declaredNames.get(name)!
+  private resolveDeclaredName(name: string, ctx: YamlContext, wantKind?: string): string | null {
+    if (ctx.declaredNames.has(name)) {
+      if (wantKind === undefined) return ctx.declaredNames.get(name)!
+      // THE KIND TEST: a resource reference resolves to a declaration of the kind its referring key
+      // names, or it does not resolve. A same-named declaration of another kind is NOT a match —
+      // that is the fabrication the F5 sweep found (a ConfigMap reference bound to a Deployment
+      // whose `metadata.name` happened to be the value the corpus repeats as a placeholder).
+      return ctx.documentKinds.get(name) === wantKind ? ctx.declaredNames.get(name)! : null
+    }
+    if (wantKind !== undefined) return null
     return ctx.serviceIndex.get(name) ?? null
   }
 
