@@ -551,3 +551,22 @@ owner's column name into the codebase, which is exactly what
 **Method note:** seven rounds of reading produced seven wrong answers. Two
 instrumented runs produced the right one. The keys printed are unambiguous in a
 way no amount of source reading was.
+
+**Correction to the previous entry.** I attributed the raw `line_number` to the
+statement at `rich_hover.ts:718`, but the observed key ORDER rules that out: that
+statement selects `r.metadata, r.time_updated` as its 4th and 5th columns, while
+the probe printed them LAST. A projection's key order follows its SELECT list, so
+the rows reaching the derivation come from a **different statement**, whose select
+list ends with `… tgt_rel, metadata, time_updated` and places `line_number` where
+the alias should be.
+
+That statement is not `r.line_number AS …` anywhere in `src/lsp` (grep finds no raw
+`r.line_number`, and no other `line_number` selection in the hover path), so the
+next step is not another grep: **instrument the caller**. Add
+`new Error().stack` to the same probe and read which function and which statement
+produced the row. That identifies the projection in one run instead of one guess
+per round.
+
+The fix is unchanged and still one line: whichever statement it turns out to be
+must select the owner's alias rather than the bare column, so the projection and
+`storedLineFromRow` agree by construction.
