@@ -7,7 +7,7 @@
   "passed": 70,
   "failed": 1,
   "failures": [
-    "H2/M: the mutant oracle HOLDS on the real component — every predicate true, so no mutant can be marked caught for free (the pre-fix `contains` predicate asserted the connected summary has ONE group, which the all-relationships verb table made false on a correct component): {\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false} — oracle saw {\"collected\":[{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":13,\"note\":\"this is the calling symbol's declaration, not the call site\"}},{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/Main2.java\",\"line\":4,\"note\":\"this is the calling symbol's declaration, not the call site\"}},{\"name\":\"Greeter\",\"kind\":\"contains\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":6,\"note\":\"this is the calling symbol's declaration, not the call site\"}},{\"name\":\"App\",\"kind\":\"uses\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":12,\"note\":\"this is the calling symbol's declaration, not the call site\"}}],\"headerCount\":3,\"renderedRows\":3,\"linkTargets\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"refTargets\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"labels\":[\"main — App.java:13 _(this is the calling symbol's declaration, not the call site)_\",\"main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_\"],\"expectedCallSites\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\"],\"groups\":[{\"verb\":\"called by\",\"names\":[\"main\",\"main\"]},{\"verb\":\"used by\",\"names\":[\"App\"]}],\"cardBlocks\":{\"connected\":[\"main -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"App -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"usages\":[\"main — App.java:13 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:12:23\",\"main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:3:23\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"contained\":[\"Greeter -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6\"]},\"doubleGrounds\":[{\"id\":\"r-app\",\"kind\":\"calls\",\"declaration\":false,\"branch\":\"stored-line\",\"key\":\"App.java:14:0\"},{\"id\":\"r-main2\",\"kind\":\"calls\",\"declaration\":false,\"branch\":\"stored-line\",\"key\":\"Main2.java:5:0\"},{\"id\":\"r-greeter\",\"kind\":\"contains\",\"declaration\":true,\"branch\":\"stored-line\",\"key\":\"App.java:5:6\"},{\"id\":\"r-legacy\",\"kind\":\"uses\",\"declaration\":false,\"branch\":\"declaration-substitute\",\"key\":\"App.java:11:13\"}],\"section\":\"**usages** — 3 stored references (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — App.java:13 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A12%2C%22character%22%3A23%7D%5D)\\n2. [main — Main2.java:4 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FMain2.java%22%2C%22line%22%3A3%2C%22character%22%3A23%7D%5D)\\n3. [App — App.java:12 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A11%2C%22character%22%3A13%7D%5D)\"}"
+    "H2/M: the mutant oracle HOLDS on the real component — every predicate true, so no mutant can be marked caught for free (the pre-fix `contains` predicate asserted the connected summary has ONE group, which the all-relationships verb table made false on a correct component): {\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true} — oracle saw {\"collected\":[{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"callSite\":{\"kind\":\"call-site\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":15}},{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"callSite\":{\"kind\":\"call-site\",\"file\":\"src/main/java/com/demo/Main2.java\",\"line\":6}},{\"name\":\"Greeter\",\"kind\":\"contains\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6\",\"callSite\":{\"kind\":\"call-site\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":6}},{\"name\":\"App\",\"kind\":\"uses\",\"reversed\":true,\"path\":\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":12,\"note\":\"this is the calling symbol's declaration, not the call site\"}}],\"headerCount\":3,\"renderedRows\":3,\"linkTargets\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"refTargets\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"labels\":[\"main — App.java:15\",\"main — Main2.java:6\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_\"],\"expectedCallSites\":[\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\"],\"groups\":[{\"verb\":\"called by\",\"names\":[\"main\",\"main\"]},{\"verb\":\"used by\",\"names\":[\"App\"]}],\"cardBlocks\":{\"connected\":[\"main -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"main — Main2.java:6 -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"App -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"usages\":[\"main — App.java:15 -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"main — Main2.java:6 -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_ -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"contained\":[\"Greeter -> $HOME/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:6\"]},\"doubleGrounds\":[{\"id\":\"r-app\",\"kind\":\"calls\",\"declaration\":false,\"branch\":\"declaration-substitute\",\"key\":\"App.java:12:23\"},{\"id\":\"r-main2\",\"kind\":\"calls\",\"declaration\":false,\"branch\":\"declaration-substitute\",\"key\":\"Main2.java:3:23\"},{\"id\":\"r-greeter\",\"kind\":\"contains\",\"declaration\":true,\"branch\":\"declaration-substitute\",\"key\":\"App.java:5:6\"},{\"id\":\"r-legacy\",\"kind\":\"uses\",\"declaration\":false,\"branch\":\"declaration-substitute\",\"key\":\"App.java:11:13\"}],\"section\":\"**usages** — 3 stored references (usage sites only; declaration and callees excluded) — 2 open the stored call site, 1 open the referencing declaration (no call-site line stored) _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — App.java:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\\n2. [main — Main2.java:6](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FMain2.java%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\\n3. [App — App.java:12 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A11%2C%22character%22%3A13%7D%5D)\"}"
   ],
   "verdict": {
     "realComponentFailures": 1,
@@ -23,13 +23,13 @@
     "verdicts": [
       {
         "name": "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
-        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, label",
-        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true}"
       },
       {
         "name": "M2: wrong count — the usages header is one more than the list it headlines",
-        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage, sectionConnected, label",
-        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "count, containmentInItsOwnBlock, sectionUsage, sectionConnected",
+        "detail": "{\"position\":true,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true}"
       },
       {
         "name": "M3: dropped edge — the last collected row never reaches the section",
@@ -38,23 +38,23 @@
       },
       {
         "name": "M4: a declaration containment leaks into the connected summary (re-anchored on the declaration-class guard, which is the line that decides this law today — the pre-fix `verb === null` anchor is a DEAD guard and its plant was a no-op)",
-        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, label",
-        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "containmentInItsOwnBlock, sectionUsage, sectionConnected",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true}"
       },
       {
         "name": "M5: undeclared substitution — the row label drops the caveat that says which position it opens",
-        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, label",
-        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "containmentInItsOwnBlock, sectionUsage, sectionConnected, label",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false}"
       },
       {
         "name": "M6: section swap — the **usages** block renders the declaration-containment row (a `contains` row offered as a usage, the exact defect relations.ts exists to prevent)",
-        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage, sectionConnected, label",
-        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":false}"
+        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage, sectionConnected",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true}"
       },
       {
         "name": "M7: section swap — the **contained** block renders nothing, so the owner's decision ('show all the relationships') silently drops the containment row",
-        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment, label",
-        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":false}"
+        "caughtBy": "containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":true}"
       }
     ],
     "whatTheseAre": "source-copy plants inside src/lsp/rich_hover.ts, judged by per-predicate verdicts computed against the REAL fixture files (byte columns read off the files on disk, so the component's own position owner resolves them) and read back out of the RENDERED markdown rather than from an intermediate object.",
@@ -304,16 +304,16 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 3.6,
-    "p95Ms": 5.35,
-    "maxMs": 14.64,
-    "meanMs": 3.9,
+    "p50Ms": 3.44,
+    "p95Ms": 4.39,
+    "maxMs": 11.72,
+    "meanMs": 3.61,
     "budgetMs": 50,
-    "coldMs": 57.74,
+    "coldMs": 48.2,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "4676bafc51ebecf051dc44d2d49dcfeb1f247e49",
-  "sourceFingerprint": "0511c1a37b0046a691c4556d191ff987b9c08bf8cc48153f341965d804eff231",
+  "currentCommit": "981920a1ac9b87426e6e92f638463f3d9cc87601",
+  "sourceFingerprint": "38111ada454edaef0b172ea13522af85c5784328c8248d28d40f9aa7db452bd3",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m42/verify-rich-hover.ts",
@@ -326,7 +326,7 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-11-05T14:20:01.638Z",
+  "generatedAt": "2026-11-05T14:40:06.283Z",
   "supersededExpectations": [
     {
       "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
@@ -423,7 +423,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:20:01.639Z",
-    "contentSha256": "3bd45294b09957dccce510b087836c5fe2364e5bbf2bcf53866b14b6620c7dfd"
+    "sealedAt": "2026-11-05T14:40:06.283Z",
+    "contentSha256": "812841ebca6c0dea6763a81d738c18cf2f0678f1216bbb9c20b8af8d8ab14540"
   }
 }

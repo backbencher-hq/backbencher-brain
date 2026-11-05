@@ -1333,7 +1333,7 @@ const greeterClass = spanOf(H2_FILE_APP, indexLine(H2_EXPECT.greeter.declLine), 
 const appClass = spanOf(H2_FILE_APP, indexLine(H2_EXPECT.greeter.declLine) + 6, "App")
 const row = (o: Partial<Record<string, unknown>>) => ({
   id: "r", relationship_type: "calls", confidence: 0.9, source_symbol_id: "sym-x", target_symbol_id: "sym-render",
-  line_number: 0, src_name: null, src_type: null, src_bs: null, src_be: null, src_ls: null, src_le: null,
+  bb_stored_call_line: 0, src_name: null, src_type: null, src_bs: null, src_be: null, src_ls: null, src_le: null,
   src_path: null, src_decl: null, src_rel: null, tgt_name: "render", tgt_type: "method", tgt_bs: 1, tgt_be: 2,
   tgt_ls: indexLine(H2_EXPECT.render.declLine), tgt_le: indexLine(H2_EXPECT.render.declLine), tgt_path: H2_FILE_APP,
   tgt_decl: indexLine(H2_EXPECT.render.declLine), tgt_rel: H2_REL_APP, metadata: null, time_updated: null, ...o,
@@ -1367,14 +1367,14 @@ function doubleGroundOf(r: Record<string, unknown>): RowGround | null {
 }
 const MUTANT_ROWS = [
   // A call row whose stored line IS the call site: the link must open line 15.
-  row({ id: "r-app", source_symbol_id: "sym-app-main", target_symbol_id: "sym-render", line_number: appCallLine,
+  row({ id: "r-app", source_symbol_id: "sym-app-main", target_symbol_id: "sym-render", bb_stored_call_line: appCallLine,
     src_name: "main", src_type: "method", ...appMain, src_path: H2_FILE_APP, src_rel: H2_REL_APP, src_decl: appMainDeclLine }),
-  row({ id: "r-main2", source_symbol_id: "sym-main2-main", target_symbol_id: "sym-render", line_number: main2CallLine,
+  row({ id: "r-main2", source_symbol_id: "sym-main2-main", target_symbol_id: "sym-render", bb_stored_call_line: main2CallLine,
     src_name: "main", src_type: "method", ...main2Main, src_path: H2_FILE_MAIN2, src_rel: H2_REL_MAIN2, src_decl: main2MainDeclLine }),
   // The declaration containment: a usage row's ABSENCE (M55.T3), with no stored
   // call-site line of its own — the shape that must render no connection fact.
   row({ id: "r-greeter", relationship_type: "contains", source_symbol_id: "sym-greeter", target_symbol_id: "sym-render",
-    line_number: indexLine(H2_EXPECT.greeter.declLine), src_name: "Greeter", src_type: "class", ...greeterClass,
+    bb_stored_call_line: indexLine(H2_EXPECT.greeter.declLine), src_name: "Greeter", src_type: "class", ...greeterClass,
     src_path: H2_FILE_APP, src_rel: H2_REL_APP, src_decl: indexLine(H2_EXPECT.greeter.declLine) }),
   // A row whose stored call-site line is the indexer's legacy 0: the address
   // owner returns a labelled SUBSTITUTE, and the row must SAY so (§14 rule 2).
@@ -1384,7 +1384,7 @@ const MUTANT_ROWS = [
   // changed nothing observable. A gate whose fixture cannot express the state it
   // names is a gate that cannot fail.
   row({ id: "r-legacy", relationship_type: "uses", source_symbol_id: "sym-app", target_symbol_id: "sym-render",
-    line_number: 0, src_name: "App", src_type: "class", ...appClass,
+    bb_stored_call_line: 0, src_name: "App", src_type: "class", ...appClass,
     src_path: H2_FILE_APP, src_rel: H2_REL_APP, src_decl: indexLine(H2_EXPECT.greeter.declLine) + 6 }),
 ]
 const rawDouble = {
