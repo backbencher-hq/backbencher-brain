@@ -394,7 +394,11 @@ function main(): void {
     if (!existsSync(dir)) return []
     const records: Array<Record<string, unknown>> = []
     for (const f of readdirSync(dir)) {
-      if (!f.startsWith(prefix) || !f.endsWith(".json")) continue
+      // Archive is not evidence: a \`.superseded-<sha>\` record is the same file
+      // name with history, and reading it lets an old "blocked" verdict overwrite
+      // a current "verified" one in directory order. The listing gate had the same
+      // defect and reported two contradictions against a correct README.
+      if (!f.startsWith(prefix) || !f.endsWith(".json") || f.includes(".superseded-")) continue
       try {
         records.push(parseSealedRecord(path.join(dir, f)) as Record<string, unknown>)
       } catch {
