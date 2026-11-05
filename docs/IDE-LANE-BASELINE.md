@@ -493,3 +493,32 @@ retired by reading one more layer. The next action is a single instrumented run
 that logs, for the fixture's three usage rows at line 798:
 `{ storedLine, typeof storedLine, callLine0, incoming, declarationRow, address.kind, sourceRel }`.
 That prints the actual decision instead of one more theory about it.
+
+**INSTRUMENTED — and the answer contradicts what the code reads like.** A temporary
+probe was inserted immediately after `servesCallSite` and reverted after one run.
+For every row the derivation is asked about:
+
+```
+PROBE {"rel":"calls","typeofStored":"undefined","keys":[],
+       "callLine0":null,"incoming":true,"declarationRow":false,
+       "targetIsSymbol":true,"addressKind":"declaration",
+       "srcRel":"src/main/java/com/demo/App.java"}
+```
+
+- `typeofStored` is **`undefined`** and the row has **no `bb_*` keys at all**
+  (`keys: []`), so `storedLineFromRow` reads a property that is not there;
+- `incoming: true`, `targetIsSymbol: true`, `declarationRow` correct — so the
+  branch condition is satisfied and the ONLY failing term is the stored line;
+- `addressKind: "declaration"`, `callLine0: null` follow directly from that.
+
+So the missing-property hypothesis was RIGHT after all and my retraction of it was
+wrong. The query at `rich_hover.ts:715` **does** select
+`${STORED_LINE_SELECT}`, and the loop at `:767` iterates that very `rows` array —
+yet the row object has no `bb_` prefixed key. The value is being dropped between
+the statement and the loop.
+
+**The remaining question is therefore narrow and mechanical:** what is `rows` at
+`:767` at runtime, and what removes `bb_stored_call_line` from each element? Note
+that the fixture node is the ONLY caller of this path that exercises it, and that
+`keys: []` means the alias and every other `bb_`-prefixed column are absent
+together — which points at the projection, not at the alias name.
