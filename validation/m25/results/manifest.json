@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "59f30ca2bf5068b87fdb968010bc9d181a389a8f",
+        "currentCommit": "127e6ac185706a0b5bc7377e2d40d9339a772a3a",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 85,
         "failed": 1,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: ide/vscode/README.md"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -331,7 +331,7 @@
       "code": "D1",
       "githubIssue": 506,
       "tool": "marketplace-docs",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "OpenVSX/VS Code marketplace listing text as a governed artifact: features, claim levels, limitations, complement stance; install/verification docs per editor",
       "acceptanceCriteria": [
         "listing linted with contract vocabulary (D1 verifier reads the listing source)",
@@ -344,12 +344,12 @@
         "limitations non-empty or justified"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "currentCommit": "59f30ca2bf5068b87fdb968010bc9d181a389a8f",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
-        "passed": 20,
-        "failed": 2,
+        "passed": 22,
+        "failed": 0,
         "negativeCases": 4,
         "installFollowAlong": {
           "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
@@ -389,7 +389,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T16:49:56.540Z",
-    "contentSha256": "22ccb5a0816b0edec3c569d5c718f3c48a7768a93f000286bacd700c2131d28b"
+    "sealedAt": "2026-11-05T16:50:26.789Z",
+    "contentSha256": "ec839ace03e258a2cfb63a2cb5560501fa62b4665f0f81cac73d32e292211f52"
   }
 }
