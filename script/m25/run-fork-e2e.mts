@@ -137,7 +137,12 @@ async function main() {
       "--nologo",
     ], {
       detached: true,
-      stdio: "ignore",
+      // Inherit, not "ignore": with the fork's output discarded, a run that
+      // produced 0 checks was indistinguishable from one that never started.
+      // The first inherited run showed Electron accepting the CLI and warning
+      // about --nologo, so the fork DOES start; the extension host is what never
+      // writes results. Silent-by-default made that cost a round to learn.
+      stdio: "inherit",
       env: {
         ...process.env,
         DISPLAY: process.env.DISPLAY ?? ":0",
