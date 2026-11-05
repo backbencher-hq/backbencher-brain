@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "926e530e2397f7c489433157242a8c539cfd9515d6b7d1aa6a68e248f56b049e",
-    "sealedAt": "2026-11-05T05:27:21.000Z"
+    "contentSha256": "18651538371e535700abbe65ef00bbb997c46d1f87c038d237984a0b0efe1d96",
+    "sealedAt": "2026-11-05T13:33:58.000Z"
   },
   "checks": [
     {
@@ -60,7 +60,7 @@
     },
     {
       "description": "bash avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "otp:bash 4.1 ms/file",
+      "detail": "otp:bash 3.8 ms/file",
       "id": "section-f-perf-budget",
       "language": "bash",
       "status": "pass"
@@ -504,7 +504,7 @@
     },
     {
       "description": "javascript avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "lodash:javascript 356.4 ms/file",
+      "detail": "lodash:javascript 281.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "javascript",
       "status": "pass"
@@ -1096,7 +1096,7 @@
     },
     {
       "description": "csharp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "powershell:csharp 88.5 ms/file",
+      "detail": "powershell:csharp 71.5 ms/file",
       "id": "section-f-perf-budget",
       "language": "csharp",
       "status": "pass"
@@ -1244,7 +1244,7 @@
     },
     {
       "description": "swift avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "swift-nio:swift 95.4 ms/file",
+      "detail": "swift-nio:swift 76.4 ms/file",
       "id": "section-f-perf-budget",
       "language": "swift",
       "status": "pass"
@@ -1392,7 +1392,7 @@
     },
     {
       "description": "php avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "phpunit:php 7.7 ms/file",
+      "detail": "phpunit:php 9.4 ms/file",
       "id": "section-f-perf-budget",
       "language": "php",
       "status": "pass"
@@ -1540,7 +1540,7 @@
     },
     {
       "description": "python avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "cython:python 56.2 ms/file",
+      "detail": "cython:python 45.7 ms/file",
       "id": "section-f-perf-budget",
       "language": "python",
       "status": "pass"
@@ -1836,7 +1836,7 @@
     },
     {
       "description": "make avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "redis:make 4.1 ms/file",
+      "detail": "redis:make 3.6 ms/file",
       "id": "section-f-perf-budget",
       "language": "make",
       "status": "pass"
@@ -1910,7 +1910,7 @@
     },
     {
       "description": "perl avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "mojo:perl 4.2 ms/file",
+      "detail": "mojo:perl 16.4 ms/file",
       "id": "section-f-perf-budget",
       "language": "perl",
       "status": "pass"
@@ -1984,7 +1984,7 @@
     },
     {
       "description": "css avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "svelte:css 1.408 ms/file",
+      "detail": "svelte:css 6.4 ms/file",
       "id": "section-f-perf-budget",
       "language": "css",
       "status": "pass"
@@ -2058,7 +2058,7 @@
     },
     {
       "description": "toml avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "cargo:toml 0.2 ms/file",
+      "detail": "cargo:toml 0.1 ms/file",
       "id": "section-f-perf-budget",
       "language": "toml",
       "status": "pass"
@@ -2650,7 +2650,7 @@
     },
     {
       "description": "html avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "otp:html 2.1 ms/file",
+      "detail": "otp:html 1.6 ms/file",
       "id": "section-f-perf-budget",
       "language": "html",
       "status": "pass"
@@ -2724,7 +2724,7 @@
     },
     {
       "description": "fsharp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "fsharp:csharp 36 ms/file",
+      "detail": "fsharp:csharp 40 ms/file",
       "id": "section-f-perf-budget",
       "language": "fsharp",
       "status": "pass"
@@ -2819,8 +2819,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "26b2f6e883ec239223d7266cd6cf762fd83c235f",
-  "committedAt": "2026-11-05T00:27:21-05:00",
+  "commit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "committedAt": "2026-11-05T08:33:58-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -2878,7 +2878,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "otp:bash 4.1 ms/file",
+            "detail": "otp:bash 3.8 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -3146,7 +3146,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "powershell:csharp 88.5 ms/file",
+            "detail": "powershell:csharp 71.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -3206,7 +3206,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "svelte:css 1.408 ms/file",
+            "detail": "svelte:css 6.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -3509,7 +3509,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "fsharp:csharp 36 ms/file",
+            "detail": "fsharp:csharp 40 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -3851,7 +3851,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "otp:html 2.1 ms/file",
+            "detail": "otp:html 1.6 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -4045,7 +4045,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "lodash:javascript 356.4 ms/file",
+            "detail": "lodash:javascript 281.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -4234,7 +4234,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "redis:make 4.1 ms/file",
+            "detail": "redis:make 3.6 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -4413,7 +4413,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "mojo:perl 4.2 ms/file",
+            "detail": "mojo:perl 16.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -4503,7 +4503,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "phpunit:php 7.7 ms/file",
+            "detail": "phpunit:php 9.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -4579,7 +4579,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "cython:python 56.2 ms/file",
+            "detail": "cython:python 45.7 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -5078,7 +5078,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "swift-nio:swift 95.4 ms/file",
+            "detail": "swift-nio:swift 76.4 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -5123,7 +5123,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "cargo:toml 0.2 ms/file",
+            "detail": "cargo:toml 0.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -5561,9 +5561,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-11-05T00:27:21-05:00",
-  "regeneratedAtCommit": "26b2f6e883ec239223d7266cd6cf762fd83c235f",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-11-05T08:33:58-05:00",
+  "regeneratedAtCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

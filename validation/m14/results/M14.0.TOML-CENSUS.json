@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "f4d19a1dcb22d1c05b2a2a2f4396aec2708d1cdd9e8b0e45f964ec67ae4d81ab",
-    "sealedAt": "2026-11-05T05:27:21.000Z"
+    "contentSha256": "d3cb21759ca7a81007554b4fa8abcdf4ab8e51d50ced2a7cb88059e1cde10813",
+    "sealedAt": "2026-11-05T13:33:58.000Z"
   },
   "checks": [
     {
@@ -17,8 +17,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "26b2f6e883ec239223d7266cd6cf762fd83c235f",
-  "committedAt": "2026-11-05T00:27:21-05:00",
+  "commit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "committedAt": "2026-11-05T08:33:58-05:00",
   "data": {
     "claimedTypes": [
       {
@@ -145,8 +145,8 @@
       "description": "the corpus is the pinned fixtures repositories and rotates as a pool, so a construct no corpus exercises is reported as NOT SEEN rather than unaccounted — `MISSING` is in that state today, handled and pinned by fixture instead"
     }
   ],
-  "regeneratedAt": "2026-11-05T00:27:21-05:00",
-  "regeneratedAtCommit": "26b2f6e883ec239223d7266cd6cf762fd83c235f",
+  "regeneratedAt": "2026-11-05T08:33:58-05:00",
+  "regeneratedAtCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "toml construct census"

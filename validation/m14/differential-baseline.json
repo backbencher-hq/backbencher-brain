@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 2.6,
-    "loadAvgEnd": 2.6,
+    "loadAvgStart": 4.24,
+    "loadAvgEnd": 3.94,
     "sliceCount": 11
   },
   "counts": {
@@ -43,11 +43,11 @@
     "Exposed:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 87,
+      "heuristic": 100,
       "perf": {
-        "avgMsPerFile": 57.2
+        "avgMsPerFile": 41.8
       },
-      "sampleSetHash": "f39e30d3648bd4a2"
+      "sampleSetHash": "71abaa67437c73e2"
     },
     "Exposed:java": {
       "missing": 0,
@@ -309,7 +309,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 281.7
+        "avgMsPerFile": 279.4
       },
       "sampleSetHash": "494e1b94766e8ade"
     },
@@ -430,11 +430,11 @@
     "svelte:javascript": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 1,
+      "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 9.7
+        "avgMsPerFile": 8.9
       },
-      "sampleSetHash": "efa1a7c14f64d91c"
+      "sampleSetHash": "e42073660726e95b"
     },
     "svelte:typescript": {
       "missing": 0,
@@ -1137,9 +1137,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 71.5
+        "avgMsPerFile": 91.2
       },
-      "sampleSetHash": "14efe1f05cdb934e"
+      "sampleSetHash": "01881882815aab70"
     },
     "proxicall:dart": {
       "missing": 0,
@@ -1155,18 +1155,18 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 76.4
+        "avgMsPerFile": 38.8
       },
-      "sampleSetHash": "787bd05ef81fe68c"
+      "sampleSetHash": "011b086821f630a5"
     },
     "phpunit:php": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 9.4
+        "avgMsPerFile": 8.7
       },
-      "sampleSetHash": "4f813a27036d1331"
+      "sampleSetHash": "0af8f28866a8e29b"
     },
     "rake:c": {
       "missing": 0,
@@ -1282,11 +1282,11 @@
     "kotlinx-coroutines:kotlin": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 85,
+      "heuristic": 59,
       "perf": {
-        "avgMsPerFile": 15.8
+        "avgMsPerFile": 13.5
       },
-      "sampleSetHash": "2e3e5893781d2da9"
+      "sampleSetHash": "f29e2833d7eb2758"
     },
     "clojure:java": {
       "missing": 0,
@@ -1356,9 +1356,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 40
+        "avgMsPerFile": 39.8
       },
-      "sampleSetHash": "3203ce3a828bd8aa"
+      "sampleSetHash": "51fe9fdd63b9ce45"
     },
     "dart-http:dart": {
       "missing": 0,
@@ -1374,9 +1374,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 42.3
+        "avgMsPerFile": 55.6
       },
-      "sampleSetHash": "ecdb25b00584cf23"
+      "sampleSetHash": "0052e892f6e0d27b"
     },
     "afnetworking:objc": {
       "missing": 0,
@@ -1392,9 +1392,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 24.8
+        "avgMsPerFile": 25.9
       },
-      "sampleSetHash": "a3e0e08dcfbe34f0"
+      "sampleSetHash": "b3562a4039b50cf9"
     },
     "rack:ruby": {
       "missing": 0,
@@ -1410,7 +1410,7 @@
       "unexplained": 0,
       "heuristic": 50,
       "perf": {
-        "avgMsPerFile": 55
+        "avgMsPerFile": 38.2
       },
       "sampleSetHash": "e3679fa2131e9b78"
     },
@@ -1428,9 +1428,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 17.7
+        "avgMsPerFile": 17.3
       },
-      "sampleSetHash": "5c95656137506145"
+      "sampleSetHash": "0667bcac204cb43e"
     },
     "otp:erlang": {
       "missing": 0,
@@ -1446,9 +1446,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 16.4
+        "avgMsPerFile": 9.6
       },
-      "sampleSetHash": "93bd5239a044ad6d"
+      "sampleSetHash": "7c28f82f48a98384"
     },
     "svelte:css": {
       "missing": 0,
@@ -1464,9 +1464,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 14
+        "avgMsPerFile": 8.9
       },
-      "sampleSetHash": "b1a764a028ab54fa"
+      "sampleSetHash": "2dc59a0c51b427ad"
     },
     "kubernetes:yaml": {
       "missing": 0,
@@ -1579,9 +1579,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.6
+        "avgMsPerFile": 1.8
       },
-      "sampleSetHash": "7e9c67d715a71a25"
+      "sampleSetHash": "435ca129b2b2ed47"
     },
     "cargo:toml": {
       "missing": 0,
@@ -1590,14 +1590,14 @@
       "perf": {
         "avgMsPerFile": 0.1
       },
-      "sampleSetHash": "82f47ef54f28fec8"
+      "sampleSetHash": "d5d30b99f18fbf2c"
     },
     "sqlite:html": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.3
+        "avgMsPerFile": 1.9
       },
       "sampleSetHash": "3316e7bdc525d7af"
     },
@@ -1606,7 +1606,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1
+        "avgMsPerFile": 0.8
       },
       "sampleSetHash": "c5e515b54f5e915c"
     },
@@ -1624,34 +1624,34 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 2.2
+        "avgMsPerFile": 3.3
       },
-      "sampleSetHash": "08fe537258f4217c"
+      "sampleSetHash": "8cb5822a2ad61716"
     },
     "grails-core:xml": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 18.8
+        "avgMsPerFile": 3.1
       },
-      "sampleSetHash": "ffe6839fc280fa8a"
+      "sampleSetHash": "b0a525cf8aa49d27"
     },
     "terraform:json": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.4
+        "avgMsPerFile": 1.6
       },
-      "sampleSetHash": "35ac58ec7c90abfa"
+      "sampleSetHash": "934031cbd42fdaf0"
     },
     "redis:make": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.6
+        "avgMsPerFile": 5.8
       },
       "sampleSetHash": "e1b49ce25608c189"
     },
@@ -1669,7 +1669,7 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.5
+        "avgMsPerFile": 4.4
       },
       "sampleSetHash": "abac0ebd75471c84"
     },
@@ -1678,24 +1678,24 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 3.8
+        "avgMsPerFile": 3.6
       },
-      "sampleSetHash": "1f1650b534d9196b"
+      "sampleSetHash": "49f9724aeb4f219b"
     },
     "mojo:perl": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 16.4
+        "avgMsPerFile": 17
       },
-      "sampleSetHash": "e5f2c5fb033ae2d6"
+      "sampleSetHash": "b977bc925cacf6aa"
     }
   },
   "hashes": {
     "grails-core:javascript": "32c4318f0f3db775",
     "vue-core:typescript": "771c854fefb7fcdc",
-    "Exposed:kotlin": "f39e30d3648bd4a2",
+    "Exposed:kotlin": "71abaa67437c73e2",
     "scala3:scala": "49b947fefb290066",
     "grails-core:java": "2fff892462bb64ee",
     "grails-core:groovy": "3a9248865d3bbbd9",
@@ -1705,11 +1705,11 @@
     "ripgrep:rust": "3726f83d65a6e09a",
     "go-tools:go": "ae9449eb50c1f68f",
     "zig:zig": "053fa67f6663fddb",
-    "powershell:csharp": "14efe1f05cdb934e",
+    "powershell:csharp": "01881882815aab70",
     "proxicall:dart": "0e484c4b04addfbd",
-    "swift-nio:swift": "787bd05ef81fe68c",
+    "swift-nio:swift": "011b086821f630a5",
     "sdwebimage:objc": "8234cb008232a69b",
-    "phpunit:php": "4f813a27036d1331",
+    "phpunit:php": "0af8f28866a8e29b",
     "rake:ruby": "0c505b9b4aeda127",
     "cython:python": "2f1c96734046b556",
     "cabal:haskell": "2040e3ad57636818",
@@ -1718,7 +1718,7 @@
     "clojure:clojure": "e0395ac2bf495bf0",
     "lodash:javascript": "494e1b94766e8ade",
     "element-plus:typescript": "258bbdbad4d0a7bc",
-    "kotlinx-coroutines:kotlin": "2e3e5893781d2da9",
+    "kotlinx-coroutines:kotlin": "f29e2833d7eb2758",
     "cats-effect:scala": "45c0a06542ed9f1a",
     "clojure:java": "c9d6a3b4b3fb8eb6",
     "geb:groovy": "afddb7a7aeb00bd8",
@@ -1727,41 +1727,41 @@
     "cargo:rust": "e09029111a6cc4ec",
     "terraform:go": "9c09cea779eb5ca6",
     "zls:zig": "c1285552d459a43a",
-    "fsharp:csharp": "3203ce3a828bd8aa",
+    "fsharp:csharp": "51fe9fdd63b9ce45",
     "dart-http:dart": "549143339f0cfaa9",
-    "alamofire:swift": "ecdb25b00584cf23",
+    "alamofire:swift": "0052e892f6e0d27b",
     "afnetworking:objc": "29684f4b8391be9f",
-    "phpmyadmin:php": "a3e0e08dcfbe34f0",
+    "phpmyadmin:php": "b3562a4039b50cf9",
     "rack:ruby": "cbf9b090af441408",
     "requests:python": "e3679fa2131e9b78",
     "hledger:haskell": "d1c3ed0e861d118d",
-    "phoenix:elixir": "5c95656137506145",
+    "phoenix:elixir": "0667bcac204cb43e",
     "otp:erlang": "c3632c972f79c9a2",
-    "clj-kondo:clojure": "93bd5239a044ad6d",
+    "clj-kondo:clojure": "7c28f82f48a98384",
     "svelte:svelte": "c1c6f9e95bf02a6b",
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
     "jq:c": "2b743b65d0eac283",
     "svelte:css": "af9df135a261420f",
-    "grails-core:css": "b1a764a028ab54fa",
+    "grails-core:css": "2dc59a0c51b427ad",
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
     "solidity:solidity": "e9708e750546e983",
     "julia:julia": "0b7c135add6ea602",
-    "otp:html": "7e9c67d715a71a25",
-    "cargo:toml": "82f47ef54f28fec8",
+    "otp:html": "435ca129b2b2ed47",
+    "cargo:toml": "d5d30b99f18fbf2c",
     "sqlite:html": "3316e7bdc525d7af",
     "ripgrep:toml": "c5e515b54f5e915c",
     "tf-aws-components:hcl": "1bae8a312cc9c4a2",
-    "ansible:yaml": "08fe537258f4217c",
-    "grails-core:xml": "ffe6839fc280fa8a",
-    "terraform:json": "35ac58ec7c90abfa",
-    "svelte:javascript": "efa1a7c14f64d91c",
+    "ansible:yaml": "8cb5822a2ad61716",
+    "grails-core:xml": "b0a525cf8aa49d27",
+    "terraform:json": "934031cbd42fdaf0",
+    "svelte:javascript": "e42073660726e95b",
     "redis:make": "e1b49ce25608c189",
     "duckdb:sql": "8378a1275fc0b970",
     "consul:make": "abac0ebd75471c84",
-    "otp:bash": "1f1650b534d9196b",
-    "mojo:perl": "e5f2c5fb033ae2d6"
+    "otp:bash": "49f9724aeb4f219b",
+    "mojo:perl": "b977bc925cacf6aa"
   },
   "floorMoves": {
     "solidity:solidity": {
