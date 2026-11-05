@@ -1328,6 +1328,32 @@ export function isPublishableFunctionName(name: string | null | undefined): bool
 }
 
 /**
+ * KAD2/TSD2: ARE TWO web-tree-sitter NODES THE SAME NODE?
+ *
+ * **Never with `===`.** Every `childForFieldName`/`namedChild`/`namedChildren` access returns a
+ * FRESH wrapper object around the underlying node, so two wrappers describing the SAME node are
+ * `===`-false and a wrapper-identity comparison can only ever be false — a guard written with it is
+ * DEAD, and it silently does whatever the un-guarded path does.
+ *
+ * MEASURED, and not hypothetical: this file's `for_range_loop` branch reads the loop's `type` and
+ * `declarator` fields only to EXCLUDE them, because on that node the grammar's `type` field is the
+ * RANGE EXPRESSION and its `declarator` field is the BODY — the written type and the declared name
+ * are the first two named children that are neither. Written with `===`, the exclusion never fired,
+ * so the scan typed the RANGE EXPRESSION as the written type and the loop BODY as the declared name,
+ * which is the defect the comment above it says the positional scan was introduced to FIX. The
+ * guard was decoration over a live bug, which is why this fix changes behaviour and not only a
+ * hygiene finding.
+ *
+ * A node's identity is its SPAN: two wrappers describing the same bytes describe the same node.
+ * `type` is compared too, because a zero-width node (a missing field) can share a span with its
+ * neighbour and only the kind tells them apart.
+ */
+export function sameTsNode(a: any, b: any): boolean {
+  if (!a || !b) return false
+  return a.type === b.type && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+}
+
+/**
  * ONTOLOGY/D23: is this declaration a PURE VIRTUAL — `virtual T f(...) = 0;`?
  *
  * The member a pure virtual declares is the C++ spelling of an interface
@@ -2970,7 +2996,10 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           add(typeNode, firstDecl)
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c === typeNode || c === firstDecl) continue
+            // KAD2/TSD2: SPAN identity, not wrapper identity — `childForFieldName` returns a FRESH
+            // wrapper per call, so `c === typeNode` was ALWAYS false and these two fields were re-added
+            // as if they were extra declarators.
+            if (sameTsNode(c, typeNode) || sameTsNode(c, firstDecl)) continue
             add(typeNode, c)
           }
           return
@@ -2987,7 +3016,9 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           let declared: any = null
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c === typeField || c === declField) continue
+            // KAD2/TSD2: the guard the hygiene gate reports (dead wrapper identity). While it was dead,
+            // `written` was the RANGE EXPRESSION and `declared` was the loop BODY.
+            if (sameTsNode(c, typeField) || sameTsNode(c, declField)) continue
             if (!written) { written = c; continue }
             if (!declared) { declared = c; break }
           }

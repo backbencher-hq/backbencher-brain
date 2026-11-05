@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "e22f53d69c6fa5e78990456b9e5d44f63d9e00258d45333c82ccd173ff5f5ddc",
-    "sealedAt": "2026-11-05T13:33:58.000Z"
+    "contentSha256": "fe8e0e40de59ee2d4d09fdbcfed7ac108e87bbe5e34579588dddda5b96527715",
+    "sealedAt": "2026-11-05T16:51:20.000Z"
   },
   "checks": [
     {
@@ -22,8 +22,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
-  "committedAt": "2026-11-05T08:33:58-05:00",
+  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "committedAt": "2026-11-05T11:51:20-05:00",
   "data": {
     "claimedCarriersBroken": [],
     "claimedCarriersProbed": 38,
@@ -53,8 +53,8 @@
       "description": "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES"
     }
   ],
-  "regeneratedAt": "2026-11-05T08:33:58-05:00",
-  "regeneratedAtCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "regeneratedAt": "2026-11-05T11:51:20-05:00",
+  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "html carrier census"

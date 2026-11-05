@@ -199,6 +199,22 @@ const POPULATION_EXEMPT: Record<string, Record<string, { reason: string; missing
       reason: "the engine CONTENT-SNIFS a header and routes the C++ ones to the cpp analyzer; the router's extension answer is not the last word on `.h`",
       foreign: ["h"],
     },
+    // matlab IS CONTENT-DISAMBIGUATED, NOT EXTENSION-ROUTED. A `.m` file is routed to
+    // objective-c by the router, and the engine then sniffs the file's heading
+    // (`function `/`classdef `) and hands the MATLAB ones to this lane — measured in
+    // language-detection.ts:407 and used by the matlab lane's own declaration. The router
+    // ALSO carries a literal `matlab: "matlab"` row (added 2026-10-31 in the dedicated-root
+    // commit) that maps a pseudo-extension named after the language; NO file with that
+    // extension exists in any corpus on this machine (checked: zero across the shared shelf
+    // and the workspace `.corpus` root), so it is a language-support placeholder, not a
+    // population the lane could measure. Declaring it in the lane's extension list would
+    // claim a file population that does not exist; this exemption records the decision
+    // instead, and it is scoped to that one pseudo-extension only.
+    matlab: {
+      reason: "matlab is content-disambiguated from `.m`; the router's `matlab` pseudo-extension names no real file (0 in every corpus) and is a placeholder, not a measurable population, while the lane's `m` entry is the CONTENT-SNIFFED half of the objective-c route that the engine hands to this lane",
+      missing: ["matlab"],
+      foreign: ["m"],
+    },
   },
   "residual-gate": {},
   "run-fixtures": {},
@@ -241,7 +257,14 @@ const router = routerMap()
  */
 const INSTRUMENTS: Array<[string, string, "laneMap" | "nestedExt", string[]]> = [
   // BOTH lane maps: `LANES_A` is a second map in the same file and the gate used to read one.
-  ["incoming-gate", "script/m14/incoming-gate.ts", "laneMap", ["export const LANES_A", "export const LANES_B"]],
+  // THE TABLE MOVED, THE INSTRUMENT FOLLOWED (2026-11-04). `incoming-gate.ts` runs its whole gate
+  // body on import, so the lane maps were extracted to `language-extensions.ts` (commit 8f449a26e)
+  // and re-exported from the gate. This reader still parsed the OLD file, found no literal
+  // `export const LANES_A` (the file now has `import { LANES_A } from "./language-extensions"`),
+  // reported the instrument as absent and then reported EVERY lane as unswept — a gate that could
+  // not read the table it was written to read. The single moved table is the one this gate must
+  // read: one table, every consumer, exactly the property that extraction was made for.
+  ["incoming-gate", "script/m14/language-extensions.ts", "laneMap", ["export const LANES_A", "export const LANES_B"]],
   ["residual-gate", "script/m14/residual-gate.ts", "laneMap", ["const ext = {"]],
   ["run-fixtures", "script/m14/run-fixtures.ts", "nestedExt", ["const LANGS"]],
 ]
@@ -387,7 +410,7 @@ if (process.argv.includes("--selftest")) {
   ok("router reader sees the quoted + key", (router.get("cpp") ?? []).includes("c++"), "the router's c++ extension must be visible to the gate")
 
   // 6 · THE LANE READER MUST SEE A QUOTED KEY — `"objective-c"` was invisible before.
-  const laneMaps = laneMapFrom("script/m14/incoming-gate.ts", ["export const LANES_A", "export const LANES_B"])
+  const laneMaps = laneMapFrom("script/m14/language-extensions.ts", ["export const LANES_A", "export const LANES_B"])
   ok("lane reader sees a quoted key", laneMaps?.has("objective-c") === true, "the objective-c lane must be readable")
   ok("lane reader sees a quoted key in LANES_B's sibling map", laneMaps?.has("c") === true, "the c lane must be readable")
 

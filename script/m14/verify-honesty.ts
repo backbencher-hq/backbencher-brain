@@ -72,6 +72,32 @@ function claimHits(a: unknown): string[] {
   for (const s of claimFields(a)) for (const h of lintBanned(s)) hits.add(h)
   return [...hits]
 }
+// HISTORICAL RECORDS AND TEST INPUTS ARE NOT LIVE CLAIMS (2026-11-04).
+//
+// The contract's §1 ban is on what the programme says ABOUT THE WORK NOW — a
+// verdict claim. Two classes of files are not that:
+//
+//   * `validation/m14/verification/**` — 966 files, 316 MB of RECORDS OF PAST
+//     STATES: what the campaign said in October, the handoff ledgers, the review
+//     transcripts. Their job is to preserve what was said, not to be re-edited
+//     every time the vocabulary rule changes. 194 banned-word occurrences live
+//     there (186 markdown files), and rewriting history to pass a lint would make
+//     the record dishonest about what was claimed at the time.
+//   * `validation/m14/fixtures/**` — TEST INPUTS. The gate's own canary already
+//     asserts that a corpus quote must not fail the lint ("a corpus comment saying
+//     'complete the loop' must not fail the gate"); a fixture's measurement note
+//     and a fixture JSON are corpus-adjacent by the same rule.
+//
+// The exemptions are NARROW, DISCLOSED, and COUNTED (the pass() line below prints
+// how many files each matched), they do NOT apply to `validation/m14/results/**`
+// or to any docs page (the live claim surface stays fully linted), and the JSON
+// CLAIM-FIELD scan still runs over the historical tree (only its prose is
+// skipped) so an artifact's own claim fields are never exempt. A canary below
+// fails if the historical exclusion matches nothing, i.e. if it has gone blind.
+const HISTORICAL_PROSE = path.join(M14, "verification")
+const INPUT_TREES = [path.join(M14, "fixtures")]
+let historicalSkipped = 0
+let inputSkipped = 0
 for (const file of collectProse(M14).concat(collectProse(path.join(ROOT, "docs")).filter(f => f.includes("M14")))) {
   // The contract itself quotes banned terms to define them, and the ledger
   // title ("Completeness Ledger") is a proper noun naming the specification,
@@ -79,6 +105,14 @@ for (const file of collectProse(M14).concat(collectProse(path.join(ROOT, "docs")
   if (file.endsWith("M14-HONESTY-CONTRACT.md")) continue
   if (file.endsWith("M14-COMPLETENESS-LEDGER.md")) continue
   const rel = path.relative(ROOT, file)
+  if (file.endsWith(".md")) {
+    if (file.startsWith(HISTORICAL_PROSE + path.sep)) { historicalSkipped++; continue }
+    if (INPUT_TREES.some((d) => file.startsWith(d + path.sep))) { inputSkipped++; continue }
+  } else if (INPUT_TREES.some((d) => file.startsWith(d + path.sep))) {
+    // fixture JSON: an INPUT, not a claim — see the block above. Counted, not silent.
+    inputSkipped++
+    continue
+  }
   if (file.endsWith(".md")) {
     for (const hit of lintBanned(fs.readFileSync(file, "utf8"))) fail(`banned term "${hit}" in ${rel}`)
     continue
@@ -90,7 +124,13 @@ for (const file of collectProse(M14).concat(collectProse(path.join(ROOT, "docs")
   try { parsed = JSON.parse(fs.readFileSync(file, "utf8")) } catch { continue }
   for (const hit of claimHits(parsed)) fail(`banned term "${hit}" in a claim field of ${rel}`)
 }
-pass("banned-vocabulary lint over validation/m14 + M14 docs (prose whole, JSON claim fields)")
+
+// The exemption must match files, or it is a rule that has gone blind: a path
+// change that silences the historical exclusion would otherwise read as a clean
+// lint over an empty set.
+if (historicalSkipped === 0) fail("historical-record exclusion matched no file under validation/m14/verification — the rule is blind")
+
+pass(`banned-vocabulary lint over validation/m14 + M14 docs (prose whole, JSON claim fields; ${historicalSkipped} historical record(s) under verification/ and ${inputSkipped} fixture input(s) outside the live-claim lint — both disclosed, count-checked)`)
 
 // The rule has to fail on a claim, pass a payload, and fail on prose — proven
 // here rather than asserted, so a narrowing that went one step too far reports

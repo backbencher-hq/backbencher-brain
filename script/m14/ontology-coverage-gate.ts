@@ -64,6 +64,9 @@ import { XML_RULED } from "./xml-ruled"
 import { NIM_RULED } from "./nim-ruled"
 import { SCSS_RULED } from "./scss-ruled"
 import { MARKDOWN_RULED } from "./markdown-ruled"
+import { HTML_RULED } from "./html-ruled"
+import { JAVASCRIPT_RULED } from "./javascript-ruled"
+import { SVELTE_RULED } from "./svelte-ruled"
 import { PHP_RULED } from "./php-ruled"
 import { SQL_RULED } from "./sql-ruled"
 import { CLEAN_RULED } from "./clean-ruled"
@@ -564,6 +567,14 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   dart: DART_RULED,
   powershell: POWERSHELL_RULED,
   python: PYTHON_RULED,
+  // THE THREE TABLES THE REGISTRATION GATE FOUND MISSING (2026-11-04): these lanes had
+  // committed `script/m14/{html,javascript,svelte}-ruled.ts` but no line here, so the
+  // arbiter could not see them and each lane read as unadjudicated — a ruling table that
+  // is committed but invisible is a decision nobody applies. Registered as found; their
+  // verdicts are measured by the arbiter's own run, not asserted here.
+  html: HTML_RULED,
+  javascript: JAVASCRIPT_RULED,
+  svelte: SVELTE_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 

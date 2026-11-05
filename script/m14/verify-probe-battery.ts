@@ -21,6 +21,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { fileURLToPath } from "node:url"
 import * as WTS from "web-tree-sitter"
+import { BINDING_SEP } from "../../src/ast/types"
 
 // `__dirname` / `__filename` do not exist in an ES module, and package.json
 //  declares "type": "module". Reaching for one here means this file dies at LOAD
@@ -186,6 +187,22 @@ async function probeVue(
   }
 }
 
+/**
+ * THE ORACLE'S TARGET SPACE IS SITE-AGNOSTIC NAMES (label:target), while the ANALYZER now
+ * publishes a LOCAL read under its published binding key (`BINDING_SEP`, #920 family:
+ * `reader\u0000flag`). Measured at HEAD for the two probes that pin local reads: the
+ * javascript oracle derives `uses:flag`, the objc oracle `uses:tag` — bare names — and the
+ * analyzer `uses:reader\u0000flag` / `uses:runBlock\u0000tag`. Comparing the two spellings
+ * literally would fail every binding-sep expectation as an "oracle regression" while both
+ * sides are right about different contracts (the differential normalises the same way).
+ * So the oracle check reads the bare NAME a scoped target ends in; the analyzer-side match
+ * above is still exact and is where the publication contract is pinned.
+ */
+function oracleBareTarget(target: string): string {
+  const sep = target.lastIndexOf(BINDING_SEP)
+  return sep >= 0 ? target.slice(sep + 1) : target
+}
+
 async function probeLang(
   id: string,
   lang: string,
@@ -222,7 +239,7 @@ async function probeLang(
         const rest = e.slice(label.length + 1)
         // expectations may be written `label:target` or `label:source->target`;
         // oracle edges are site-agnostic `label:target` pairs.
-        const target = rest.includes("->") ? rest.split("->")[1] : rest
+        const target = oracleBareTarget(rest.includes("->") ? rest.split("->")[1] : rest)
         return !oracle.has(`${label}:${target}`)
       })
       if (oracleMiss.length > 0) {
@@ -234,7 +251,7 @@ async function probeLang(
         // oracle's edges are site-agnostic `label:target` pairs.
         const collusion = forbid.filter((f) => {
           const [label, rest] = f.split(":")
-          const target = rest.includes("->") ? rest.split("->")[1] : rest
+          const target = oracleBareTarget(rest.includes("->") ? rest.split("->")[1] : rest)
           return oracle.has(`${label}:${target}`)
         })
         if (collusion.length > 0) {
@@ -552,7 +569,6 @@ pickOne = C.Registry 1
 module M where
 
 import qualified Data.Csv as C
-import { fileURLToPath } from "node:url"
 
 registry :: C.Registry
 registry = C.Registry
@@ -680,9 +696,33 @@ class Host
     try {
       const res = await analyzeWith(lang, m3710Cfgs[lang], src)
       const rels = (res.relationships ?? []).filter((r: any) => r.type === "overrides")
-      const inSvc = rels.find((r: any) => r.source === "InService.handle" && r.target === "Base.handle")
-      const audit = rels.find((r: any) => r.source === "AuditService.handle" && r.target === "ExternalBase.handle")
+      // THE OVERRIDE TARGET SPELLING IS PER-LANE, AND THE PROBE MUST READ IT FROM THE
+      // LANE'S OWN CONTRACT. The class-family lanes moved the target to the member NAME
+      // (the go precedent 2abb2f33c: "THE TARGET IS THE MEMBER NAME … the pair moves to
+      // metadata; the SOURCE keeps Receiver.Method"), while php/ruby/swift (and perl's
+      // EXTERNAL guess) still publish the qualified target. Measured at HEAD before this
+      // change — python/javascript/java: `InService.handle->handle` + external
+      // `AuditService.handle->handle`; perl: in-file `->handle`, external
+      // `->ExternalBase.handle`; php/ruby/swift unchanged. The in-file verified tier and
+      // the 0.5/first-parent-guess external contract below are unchanged; only the
+      // spelling each lane publishes is read from the lane.
+      const leafTarget = lang === "python" || lang === "javascript" || lang === "java" || lang === "perl"
+      const inSvc = rels.find((r: any) => r.source === "InService.handle" && r.target === (leafTarget ? "handle" : "Base.handle"))
+      const externalQualified = lang === "php" || lang === "ruby" || lang === "swift" || lang === "perl"
+      const audit = rels.find((r: any) => r.source === "AuditService.handle" && r.target === (externalQualified ? "ExternalBase.handle" : "handle"))
+      // The qualified pair is not lost: where a lane publishes the leaf it records the
+      // base it guessed in metadata. Assert it where the lane does record it, so this
+      // probe still pins WHICH base the guess was about.
+
       const problems: string[] = []
+      // WHERE THE LANE PUBLISHES THE LEAF, THE PAIR MUST STILL BE RECORDED SOMEWHERE:
+      // java carries `declaringType`, perl (in-file) carries `overriddenOwner`. python and
+      // javascript carry only `reasonCode` in the measured contract, so they are exempt
+      // from this metadata assertion (their pair is asserted by the external guess below).
+      if (inSvc && leafTarget && lang !== "python" && lang !== "javascript") {
+        const base = inSvc.metadata?.declaringType ?? inSvc.metadata?.overriddenOwner
+        if (base !== "Base") problems.push(`in-file base metadata ${JSON.stringify(base)} != Base (leaf target must record the pair)`)
+      }
       if (!inSvc) problems.push("in-file overrides edge missing")
       else if ((inSvc.confidence ?? 0) < 0.9) problems.push(`in-file confidence ${inSvc.confidence} < 0.9 (verified tier must hold; 0.95 php/ruby/python/js/perl family, 1.0 java/swift Pass-1)`)
       if (lang === "php") {
@@ -743,8 +783,18 @@ class Host
     await probeLang("F9-PROBE-JSD-BINDINGS", "javascript",
       "binding positions emit no read edge (import bindings, parameters, catch params, destructuring targets, export aliases); pattern-default RHS still reads; oracle must not derive the forbidden names",
       jsCfg, "deriveJavaScriptEdges", src,
-      ["uses:reader->base", "uses:reader->count", "uses:reader->flag", "uses:defaults->seed"],
-      ["uses:Default", "uses:named", "uses:alias", "uses:ns", "uses:alpha", "uses:beta", "uses:err", "uses:first", "uses:renamed", "uses:third", "uses:one", "uses:two", "uses:reexported", "uses:value"],
+      // THE PUBLISHED-KEY CONTRACT (#920 family, `BINDING_SEP` in src/ast/types.ts): a
+      // LOCAL read's target carries its binding scope inside the key — `reader\u0000flag`,
+      // `defaults\u0000seed` — because a bare local name is indistinguishable from a
+      // declaration's name and the older spelling made every binding claim unverifiable.
+      // The probe's expectation predated it and read as `missing`; the target spelling is
+      // the contract, so the expectation moves with it.
+      ["uses:reader->base", "uses:reader->count", "uses:reader->reader\u0000flag", "uses:defaults->defaults\u0000seed"],
+      // The absence half moves the SAME way or it becomes decoration: under the published-key
+      // contract a fabricated binding read is a `\u0000` target, so the bare spellings alone
+      // could never fire again. Both shapes are forbidden.
+      ["uses:Default", "uses:named", "uses:alias", "uses:ns", "uses:alpha", "uses:beta", "uses:err", "uses:first", "uses:renamed", "uses:third", "uses:one", "uses:two", "uses:reexported", "uses:value",
+       "uses:binder\u0000alpha", "uses:binder\u0000beta", "uses:catcher\u0000err", "uses:destructured\u0000first", "uses:destructured\u0000renamed", "uses:destructured\u0000third", "uses:defaults\u0000value"],
       { oracleForbid: true },
     )
   }
@@ -1170,10 +1220,22 @@ class Host
       ``,
     ].join("\n")
     await probeLang("F9-PROBE-GO-EMBED-GENERIC", "go",
-      "an embedded INSTANTIATED GENERIC names the LEAF of its base type on the analyzer AND the oracle (ResourceIndexer, ClientWithListAndApply), and the truth never derives a TYPE ARGUMENT as the embedded type's name (Example])",
+      // THE LABEL MOVED WITH THE LANE'S OWN ONTOLOGY FIXTURE (go/embedding-halves): a STRUCT
+      // embeds a type's IMPLEMENTATION — no single base, no inheritance clause, no conformance
+      // declared — so the struct half is `mixes_in`; `extends` is reserved for the INTERFACE
+      // half (`type I interface { J }`), which composes no implementation. This probe predated
+      // the relabel and pinned the old `extends` spelling, i.e. it asserted the crossing the
+      // lane's fixture now FORBIDS. What this probe still uniquely pins: the target is the LEAF
+      // of the embedded type even for instantiated generics (never a type argument or bracketed
+      // text), on analyzer AND oracle.
+      "an embedded INSTANTIATED GENERIC names the LEAF of its base type on the analyzer AND the oracle (ResourceIndexer, ClientWithListAndApply) under the struct half's `mixes_in` label, and the truth never derives a TYPE ARGUMENT as the embedded type's name (Example])",
       goCfg, "deriveGoEdges", src,
-      ["extends:ctl->Reader", "extends:exampleLister->ResourceIndexer", "extends:examples->ClientWithListAndApply"],
-      ["extends:exampleLister->Example]", "extends:examples->CustomResourceDefinitionApplyConfiguration]"],
+      ["mixes_in:ctl->Reader", "mixes_in:exampleLister->ResourceIndexer", "mixes_in:examples->ClientWithListAndApply"],
+      // The relabel's own defect signatures: the struct half published as `extends` (the
+      // pre-relabel spelling) and the raw bracketed text as a target under BOTH labels.
+      ["extends:ctl->Reader", "extends:exampleLister->ResourceIndexer", "extends:examples->ClientWithListAndApply",
+       "mixes_in:exampleLister->Example]", "mixes_in:examples->CustomResourceDefinitionApplyConfiguration]",
+       "extends:exampleLister->Example]", "extends:examples->CustomResourceDefinitionApplyConfiguration]"],
       { oracleForbid: true },
     )
   }
@@ -1417,16 +1479,26 @@ class Host
       "deriveObjcEdges", src,
       [
         "calls:runBlock->handler",
-        "uses:runBlock->tag",
+        // A local read's target carries its binding scope inside the key (`BINDING_SEP`,
+        // #920 family) — measured at HEAD: `runBlock\u0000tag`, `runPtr\u0000x`,
+        // `apply:\u0000n`. The pre-relabel bare spellings are what the expectation used.
+        "uses:runBlock->runBlock\u0000tag",
         "calls:runPtr->cb",
-        "uses:runPtr->x",
+        "uses:runPtr->runPtr\u0000x",
         "calls:apply:->done",
-        "uses:apply:->n",
+        "uses:apply:->apply:\u0000n",
       ],
       [
+        // The declaration-name absence is asserted in BOTH spellings: the bare one for a
+        // resolver that ignores the contract, and the published-key one, which is the shape
+        // a fabrication would actually take today. An absence list that can only match the
+        // retired spelling is the vacuous-probe defect this battery exists to catch.
         "uses:runBlock->handler",
         "uses:runPtr->cb",
         "uses:apply:->done",
+        "uses:runBlock->runBlock\u0000handler",
+        "uses:runPtr->runPtr\u0000cb",
+        "uses:apply:->apply:\u0000done",
       ],
       { oracleForbid: true },
     )

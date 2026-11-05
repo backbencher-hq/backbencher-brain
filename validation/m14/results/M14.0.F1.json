@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "e7deef8f6ebdb75963e736b8421b8eb981ca21730dbeb5c0986e5c73571717c9",
-    "sealedAt": "2026-11-05T14:32:04.000Z"
+    "contentSha256": "0c9ef329eaee7b77a6feb890b370797c0b9940f42de98b6e760091f383871dfa",
+    "sealedAt": "2026-11-05T16:38:10.000Z"
   },
   "checks": [
     {
@@ -30,8 +30,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "121258ec75119674a0009329389da934a5ad97d0",
-  "committedAt": "2026-11-05T09:32:04-05:00",
+  "commit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+  "committedAt": "2026-11-05T11:38:10-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -182,37 +182,37 @@
         "waivedFindings": [
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "unique_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "shared_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "weak_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "auto_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "optional"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "reference_wrapper"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 3027,
+            "line": 3058,
             "literal": "atomic"
           }
         ],
@@ -2316,8 +2316,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-11-05T09:32:04-05:00",
-  "regeneratedAtCommit": "121258ec75119674a0009329389da934a5ad97d0",
+  "regeneratedAt": "2026-11-05T11:38:10-05:00",
+  "regeneratedAtCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

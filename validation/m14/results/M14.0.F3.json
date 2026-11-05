@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "62026f0b3d775aea6480582fb4eccfa355f110b5b375d4f04b68e43e65c6bedb",
-    "sealedAt": "2026-11-05T13:33:58.000Z"
+    "contentSha256": "a3dac64bfb5cf157c50c0fcfa583b38e968260c45f8bb308a81f7fb2f2ea9ae0",
+    "sealedAt": "2026-11-05T16:51:20.000Z"
   },
   "checks": [
     {
@@ -25,7 +25,7 @@
     },
     {
       "description": "clojure adversarial fixtures",
-      "detail": "81/81 fixtures pass",
+      "detail": "82/82 fixtures pass",
       "id": "fixtures-clojure",
       "status": "pass"
     },
@@ -121,7 +121,7 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "52/52 fixtures pass",
+      "detail": "53/53 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
-  "committedAt": "2026-11-05T08:33:58-05:00",
+  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "committedAt": "2026-11-05T11:51:20-05:00",
   "data": {
     "details": [
       {
@@ -563,6 +563,11 @@
       },
       {
         "fixture": "clojure/edn-data-rule-code",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/error-recovery",
         "ok": true,
         "problems": []
       },
@@ -5542,6 +5547,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/cast-pattern",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/catch-clause-types",
         "ok": true,
         "problems": []
@@ -9172,7 +9182,7 @@
       },
       "clojure": {
         "fail": 0,
-        "pass": 81
+        "pass": 82
       },
       "cpp": {
         "fail": 0,
@@ -9188,7 +9198,7 @@
       },
       "dart": {
         "fail": 0,
-        "pass": 52
+        "pass": 53
       },
       "elixir": {
         "fail": 0,
@@ -9373,8 +9383,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-05T08:33:58-05:00",
-  "regeneratedAtCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "regeneratedAt": "2026-11-05T11:51:20-05:00",
+  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

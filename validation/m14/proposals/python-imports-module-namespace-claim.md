@@ -108,7 +108,7 @@ instrument is the shape this programme refuses.
 **This supersedes §3's verification design.** §3 proposed a narrow, refutable STDLIB-LIST claim. The Lead's
 conditions 3 and 4 supersede it: **keep the broad shape** (third-party is as external as stdlib) and **verify
 against the SAME file-derived project module space the landed refiner uses** — not a stdlib list, not
-`ProjectIndex.complete`. The landed refiner (`8def4a5d5`) already provides the two primitives this needs:
+the `ProjectIndex` completion flag. The landed refiner (`8def4a5d5`) already provides the two primitives this needs:
 `projectModuleNames(facts)` (`incoming-rule.ts:1070`) and `externalSpecifier` captured on the claim
 (`incoming-rule.ts:463`).
 
