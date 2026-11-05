@@ -20,6 +20,7 @@ import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
 import { spawnSync } from "child_process"
+import { createHash } from "crypto"
 import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
 import { CSS_MUTANTS } from "./css-mutants"
@@ -19936,6 +19937,23 @@ export const MUTANTS: Mutant[] = [
  */
 async function driveFleet(): Promise<void> {
   const lanes = [...new Set(MUTANTS.filter((m) => !m.retired).map((m) => m.language))].sort()
+  // ── RESUMABLE ACROSS PROCESS DEATHS ─────────────────────────────────────────────────────────────
+  // This battery is the longest single step of the analyzer suite (~40 min), and the harness that
+  // runs it can be interrupted between tool calls. A run that dies has to be re-runnable WITHOUT
+  // redoing lanes it already finished: each lane's slice is written into a persistent directory and
+  // a later run reuses it. The slice carries a FINGERPRINT of (this harness source + the lane's
+  // analyzer source), because a slice recorded against different code is not a measurement of
+  // today's code — a resumed run must re-run that lane, not trust a stale verdict.
+  const sliceDir = process.env.BB_MUT_SLICE_DIR ?? path.join(os.tmpdir(), "bb-mut-slices")
+  fs.mkdirSync(sliceDir, { recursive: true })
+  const harnessHash = createHash("sha256").update(fs.readFileSync(process.argv[1]!, "utf8")).digest("hex").slice(0, 16)
+  const laneFingerprint = (lane: string): string => {
+    const cfg = LANGS[lane] as { analyzerFile?: string } | undefined
+    const analyzer = cfg?.analyzerFile ? (() => {
+      try { return fs.readFileSync(path.join(ROOT, "src", "ast", cfg.analyzerFile!), "utf8") } catch { return "" }
+    })() : ""
+    return createHash("sha256").update(harnessHash).update(analyzer).digest("hex").slice(0, 16)
+  }
   const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
   const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
   let survivors = 0
@@ -19943,28 +19961,35 @@ async function driveFleet(): Promise<void> {
   const crashed: string[] = []
   const slices: string[] = []
   for (const lane of lanes) {
-    const slice = path.join(os.tmpdir(), `bb-mut-slice-${lane.replace(/[^a-z0-9]+/gi, "_")}-${process.pid}.json`)
+    const slice = path.join(sliceDir, `bb-mut-slice-${lane.replace(/[^a-z0-9]+/gi, "_")}.json`)
     slices.push(slice)
-    const r = spawnSync(process.execPath, [process.argv[1]!, "--lang", lane], {
-      env: { ...process.env, BB_MUTANT_DRIVEN: "1", BB_MUTANT_SLICE: slice },
-      encoding: "utf8",
-      maxBuffer: 128 * 1024 * 1024,
-    })
-    for (const line of `${r.stdout ?? ""}${r.stderr ?? ""}`.split("\n")) {
-      if (line.startsWith("CAUGHT ") || line.startsWith("SURVIVED ")) process.stdout.write(line + "\n")
+    const fp = laneFingerprint(lane)
+    let s: { checks: typeof checks; mutationLog: typeof mutationLog; survivors: number; run: number; laneFingerprint?: string } | null = null
+    try { s = JSON.parse(fs.readFileSync(slice, "utf8")) } catch { s = null }
+    if (s && s.laneFingerprint === fp) {
+      process.stdout.write(`(resumed) `)
+    } else {
+      const r = spawnSync(process.execPath, [process.argv[1]!, "--lang", lane], {
+        env: { ...process.env, BB_MUTANT_DRIVEN: "1", BB_MUTANT_SLICE: slice, BB_MUT_SLICE_FP: fp },
+        encoding: "utf8",
+        maxBuffer: 128 * 1024 * 1024,
+      })
+      for (const line of `${r.stdout ?? ""}${r.stderr ?? ""}`.split("\n")) {
+        if (line.startsWith("CAUGHT ") || line.startsWith("SURVIVED ")) process.stdout.write(line + "\n")
+      }
+      try { s = JSON.parse(fs.readFileSync(slice, "utf8")) } catch { s = null }
+      if (r.status !== 0 && r.status !== 2) crashed.push(`${lane}(rc=${r.status})`)
+      if (r.status === 2 && !s) crashed.push(`${lane}(rc=2, no slice)`)
     }
-    try {
-      const s = JSON.parse(fs.readFileSync(slice, "utf8")) as { checks: typeof checks; mutationLog: typeof mutationLog; survivors: number; run: number }
-      checks.push(...s.checks)
-      mutationLog.push(...s.mutationLog)
-      survivors += s.survivors
-      run += s.run
-      fs.rmSync(slice, { force: true })
-    } catch {
-      crashed.push(`${lane}(rc=${r.status})`)
-      console.log(`LANE ${lane}: NO SLICE (rc=${r.status}) — the lane did not finish its own mutants`)
+    if (!s || s.laneFingerprint !== fp) {
+      crashed.push(`${lane}(unresumable slice)`)
+      console.log(`LANE ${lane}: NO USABLE SLICE — the lane did not finish its own mutants`)
+      continue
     }
-    if (r.status !== 0 && r.status !== 2) crashed.push(`${lane}(rc=${r.status})`)
+    checks.push(...s.checks)
+    mutationLog.push(...s.mutationLog)
+    survivors += s.survivors
+    run += s.run
   }
   // de-duplicate crash reports (a missing slice and a non-zero rc are the same lane)
   const crashedLanes = [...new Set(crashed)]
@@ -20117,7 +20142,7 @@ async function main() {
   // gated on `!scoped`: a child that wrote no slice read as a crashed lane (measured, css rc=0).
   if (process.env.BB_MUTANT_DRIVEN === "1") {
     const sliceOut = process.env.BB_MUTANT_SLICE
-    if (sliceOut) fs.writeFileSync(sliceOut, JSON.stringify({ checks, mutationLog, survivors, run: selected.length }))
+    if (sliceOut) fs.writeFileSync(sliceOut, JSON.stringify({ checks, mutationLog, survivors, run: selected.length, laneFingerprint: process.env.BB_MUT_SLICE_FP }))
   } else if (!scoped) emitEvidence({
     issueId: "M14.0.F4",
     title: "Mutation-testing harness",
