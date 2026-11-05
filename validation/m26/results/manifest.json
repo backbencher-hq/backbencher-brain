@@ -40,11 +40,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "b3ba88e1279cc3e7d470eb400d821ed657e4ffe0",
         "verifierCommand": "npx tsx script/m26/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 65,
-        "failed": 5,
+        "passed": 66,
+        "failed": 4,
         "negativeCases": 10,
         "blockedReason": "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features."
       }
@@ -67,7 +67,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
         "evidenceFile": "W1.json",
         "passed": 23,
@@ -95,7 +95,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
         "evidenceFile": "W2.json",
         "passed": 26,
@@ -123,11 +123,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e40f51a16be5e62a444d794b6161c89e3f40f7e2",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
         "evidenceFile": "W3.json",
         "passed": 21,
-        "failed": 1,
+        "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
         "blockedReason": "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
@@ -152,7 +152,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
         "evidenceFile": "W4.json",
         "passed": 20,
@@ -180,13 +180,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
         "evidenceFile": "W5.json",
-        "passed": 30,
+        "passed": 29,
         "failed": 0,
-        "mutantsCaught": 19,
-        "mutantsTotal": 19,
+        "mutantsCaught": 20,
+        "mutantsTotal": 20,
         "blockedReason": "totalCountIfKnown is computed by an independent bounded COUNT under the same containment rule; it counts distinct caller symbols, not call sites."
       }
     },
@@ -208,7 +208,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
         "evidenceFile": "W6.json",
         "passed": 21,
@@ -242,7 +242,7 @@
         "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
-        "currentCommit": "639b9f284bd6da2dcded5b9617aa7ee8c04d1dd6",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "blockedReason": "The harness asserts the DOM contract (classes, data attributes, counts) over a stub DOM; CSS/paint is per-editor presentation."
       }
     },
@@ -271,8 +271,22 @@
         "negativeCases": 3,
         "mutantsCaught": 3,
         "mutantsTotal": 3,
-        "currentCommit": "327b138000b0763f1ac8f5a1fef599e4885799bd",
-        "blockedReason": "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate."
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
+        "blockedReason": "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
+        "mutants": [
+          {
+            "name": "M1 doctored embedded fact (drift rule)",
+            "caught": true
+          },
+          {
+            "name": "M2 fabricated reality row",
+            "caught": true
+          },
+          {
+            "name": "M3 ambient leak (leaky control)",
+            "caught": true
+          }
+        ]
       }
     },
     {
@@ -288,7 +302,13 @@
         "failed": 0,
         "mutantsCaught": 1,
         "mutantsTotal": 1,
-        "currentCommit": "67f606b4284507e4360fef4db23d717498214d5a"
+        "currentCommit": "7c5260ab93d8dca5e048d3536b20ba0928fd5703",
+        "mutants": [
+          {
+            "name": "M1 resolveRelationships normalization suppressed",
+            "caught": true
+          }
+        ]
       },
       "githubIssue": 615,
       "tool": "polyglot-e2e",
@@ -325,9 +345,9 @@
         "verifierCommand": "npx tsx script/m26/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 50,
-        "failed": 2,
+        "failed": 0,
         "negativeCases": 3,
-        "currentCommit": "327b138000b0763f1ac8f5a1fef599e4885799bd",
+        "currentCommit": "d619b5d292f3940dfc010041c6f3f6a3e14f0572",
         "blockedReason": "X1: W3 verifier passes at HEAD",
         "checks": 50
       }
@@ -335,7 +355,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T22:29:05.818Z",
-    "contentSha256": "abde1a15bdca63f356d0a79a10c3b778c61e60d86e409dbc562a7b3229bbf577"
+    "sealedAt": "2026-11-05T22:40:17.660Z",
+    "contentSha256": "d8b5a076bec85f2b1b08b846874a41deec93d2181b24e5dd82930e0548d73008"
   }
 }
