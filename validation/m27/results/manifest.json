@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 616,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,12 +29,12 @@
         "Evidence persisted at validation/m27/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "13ca0d846d7ba88f64de5e83baa200805a030ef3",
+        "status": "verified",
+        "currentCommit": "e4ea1c5609d2c49eb77d3574a670254626e623a5",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 1,
+        "passed": 71,
+        "failed": 0,
         "negativeCases": 11,
         "blockedReason": "not verified at 13ca0d846d7ba88f64de5e83baa200805a030ef3: G1: every non-planned ledger item has matching persisted evidence at the current commit"
       }
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T23:24:50.714Z",
-    "contentSha256": "1ea32dfd0a01bfe87f28ff2a907706b9246ec24c0148e64bfd8fc8f764e1b7a2"
+    "sealedAt": "2026-11-05T23:25:02.566Z",
+    "contentSha256": "814ae552797f99a4cbe7a29d889e3afd5eb74b08e1163a1b6463c197a0ad8e63"
   },
-  "updatedAt": "2026-11-05T23:24:50.714Z"
+  "updatedAt": "2026-11-05T23:25:02.566Z"
 }
