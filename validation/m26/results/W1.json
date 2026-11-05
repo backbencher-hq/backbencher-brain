@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "32e23ec9da68b138aef11e92d4fca1b40d138ce8",
+  "currentCommit": "327b138000b0763f1ac8f5a1fef599e4885799bd",
   "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
   "sourceFingerprint": "4aedccc722de4f92d340225af1d3ab70d7cf0e8c22c92faec9162f27f636b0b7",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -17,14 +17,14 @@
     "script/m26/graph-core.ts"
   ],
   "evidenceFile": "W1.json",
-  "generatedAt": "2026-11-05T21:56:50.086Z",
+  "generatedAt": "2026-11-05T22:19:15.278Z",
   "limitations": [
     "DOM-port stub is the harness surface; real webview CSS/positioning is verified in-editor by later legs (E5/E6 pattern).",
     "Render budget (300/1000 ms) is measured by the caller per contract section 3; this suite pins the structural budget only."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:56:50.086Z",
-    "contentSha256": "cd32029e19e97eefb0ed8772788d40de270ee21ef9a5226d75f9d7244370e3e7"
+    "sealedAt": "2026-11-05T22:19:15.278Z",
+    "contentSha256": "f24f633fae64233a6f85e4a28fd83735eb131d4be04bc9ad6ddcc94644fa191c"
   }
 }
