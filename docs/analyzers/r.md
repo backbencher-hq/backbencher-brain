@@ -1736,9 +1736,10 @@ refuses a hand edit.
 
 - **R-oracle differential (the strongest check in this lane)** —
   `validation/m12/results/r-oracle-differential.json`: **R 4.4.3 itself decides
-  which top-level names each of the 997 comparable corpus files binds, and the
-  analyzer is asked the same question.** Result: **8,798 bindings, 8,798 agree,
-  0 phantom, 0 missed, precision 1.000000, recall 1.000000.**
+  which top-level names each of the 1,174 considered files binds — 993 comparable —
+  and the analyzer is asked the same question.** Result: **8,707 bindings,
+  8,707 agree, 0 phantom, 0 missed, precision 1, recall 1** (831 declarations that
+  are not bindings; 1 file rejected by R).
 
   The two sides share no grammar, no code and no assumptions. R's own `parse()`
   builds the AST — so R's grammar and R's desugaring of the rightward forms are
@@ -1762,7 +1763,16 @@ refuses a hand edit.
   **0 unknown node types, 0 unknown fields, 0 regex literals**, against node types
   and fields enumerated from the shipped wasm at run time. The one dead field the
   M14 register carried for R (`default_value`) is repaid and removed: the grammar
-  names the field `default`.
+  names the field `default`. The register-level audit
+  (`validation/m14/results/M14.0.F1.json`, `script/m14/audit-analyzer-grammar.ts
+  --prove-java`) reads r `PASS`, `unknown=0`, `unknownFields=0`, with **three
+  `waivedFindings`** — `library_import`, `library_dependency`, `namespace_access`
+  at `real-r-analyzer.ts:76`. They are **relationship subtypes, not node types**:
+  the values of `PACKAGE_NAMESPACE_SUBTYPES`, compared only against
+  `metadata.relationshipSubType` (:1216, :1237). The scanner treats any const whose
+  identifier matches `*TYPES*` as a node-type set, and this one matches because
+  `SUBTYPES` ends in `TYPES`; the waivers are recorded in
+  `validation/m14/grammar-audit-allowlist.json` under `"r"`.
 - **Differential (L3)** — `validation/m12/results/r-differential.json`:
   12 hand-derived fixtures, **222/222 facts, precision 1.000, recall 1.000, 0 FP,
   0 FN, 0 unknown**, plus 0 phantom violations against each fixture's
@@ -1788,7 +1798,7 @@ refuses a hand edit.
   denominator. `src/ast/real-r-analyzer.ts` is restored byte-identical after each run
   and the runner asserts it.
 - **Corpus** — `validation/m12/results/r-corpus-errors.json`: 1,174 files,
-  16,467 symbols, 39,128 relationships, 2 files with parse errors (both correct).
+  16,102 symbols, 41,107 relationships, 2 files with parse errors (both correct).
 - **A/B against the previous analyzer** — +3,313 relationship instances, 601
   removed, and **every removal lands in a named bucket with 0 unexplained**:
   332 backtick-normalized identity fixes, 6 phantom `library()` options no longer

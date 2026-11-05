@@ -34,16 +34,30 @@
 > anchored at a symbol name that does not exist — see "The source of a
 > `references` edge was not a node". Both are corrected below rather than left to
 > contradict the gate.
+>
+> **Canonical-table audit (this revision).** The 14-row claim table is derived from
+> `src/ast/real-toml-analyzer.ts`'s own `RelationshipType.` sites (six: `Contains`×2,
+> `References`×2, `Exports`, `Imports` — no site for any ruled kind) and from the
+> committed whole-population evidence, and the other seven sections were audited against
+> the analyzer and this page's measured body. Contradictions fixed: the population
+> (1,141/56 M60 census → 1,485/77 fleet admission), the spec bucket counts (18/2/1),
+> the dead census path, the `references` confidence class (`reference_qualified` is not
+> a fleet evidence class; the code carries `structural`), the corpus counts on
+> `contains`/`imports`/`references`/`part_of`, the "conventions produce no edges" row
+> (they are emitted as `references`), the "nine value types" count (ten), the regex
+> inventory (the one literal this page's earlier text predated is gone), and the
+> differential readings (742/363/5,621 at this HEAD). The M60 measurements are kept
+> under explicit population labels rather than overwritten.
 
 ## Language
 
 | | |
 |---|---|
 | Grammar | `wasm/tree-sitter-toml.wasm`, 25,436 bytes, sha256 `7849ac8ce9d10a46…`. Source `@tree-sitter-grammars/tree-sitter-toml`, obtained as a **redistributor collection build** (`tree-sitter-wasms`), so `versionKind: redistributor-collection` and `versionIsComparableToUpstreamGrammar: false` — the M60 survey records it that way on purpose, because a collection build states a collection version and comparing it to an upstream grammar version would yield a false "behind" |
-| Node types | **20 distinct types observed across the census**, measured: the 19 named types the grammar declares (`escape_sequence` occupies two `nodeTypeForId` slots) plus `ERROR`. `MISSING` is **0** across 1,141 files. The census is `verification/m14/fixtures/toml/census.ts`, phase `bc` |
-| Completeness | `script/m14/spec/toml-completeness.json` — **21/21 classified, gap list empty**: 17 handled, 3 silent, 1 design decision (19 grammar types plus the universal `ERROR`/`MISSING` pair) |
+| Node types | **20 distinct types observed across the census**, measured: the 19 named types the grammar declares (`escape_sequence` occupies two `nodeTypeForId` slots) plus `ERROR`. `MISSING` is **0** across the current admitted population. The census is `validation/m14/fixtures/toml/tools/construct-census.ts` |
+| Completeness | `script/m14/spec/toml-completeness.json` — **21/21 classified, gap list empty**: 18 handled (`handled_verified`, including `ERROR`), 2 silent (`MISSING`, `comment`), 1 design decision (`escape_sequence`, TOML-D1) |
 | Analyzer | `src/ast/real-toml-analyzer.ts` |
-| Corpus | 1,141 git-tracked `.toml` files across **56** repositories; largest is `cargo` @ `94faf91`, **684** files |
+| Corpus | **1,485 admitted `.toml` files across 77 repositories** under the fleet's admission rule (git-tracked, present on disk, ≤1 MiB, corpus root `$PWD/.corpus`, production `parseFile`, 0 parse failures); largest is `cargo` (**684** files), then `Pkg.jl` 250 and `traefik` 180. Artifact: `validation/m14/measurements/toml-extended-constructs-census.json`. The M60 census used a **different, smaller rule** (1,141 files / 56 repositories, ≤512 KB); its measurements below are labelled by that population and are history, not the current population |
 | Tracking | #289 |
 
 **The lane entered with a grammar and nothing else.** `toml` was absent from
@@ -114,38 +128,49 @@ see "Defect D1" below.
 
 ## Relationship ontology
 
-The canonical claim table, fourteen rows in the register's order. Six of the four classes below are
-marked in the page's own code terms; every "emitted" row names the emission site, and every ruled
-row carries the measurement that rules it (the ten-type verdict table below keeps those measurements
-verbatim, including the ones the analyzer has since moved past — those are flagged where they moved).
+The canonical claim table, fourteen rows in the register's order. Four are emitted and ten
+are ruled; every "emitted" row names the emission site, and every ruled row carries the
+measurement or the grammar fact that rules it (the ten-type verdict table below keeps the
+M60 measurements verbatim, including the ones the analyzer has since moved past — those are
+flagged where they moved).
+
+**The analyzer's own emission set, which the ruled rows rest on:** `src/ast/real-toml-analyzer.ts`
+carries six `RelationshipType.` references — `Contains` at `:1197` and `:1286`, `References` at
+`:1446` and `:1542`, `Exports` at `:1599`, `Imports` at `:1623` — and **no site for any of the ten
+ruled kinds** (`grep RelationshipType.` over the file).
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 |---|---|---|---|
-| calls | `❌` no — grammar-inventory | the corpus's 20 distinct node types contain no callable node (no `function_definition`, `call_expression`, `lambda`, `macro_invocation`); a key is data, not a callee | — (nothing to model; ruling in the verdict table) |
-| extends | `❌` no — measurement | 14 candidate sites / 13 files, 12 of them a bare name that names no admitted document and 2 a path; the 11 `base` hits are `cargo add --base` git branches, not supertypes | — (ruled) |
-| implements | `❌` no — measurement | 0 occurrences of the marker names over 1,141 admitted files; no supertype clause and no interface node exists in the grammar | — (ruled) |
-| uses | `❌` no — grammar + parse-tree count | 1 template-key occurrence and 366 interpolation-marker values, every one inspected as a template for ANOTHER tool (Go/JS), rendered before TOML reads it | — (ruled) |
-| imports | `✅` emitted — `real-toml-analyzer.ts:1623` | a Cargo `path` dependency: the manifest writes a file/directory path and the edge is published only where `dependencyFileClaim` verifies it against the project's admitted files (`metadata.isPathDependency`, `dependencySection`, `FILE_CLAIM_KEY`); the refuted remainder is counted, not claimed | 1.0 `import_based` |
-| exports | `✅` emitted in code — `:1599`; corpus-zero | a `publish`-style site whose VALUE names a declaration of this document (`metadata.isPublishSurfaceExport`, `exportForm: "manifest_publish_surface"`); the candidate is only admitted after the self/context/ancestor filters, and the measured corpus has 174 candidates with 0 emitted — the graph is unchanged, the type error is now impossible by construction | 1.0 `structural` |
-| contains | `✅` emitted — `:1197`, `:1286` | the module → its top-level tables and root keys; a table → its keys and sub-tables; 19,087 edges, 100% resolved at both ends | 1.0 `structural` |
-| references | `✅` emitted — `:1446`, `:1542` | (a) `version.ref = "<name>"` in a Gradle version catalogue: the alias is resolved to the key declared under the document's final segment (`metadata.isAliasReference`); (b) Cargo workspace inheritance `x.workspace = true`: resolved against the workspace root's declared path list and read through the root's module name (`metadata.isWorkspaceInheritance`, `inheritedFrom`); an ambiguous or unresolved alias publishes nothing | 1.0 `reference_qualified` |
-| overrides | `❌` no — measurement | TOML v1.0.0 FORBIDS redeclaring a table or key, so the one duplicated `[core]` header in 1,141 files is a spec violation, not a winning second body; 96 `[[array-of-tables]]` redeclarations APPEND and replace nothing | — (ruled) |
-| instantiates | `❌` no — measurement | 0 occurrences of the marker names over 1,141 admitted files; the grammar has no constructor or `new` node | — (ruled) |
-| decorates | `❌` no — ontological | a TOML key is data; the format has no declaration/annotation distinction for an attribute to decorate, and the extended census counts 0 constructs of that shape | — (ruled) |
-| renders | `❌` no — grammar-absence | no render host and no component boundary exists in the format; 0 of the 20 node types could carry the edge | — (ruled) |
-| mixes_in | `❌` no — grammar-absence | no heritage clause, no member-set provider and no composition node in the grammar; 0 candidates | — (ruled) |
-| part_of | `❌` no — ruled with near misses | a TOML document is only ever included by another TOOL, never by TOML itself: the 7 `.toml` values that name another existing `.toml` file are lists of files a linter is told about (`extend-exclude`, `srcs`), not splices — the shape the arbiter's header warns about | — (ruled) |
+| calls | `❌` no — grammar-inventory | 20 distinct observed node types (19 named + `ERROR`) and none is a callable; 0 call-shaped nodes in the current census (1,485 files / 77 repositories). A key is data, not a callee | — (ruled; ledger in the verdict table) |
+| extends | `❌` no — measurement | 14 inheritance-shaped key sites in 13 files over the whole population: 12 are bare names (`base = "my_base"` in cargo's `cargo add` fixtures) and 2 are paths; the one path naming an admitted document is ruff's `extend = "../../ruff.toml"` configuration composition — a tool's settings chain consumed as data, not a supertype, and a path target is not a symbol | — (ruled) |
+| implements | `❌` no — grammar | 0 interface productions in the grammar and 0 marker-key sites over the whole population; TOML declares no type for anything to conform to | — (ruled) |
+| uses | `❌` no — grammar + parse-tree count | the grammar has no value-evaluation node. The census reads 508 template tokens in 159 files — 410 inside lexed strings, 3 in comments, 92 inside parser `ERROR` regions, 5 inside brace-shaped `inline_table` recovery nodes (`{{end}}]`, `{{ .Precedence }}`) — and every one is another tool's template text, not a TOML value | — (ruled) |
+| imports | `✅` emitted — `real-toml-analyzer.ts:1623` | a Cargo `path` dependency: the manifest writes a file/directory path and the edge is published only where `dependencyFileClaim` verifies it against the project's admitted files (`metadata.isPathDependency`, `dependencySection`, `importProjectFile`); the remainder carries a `sourcePathClaim` or is counted unresolved — **331 edges over the admitted population: 326 confirmed claims + 5 unresolved** | 1.0 `import_based` |
+| exports | `✅` emitted in code — `:1599`; corpus-zero | a `publish`-style site whose VALUE names a declaration of this document (`metadata.isPublishSurfaceExport`, `exportForm: "manifest_publish_surface"`), admitted only after the self/context/ancestor filters; **174 candidates, 0 emitted** — the graph is unchanged, the type error is now impossible by construction | 1.0 `structural` |
+| contains | `✅` emitted — `:1197`, `:1286` | the module → its top-level tables and root keys; a table → its keys and sub-tables; **25,033 edges over the admitted population, 100% resolved at both ends** (1,474 files) | 1.0 `structural` |
+| references | `✅` emitted — `:1446`, `:1542` | (a) `version.ref = "<name>"` in a Gradle version catalogue: the alias is resolved to the key declared under the document's final segment (`metadata.isAliasReference`, `resolvedBy: "final-segment"`); (b) Cargo workspace inheritance `x.workspace = true`: resolved against the workspace root's declared path list and read through the root's module name (`metadata.isWorkspaceInheritance`, `inheritedFrom`); an ambiguous or unresolved alias publishes nothing — **1,350 edges over the admitted population: 167 alias + 1,183 workspace-inheritance** | 1.0 `structural` |
+| overrides | `❌` no — measurement | TOML v1.0.0 forbids redeclaring a table or key: the current census reads **0** key paths declared twice in 1,485 files, and the one duplicated `[core]` header M60 found is a spec violation, not a winning second body (verdict table) | — (ruled) |
+| instantiates | `❌` no — grammar | 0 constructor productions in the grammar and 0 marker-key sites over the whole population; every TOML value is a literal | — (ruled) |
+| decorates | `❌` no — ontological | a TOML key is data; the format has no declaration/callable distinction for an attribute to decorate. The extended census reads **0 applied-call values** in 1,485 files (0 non-literal values corpus-wide); the near miss is **1** decorator-shaped key (`wrap = "keep"`), a name/pointer, not an application | — (ruled) |
+| renders | `❌` no — grammar-absence | no render host, no component boundary and no expression production: 0 of the 19 named node types could carry it, and no template token in the corpus is a template expression naming a component (the `uses` row decomposes all 508 tokens) | — (ruled) |
+| mixes_in | `❌` no — grammar-absence | no heritage clause, no member-set provider and no composition node in the grammar; **0** tables carry a component list AND a separately named base. The 2 component-list tables are tool plugin lists (`plugins` for mypy, `components` for rustup) | — (ruled) |
+| part_of | `❌` no — ruled with near misses | a TOML document is included only by another TOOL, never by TOML: the grammar has 0 include/splice productions (0 of 19 named types), and of 1,074 file-naming keys in 442 files (25 at document root) exactly 2 name an admitted `.toml` — one a tool config key (`filename = "pyproject.toml"`), the other ruff's `extend` ruled under `extends` — neither is a splice | — (ruled) |
 
 **Two notes the table must not lose.** (1) The `references` and `exports` shapes above are LATER than
 the ten-type verdict table below: that table records `references` as "Gradle half emitted, Cargo
 half unemitted" and `exports` as RULED 0, which was true of the analyzer it measured. The code now
-emits workspace inheritance (`:1523-1556`, pattern `workspace-inheritance-refs`) and the publish
-surface (`:1568-1623`, measured 174 candidates / 0 emitted), so the verdict table's rows for those
+emits workspace inheritance (`:1542-1556`, pattern `workspace-inheritance-refs`) and the publish
+surface (`:1570-1611`, measured 174 candidates / 0 emitted), so the verdict table's rows for those
 two are kept as MEASURED HISTORY and the claim table is the current statement. (2) The `imports` row
 is deliberately narrow: the format defines no module system, so the edge exists only where a
 manifest writes a path AND the file claim verifies it — a target naming nothing carries no claim.
 
 ## The ten types, verdict by verdict
+
+**MEASURED HISTORY — the M60 census (2026-10-09): 1,141 files / 56 repositories, ≤512 KB.** Every
+number in this section and the subsections that follow describes the analyzer at that commit. Where
+the code has moved since (references, exports, imports), the claim table above is the current
+statement; these rows are kept because they are the audit trail that ruled each type.
 
 Corpus: **1,141** git-tracked `.toml` files, 56 repositories, admitted by the same
 rule the arbiter uses (`git ls-files`, `detectLanguageFromPath === "toml"`, ≤512 KB).
@@ -352,7 +377,7 @@ Instrument: `validation/m14/fixtures/toml/pass2-probes.ts`, probe
 | a value of any type | data, not a dependency — recorded as `metadata.valueType` on its key |
 | an inline table's keys | part of one value expression; recorded in `metadata.inlineKeys` |
 | a path-shaped string (`path`, `include`, `manifest_path`) | TOML has no reference mechanism, so a path is a string, not a fetch |
-| a Cargo/Gradle convention (`workspace = true`, `version.ref`) | a tool's rule, not TOML's — the two populations are measured above and the reason for declining them is stated there |
+| a `workspace = true` site whose root does not declare the inherited path, or an alias whose final segment is absent or ambiguous | counted, not guessed — no edge is emitted where the target is not exactly one declaration. (The resolvable convention sites are NOT silent: they are emitted as `references`, see the ontology rows) |
 | a comment | not an identity |
 | an implied parent table | recorded in metadata, never a node — an edge to a non-existent target is the unresolvable-identity defect |
 | an empty key `""` | no name, so no identity — now asked at every level, not only at the document root |
@@ -372,7 +397,7 @@ Instrument: `validation/m14/fixtures/toml/pass2-probes.ts`, probe
 | a section declared **before** its ancestor | one symbol, owned by the ancestor — resolved in a second pass against the whole declared-table map (D1) |
 | `table_array_element` `[[bin]]` | one symbol per element; the second takes `#2`, and its keys are prefixed with the **allocated** name so `bin.name` and `bin#2.name` cannot collide |
 | `pair` | a `property`; the key is the first child, never the pair's text |
-| all nine value types | `string`, `integer`, `float`, `boolean`, `array`, `inline_table` and the four datetimes → `metadata.valueType` |
+| all ten value types | `string`, `integer`, `float`, `boolean`, `array`, `inline_table` and the four datetimes → `metadata.valueType` |
 
 Numeric and float keys work (`1`, `2.5`), because TOML's bare-key alphabet includes
 digits. Unicode **quoted** keys work; a unicode **bare** key is rejected by the
@@ -385,16 +410,22 @@ grammar, which is correct — TOML v1.0.0 restricts bare keys to `A-Za-z0-9_-`.
 | a value as a symbol | ruled out — data, not identity |
 | an inline table's keys as symbols | ruled out — one value expression; recorded on the key instead |
 | implied parent tables as symbols | ruled out — never written, so inventing one is a guess |
-| `ERROR` / `MISSING` recovery nodes | `ERROR` **does occur** — 203 nodes in 16 of 1,141 files, reported at their own span. `MISSING` does not: **0**. Twelve deliberately malformed documents and 1,141 real ones disagreed about `ERROR`, and the real ones were right. Pinned by `toml/malformed-and-rejected`, which places the error **between** two keys so a walk that stopped at the recovery node would lose everything after it |
+| `ERROR` / `MISSING` recovery nodes | `ERROR` **does occur** — 203 nodes in 16 of the M60 census's 1,141 files, reported at their own span (the current 1,485-file population is not re-counted here). `MISSING` does not: **0**. Twelve deliberately malformed documents and 1,141 real ones disagreed about `ERROR`, and the real ones were right. Pinned by `toml/malformed-and-rejected`, which places the error **between** two keys so a walk that stopped at the recovery node would lose everything after it |
 | `"" = 1` (empty key) | parses, produces no symbol at any level — an identity needs a name. Pinned by `toml/malformed-and-rejected` at the root and by `toml/declaration-order-and-empty-keys` inside a table |
-| a section nested inside another section | **0** occurrences in 1,141 files (census probe D3), so the walk's one-level depth loses nothing. This is measured rather than assumed, because it is the load-bearing structural claim of the walk |
+| a section nested inside another section | **0** occurrences in the M60 census's 1,141 files (probe D3), so the walk's one-level depth loses nothing. This is measured rather than assumed, because it is the load-bearing structural claim of the walk |
 | external references of any kind | no TOML construct produces one |
 
 ## Regex inventory
 
-**Zero.** Pure-String throughout: `segmentsOf`, `joinPath`, `spellSegment`,
-`unquoteKey`, `isBareKeyChar`, `asciiLower` are index loops. The M12 regex census
-carries **no toml row**, which *is* the zero — re-measured after these changes.
+**Zero at HEAD.** Pure-String throughout: `segmentsOf`, `joinPath`, `spellSegment`,
+`unquoteKey`, `isBareKeyChar`, `asciiLower` are index loops, and the `sourcePathClaim`
+shape test — the ONE regex literal this analyzer acquired after this section was
+written, `/[/\\]|^[a-z][a-z0-9+.-]*:/i`, cited once in the M12 census at `:1617` — is
+now the pure-String `isPathOrUriShaped` helper. The M12 census
+(`validation/m12/results/regex-census.json`) carries **no toml row**, which *is* the
+zero, and `bash script/m14/no-regex-gate.sh` PASSES with the analyzer absent from its
+census. The audit that found this also restored the shared artifacts the grammar
+audit instrument rewrote, so those files are not part of this page's change.
 
 `TOML-D1` is why the escape decode is a String routine and not a walk: an
 `escape_sequence` node's text is exactly the escape its parent contains, so reading
@@ -420,10 +451,10 @@ with three levels, and reporting the former as complexity would be meaningless.
 contains another `table`, and the only nesting is inside a value (`inline_table`,
 `array`), which is not descended into. So there is no recursion, no stack, and no
 depth-dependent blowup. **Measured, not assumed: 0 occurrences of a nested section
-in 1,141 files (probe D3).**
+in the M60 census's 1,141 files (probe D3).**
 
 The **second pass** adds one linear walk over the sections already emitted, which
-is O(sections) and allocates one record per section. On the census it fires on
+is O(sections) and allocates one record per section. On the M60 census it fires on
 **1 file of 1,141** (`ansible/pyproject.toml`, 1 section moved) and is a no-op
 everywhere else — the metric `documentMetrics.reOwnedSections` reports the count per
 file so that stays checkable.
@@ -466,13 +497,16 @@ O(depth²) in the path of a single deeply-dotted key, with a graceful degradatio
 above ~12,000.** Anything less precise than that would be a claim about a shape
 nobody publishes.
 
-### Measured on the whole census (1,141 files, 56 repositories)
+### Measured on the M60 census (1,141 files, 56 repositories)
+
+**This table is the M60 point-in-time census; the current fleet population is 1,485 files / 77
+repositories (see Language), and the current relationship totals are below the table.**
 
 | | value |
 |---|---|
 | files | **1,141** — `cargo` 684, `traefik` 180, `hasura-engine` 53, `redwood` 52, `r-air` 28, `graphql-nim` 21, `docker` 14, `ripgrep` 14, `julia` 11, `ansible` 8, and 46 repositories of 1–4 |
 | symbols | **20,229** — 1,141 `module`, 6,239 `namespace`, 12,849 `property` |
-| relationships | **19,087**, **all `contains`** |
+| relationships | **19,087**, **all `contains`** at this census; the analyzer now also emits `imports` and `references` — current totals below |
 | duplicate names | **0** |
 | empty names | **0** |
 | empty `SymbolKind` | **0** |
@@ -484,12 +518,19 @@ nobody publishes.
 | density | 17.7 symbols/file, 16.7 relationships/file |
 | **unresolvable edge targets** | **0** of 19,087 |
 
+**At the current fleet population** (1,485 files / 77 repositories) the production path emits
+**26,714 relationships** — `contains` 25,033 + `imports` 331 + `references` 1,350 — measured by the
+whole-population arm over five disjoint slices covering `[0, 1485)` with an EXACT eleven-term closure
+(`validation/m14/results/toml-whole-population-closure.json`; `unclassed` 0).
+
 The corpus is no longer SHORT of the floor. Earlier pages of this document recorded
 743 files and stated the shortfall against the project's ≥1,000 standing requirement;
 `traefik` (180) and `julia` (11 tracked) have since been cloned and the admitted set
-is **1,141 across 56 repositories**, so the requirement is met without redefining
-anything. The census is a point-in-time census of a shared corpus that other lanes
-extend: it read 1,140 files at one run and 1,141 at the next, one repository apart.
+is **1,485 across 77 repositories** at the current fleet population (the M60 census
+that the table above reads was 1,141 across 56 under its ≤512 KB rule), so the
+requirement is met without redefining anything. The census is a point-in-time census
+of a shared corpus that other lanes extend: it read 1,140 files at one run and 1,141
+at the next, one repository apart.
 
 ## Differential ground truth
 
@@ -508,16 +549,18 @@ analyzer by construction:
 
 | Draw | Files | Truth | Covered | MISSING | Unexplained |
 |---|---|---|---|---|---|
-| `cargo:toml` (primary, 60-file draw) | 60 | 416 | **416 (100%)** | 0 | 0 |
-| `ripgrep:toml` (second) | 13 | 344 | **344 (100%)** | 0 | 0 |
-| `cargo:toml` (depth, `--sample 100000`) | **657** | 5,515 | **5,515 (100%)** | 0 | 0 |
+| `cargo:toml` (primary, 60-file draw) | 60 | 742 | **742 (100%)** | 0 | 0 |
+| `ripgrep:toml` (second) | 13 | 363 | **363 (100%)** | 0 | 0 |
+| `cargo:toml` (depth, `--sample 100000`) | **657** | 5,621 | **5,621 (100%)** | 0 | 0 |
 
-Re-measured after the D1 and D2 fixes. `ripgrep`'s truth hash is
-**byte-identical** before and after (`c5e515b54f5e915c`), which is the A/B that shows
-the fixes are behaviour-preserving on a corpus that contains neither defect. The
-`cargo` 60-file draw rotates (the cold pool advanced from rotation 15 to 17), so its
-edge count differs between runs; the **657-file depth draw reproduces the documented
-5,515 exactly**.
+Re-measured at the audit HEAD over the current corpus. `ripgrep`'s truth hash is
+**byte-identical** on every run (`c5e515b54f5e915c`), which is the A/B that shows the
+D1/D2 fixes remain behaviour-preserving on a corpus that contains neither defect. The
+`cargo` 60-file draw rotates (cold-pool rotation 1 at the audit), so its edge count
+differs between runs (`f311691cf4754d1b` at this draw); the **657-file depth draw reads
+5,621 edges at hash `ac01cb0308e4af04`**, where the M60 draw read 5,515 — the corpus
+and the analyzer's admission moved, and the historical figure stays in the audit trail
+below rather than being restated as current.
 
 Comparable on `contains` **alone** — a label is comparable exactly when the lane's
 oracle derives it, nothing less and nothing more. `ripgrep` is declared as the
@@ -570,19 +613,19 @@ the oracle needs the same second pass (§Report to the supervisor).
 
 | Gate | State |
 |---|---|
-| F3 fixtures | **7/7** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths`, `store-seam-probe`, `malformed-and-rejected`, `declaration-order-and-empty-keys` |
-| F4 mutation (shared registry) | **9/9 caught** (`BB_MUTANT_ONLY="toml/"`), unchanged by this round |
-| F4 mutation (lane-local, `mutants.ts`) | **2/2 applied and 2/2 caught** — `toml/declaration-order-second-pass-disabled`, `toml/empty-key-fix-reverted` |
-| M12 differential | **precision 1.000, recall 1.000** — TP=41, FP=0, FN=0, `earliestFailingLayer=none`, against a **hand-audited** 41-fact truth |
-| M14.0.TOML-CENSUS | **PASS** — 21 declared node types all accounted for (7 claimed, 13 ruled silent with a reason, 1 not-seen) over the pool, plus 6 ruled non-carrier shapes. Consults **neither** the analyzer nor the oracle |
-| F6 fixture coverage | **PASS** — 18 handled, 29 fixture types, 0 uncovered, 0 dead literals |
-| F5 differential | **100% / MISSING=0 / unexplained=0** on both corpora, and **5,515/5,515 at 657-file depth** |
-| L2 grammar audit | **PASS** — `toml refs=8 unknown=0 unknownFields=0` |
-| regex census | **0** — no `toml` row |
-| typecheck | clean |
-| honesty gate | **22 failures, none attributable to pass 2** — measured with this lane's changes stashed and the `HONESTY-GATE FAIL` lists byte-identical (22 = 22, `diff` empty): 11 banned terms in other lanes' files, 10 F1–F9 evidence-freshness entries, the freshness rule's own discrimination check, and F7's `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`. The count is 20 while a regenerated `M14.0.TOML-CENSUS.json` is on disk and 22 with the committed one — report item 6 |
-| M14 pass-2 probes | `pass2-probes.ts` — edge↔owner agreement 19,087/19,087, repo-scope resolution 24.5% unique / 75.5% ambiguous, role probes for `references`/`imports`/`overrides`/`exports`, DERIVATION findings 0 |
-| arbiter (proof run) | pass 2, as recorded: `emitted 1/10, ruled-sound 8, FALSIFIED 1`, exit 1 on `references`. **Re-measured with `--fresh` (M60 #919): `emitted 2/10, ruled-sound 8, FALSIFIED 0, ruled-without-justification 0`, exit 0** — the pass-2 run had settled every file in an earlier run and measured none, so its table was computed from 0 of 1,486 files |
+| F3 fixtures | **11/11** — `arrays-and-values`, `bare-name-and-claim-shapes`, `declaration-order-and-empty-keys`, `dotted-and-quoted-paths`, `identity-and-paths`, `malformed-and-rejected`, `module-name-collision`, `path-dependencies`, `publish-surface-and-paths`, `reference-anchors`, `store-seam-probe` (`bun script/m14/run-fixtures.ts --lang toml` → 11 pass / 0 fail) |
+| F4 mutation (shared registry) | **M60 reading: 9/9 caught** (`BB_MUTANT_ONLY="toml/"`). Not re-run in this docs-only audit; the analyzer's emission sites have moved since, so re-run before quoting it as current |
+| F4 mutation (lane-local, `mutants.ts`) | **M60 reading: 2/2 applied and 2/2 caught** — `toml/declaration-order-second-pass-disabled`, `toml/empty-key-fix-reverted`. Same caveat as the row above |
+| M12 differential | **M60 reading: precision 1.000, recall 1.000** — TP=41, FP=0, FN=0, `earliestFailingLayer=none`, against a **hand-audited** 41-fact truth |
+| M14.0.TOML-CENSUS | **SUPERSEDED by the current spec accounting: 21/21 classified** — 18 `handled_verified` (including `ERROR`), 2 `internal_silent` (`MISSING`, `comment`), 1 design decision (`escape_sequence`, TOML-D1); gap list empty (`script/m14/spec/toml-completeness.json`). The M60 censuses 21 declared node types under a different bucket typology |
+| F6 fixture coverage | **M60 reading: PASS** — 18 handled, 29 fixture types, 0 uncovered, 0 dead literals |
+| F5 differential | **100% / MISSING=0 / unexplained=0 on both corpora at this audit** — cargo 60-file draw 742/742, ripgrep 13-file draw 363/363, cargo 657-file depth draw **5,621/5,621** (hashes in "Differential ground truth") |
+| L2 grammar audit | **PASS at this audit — `toml refs=13 unknown=0 unknownFields=0`** (`npx tsx script/m14/audit-analyzer-grammar.ts --lang toml`) |
+| regex census | **0** — no `toml` row in `validation/m12/results/regex-census.json`; `bash script/m14/no-regex-gate.sh` PASSES |
+| typecheck | **not re-run in this docs-only audit** (no analyzer code changed here); the last lane reading (M60) was clean |
+| honesty gate | **M60 reading: 22 failures, none attributable to pass 2** — measured with this lane's changes stashed and the `HONESTY-GATE FAIL` lists byte-identical (22 = 22, `diff` empty): 11 banned terms in other lanes' files, 10 F1–F9 evidence-freshness entries, the freshness rule's own discrimination check, and F7's `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`. The count is 20 while a regenerated `M14.0.TOML-CENSUS.json` is on disk and 22 with the committed one — report item 6 |
+| M14 pass-2 probes | **M60 reading** — `pass2-probes.ts`: edge↔owner agreement 19,087/19,087, repo-scope resolution 24.5% unique / 75.5% ambiguous, role probes for `references`/`imports`/`overrides`/`exports`, DERIVATION findings 0 |
+| arbiter (proof run) | pass 2, as recorded: `emitted 1/10, ruled-sound 8, FALSIFIED 1`, exit 1 on `references`. **Re-measured with `--fresh` (M60 #919): `emitted 2/10, ruled-sound 8, FALSIFIED 0, ruled-without-justification 0`, exit 0** — the pass-2 run had settled every file in an earlier run and measured none, so its table was computed from 0 of 1,486 files. The current instruments are `verify-doc-truth-emissions.ts` and `verify-analyzer-docs.ts` (see the audit note above) |
 
 ### Two probes were wrong before they were right
 

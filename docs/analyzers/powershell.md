@@ -131,7 +131,7 @@ The per-type measured census (edges, files, corpus/intra resolution, tier) is th
 | Variables | assignments (including `for` counters and `foreach` loop vars) declare once per scope; `$global:`/`$script:`/`$env:` qualified names and automatic variables (`$this`, `$_`, `$args`, `$PSItem`, …) are never declarations |
 | Calls | cmdlets and functions emit `calls` (source = enclosing owner or `global`); flow keywords (`break`, `continue`, `return`, …) excluded; `$obj.Method()` → `calls` with `methodCall`; `[Type]::Static()` → `calls` to the store's QUALIFIED NAME `Type.Static` (the source's `::` is not a name any declaration has — PS-B22); `& ./file.ps1` → `calls` with the invocation operator recorded; `. ./file.ps1` (DOT-SOURCE) → `part_of`: the sourced file's declarations land in the CALLER's scope, so the file is a part of the calling unit; the invocation operator is recorded on that row too (`invokationOperator: "."`) |
 | Instantiates | `[Type]::new(...)` → `instantiates` to the type |
-| Imports | `Import-Module` (bare, `-Name` and positional), `using module`, `using namespace`, and `#requires -Module`/`-Modules` populate the import table **and emit BOTH an `imports` and a `references` edge** at 0.9, tier `import_based`, with `metadata.via` naming which of the four forms declared it (char/index scanning only — comments are opaque to the grammar). Both edges carry identical metadata. See "The ontology types" for why both and not one |
+| Imports | `Import-Module` (bare, `-Name` and positional), `using module`, `using namespace`, and `#requires -Module`/`-Modules` populate the import table **and emit BOTH an `imports` and a `references` edge** at 0.9, tier `import_based`, with `metadata.via` naming which of the four forms declared it (char/index scanning only — comments are opaque to the grammar). Both edges carry identical metadata. See "Ontology measurements" for why both and not one |
 | Extends / Implements | class header `: Base, IFoo, IBar` → `extends` to the FIRST base and `implements` to the rest. PowerShell's header cannot say which base is a class and which are interfaces — the language resolves that at runtime — so the grammar's positional shape is the only information there is, and this row pins the rule rather than a guess. Gated by `class-inherit-psa2` and three mutants |
 | Overrides | a subclass member whose name matches a member of its resolved base emits `overrides` carrying `meta.overridesMember` = the member name. PowerShell class methods are virtual by default, so there is no `override` keyword to key on — the match is by name against the base's declared member set, and since PS26 it must additionally match the member KIND and the base member must be neither `hidden` nor `static` (the two things PowerShell uses to say a member is NOT overridden). The match is case-INSENSITIVE since PS28, because PowerShell identifiers are. Gated by `class-inherit-psa2`, `overrides-modifiers-psb12` and `overrides-redeclaration-psb13` |
 | Interfaces | PowerShell 5.0 `interface IShape { [string] Describe() }`. The GRAMMAR has no node for it, so it parses as a `command` named `interface`; the analyzer declares `IShape` as an `interface` symbol from that structure and does not publish it as a call. Known gap: the interface's method signatures are bodiless, so they are not `class_method_definition` nodes and an interface is declared with no members |
@@ -228,9 +228,9 @@ removal. The helper-presence assertion exists because a zero-regex gate is trivi
 satisfiable by deleting the work, and a green "zero regex" meaning "nothing left to be
 wrong about" is the vacuous pass this repo refuses elsewhere.
 
-## The ontology types
+## Ontology measurements — per-type census (1,108-file population)
 
-The ten types in the table below (plus `part_of`, stated beneath it) are **EMITTED**, and
+The ten engine types in the table below are **EMITTED**, and
 every count in it is a positive measurement. **This section previously read "there is no RULED type in this lane", and
 that is no longer true**: the lane's applicable set is fourteen, and it reads **11
 implemented / 11 applicable / 3 excluded** in the coverage gate
@@ -244,7 +244,9 @@ omission**; the `0` in each is a measured zero over the whole admitted populatio
 cell that was never filled.
 
 `part_of` is implemented as well — which is why the gate reads 11/11 — and it is **not
-one of the ten rows below**; this document does not restate its counts.
+one of the ten rows below**; its count is reported in the canonical claim table above and
+in `validation/m14/measurements/powershell-dot-source-census-after.json` (38 edges over 37
+files, whole admitted population).
 
 **Instrument, corpus, admission.** `validation/m14/fixtures/powershell/census.ts`, run
 through production `parseFile` from `src/ast/pool-worker.ts` (not `analyze()`, which is a

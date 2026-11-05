@@ -119,9 +119,9 @@ None.
 | sql | `calls extends uses imports contains references overrides instantiates` | import-site: ImportInfo[] | line 101, 14 rows |
 | svelte | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 14 rows |
 | swift | `calls extends implements uses imports exports contains references overrides instantiates renders` | import-site: ImportInfo[], export-site: ExportInfo[] | line 48, 11 rows |
-| toml | `imports exports contains references` | — | line 122, 14 rows |
+| toml | `imports exports contains references` | — | line 142, 14 rows |
 | typescript | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 14 rows |
-| vb | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[] | line 153, 14 rows |
+| vb | `calls extends implements uses imports exports contains references overrides instantiates decorates` | import-site: ImportInfo[] | line 158, 14 rows |
 | vba | `calls implements uses imports exports contains references instantiates decorates` | — | line 100, 14 rows |
 | vue | `calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of` | import-site: ImportInfo[], export-site: ExportInfo[] | line 91, 14 rows |
 | xml | `calls extends uses imports contains references overrides mixes_in part_of` | import-site: ImportInfo[] | line 109, 14 rows |

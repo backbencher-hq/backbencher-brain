@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "f4512e7dfe117d37804bdbba37a4bddffca2bb278c67d977edaef3096a4e7611",
-    "sealedAt": "2026-11-04T21:05:27.000Z"
+    "contentSha256": "78153ee0301f487a63e1ac90df8879c29a16325226d974134591ef70113eb2c3",
+    "sealedAt": "2026-11-05T04:46:20.000Z"
   },
   "checks": [
     {
@@ -30,8 +30,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "fe5dc571d9710526d8f45ca6de74e6cd3844a904",
-  "committedAt": "2026-11-04T16:05:27-05:00",
+  "commit": "b8cfa2cfd12f3b3cb832fdaae06d91ef1c0f78ae",
+  "committedAt": "2026-11-04T23:46:20-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -182,37 +182,37 @@
         "waivedFindings": [
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "unique_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "shared_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "weak_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "auto_ptr"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "optional"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "reference_wrapper"
           },
           {
             "justification": "real-cpp-analyzer.ts OWNER_WRAPPER_TYPES (line 2968): a table of C++ LIBRARY TYPE NAMES (unique_ptr, shared_ptr, weak_ptr, auto_ptr, optional, reference_wrapper, atomic) used to recognise an owner-wrapper by its callee's template name. They are identifiers from headers, not parse-tree node types; the auditor's const-initializer heuristic treats the array as a node-type set, and this one is semantic vocabulary (same class as swift's \"String\" entry).",
-            "line": 2968,
+            "line": 3027,
             "literal": "atomic"
           }
         ],
@@ -462,27 +462,27 @@
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-html-analyzer.ts:1038, the `<input type=...>` label counter): an HTML input-type ATTRIBUTE VALUE, not a parse-tree node reference. `type` is a lowercased attribute string from `attrs[\"type\"]`, so the comparison is live and correct and the grammar declares no node by this name. Waived, not fixed — there is nothing to fix, and the swift `String` entry is the same shape.",
-            "line": 1502,
+            "line": 1518,
             "literal": "hidden"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1502,
+            "line": 1518,
             "literal": "submit"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1502,
+            "line": 1518,
             "literal": "button"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1502,
+            "line": 1518,
             "literal": "reset"
           },
           {
             "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
-            "line": 1502,
+            "line": 1518,
             "literal": "image"
           }
         ],
@@ -1850,17 +1850,17 @@
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
-            "justification": "real-r-analyzer.ts const PACKAGE_NAMESPACE_SUBTYPES (line 76): this lane's OWN relationshipSubType vocabulary for library/namespace edges (library_import, library_dependency, namespace_access) — written into relationship metadata, never compared against a node type and never read from the tree. The auditor's const-initializer heuristic treats *_SUBTYPES string arrays as node-type sets; this one is semantic subtype vocabulary.",
+            "justification": "SEMANTIC RELATIONSHIP SUBTYPE, not a parse-tree node type. It is one of the three values of `const PACKAGE_NAMESPACE_SUBTYPES` (src/ast/real-r-analyzer.ts:76), a set compared against `metadata.relationshipSubType` — never against `node.type`; its only reads are `PACKAGE_NAMESPACE_SUBTYPES.has(String(md.relationshipSubType ?? \"\"))` at :1216 and :1237 (the package-namespace claim's guards). `handleLibraryCall` writes it as the `relationshipSubType` of the `imports` edge for `library()`/`require()`. The audit's scanner treats string literals inside any const whose identifier matches `*TYPES*` as node-type references, and this identifier matches only because `SUBTYPES` ENDS in `TYPES` — the same class of table as swift's `String` entry.",
             "line": 76,
             "literal": "library_import"
           },
           {
-            "justification": "real-r-analyzer.ts const PACKAGE_NAMESPACE_SUBTYPES (line 76): this lane's OWN relationshipSubType vocabulary for library/namespace edges (library_import, library_dependency, namespace_access) — written into relationship metadata, never compared against a node type and never read from the tree. The auditor's const-initializer heuristic treats *_SUBTYPES string arrays as node-type sets; this one is semantic subtype vocabulary.",
+            "justification": "SEMANTIC RELATIONSHIP SUBTYPE, not a parse-tree node type — see `library_import`. A value of `PACKAGE_NAMESPACE_SUBTYPES` (src/ast/real-r-analyzer.ts:76), written by `handleLibraryCall` as the `relationshipSubType` of the `references` edge for `library()`/`require()` (the generic dependency edge beside the import edge). Read only as `PACKAGE_NAMESPACE_SUBTYPES.has(String(md.relationshipSubType ?? \"\"))` (:1216, :1237).",
             "line": 76,
             "literal": "library_dependency"
           },
           {
-            "justification": "real-r-analyzer.ts const PACKAGE_NAMESPACE_SUBTYPES (line 76): this lane's OWN relationshipSubType vocabulary for library/namespace edges (library_import, library_dependency, namespace_access) — written into relationship metadata, never compared against a node type and never read from the tree. The auditor's const-initializer heuristic treats *_SUBTYPES string arrays as node-type sets; this one is semantic subtype vocabulary.",
+            "justification": "SEMANTIC RELATIONSHIP SUBTYPE, not a parse-tree node type — see `library_import`. A value of `PACKAGE_NAMESPACE_SUBTYPES` (src/ast/real-r-analyzer.ts:76), written by the `pkg::fn` / `pkg:::fn` branch of `handleCall` as the `relationshipSubType` of both the `imports` and the `references` edge for namespace access. The grammar node involved is `namespace_operator`, which is a served type and is NOT waived; this literal names the EDGE's subtype, not the node.",
             "line": 76,
             "literal": "namespace_access"
           }
@@ -2316,8 +2316,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-11-04T16:05:27-05:00",
-  "regeneratedAtCommit": "fe5dc571d9710526d8f45ca6de74e6cd3844a904",
+  "regeneratedAt": "2026-11-04T23:46:20-05:00",
+  "regeneratedAtCommit": "b8cfa2cfd12f3b3cb832fdaae06d91ef1c0f78ae",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
