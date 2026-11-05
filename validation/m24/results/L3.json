@@ -2,8 +2,8 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
-  "sourceFingerprint": "84c2a0b4fc2baa6f4357026115887509354ce35b4de8d4c52c3877c8bc5ccdc2",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "ef38045a76da71e1c7fa40a04e0966a16c78693e7b47df58751b98eb032ab910",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-navigation.ts",
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",
-  "generatedAt": "2026-11-04T01:15:06.041Z",
+  "generatedAt": "2026-11-05T04:28:17.718Z",
   "passed": 122,
   "failed": 0,
   "failures": [],
@@ -92,7 +92,7 @@
     "the declared-absence reason reaches the wire only through src/lsp/server.ts, which is not this lane's file — see `wiringNeededInServerTs` below. This gate proves the component carries the reason; it cannot prove the editor receives it.",
     "the launch gate keys off the file EXTENSION (languageForPath), not brain_file.language. A file whose extension maps to a launch language while its rows say otherwise is served; a file the extension cannot classify is declared absent with language:null.",
     "§15.3 omission counts are per-response and split into TWO declared facts: omittedUnresolvable (the store names a line the source does not confirm) and omittedUnpositionable (the store names no position at all). A THIRD declared fact, coalescedRows (M55.T3 integration), counts rows whose position another row already occupies — not an omission, a declared multiplicity. The per-row reason is in the owner's note / edgeLocationDetailed's absence, which the references result does not enumerate row by row.",
-    "THE HOVER'S COLLECTOR STILL SERVES A CALL-SITE LINE PAST THE END OF THE FILE (known gap, found by the M55.T3 integration, NOT fixed here). rich_hover.ts's richSitesForSymbol does not bound the address owner's line against the file's line count, so a stored line the source cannot confirm renders as a usage link. Measured on the integration's R5 fixture (a three-line target with two usage rows stored at lines 40 and 41): this surface serves 0 locations and declares omittedUnresolvable = 2; the hover's collector returns 2 sites at lines 40 and 41. That is a §12.1 / §14 rule 1 disagreement between two surfaces, in another lane's file, whose fix's blast radius is three gates this integration must not regress. Recorded as knownGaps[0] in script/m55/verify-relations.ts with its numbers, and gated there so the future fix cannot land unverified (contract F7).",
+    "CLOSED: the hover's collector no longer serves a call-site line past the end of the source. When the M55.T3 integration found it, rich_hover.ts's richSitesForSymbol did not bound the address owner's line against the file's line count, so a stored line the source could not confirm rendered as a usage link — measured on the R5 fixture (a three-line target with two usage rows stored at lines 40 and 41) as 2 hover sites at lines 40/41 against 0 served by this surface. rich_hover.ts now applies the same bound this surface applies (`createPositionMapper(text).lineTexts.length`), refuses to serve such a row, and DECLARES the omission on the card with a structured `data.omittedUsageRows`; measured after: collector sites 2 -> 0, omittedUnresolvable unchanged at 2. The agreement is gated, not described: script/m55/verify-relations.ts asserts 'R5: the HOVER'S COLLECTOR omits the same past-EOF rows references omits', and the closure is recorded in that gate's `closedGaps`.",
     "THE §2 FIXTURE'S PRE-EXISTING ROWS DIVERGE FROM THE PRODUCTION JOIN, and U0 says so out loud. Rows whose source_symbol_id is NULL have their site coordinates served as the source side, which the production LEFT JOIN cannot produce (it yields NULL for every source_* column). Those rows are retained so wave-1's accepted numbers keep their meaning; the §2 rows use the real join. A fixture that quietly laundered both shapes would prove nothing about production.",
     "no claim is made about call hierarchy: src/lsp/call_hierarchy.ts is another lane's file, actively being edited for the same migration, and was neither read for behaviour nor modified here."
   ],
@@ -105,7 +105,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-04T01:15:06.042Z",
-    "contentSha256": "0c2f244b6c4718c7b6c593e9ce0de2719b39b847c5010e58c6d9e82c03ac38fd"
+    "sealedAt": "2026-11-05T04:28:17.719Z",
+    "contentSha256": "e2aef23c1232d1c102811cbfe2f10a3233251fa816cf41b4f158d4d774d4fc6e"
   }
 }

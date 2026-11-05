@@ -8,9 +8,9 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "2b2a3fafeb66d823727bb17d4c4ce06ad2a40400",
+  "currentCommit": "4aa5861bd13a8942420f613c165c553a2c7c6bc1",
   "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
-  "sourceFingerprint": "15c96069bd991b5c923377176884a07bd4210a1177e40c81c2af3f27141eaaeb",
+  "sourceFingerprint": "5f4b26ec7d4cdfb4717915f31ddef479925d4515adf00bd005686aedb0a250b1",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-evidence-badges.ts",
@@ -19,14 +19,14 @@
     "script/m26/graph-core.ts"
   ],
   "evidenceFile": "W4.json",
-  "generatedAt": "2026-10-15T07:45:19.528Z",
+  "generatedAt": "2026-11-04T22:58:15.420Z",
   "limitations": [
     "Badge styling (colors/shape) is per-editor CSS; the verified honesty surface is the class + data-attribute contract.",
     "Legend meanings are English UI terms; localization is not declared."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T07:45:19.529Z",
-    "contentSha256": "269c56dcb8f099b056709b1b474d0daec4cfb5f5b402dc614618d1abe53a10a7"
+    "sealedAt": "2026-11-04T22:58:15.421Z",
+    "contentSha256": "52c12a08fa2105f7423109ccefb675d5a367af05415091972c095b427aeb9d48"
   }
 }

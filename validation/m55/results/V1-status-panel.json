@@ -3,15 +3,15 @@
   "code": "V1-status-panel",
   "milestone": "M55",
   "title": "The status surface (Truth Rule 1: a fact that cannot be read was not delivered)",
-  "status": "known-gap",
-  "passed": 39,
-  "failed": 3,
+  "status": "verified",
+  "passed": 42,
+  "failed": 0,
   "checks": 42,
-  "mutantsCaught": 8,
+  "mutantsCaught": 11,
   "mutantsTotal": 11,
   "negatives": 0,
-  "currentCommit": "c26b647a9a9cebf3b9a09935381c8cc4b171d6e9",
-  "sourceFingerprint": "1ddc6bce7f6cd5bcc9ce7e5e6a49c6d2a000cea3c207acb5b83dfbf7bd5a9752",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "c9e65a30324e1691de84c64fd4c6b68e95fabc03b443a7ddf4d4aeddb759f556",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-status-panel.ts",
@@ -20,25 +20,27 @@
     "ide/vscode/src/status-markup.ts"
   ],
   "workingTreeRelevantChanges": [
-    "script/m55/verify-action-args.ts",
-    "script/m55/verify-identity.ts",
-    "script/m55/verify-panel-placement.ts",
-    "script/m55/verify-status-panel.ts"
+    "ide/vscode/CHANGELOG.md",
+    "ide/vscode/README.md",
+    "ide/vscode/esbuild-extension.mjs",
+    "ide/vscode/package.json",
+    "ide/vscode/src/extension.ts",
+    "ide/vscode/src/status-model.ts",
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m55/verify-evidence-tree-clean.ts",
+    "script/m55/verify-hover-coverage.ts",
+    "script/m55/verify-relations.ts"
   ],
   "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
   "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
-  "generatedAt": "2026-10-14T19:58:55.688Z",
-  "failures": [
-    "M4: the stale marker is buried below the facts [mutant]",
-    "M8: the provenance facts stop rendering [mutant]",
-    "M10: a per-language row states its level twice [mutant]"
-  ],
+  "generatedAt": "2026-11-05T04:09:38.256Z",
+  "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-14T19:58:55.689Z",
-    "contentSha256": "60c54b6ae289db65482e26e297ec0e031940450ef83ace7b2d75e8e0855b83a6"
+    "sealedAt": "2026-11-05T04:09:38.257Z",
+    "contentSha256": "5e68b5c17a0cd5c56287819976e58eedf6219220f981a222b16e10436c0a0ce1"
   }
 }

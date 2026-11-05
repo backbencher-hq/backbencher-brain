@@ -1,7 +1,7 @@
 # The screenshot protocol (M55)
 
 **Rule (Truth Rule 5):** a claim about the editor is a claim about **the installed bundle**.
-The owner's report of 2026-09-12 was, in three of four complaints, a report about a build from
+Measured on 2026-09-12 (evidence `validation/m55/frames/filing-2026-09-12/`): in three of four complaints, the report concerned a build from
 2026-09-06 which predated the work that fixed them. Every M55 visual claim therefore closes on
 a fresh-install frame at the evidence HEAD, read through this protocol.
 
@@ -39,9 +39,9 @@ the HEAD commit. A frame captured against a bundle whose hash is not the HEAD's 
 
 ## 3. The fixture (external, declared, as-is)
 
-Owner decision 2026-09-12: the demo workspace is **`$HOME/bb-demo-hub`, used as-is**
-— not vendored into the repository. The index is the owner's real `BB_DATA_DIR` (`~/.bb`), so
-the session sees the same data the owner sees.
+Recorded decision 2026-09-12: the demo workspace is **`$HOME/bb-demo-hub`, used as-is**
+— not vendored into the repository. The index is the recorded `BB_DATA_DIR` (`~/.bb`), so
+the session sees the same data the machine-provisioned index provides.
 
 Consequences, stated honestly rather than papered over:
 
@@ -99,3 +99,5 @@ Steps 1–6 as above, on head of `main` at the filing commit, with the demo work
 Frames and wire truth are checked in under
 [`validation/m55/frames/filing-2026-09-12/`](../../validation/m55/frames/filing-2026-09-12/);
 the plan's "filing evidence" table lists each artifact's hash.
+
+Recorded decision 2026-09-12: the demo workspace is **`$HOME/bb-demo-hub`, used as-is** — not vendored into the repository. The index is the recorded `BB_DATA_DIR` (`~/.bb`), so the session sees the same data the machine-provisioned index provides.

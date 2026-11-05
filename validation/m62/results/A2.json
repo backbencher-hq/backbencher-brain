@@ -10,10 +10,10 @@
   "negativeCases": 8,
   "mutantsCaught": 8,
   "mutantsTotal": 8,
-  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
   "verifierCommand": "npx tsx script/m62/verify-consumers.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-11-01T19:28:51.892Z",
+  "generatedAt": "2026-11-05T04:11:50.994Z",
   "schemaVersion": 1,
   "laws": [
     "P1 engine-derives-address",
@@ -380,7 +380,7 @@
     "question": "reverse dependencies of the fixture root, over impact's declared relationship kinds, from each surface's OWN payload",
     "measured": {
       "graph": 9,
-      "hubCallerGroups": 9,
+      "hubCallerGroups": 6,
       "impactShown": 9
     },
     "declaredFilters": [
@@ -433,7 +433,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T19:28:51.893Z",
-    "contentSha256": "1cff5f1bc0d3315cde01ca0e2ccfd828f662dc15c0ad2188deff86371959ac06"
+    "sealedAt": "2026-11-05T04:11:50.995Z",
+    "contentSha256": "10cd748b7bef40083dfaca53b998d0232357f4446253b9cd071709c81f0fc807"
   }
 }

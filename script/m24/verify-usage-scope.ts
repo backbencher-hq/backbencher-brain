@@ -28,6 +28,16 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
+// Reproducibility: the LSP server under test resolves its index from
+// `<BB_DATA_DIR || ~/.bb>/projects/<sha1(realpath(root))>/brain.db`. Without the
+// variable the server targets the real `~/.bb`, and on a host where that path is
+// not writable (sandboxed agent session, read-only HOME, CI container) it answers
+// -32603 ENOENT and every absence-carrier path dies — a red gate about the
+// environment, not the component. `??=` keeps an explicitly supplied
+// BB_DATA_DIR authoritative. Same fix as script/m24/verify-server.ts and
+// script/m44/verify-usages-fallback.ts.
+process.env.BB_DATA_DIR ??= mkdtempSync(path.join(tmpdir(), "bb-usage-scope-data-"))
+
 type Check = { name: string; ok: boolean; detail: string }
 const checks: Check[] = []
 const check = (name: string, ok: boolean, detail: string) => {

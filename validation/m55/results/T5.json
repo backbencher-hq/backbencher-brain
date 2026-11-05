@@ -3,8 +3,8 @@
   "code": "T5",
   "milestone": "M55",
   "status": "verified",
-  "checks": 72,
-  "passed": 72,
+  "checks": 70,
+  "passed": 70,
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 7,
@@ -12,8 +12,8 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "d79ded9ef9a9dba97d7f32fc03687dec7198e68c",
-  "sourceFingerprint": "a61a36f17321e447de7a53d129acaf632c9b014cdf18d3a6a6e637de5c6db61e",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "d5b20ef1fc52a3c6bf7134431144a8c8d9e8d2d18fea7f2e996f1a11e193b1e0",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-tiers.ts",
@@ -24,13 +24,24 @@
     "script/m55/lsp-wire.ts",
     "script/m55/t5-fixture.ts"
   ],
-  "workingTreeRelevantChanges": [],
+  "workingTreeRelevantChanges": [
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m55/verify-evidence-tree-clean.ts",
+    "script/m55/verify-hover-coverage.ts",
+    "script/m55/verify-relations.ts",
+    "src/lsp/call_hierarchy.ts",
+    "src/lsp/graph_usages.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/relations.ts",
+    "src/lsp/rich_hover.ts",
+    "src/lsp/symbols.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
   "evidenceFile": "T5.json",
-  "generatedAt": "2026-11-04T01:16:39.384Z",
+  "generatedAt": "2026-11-05T04:29:03.130Z",
   "fixture": {
-    "workspace": "/tmp/m55-t5-ws-qvPIk3",
-    "projectId": "11e324201686ae73a54a72e95171ac64276cbc27",
+    "workspace": "/tmp/m55-t5-ws-ErQCGD",
+    "projectId": "1212e061d2bfba377ea2b97723086621ce39aeba",
     "symbols": 7,
     "rows": 9
   },
@@ -78,7 +89,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-04T01:16:39.385Z",
-    "contentSha256": "057c83225f1120414c982151b8d593099b99988f60a414f2ca7578d6b35cc180"
+    "sealedAt": "2026-11-05T04:29:03.131Z",
+    "contentSha256": "b0a61f6aca9aa28d52b71e2c88c2f7125baa1a48355799eaace80be8e9eece06"
   }
 }

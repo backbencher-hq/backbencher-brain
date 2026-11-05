@@ -48,7 +48,7 @@
 
 import { execFileSync } from "node:child_process"
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { availableParallelism, tmpdir } from "node:os"
 import path from "node:path"
 import { openDatabase } from "../../src/storage/db.node.ts"
 import { hover } from "../../src/lsp/hover.ts"
@@ -921,8 +921,18 @@ console.log("\nV: drift gate + the containment law (negative tests)\n")
   )
 }
 // --- V1c: DRIFT against the MCP registry's own enumeration -------------------
+// The enumeration's HOME moved. It used to sit inline in the monolithic
+// `src/mcp/tool-registry.ts`; the registry was then split into per-tool
+// descriptors and the `bb_graph` relationship-kind description now lives in
+// `src/mcp/tools/bb_graph/descriptor.ts`. This gate anchored on the old file and
+// therefore reported "the registry line naming the default kinds was not found —
+// the drift gate cannot run", which is a red gate about a REFACTOR, not about the
+// product: the hover's ten-kind denominator and the MCP tool's fourteen-kind
+// enumeration were never in conflict. The anchor now follows the owner. If the
+// descriptor moves again this check goes red again, loudly, which is the point —
+// a drift gate that silently stops running is worse than one that fails.
 {
-  const registryPath = path.join(ROOT, "src/mcp/tool-registry.ts")
+  const registryPath = path.join(ROOT, "src/mcp/tools/bb_graph/descriptor.ts")
   const registrySrc = readFileSync(registryPath, "utf8")
   // Read the registry's enumeration at SOURCE level. Importing the module would
   // make the LSP gate depend on the MCP tool registry at runtime for no reason;
@@ -1449,7 +1459,13 @@ const evidence = {
     withinBudget: budget !== null && budget.p95 < 50,
     machine: {
       kernel: execFileSync("uname", ["-sr"], { encoding: "utf8" }).trim(),
-      cpus: Number(execFileSync("sysctl", ["-n", "hw.ncpu"], { encoding: "utf8" }).trim()),
+      // CPU count via `node:os`, not `sysctl -n hw.ncpu`. The sysctl spelling is
+      // macOS-only: on Linux it fails with "cannot stat /proc/sys/hw/ncpu" and
+      // the gate crashed in the metadata block BEFORE it could report any result,
+      // so a Linux run of this gate could never produce evidence at all.
+      // `availableParallelism` honours the process affinity mask, which is the
+      // number that actually bounds a latency budget.
+      cpus: availableParallelism(),
       node: process.version,
       loadAverage: (() => { try { return execFileSync("uptime", [], { encoding: "utf8" }).trim() } catch { return "unavailable" } })(),
     },

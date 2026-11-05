@@ -28,11 +28,22 @@
 // Evidence: validation/m44/results/U6.json (machine-emitted)
 
 import { execFileSync, spawn } from "node:child_process"
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { U6_EXPECT, U6_REL, U6_ROOT, U6_SOURCE_APP, writeU6Fixture } from "./u6-fixture.ts"
 import { writeSealed } from "../lib/evidence.ts"
+
+// Reproducibility: the LSP server under test resolves its index from
+// `<BB_DATA_DIR || ~/.bb>/projects/<sha1(realpath(root))>/brain.db`. Without the
+// variable every server this gate spawns targets the real `~/.bb`, and on a host
+// where that path is not writable (sandboxed agent session, read-only HOME, CI
+// container) the server answers -32603 ENOENT and every absence-carrier path
+// dies — a red gate about the environment, not the component. `??=` keeps an
+// explicitly supplied BB_DATA_DIR authoritative. Same fix as
+// script/m24/verify-server.ts and script/m24/verify-usage-scope.ts.
+process.env.BB_DATA_DIR ??= mkdtempSync(path.join(tmpdir(), "bb-u6-data-"))
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m44/results/U6.json")

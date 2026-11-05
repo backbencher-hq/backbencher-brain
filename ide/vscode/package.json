@@ -25,7 +25,14 @@
     "onLanguage:scala",
     "onLanguage:typescript",
     "onLanguage:javascript",
-    "onLanguage:python"
+    "onLanguage:python",
+    "onLanguage:zig",
+    "onLanguage:go",
+    "onLanguage:rust",
+    "onLanguage:c",
+    "onLanguage:cpp",
+    "onLanguage:vue",
+    "onLanguage:svelte"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -79,7 +86,7 @@
             "secondarySidebar"
           ],
           "enumDescriptions": [
-            "Open hub/impact/graph panels as a tab in the current editor group, no split (default; the owner's decision).",
+            "Open hub/impact/graph panels as a tab in the current editor group, no split (declared default, 2026-09-12).",
             "Open panels beside the current editor, splitting the group (the pre-M55 behaviour).",
             "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing.",
             "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing."

@@ -209,7 +209,14 @@ export const CLAIM_COVERAGE: Readonly<Record<string, ClaimDeclaration>> = {
   "m44.U2": { covers: ["script/m44/verify-hub-list.ts", "script/m44/hub-list-derivation.ts", "script/m44/u2-declaration.json"] },
   "m44.U4": { covers: ["script/m44/verify-legend.ts", "docs/m44/LEGEND.md", "ide/vscode/src/hub-panel.ts", "src/brain/database.ts", "src/lsp/freshness.ts", "src/lsp/graph_request.ts", "src/util/project-id.ts", "script/m26/graph-core.ts", "script/m26/webview-harness.ts"] },
   "m44.U5": { covers: ["script/m44/verify-impact-resolution.ts", "src/brain/database.ts", "src/lsp/identity.ts", "src/lsp/impact.ts", "src/util/project-id.ts", "script/m26/graph-core.ts", "script/m44/u5-fixture.ts"] },
-  "m55.EVID-TREE": { covers: ["script/m55/verify-evidence-tree-clean.ts", "script/m24/verify-call-hierarchy.ts", "script/m24/verify-hover.ts", "script/m26/verify-content-security.ts", "script/m26/verify-cross-language-hover.ts", "script/m26/verify-evidence-badges.ts", "script/m26/verify-graph-transport.ts", "script/m26/verify-impact-mode.ts", "script/m26/verify-polyglot-e2e.ts", "script/m26/verify-webview-core.ts", "script/m26/verify-webview-harness.ts"] },
+  // `.gitignore` is the first entry and it is NOT an oracle: the claim "the
+  // evidence tree under validation/ is only evidence" is decided by which files
+  // git is configured to ignore, so the ignore policy IS part of the claim's
+  // subject matter. Without it this coverage named only verifier scripts, and
+  // `fingerprintFields` correctly refused to publish a digest over a list that
+  // could not discriminate — it threw on every run that reached the evidence
+  // write. The throw was right; the declaration was wrong.
+  "m55.EVID-TREE": { covers: [".gitignore", "script/m55/verify-evidence-tree-clean.ts", "script/m24/verify-call-hierarchy.ts", "script/m24/verify-hover.ts", "script/m26/verify-content-security.ts", "script/m26/verify-cross-language-hover.ts", "script/m26/verify-evidence-badges.ts", "script/m26/verify-graph-transport.ts", "script/m26/verify-impact-mode.ts", "script/m26/verify-polyglot-e2e.ts", "script/m26/verify-webview-core.ts", "script/m26/verify-webview-harness.ts"] },
   "m55.HOV-COVERAGE": { covers: ["script/m55/verify-hover-coverage.ts", "docs/HOVER-KNOWLEDGE-AUDIT.md", "src/intelligence/graph/line-address.ts", "src/lsp/hover.ts", "src/lsp/relations.ts", "src/lsp/rich_hover.ts", "src/mcp/tool-registry.ts", "src/storage/db.node.ts", "script/m55/hover-coverage-fixture.ts"] },
   "m55.HOV-REDTEAM": { covers: ["script/m55/verify-hover-coverage-redteam.ts", "src/lsp/evidence_tier.ts", "src/lsp/relations.ts", "src/lsp/rich_hover.ts", "script/m55/verify-hover-coverage.ts"] },
   "m55.P1": { covers: ["script/m55/verify-panel-placement.ts", "ide/vscode/package.json", "ide/vscode/src/graph-panel.ts", "ide/vscode/src/hub-panel.ts", "ide/vscode/src/impact-panel.ts", "ide/vscode/src/panel-placement.ts"] },

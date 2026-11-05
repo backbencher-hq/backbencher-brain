@@ -457,11 +457,57 @@ try {
   const ch = await import(COMPONENT);
 
   const compIncoming = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" });
-  check("C1: the artifact self-edge is dropped and DECLARED with its reason", (() => {
-    const dropped = compIncoming.droppedEdges ?? [];
-    return dropped.length >= 1 && dropped.some((d: any) => String(d.reason).includes("receiver-qualified") && String(d.reason).includes("this.items.get"));
-  })(), JSON.stringify(compIncoming.droppedEdges));
-  check("C1: the drop count matches the wire (no artifact caller rendered)", compIncoming.calls.length === getIncomingCalls.length, `${compIncoming.calls.length} vs ${getIncomingCalls.length}`);
+  // C1 — the receiver-qualified self-edge law, gated HERMETICALLY.
+  //
+  // MEASURED at HEAD, and the measurement moves the stimulus. The real store no
+  // longer holds this artifact row: the analyzer stores `get -> <unresolved
+  // "get">` (target_symbol_id NULL, target_external "get", line 9), and the graph
+  // engine stopped NAME-MATCHING an unresolved target back onto a symbol in
+  // commit 2617ac1bd ("an unresolved target is reported as unresolved, not
+  // matched by name"). The old real-index assertion therefore read a store shape
+  // that no longer exists and failed even though the component's answer was
+  // correct (`droppedEdges: []` — nothing arrived to drop). The LAW is still
+  // real, so it is gated on a PLANTED row, the same technique C6d uses for the
+  // non-call rows: a `calls` row from `get` to `get` over source that invokes
+  // `this.items.get(...)`. A surface that re-admits it renders a self-loop; the
+  // correct surface drops it and names the receiver it found.
+  const selfEdgeRow = {
+    from: getItem.data.symbolId,
+    to: getItem.data.symbolId,
+    relationshipType: "calls",
+    confidence: 0.9,
+    isCrossLanguage: false,
+    callSite: { kind: "call-site" as const, file: T2_EXPECT.store.rel, line: T2_EXPECT.store.getLine1 + 1 },
+    depth: 0,
+  };
+  const selfEdgeTraverse = async (): Promise<any> => ({
+    callers: [selfEdgeRow],
+    callees: [],
+    nodes: {
+      [getItem.data.symbolId]: {
+        id: getItem.data.symbolId,
+        name: "get",
+        symbolType: "method",
+        file: T2_EXPECT.store.rel,
+        filePath: path.join(T2_ROOT, T2_EXPECT.store.rel),
+        line: T2_EXPECT.store.getLine1,
+        lineEnd: T2_EXPECT.store.getLine1 + 2,
+        language: "typescript",
+        complexity: 0,
+        isExternal: false,
+      },
+    },
+    truncated: false,
+    maxDepthReached: 1,
+  });
+  const selfEdgeAnswer = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, selfEdgeTraverse);
+  check("C1: a receiver-qualified self-edge is dropped and DECLARED with its reason (planted — the store shape at HEAD no longer holds it)", (() => {
+    const dropped = selfEdgeAnswer.droppedEdges ?? [];
+    return selfEdgeAnswer.calls.length === 0 &&
+      (selfEdgeAnswer.droppedEdges ?? []).length >= 1 &&
+      dropped.some((d: any) => String(d.reason).includes("receiver-qualified") && String(d.reason).includes("this.items.get"));
+  })(), JSON.stringify({ calls: selfEdgeAnswer.calls, dropped: selfEdgeAnswer.droppedEdges }));
+  check("C1: the drop count matches the wire (no artifact caller rendered on the real index)", compIncoming.calls.length === getIncomingCalls.length, `${compIncoming.calls.length} vs ${getIncomingCalls.length}`);
 
   // --- C6: A fromRange may only be produced for a CALL row. -------------------
   //
@@ -837,13 +883,14 @@ try {
       // table for exactly that reason. The claim being planted is the claim
       // about the store, so the whole sentence that makes it must go.
       name: "absence: imply the store holds no rows when the FILTER emptied the answer (§11.7)",
-      // Anchor the EXACT current text of the `edges.length > 0` branch. The
-      // component carries TWO absence sentences (the "no rows at all" branch and
-      // the "read some, rendered none" branch), and only the second is on this
-      // path: with the filter applied the engine still returns the depth-0
-      // `calls` row for this symbol (measured, callers.length 1), so a filtered
-      // empty answer never reaches the first.
-      from: '`no stored ${direction === "callers" ? "caller" : "callee"} CALL row of this symbol is rendered. This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter on every response (§15.1): ${edges.length} stored CALL row(s) were read and ${droppedEdges.length} were dropped or declared absent, each with its reason and kind named — rows of other kinds may be stored for this symbol and are not ${direction === "callers" ? "callers" : "callees"} here, so this answer is "no stored call rendered", not "no stored relationship"`',
+      // Anchor the EXACT current text of the FIRST absence branch. MEASURED at
+      // HEAD: with the filter applied the engine returns ZERO caller rows for
+      // `get` (the receiver-qualified artifact the pre-engine-fix store held is
+      // gone — commit 2617ac1bd), so the branch this mutant must revert is the
+      // `edges.length === 0` arm. Anchoring the second arm left the mutant
+      // changing a sentence no filtered answer reaches, and it survived until
+      // the runaway `droppedOk` predicate convicted it for free.
+      from: '`no stored ${direction === "callers" ? "caller" : "callee"} CALL edge was read for this symbol (none stored among the relationship kind(s) this surface reads). This surface asked the engine for ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter (§15.1), so "none stored" is a statement about ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only — it is NOT a statement that the store holds no relationship row of any other kind`',
       to: '`the engine returned no stored ${direction === "callers" ? "caller" : "callee"} edge for ${rootRow.name} (this is an indexed, served symbol: the answer is "none stored", not "unknown")`',
     },
   ];
@@ -940,6 +987,7 @@ function rewriteRelativeImports(source: string): string {
    */
   const baselinePredicates = (await (async () => {
     const incomp = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" });
+    const selfEdge = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, selfEdgeTraverse);
     const mult = await ch.expandCalls(raw, projectId, { item: deepItem, direction: "incoming" });
     const approxCase = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, fakeTraverse);
     const planted = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, nonCallTraverse);
@@ -950,7 +998,12 @@ function rewriteRelativeImports(source: string): string {
     return {
       rangesOk: (manyMod?.fromRanges ?? []).length === 2 &&
         (manyMod?.fromRanges ?? []).every((r: any) => sliceRange(T2_EXPECT.multi.rel, r) === "deep"),
-      droppedOk: (incomp.droppedEdges ?? []).length >= 1 && incomp.calls.every((c: any) => c.from?.name !== "get"),
+      // Hermetic, like C1: the real index no longer holds the artifact row at
+      // HEAD (engine commit 2617ac1bd), so a real-index predicate here is FALSE
+      // in the baseline and every mutant convicted by it is convicted for free
+      // (§8.7). The planted self-edge is the shape the law is about.
+      droppedOk: selfEdge.calls.length === 0 &&
+        (selfEdge.droppedEdges ?? []).some((d: any) => String(d.reason).includes("receiver-qualified") && String(d.reason).includes("this.items.get")),
       selectionOk: selectionEntry !== undefined &&
         sliceRange(relOf(selectionEntry.from?.uri ?? ""), selectionEntry.from?.selectionRange) === String(selectionEntry.from?.name ?? "\u0000"),
       declaredOk: approxCase.callSitesApproximate === 1 && String(approxCase.calls[0]?.from?.detail ?? "").includes("position approximate"),
@@ -994,10 +1047,12 @@ function rewriteRelativeImports(source: string): string {
     try {
       const incomp = await mod.expandCalls(raw, projectId, { item: getItem, direction: "incoming" });
       const mult = await mod.expandCalls(raw, projectId, { item: deepItem, direction: "incoming" });
+      const selfEdge = await mod.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, selfEdgeTraverse);
       const manyMod = mult.calls.find((c: any) => c.from?.name === "many");
       const rangesOk = (manyMod?.fromRanges ?? []).length === 2 &&
         (manyMod?.fromRanges ?? []).every((r: any) => sliceRange(T2_EXPECT.multi.rel, r) === "deep");
-      const droppedOk = (incomp.droppedEdges ?? []).length >= 1 && incomp.calls.every((c: any) => c.from?.name !== "get");
+      const droppedOk = selfEdge.calls.length === 0 &&
+        (selfEdge.droppedEdges ?? []).some((d: any) => String(d.reason).includes("receiver-qualified") && String(d.reason).includes("this.items.get"));
       // Read off `mult` (deep/incoming), NOT off `incomp` (get/incoming). MEASURED
       // why that matters now: `get` is genuinely never called in this fixture, so
       // the fix empties its caller list (that is the W1 law), `incomp.calls[0]` is

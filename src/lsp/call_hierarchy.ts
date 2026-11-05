@@ -1,3 +1,32 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the LSP call-hierarchy surface: prepareCallHierarchy,
+// callHierarchy/incomingCalls and callHierarchy/outgoingCalls, over the graph
+// engine, rendered as DIRECT relations carrying call-site ranges.
+// WHICH TOOL IT SERVES — the editor's native Call Hierarchy view (and the
+// call-tree panels the hub and hover open from it).
+// WHY IT IS SHAPED THIS WAY — LSP renders `fromRanges` at the invocation, so
+// every range is resolved from the CALLER'S OWN SOURCE, and the surface asks the
+// engine for `calls` rows only: a membership/lexical row names no invocation and
+// gets no plausible range (§15.3). The stored call-site line is read through its
+// OWNER (src/intelligence/graph/line-address.ts), never re-derived here. Every
+// filter is declared on the response (§15.1), and every omission is declared
+// with its reason (§11.7).
+// WHERE ITS EVIDENCE LIVES — validation/m55/results/T2.json,
+// validation/m24/results/L5.json; gates script/m55/verify-call-hierarchy.ts and
+// script/m24/verify-call-hierarchy.ts; contract §11.7, §15.1, §15.3.
+// EDIT TOGETHER WHEN THIS CHANGES — src/lsp/server.ts (registration + request
+// validation), src/lsp/symbols.ts (the shared absence vocabulary),
+// src/lsp/positions.ts (P1 conversion), src/lsp/identity.ts (member identity),
+// src/intelligence/graph/graph-engine.ts and line-address.ts (the engine and the
+// call-site address owner).
+// CONTRACTS IT MUST NOT BREAK — a fromRange always names the invocation it
+// points at; a non-call relation is never rendered; the relationship-kind filter
+// is declared on every response; a malformed client item is InvalidParams
+// (-32602), never -32603.
+// ─────────────────────────────────────────────────────────────────────────────
+//
 // src/lsp/call_hierarchy.ts — M24.L5 (extended by M55.T2, issue #771).
 //
 // prepareCallHierarchy + incomingCalls/outgoingCalls backed by the bounded
@@ -1526,36 +1555,39 @@ export async function expandCalls(
     droppedEdges,
     absence: calls.length === 0
       ? absenceWith(
-          "symbol_not_at_position",
+          // §11.7: the symbol WAS found and served; what is empty is its call
+          // list among the kinds this surface reads. That is a different fact
+          // from "no symbol covers the position" (prepare's code), so it has its
+          // own machine-readable code — a client that branches on the code must
+          // not be told the symbol is missing.
+          "no_stored_calls",
           // §11.7 + §15.1: the absence names the filter, because an answer
           // emptied BY the filter is a different claim from an answer emptied
           // because the STORE holds no row.
           //
-          // TWO BRANCHES, and MEASUREMENT decided which sentence goes where. The
-          // engine still returns the depth-0 `calls` row for a symbol with no
-          // genuine caller even under `relationshipTypes: ["calls"]` — the
-          // receiver-qualified artifact (measured on the T2 fixture: callers
-          // .length 1, not 0) — so an answer that the filter emptied does NOT
-          // take a "no rows at all" branch. A reword confined to that branch
-          // left the branch actually taken still implying the store holds
-          // nothing, which is false there (it holds `contains` and `uses` rows
-          // for the same symbol). Both are stated now.
-          //
-          // WHAT EACH BRANCH MAY CLAIM, kept strictly to what this answer read:
-          //   edges.length === 0   no stored row of ANY kind reached this answer.
-          //                        "none stored" is a claim about the kind this
-          //                        surface read, and that is all it says.
+          // WHAT EACH BRANCH MAY CLAIM, kept strictly to what this answer read.
+          // The surface asks the engine for `calls` alone (measured on the T2
+          // fixture at HEAD: `get/incoming` answers zero caller rows), so no
+          // branch may claim what the engine would have said about another kind:
+          //   edges.length === 0   no stored CALL row reached this answer. "none
+          //                        stored" is scoped to the kinds this surface
+          //                        read, and the sentence says so.
           //   edges.length >  0    this many stored CALL rows were read and this
           //                        many were dropped or declared absent. A
           //                        non-call row the surface DID see is named in
           //                        `droppedEdges` with its kind, so a reader can
-          //                        find the rows this answer declined rather than
-          //                        being told they do not exist.
+          //                        find the rows this answer declined rather
+          //                        than being told they do not exist.
           //
-          // DELIBERATELY NOT CLAIMED: that the store holds no relationship row of
-          // any kind. This surface cannot know that — it asked for one kind.
+          // DELIBERATELY NOT CLAIMED: that the engine returned no stored edge of
+          // any kind, or that the store holds no relationship row of another
+          // kind. This surface asked for one kind and cannot know either. The
+          // pre-M55 wording of the first branch claimed both ("the engine
+          // returned no stored … edge of any kind"), which a filtered surface is
+          // not entitled to say; the declared filter is what lets a reader bound
+          // the claim.
           edges.length === 0
-            ? `the engine returned no stored ${direction === "callers" ? "caller" : "callee"} edge of any kind for this symbol (none stored). This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} and declares that filter (§15.1), so "none stored" is a statement about ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only — it is NOT a statement that the store holds no relationship row of any other kind`
+            ? `no stored ${direction === "callers" ? "caller" : "callee"} CALL edge was read for this symbol (none stored among the relationship kind(s) this surface reads). This surface asked the engine for ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter (§15.1), so "none stored" is a statement about ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only — it is NOT a statement that the store holds no relationship row of any other kind`
             : `no stored ${direction === "callers" ? "caller" : "callee"} CALL row of this symbol is rendered. This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter on every response (§15.1): ${edges.length} stored CALL row(s) were read and ${droppedEdges.length} were dropped or declared absent, each with its reason and kind named — rows of other kinds may be stored for this symbol and are not ${direction === "callers" ? "callers" : "callees"} here, so this answer is "no stored call rendered", not "no stored relationship"`,
           rootRow.filePath,
         )

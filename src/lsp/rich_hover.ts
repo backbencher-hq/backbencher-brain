@@ -1,3 +1,37 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — M42.H2 (issue #650): the rich hover sections, and the ONE
+//   collector of the rows a symbol's card can render (connected summary, usage
+//   sites, declaration containment, actions). It owns the per-request location
+//   resolution and the served-position dedupe, and it owns the omission of a
+//   stored position the source cannot confirm (§12.1, §15.3).
+// WHICH TOOL IT SERVES — bb_lsp `textDocument/hover` (the editor card), and every
+//   consumer that needs the same row set: script/m24/verify-hover.ts,
+//   script/m42/verify-rich-hover.ts, script/m55/verify-hover-coverage.ts,
+//   script/m55/verify-relations.ts.
+// WHY IT IS SHAPED THIS WAY — the hover is the most-read surface in the product,
+//   so a row that cannot be rendered honestly is OMITTED AND COUNTED rather than
+//   snapped to a plausible range: the usage vocabulary comes from the one owner
+//   (src/lsp/relations.ts), the address verdict comes from the one owner
+//   (src/intelligence/graph/line-address.ts), and the line table used to bound a
+//   stored call site is the one positions.ts mapper — never a second `split("\n")`.
+// WHERE ITS EVIDENCE LIVES — validation/m24/results/HOVER.json,
+//   validation/m42/results/, validation/m55/results/T3.json and
+//   HOV-COVERAGE.json; the past-end-of-file omission is measured by the M55.T3 R5
+//   fixture and reported on the card as "usages omitted".
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/hover.ts (the caller and the
+//   renderer), src/lsp/relations.ts (the usage vocabulary), src/lsp/navigation.ts
+//   (the L3 references surface: the same address rule and the same omission
+//   taxonomy must be applied by both surfaces), src/intelligence/graph/
+//   line-address.ts (the address owner).
+// CONTRACTS IT MUST NOT BREAK — one collection feeds the count, the list and the
+//   connected summary (§14 rule 1: count == rendered rows + declared remainder);
+//   a declaration containment and a callee are never usage sites (the vocabulary
+//   owner decides, this file obeys); a row whose stored position the source
+//   cannot confirm is omitted and counted, never served (§12.1, §15.3); a
+//   row-level failure never throws out of the hover.
+// ─────────────────────────────────────────────────────────────────────────────
 // src/lsp/rich_hover.ts — M42.H2 (issue #650): the rich hover sections.
 //
 // The SINGLE owner of the H2 surface:
@@ -29,9 +63,10 @@
 // the surface: a register only a test owns is a register the surface can fail to
 // keep honest.
 
+import { readFileSync, statSync } from "node:fs"
 import type { CoreDatabase } from "../brain/database"
 import { edgeLocation } from "./navigation"
-import { PositionError } from "./positions"
+import { PositionError, createPositionMapper } from "./positions"
 import {
   isDeclarationRelationship,
   usageSites,
@@ -87,14 +122,21 @@ export interface RichSite {
   enrichment: Enrichment | null
   /** M42.H3: enrichment is stale when computed before the row last changed. */
   enrichmentStale: boolean
-  /** Lane 6 (§14 rule 3): where this site is. The ONE owner of stored
-   *  call-site lines is src/intelligence/graph/line-address.ts — this is ITS
-   *  verdict for this row, passed through unchanged and never re-derived.
+  /** Lane 6 (§14 rule 3): where this site is, as the ONE address owner
+   *  (src/intelligence/graph/line-address.ts) classified the row's STORED
+   *  call-site line — derived from the row's SOURCE end, because the store
+   *  records the line where the source wrote the reference, never a line in the
+   *  far end's file. This is the owner's verdict, passed through and never
+   *  re-derived here.
    *
-   *  - "call-site": the store holds a real call-site line and the link opens
-   *    THAT line. This is the §14 rule 3 case: the range points at the call.
+   *  - "call-site": the store holds a real call-site line. It is SERVED when the
+   *    row is a usage row (incoming, non-declaration), where the link opens THAT
+   *    line in the caller's file. For an outgoing or declaration row the link
+   *    opens the far end's index-stored DECLARATION instead — a call-site line
+   *    from this symbol's file would be an invented position in the far end's
+   *    file, which is the §6 defect this field's `opening` rule fixes.
    *  - "declaration": the store holds no call-site line (NULL, or the legacy
-   *    `0` placeholder), so the link opens the referencing symbol's
+   *    `0` placeholder), so a usage link opens the referencing symbol's
    *    declaration and SAYS SO on the card (ADDRESS_NOTES.substitute). The
    *    substitution is declared, never silent (§14 rule 2).
    *  - "unknown": the store holds something that is not a position at all.
@@ -113,15 +155,117 @@ export interface RichSite {
 export const MAX_USAGE_LINKS = 3
 
 // ---------------------------------------------------------------------------
+// THE LINE-COUNT CACHE — a stat-keyed, bounded, cross-request cache of one fact
+// ---------------------------------------------------------------------------
+//
+// Why it exists: the §12.1/§15.3 source bound (a stored call-site line must be a
+// line the file actually has) needs the file's line count for every usage row.
+// Deriving it from bytes is a whole-file read + split + mapper build, and a WARM
+// hover pays that again on every request; on the M55 R6 "many distinct files"
+// shape that alone pushed the warm p95 from 34.4 ms to 51.3 ms — a red latency
+// gate for a bound the product genuinely needs. The count is a property of the
+// FILE, not of the request, so it is cached here.
+//
+// THE HONESTY CONTRACT (mirrors src/brain/freshness.ts's own evidence choice):
+// an entry is used only when `statSync` now reports the SAME `mtimeMs` and
+// `size` that were recorded with the count. Any mismatch discards the entry and
+// the count is re-derived from current bytes. The declared residual: a file
+// replaced with different bytes of exactly the same size while its mtime is also
+// preserved is treated as unchanged — mtime+size is the same evidence the
+// freshness system itself accepts, and the alternative (re-reading every file on
+// every hover) is the latency defect this cache exists to remove. Bounded to
+// LINE_COUNT_CACHE_MAX entries, recency-refreshed on hit; each entry is a path
+// plus three numbers.
+const LINE_COUNT_CACHE_MAX = 512
+const lineCountCache = new Map<string, { mtimeMs: number; size: number; lineCount: number }>()
+
+/** The cached line count for `path`, or null when there is no entry or its
+ *  recorded `(mtimeMs, size)` no longer matches the file on disk. Never invents:
+ *  an unreadable file returns null and is not cached. */
+function cachedLineCount(path: string): number | null {
+  let stat: { mtimeMs: number; size: number }
+  try {
+    const st = statSync(path)
+    stat = { mtimeMs: st.mtimeMs, size: st.size }
+  } catch {
+    return null
+  }
+  const entry = lineCountCache.get(path)
+  if (entry === undefined) return null
+  if (entry.mtimeMs !== stat.mtimeMs || entry.size !== stat.size) {
+    // The file changed since the count was taken: drop the stale entry and let
+    // the caller re-derive from current bytes. A stale count is an honesty
+    // defect (it would omit a real row or serve a past-EOF one), so this branch
+    // is the contract, not an optimisation detail.
+    lineCountCache.delete(path)
+    return null
+  }
+  // Recency refresh: Map preserves insertion order, so re-inserting the hit
+  // moves it to the newest position and the eviction below removes the least
+  // recently used entry.
+  lineCountCache.delete(path)
+  lineCountCache.set(path, entry)
+  return entry.lineCount
+}
+
+/** Record a line count under the file's CURRENT `(mtimeMs, size)`, evicting the
+ *  least-recently-used entry past the bound. A stat failure records nothing:
+ *  without the evidence the entry could never be validated. */
+function rememberLineCount(path: string, lineCount: number): void {
+  let stat: { mtimeMs: number; size: number }
+  try {
+    const st = statSync(path)
+    stat = { mtimeMs: st.mtimeMs, size: st.size }
+  } catch {
+    return
+  }
+  lineCountCache.delete(path)
+  lineCountCache.set(path, { ...stat, lineCount })
+  while (lineCountCache.size > LINE_COUNT_CACHE_MAX) {
+    const oldest = lineCountCache.keys().next()
+    if (oldest.done === true) break
+    lineCountCache.delete(oldest.value)
+  }
+}
+
+/** Test/ops hook: the cache's current size (0 after a reset). Exported so a gate
+ *  can prove the cache is bounded and actually used, rather than assume it. */
+export function lineCountCacheSize(): number {
+  return lineCountCache.size
+}
+
+/** Test/ops hook: drop every entry. Only a gate needs this (to measure a cold
+ *  run against a warm one); the product never calls it. */
+export function resetLineCountCache(): void {
+  lineCountCache.clear()
+}
+
+// ---------------------------------------------------------------------------
 // THE COVERAGE DENOMINATOR
 //
-// The canonical ten relationship kinds, enumerated by the MCP graph tool's own
-// `relationshipTypes` parameter description (src/mcp/tool-registry.ts:259).
-// This list is the denominator for "does the hover show all the relationships".
-// It is duplicated here rather than imported — the tool registry is a large
-// module and the LSP lane does not depend on it — so the two are COMPARED by the
-// drift gate in script/m55/verify-hover-coverage.ts instead of being assumed
-// equal. A denominator nobody re-checks is a denominator that rots.
+// The FOURTEEN relationship kinds the index EMITS, enumerated by the MCP graph
+// tool's own `relationshipTypes` parameter description
+// (src/mcp/tools/bb_graph/descriptor.ts; it lived inline in
+// src/mcp/tool-registry.ts before the registry was split into per-tool
+// descriptors, and the drift gate's anchor follows it). This list is the
+// denominator for "does the hover show all the relationships". It is duplicated
+// here rather than imported — the tool descriptor is a large module and the LSP
+// lane does not depend on it — so the two are COMPARED by the drift gate in
+// script/m55/verify-hover-coverage.ts instead of being assumed equal. A
+// denominator nobody re-checks is a denominator that rots.
+//
+// THE FOUR EXTENDED KINDS (2026-10-18 vocabulary extension, src/ast/types.ts):
+//   decorates  decorated declaration -> decorator (parser-deterministic)
+//   renders    rendering component -> rendered component (parser-deterministic)
+//   mixes_in   class -> mixin composed into its supertype chain (parser-deterministic)
+//   part_of    a `part`/`part of` DIRECTIVE, whose direction is the directive's
+//              own (module-level, like imports; metadata.partRole names which end
+//              is the library)
+// The hover's tier owner (src/lsp/evidence_tier.ts) already classifies all four:
+// the first three structural, `part_of` import-based. Leaving them out of THIS
+// list was the drift: a card could not even say "this row is not a symbol
+// relationship" for a kind the index stores, and the M55 drift gate (V1c) was
+// the only thing that noticed.
 // ---------------------------------------------------------------------------
 export const CANONICAL_RELATIONSHIP_KINDS = [
   "calls",
@@ -134,6 +278,10 @@ export const CANONICAL_RELATIONSHIP_KINDS = [
   "references",
   "imports",
   "exports",
+  "decorates",
+  "renders",
+  "mixes_in",
+  "part_of",
 ] as const
 
 export type CanonicalRelationshipKind = (typeof CANONICAL_RELATIONSHIP_KINDS)[number]
@@ -158,7 +306,7 @@ export const RELATIONSHIP_KIND_ALIASES: Readonly<Record<string, CanonicalRelatio
 }
 
 /** The canonical kind a stored spelling names, or null when the index carries a
- *  kind outside the ten (a non-canonical writer's spelling). */
+ *  kind outside the fourteen (a non-canonical writer's spelling). */
 export function canonicalKind(relationshipType: string): CanonicalRelationshipKind | null {
   const t = relationshipType.trim().toLowerCase()
   if ((CANONICAL_RELATIONSHIP_KINDS as readonly string[]).includes(t)) return t as CanonicalRelationshipKind
@@ -183,7 +331,7 @@ export function canonicalKind(relationshipType: string): CanonicalRelationshipKi
 // (src/lsp/relations.ts, the single owner of the usage vocabulary) does that.
 // Splitting the two is what lets every kind carry a word while a declaration
 // containment can never reach the CONNECTION summary: the table is total over
-// the ten kinds, and the section is chosen by the owner's class.
+// the fourteen kinds, and the section is chosen by the owner's class.
 const RELATIONSHIP_VERB: Record<CanonicalRelationshipKind, { outgoing: string; incoming: string }> = {
   calls: { outgoing: "calls", incoming: "called by" },
   extends: { outgoing: "extends", incoming: "extended by" },
@@ -201,11 +349,31 @@ const RELATIONSHIP_VERB: Record<CanonicalRelationshipKind, { outgoing: string; i
   imports: { outgoing: "imports", incoming: "imported by" },
   // `exports` is the other declaration containment (relations.ts). Same law.
   exports: { outgoing: "exports", incoming: "exported by" },
+  // ── the four EXTENDED kinds (2026-10-18 vocabulary extension) ─────────────
+  // `decorates`: the EMITTED direction is decorated declaration -> decorator, so
+  // a card for the decorated declaration reads "carries decorator [X]" and a card
+  // for the decorator reads "decorates [Y]". Not "called by": nothing invokes a
+  // decorator at the source level (src/ast/types.ts says so in as many words).
+  decorates: { outgoing: "carries decorator", incoming: "decorates" },
+  // `renders`: rendering component -> rendered component (JSX element creation;
+  // NOT `instantiates` — nothing is `new`ed in the source).
+  renders: { outgoing: "renders", incoming: "rendered by" },
+  // `mixes_in`: class -> mixin composed into its supertype chain (Dart `with`).
+  // A supertype-composition relation, like `extends`/`implements`.
+  mixes_in: { outgoing: "mixes in", incoming: "mixed in by" },
+  // `part_of`: a `part`/`part of` DIRECTIVE. Its emitted direction is the
+  // directive's own and metadata.partRole names which end is the library, so the
+  // two direction words describe the DIRECTIVE, not a symbol-usage claim: a card
+  // reading "part-of directive" or "named by part-of directive" is true whichever
+  // role this row carries. The card never claims a part USES a library (§13.5:
+  // a module-level edge is a directive, not a symbol usage). Rows whose far end
+  // the index could not resolve as a symbol are declared in DECLARED_ABSENCE.
+  part_of: { outgoing: "part-of directive", incoming: "named by part-of directive" },
 }
 
 /** The verb a stored kind renders with in a given direction, or null when the
- *  index carries a kind outside the canonical ten (no declared word exists, so
- *  the row is a DECLARED absence with a reason — never an unlabelled render). */
+ *  index carries a kind outside the canonical fourteen (no declared word exists,
+ *  so the row is a DECLARED absence with a reason — never an unlabelled render). */
 export function verbFor(relationshipType: string, direction: "incoming" | "outgoing"): string | null {
   const canonical = canonicalKind(relationshipType)
   if (canonical === null) return null
@@ -284,12 +452,17 @@ export const DECLARED_ABSENCE: readonly DeclaredAbsence[] = [
   {
     kind: "unknown-kind",
     reason:
-      "a stored kind outside the canonical ten has no declared verb and no declared meaning; it renders nothing rather than being guessed at. The count is reported.",
+      "a stored kind outside the canonical fourteen has no declared verb and no declared meaning; it renders nothing rather than being guessed at. The count is reported.",
   },
   {
     kind: "imports",
     reason:
       "an `imports` row is a FILE-level edge: its far end is a module path, not an indexed symbol, so it has no index-stored location to navigate to. It is counted and named as a file-level row, never rendered as a symbol link (§13.5 noise is labelled, not hidden; §12.1 nothing unclickable).",
+  },
+  {
+    kind: "part_of",
+    reason:
+      "a `part_of` row is a `part`/`part of` DIRECTIVE (a compilation-unit inclusion, module-level like `imports`): its far end is a file or module, not a symbol the card can navigate to, and its direction is the directive's own (`metadata.partRole` names which end is the library). It is declared here — never read as one symbol using another — and counted rather than drawn as a link when the far end has no indexed location (§13.5 labelled, §12.1 nothing unclickable).",
   },
 ]
 
@@ -408,16 +581,44 @@ export function addressNoteSuffix(address: CallSiteAddress | undefined | null): 
 }
 
 /**
+ * The rows this collector REFUSED to serve, and why — passed in by the caller so
+ * the hover can DECLARE them (§15.3: an omission is counted and named, never
+ * silently dropped). The taxonomy mirrors `textDocument/references`
+ * (`NavigationReferencesResult.omittedUnresolvable`) so the two surfaces speak
+ * one language: a row whose stored call-site line the source cannot confirm is
+ * `unresolvable` on both, and both decline to serve it.
+ */
+export interface UsageCollectionOmissions {
+  /**
+   * Stored usage rows whose call-site address is EXACT (a real stored line) but
+   * whose line does not exist in the caller's source file — the file on disk is
+   * shorter than the line the store names. `textDocument/references` omits these
+   * and counts them in `omittedUnresolvable`; before this field the hover served
+   * them as links opening past the end of the file, so two surfaces disagreed
+   * about the same stored rows (§12.1 / §14 rule 1; the M55.T3 record's
+   * `knownGaps[0]`, measured on its R5 fixture: references 0 locations + 2
+   * omissions, hover 2 sites at lines 40 and 41 of a three-line file).
+   */
+  unresolvable: number
+}
+
+/**
  * Collect the usage sites of a symbol: every stored relationship row whose
  * OTHER end is a real indexed symbol with a resolvable location, in the same
  * row order (confidence DESC, id) and with the same dedup key
  * (path:line:character) as the L3 references surface — one location owner.
  *
+ * A row whose stored call-site line the source cannot confirm is OMITTED and
+ * counted in `omissions.unresolvable` — the same verdict `textDocument/references`
+ * produces for the same row (§12.1: a navigation target must equal an
+ * index-stored location the source can be checked against; §15.3: the omission is
+ * declared, not clamped and not silently dropped).
+ *
  * The OR-free UNION shape mirrors the M29.R3 scale fix: two indexed probes
  * (source_symbol_id / target_symbol_id are both indexed) instead of one
  * OR-scan of brain_relationship.
  */
-export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSite[] {
+export function richSitesForSymbol(raw: CoreDatabase, symbolId: string, omissions?: UsageCollectionOmissions): RichSite[] {
   // Lane 6 (§3 budget): PER-CALL location memo.
   //
   // `edgeLocation` re-reads the source file and rebuilds a PositionMapper on
@@ -455,6 +656,61 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
     }
     locationMemo.set(key, loc)
     return loc
+  }
+  // THE LINE TABLE A STORED CALL SITE IS CHECKED AGAINST (§12.1, §15.3).
+  // The line count comes from the ONE positions mapper —
+  // `createPositionMapper(text).lineTexts.length` splits on the line endings the
+  // file actually uses, exactly the bound `navigation.referenceLocation` applies
+  // to the same row. A second `text.split("\n")` would disagree with that mapper
+  // on every CRLF/CR file, and two surfaces using two bounds is the disagreement
+  // this file exists to prevent. `null` = the source cannot be read, so no stored
+  // line in it can be confirmed either.
+  //
+  // MEASURED COST, AND WHY THIS IS CACHED ACROSS REQUESTS (M55 R6, shape A
+  // "many distinct files"): the first version of this bound read and split the
+  // whole file on EVERY hover. The per-request `edgeSourceCache` cannot help a
+  // WARM hover — a new request starts with an empty map — so on the gate's shape
+  // A (32 distinct files behind one symbol) every warm hover re-read and
+  // re-split all 32 files and rebuilt 32 position mappers, and the warm p95 went
+  // from 34.4 ms (pre-bound) to 51.3 ms, a red budget. The line count is a
+  // property of the FILE, not of the request, so it is cached here keyed by
+  // `(absolute path, mtimeMs, size)`.
+  //
+  // THE HONESTY CONTRACT OF THIS CACHE (why it cannot trade latency for a wrong
+  // omission): an entry is used ONLY when the file's CURRENT `stat` matches the
+  // `mtimeMs` and `size` recorded with the count. Any mismatch re-reads and
+  // re-splits. The one residual case — a file replaced by different bytes of
+  // exactly the same size while its mtime is also unchanged — is the git
+  // index-stat-cache trade-off, and it is DECLARED not hidden: the risk is a
+  // file that a filesystem/user has preserved `mtime` across (mtime + same size
+  // is the same evidence `src/brain/freshness.ts` itself uses to call a file
+  // unchanged). It is bounded (LINE_COUNT_CACHE_MAX), recency-refreshed on hit,
+  // and stores only three numbers per path.
+  const lineCountOf = (p: string): number | null => {
+    const cached = edgeSourceCache.get(p)
+    if (cached !== undefined) {
+      // The location resolver already read this file IN THIS REQUEST, so its
+      // bytes are the ones being reasoned about — no extra read, and no chance
+      // of the count disagreeing with the text the other sites were placed by.
+      if ("readError" in cached) return null
+      if (cached.mapper === undefined) cached.mapper = createPositionMapper(cached.text)
+      const count = (cached.mapper as ReturnType<typeof createPositionMapper>).lineTexts.length
+      rememberLineCount(p, count)
+      return count
+    }
+    const hit = cachedLineCount(p)
+    if (hit !== null) return hit
+    try {
+      const text = readFileSync(p, "utf8")
+      const lines = text.split("\n")
+      const mapper = createPositionMapper(text)
+      edgeSourceCache.set(p, { text, lines, mapper })
+      rememberLineCount(p, mapper.lineTexts.length)
+      return mapper.lineTexts.length
+    } catch (error) {
+      edgeSourceCache.set(p, { readError: (error as Error).message })
+      return null
+    }
   }
 
   const rows = raw
@@ -521,40 +777,96 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
     const other = incoming
       ? { name: row.src_name, type: row.src_type, path: row.src_path, bs: row.src_bs, be: row.src_be, ls: row.src_ls, le: row.src_le, decl: row.src_decl, rel: row.src_rel }
       : { name: row.tgt_name, type: row.tgt_type, path: row.tgt_path, bs: row.tgt_bs, be: row.tgt_be, ls: row.tgt_ls, le: row.tgt_le, decl: row.tgt_decl, rel: row.tgt_rel }
-    if (!other.name || !other.path || other.bs === null || other.be === null || other.ls === null || other.le === null) continue
-    // Lane 6 (measured on a real index, script/m55/verify-hover-coverage.ts
-    // R6): edgeLocation THROWS PositionError on a stored row whose byte column
-    // lands mid-code-point — a row the indexer wrote for a line containing a
-    // multi-byte character. This collector called it unguarded, so ONE such row
-    // anywhere in a symbol's relationship set threw out of `hover()` itself. The
-    // server has no try/catch on the hover path, so the LSP request REJECTED:
-    // VS Code logged "provider FAILED" and silently fell back to the native
-    // hover, which is the §12 contract rendered as a crash with no content at
-    // all. Measured on this machine's backbencher-brain index: 46 of the 400
-    // busiest source symbols (11.5%) and 71 of 4000 symbols swept (1.8%).
-    //
-    // The guard lives INSIDE `locationOf`, which is the single choke point
-    // every resolution passes through — one guard, one place, and the memo
-    // cannot serve a value the guard would have refused. A second try/catch at
-    // this call site was tried first and the mutation suite caught the
-    // consequence: removing the inner guard changed nothing, so the mutant
-    // SURVIVED. One guard, at the choke point.
-    const loc = locationOf(other.path, other.bs, other.be, other.ls, other.le)
-    if (loc === null) continue
-    // The stored call-site line, classified by the ONE owner
-    // (src/intelligence/graph/line-address.ts). Never re-derived here.
+    if (!other.name || !other.path) continue
+    // THE STORED CALL-SITE LINE BELONGS TO THE ROW'S SOURCE END — the symbol
+    // that WROTE the reference — in both directions. The store records the line
+    // where the source wrote it, not a line in the far end's file. Deriving the
+    // address from `other` was right only for incoming rows (where `other` IS the
+    // source) and wrong for outgoing rows: that is how a link labelled
+    // "instantiates [Greeter]" on `main` came to open `greeter.ts:4` while the
+    // instantiation is `app.ts:4` — a position nobody stored, told at click time.
+    // The address owner is fed the SOURCE side now, so its verdict is about the
+    // file the line actually lives in.
+    const sourceRel = incoming ? other.rel : row.src_rel
+    const sourceDeclLine = incoming ? other.decl : row.src_decl
+    // §12.1/§15.3 — a declared declaration substitute for a SOURCE whose own
+    // declaration line is not a position must not fall back to the far end's:
+    // `deriveCallSiteAddress` sees only what it is given, and the caller here is
+    // the source symbol, so a NULL source declaration correctly produces the
+    // owner's declared `unknown` rather than a borrowed line.
     const address = deriveCallSiteAddress({
       storedLine: storedLineFromRow(row as unknown as Record<string, unknown>),
-      file: other.rel ?? "",
-      callerDeclaration: { line: other.decl },
+      file: sourceRel ?? "",
+      callerDeclaration: { line: sourceDeclLine },
     })
-    // §14 rule 3: when the store holds a REAL call site, the link opens the
-    // CALL SITE. Otherwise the link opens the declaration the owner permits as
-    // a substitute, and the card says which of the two it is (below).
     const callLine0 = addressLine0(address)
+    const declarationRow = isDeclarationRelationship(row.relationship_type)
+    // WHERE A STORED CALL-SITE LINE MAY BE SERVED (M55.T3, §12.1/§14 rule 3).
+    //
+    // Only a USAGE row — incoming, non-declaration — serves the call-site line:
+    // there the far end IS the caller that wrote it, so the served place is the
+    // caller's file at the stored line, verified below against that file's own
+    // line table (the OLD behaviour for every row, kept here and only here).
+    //
+    // An OUTGOING row is a CONNECTION claim ("this symbol calls X") and a
+    // DECLARATION row is a CONTAINMENT claim ("X declares this"): the link to
+    // the far end must open that symbol's INDEX-STORED DECLARATION. A stored
+    // call-site line belongs to THIS symbol's file, so opening it in the far
+    // end's file invents a position — the defect this branch fixes.
+    const servesCallSite = callLine0 !== null && incoming && !declarationRow
+    // THE FAST PATH, and the reason the §3 budget can be met at all.
+    //
+    // A USAGE site with a REAL stored call-site line does not need the declaring
+    // symbol's byte columns: the served position is `(the caller's file, the
+    // stored line)` and it is verified against that file's line table. Resolving
+    // `edgeLocation` for these rows only obtained the SAME path (and a
+    // declaration range the call-site branch then overrode) at the cost of a full
+    // file read + PositionMapper build per distinct caller file on EVERY warm
+    // hover — the M55 R6 "many distinct files" shape, where a symbol used from 30
+    // files paid 30 reads and 30 mapper builds for positions no later code read.
+    let loc: ReturnType<typeof edgeLocation>
+    if (servesCallSite) {
+      const lineCount = lineCountOf(other.path)
+      if (lineCount === null || callLine0 >= lineCount) {
+        if (omissions !== undefined) omissions.unresolvable++
+        continue
+      }
+      loc = { path: other.path, line: callLine0, character: 0, endLine: callLine0, endCharacter: 0 }
+    } else {
+      if (other.bs === null || other.be === null || other.ls === null || other.le === null) continue
+      // Lane 6 (measured on a real index, script/m55/verify-hover-coverage.ts
+      // R6): edgeLocation THROWS PositionError on a stored row whose byte column
+      // lands mid-code-point — a row the indexer wrote for a line containing a
+      // multi-byte character. This collector called it unguarded, so ONE such row
+      // anywhere in a symbol's relationship set threw out of `hover()` itself. The
+      // server has no try/catch on the hover path, so the LSP request REJECTED:
+      // VS Code logged "provider FAILED" and silently fell back to the native
+      // hover, which is the §12 contract rendered as a crash with no content at
+      // all. Measured on this machine's backbencher-brain index: 46 of the 400
+      // busiest source symbols (11.5%) and 71 of 4000 symbols swept (1.8%).
+      //
+      // The guard lives INSIDE `locationOf`, which is the single choke point
+      // every resolution passes through — one guard, one place, and the memo
+      // cannot serve a value the guard would have refused. A second try/catch at
+      // this call site was tried first and the mutation suite caught the
+      // consequence: removing the inner guard changed nothing, so the mutant
+      // SURVIVED. One guard, at the choke point.
+      //
+      // When the far end has NO resolvable declaration either, the row is
+      // omitted and counted by DECLARED_ABSENCE (external / unknown-kind), never
+      // served at a guessed position — that is the same declared-absence law the
+      // coverage gate measures, applied here by omission instead of a link.
+      const resolved = locationOf(other.path, other.bs, other.be, other.ls, other.le)
+      if (resolved === null) continue
+      loc = resolved
+    }
+    // §14 rule 3: a USAGE row with a REAL stored call site opens the CALL SITE;
+    // every other row opens the far end's index-stored DECLARATION (the address
+    // owner's range), which is the only position such a connection can honestly
+    // claim.
     const opening: { path: string; line: number; character: number; endLine: number; endCharacter: number } =
-      callLine0 !== null
-        ? { path: loc.path, line: callLine0, character: 0, endLine: callLine0, endCharacter: 0 }
+      servesCallSite
+        ? { path: loc.path, line: callLine0 as number, character: 0, endLine: callLine0 as number, endCharacter: 0 }
         : { path: loc.path, line: loc.line, character: loc.character, endLine: loc.endLine, endCharacter: loc.endCharacter }
     // Dedup by location AND DIRECTION, but never by dropping a kind.
 //
@@ -629,7 +941,7 @@ export function usageSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSi
  *
  *  Every non-declaration kind now HAS a verb, so no row reaches this function
  *  and renders with no label: `verbFor` returning null means the index stores a
- *  kind outside the canonical ten, and that row is a declared absence with a
+ *  kind outside the canonical fourteen, and that row is a declared absence with a
  *  reason (DECLARED_ABSENCE), never an unlabelled link. */
 export function connectedGroups(sites: RichSite[]): ConnectedGroup[] {
   const groups = new Map<string, ConnectedGroup>()

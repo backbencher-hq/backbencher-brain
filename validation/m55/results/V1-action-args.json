@@ -10,8 +10,8 @@
   "mutantsCaught": 7,
   "mutantsTotal": 7,
   "negatives": 23,
-  "currentCommit": "c26b647a9a9cebf3b9a09935381c8cc4b171d6e9",
-  "sourceFingerprint": "09f622cb5f533d782bcd11ca3807d7cc31946365b10aa4df63110114318aed69",
+  "currentCommit": "32074f3beaa0ef2e2c18665b5cb54a58ff8c4550",
+  "sourceFingerprint": "90e075fb2282b06262725135475d2ea3baab70750ff09fbfb5ea5c677a5a70f4",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-action-args.ts",
@@ -20,20 +20,19 @@
     "src/lsp/rich_hover.ts"
   ],
   "workingTreeRelevantChanges": [
-    "script/m55/verify-action-args.ts",
-    "script/m55/verify-identity.ts",
-    "script/m55/verify-panel-placement.ts",
-    "script/m55/verify-status-panel.ts"
+    "ide/vscode/package.json",
+    "ide/vscode/src/extension.ts",
+    "script/m55/verify-relations.ts"
   ],
   "foundBy": "the V1 rig's own frames (flows 4 and 5 captured the error toast: validation/m55/frames/live-6/4-open-in-graph.png, 5-impact.png)",
   "owner": "ide/vscode/src/hover-action-args.ts (pure) + ide/vscode/src/hover-commands.ts (IO)",
   "verifierCommand": "npx tsx script/m55/verify-action-args.ts",
   "evidenceFile": "V1-action-args.json",
-  "generatedAt": "2026-10-14T19:56:20.107Z",
+  "generatedAt": "2026-11-05T00:14:20.622Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-14T19:56:20.108Z",
-    "contentSha256": "eb2524406e54480de676da6f5dfc72bd8ba3122278abd7b7332499947510b74e"
+    "sealedAt": "2026-11-05T00:14:20.623Z",
+    "contentSha256": "824d1fb3c30dcc7c565c0e054b00b1d01d52d1681595d415b4ea84c58d465eef"
   }
 }

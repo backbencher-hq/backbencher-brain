@@ -1,3 +1,31 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the SINGLE owner of the relation vocabulary: what a USAGE
+//   SITE is, what a usage COUNT counts and in what unit, the declaration-
+//   containment class, the SQL restatement of the count, and the labels every
+//   surface quotes verbatim so no surface can paraphrase the unit into its own
+//   dialect.
+// WHICH TOOL IT SERVES — the IDE/editor lane: bb_lsp hover, textDocument/
+//   references, bb/graph `mode:"usages"` — every surface that answers "who uses
+//   this symbol".
+// WHY IT IS SHAPED THIS WAY — one law in one file, so the four numbers that once
+//   answered one question cannot be four again: a declaration containment is
+//   never a usage, a callee is never a usage of the caller, and a count counts
+//   SERVED POSITIONS (the places the index can put a caret), with the rows that
+//   share a position declared rather than dropped.
+// WHERE ITS EVIDENCE LIVES — docs/IDE-HONESTY-CONTRACT.md §14/§15,
+//   validation/m55/results/T3.json, script/m55/verify-relations.ts (the
+//   differentials and mutants), script/m44/verify-usages-groups.ts.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/rich_hover.ts (the collector),
+//   src/lsp/hover.ts (the card), src/lsp/navigation.ts (the references surface),
+//   src/lsp/graph_usages.ts (the hub's grouping), and the M55.T3 gate.
+// CONTRACTS IT MUST NOT BREAK — a declaration containment is never a usage site;
+//   a count equals the rendered rows plus any declared remainder; every surface
+//   quotes USAGE_SITE_FILTER_LABEL / USAGE_COUNT_UNIT_LABEL rather than wording
+//   its own; the SQL count never silently disagrees with what a surface serves
+//   (the one difference it cannot see — a source it cannot read — is declared).
+// ─────────────────────────────────────────────────────────────────────────────
 // src/lsp/relations.ts — M55.T3 (issue #772, §14 Truth Rule 1: one surface,
 // one answer).
 //
@@ -178,13 +206,15 @@ export interface UsageCountDb {
  * materialization, no location resolution) used as a differential check by
  * the M55.T3 gate and as the scale-safe counter.
  *
- * Mirrors `richSitesForSymbol`'s eligibility exactly:
+ * Mirrors `richSitesForSymbol`'s eligibility, apart from the two source-reading
+ * checks declared below:
  *   - the symbol is the row's TARGET, and not also its source (self-loops are
  *     analyzer artifacts, not usages — the collector skips them);
  *   - the kind is not a declaration containment;
- *   - the OTHER end is a real indexed symbol whose location resolves
- *     (path + line + byte columns present — the collector renders no site
- *     without a clickable, index-stored location, §12.1);
+ *   - the OTHER end is a real indexed symbol with an index-stored path (§12.1),
+ *     and the position this count serves is one the collector can serve: a real
+ *     stored call-site line for a usage row, or the caller's declaration range
+ *     when the store holds no call-site line;
  *   - the row is POSITIONED, by the ONE address owner's rule restated in SQL
  *     (below): a positive-integer stored line is the call site, and anything
  *     else the owner would leave `unknown` is omitted here too;
@@ -234,11 +264,19 @@ export interface UsageCountDb {
  *   omitted (`unknown`).
  *
  * DECLARED LIMIT OF THE RESTATEMENT (not a silent gap): this query cannot read
- * the source, so it cannot apply `resolveRowByteColumns`. A row whose stored
- * byte columns do not convert against the file on disk is counted here and
- * dropped by the collector — the difference `isResolvableUsageSiteRow` exists to
- * let a caller see. That case is measured and declared; it is not the case
- * fixed here, which was a 30–35% systematic shortfall.
+ * the source, so two of the collector's checks cannot be restated in SQL. (1) A
+ * row whose stored BYTE COLUMNS do not convert against the file on disk is
+ * counted here and dropped by the collector (`resolveRowByteColumns`).
+ * (2) A row whose stored CALL-SITE LINE is past the end of the source file is
+ * likewise counted here and OMITTED by the collector, which bounds the line
+ * against the file's own line table (§12.1/§15.3; the hover declares the
+ * omission as "usages omitted", textDocument/references counts it in
+ * `omittedUnresolvable`). Both differences are the same shape — the SQL counts
+ * what the store CLAIMS, the surfaces serve only what the source confirms — and
+ * `isResolvableUsageSiteRow` exists so a caller comparing the two can see the
+ * distinction rather than mistaking it for a defect. Neither is the case fixed
+ * here, which was a 30–35% systematic shortfall on rows every surface should
+ * have served.
  *
  * Scale shape (M29.R3): one indexed reverse probe with a join, no OR-scan.
  */
@@ -284,6 +322,13 @@ const DECLARATION_LINE_IS_EXACT_SQL = "typeof(o.line_start) = 'integer' AND o.li
  * navigation.edgeLocation throws instead of returning null), and a count that
  * disagrees with the list is exactly the defect §14 rule 1 names. A caller
  * comparing the two MUST apply the same predicate to both sides.
+ *
+ * It covers the DECLARATION-SUBSTITUTE branch (path + byte columns + line
+ * range). The other source-reading difference — a stored CALL-SITE line past
+ * the end of the source file — needs the file's line table and is therefore
+ * checked by the collector itself (`richSitesForSymbol`'s `lineCountOf` bound);
+ * a caller comparing a count to a list must account for it as well. Both are
+ * declared in the `countUsageSites` documentation above.
  */
 export function isResolvableUsageSiteRow(
   row: { otherName?: string | null; otherPath?: string | null; byteStart?: number | null; byteEnd?: number | null; lineStart?: number | null; lineEnd?: number | null },

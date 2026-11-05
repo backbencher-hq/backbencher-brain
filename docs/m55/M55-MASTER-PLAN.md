@@ -21,9 +21,9 @@ and must stop saying things in a machine's voice.
 
 ## Why now (evidence, not opinion)
 
-The owner tested the shipped extension on 2026-09-12 and reported: broken call hierarchy, a
+Measured on 2026-09-12 (evidence `validation/m55/frames/filing-2026-09-12/`): broken call hierarchy, a
 graph that is "very bad looking", `bb_lsp: this editor has no native references view`, a
-`constructor` graph error, and — his words — "the VS Code is already full from the terminal,
+`constructor` graph error, and the reported feedback — "the VS Code is already full from the terminal,
 copilot from the right, files from the left, and a very small window in the middle".
 
 Step zero (this milestone's filing evidence, `validation/m55/frames/filing-2026-09-12/`)
@@ -132,5 +132,5 @@ honestly as `inferred`.
 | `s10-ctor-graph.png` | `851c7c9eb33e9be6` | 336138 | the constructor graph opens on the **class** `Store` — the silent relabel — after a second hover action, with four editor columns |
 | `wire-truth.json` | `155fa1b12405df28` | 34245 | the raw stdio responses behind every number in "Why now" |
 
-The demo workspace is an **external declared fixture** (the owner's `~/bb-demo-hub`), used
-as-is by owner decision (2026-09-12) — see [SCREENSHOT-PROTOCOL.md](SCREENSHOT-PROTOCOL.md).
+The demo workspace is an **external declared fixture** (`~/bb-demo-hub`), used
+as-is by recorded decision (2026-09-12) — see [SCREENSHOT-PROTOCOL.md](SCREENSHOT-PROTOCOL.md).

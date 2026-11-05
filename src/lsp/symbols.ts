@@ -1,3 +1,27 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the declared-symbol surface (documentSymbol /
+// workspaceSymbol over the persisted index) and the ONE declared-absence
+// vocabulary every LSP read door branches on.
+// WHICH TOOL IT SERVES — the editor's outline and symbol picker, plus each LSP
+// door that must say WHY an answer is empty instead of returning a bare [].
+// WHY IT IS SHAPED THIS WAY — absence is a CONTRACT, not a message: a single
+// code union owned here, so two surfaces cannot name the same absence
+// differently (§11.7). A code names ONE fact, and a fact gets its own code
+// rather than being squeezed into a neighbouring one.
+// WHERE ITS EVIDENCE LIVES — script/m24/verify-symbols.ts,
+// script/m24/verify-server.ts, script/m24/verify-call-hierarchy.ts (L5 G7);
+// docs/IDE-HONESTY-CONTRACT.md §11.7, §15.3.
+// EDIT TOGETHER WHEN THIS CHANGES — src/lsp/call_hierarchy.ts (imports this
+// vocabulary), src/lsp/navigation.ts (same position/absence owners),
+// src/lsp/positions.ts (the P1 coordinate conversion),
+// src/lsp/launch_languages.ts (the launch set named in every absence).
+// CONTRACTS IT MUST NOT BREAK — every code means exactly one thing; a served
+// symbol's empty answer keeps a machine-readable reason; no consumer can
+// receive a bare empty result as "nothing found".
+// ─────────────────────────────────────────────────────────────────────────────
+//
 // src/lsp/symbols.ts — M24.L4 (declared-absence + position-ownership wave).
 //
 // textDocument/documentSymbol and workspace/symbol over the persisted index
@@ -70,6 +94,11 @@ export type DeclaredAbsenceCode =
   | "not_in_index"
   /** no indexed symbol covers the requested position */
   | "symbol_not_at_position"
+  /** a SERVED symbol whose call list is empty: the symbol WAS found, and the
+   *  answer is that the store holds no caller/callee row of the kinds the
+   *  surface reads. Distinct from "no symbol at the position" — a client that
+   *  branches on this must not be told the symbol is missing. */
+  | "no_stored_calls"
   /** the requested symbol id is not in the index */
   | "symbol_not_in_index"
   /** an external (unresolvable) target has no index identity to expand */

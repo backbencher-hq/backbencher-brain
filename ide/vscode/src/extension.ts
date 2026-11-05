@@ -1,4 +1,43 @@
 // ide/vscode/src/extension.ts — M25.E1 entry (thin client).
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — M25.E1 entry for the bb_lsp VS Code extension: a thin
+// client that resolves and launches the bb_lsp server, wires the
+// LanguageClient, owns the activation budget, the status bar surface, command
+// registration, and the webview panel entry points. All intelligence lives in
+// src/lsp/; this file owns no language set, no analysis, and no renderer.
+//
+// WHICH TOOL IT SERVES — bb-lsp-vscode (the VS Code-family extension client).
+//
+// WHY IT IS SHAPED THIS WAY — activate() is a measured, bounded operation
+// (contract §7.3); language coverage is derived from the single launch-set
+// owner (src/lsp/launch_languages.ts) so the client can never silently stop
+// serving a language the server serves; every status-bar badge carries a
+// command so no badge is dead; panels are placed through the single P1
+// decision (ide/vscode/src/panel-placement.ts) and reused.
+//
+// WHERE ITS EVIDENCE LIVES — activation measurement: this file (activate()
+// wall clock, report.withinBudget), gated by `npx tsc --noEmit -p ide/vscode`
+// and `node ./esbuild-extension.mjs`; language list: src/lsp/launch_languages.ts
+// (14 launch languages, drift-gated by script/m25/verify-packaging.ts and by
+// the build-script lockstep asserted in esbuild-extension.mjs); panel
+// placement: panel-placement.ts, used by graph-panel.ts, hub-panel.ts,
+// impact-panel.ts; frames: validation/m55/frames/live-7/7-status.png,
+// live-8/7-status.png, live-10/7-status.png (a status notification collapsed
+// to one line — fixed by the M55.V1 status surface in status-markup.ts).
+//
+// EDIT TOGETHER WHEN THIS FILE CHANGES — ide/vscode/package.json
+// (activationEvents must match the launch set; the build fails on drift),
+// esbuild-extension.mjs (asserts the same lockstep and stages grammar wasms
+// per launch language), status-model.ts (per-language claim levels indexed by
+// LAUNCH_LANGUAGES), panel-placement.ts (the P1 placement decision this file
+// consumes via resolvePlacementFromSettings).
+//
+// CONTRACTS IT MUST NOT BREAK — contract §7.3 activation budget (measured and
+// surfaced, a miss is a failed gate); contract §9 language onboarding (no
+// unapproved language surfaces in the client); contract §4 (crash evidence
+// never silent); M55.P1 (activeGroup default, preserveFocus honored, panels
+// reused never duplicated).
 //
 // The extension stays thin: all intelligence lives in bb_lsp. This file owns
 // exactly three E1 responsibilities:
@@ -31,6 +70,7 @@ import {
 import { resolveServerLaunch, versionDecision, ServerLaunch, SourceMode } from "./server-resolution"
 import { createAutoIndexMachine, AutoIndexMachine } from "./auto-index"
 import { renderStatus, StatusInput, StaleMarkerInput } from "./status-model"
+import { LAUNCH_LANGUAGES, type LaunchLanguage } from "../../../src/lsp/launch_languages"
 // M55.V1: the status SURFACE — the pure markup owner + the ONE webview shell
 // and placement helper every panel uses (no second style or placement rule).
 import { renderStatusMarkup, statusSurfaceState, type StatusSurfaceInput } from "./status-markup"
@@ -42,6 +82,29 @@ export const BB_ACTIVATION_BUDGET_SETTING = "bbLsp.activationBudgetMs"
 export const BB_MIN_SERVER_VERSION_SETTING = "bbLsp.minServerVersion"
 export const BB_SERVER_PATH_SETTING = "bbLsp.serverPath"
 export const BB_SOURCE_MODE_SETTING = "bbLsp.sourceMode"
+
+/** VS Code language id for each launch language. Identity today — declared as
+ *  a table so a future rename (for example the server calling it "c++" while
+ *  VS Code uses "cpp") is one visible, build-gated change instead of a second
+ *  silent list. Lockstep with src/lsp/launch_languages.ts is enforced by the
+ *  type system (Record<LaunchLanguage, string>) and by the build-script
+ *  assertion in esbuild-extension.mjs. */
+export const VSCODE_LANGUAGE_ID: Record<LaunchLanguage, string> = {
+  java: "java",
+  groovy: "groovy",
+  kotlin: "kotlin",
+  scala: "scala",
+  typescript: "typescript",
+  javascript: "javascript",
+  python: "python",
+  zig: "zig",
+  go: "go",
+  rust: "rust",
+  c: "c",
+  cpp: "cpp",
+  vue: "vue",
+  svelte: "svelte",
+} as const
 
 export type ActivationReport = {
   /** activate() → control returned to the editor (§7.3 regime), ms. */
@@ -250,19 +313,20 @@ async function startClient(context: ExtensionContext, report: ActivationReport):
   if (report.launch === null) return
   const serverOptions = buildServerOptions(report.launch)
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [
-      { scheme: "file", language: "java" },
-      { scheme: "file", language: "groovy" },
-      { scheme: "file", language: "kotlin" },
-      { scheme: "file", language: "scala" },
-      { scheme: "file", language: "typescript" },
-      { scheme: "file", language: "javascript" },
-      { scheme: "file", language: "python" },
-    ],
+    // Derived from the single launch-set owner (src/lsp/launch_languages.ts)
+    // through the declared mapping table — never a second list. A wave that
+    // adds language N+1 flows here automatically; the build fails if package.json
+    // activationEvents drifts (see esbuild-extension.mjs).
+    documentSelector: LAUNCH_LANGUAGES.map((language) => ({
+      scheme: "file",
+      language: VSCODE_LANGUAGE_ID[language],
+    })),
     initializationOptions: {},
-    // Hover links must fire (owner test, 2026-09-05): VS Code only executes
-    // command: URIs in Markdown that is marked TRUSTED. The rich hover body
-    // (bb.openUsage / bb.openDefinition / bb.openGraph / …) is composed by
+    // Hover links must fire (measured editor behavior, 2026-09-05): VS Code
+    // only executes `command:` URIs in Markdown marked TRUSTED. No repo record
+    // captures this — it is a platform constraint, and this file works around
+    // it by trusting our own server-composed Markdown (our own `bb.*`
+    // commands, self-produced content).
     // OUR OWN server — self-produced content with our own bb.* commands — so
     // trusting it is safe and is what makes the actions clickable. Middleware
     // stamps every MarkdownString the client hands to the hover UI.
@@ -343,55 +407,20 @@ async function startClient(context: ExtensionContext, report: ActivationReport):
 export async function activate(context: ExtensionContext): Promise<unknown> {
   const startedAt = Date.now()
   const { mode, serverPath, minVersion, budgetMs } = readLaunchConfig()
-  // Declared refusal BEFORE resolution: without a workspace folder there is no
-  // project to index — no silent cwd guess (see workspaceRootOrNull).
-  const wsRoot = workspaceRootOrNull()
-  if (wsRoot === null) {
-    statusItem = window.createStatusBarItem(StatusBarAlignment.Right, 90)
-    statusItem.name = "Backbencher Brain"
-    context.subscriptions.push(statusItem)
-    statusItem.text = "$(info) bb: no workspace"
-    statusItem.tooltip = "bb_lsp is not started: this window has no workspace folder (a single opened file is not a project). Open the project's folder to enable the Backbencher index."
-    statusItem.show()
-    return { activationMs: Date.now() - startedAt, declaredBudgetMs: budgetMs, withinBudget: true, launch: null, serverVersion: undefined, versionOk: false, noWorkspace: true }
-  }
-  const launchResult = resolveServerLaunch({
-    workspaceRoot: wsRoot,
-    extensionRoot: context.extensionUri.fsPath,
-    mode,
-    explicitServerPath: serverPath,
-  })
-  const report: ActivationReport = {
-    activationMs: 0,
-    declaredBudgetMs: budgetMs,
-    withinBudget: false,
-    launch: "error" in launchResult ? null : launchResult,
-    serverVersion: undefined,
-    versionOk: false,
-  }
-  activationReport = report
+  // Assigned after launch resolution; null until then. The restart command
+  // below closes over it — registration runs before any early return, so the
+  // command id exists on every badge path even when report never materializes.
+  let report: ActivationReport | null = null
 
-  statusItem = window.createStatusBarItem(StatusBarAlignment.Right, 90)
-  statusItem.name = "Backbencher Brain"
-  context.subscriptions.push(statusItem)
-  statusItem.text = "$(sync~spin) bb: starting"
-  statusItem.show()
-
-  if (report.launch === null) {
-    const message = "error" in launchResult ? launchResult.error : "bb_lsp could not be resolved."
-    statusItem.text = "$(error) bb: no server"
-    statusItem.tooltip = message
-    void window.showErrorMessage(message, "Show docs").then((choice) => {
-      if (choice === "Show docs") void commands.executeCommand("vscode.open", "https://github.com/backbencher-hq/backbencher-brain")
-    })
-    report.activationMs = Date.now() - startedAt
-    report.withinBudget = report.activationMs <= budgetMs
-    return
-  }
-
+  // DEFECT 2 fix (M55): register every command BEFORE any early return so the
+  // command id always exists — a badge whose click does nothing is a dead
+  // badge. Registration has no launch dependency, so it runs first and every
+  // badge path below sets statusItem.command at creation time.
   commands.registerCommand("bbLsp.restartServer", async () => {
+    const r = activationReport ?? report
+    if (r === null) return
     if (client !== null) await client.stop()
-    await startClient(context, activationReport ?? report)
+    await startClient(context, r)
   })
   commands.registerCommand("bbLsp.showGraph", async () => {
     const editor = window.activeTextEditor
@@ -410,12 +439,6 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
     // through the index's own truth, never by guessing (Truth Rule 2).
     await showGraphPanel(word, { client, cspSource: "" }, context, editor.document.uri.fsPath)
   })
-  // M55.V1: this command used to show its four facts in a notification —
-  // which VS Code renders as ONE line, so the frame (live-8/7-status.png)
-  // showed only `launch: compiled dist (bundled) — …` and hid the version,
-  // the version verdict and the activation cost. It now opens the SAME status
-  // surface, whose provenance section carries exactly these facts: one
-  // surface, one place to look, nothing collapsed.
   commands.registerCommand("bbLsp.showServerStatus", () => void showStatusPanel(context))
   // E3 status surface commands (declared in the manifest).
   commands.registerCommand("bbLsp.showStatusPanel", () => void showStatusPanel(context))
@@ -428,7 +451,8 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
   // Live getter, NOT a value: this runs before startClient() assigns the
   // module-level client, so capturing `client` here would freeze the hover
   // actions at null and every bb.openGraph / bb.openImpact panel would
-  // render "bb_lsp is not running" forever (owner test, 2026-09-06).
+  // render "bb_lsp is not running" forever (measured 2026-09-06; evidence:
+  // this file, activation order — registration precedes startClient()).
   registerHoverCommands(context, { getClient: () => client, cspSource: "" })
   // Staleness follows the active editor; status renders after every change.
   context.subscriptions.push(
@@ -436,6 +460,55 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
       void refreshStaleness().then(refreshStatus)
     }),
   )
+
+  // Declared refusal BEFORE resolution: without a workspace folder there is no
+  // project to index — no silent cwd guess (see workspaceRootOrNull).
+  const wsRoot = workspaceRootOrNull()
+  if (wsRoot === null) {
+    statusItem = window.createStatusBarItem(StatusBarAlignment.Right, 90)
+    statusItem.name = "Backbencher Brain"
+    context.subscriptions.push(statusItem)
+    statusItem.text = "$(info) bb: no workspace"
+    statusItem.tooltip = "bb_lsp is not started: this window has no workspace folder (a single opened file is not a project). Open the project's folder to enable the Backbencher index."
+    statusItem.command = "bbLsp.showStatusPanel"
+    statusItem.show()
+    return { activationMs: Date.now() - startedAt, declaredBudgetMs: budgetMs, withinBudget: true, launch: null, serverVersion: undefined, versionOk: false, noWorkspace: true }
+  }
+  const launchResult = resolveServerLaunch({
+    workspaceRoot: wsRoot,
+    extensionRoot: context.extensionUri.fsPath,
+    mode,
+    explicitServerPath: serverPath,
+  })
+  report = {
+    activationMs: 0,
+    declaredBudgetMs: budgetMs,
+    withinBudget: false,
+    launch: "error" in launchResult ? null : launchResult,
+    serverVersion: undefined,
+    versionOk: false,
+  }
+  activationReport = report
+
+  statusItem = window.createStatusBarItem(StatusBarAlignment.Right, 90)
+  statusItem.name = "Backbencher Brain"
+  context.subscriptions.push(statusItem)
+  statusItem.text = "$(sync~spin) bb: starting"
+  statusItem.command = "bbLsp.showStatusPanel"
+  statusItem.show()
+
+  if (report.launch === null) {
+    const message = "error" in launchResult ? launchResult.error : "bb_lsp could not be resolved."
+    statusItem.text = "$(error) bb: no server"
+    statusItem.tooltip = message
+    statusItem.command = "bbLsp.showStatusPanel"
+    void window.showErrorMessage(message, "Show docs").then((choice) => {
+      if (choice === "Show docs") void commands.executeCommand("vscode.open", "https://github.com/backbencher-hq/backbencher-brain")
+    })
+    report.activationMs = Date.now() - startedAt
+    report.withinBudget = report.activationMs <= budgetMs
+    return
+  }
 
   // Await client start inside the measured window (activation budget).
   // §7.3 measures the extension's OWN synchronous activation cost (resolve
@@ -556,10 +629,11 @@ export async function showStatusPanel(context?: ExtensionContext): Promise<void>
     language: window.activeTextEditor?.document.languageId ?? null,
   }
   const view = renderStatus(input)
-  // M55.V1 (owner live test, 2026-09-13): the facts used to go into a
-  // notification — and VS Code renders a notification as ONE line, so the
-  // frame showed only "launch: compiled dist (bundled) — …" while every
-  // evidence level, the budget and the staleness marker were collapsed away.
+  // M55.V1 (measured 2026-09-13): the facts used to go into a notification —
+  // and VS Code renders a notification as ONE line, so the frame
+  // validation/m55/frames/live-8/7-status.png showed only "launch: compiled
+  // dist (bundled) — …" while every evidence level, the budget and the
+  // staleness marker were collapsed away.
   // The facts now render on a real, readable, screenshot-able surface; the
   // notification is kept ONLY for the remediation buttons, and its single line
   // is short by construction so nothing is lost in it.

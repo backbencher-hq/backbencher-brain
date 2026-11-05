@@ -12,8 +12,8 @@
     "total": 14,
     "caught": 14
   },
-  "currentCommit": "a512c71f0b435be3203cabd80d53207be8bf3b71",
-  "sourceFingerprint": "2d13f652f4f160134ce943b1cf182ed95d15895075d3d6e7c956e8f9c8fbb50c",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "sourceFingerprint": "8bf97f0771bb583cf4aceff682da435e4d34a360e1714a93240bab7f7c202ba7",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-live-surface.ts",
@@ -27,12 +27,20 @@
     "script/m55/wire-probe.ts"
   ],
   "workingTreeRelevantChanges": [
-    "script/m26/verify-cross-language-hover.ts",
-    "src/lsp/cross_language_hover.ts"
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m55/verify-evidence-tree-clean.ts",
+    "script/m55/verify-hover-coverage.ts",
+    "script/m55/verify-relations.ts",
+    "src/lsp/call_hierarchy.ts",
+    "src/lsp/graph_usages.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/relations.ts",
+    "src/lsp/rich_hover.ts",
+    "src/lsp/symbols.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-11-01T19:31:33.602Z",
+  "generatedAt": "2026-11-05T04:12:19.896Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": false,
@@ -318,7 +326,7 @@
     }
   ],
   "failures": [
-    "R3: the recorded bundle hash equals the bundle built at this HEAD: recorded 9880439da695 vs built 06a2a7d5e0c0"
+    "R3: the recorded bundle hash equals the bundle built at this HEAD: recorded 9880439da695 vs built b4f44dde7085"
   ],
   "limitations": [
     "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
@@ -328,7 +336,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-01T19:31:33.602Z",
-    "contentSha256": "4a8ade4781e36801d8cbeb2f014a896bfadc7f4e88b8add2507283e778e6988f"
+    "sealedAt": "2026-11-05T04:12:19.896Z",
+    "contentSha256": "622334d2905bbeeb469f681d5f5712dda498359a4fc85955fff9775dcfc8bca7"
   }
 }

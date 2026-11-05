@@ -4,28 +4,45 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 41,
-  "passed": 32,
-  "failed": 9,
-  "realFailed": 9,
+  "passed": 36,
+  "failed": 5,
+  "realFailed": 5,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
   "workingTreeRelevantChanges": [
+    "docs/m55/M55-MASTER-PLAN.md",
+    "docs/m55/SCREENSHOT-PROTOCOL.md",
     "docs/m55/VERDICT-PACK.md",
-    "script/m55/verify-closure.ts",
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m55/verify-evidence-tree-clean.ts",
+    "script/m55/verify-hover-coverage.ts",
+    "script/m55/verify-relations.ts",
+    "validation/m55/results/EVID-TREE.json",
+    "validation/m55/results/HOV-COVERAGE.json",
+    "validation/m55/results/HOV-REDTEAM.json",
+    "validation/m55/results/P1.json",
     "validation/m55/results/T1.json",
+    "validation/m55/results/T2.json",
+    "validation/m55/results/T3.json",
     "validation/m55/results/T4.json",
-    "validation/m55/results/X1.json",
-    "validation/m55/results/manifest.json"
+    "validation/m55/results/T5.json",
+    "validation/m55/results/T6.json",
+    "validation/m55/results/V1-action-args.json",
+    "validation/m55/results/V1-blocked-path.json",
+    "validation/m55/results/V1-probe.json",
+    "validation/m55/results/V1-status-panel.json",
+    "validation/m55/results/V1.json",
+    "validation/m55/results/X1.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-10-17T17:29:17.525Z",
+  "generatedAt": "2026-11-05T04:05:09.931Z",
   "audit": {
-    "head": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+    "head": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
@@ -367,13 +384,9 @@
     "handoffIssue": 816
   },
   "failures": [
-    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=a0ed9eade700 realFailed=1 stale((git-could-not-answer) git diff --name-only a0ed9eade7008de7ce93a312f6b0bd7e182a43a9..HEAD -- script/m55/verify-governance.ts docs/m55/M55-MASTER-PLAN.md docs/m55/SCREENSHOT-PROTOCOL.md script/m55/relevance.ts — Command failed: git diff --name-only a0ed9eade7008de7ce93a312f6b0bd7e182a43a9..HEAD -- script/m55/verify-governance.ts docs/m55/M55-MASTER-PLAN.md docs/m55/SCREENSHOT-PROTOCOL.md script/m55/relevance.ts)",
-    "C1: T2 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=554f889a5617 realFailed=0 stale((git-could-not-answer) git diff --name-only 554f889a5617ddf2f72c4c8bd2abab3b701f0bde..HEAD -- src/lsp/call_hierarchy.ts src/lsp/positions.ts script/m55/verify-call-hierarchy.ts script/m55/t2-fixture.ts script/m55/relevance.ts — Command failed: git diff --name-only 554f889a5617ddf2f72c4c8bd2abab3b701f0bde..HEAD -- src/lsp/call_hierarchy.ts src/lsp/positions.ts script/m55/verify-call-hierarchy.ts script/m55/t2-fixture.ts script/m55/relevance.ts)",
-    "C1: T3 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=4ab4019155f1 realFailed=0 stale((git-could-not-answer) git diff --name-only 4ab4019155f10f6395ab644c694bda960b68b992..HEAD -- src/lsp/relations.ts src/lsp/rich_hover.ts src/lsp/navigation.ts script/m55/verify-relations.ts script/m55/t3-fixture.ts script/m55/relevance.ts — Command failed: git diff --name-only 4ab4019155f10f6395ab644c694bda960b68b992..HEAD -- src/lsp/relations.ts src/lsp/rich_hover.ts src/lsp/navigation.ts script/m55/verify-relations.ts script/m55/t3-fixture.ts script/m55/relevance.ts)",
-    "C1: T5 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=428658b04fa0 realFailed=0 stale((git-could-not-answer) git diff --name-only 428658b04fa05de756ca8afff490a20dea94eec9..HEAD -- src/lsp/evidence_tier.ts src/lsp/hover.ts src/lsp/cross_language_hover.ts script/m26/graph-core.ts script/m55/verify-tiers.ts script/m55/t5-fixture.ts script/m55/relevance.ts — Command failed: git diff --name-only 428658b04fa05de756ca8afff490a20dea94eec9..HEAD -- src/lsp/evidence_tier.ts src/lsp/hover.ts src/lsp/cross_language_hover.ts script/m26/graph-core.ts script/m55/verify-tiers.ts script/m55/t5-fixture.ts script/m55/relevance.ts)",
-    "C1: P1 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=428658b04fa0 realFailed=n/a stale((git-could-not-answer) git diff --name-only 428658b04fa05de756ca8afff490a20dea94eec9..HEAD -- ide/vscode/src/panel-placement.ts ide/vscode/src/hub-panel.ts ide/vscode/src/impact-panel.ts ide/vscode/src/graph-panel.ts ide/vscode/package.json script/m55/verify-panel-placement.ts script/m55/relevance.ts — Command failed: git diff --name-only 428658b04fa05de756ca8afff490a20dea94eec9..HEAD -- ide/vscode/src/panel-placement.ts ide/vscode/src/hub-panel.ts ide/vscode/src/impact-panel.ts ide/vscode/src/graph-panel.ts ide/vscode/package.json script/m55/verify-panel-placement.ts script/m55/relevance.ts)",
-    "C1: V1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=02d330054f99 realFailed=20 stale((git-could-not-answer) git diff --name-only 02d330054f994b9e6f0c391343ee80e49487497b..HEAD -- script/m55/verify-live-surface.ts script/m55/screenshot-protocol.ts script/m55/wire-probe.ts script/m55/pixel-read.py script/m55/relevance.ts — Command failed: git diff --name-only 02d330054f994b9e6f0c391343ee80e49487497b..HEAD -- script/m55/verify-live-surface.ts script/m55/screenshot-protocol.ts script/m55/wire-probe.ts script/m55/pixel-read.py script/m55/relevance.ts)",
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=0dbafd74ef4f green=41/41 lane-changed=142",
+    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=a0ed9eade700 realFailed=1 stale(docs/m55/M55-MASTER-PLAN.md,script/m55/verify-governance.ts)",
+    "C1: V1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=922b4f883f3c realFailed=1",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=0dbafd74ef4f green=41/41 lane-changed=149",
     "C2: G1's bar re-audit records the ladder gates it ran: []",
     "C2: G1's bar re-audit records every ladder gate green: []"
   ],
@@ -384,7 +397,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:29:17.562Z",
-    "contentSha256": "253bee9e422dbbf96cbe31d8cedabcc30f23a3df6bf745d218f789a832555c96"
+    "sealedAt": "2026-11-05T04:05:09.941Z",
+    "contentSha256": "596ea423e7305f03e45b3842338e2a4eb06c42eb1e0abfd28ca48089f0d51025"
   }
 }

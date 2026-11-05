@@ -164,7 +164,26 @@ export interface ScanResult {
  * no git, so every mutant in M1-M4 drives the SAME function the real verdict
  * drives, on a synthetic tree, with zero risk to the real evidence tree.
  */
-export function scanEvidenceTree(root: string, tracked: ReadonlySet<string>, rule: { pattern: RegExp }): ScanResult {
+export function scanEvidenceTree(
+  root: string,
+  tracked: ReadonlySet<string>,
+  rule: { pattern: RegExp },
+  /** DECLARED-IGNORED files: present on disk, absent from git BY POLICY.
+   *  Excluded from the "untracked" corpus unless the caller deliberately omits
+   *  this set (the mutants do, on a temp tree with no ignores).
+   *
+   *  WHY THIS PARAMETER EXISTS. The rule this gate enforces is "no harness left
+   *  scratch behind" — scratch being a file a `git add -A` would sweep up. The
+   *  repository deliberately gitignores heavy research artifacts under
+   *  `validation/tools/**` (databases, corpora, node_modules, screenshots) and
+   *  `validation/release/**`; there are ~6.7k of them on a working tree. The
+   *  first implementation subtracted only `git ls-files` from a filesystem walk,
+   *  so every one of those declared-ignored artifacts counted as scratch and C1
+   *  could never pass — while C4, which asks git the same question, passed. Two
+   *  checks in one gate answering the same question differently is how a gate
+   *  becomes noise. This makes both read the same corpus. */
+  ignored: ReadonlySet<string> = new Set(),
+): ScanResult {
   const files: string[] = []
   const walk = (dir: string): void => {
     let entries: ReturnType<typeof readdirSync>
@@ -184,7 +203,7 @@ export function scanEvidenceTree(root: string, tracked: ReadonlySet<string>, rul
   const untracked: string[] = []
   const scratchSignatures: string[] = []
   for (const rel of files) {
-    if (!tracked.has(rel)) untracked.push(rel)
+    if (!tracked.has(rel) && !ignored.has(rel)) untracked.push(rel)
     if (rule.pattern.test(path.basename(rel))) scratchSignatures.push(rel)
   }
 
@@ -195,6 +214,24 @@ export function scanEvidenceTree(root: string, tracked: ReadonlySet<string>, rul
   }
   violations.sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0))
   return { total: files.length, untracked, scratchSignatures, violations }
+}
+
+/** `git ls-files --others --ignored --exclude-standard` over validation/, as rel
+ *  paths from the validation root. The complement of the tracked set: files git
+ *  knows about but is configured NOT to track. */
+function ignoredUnderValidation(): Set<string> {
+  const out = execFileSync(
+    "git",
+    ["ls-files", "--others", "--ignored", "--exclude-standard", "--", "validation"],
+    { cwd: ROOT, encoding: "utf8" },
+  )
+  const set = new Set<string>()
+  for (const line of out.split("\n")) {
+    const l = line.trim()
+    if (!l) continue
+    set.add(l.replace(/^validation\//, ""))
+  }
+  return set
 }
 
 /** `git ls-files` over validation/, as rel paths from the validation root. */
@@ -246,7 +283,8 @@ const SELF_EXEMPT = new Set([OWN_EVIDENCE_REL])
 console.log("M55 evidence-tree hygiene: is the evidence tree only evidence?")
 const VALIDATION = path.join(ROOT, "validation")
 const tracked = trackedUnderValidation()
-const real = scanEvidenceTree(VALIDATION, tracked, SCRATCH_NAME_RULE)
+const ignored = ignoredUnderValidation()
+const real = scanEvidenceTree(VALIDATION, tracked, SCRATCH_NAME_RULE, ignored)
 
 // C1's corpus: untracked files, minus this gate's own declared output.
 const c1Untracked = real.untracked.filter((rel) => !SELF_EXEMPT.has(rel))

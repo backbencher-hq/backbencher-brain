@@ -2,6 +2,146 @@
 
 ## Unreleased
 
+### The editor surfaces stopped disagreeing with each other
+
+Four surfaces answer "who uses this symbol": the hover card, `bb/graph` `mode:"usages"`
+(the hub), `textDocument/references`, and the hover's own `connected:` line. Measured on a
+real index over real stdio, one symbol produced four numbers — `greet` reported 6 usages in
+prose while its own connections line listed 3 callers, the hub listed 6 caller groups, and
+references returned 7 locations. Each number was individually defensible: they counted
+different things, and none of them said what.
+
+They now count one thing and say so. A **usage site** is a stored relationship row whose
+target is the symbol and whose kind is not a declaration containment, owned in one place
+(`src/lsp/relations.ts`); a **count** is a count of served positions, and the unit sentence is
+the owner's single copy quoted by every surface. The hover's count equals its rendered rows
+plus a declared remainder; zero is stated rather than omitted.
+
+Three separate lies were removed to get there, each found only because a human read the
+surface:
+
+- **The hover's "usages" list was not usages.** `greetAll` has zero callers and rendered
+  "3 usages" listing its own class (`Greeter`) and its own callee (`greet`). Declaration
+  containments now render in their own labelled section and never in the usage list or the
+  connection summary.
+- **The hub served the owner-family cascade as callers.** A method with **zero** callers
+  answered six caller groups — every class member's referrers plus the class's own
+  instantiators — so "who calls this" listed symbols that never call it. Cascade rows are now
+  excluded **and counted** per bucket (`selfReferentialRows`, `declarationContainments`,
+  `ownerFamilyRows`), with `callerCandidateRows` on the payload so every excluded row is
+  accounted for. The naive fix — drop everything not adjacent to the root — was measured and
+  rejected: it deleted the hub's legitimate transitive call tree. The law that satisfies both
+  is that a deeper row is served only when it extends an already-served chain.
+- **The class's caller list carried a member's own call**, re-attributed to the class. It now
+  equals the class's usage sites.
+
+`script/m55/verify-relations.ts` grew four cross-surface assertions (`R3b`) that pin the
+agreement on the wire: a zero-caller symbol answers zero from hover, references and the hub;
+an empty answer is empty *by a declared filter* whose counts close the row arithmetic; a
+symbol with callers reconciles as groups = usage places + the declared unlocatable referrers.
+
+### A position a surface could not know is no longer shown
+
+Three classes of invented position, all found by reading rendered surfaces:
+
+- **The hover served stored call-site lines past the end of the source.** A three-line file
+  with rows stored at lines 40 and 41 rendered two usage links that opened past the file.
+  The hover now applies the same line bound `textDocument/references` applies
+  (`createPositionMapper(text).lineTexts.length`), refuses to serve such a row, and declares
+  the count: *"usages omitted — N stored rows name a call-site line past the end of the source
+  file"*, with `data.omittedUsageRows`. Measured before/after: collector sites 2 → 0,
+  `omittedUnresolvable` unchanged at 2. The agreement is gated, not described.
+- **Call hierarchy listed the root as its own caller and callee**, pointed every `fromRanges`
+  entry at a declaration instead of the call site, and threw `-32603` when a caller was
+  expanded. Self-edges are dropped and **declared with their reason**; ranges come from the
+  M62 address owner and carry the declared unknown where the store holds no real line.
+- **Outgoing connected/containment links opened the far end's file at the caller's stored
+  line** — a link labelled "instantiates [Greeter]" that opened `greeter.ts:4` when the site is
+  `app.ts:4`. Outgoing rows now open the far end's declaration and never turn a stored line
+  into a link target for a different symbol.
+
+A new absence code `no_stored_calls` distinguishes "served symbol with an empty call list" from
+`symbol_not_at_position`, which was false for it — a machine-readable code a client may branch
+on must not contradict the answer.
+
+### The hover's relationship denominator was ten kinds against an index that stores fourteen
+
+`decorates`, `renders`, `mixes_in` and `part_of` were stored, classified by the hover's own tier
+owner, and could not be rendered or declared because the denominator and the verb table stopped
+at ten. All fourteen now have a denominator entry, both-direction verbs, and — for `part_of` —
+a declared absence instead of a link (a module-level inclusion, like `imports`, is not drawn as
+a symbol link). The drift gate that catches this was itself anchored on a file the kind
+enumeration had moved out of, so it had been reporting a refactor as a pass rather than
+checking a fact.
+
+### Warm hover latency: p95 51.31 ms → 9.82 ms
+
+The warm budget is 50 ms (§3). One of three busy shapes missed it. The cause was not the parse:
+the hover resolved a full call-site location for **every** row and then discarded it for any row
+whose stored call-site line was real, so a 32-file symbol paid 30 file reads and 60 position
+mappers per request for positions nothing later read. Now a row with a real stored call-site
+line is served from `(caller path, stored line)` validated only by the line-count bound, and
+line counts ride a bounded LRU keyed by `(path, mtimeMs, size)` — stat-only on a warm hit,
+re-read on any mismatch. Measured with load average 20.67 on 8 CPUs: shape A p50 6.62 ms /
+p95 9.82 ms; shapes B and C under 5 ms. No regex was introduced (regex policy: 0 new).
+
+### The extension activated on 7 of the 14 languages the server serves
+
+`src/lsp/launch_languages.ts` is the single owner of the launch set (14 languages), but
+`package.json` `activationEvents` and the client's `documentSelector` listed 7. On a Go, Rust,
+C, C++, Vue, Svelte or Zig file the extension never activated; in a mixed workspace VS Code
+sent no requests for those files at all. Both lists are now derived from the owner through a
+type-enforced language-id table, and `esbuild-extension.mjs` fails the build if
+`activationEvents` drifts from the launch set.
+
+### The status-bar badge was dead on three paths
+
+Clicking the `bb` badge opened nothing when there was no workspace folder (a single file
+opened), when the server was not resolved, or when the server version was incompatible — the
+click target was assigned only on the success path. The command is now assigned at creation and
+every command is registered before any early return, so no badge renders without a working
+click.
+
+### A claim ladder with three definitions
+
+The I0–I5 levels were defined three times and disagreed: the contract said I2
+INDEX-CONFORMANT / I3 EDITOR-VERIFIED / I4 FORK-VERIFIED, the extension README said
+RUNTIME-PASSED / IN-EDITOR / CROSS-EDITOR, and the status model said HARNESS-VERIFIED /
+EDITOR-VERIFIED / PRECISION-VERIFIED. The website rendered two of them side by side. The
+contract is governing; both other copies now defer to it and define no second ladder.
+
+### Verification machinery repaired
+
+Six gates were red or silently not running, each for a reason unrelated to the product:
+
+- `verify-relations.ts` M4 anchored on a source expression M62 had moved behind the
+  single-owner constant `STORED_LINE_COLUMN`, so it matched zero times.
+- `verify-call-hierarchy.ts` C1 asserted a store shape the engine stopped producing in
+  `2617ac1bd` ("an unresolved target is reported as unresolved, not matched by name"); it is
+  now a hermetic planted-row test, and the seven free verdicts it caused are gone.
+- `verify-hover-coverage.ts` V1c read `src/mcp/tool-registry.ts`, where the relationship-kind
+  enumeration no longer lives, and its machine metadata shelled out to
+  `sysctl -n hw.ncpu`, which crashes on Linux before any result is written.
+- `verify-evidence-tree-clean.ts` counted ~6.7k **deliberately gitignored** research artifacts
+  as "scratch" while its own self-check asked git the same question and got a different
+  answer; and its EVID-TREE claim declared only verifier paths as coverage, so the fingerprint
+  could not discriminate and the gate threw on every run that reached the evidence write.
+- Four gates (`verify-server`, `verify-usage-scope`, `verify-usages-fallback`) did not pin
+  `BB_DATA_DIR`, so on a host with a read-only `~/.bb` every absence-carrier path died with
+  `-32603 ENOENT` — a red gate about the sandbox. They now pin a temp data dir unless one is
+  supplied, and `L1` is 142/142 reproducibly.
+
+### Documentation and tree hygiene
+
+Documentation now states measured fact rather than narrated decision: the "owner said",
+"his words" and "owner live test" framing is gone from the IDE documents and from the
+analyzer header template that taught it. Thirteen superseded/duplicate documents and twelve
+stray root files (six ad-hoc probes referencing a path that does not exist in this layout, a
+certificate log, two XML probes, two superseded root docs, an unused wasm copy) were removed
+after a reference grep proved nothing cited them. A new `docs/IDE-LANE-BASELINE.md` records,
+per record, what the documents claimed, what the record claimed, what the gate returned at
+HEAD, and what is actually true — four different states that had been collapsed into one.
+
 ### A `callers` count was not a count of calls
 
 The graph engine's default covers every relationship kind the index stores — documented, and

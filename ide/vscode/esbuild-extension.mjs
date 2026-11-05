@@ -1,4 +1,43 @@
 // ide/vscode/esbuild-extension.mjs — M25.E1/E4 build.
+// Author: Muhammad Ishaq Khan
+//
+// WHAT THIS FILE IS — the bb_lsp VS Code extension build: bundles src/
+// extension.ts (and the panel/test bridges) with esbuild, and stages the
+// compiled bb_lsp server, its grammar wasms, and the indexer pool worker
+// into dist/ so collect-server-deps.mjs can ship runtime deps next to them.
+//
+// WHICH TOOL IT SERVES — bb-lsp-vscode (the VS Code-family extension client).
+//
+// WHY IT IS SHAPED THIS WAY — esbuild bundles the extension entry with vscode
+// external (the editor supplies it); the server dist is CHUNKED (tsup), so the
+// whole relative import closure is staged, preserving layout; grammar wasms
+// are NOT discoverable by any import walk (data loaded by string paths from
+// src/util/bb-data-dir.ts) — they are DERIVED from the single launch-set
+// owner src/lsp/launch_languages.ts at build time, so a wave adding language
+// N+1 cannot ship a server that cannot parse its files; the pool worker's
+// same-dir chunk imports are rewritten one level up for the nested
+// dist/server/ layout. package.json cannot import TS, so activationEvents
+// lockstep with the launch set is ASSERTED here and the build fails on drift
+// — no second language list is maintained anywhere.
+//
+// WHERE ITS EVIDENCE LIVES — language list: src/lsp/launch_languages.ts
+// (derived here with the same derivation as script/m25/verify-packaging.ts);
+// grammar mapping: GRAMMAR_BY_LANGUAGE in this file (declared, per language);
+// lockstep: the manifest assertion below, run on every build; the built
+// dist/extension.js sha256 is the release identity recorded after a green
+// build (task-4 verification).
+//
+// EDIT TOGETHER WHEN THIS FILE CHANGES — ide/vscode/package.json
+// (activationEvents must match the launch set; this file fails the build on
+// drift), src/lsp/launch_languages.ts (single owner of the launch set — a
+// wave change here requires a grammar mapping here and a manifest change),
+// script/m25/verify-packaging.ts (independently re-derives the same set and
+// asserts the staged wasms).
+//
+// CONTRACTS IT MUST NOT BREAK — contract §9 language onboarding (the client
+// surface covers exactly the launch set); the bundled server parses every
+// launch language (staged grammar wasms cover the set).
+//
 // Bundles the extension entry and copies the compiled bb_lsp server into the
 // VSIX layout (dist/server/lsp/server.js) so resolution order (c) works.
 import { build } from "esbuild"
@@ -152,6 +191,25 @@ if (existsSync(serverDist)) {
   const launchMatch = /LAUNCH_LANGUAGES = \[([\s\S]*?)\]/.exec(launchSrc)
   const launchLanguages = launchMatch ? [...launchMatch[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]) : []
   if (launchLanguages.length === 0) throw new Error("could not derive LAUNCH_LANGUAGES from src/lsp/launch_languages.ts — keep the derivation in sync")
+
+  // Lockstep with the manifest: package.json cannot import TS, so its
+  // activationEvents are asserted against the single launch-set owner and the
+  // build FAILS on drift. A language missing from activationEvents is a
+  // language the extension never activates on (the 7-vs-14 defect).
+  const manifest = JSON.parse(readFileSync(path.join(here, "package.json"), "utf8"))
+  const declared = (manifest.activationEvents ?? [])
+    .map((e) => { const m = /^onLanguage:([a-z0-9+]+)$/.exec(e); return m ? m[1] : null })
+    .filter((e) => e !== null)
+  const missing = launchLanguages.filter((l) => !declared.includes(l))
+  const extra = declared.filter((d) => !launchLanguages.includes(d))
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      `bb_lsp activation drift: package.json activationEvents do not match the launch set ` +
+      `(src/lsp/launch_languages.ts, ${launchLanguages.length} languages). ` +
+      `Missing: ${missing.join(", ") || "none"}. Extra: ${extra.join(", ") || "none"}. ` +
+      `Update package.json activationEvents to cover every launch language; do not maintain a second list.`,
+    )
+  }
   const GRAMMAR_BY_LANGUAGE = {
     typescript: ["tree-sitter-typescript.wasm", "tree-sitter-tsx.wasm"], // tsx shares the typescript package (engine.ts case "tsx")
     javascript: ["tree-sitter-javascript.wasm"],

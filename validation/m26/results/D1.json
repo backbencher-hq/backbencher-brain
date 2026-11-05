@@ -23,17 +23,74 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 0,
-    "skipped": 980
+    "scanned": 949,
+    "skipped": 31
   },
-  "realDbsScanned": 0,
-  "realDbsSkipped": 980,
-  "realCrossLanguagePairs": 0,
-  "realPairRows": [],
+  "realDbsScanned": 949,
+  "realDbsSkipped": 31,
+  "realCrossLanguagePairs": 8,
+  "realPairRows": [
+    {
+      "source": "c",
+      "target": "cpp",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "38efa84d12ab7f95e13e5caf90bdf3dffce81cb4"
+    },
+    {
+      "source": "go",
+      "target": "yaml",
+      "edgeCount": 40,
+      "sampleBridge": "name-resolution",
+      "database": "3cc416747a0082a80b42b89928cb8c909e09e371"
+    },
+    {
+      "source": "javascript",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9"
+    },
+    {
+      "source": "vue",
+      "target": "typescript",
+      "edgeCount": 2,
+      "sampleBridge": "name-resolution",
+      "database": "4ea1262456630e2bd44cbda7f4e98502f819abb9"
+    },
+    {
+      "source": "groovy",
+      "target": "java",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "5beed1b97e35797710f9e6bed37356d751da06be"
+    },
+    {
+      "source": "go",
+      "target": "yaml",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 22,
+      "sampleBridge": "name-resolution",
+      "database": "9984990e82d7c4a065c465b42cc520d980c70e3e"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 361,
+      "sampleBridge": "name-resolution",
+      "database": "b750c2644e0f50449cd827105bcd2a22fce791dd"
+    }
+  ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "fded4e59bba398f4ed40166591bce3a8c6d2e330",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "sourceFingerprint": "3f5470ad708ee83f4727120276fa001565ce9f721a8fb7de0af7caa31328e4a2",
+  "sourceFingerprint": "0decc2523cfb10ffe7b56ba9bf5488aeaacd5a8a975bf905ca1d82429d57f312",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m26/verify-graph-docs.ts",
@@ -43,14 +100,14 @@
     "script/m26/ambient-reality.ts",
     "script/m26/graph-core.ts"
   ],
-  "generatedAt": "2026-11-03T16:37:37.614Z",
+  "generatedAt": "2026-11-05T04:28:04.478Z",
   "limitations": [
     "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
     "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-03T16:37:37.615Z",
-    "contentSha256": "83cfab6b2ffb7aea2cd64e4a410baf064fb82d71356a9f819f1672a37a4ed31d"
+    "sealedAt": "2026-11-05T04:28:04.478Z",
+    "contentSha256": "694ee43ddb5f2b6e152eb42ee0a1c1bc2df29c7bd2053172ed67bf7655f4bfe3"
   }
 }

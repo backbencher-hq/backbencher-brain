@@ -1,21 +1,35 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Author: Muhammad Ishaq Khan
 //
-// WHAT THIS FILE IS — {what}
+// WHAT THIS FILE IS — the `textDocument/hover` handler: resolve the symbol under
+//   the cursor, then assemble the card (signature, type provenance, usage count
+//   with its declared scope and unit, evidence tiers, connected/usage/containment
+//   sections, actions, cross-language facts, annotations, freshness) and render
+//   it as human markdown plus the structured `SymbolHoverData`.
 // WHICH TOOL IT SERVES — the IDE surface of the index: every bb tool whose
 //   evidence appears in a hover (bb_graph, bb_impact, bb_cross_language,
 //   bb_annotate / bb_annotations) plus bb_lsp itself.
-// WHY SHAPED THIS WAY — every rendering path labels the author class and tool
-//   identity so an agent note can never read as index-derived fact; absence is
-//   declared (an empty section, nothing rendered) rather than rendered as zero.
-// WHERE EVIDENCE LIVES — script/m24/verify-hover-docs.ts, script/m55/verify-hover-coverage.ts,
-//   script/m28/verify-annotation-ui.ts, validation/tools/bb_annotate/ and
+// WHY IT IS SHAPED THIS WAY — one collection feeds the count, the list and the
+//   connected summary (§14 Truth Rule 1: count = rendered rows + declared
+//   remainder); a stored row the surface refuses (a call-site line the source
+//   cannot confirm) is OMITTED AND COUNTED on the card, never silently dropped;
+//   absence is declared (an empty section, nothing rendered) rather than rendered
+//   as zero; every rendered block states what its data is and how far to trust it.
+// WHERE ITS EVIDENCE LIVES — script/m24/verify-hover-docs.ts,
+//   script/m55/verify-hover-coverage.ts, script/m24/verify-usage-scope.ts,
+//   script/m28/verify-annotation-ui.ts, validation/m55/results/T3.json (the
+//   past-EOF omission), validation/tools/bb_annotate/ and
 //   validation/tools/cross-language/.
-// EDIT TOGETHER — src/lsp/hover_render.ts (section renderers), src/lsp/evidence_tier.ts
-//   (the trust tier), src/brain/annotation-store.ts (annotation identity).
-// CONTRACTS — every content block states what the data is, how much to trust it,
-//   and whether it is stale; a section is empty (nothing rendered) when its
-//   evidence is absent; the trust tier is derived, never asserted.
+// EDIT TOGETHER WHEN THIS FILE CHANGES — src/lsp/rich_hover.ts (the one collector
+//   and the section renderers), src/lsp/relations.ts (the usage vocabulary),
+//   src/lsp/signature.ts (signature rendering), src/lsp/evidence_tier.ts (the
+//   trust tier), src/lsp/cross_language_hover.ts, src/lsp/annotation_ui.ts,
+//   src/brain/annotation-store.ts (annotation identity).
+// CONTRACTS IT MUST NOT BREAK — every content block states what the data is, how
+//   much to trust it, and whether it is stale; a section is empty (nothing
+//   rendered) when its evidence is absent; the trust tier is derived, never
+//   asserted; a zero usage count is stated together with the scope it was
+//   measured over; an omitted row is declared with its count.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { readFileSync } from "node:fs"
@@ -41,7 +55,7 @@ import { parseParameters, renderSignature, UNRESOLVED_TYPE } from "./signature"
 // the cache module's header): hover used ONE occurrence and ONE comment out of all of them.
 import { ParseUnavailable, docCommentAt, occurrenceAtPoint, parseForCursor, type CursorParse } from "./hover_cache"
 import { renderTypeLine, resolveTypeLine, type TypeLine } from "./type_inference_surface"
-import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
+import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection, type UsageCollectionOmissions } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (one owner; the set was duplicated here
@@ -86,6 +100,16 @@ export interface SymbolHoverData {
    * could not be taken (absent schema/read failure): an absence of measurement is not a measured zero.
    */
   unresolvedNameMatches: UnresolvedNameMatches | null
+  /**
+   * `§15.3` DECLARED OMISSION of stored usage rows. A stored `calls` row whose
+   * call-site line the source file cannot confirm (the file on disk is shorter
+   * than the line the store names) is not a position the index can vouch for, so
+   * it is not served and not counted in `usageCount` — it is counted HERE and
+   * named on the card. `textDocument/references` omits and counts the same rows
+   * in its own `omittedUnresolvable`, so both surfaces answer the same set the
+   * same way. Empty object / zero means "no row was refused" (a measured zero).
+   */
+  omittedUsageRows: Required<UsageCollectionOmissions>
   /**
    * How many files this project's index covers — the denominator for
    * `usageCount`. Null when it could not be measured; the renderer then says the
@@ -464,6 +488,19 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.usagesSection && data.usagesSection.length > 0) {
     lines.push(data.usagesSection)
   }
+  // §15.3 DECLARED OMISSION. The usages list serves only positions the index can
+  // vouch for, which means a stored row whose call-site line is past the end of
+  // the caller's file is refused by the collector. A refusal that is not stated
+  // is a silent under-count, so it is stated here, in the same words the
+  // references surface uses for the same rows. The count line above stays the
+  // truth about SERVED usages (zero stays zero); this line says what was omitted
+  // and why, so the two can never be read as a complete account of the store.
+  if (data.omittedUsageRows.unresolvable > 0) {
+    const n = data.omittedUsageRows.unresolvable
+    lines.push(
+      `**usages omitted** — ${n} stored row${n === 1 ? "" : "s"} name a call-site line past the end of the source file, so ${n === 1 ? "it is" : "they are"} not served (§15.3: omitted and counted, never clamped); \`textDocument/references\` omits the same ${n === 1 ? "row" : "rows"}.`,
+    )
+  }
   // INBOUND MODEL phase B: the usages list is IDENTITY rows only, so a zero there is not the same claim as
   // "nothing names this". When the store holds string-only rows naming the symbol, say so — and say which of
   // the two states they are in (`external` = a known-external identity no declaration here can be,
@@ -587,7 +624,14 @@ export async function hover(
   // usage sites = the L3 references row set, resolved through the
   // navigation location owner. Used for the connected summary, the top-3
   // usage links AND the count (one collection, three renderings).
-  const sites = richSitesForSymbol(raw, symbol.id)
+  //
+  // The THIRD argument is the §15.3 omission counter: a stored usage row whose
+  // call-site line the source cannot confirm is refused by the collector and
+  // counted here, so the card can declare it instead of silently under-counting.
+  // `textDocument/references` applies the same bound to the same rows, which is
+  // what makes hover's count and references' count the same answer.
+  const omittedUsageRows: UsageCollectionOmissions = { unresolvable: 0 }
+  const sites = richSitesForSymbol(raw, symbol.id, omittedUsageRows)
   // (§14 Truth Rule 1): the count IS this array's length — the number
   // of rows the usages list can show (the `+N more` rest included, since the
   // list is capped at MAX_USAGE_LINKS and reports the remainder). The
@@ -753,6 +797,7 @@ export async function hover(
     })(),
     usageCount,
     unresolvedNameMatches,
+    omittedUsageRows,
     indexedFileCount,
     evidenceTiers: tiers,
     // rich sections composed from stored relationship rows.

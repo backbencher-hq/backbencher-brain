@@ -503,6 +503,57 @@ try {
     countUnit === unitFromOwner && greetMd.includes(unitFromOwner),
     JSON.stringify({ hub: countUnit, hoverHasIt: greetMd.includes(unitFromOwner), owner: unitFromOwner }),
   )
+  // --- R3b: the hub's caller list means CALLERS (§15.1, cross-surface) --------
+  //
+  // THE DEFECT THIS PINS (measured on a real index over real stdio): the hub
+  // served the traversal's OWNER-FAMILY CASCADE as caller groups. A method with
+  // ZERO callers answered six — every class member's referrers plus the class's
+  // own instantiators — and the class's caller list carried a member's own call
+  // re-attributed to it. A developer (or an agent) reading "6 callers" for a
+  // method nothing calls is the §15.1 failure this milestone exists to end, one
+  // surface over from the hover defect.
+  //
+  // The fix excludes those rows and DECLARES the count per bucket, so the three
+  // surfaces reconcile ON THE WIRE. Two differences remain and are part of the
+  // account, not exceptions to it: the hub keeps referrers whose location the
+  // index cannot place (its R3 law above), and its groups count caller SYMBOLS
+  // while hover counts usage PLACES (both units are on the payload).
+  const exclusionsSum = (c: any): number =>
+    (c?.selfReferentialRows ?? 0) + (c?.declarationContainments ?? 0) + (c?.ownerFamilyRows ?? 0)
+  const gwAll = await wire.request("bb/graph", { schemaVersion: 2, symbol: "greetAll", mode: "usages", direction: "callers", file: GREETER_FILE })
+  const hubAll: any = gwAll.result
+  check(
+    "R3b: a ZERO-CALLER symbol answers zero caller groups, and hover = references = hub (all zero)",
+    hoverGreetAll.data?.usageCount === 0 && (refsGreetAll.totalCount ?? 0) === 0 &&
+      hubAll?.counts?.callerGroups === 0 && (hubAll?.callers ?? []).length === 0,
+    JSON.stringify({ hover: hoverGreetAll.data?.usageCount, refs: refsGreetAll.totalCount, hubGroups: hubAll?.counts?.callerGroups, groups: (hubAll?.callers ?? []).map((g: any) => g.name) }),
+  )
+  check(
+    "R3b: the empty answer is empty BY A DECLARED FILTER (the traversal returned rows and every one is counted)",
+    (hubAll?.counts?.callerCandidateRows ?? 0) > 0 &&
+      (hubAll?.declaredExclusions?.counts?.caller?.ownerFamilyRows ?? 0) > 0 &&
+      hubAll?.counts?.callerCandidateRows === hubAll?.counts?.callerRows + exclusionsSum(hubAll?.declaredExclusions?.counts?.caller),
+    JSON.stringify({ counts: hubAll?.counts, exclusions: hubAll?.declaredExclusions?.counts?.caller }),
+  )
+  check(
+    "R3b: a symbol WITH callers reconciles — hub caller groups = hover usages + the declared unlocatable referrers; references = hover; the exclusion count closes the row arithmetic",
+    gw.result?.counts?.callerGroups === (hoverGreet.data?.usageCount ?? 0) + unresolvable.length &&
+      refsGreet.totalCount === hoverGreet.data?.usageCount &&
+      callerNames.length === gw.result?.counts?.callerGroups &&
+      gw.result?.counts?.callerCandidateRows === gw.result?.counts?.callerRows + exclusionsSum(gw.result?.declaredExclusions?.counts?.caller),
+    JSON.stringify({ hubGroups: gw.result?.counts?.callerGroups, hover: hoverGreet.data?.usageCount, refs: refsGreet.totalCount, unlocatable: unresolvable, hubRows: gw.result?.counts?.callerRows, candidates: gw.result?.counts?.callerCandidateRows, exclusions: gw.result?.declaredExclusions?.counts?.caller }),
+  )
+  const refsGreeter = resolveReferences(raw, { filePath: GREETER_FILE, line: greeterPos.line, character: greeterPos.character, includeDeclaration: false })
+  const gwGreeter = await wire.request("bb/graph", { schemaVersion: 2, symbol: "Greeter", mode: "usages", direction: "callers", file: GREETER_FILE })
+  const hubGreeterNames: string[] = (gwGreeter.result?.callers ?? []).map((g: any) => g.name)
+  check(
+    "R3b: the class's caller groups ARE its usage sites (a member's own call is no longer re-attributed to the class)",
+    hubGreeterNames.length === gwGreeter.result?.counts?.callerGroups &&
+      hubGreeterNames.slice().sort().join(",") === greeterSites.map((s) => s.name).sort().join(",") &&
+      gwGreeter.result?.counts?.callerGroups === hoverGreeter.data?.usageCount &&
+      gwGreeter.result?.counts?.callerGroups === refsGreeter.totalCount,
+    JSON.stringify({ hub: hubGreeterNames, sites: greeterSites.map((s) => s.name), hover: hoverGreeter.data?.usageCount, refs: refsGreeter.totalCount }),
+  )
   // The declaration containment `Greeter contains greet` is a stored row that
   // targets greet. It is NOT a usage of greet, and it must be named as the
   // exclusion rather than left implicit — this is the row that leaked.
@@ -603,11 +654,19 @@ let r5sql = -1
 let r5PreFixKeyCount = -1
 /** F2's numbers, on their OWN target symbol. They are kept off `r5-target` on
  *  purpose: §12.1 says a stored call-site line the source cannot confirm must be
- *  OMITTED AND DECLARED, and `textDocument/references` does that — but the
- *  hover's collector does not, and it is another lane's file. Folding those rows
- *  into the count differential would either fail this gate on a defect this lane
- *  does not own, or (worse) tempt a weakened assertion. They are measured on
- *  their own symbol and the disagreement is declared instead. See `knownGaps`. */
+ *  OMITTED AND DECLARED. When this section was authored, `textDocument/references`
+ *  did that and the hover's collector did NOT — the two surfaces disagreed, the
+ *  collector's rows were folded off `r5-target` so the count differential stayed
+ *  honest, and the disagreement was recorded as `knownGaps[0]`.
+ *
+ *  THAT GAP IS NOW CLOSED. `src/lsp/rich_hover.ts` bounds a stored call-site line
+ *  against the same `createPositionMapper(text).lineTexts.length` that
+ *  `navigation.ts` applies, refuses to serve a past-EOF row, and declares the
+ *  count as "usages omitted" with a structured `data.omittedUsageRows`. Measured
+ *  before/after on this exact fixture: collector sites 2 (lines 40, 41) -> 0, with
+ *  `omittedUnresolvable` unchanged at 2 on references. The assertion below is the
+ *  one that would have caught the old disagreement, so the closure is GATED
+ *  rather than described — a fix that regresses goes red here. */
 let r5PastEof: {
   servedLocations: number
   omittedUnresolvable: number
@@ -786,6 +845,17 @@ let r5PastEof: {
     readFileSync(path.join(r5ws, "src/target2.ts"), "utf8").split("\n").length < 40,
     `${readFileSync(path.join(r5ws, "src/target2.ts"), "utf8").split("\n").length} lines`,
   )
+  // The closure of former `knownGaps[0]`, asserted rather than described: the
+  // HOVER COLLECTOR must omit the same past-EOF rows `references` omits. This
+  // is the leg that was RED until `src/lsp/rich_hover.ts` gained the line-bounds
+  // check, so it is the leg that keeps the two surfaces from drifting apart again
+  // — one surface, one answer (§15.1), over rows where the only possible correct
+  // answer is to serve nothing.
+  check(
+    "R5: the HOVER'S COLLECTOR omits the same past-EOF rows references omits — one surface, one answer (§12.1)",
+    r5eofSites.length === 0 && r5eof.locations.length === 0,
+    `hoverCollector=${r5eofSites.length} at lines ${JSON.stringify(r5PastEof.collectorLines)} references=${r5eof.locations.length} omitted=${r5eof.omittedUnresolvable}`,
+  )
 
   // THE CLAUSE THIS SECTION EXISTS TO PROVE, stated as a failure test: on these
   // rows the pre-fix key answers strictly fewer than the surfaces serve. If it
@@ -911,10 +981,19 @@ await withRelations(
 // mutant the R5 differential could be satisfied by an implementation that is
 // still wrong on 30-35% of a real index's usages, and the gate would call it a
 // pass — which is what it did when this key was planted by hand.
+// The anchor follows the M62 L6 rule: the stored-line COLUMN is named in exactly
+// ONE file (src/intelligence/graph/line-address.ts) and every consumer composes
+// it through STORED_LINE_COLUMN. When M62 landed, src/lsp/relations.ts stopped
+// spelling `r.line_number` literally and started interpolating the owner's
+// constant — which left this anchor matching ZERO times and turned a green gate
+// red for a reason that had nothing to do with the product. The anchor is
+// therefore written in the same composed form the source uses, and it will still
+// fail loudly (anchor matched 0 times) if the expression moves again: that
+// failure is the F7 rule working, not a regression.
 await withSource(
   "M4: the SQL count folds call sites back into the caller's declaration (the 30% under-count)",
   RELATIONS,
-  "(CASE WHEN ${STORED_LINE_IS_EXACT_SQL} THEN r.line_number ELSE o.line_start END)",
+  "(CASE WHEN ${STORED_LINE_IS_EXACT_SQL} THEN ${STORED_LINE_COLUMN} ELSE o.line_start END)",
   "o.line_start /* pre-fix: the caller's declaration */",
   async (m) => {
     const mutated = m.countUsageSites(r5raw, "r5-target") as number
@@ -926,11 +1005,19 @@ await withSource(
 // DECLARATION CONTAINMENT as a usage — the row that leaked `Greeter` into
 // greet's callers on the merged branch. Judged by the pure grouping core, which
 // is the owner of the decision, so the catch is behavioural and not a lint.
+//
+// ANCHOR HISTORY: the filter used to be the inline expression
+// `edges.filter((e) => e.from !== e.to && !isDeclarationRelationship(...))`. The
+// owner-family cascade fix moved the decision into `directUsageRows`, where it is
+// an `if` with its own counted exclusion bucket, so the anchor is written in the
+// form the source now has. The mutation removes the containment guard and leaves
+// the counter untouched — the exact defect (a declaration admitted as a usage)
+// with the bookkeeping that would have made it visible also disabled.
 await withSource(
   "M5: the hub's caller grouping admits a declaration containment as a usage",
   USAGES,
-  "edges.filter((e) => e.from !== e.to && !isDeclarationRelationship(e.relationshipType))",
-  "edges.filter((e) => e.from !== e.to)",
+  "    if (isDeclarationRelationship(edge.relationshipType)) {\n      excluded.declarationContainments++\n      continue\n    }",
+  "    if (false) {\n      excluded.declarationContainments++\n      continue\n    }",
   async (m) => {
     // The exact leak: greet's own class, connected by `contains`, offered as a
     // caller of greet by the mutated grouping core.
@@ -1044,31 +1131,35 @@ const result = {
       sources: ["src/caller.ts", "src/target.ts", "src/other.ts"],
       shapes: {
         F1: "two call sites on two distinct stored lines from one caller -> two served places (§13.4)",
-        F2: "two stored lines past the end of the source, on their OWN target symbol -> omitted and counted (§12.1); kept off r5-target so the count differential is not blocked by a defect in another lane's file (see knownGaps)",
+        F2: "two stored lines past the end of the source, on their OWN target symbol -> omitted and counted (§12.1) by BOTH surfaces; the hover-collector leg asserts the agreement rather than describing it (former knownGaps[0], now closed and kept in closedGaps)",
         F3: "one caller, one stored line, two relationship kinds -> one place, one declared coalesced row (§13.2)",
         F4: "a different caller at the same stored line -> its own served place",
       },
       targets: { r5Target: "src/target.ts (F1, F3, F4)", r5Target2: "src/target2.ts (F2, three lines, stored lines 40 and 41)" },
     },
   },
-  /** Defects this integration FOUND and did NOT fix, each with the law, the
-   *  measurement, and the file that owns it. Recorded as structured gaps rather
-   *  than prose so a reader can diff them against a later run — and so the gate
-   *  does not report VERIFIED while a measured §14 violation is open. */
-  knownGaps: [
+  /** Defects this integration FOUND that are now CLOSED, each kept with the law,
+   *  the original measurement, the owning file, and how the closure is verified.
+   *  The array is empty because no known gap is open; it is kept rather than
+   *  deleted so that (a) the historical defect stays diffable against a later
+   *  run and (b) a re-opened gap has an obvious home with the right shape.
+   *  A closure recorded ONLY as prose is a closure nobody can re-check. */
+  closedGaps: [
     {
       id: "M55.T3-INTEGRATION-1",
-      law: "§14 rule 1 / §13.4 / §12.1 — the hover's usage collector serves a stored call-site line the source cannot confirm.",
+      status: "CLOSED",
+      law: "§14 rule 1 / §13.4 / §12.1 — the hover's usage collector must not serve a stored call-site line the source cannot confirm.",
       where: "src/lsp/rich_hover.ts (richSitesForSymbol)",
-      measured:
-        "On the R5 fixture's `target2` (a three-line file with two usage rows stored at lines 40 and 41): textDocument/references serves 0 locations and declares omittedUnresolvable = 2; the hover's collector returns 2 usage sites at lines 40 and 41. So the hover renders two usage links that open past the end of the file, and hover's count (2) disagrees with references' (0) on the same index.",
-      whyNotFixedHere:
-        "rich_hover.ts is another lane's file. Its collector also lacks the line-bounds check that navigation.ts performs (`line0 >= createPositionMapper(sourceText).lineTexts.length`), and the fix's blast radius is three gates this integration was told not to regress (H2 rich-hover, the M24 hover gate, CALLSITE-AGREEMENT). Landed here it would be an unowned change to someone else's surface.",
-      gateStatus:
-        "GATED, not merely noted: the R5 section asserts the law on the surface this lane owns (references omits and counts), asserts the CONTROL that the fixture can fail it, and carries the hover's numbers in `observed.r5` so the gap is visible in the record. Under contract F7 the gate exists before any future fix, so the fix cannot land unverified.",
+      originalMeasurement:
+        "On the R5 fixture's `target2` (a three-line file with two usage rows stored at lines 40 and 41): textDocument/references served 0 locations and declared omittedUnresolvable = 2, while the hover's collector returned 2 usage sites at lines 40 and 41 — two links that opened past the end of the file, and a hover count (2) that disagreed with references (0) on the same index.",
+      closure:
+        "rich_hover.ts now bounds each stored call-site line against the same `createPositionMapper(text).lineTexts.length` bound navigation.ts applies, refuses to serve a past-EOF row, and declares the omission: the card states \"usages omitted — N stored rows name a call-site line past the end of the source file\", with a structured `data.omittedUsageRows`. Measured after: collector sites 2 -> 0, references unchanged at 0 served + 2 omitted.",
+      verifiedBy: "script/m55/verify-relations.ts — the check 'R5: the HOVER'S COLLECTOR omits the same past-EOF rows references omits'",
       firstMeasuredAt: "M55.T3 integration, branch integration/lsp-truth",
+      closedAt: "IDE lane completion pass",
     },
   ],
+  knownGaps: [] as Array<{ id: string; law: string; where: string; measured: string }>,
   observed: {
     greetUsageCount: hoverGreet.data?.usageCount ?? null,
     greetRenderedRows: usagesGreet.rows.map((r) => `${r.name}@${r.file}:${r.line}`),
@@ -1094,8 +1185,9 @@ const result = {
       /** what the PRE-FIX key (the caller's declaration columns) answers here —
        *  carried so a reader can see the differential without re-deriving it. */
       preFixKeyCount: r5PreFixKeyCount,
-      /** F2, on its own three-line target: references omits and counts; the
-       *  hover's collector serves both. That disagreement is knownGaps[0]. */
+      /** F2, on its own three-line target: BOTH surfaces omit and count now
+       *  (former knownGaps[0], closed). The numbers stay on the record so a
+       *  reader can check the agreement instead of being told about it. */
       pastEof: r5PastEof,
     },
   },

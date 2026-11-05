@@ -75,6 +75,26 @@ import {
 import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 import { canFailFromChecks, writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
+
+// --- Reproducibility: pin a temp BB_DATA_DIR for the whole run unless one was
+// supplied. ----------------------------------------------------------------
+//
+// The server under test resolves its index location as
+// `<BB_DATA_DIR || ~/.bb>/projects/<sha1(realpath(root))>/brain.db` (the same
+// convention as src/cli/index.ts). Without BB_DATA_DIR the gate's in-process
+// servers all target the real `~/.bb`. On a host where that path is not
+// writable — a sandboxed agent session, a CI container with a read-only HOME, a
+// shared runner — the server surfaces the failed `mkdir` as `-32603 ENOENT`,
+// which kills every absence-carrier path and turns this suite red for a reason
+// that has nothing to do with the product. MEASURED: 123/142 without the
+// variable, 142/142 with it, same commit, same component.
+//
+// The assignment is `??=`: an explicit
+// `BB_DATA_DIR=/some/dir npx tsx script/m24/verify-server.ts` still wins, so the
+// gate stays testable against a real index when a caller wants that. The
+// pre-existing per-case manipulation further down (the data-dir-canonicalization
+// case) still overrides and restores as before.
+process.env.BB_DATA_DIR ??= mkdtempSync(join(tmpdir(), "bblsp-l1-data-"))
 // The ANCHOR-DRIFT class gate (script/m24/mutant-anchor-gate.ts). Shared with
 // script/m24/verify-hover.ts so the class is gated by ONE implementation.
 import {

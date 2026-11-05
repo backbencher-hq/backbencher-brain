@@ -1,6 +1,6 @@
 # M26.L — why `callHierarchy/outgoingCalls` takes 2–3.5 seconds
 
-Measured 2026-10-08 on the owner's real index
+Measured 2026-10-08 on the recorded index
 (`064be526733c31e95c0ac2beb42d209af9bab8e6`, 201 files, 10,271 symbols,
 58,324 relationships), Node v22.14.0, darwin-x64. Every number below is a
 measurement with the command that produced it; nothing here is an estimate.

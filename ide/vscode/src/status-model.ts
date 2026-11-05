@@ -54,15 +54,22 @@ export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
   svelte: "I1",
 }
 
-/** Human-readable expansion of a claim level (contract §2 ladder). */
+/** Human-readable expansion of a claim level — CONTRACT §2 ladder (single source).
+ *
+ *  docs/IDE-HONESTY-CONTRACT.md §2 governs this ladder:
+ *    I0 UNVERIFIED, I1 PROTOCOL-PASSED, I2 INDEX-CONFORMANT,
+ *    I3 EDITOR-VERIFIED, I4 FORK-VERIFIED, I5 SCOPED-VERIFIED.
+ *  No second ladder may be defined here; any other copy of this ladder in the
+ *  repo is a defect to be removed, not a source to be mirrored.
+ */
 export function describeLevel(level: string): string {
   const known: Record<string, string> = {
-    I0: "I0 — not claimed",
-    I1: "I1 — protocol-passed",
-    I2: "I2 — index-conformant",
-    I3: "I3 — harness-verified",
-    I4: "I4 — editor-verified",
-    I5: "I5 — precision-verified",
+    I0: "I0 — UNVERIFIED",
+    I1: "I1 — PROTOCOL-PASSED",
+    I2: "I2 — INDEX-CONFORMANT",
+    I3: "I3 — EDITOR-VERIFIED",
+    I4: "I4 — FORK-VERIFIED",
+    I5: "I5 — SCOPED-VERIFIED",
   }
   return known[level] ?? level
 }

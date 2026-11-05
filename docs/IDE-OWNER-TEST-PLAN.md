@@ -49,8 +49,8 @@ version.
 
 ## 1. The fixture, and what the HEAD server returns for it today
 
-Fixture (owner decision 2026-09-12, protocol §3): **`$HOME/bb-demo-hub`,
-used as-is**, indexed by the owner's real `BB_DATA_DIR` (`~/.bb`). Its index was
+Fixture (recorded decision 2026-09-12, protocol §3): **`$HOME/bb-demo-hub`,
+used as-is**, indexed by the recorded `BB_DATA_DIR` (`~/.bb`). Its index was
 written by an **older indexer** — every stored call-site line is the literal `0`.
 That is not a problem for this run: it is exactly the state M62 exists to
 interpret honestly, so it exercises the fix rather than avoiding it.

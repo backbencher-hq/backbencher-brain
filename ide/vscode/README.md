@@ -23,6 +23,17 @@ Every feature carries its declared claim level — the UI shows the same table
 | javascript| I1    | I1         | I1         | I1      | I1             |
 | python    | I1    | I1         | I1         | I1      | I1             |
 
+The extension **activates** for all fourteen languages in
+`src/lsp/launch_languages.ts` — `package.json`'s `activationEvents` and the
+client's `documentSelector` are both derived from that single owner, and the
+build fails if they drift. That is deliberately wider than this table: the
+extension *claims* the languages whose evidence chain reaches this table, and
+`bb lsp` *serves* the full launch set. The seven launched-but-unclaimed
+languages are named as a declared gap on the website's `/editors` page rather
+than silently merged into the claim set. Before the activation fix, the
+extension activated on only seven of the fourteen — the same seven it claims —
+so a Go or Rust file opened in an indexed workspace produced no extension at all.
+
 I1 = protocol-passed (see the honesty contract in the repository: `docs/IDE-HONESTY-CONTRACT.md`).
 The claim table shipped in this extension is drift-gated against the
 machine-generated tool document at verify time — the UI can never claim more
@@ -34,22 +45,31 @@ the published ledger carries the evidence-derived claim levels (I3 across the
 wave-1 languages), warm-latency percentiles, and the analyzer differential
 floors behind this table.
 
-**Claim-level legend** (contract §2 — higher levels require all lower ones):
+**Claim-level legend** (contract §2 — the canonical ladder; higher levels require all lower ones):
 
 | Level | Meaning |
 |-------|---------|
 | I0 | UNVERIFIED — may not ship behind any trust label |
 | I1 | PROTOCOL-PASSED — real protocol requests against `bb lsp` assert response shape and content |
-| I2 | RUNTIME-PASSED — I1 plus a real `bb lsp` server process over stdio with real files on disk |
-| I3 | IN-EDITOR VERIFIED — I2 plus the feature exercised inside a pinned editor version with machine evidence |
-| I4 | CROSS-EDITOR VERIFIED — I3 plus a pinned run in a non-VS Code editor (fork) |
+| I2 | INDEX-CONFORMANT — I1 plus position-mapping and freshness gates pass (contract §2) |
+| I3 | EDITOR-VERIFIED — I2 plus a pinned editor run with machine evidence (contract §2) |
+| I4 | FORK-VERIFIED — I3 plus a pinned fork run per fork (contract §2) |
+| I5 | SCOPED-VERIFIED — I2 ∧ I3 ∧ latency budget ∧ limitations ∧ evidence fresh (contract §2) |
 
-Currently shipped claims are I1 (protocol level) everywhere. **No editor run is
-recorded as verified**: the VS Code 1.85.0 in-editor run is a known-gap (90/91
-checks — the live debounced reindex never landed), and Cursor 3.18.9,
-Antigravity 1.107.0 and Windsurf have no completed pinned run on this machine —
-see the evidence files under `validation/` in the repository. An editor or
-platform with no pinned, passing run is declared unverified here, not claimed.
+The CONTRACT is the governing document; this table summarizes it. See `docs/IDE-HONESTY-CONTRACT.md` §2 for the authoritative definitions.
+
+Currently shipped claims are I1 (protocol level) for every feature on every
+launched language. Editor-level claims exist for the two editors that have a
+pinned recorded run — VS Code and Antigravity, in the matrix below — and each is
+a claim about **the bundle that run installed**, per contract §15 Truth Rule 5.
+The extension source changed on 2026-11-04 (fourteen-language activation and the
+status-bar command path), so both runs predate the current bundle: re-capturing
+their frames against it is the remaining step before either is cited as a claim
+about HEAD. Cursor and Windsurf have no completed pinned run on this machine,
+and no platform beyond Linux has one.
+
+**No claim is inherited.** A fork with no pinned run carries no claim, and a run
+in one editor never implies another — the matrix below is the whole claim set.
 
 ## Editor verification matrix
 
@@ -58,11 +78,11 @@ from per-fork evidence and drift-gated by the D1 verifier:
 
 | Editor | Claim | Evidence |
 |--------|-------|----------|
-| VS Code | known-gap — an in-editor run at 1.85.0 recorded 90/91 checks; the live debounced reindex never landed (stale: true, status: "missing") | `validation/m25/results/E5.json` |
-| Cursor | blocked — no pinned run on this machine (cursor not found) | `validation/m25/results/F-CURSOR.json` |
-| Antigravity | known-gap — pinned version 1.107.0, but no run completed on this machine | `validation/m25/results/F-ANTIGRAVITY.json` |
-| Windsurf | blocked — no pinned run on this machine | `validation/m25/results/F-WINDSURF.json` |
-| macOS / Windows | blocked — only the Linux leg is verified (E7-linux); macOS and Windows have no passing run | `validation/m25/results/E7-darwin.json` |
+| VS Code | I3 — in-editor run at pinned 1.85.0, 91/91 checks (recorded 2026-10-17; the run predates the 2026-11-04 bundle, so frames must be re-captured before this is cited at HEAD) | `validation/m25/results/E5.json` |
+| Cursor | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-CURSOR.json` |
+| Antigravity | I4 — pinned fork run at 1.107.0, 90/90 checks (recorded 2026-10-17; the run predates the 2026-11-04 bundle) | `validation/m25/results/F-ANTIGRAVITY.json` |
+| Windsurf | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-WINDSURF.json` |
+| macOS / Windows | blocked — only the Linux leg is verified (E7-linux); the macOS and Windows matrix legs are executed by `.github/workflows/os-matrix.yml` and have no persisted passing run | `validation/m25/results/E7-darwin.json` |
 
 ## Complement stance (contract §7)
 
@@ -81,9 +101,10 @@ rust-analyzer, tsserver, jdtls, …) and never competes with them:
 
 ## Limitations (declared, contract §1)
 
-- **Five launch languages only** (Java, Groovy, Kotlin, Scala, TypeScript).
+- **14 launch languages** (java, groovy, kotlin, scala, typescript, javascript, python, zig, go, rust, c, cpp, vue, svelte — the single owner is `src/lsp/launch_languages.ts`, contract §9).
   Other languages are declared absent — the server reports no declared claim
   level and offers no features for them rather than guessing.
+- **VS Code activation gap:** the extension currently activates on only 7 languages (java, groovy, kotlin, scala, typescript, javascript, python — per `package.json` activationEvents and `extension.ts` documentSelector). The remaining 7 launch languages (zig, go, rust, c, cpp, vue, svelte) are served by the server but do not activate the extension in VS Code. This is a functional defect tracked in task-4 for the vscode-client lane.
 - **Claim level I1 on the shipped surface.** The features pass the protocol and
   runtime verifiers, and in-editor and fork runs exist as recorded evidence — but
   none of those runs is verified, so the shipped trust labels stop at I1 and the
