@@ -219,3 +219,58 @@ Both defects were measured and fixed by the vscode-client lane:
 | **Dead status-bar click (3 early-return paths)** | `statusItem.command = "bbLsp.showStatusPanel"` set only in `refreshStatus()`; three early returns in `activate()` never reached it (no workspace, server not resolved, version incompatible) | `statusItem.command` set at creation time on ALL paths; commands registered before early returns. Panel now renders its actions internally (self-sufficient). File: `ide/vscode/src/extension.ts` |
 
 **Evidence:** Task-4 records (Lead to seal). Both defects are fixed and verified at HEAD.
+
+## 14. Open decision: what position a `contains` link must open
+
+**Status: unresolved, and it is the only thing standing between `m42-rich-hover`
+and green.** Recorded here with its measurements so the decision can be made on
+facts rather than on whichever code happens to run.
+
+Two laws now govern the `contained` block of a hover card and they disagree about
+**one field**.
+
+**Law A — the address rule (adopted this campaign, gated in T3 and §6).** An
+outgoing or declaration row opens the far end's *index-stored declaration*; a
+stored call-site line is never turned into a link in another file's coordinate
+system. This is what ended the defect where `instantiates [Greeter]` opened
+`greeter.ts:4` for a site in `app.ts`.
+
+**Law B — `H2/R4-LAW-CONTAIN` (written before Law A existed).** Every `contained`
+link equals "the index-stored location of the `contains`/`exports` row it
+renders — the position that row STORES, which `textDocument/references` excludes
+by law".
+
+**The measured disagreement, on the H2 fixture (`Greeter` in `App.java`):**
+```
+rendered link        App.java:5:6      (0-based line 5, column 6)
+stored row key       App.java:6:0      (1-based line 6, column 0)
+callSite record      {"kind":"declaration","file":"…/App.java","line":6,
+                      "note":"this is the calling symbol's declaration, not the call site"}
+```
+**They name the same line.** The rendered link is 0-based line 5 = 1-based line 6,
+which is exactly the declaration line the record stores. The only difference is
+the **column**: the store carries `0`, a line-start placeholder, because a
+containment row stores a line and not an identifier column; the component now
+carries `6`, the column of the declared identifier.
+
+**Why this is a decision and not a bug fix.** The gate's comparison is not wrong,
+and the component's output is not wrong — the store's column was never
+meaningful, so `R4-LAW-CONTAIN` was asserting a placeholder while believing it
+was asserting a position. Two honest resolutions:
+
+1. **Narrow the law to (file, line) for containment rows** and keep asserting
+   coverage (one link per stored row, which `R4-LAW-CONTAIN-ROWS` already does).
+   Justification: the stored column is a placeholder `0`, so the column clause
+   never discriminated; the new link is strictly more precise and on the same
+   line. Cost: the gate no longer asserts any column for containment, and it
+   should say so out loud rather than silently comparing fewer fields.
+2. **Keep the law and make the component emit the stored column** for
+   containment rows. Cost: it reintroduces a line-start position for a link whose
+   useful target is an identifier, and it re-opens the class of defect Law A
+   closed for every other row kind.
+
+**Recommendation: resolution 1**, with the limitation stated in the gate — the
+stored column is not evidence, so asserting it was theatre. Not applied
+unilaterally because it changes what a law claims about the product, and the
+third failing check (`H2/M`, the mutant oracle) is built on the same expectation
+and would need the same revision.
