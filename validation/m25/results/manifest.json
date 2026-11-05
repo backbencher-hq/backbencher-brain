@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "b162d2e260a24e75024f7189a0467db2129e17b9",
+        "currentCommit": "3ea307e68ec832edecefbd8d233d93b24de71458",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 84,
-        "failed": 2,
+        "passed": 85,
+        "failed": 1,
         "realFailed": 0,
         "negativeCases": 21,
-        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) — the relevant tree was clean at measure time"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -255,8 +255,8 @@
         "owner spot-check scheduled"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "b007e12db69b0d5c55a72ca4b5f0ccbd3f8ddb84",
+        "status": "blocked",
+        "currentCommit": "b162d2e260a24e75024f7189a0467db2129e17b9",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -289,7 +289,8 @@
           "L3: definition outside index is honest empty (per fork)",
           "G1: forged fork claim in the capability matrix is detected (mutation proof)"
         ],
-        "total": 91
+        "total": 91,
+        "blockedReason": "cursor not found — looked at: legacy: /usr/bin/cursor"
       }
     },
     {
@@ -345,7 +346,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "6cc8f5c37fef481891172aaccc6269869aa6a889",
+        "currentCommit": "b162d2e260a24e75024f7189a0467db2129e17b9",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
         "passed": 22,
@@ -389,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T22:51:56.087Z",
-    "contentSha256": "e123a42b31b479a47a72aaad04059a6e128ead16bdfc1bf07de3dae1b72e8f98"
+    "sealedAt": "2026-11-05T22:54:03.721Z",
+    "contentSha256": "84e6d42bfe140eb868031415f4f1c7526705a8cdb7a9910df74ba749ea286229"
   }
 }
