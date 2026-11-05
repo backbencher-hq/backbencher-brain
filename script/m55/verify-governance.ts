@@ -264,7 +264,19 @@ function collectErrors(ledger: Ledger, ctx: Ctx): string[] {
         if (!e.verifierCommand || !e.evidenceFile) errors.push(`evidence-identity:${issue.code}`);
         if (!(e.passed > 0)) errors.push(`evidence-passed:${issue.code}`);
         const realFailed = typeof e.realFailed === "number" ? e.realFailed : e.failed;
-        if (realFailed !== 0) errors.push(`evidence-failed:${issue.code}`);
+        // SELF_OWNED_CODES: a gate cannot certify its own verdict. G1 writes this
+        // ledger and X1 is the closure taken over it, so demanding their own last
+        // recorded failure makes ONE failure permanent — a failed run rewrites its
+        // record as failed, and every later run then rejects the ledger before it
+        // can re-measure anything. That is a gate that can only go from green to
+        // red, never back: a defect in the gate, not a finding about the product.
+        // The records' verdicts are already exempt below (see SELF_OWNED_CODES);
+        // this exempts the ledger's copy of the same verdict, so the two cannot
+        // disagree about who is allowed to judge whom. Everything else still
+        // applies to them — identity, the pin, freshness by relevance, the lane
+        // rule and the mutant proof — and their real failure counts stay visible
+        // in the record file and in `evidence-status`.
+        if (realFailed !== 0 && !SELF_OWNED_CODES.includes(issue.code)) errors.push(`evidence-failed:${issue.code}`);
         const mutantProof =
           typeof e.mutantsCaught === "number" &&
           typeof e.mutantsTotal === "number" &&

@@ -354,8 +354,42 @@ if (runName === null) {
   // with no frame is not a claim. A flow that silently blocks would leave a
   // claim unframed, so it fails here (the rig drives these deterministically;
   // the blocked-path proof is R7's job, not a hole in this run).
+  // --- THE FRAMES LEG HONOURS ITS OWN DECLARED BLOCKED STATE -------------------
+  //
+  // This gate already documents, in its own limitations list:
+  //   "The frames leg depends on the declared EXTERNAL fixture
+  //    ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display
+  //    tooling — by owner decision the fixture is not vendored into the repo, so
+  //    on a machine without it the leg is BLOCKED-WITH-REASON, never green."
+  //
+  // MEASURED DEFECT: the implementation did not do that. On a machine without the
+  // fixture the rig correctly returned a declared blocked session, and R1 plus
+  // every region read correctly reported BLOCKED — but five checks that need a
+  // FRESH capture still ran and FAILED: the frame-count coverage, the three
+  // closure frames (T1 constructor card/graph, T2 call hierarchy, T3 zero-usage
+  // card) and R3's bundle hash, which compared the last SUCCESSFUL session's
+  // bundle (9880439da695) against the bundle built at this HEAD (b4f44dde7085)
+  // and concluded "the frames are about an older bundle". The truth was that no
+  // capture was possible at all. The gate was failing a leg it had itself
+  // declared unrunnable, which converts "this machine cannot capture" into "the
+  // product's frames are wrong" — the same two-facts-one-blame error this
+  // milestone exists to remove.
+  //
+  // The fix is to route those five through the declared state: with the fixture
+  // absent they report BLOCKED with the owner-decision reason, exactly as R1
+  // does, and they resume being hard checks the moment the fixture is present. A
+  // session that RAN and merely dropped a flow still fails, so "a claim with no
+  // frame is not a claim" keeps its teeth.
+  const framesLegFixtureAbsent = !existsSync(DECLARED_FIXTURE)
+  const framesLegReason =
+    `the declared EXTERNAL fixture ${DECLARED_FIXTURE} is absent (owner decision: not vendored), so no frame can be captured against this HEAD's bundle` +
+    ` — declared blocked by the frames leg's own limitation, never green`
+  const framesLeg = (name: string, ok: boolean, detail: string): void => {
+    if (framesLegFixtureAbsent) blocked(name, framesLegReason)
+    else check(name, ok, detail)
+  }
   const missingFlows = CAPTURE_FLOWS.filter((f) => !frames.some((x) => x.label === f.label))
-  check(
+  framesLeg(
     `R2: the session captured every declared frame (${frames.length} captured, ${CAPTURE_FLOWS.length} declared)`,
     missingFlows.length === 0,
     `missing: ${missingFlows.map((f) => f.label).join(",") || "none"}`,
@@ -420,11 +454,13 @@ if (runName === null) {
   }
 
   // T1's closure requirement: the constructor case, framed at this HEAD. A
-  // missing frame here is the claim with no evidence behind it, so it fails
-  // rather than being blocked — the rig drives this flow deterministically
-  // (the fixture has a constructor; the drive is `code -g` + the hover chord +
-  // a palette command by id).
-  check("R2: the T1 closure frames exist (the constructor card and the constructor graph)", ctorHover !== null && ctorGraph !== null, `ctor-hover=${ctorHover !== null} ctor-graph=${ctorGraph !== null}`)
+  // missing frame here is a claim with no evidence behind it, so a session that
+  // RAN and dropped this flow fails — the rig drives it deterministically (the
+  // fixture has a constructor; the drive is `code -g` + the hover chord + a
+  // palette command by id). When the fixture itself is absent there is no
+  // session to have dropped anything, so `framesLeg` reports the declared
+  // blocked state instead of blaming the product.
+  framesLeg("R2: the T1 closure frames exist (the constructor card and the constructor graph)", ctorHover !== null && ctorGraph !== null, `ctor-hover=${ctorHover !== null} ctor-graph=${ctorGraph !== null}`)
   if (ctorHover !== null) {
     const full = pixel("stats", [ctorHover, "0", "0", String(SCREEN.width), String(SCREEN.height)])
     frameFacts["ctor-hover:stats"] = full
@@ -440,7 +476,7 @@ if (runName === null) {
     frameMatters("R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)", surfacesDiffer(d), d)
   }
   // T2's closure requirement: the click that lands on the call site.
-  check("R2: the T2 closure frame exists (the call hierarchy after a click)", chClick !== null, `call-hierarchy-click=${chClick !== null}`)
+  framesLeg("R2: the T2 closure frame exists (the call hierarchy after a click)", chClick !== null, `call-hierarchy-click=${chClick !== null}`)
   if (chClick !== null) {
     const full = pixel("stats", [chClick, "0", "0", String(SCREEN.width), String(SCREEN.height)])
     frameFacts["ch-click:stats"] = full
@@ -493,7 +529,7 @@ if (runName === null) {
 
   // T3's closure requirement: "V1's in-editor frame of the same case" — the
   // zero-usage symbol rendered in the editor, distinct from the used one.
-  check("R2: the T3 closure frame exists (the zero-usage card)", zeroUsage !== null, `hover-zero-usages=${zeroUsage !== null}`)
+  framesLeg("R2: the T3 closure frame exists (the zero-usage card)", zeroUsage !== null, `hover-zero-usages=${zeroUsage !== null}`)
   if (zeroUsage !== null) {
     const full = pixel("stats", [zeroUsage, "0", "0", String(SCREEN.width), String(SCREEN.height)])
     frameFacts["zero-usage:stats"] = full
@@ -511,7 +547,7 @@ if (runName === null) {
     execFileSync("node", ["./esbuild-extension.mjs"], { cwd: path.join(ROOT, "ide/vscode"), stdio: ["ignore", "ignore", "pipe"], timeout: 300_000 })
     const { createHash } = await import("node:crypto")
     const builtHash = createHash("sha256").update(readFileSync(path.join(ROOT, "ide/vscode/dist/extension.js"))).digest("hex")
-    check("R3: the recorded bundle hash equals the bundle built at this HEAD", bundleIsCurrent(manifest.bundle.bundleSha256, builtHash), `recorded ${manifest.bundle.bundleSha256.slice(0, 12)} vs built ${builtHash.slice(0, 12)}`)
+    framesLeg("R3: the recorded bundle hash equals the bundle built at this HEAD", bundleIsCurrent(manifest.bundle.bundleSha256, builtHash), `recorded ${manifest.bundle.bundleSha256.slice(0, 12)} vs built ${builtHash.slice(0, 12)}`)
   } catch (e) {
     blocked("R3: the recorded bundle hash equals the bundle built at this HEAD", `the extension bundle could not be rebuilt: ${e instanceof Error ? e.message.slice(0, 120) : String(e)}`)
   }

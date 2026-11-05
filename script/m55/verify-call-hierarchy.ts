@@ -34,6 +34,7 @@ import { pathToFileURL } from "node:url";
 import { T2_ROOT, T2_EXPECT, writeT2Fixture } from "./t2-fixture.ts";
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
+import { ISSUE_RELEVANT_FILES } from "./relevance.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const COMPONENT = path.join(ROOT, "src/lsp/call_hierarchy.ts");
@@ -165,6 +166,30 @@ const workingTreeDirty = execFileSync("git", ["status", "--porcelain"], { cwd: R
   .split("\n")
   .filter((l) => l.trim() !== "")
   .map((l) => l.slice(3));
+/**
+ * The dirty files that are RELEVANT TO THIS ISSUE — the field's own name, and
+ * the contract the governance gate reads it under.
+ *
+ * MEASURED DEFECT (found by `script/m55/verify-governance.ts`): this field used
+ * to carry every dirty path in the checkout. In a shared checkout other lanes
+ * hold their own files dirty, so the record claimed their in-progress edits as
+ * T2's working-tree changes and governance reported
+ * `lane-violation:T2(script/m14/…)` and
+ * `lane-violation:T2(src/ast/real-typescript-analyzer.ts)` — thirteen files T2
+ * has never touched. The lane rule exists so that one lane's evidence is not
+ * earned on a tree another lane is mid-edit on; recording the whole tree made
+ * the rule fire on every run in a concurrent checkout — a false accusation
+ * against T2, and a gate that cannot be passed.
+ *
+ * The fix is the one `script/m55/verify-action-args.ts` already applies: filter
+ * to this issue's own relevance set (`ISSUE_RELEVANT_FILES.T2`, the single owner
+ * of that list). A dirty file this issue genuinely owns still appears and still
+ * trips the lane rule if it belongs to another lane, so the check keeps its
+ * teeth — `verify-governance.ts`'s own negative case plants exactly that shape.
+ */
+const workingTreeRelevantChanges: string[] = workingTreeDirty.filter((f) =>
+  (ISSUE_RELEVANT_FILES.T2 ?? []).some((rel) => f === rel || f.startsWith(`${rel}/`)),
+);
 
 // --- R1: fixture written and indexed by the REAL indexer ----------------------
 console.log("R1: fixture (real indexer, isolated data dir)");
@@ -1154,7 +1179,7 @@ function rewriteRelativeImports(source: string): string {
     },
     currentCommit,
     ...fingerprintFields(["m55.T2"], ROOT),
-    workingTreeRelevantChanges: workingTreeDirty,
+    workingTreeRelevantChanges,
     /**
      * §8.2 — "byte-identical modulo timestamps declared as such" is only
      * meaningful if the record says WHICH fields those are. Declared here so a
