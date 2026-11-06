@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "44ab87f734033df86de914118ea95eb303c46b6d",
+        "currentCommit": "ef6c8e091f583aefa7b48bdebd3d872e6b1cea7a",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "a74a4e7da3c2f315ebe2d28f799efe316a555d92",
+        "currentCommit": "2445d19d95ffd277ef0400f35cab029ea05410cb",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:49:50.119Z",
-    "contentSha256": "5be32f4c4a3a98fd917afdf139d8573f3db606a77d6209a628f287ecc92098fc"
+    "sealedAt": "2026-11-06T20:52:53.961Z",
+    "contentSha256": "f0910e5a18c6eaa02dacb8f4b17a97685ab4ca14392410b0e72d4aa9583f0395"
   }
 }
