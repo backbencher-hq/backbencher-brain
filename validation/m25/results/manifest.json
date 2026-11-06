@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 498,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M25 ledger, closure gate, verify wiring; standing M24 completion-bar re-audit; contract vocabulary lint over M25 artifacts",
       "acceptanceCriteria": [
         "ledger + gate + verify wiring as in M24.G1",
@@ -39,12 +39,12 @@
         "clean rerun recorded"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "b8b46c21c0279a1804edb00e5cd4778e24a6d57b",
+        "status": "verified",
+        "currentCommit": "765d20bbc7f88dfae17ccc8142b5903d824e507b",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 85,
-        "failed": 1,
+        "passed": 86,
+        "failed": 0,
         "realFailed": 0,
         "negativeCases": 21,
         "blockedReason": "1 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical) — the relevant tree was clean at measure time"
@@ -390,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:52:24.402Z",
-    "contentSha256": "823172d2d2da507655967ab72e1eeb99216874cefb64452f3929d2469b08e439"
+    "sealedAt": "2026-11-06T23:52:27.215Z",
+    "contentSha256": "b3cbc5790d46fadf2f7ec862846188ef84234d2dfa4386f9457ba06e594ffe64"
   }
 }
