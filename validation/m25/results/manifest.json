@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a816c679e4c5eee081f00adb1b5e9cb433c7f240",
+        "currentCommit": "44ab87f734033df86de914118ea95eb303c46b6d",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 86,
@@ -390,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:48:18.187Z",
-    "contentSha256": "76b48394e6395d3179c9da829b98aa0223c9aca3ae9f81348acab0c2b94d893a"
+    "sealedAt": "2026-11-06T20:49:50.224Z",
+    "contentSha256": "e258a91108ab68b0e90228451b16e658551ad39582a76d06a2891d301eeeda4e"
   }
 }
