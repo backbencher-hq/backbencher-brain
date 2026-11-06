@@ -2,27 +2,28 @@
   "issue": "M44.G1",
   "code": "G1",
   "milestone": "M44",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 31,
-  "passed": 31,
-  "failed": 0,
+  "passed": 30,
+  "failed": 1,
   "negativeCases": 9,
-  "currentCommit": "29bed97f39167f8d5166cf544553b05f0dab5a93",
+  "currentCommit": "8d4513ab338254091ce288887c2dfb1a8824f396",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T21:24:21.209Z",
+  "generatedAt": "2026-11-06T23:45:25.776Z",
   "ledger": "validation/m44/results/manifest.json",
   "m42Bar": {
-    "gateExit": 0
+    "gateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M42 bar (M29 re-audited transitively); it does not verify the hub features themselves (U1–U6 own those).",
     "A run with relevant uncommitted M44 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
+  "blockedReason": "1 check(s) failed: G1: M42 bar — M42 governance gate exits 0 at HEAD (spawned) - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:24:21.216Z",
-    "contentSha256": "81455f066e562e58e40a8bc65eefa5d5650a1c77a137494bb4d28b436135ecd6"
+    "sealedAt": "2026-11-06T23:45:25.789Z",
+    "contentSha256": "702b0da7c546477d112bb4be502ceecbe9bc57e542b383084ab60affe486bcea"
   }
 }
