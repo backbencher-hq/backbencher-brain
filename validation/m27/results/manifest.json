@@ -30,13 +30,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "1f6c66b5ad25d8b242085c3a0993a9aaf2412efb",
+        "currentCommit": "d1510031f0b9f2b36ad0832269e326fb123af7b3",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 70,
         "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "not verified at 1f6c66b5ad25d8b242085c3a0993a9aaf2412efb: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
+        "blockedReason": "not verified at d1510031f0b9f2b36ad0832269e326fb123af7b3: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
       }
     },
     {
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:25:31.321Z",
-    "contentSha256": "df995292c1fe93655a81fc0d67da1fabbcb2aa7bc7f4fd37149741c4a6202237"
+    "sealedAt": "2026-11-06T20:26:15.044Z",
+    "contentSha256": "7d158ceea0a28e25f079ce666665847ed8b50e21b8901f54349300a4ceb022f7"
   },
-  "updatedAt": "2026-11-06T20:25:31.321Z"
+  "updatedAt": "2026-11-06T20:26:15.044Z"
 }
