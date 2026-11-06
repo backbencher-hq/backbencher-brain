@@ -3,7 +3,7 @@
   "milestone": "M28",
   "githubMilestone": 39,
   "title": "M28: The Union (MCP + agent)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m28/M28-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 623,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M27 completion bar re-verified inside this gate before any M28 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,13 +29,13 @@
         "Evidence persisted at validation/m28/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
+        "status": "verified",
+        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 2,
-        "negativeCases": 12,
+        "passed": 74,
+        "failed": 0,
+        "negativeCases": 14,
         "blockedReason": "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify MCP tools or annotations."
       }
     },
@@ -266,8 +266,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T04:19:11.842Z",
-    "contentSha256": "890ec2837b71a832d3782da647ef9571325132ff918191cab07430546fb441e1"
+    "sealedAt": "2026-11-06T04:37:00.140Z",
+    "contentSha256": "0f5fdf491818c91c2c954878e9cc0c82ecea5beb127e921f4c3b4933cf12677a"
   },
-  "updatedAt": "2026-11-06T04:19:11.842Z"
+  "updatedAt": "2026-11-06T04:37:00.140Z"
 }

@@ -31,13 +31,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
+        "currentCommit": "f83622e45003e5fe29333ef14892762925899f18",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 69,
-        "failed": 1,
+        "passed": 67,
+        "failed": 3,
         "negativeCases": 10,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md"
+        "blockedReason": "3 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: package.json, src/ast/real-julia-analyzer.ts"
       }
     },
     {
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "60b9444a7889b45600dd0f233d702c97b994c303",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -72,7 +72,7 @@
       "code": "R2",
       "githubIssue": 537,
       "tool": "wave-1-execution",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Execute R1 for the next language(s) chosen by the #419 ledger at execution time (candidates: javascript INVENTORY-DONE, vue NOT-STARTED; actual set owner-approved). End-to-end: gates, fixtures, mutants, budgets, claim levels, IDE matrix updated.",
       "acceptanceCriteria": [
         "Wave gate green for the onboarded language(s)",
@@ -85,12 +85,12 @@
         "Owner spot-check scheduled"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "status": "verified",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
-        "passed": 93,
-        "failed": 28,
+        "passed": 261,
+        "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
         "approvalRecord": "validation/m29/results/wave-1-approval.json",
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
         "passed": 21,
@@ -150,7 +150,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
@@ -178,7 +178,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -206,7 +206,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "60b9444a7889b45600dd0f233d702c97b994c303",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -235,7 +235,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "60b9444a7889b45600dd0f233d702c97b994c303",
+        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -277,7 +277,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T23:37:23.444Z",
-    "contentSha256": "8cfacb68f798373fdc8fd54f0bc1dc9e8dbf972700af049bf06b5a3262ca048c"
+    "sealedAt": "2026-11-06T04:20:38.771Z",
+    "contentSha256": "b2feef3398f0c9f011e1026bf4db5387ea13468cb77f9f1b9aaddef50d9dea29"
   }
 }

@@ -3,7 +3,7 @@
   "milestone": "M24",
   "githubMilestone": 24,
   "title": "bb_lsp — The Server (IDE Program v0)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-08-31T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 487,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "authority, ledger, closure gate, npm run verify wiring",
       "acceptanceCriteria": [
         "machine-readable ledger with all 11 M24 issues",
@@ -39,8 +39,8 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
+        "status": "verified",
+        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T04:19:10.956Z",
-    "contentSha256": "1e9c327d9af61df85ce1ec729b89c99f9307cae85edd49dca3ebe32c72cad527"
+    "sealedAt": "2026-11-06T04:36:59.559Z",
+    "contentSha256": "386c80a15f79fc753a3c9a5d42de4e80ef1b10ec42a90e773b8928031f47b289"
   }
 }

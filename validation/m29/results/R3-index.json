@@ -1,0 +1,12 @@
+{
+  "status": "indexed",
+  "corpusRevision": "7f29ef266ea621a9",
+  "indexedFiles": 59000,
+  "indexedSymbols": 374000,
+  "indexedRelationships": 977000,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-06T04:35:01.625Z",
+    "contentSha256": "e7784b5dc2e696a3e02f9078198f6e36b2972d12144cc8b72773459cacb6d5a7"
+  }
+}

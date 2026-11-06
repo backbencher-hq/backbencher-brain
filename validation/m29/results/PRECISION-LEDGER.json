@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "c361d9dd63bb2bec9d93dd2d2ed64fba5b8d6656",
+  "inputsHash": "f72a3c312d921cfc0c4383b6504e9948aab5265d",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -328,15 +328,15 @@
     "present": true,
     "corpus": {
       "kind": "synthetic-deterministic",
-      "revision": "f7572f6229314400",
+      "revision": "7f29ef266ea621a9",
       "files": 59000
     },
-    "hoverP95Ms": 4.78,
-    "inEditorHoverP95Ms": 8.13,
-    "coldMedianMs": 882,
+    "hoverP95Ms": 12.46,
+    "inEditorHoverP95Ms": 8.49,
+    "coldMedianMs": 1594,
     "tierRatio": {
-      "totalRelationships": 785954,
-      "inferredRatioBeforePct": 42.1,
+      "totalRelationships": 977000,
+      "inferredRatioBeforePct": 41.2,
       "inferredRatioAfterPct": 0,
       "fix": "hover honors stored metadata.evidenceClass + structural set at the W4 0.7 floor (script/m29/r5-tier-fixture.ts, mutant-gated)"
     },

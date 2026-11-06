@@ -1,12 +1,12 @@
 {
-  "status": "known-gap",
-  "passed": 21,
-  "failed": 6,
+  "status": "verified",
+  "passed": 28,
+  "failed": 0,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
-  "relevantInputsHash": "a87a8810ed0c19543d52b2256d7be59df08ff491",
+  "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+  "relevantInputsHash": "a0733d98c328d7baad3caffc54c1175a2761f897",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "sourceFingerprint": "b82775474d328a36476e2b3e623efaaebcbc4e34fa73e5eb478f09e9fcfeeb5d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -20,18 +20,11 @@
     "script/m29/giant-repo-budget.ts"
   ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-11-06T00:19:46.169Z",
-  "details": [
-    "R1: corpus manifest exists and declares a synthetic kind",
-    "R1: corpus meets the M19 giant-scale bar (files >= 50k): undefined",
-    "R1: corpus on disk matches the manifest: disk=0 manifest=undefined",
-    "R2: relevant inputs unchanged since the evidence run: evidence=49b428d28e42965e261aa89e2bd731849fdf741b vs current=a87a8810ed0c19543d52b2256d7be59df08ff491 — re-run giant-repo-budget.ts --reuse to refresh",
-    "R2: evidence indexed counts agree with the manifest: 59000 vs undefined",
-    "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass"
-  ],
+  "generatedAt": "2026-11-06T04:36:00.501Z",
+  "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T00:19:46.169Z",
-    "contentSha256": "e9c6579b70fd9a76760aa25c418532f1837766daec1a2290e0cb50e1d73a362b"
+    "sealedAt": "2026-11-06T04:36:00.502Z",
+    "contentSha256": "7c430e8294a6d98dcd4d65aeb1816bd5f883587870321f59bd1947e12927f60c"
   }
 }
