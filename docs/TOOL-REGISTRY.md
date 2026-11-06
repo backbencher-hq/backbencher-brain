@@ -33,6 +33,24 @@ The registry validates itself when imported. Validation rejects empty or duplica
 
 ## Runtime Attachment
 
+
+## What is not a tool (dead names and modes)
+
+- **Test intelligence is a mode family, not a tool.** `test_mapping`, `test_gaps`,
+  `test_impact` and `test_quality` are `bb_analyze` modes. The pre-0.3.0 per-mode names
+  `bb_test_quality` and `bb_test_suggestions` were retired into `bb_analyze` and are not
+  registered; the suggestions engine behind the old name is internal and never exposed.
+- **The other retired names** (`bb_select`, `bb_relationships`, `bb_refresh`, `bb_write`,
+  `bb_update`, `bb_insert`, `bb_delete`, `bb_refactor`) are dead 0.2.x spellings. They
+  return `unknown tool`; `docs/website/TOOLS.md` keeps the replacement table and
+  `RETIRED_GHOST_TOOL_NAMES` in `src/cli/onboard.ts` exists so gates can prove they stay gone.
+- **The number is fixed by the registry, not by prose.** The generated catalogs
+  (`docs/data/public-tools.json`, `docs/tools/*.md`, `website/src/data/tools.generated.ts`)
+  are derived from the descriptors; `script/verify-doc-tool-surface.ts` fails the docs when a
+  current page mentions a non-tool `bb_*` name outside a retired/dead/legacy marker, when a
+  "N tools" claim does not equal the registry count, or when a catalog parameter/mode list
+  drifts from the registry.
+
 `src/mcp/tool-handlers.ts` is the assembler: it binds each registered public tool
 name to one handler module, `src/mcp/tools/<tool>/handler.ts`. `createToolHandlers()`
 verifies a one-to-one mapping:

@@ -75,6 +75,14 @@ drift (`script/verify-tool-docs.ts` writes [`data/public-tools.json`](./data/pub
 | `bb_patterns` | [`tools/bb_patterns.md`](./tools/bb_patterns.md) | | | `bb_search` | [`tools/bb_search.md`](./tools/bb_search.md) |
 | `bb_security` | [`tools/bb_security.md`](./tools/bb_security.md) | | | `bb_visualize` | [`tools/bb_visualize.md`](./tools/bb_visualize.md) |
 
+The public surface is **exactly these sixteen tools**. Test intelligence is not a separate
+tool: it is the `test_mapping`, `test_gaps`, `test_impact` and `test_quality` modes of
+`bb_analyze` (deep guides: [`BB_TEST_INTEL.md`](./BB_TEST_INTEL.md),
+[`BB_TEST_QUALITY.md`](./BB_TEST_QUALITY.md)). The per-mode names retired before 0.3.0
+(`bb_select`, `bb_write`, `bb_test_quality`, …) are not callable; they are listed only in the
+retired-name tables of [`TOOL-REGISTRY.md`](./TOOL-REGISTRY.md) and
+[`website/TOOLS.md`](./website/TOOLS.md) so readers can migrate off them.
+
 `npm run docs:verify` regenerates the artifact set and fails on drift. `man bb` ships with the package and
 points at these directories, so an installed user has the same reference. There are no hidden tools or aliases:
 the `0.3.0` release removed them, and `bb --help` lists exactly these sixteen.

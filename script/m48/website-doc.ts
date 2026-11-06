@@ -46,7 +46,7 @@ Version 0.2.x advertised a ten-tool surface and kept legacy names as callable
 aliases; 0.3.0 removed the aliases as announced — they now return \`unknown
 tool\`. These names are NOT tools and must never appear as tools on the website:
 
-| Legacy name (dead) | Use instead | Mode |
+| Legacy name (dead — NOT a tool) | Use instead | Mode |
 | --- | --- | --- |
 | \`bb_select\` | \`bb_search\` | \`symbol\` |
 | \`bb_relationships\` | \`bb_analyze\` | \`callers\`, \`callees\`, or \`trace\` (or \`bb_graph\`) |
@@ -57,7 +57,13 @@ tool\`. These names are NOT tools and must never appear as tools on the website:
 | \`bb_delete\` | \`bb_edit\` | \`delete\` |
 | \`bb_refactor\` | \`bb_edit\` | \`refactor\` |
 | \`bb_test_quality\` | \`bb_analyze\` | \`test_quality\` |
-| \`bb_test_suggestions\` | \`bb_analyze\` | \`test_impact\` |
+| \`bb_test_suggestions\` | — (the suggestions engine is internal, never a public tool) | — |
+
+Test intelligence is **not a tool**: it is the \`test_mapping\`, \`test_gaps\`, \`test_impact\` and
+\`test_quality\` modes of \`bb_analyze\` (its deep guides are \`docs/BB_TEST_INTEL.md\` and
+\`docs/BB_TEST_QUALITY.md\`). The same holds for every per-mode spelling above — there is no
+\`bb_test_intel\`, \`bb_test_quality\` or \`bb_test_suggestions\` tool; a call with any dead name
+returns \`unknown tool\`.
 
 ## Same question, which tool?
 

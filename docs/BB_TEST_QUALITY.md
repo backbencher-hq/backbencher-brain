@@ -11,6 +11,11 @@ validation/tools/bb_analyze/regex-edge-cases.ts.
 
 # Test quality reference
 
+> **Not a tool.** There is no `bb_test_quality` (or `bb_test_intel`) tool. This surface belongs
+> to `bb_analyze` through its `test_quality` mode (and the other test modes: `test_mapping`,
+> `test_gaps`, `test_impact`). The only public tools are the sixteen in
+> `docs/data/public-tools.json`.
+
 Engine: `src/intelligence/testing/quality.ts`, reached through the public tool as
 **`bb_analyze mode=test_quality`**. The recommendations engine
 (`src/intelligence/testing/suggestions.ts`) is NOT exposed as a public tool —

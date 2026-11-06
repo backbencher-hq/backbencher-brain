@@ -10,9 +10,14 @@ src/mcp/tools/bb_analyze/handler.ts, docs/tools/bb_analyze.md, validation/tools/
 
 # Test intelligence reference
 
+> **Not a tool.** There is no `bb_test_intel` (or `bb_test_quality`) tool. The test-intelligence
+> surface belongs to `bb_analyze` through its `test_mapping`, `test_gaps`, `test_impact` and
+> `test_quality` modes. The only public tools are the sixteen in
+> `docs/data/public-tools.json`.
+
 Static, evidence-based test intelligence over the current `brain_*` tables.
-Engine: `src/intelligence/testing/test-intel.ts`. Three modes: **mapping**,
-**gaps**, **impact**.
+Engine: `src/intelligence/testing/test-intel.ts`. Three modes: **test_mapping**,
+**test_gaps**, **test_impact**.
 
 ## What "static test evidence" means (and does not)
 
@@ -40,14 +45,14 @@ coverage artifact (never inferred from test-file ratios or counts).
 Mapping is keyed by **resolved symbol id**, so two same-named symbols in
 different files are never conflated (verified).
 
-## Mode: mapping
+## Mode: test_mapping
 
 `testMapping(projectId)` → per production symbol: its `links[]` (each a test
 symbol + file + evidence kind + confidence) and `strongestEvidence`. Summary
 reports production/tested/untested symbol counts and test-file/test-symbol scan
 counts.
 
-## Mode: gaps
+## Mode: test_gaps
 
 `testGaps(projectId)` → risk-ranked gaps. Categories:
 - `no_evidence` — no test references the symbol.
