@@ -2,14 +2,11 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 32,
-  "passed": 30,
-  "failed": 2,
-  "failures": [
-    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
-  ],
+  "passed": 32,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
   "suiteExits": {
     "M24": 0,
@@ -25,8 +22,8 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "e5bd6381e5bf5e80ccd6bd09edede6881a32a42f",
-  "sourceFingerprint": "2c59aa18058762822d6d451f092bacb07956038ce6167ab86559e946d9e89c18",
+  "currentCommit": "89226b3148f326686fc828bea99d02951936dc50",
+  "sourceFingerprint": "5af0052aeb3beee31dc1f484d94fb901c1fdb9d829259a026061adae315e154d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -61,7 +58,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-06T18:12:34.298Z",
+  "generatedAt": "2026-11-06T18:46:02.680Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -70,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T18:12:34.299Z",
-    "contentSha256": "22b0581c8730d73ea84ac8d44758bab8a1083031f80c072187b825ec069c98c7"
+    "sealedAt": "2026-11-06T18:46:02.680Z",
+    "contentSha256": "361386994cebd0ed91636b34a05e37a10ed04ade6ce2242a55158c88cdd37c73"
   }
 }
