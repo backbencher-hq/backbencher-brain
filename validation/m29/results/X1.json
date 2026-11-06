@@ -2,18 +2,22 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 32,
-  "passed": 32,
-  "failed": 0,
-  "failures": [],
+  "passed": 29,
+  "failed": 3,
+  "failures": [
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (69/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (75/77 passed, 15 negative)  (exit=1)"
+  ],
   "negativeCases": 3,
   "suiteExits": {
     "M24": 0,
     "M25": 0,
-    "M26": 0,
-    "M27": 0,
-    "M28": 0,
+    "M26": 1,
+    "M27": 1,
+    "M28": 1,
     "M29-R1": 0,
     "M29-R2": 0,
     "M29-R3": 0,
@@ -22,8 +26,8 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "89226b3148f326686fc828bea99d02951936dc50",
-  "sourceFingerprint": "5af0052aeb3beee31dc1f484d94fb901c1fdb9d829259a026061adae315e154d",
+  "currentCommit": "4875741b836d751ef573f5b5450b3ebf1e27797a",
+  "sourceFingerprint": "b46f4f6365afdf926e26fdd1d5df20afce0f90e541b6117775842c0eee1013d8",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -58,7 +62,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-06T18:46:02.680Z",
+  "generatedAt": "2026-11-06T20:01:42.765Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -67,7 +71,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T18:46:02.680Z",
-    "contentSha256": "361386994cebd0ed91636b34a05e37a10ed04ade6ce2242a55158c88cdd37c73"
+    "sealedAt": "2026-11-06T20:01:42.765Z",
+    "contentSha256": "a74546a17d1f8fa17759e9a1e803981926f68b660149803041aa57eabda99bae"
   }
 }
