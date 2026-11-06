@@ -12,7 +12,7 @@
       "code": "G1",
       "githubIssue": 687,
       "tool": "m44-governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M44 ledger; closure gate re-auditing the M29+M42 bars; §13 Understanding Rules in the contract doc, machine-gated",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where M24→M42 governance all exit 0; exits non-zero when any ledger item lacks evidence or a bar fails (proven by mutant ledger entries)",
@@ -25,12 +25,12 @@
         "verify-chain + CI wiring present (verify:fast and verify)"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "status": "verified",
+        "currentCommit": "5128d2a07448070e8782bc6e2c8fe4c21ba7d89c",
         "verifierCommand": "npx tsx script/m44/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 25,
-        "failed": 1,
+        "passed": 26,
+        "failed": 0,
         "realFailed": 0,
         "negativeCases": 9,
         "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
@@ -84,7 +84,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+        "currentCommit": "36e0aa03f1ad28067964f053db16179f9a1290df",
         "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
         "evidenceFile": "U2.json",
         "passed": 41,
@@ -252,7 +252,7 @@
   "closedAt": "2026-09-09",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T19:13:29.836Z",
-    "contentSha256": "0b7d8b25b3ec78e55623901717abc306835f9648c153ede68a5f054ada1d436b"
+    "sealedAt": "2026-11-06T19:14:02.715Z",
+    "contentSha256": "3511b8559f7a26d4c0502e16cddcd0deef62df5d06591ed35366e71b49fdebc2"
   }
 }
