@@ -2,16 +2,13 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 50,
-  "passed": 48,
-  "failed": 2,
-  "failures": [
-    "X1: D1 verifier passes at HEAD",
-    "X1: D1 evidence byte-identical (modulo generatedAt/currentCommit)"
-  ],
+  "passed": 50,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
-  "currentCommit": "8e8c08acaacbbf8d8d1e0a7ff3b2f1685d0d62d6",
+  "currentCommit": "36e0aa03f1ad28067964f053db16179f9a1290df",
   "sourceFingerprint": "5d79e12288c0e3c9c32810711d28e51f83a6e3808ee9fdd930923f821ded9d7c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -257,10 +254,10 @@
       }
     ]
   },
-  "generatedAt": "2026-11-06T17:32:55.644Z",
+  "generatedAt": "2026-11-06T17:44:02.644Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T17:32:55.645Z",
-    "contentSha256": "1abf7fcc99440b975ae52c85facf01e8776d94bddc82080941bb95ee4d870b2e"
+    "sealedAt": "2026-11-06T17:44:02.644Z",
+    "contentSha256": "7d96ca6c65ae0850be105a105059366c2b18eaba84d884413a94bfcbaae272d9"
   }
 }
