@@ -3,7 +3,7 @@
   "milestone": "M24",
   "githubMilestone": 24,
   "title": "bb_lsp — The Server (IDE Program v0)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-08-31T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 487,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "authority, ledger, closure gate, npm run verify wiring",
       "acceptanceCriteria": [
         "machine-readable ledger with all 11 M24 issues",
@@ -39,12 +39,12 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2174ecf70ff9b57d3daeefa2d5b3b41c3c36681b",
+        "status": "verified",
+        "currentCommit": "b8b46c21c0279a1804edb00e5cd4778e24a6d57b",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 23,
-        "failed": 1,
+        "passed": 24,
+        "failed": 0,
         "negativeCases": 11,
         "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:52:22.613Z",
-    "contentSha256": "6c3d8f311e11b7151e76ac14120e90f1129c96d5c0f919812d74432fe3133bbc"
+    "sealedAt": "2026-11-06T23:52:24.300Z",
+    "contentSha256": "2a5d825c8e881d9a23bffdb787cb3bc5841220224081c3084b5d83dc1a882564"
   }
 }
