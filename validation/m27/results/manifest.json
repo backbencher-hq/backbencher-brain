@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 616,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,14 +29,14 @@
         "Evidence persisted at validation/m27/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+        "status": "known-gap",
+        "currentCommit": "7ea904c7ee44255f7c76b5c176760bed1d651259",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 71,
-        "failed": 0,
+        "passed": 69,
+        "failed": 2,
         "negativeCases": 11,
-        "blockedReason": "not verified at 07039813002b5a50a90bd8a607eedf4a30bca8c7: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
+        "blockedReason": "not verified at 7ea904c7ee44255f7c76b5c176760bed1d651259: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned) ; G1: every non-planned ledger item has matching persisted evidence at the current commit"
       }
     },
     {
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T04:37:00.055Z",
-    "contentSha256": "a234758537f44633585ed166fdf105aaf0d5d39ca63613ce2cde0666156349c5"
+    "sealedAt": "2026-11-06T17:12:46.772Z",
+    "contentSha256": "f6cd2391e1b3ed3c2ad62395598482b9c7cae18eb8a2da25402ce9edb431ee38"
   },
-  "updatedAt": "2026-11-06T04:37:00.055Z"
+  "updatedAt": "2026-11-06T17:12:46.772Z"
 }

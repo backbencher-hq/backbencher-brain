@@ -17,8 +17,8 @@
     "node": "v22.22.1",
     "runtime": "fork-run"
   },
-  "currentCommit": "77e8851b2686d1cb01ac92bfabebd2813ca099b6",
-  "commit": "77e8851b2686d1cb01ac92bfabebd2813ca099b6",
+  "currentCommit": "0dce4ec57f3664f021646fccb8148ff705998778",
+  "commit": "0dce4ec57f3664f021646fccb8148ff705998778",
   "failed": 0,
   "checks": [
     {
@@ -32,12 +32,12 @@
     {
       "name": "E5: server launched and version ok",
       "ok": true,
-      "detail": "{\"activationMs\":29,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/mcp/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\","
+      "detail": "{\"activationMs\":28,\"declaredBudgetMs\":150,\"withinBudget\":true,\"launch\":{\"kind\":\"dist-bundled\",\"entryPath\":\"$HOME/mcp/backbencher-brain/ide/vscode/dist/server/lsp/server.js\",\"runtime\":\"node\","
     },
     {
       "name": "E5: activation within declared budget",
       "ok": true,
-      "detail": "{\"activationMs\":29,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
+      "detail": "{\"activationMs\":28,\"regime\":\"cold-first-launch\",\"ceiling\":1500,\"declaredBudgetMs\":150}"
     },
     {
       "name": "E5: extension exposes its LanguageClient transport",
@@ -51,7 +51,7 @@
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"provenance\":{\"source\":\"bb_index\",\"evidenceClass\":\"structural\",\"engine\":\"bb_lsp hover@m24.l2\",\"limitations\":[\"index-sourced; no compiler-backed types (complement stance)\"],\"stale\":false},\"symbol\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"parameters\":null,\"usageCount\":1,\"unresolvedNameMatches\":{\"name\":\"greet\",\"external\":0,\"unresolved\":0,\"total\":0},\"omittedUsageRows\":{\"unresolvable\":0},\"indexedFileCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\",\"usagesSection\":\"**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — main.ts:8 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D)\",\"containmentSection\":\"\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"lineStart\":2,\"lineEnd\":2,\"typeLine\":{\"provenance\":\"unknown\",\"text\":\"unknown\",\"confidence\":null,\"reason\":\"the engine returned no entry for this function; no type is asserted\",\"withheld\":\"no-engine-answer\",\"withheldText\":null,\"storedProvenanceUnknown\":false,\"stale\":false,\"witness\":null},\"docComment\":\"\"}}"
+      "detail": "{\"provenance\":{\"source\":\"bb_index\",\"evidenceClass\":\"structural\",\"engine\":\"bb_lsp hover@m24.l2\",\"limitations\":[\"index-sourced; no compiler-backed types (complement stance)\"],\"stale\":false},\"symbol\":{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"parameters\":null,\"usageCount\":1,\"unresolvedNameMatches\":{\"name\":\"greet\",\"external\":0,\"unresolved\":0,\"total\":0},\"omittedUsageRows\":{\"unresolvable\":0},\"indexedFileCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\",\"usagesSection\":\"**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — main.ts:8 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D)\",\"containmentSection\":\"\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"lineStart\":2,\"lineEnd\":2,\"typeLine\":{\"provenance\":\"unknown\",\"text\":\"unknown\",\"confidence\":null,\"reason\":\"the engine returned no entry for this function; no type is asserted\",\"withheld\":\"no-engine-answer\",\"withheldText\":null,\"storedProvenanceUnknown\":false,\"stale\":false,\"witness\":null},\"docComment\":\"\"}}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -74,12 +74,12 @@
     {
       "name": "H2: usage link is clickable with an index-backed file:line target",
       "ok": true,
-      "detail": "label=main.ts:8 (expected main.ts:8), caveat=\"_(this is the calling symbol's declaration, not the call site)_\", query=[{\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":7,\"character\":9}]"
+      "detail": "label=main.ts:8 (expected main.ts:8), caveat=\"_(this is the calling symbol's declaration, not the call site)_\", query=[{\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":7,\"character\":9}]"
     },
     {
       "name": "H2: the usage link's target is an index-backed ABSOLUTE path into the fixture",
       "ok": true,
-      "detail": "parsed=true absolute=true file=\"/tmp/v1-ws-hQzYfm/main.ts\" expected=\"/tmp/v1-ws-hQzYfm/main.ts\""
+      "detail": "parsed=true absolute=true file=\"/tmp/v1-ws-9L5RjM/main.ts\" expected=\"/tmp/v1-ws-9L5RjM/main.ts\""
     },
     {
       "name": "H2: the usage link's payload line and its label line name the SAME source line",
@@ -104,12 +104,12 @@
     {
       "name": "H3: stored enrichment surfaces on hover (role/layer/frequency)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 1 usage in 1 indexed file _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%"
+      "detail": "```\nmethod greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 1 usage in 1 indexed file _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%"
     },
     {
       "name": "H3: enrichment is labeled index-inferred, never parser-fact tier",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 1 usage in 1 indexed file _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%"
+      "detail": "```\nmethod greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 1 usage in 1 indexed file _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%"
     },
     {
       "name": "H3: enrichment annotation never upgrades the evidence tier",
@@ -119,7 +119,7 @@
     {
       "name": "H4: hover embeds the actions row",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 1 usage in 1 indexed file _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-hQzYfm%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n"
+      "detail": "```\nmethod greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 1 usage in 1 indexed file _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-9L5RjM%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n"
     },
     {
       "name": "H4: exactly the three action commands embed parseable args",
@@ -129,7 +129,7 @@
     {
       "name": "H4: action args are the server-resolved symbol identity (greet)",
       "ok": true,
-      "detail": "{\"symbol\":\"greet\",\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":1,\"character\":2}"
+      "detail": "{\"symbol\":\"greet\",\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":1,\"character\":2}"
     },
     {
       "name": "L2: hover outside index is declared absent",
@@ -139,17 +139,17 @@
     {
       "name": "L3: definition resolves greet",
       "ok": true,
-      "detail": "{\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
+      "detail": "{\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
     },
     {
       "name": "L3: definition location is 0-based line 1",
       "ok": true,
-      "detail": "{\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
+      "detail": "{\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}}}"
     },
     {
       "name": "L3: references returns locations",
       "ok": true,
-      "detail": "[{\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":7,\"character\":9},\"end\":{\"line\":10,\"character\":1}}},{\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":"
+      "detail": "[{\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":7,\"character\":9},\"end\":{\"line\":10,\"character\":1}}},{\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":"
     },
     {
       "name": "L3: definition outside index is honest empty",
@@ -168,17 +168,17 @@
     {
       "name": "L4: workspace/symbol finds greet",
       "ok": true,
-      "detail": "[{\"name\":\"greet\",\"kind\":6,\"containerName\":\"Greeter.greet\",\"location\":{\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":1,\"character\":0}}}}]"
+      "detail": "[{\"name\":\"greet\",\"kind\":6,\"containerName\":\"Greeter.greet\",\"location\":{\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":1,\"character\":0}}}}]"
     },
     {
       "name": "L5: prepareCallHierarchy returns item",
       "ok": true,
-      "detail": "[{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\""
+      "detail": "[{\"name\":\"greet\",\"kind\":6,\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\"line\":1,\"character\":7}},\"selectionRange\":{\"start\":{\"line\":1,\"character\":2},\"end\":{\""
     },
     {
       "name": "L5: incomingCalls returns callers",
       "ok": true,
-      "detail": "[{\"from\":{\"name\":\"main\",\"kind\":12,\"uri\":\"file:///tmp/v1-ws-hQzYfm/main.ts\",\"range\":{\"start\":{\"line\":7,\"character\":0},\"end\":{\"line\":10,\"character\":1}},"
+      "detail": "[{\"from\":{\"name\":\"main\",\"kind\":12,\"uri\":\"file:///tmp/v1-ws-9L5RjM/main.ts\",\"range\":{\"start\":{\"line\":7,\"character\":0},\"end\":{\"line\":10,\"character\":1}},"
     },
     {
       "name": "L5: outgoingCalls returns callees",
@@ -218,7 +218,7 @@
     {
       "name": "E5-H2: clicking bb.openUsage reveals the index-stored target",
       "ok": true,
-      "detail": "{\"before\":-1,\"args\":{\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":7,\"character\":9},\"line\":7}"
+      "detail": "{\"before\":-1,\"args\":{\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":7,\"character\":9},\"line\":7}"
     },
     {
       "name": "E5-H2: hover embeds a bb.openDefinition link",
@@ -228,7 +228,7 @@
     {
       "name": "E5-H2: clicking bb.openDefinition reveals the declaration",
       "ok": true,
-      "detail": "{\"args\":{\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":1,\"character\":2},\"line\":1}"
+      "detail": "{\"args\":{\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":1,\"character\":2},\"line\":1}"
     },
     {
       "name": "E5-H2: all three hover-link commands are registered",
@@ -238,7 +238,7 @@
     {
       "name": "E5-U6: a show-all-usages target is derivable from the hover",
       "ok": true,
-      "detail": "{\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":1,\"character\":2,\"symbol\":\"greet\"}"
+      "detail": "{\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":1,\"character\":2,\"symbol\":\"greet\"}"
     },
     {
       "name": "E5-U6: the click returns a declared surface (never message-only)",
@@ -413,7 +413,7 @@
     {
       "name": "E5-H6: click-to-reveal lands the cursor on the index-stored line",
       "ok": true,
-      "detail": "{\"ack\":{\"schemaVersion\":1,\"type\":\"ack\",\"ok\":true},\"revealed\":{\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":8},\"active\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":8,\"targetFile\":\"main.ts\",\"targetLine\":8}"
+      "detail": "{\"ack\":{\"schemaVersion\":1,\"type\":\"ack\",\"ok\":true},\"revealed\":{\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":8},\"active\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":8,\"targetFile\":\"main.ts\",\"targetLine\":8}"
     },
     {
       "name": "E5-H6: wrong-version message LOUDLY rejected, cursor untouched",
@@ -423,7 +423,7 @@
     {
       "name": "E5-H6: stale click reveals and labels (never blocks, never silent)",
       "ok": true,
-      "detail": "{\"ack\":{\"schemaVersion\":1,\"type\":\"ack\",\"ok\":true},\"action\":\"navigate\",\"revealed\":{\"file\":\"/tmp/v1-ws-hQzYfm/main.ts\",\"line\":8},\"staleLabeled\":true}"
+      "detail": "{\"ack\":{\"schemaVersion\":1,\"type\":\"ack\",\"ok\":true},\"action\":\"navigate\",\"revealed\":{\"file\":\"/tmp/v1-ws-9L5RjM/main.ts\",\"line\":8},\"staleLabeled\":true}"
     },
     {
       "name": "E5-H6: fabricated path refused with a declared error",
@@ -466,7 +466,7 @@
   "checksPassed": 90,
   "checksTotal": 90,
   "activation": {
-    "activationMs": 29,
+    "activationMs": 28,
     "declaredBudgetMs": 150,
     "withinBudget": true,
     "launch": {
@@ -478,16 +478,16 @@
     },
     "serverVersion": "0.3.0",
     "versionOk": true,
-    "handshakeMs": 614
+    "handshakeMs": 676
   },
-  "elapsedMs": 30017,
+  "elapsedMs": 34021,
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
-  "generatedAt": "2026-11-05T22:58:01.703Z",
+  "generatedAt": "2026-11-06T17:28:24.111Z",
   "limitations": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T22:58:01.703Z",
-    "contentSha256": "a18588dfe5cea206f9c7ffc5e3fe9aca8259ce80a724ebd101acae24d194df00"
+    "sealedAt": "2026-11-06T17:28:24.111Z",
+    "contentSha256": "64b608a26e4a63f320c9ac9f396234f484582bc996b473b4cf1a96ac80c19df3"
   }
 }
