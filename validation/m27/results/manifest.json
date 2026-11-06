@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 616,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,12 +29,12 @@
         "Evidence persisted at validation/m27/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "8d4513ab338254091ce288887c2dfb1a8824f396",
+        "status": "verified",
+        "currentCommit": "eda1a0beebeb9bbd608ea5651bab1c95cb33ef3d",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 1,
+        "passed": 71,
+        "failed": 0,
         "negativeCases": 11,
         "blockedReason": "not verified at 8d4513ab338254091ce288887c2dfb1a8824f396: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
       }
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:45:25.321Z",
-    "contentSha256": "796a1621a44afb3b4d2bf5c939cf257291bda51c7de99e22697f0468a29657d1"
+    "sealedAt": "2026-11-06T23:52:30.873Z",
+    "contentSha256": "4423ab209d7f047b73271dfb10d50d432f7d103f37d88a511d8c29dd9b765119"
   },
-  "updatedAt": "2026-11-06T23:45:25.321Z"
+  "updatedAt": "2026-11-06T23:52:30.873Z"
 }
