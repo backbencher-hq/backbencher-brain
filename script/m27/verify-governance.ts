@@ -293,7 +293,16 @@ function main(): void {
     "docs/IDE-PROGRAM-STATUS.md",
     "package.json",
   ])
+  // A GENERATED document is an OUTPUT (the same rule as the relevant-input maps):
+  // these gates REWRITE it on every run, so a dirty-tree sweep over docs/mNN/ would
+  // report the run that produced the document as a non-verdict. Found live: m29's
+  // G1 recorded 'docs/m29/PRECISION-LEDGER.md' as a dirty relevant file and dropped
+  // 75/75 to known-gap. A hand edit is still caught by the byte-identical drift gate.
+  const GENERATED_DOCS = new Set([
+    "docs/m27/FORK-CAPABILITY-MATRIX.md",
+  ])
   function isRelevantPath(file: string): boolean {
+    if (GENERATED_DOCS.has(file)) return false
     return (
       relevantPaths.has(file) ||
       file.startsWith("script/m27/") ||
