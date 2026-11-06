@@ -19,7 +19,7 @@
   "budgets": {
     "impactWarmP95Ms": 300
   },
-  "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
+  "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
   "sourceFingerprint": "245168d353a2f601529c40835fce928b9109b265fc0e60dd02ddbd55c5954d3d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -38,13 +38,13 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
   "evidenceFile": "H4.json",
-  "generatedAt": "2026-11-06T21:23:48.302Z",
+  "generatedAt": "2026-11-06T23:12:24.338Z",
   "limitations": [
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:23:48.303Z",
-    "contentSha256": "35c304d9debd3f665d955490049d36372f3bd414e9af89a21792595d772ff3de"
+    "sealedAt": "2026-11-06T23:12:24.338Z",
+    "contentSha256": "09ea33b6727fdb9b8b34db39d31d70a9822d90a08703d540ee177eb7b7f6fda6"
   }
 }

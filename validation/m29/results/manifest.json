@@ -3,7 +3,7 @@
   "milestone": "M29",
   "githubMilestone": 29,
   "title": "M29: Precision Waves (IDE v5)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m29/M29-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -30,14 +30,14 @@
         "Clean rerun"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "29bed97f39167f8d5166cf544553b05f0dab5a93",
+        "status": "known-gap",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 69,
         "failed": 0,
         "negativeCases": 10,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "no check failed — relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md"
       }
     },
     {
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -86,7 +86,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
         "passed": 261,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
         "passed": 28,
@@ -151,7 +151,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
@@ -180,7 +180,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -209,7 +209,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -239,7 +239,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -255,7 +255,7 @@
       "code": "X1",
       "githubIssue": 543,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence — the owner declares the idea achieved, per the spot-check ritual.",
       "acceptanceCriteria": [
         "Ladder audit: M24-M29 bars green at current HEAD, machine-checked",
@@ -268,12 +268,12 @@
         "Ledger clean across M24-M29"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "c87a8c5288635970bddeb490d20180ff8d7f3038",
+        "status": "known-gap",
+        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 32,
-        "failed": 0,
+        "passed": 30,
+        "failed": 2,
         "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
         "negativeCases": 3,
         "blockedReason": "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run."
@@ -282,7 +282,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:24:21.144Z",
-    "contentSha256": "ec8e99be21fee3bb9335ec3b02aea3f13e7e72bc09d3fbf0c3e61a956357405d"
+    "sealedAt": "2026-11-06T23:12:00.694Z",
+    "contentSha256": "5d22b10fec74949fe61389df598e7b63f479d784eb5b347bbe67e9e7f62b217b"
   }
 }
