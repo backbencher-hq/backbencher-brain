@@ -271,7 +271,12 @@ for (const issue of ledger.issues) {
     const persisted = parseSealedRecord(p) as Record<string, unknown>
     const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
     const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
-    if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+    // `persisted-failed` applies to entries that CLAIM GREEN only. An honest
+    // `known-gap` exists BECAUSE its record failed; failing it again makes the
+    // honest state structurally unrecordable and leaves the lane with no way to
+    // clear a closure precondition that names it. The same rule the m27/m28/m29
+    // gates had to learn — applied here so M42 can close honestly.
+    if (realFailed !== 0 && issue.status === "verified") evidenceErrors.push(`${issue.code}:persisted-failed`)
     const evidenceCommit = persisted["currentCommit"]
     if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
       if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
