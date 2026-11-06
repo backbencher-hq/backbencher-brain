@@ -11,8 +11,8 @@ gate — the launch record cannot be forged).
 | item | scope | status | evidence / reason |
 |---|---|---|---|
 | Hub in-editor (VS Code) — grouped rows, click affordance, tree, ONE legend | linux | EVIDENCE | validation/m25/results/E5.json |
-| Hub in-editor (forks) — Cursor + Antigravity exercised through the same suite | linux | EVIDENCE | validation/m25/results/F-CURSOR.json |
 | Hub in-editor (fork) — Antigravity | linux | EVIDENCE | validation/m25/results/F-ANTIGRAVITY.json |
+| Hub in-editor (fork) — Cursor | linux | OWNER | reason: the cursor CLI is not installed on the owner's linux box, so the fork is recorded blocked-with-reason (validation/m25/results/F-CURSOR.json, contract §2 I4 — never omitted, never claimed); the row that previously stood here pointed at that blocked file while claiming both forks had been exercised, which the closure gate caught. Owner decision for ishaq2321: install Cursor and re-run `npx tsx script/m25/run-fork-e2e.mts`, or accept the blocked record for v7 |
 | Fork availability — Windsurf | linux | OWNER | reason: windsurf CLI is not installed on the owner's linux box; the fork is recorded blocked-with-reason (validation/m25/results/F-WINDSURF.json, contract §2 I4 — never omitted, never claimed). Owner decision for ishaq2321: install Windsurf and re-run `npx tsx script/m25/run-fork-e2e.mts`, or accept the blocked record for v7 |
 | Impact resolution for member targets (constructor case) | server + editor | EVIDENCE | validation/m44/results/U5.json |
 | References fallback (show-all-usages never dead-ends) | server + editor | EVIDENCE | validation/m44/results/U6.json |
