@@ -20,10 +20,10 @@
     "loadFailureIsACatch": false,
     "note": "A mutant whose module will not import runs no probe and no harness assertion. This gate booked that as a detected defect — PROVEN: a mutant whose replacement was a bare syntax error printed 'mutant failed to load — counts as detected' and the gate still reported 6/6 mutants caught and VERIFIED. An unevaluable mutant, and an anchor that no longer matches, are both FAILURES now (§8.3 silence is guilt; the old branch printed the word SKIP and continued)."
   },
-  "currentCommit": "34065a23ebe3ad83d100cdba34f69fd57e304e14",
+  "currentCommit": "a903ff5acb80602740a1406a2546fb3391c91ed9",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-11-06T19:25:18.969Z",
+  "generatedAt": "2026-11-06T20:21:13.465Z",
   "fixture": {
     "root": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
@@ -54,7 +54,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T19:25:18.969Z",
-    "contentSha256": "0658730f6087f525433b04996f9900278bfab7d78916bbd7734990216dd60321"
+    "sealedAt": "2026-11-06T20:21:13.465Z",
+    "contentSha256": "6aea53b2c80298607af6901ebb09d41e9dca9fad48730993e99a73ea483fb9a3"
   }
 }
