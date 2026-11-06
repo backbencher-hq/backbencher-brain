@@ -3,7 +3,7 @@
   "milestone": "M44",
   "githubMilestone": 47,
   "title": "The Understandable Hub (IDE v7)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m44/M44-MASTER-PLAN.md (Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§13 Understanding Rules, M44 amendment)",
   "prerequisite": "M29 + M42 completion bars met — verified at HEAD (re-audited by G1 on every run)",
@@ -26,7 +26,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "169a91da1cd1cf085aa6d1cf30d01251cd2a76a6",
+        "currentCommit": "29bed97f39167f8d5166cf544553b05f0dab5a93",
         "verifierCommand": "npx tsx script/m44/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 26,
@@ -54,7 +54,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
         "evidenceFile": "U1.json",
         "passed": 20,
@@ -115,7 +115,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
         "evidenceFile": "U3.json",
         "passed": 32,
@@ -143,7 +143,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m44/verify-legend.ts",
         "evidenceFile": "U4.json",
         "passed": 25,
@@ -172,7 +172,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
         "evidenceFile": "U5.json",
         "passed": 33,
@@ -212,7 +212,7 @@
         "negativeCases": 2,
         "inEditor": "E5 88/88 (E5-U6 click leg: declared surface + data landing + identity + legacy reveal floor)",
         "docs": "docs/m44/M44-MASTER-PLAN.md U6 decision",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "blockedReason": "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message)."
       }
     },
@@ -220,7 +220,7 @@
       "code": "X1",
       "githubIssue": 694,
       "tool": "m44-closure",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M44 closure gate: full-ladder audit M24→M44 at HEAD; in-editor visual leg through E5/E6 with the new hub; launch bar; known gaps fixed or owner-waived with recorded reason",
       "acceptanceCriteria": [
         "gate exits 0 only when the whole ladder M24→M44 is green at HEAD and every M44 ledger item carries evidence; can-fail proven by mutants",
@@ -233,17 +233,17 @@
         "launch bar record"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m44/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 52,
-        "failed": 1,
+        "passed": 53,
+        "failed": 0,
         "negativeCases": 8,
         "editorLegs": "E5 88/88 + forks (cursor, antigravity) 88/88 each with the M44 hub legs; windsurf blocked-with-reason",
         "launchRecord": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows)",
         "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
         "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs",
         "blockedReason": "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them."
       }
@@ -252,7 +252,7 @@
   "closedAt": "2026-09-09",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:22:14.184Z",
-    "contentSha256": "3d7e4d7254a1d15acf18a9037d99a422c89161c6b3a4946c55a9efca9fb570f8"
+    "sealedAt": "2026-11-06T21:24:21.215Z",
+    "contentSha256": "bcf3cfb71575c717a02f02bce51471881558d11149ddaafa3ac6a7388c21baaa"
   }
 }
