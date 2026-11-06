@@ -24,7 +24,7 @@
     "enrichmentReadOverheadP95Ms": 5,
     "hoverP95Ms": 55
   },
-  "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+  "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
   "sourceFingerprint": "e2048b3048f9add777bc24ef18a7ae9caa320268f0528fc5ea7ada1ceaedc606",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -34,7 +34,7 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
   "evidenceFile": "H3.json",
-  "generatedAt": "2026-11-06T21:20:54.026Z",
+  "generatedAt": "2026-11-06T21:23:42.638Z",
   "limitations": [
     "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
     "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges.",
@@ -42,7 +42,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:20:54.026Z",
-    "contentSha256": "a4da1ef25f7a3196105846750f0f685d831599ff924ea22683bd2d2b0ea730aa"
+    "sealedAt": "2026-11-06T21:23:42.638Z",
+    "contentSha256": "1c7f48e9bc9b7dcc2cdd3c22cfaec6fe72ee4a52c17ab294eccc2fb359664614"
   }
 }

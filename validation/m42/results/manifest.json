@@ -26,7 +26,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e60058bf7b4091924d04147f5a7627e782092dc8",
+        "currentCommit": "29bed97f39167f8d5166cf544553b05f0dab5a93",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 25,
@@ -53,7 +53,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
         "passed": 25,
@@ -84,7 +84,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
         "passed": 71,
@@ -116,7 +116,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
         "passed": 29,
@@ -148,7 +148,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
         "passed": 33,
@@ -180,7 +180,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
         "passed": 43,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
+        "currentCommit": "4093ceb059ff20ce83f554c8090a8ce597487189",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
         "passed": 38,
@@ -252,7 +252,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:21:35.474Z",
-    "contentSha256": "d213f576f3426a61df50ea9c53bd43fe61cef321191cf6783e64634327c14979"
+    "sealedAt": "2026-11-06T21:24:21.181Z",
+    "contentSha256": "5373de3770c148d6c3f62d702be2c8c985765e79ee63062d94e44c070a9adedf"
   }
 }
