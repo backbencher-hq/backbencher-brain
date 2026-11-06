@@ -1,19 +1,19 @@
 {
-  "status": "known-gap",
-  "passed": 11,
-  "failed": 3,
+  "status": "verified",
+  "passed": 14,
+  "failed": 0,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 3,
-    "mutantsCaught": 4,
+    "realComponentFailures": 0,
+    "mutantsCaught": 5,
     "mutantsTotal": 5,
-    "ok": false
+    "ok": true
   },
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
-  "sourceFingerprint": "32735e1e9f0e551f62a89256708dbef30e534c3a255fb14de88cde6b89b05885",
+  "sourceFingerprint": "5ee6717f02c295e63b9e2a3acb2bbb5fdec2dba7f20a2c988cfbcc645e5d0d14",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-wave-harness.ts",
@@ -24,20 +24,16 @@
     "script/m29/verify-wave-protocol.ts"
   ],
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-10-17T17:00:42.117Z",
+  "generatedAt": "2026-11-06T04:19:22.873Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
     "The wiring proof reads package.json at run time; a chain edit that renames the script keys ('verify', 'verify:fast') would need this gate updated."
   ],
-  "details": [
-    "W2: R1 runner gate exits 0 (green): exit=1   FAIL: R2: real java reads conformant — language java absent from the #419 SPEC ledger\n",
-    "W3: hand-edited ledger claim makes the drift gate FAIL (exit != 0): exit=0",
-    "W3: restored SPEC makes the runner gate green again: exit=1"
-  ],
+  "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:00:42.127Z",
-    "contentSha256": "eb90fb0bf65ccd26d524a7425d70c1b1a2a2295ed6f6c823c074e3a249cceb31"
+    "sealedAt": "2026-11-06T04:19:22.874Z",
+    "contentSha256": "cf402898ca93f690072121c03438439edd1b5101683bd8ea8ff727809c0a5c00"
   }
 }

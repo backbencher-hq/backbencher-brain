@@ -74,6 +74,16 @@ console.log("M29.R4 verifier — precision ledger drift + honesty (issue #539)\n
 // G1: byte-identical regeneration
 // ---------------------------------------------------------------------------
 const fresh = buildLedger()
+// `--write` regenerates the artifacts from the builder. Every failure message in
+// this file has told the operator to "regenerate with --write" since the gate was
+// written, but the flag was NEVER IMPLEMENTED — a documented remedy the code did
+// not offer, which is the same class of defect as a claim table outrunning its
+// evidence. Implemented here so the instruction is true.
+if (process.argv.includes("--write")) {
+  writeFileSync(OUT_JSON, fresh.json)
+  writeFileSync(OUT_MD, fresh.md)
+  console.log("  regenerated PRECISION-LEDGER.json and .md from the builder")
+}
 let onDiskJson = ""
 let onDiskMd = ""
 try {

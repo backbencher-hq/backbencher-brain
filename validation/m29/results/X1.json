@@ -4,19 +4,17 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 32,
-  "passed": 20,
-  "failed": 12,
+  "passed": 22,
+  "failed": 10,
   "failures": [
-    "X1: M24 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — L2:persisted-failed,L3:status-mismatch,V1:persisted-failed,D1:persisted-failed  (exit=1)",
-    "X1: M25 ladder run green at HEAD: FAIL: G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) — antigravity:row-claims-without-evidence  (exit=1)",
-    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (65/70 passed, 10 negative)  (exit=1)",
-    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (70/75 passed, 13 negative)  (exit=1)",
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (75/79 passed, 17 negative)  (exit=1)",
-    "X1: M29-R1 ladder run green at HEAD: FAIL: R2: real java reads conformant — language java absent from the #419 SPEC ledger  (exit=1)",
-    "X1: M29-R2 ladder run green at HEAD: R2: KNOWN-GAP (92/107 passed, 5/5 mutants)  (exit=1)",
-    "X1: M29-R3 ladder run green at HEAD: R3: KNOWN-GAP (20/27 passed, 6 negatives)  (exit=1)",
-    "X1: M29-V1 ladder run green at HEAD: V1: KNOWN-GAP (11/14 passed, 3 negatives)  (exit=1)",
-    "X1: M29-D1 ladder run green at HEAD: D1: KNOWN-GAP (12/13 passed, 3 negatives)  (exit=1)",
+    "X1: M24 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — L1:stale-commit,L3:stale-commit,D1:status-mismatch  (exit=1)",
+    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) — E5=known-gap  (exit=1)",
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (64/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (69/75 passed, 13 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (74/79 passed, 17 negative)  (exit=1)",
+    "X1: M29-R2 ladder run green at HEAD: R2: KNOWN-GAP (93/121 passed, 5/5 mutants)  (exit=1)",
+    "X1: M29-R3 ladder run green at HEAD: R3: KNOWN-GAP (21/27 passed, 6 negatives)  (exit=1)",
+    "X1: M29-V1 ladder run green at HEAD: CAUGHT: W3: an empty SPEC ledger makes the runner gate FAIL (absence is never silently conformant) — exit=1  (exit=-1)",
     "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1,R1,R2,R3,V1,D1",
     "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:R1 not evidence-verified; pre1:R2 not evidence-verified; pre1:R3 not evidence-verified; pre1:V1 not evidence-verified; pre1:D1 not evidence-verified"
   ],
@@ -27,16 +25,16 @@
     "M26": 1,
     "M27": 1,
     "M28": 1,
-    "M29-R1": 1,
+    "M29-R1": 0,
     "M29-R2": 1,
     "M29-R3": 1,
     "M29-R5": 0,
     "M29-R4": 0,
-    "M29-V1": 1,
-    "M29-D1": 1
+    "M29-V1": -1,
+    "M29-D1": 0
   },
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
-  "sourceFingerprint": "fa7b21a6f612bd41d3b6016639270db0226dafeb47609a2dd436d9c66c9dfcee",
+  "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
+  "sourceFingerprint": "9099db250a8c193b8d343d9dbf5c5a5b901394d9214cb237ad4d09895c6c6cad",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -71,7 +69,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-10-17T17:01:19.178Z",
+  "generatedAt": "2026-11-05T14:01:58.668Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -80,7 +78,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:01:19.195Z",
-    "contentSha256": "5a658a85baa50ea54ef33ef09f24e77b90b90d78b054b8349c1cb9a6bc2b94e9"
+    "sealedAt": "2026-11-05T14:01:58.668Z",
+    "contentSha256": "f9ee798e1c5512f42546ae4f1baa8ba646e587562c554a690f6a4e792d44a48e"
   }
 }

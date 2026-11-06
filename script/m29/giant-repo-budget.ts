@@ -34,6 +34,24 @@ const CORPUS = path.join(ROOT, ".tools", "m29-giant-corpus")
 const MANIFEST = path.join(CORPUS, "..", "m29-giant-corpus-manifest.json")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
 
+// Neovim refuses to start when it cannot create its state directory
+// (E739: Cannot create directory ~/.local/state/nvim). This sandbox mounts $HOME
+// read-only, so every driven session failed with a Lua chunk error that reads like
+// a driver bug rather than a sandbox one. Same fix as script/m27/verify-nvim.ts,
+// never propagated to these two drivers: point every XDG location at a writable
+// directory under the system temp area.
+const NVIM_QUIET_XDG: Record<string, string> = (() => {
+  const base = path.join(tmpdir(), "m29-nvim-xdg")
+  const env: Record<string, string> = {}
+  for (const key of ["STATE", "DATA", "CACHE", "CONFIG"] as const) {
+    const dir = path.join(base, key.toLowerCase())
+    mkdirSync(dir, { recursive: true })
+    env[`XDG_${key}_HOME`] = dir
+  }
+  return env
+})()
+
+
 /** Contract §3 warm budgets (ms, p95); cold budgets for the cold probe. */
 export const WARM_BUDGETS: Record<string, number> = {
   hover: 50, definition: 50, references: 50,
@@ -531,7 +549,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
         execFileSync(NVIM, ["--headless", "--clean", "-u", "NONE", "-i", "NONE", "-n", "-l", path.join(ROOT, "script/m29/giant-editor-driver.lua")], {
           cwd: ROOT, encoding: "utf8", timeout: 300_000,
           env: {
-            ...process.env, BB_DATA_DIR: dataDir, BB29_OUT: editorOut, BB29_WS: CORPUS, BB29_ROOT: ROOT,
+            ...process.env, ...NVIM_QUIET_XDG, BB_DATA_DIR: dataDir, BB29_OUT: editorOut, BB29_WS: CORPUS, BB29_ROOT: ROOT,
             BB29_TARGET_FILE: tsTarget.file, BB29_HOVER_LINE: String(tsTarget.hoverLine), BB29_HOVER_CHAR: String(tsTarget.hoverChar),
           },
           stdio: ["ignore", "pipe", "pipe"],

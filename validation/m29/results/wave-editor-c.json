@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
       "ok": true
     },
@@ -21,12 +21,12 @@
       "ok": true
     },
     {
-      "detail": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_gr",
+      "detail": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\ntype: void _",
       "name": "S6: hover renders the symbol",
       "ok": true
     },
     {
-      "detail": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_gr",
+      "detail": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\ntype: void _",
       "name": "S6: hover carries evidence tier (contract §2)",
       "ok": true
     },
@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "commit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
   "language": "c",
   "raw": {
     "definition": {
@@ -65,7 +65,7 @@
           "line": 11
         }
       },
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c"
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
     },
     "documentSymbol": [
       {
@@ -74,7 +74,7 @@
             "children": [],
             "data": {
               "evidenceTier": "indexed",
-              "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:prefix:5",
+              "id": "174b53a656bcd8e3e798d0c81afb1979b3b66ad2:main.c:prefix:5",
               "notIndexed": false
             },
             "detail": "Greeter.prefix",
@@ -92,7 +92,7 @@
             },
             "selectionRange": {
               "end": {
-                "character": 19,
+                "character": 15,
                 "line": 4
               },
               "start": {
@@ -104,7 +104,7 @@
         ],
         "data": {
           "evidenceTier": "indexed",
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:Greeter:4",
+          "id": "174b53a656bcd8e3e798d0c81afb1979b3b66ad2:main.c:Greeter:4",
           "notIndexed": false
         },
         "detail": "Greeter.Greeter",
@@ -135,7 +135,7 @@
         "children": [],
         "data": {
           "evidenceTier": "indexed",
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:greeter_init:8",
+          "id": "174b53a656bcd8e3e798d0c81afb1979b3b66ad2:main.c:greeter_init:8",
           "notIndexed": false
         },
         "detail": "global.greeter_init",
@@ -166,7 +166,7 @@
         "children": [],
         "data": {
           "evidenceTier": "indexed",
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:greeter_greet:12",
+          "id": "174b53a656bcd8e3e798d0c81afb1979b3b66ad2:main.c:greeter_greet:12",
           "notIndexed": false
         },
         "detail": "global.greeter_greet",
@@ -197,7 +197,7 @@
         "children": [],
         "data": {
           "evidenceTier": "indexed",
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:main:16",
+          "id": "174b53a656bcd8e3e798d0c81afb1979b3b66ad2:main.c:main:16",
           "notIndexed": false
         },
         "detail": "global.main",
@@ -228,12 +228,12 @@
     "hover": {
       "contents": {
         "kind": "markdown",
-        "value": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_greet** — function, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.c:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D))_"
+        "value": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\ntype: void _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**greeter_greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual, reference_qualified\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_; uses [prefix](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A4%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_; references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.c:20](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D))_"
       },
       "data": {
         "provenance": {
           "engine": "bb_lsp hover@m24.l2",
-          "evidenceClass": "structural",
+          "evidenceClass": "usage_contextual",
           "limitations": [
             "index-sourced; no compiler-backed types (complement stance)"
           ],
@@ -241,23 +241,29 @@
           "stale": false
         },
         "symbol": {
-          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)",
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)",
           "annotationSection": "",
-          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_",
+          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_; uses [prefix](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A4%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_; references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "",
           "crossLanguageSection": "",
           "definition": {
             "character": 0,
             "line": 11
           },
+          "docComment": "",
           "evidenceTiers": [
-            "structural",
-            "usage_contextual"
+            "usage_contextual",
+            "reference_qualified"
           ],
-          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c",
           "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
           "lineEnd": 14,
           "lineStart": 12,
           "name": "greeter_greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
           "parameters": [
             {
               "isOptional": false,
@@ -288,8 +294,21 @@
           "signature": "public function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void",
           "stale": false,
           "symbolType": "function",
+          "typeLine": {
+            "provenance": "stored",
+            "reason": "type as stored in the index; the index records no marker of whether the analyzer read it from an explicit annotation or inferred it, so its own provenance is unstated",
+            "stale": false,
+            "storedProvenanceUnknown": true,
+            "text": "void"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "greeter_greet",
+            "total": 0,
+            "unresolved": 0
+          },
           "usageCount": 1,
-          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.c:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)"
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.c:20](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A19%2C%22character%22%3A0%7D%5D)"
         }
       },
       "range": {
@@ -307,15 +326,15 @@
       {
         "range": {
           "end": {
-            "character": 1,
-            "line": 22
+            "character": 0,
+            "line": 19
           },
           "start": {
             "character": 0,
-            "line": 15
+            "line": 19
           }
         },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c"
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
       },
       {
         "range": {
@@ -328,7 +347,7 @@
             "line": 11
           }
         },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c"
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/c/main.c"
       }
     ],
     "workspaceAbsence": []
@@ -337,7 +356,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:45:18.820Z",
-    "contentSha256": "afbfaa8853edef89d99c71600edaed9738606436cc39b3205dddad6a29a768a0"
+    "sealedAt": "2026-11-06T00:09:51.135Z",
+    "contentSha256": "6397347699ae3606a08af44125631db0e461a3bdb56fa7099df09500638ce33a"
   }
 }

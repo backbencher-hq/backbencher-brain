@@ -2,15 +2,15 @@
   "issue": "M29.R2",
   "code": "R2",
   "milestone": "M29",
-  "status": "known-gap",
-  "checks": 107,
-  "passed": 92,
-  "failed": 15,
+  "status": "verified",
+  "checks": 261,
+  "passed": 261,
+  "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "currentCommit": "025453f777dacb7511ca51e231ee5b8ae436c1bb",
   "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
-  "sourceFingerprint": "fe3d9284bebef32291d826869a5e2ee70acdf8e756dfa8ba30287939a16f5058",
+  "sourceFingerprint": "bbbf77447760a220bfe1762a79a3f971894184fddb6208bfe601b5ac2477cb0b",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-wave-execution.ts",
@@ -20,7 +20,7 @@
     "script/m29/wave-protocol.ts"
   ],
   "evidenceFile": "R2.json",
-  "generatedAt": "2026-10-17T16:57:27.630Z",
+  "generatedAt": "2026-11-06T00:09:58.361Z",
   "approval": {
     "record": "validation/m29/results/wave-1-approval.json",
     "approvedBy": "owner (ishaq2321)",
@@ -127,14 +127,99 @@
       "budgetsOk": true
     }
   ],
-  "s6Legs": [],
+  "s6Legs": [
+    {
+      "language": "java",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "python",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "typescript",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "javascript",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "kotlin",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "scala",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "groovy",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "zig",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "go",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "rust",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "c",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "cpp",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "vue",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "svelte",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    }
+  ],
   "limitations": [
     "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed.",
     "S5/S6 legs exercise the six owner-approved languages; languages outside the approval record are not onboarded this wave (the binding forbids it)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T16:57:27.632Z",
-    "contentSha256": "15513886874419c5f6cc976f6fd482ad152c38ead79bdcd85adadf5731c8a0f0"
+    "sealedAt": "2026-11-06T00:09:58.361Z",
+    "contentSha256": "b183ba0d4ce7d17c009671d3837c524ffe0f997eb12ccd9055ca9299ac692063"
   }
 }
