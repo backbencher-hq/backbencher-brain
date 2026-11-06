@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4875741b836d751ef573f5b5450b3ebf1e27797a",
+        "currentCommit": "9e725b838ec82edeff4270336aa2368aec5ab999",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "89226b3148f326686fc828bea99d02951936dc50",
+        "currentCommit": "4875741b836d751ef573f5b5450b3ebf1e27797a",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "89226b3148f326686fc828bea99d02951936dc50",
+        "currentCommit": "4875741b836d751ef573f5b5450b3ebf1e27797a",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T19:45:01.132Z",
-    "contentSha256": "8e875ccaaaff013b7037263d85d35a846bfae1bc7ac08cd7685fd1634025870c"
+    "sealedAt": "2026-11-06T20:01:54.089Z",
+    "contentSha256": "d128170bd0ab3d7a4cde72f58beccceca31eb7a1d614ac781e7ec3a1979d0578"
   }
 }
