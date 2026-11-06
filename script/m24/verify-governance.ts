@@ -448,7 +448,12 @@ function main(): void {
       const realFailed = verdict && typeof verdict.realComponentFailures === "number"
         ? verdict.realComponentFailures
         : persisted["failed"]
-      if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+      // `persisted-failed` applies to entries that CLAIM GREEN only. An honest
+      // `known-gap` exists BECAUSE its record failed; failing the gate for it
+      // again makes the honest state unrecordable and blocks every successor's
+      // bar, which is how this lane's whole chain stalled. The same rule the
+      // m27/m28/m29/m42/m44 gates carry.
+      if (realFailed !== 0 && issue.status === "verified") evidenceErrors.push(`${issue.code}:persisted-failed`)
       const evidenceCommit = persisted["currentCommit"]
       if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
         // Evidence records the commit at generation time; committing the

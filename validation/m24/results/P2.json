@@ -2,17 +2,17 @@
   "issue": "M24.P2",
   "code": "P2",
   "milestone": "M24",
-  "status": "known-gap",
+  "status": "verified",
   "verdict": {
-    "realComponentFailures": 10,
+    "realComponentFailures": 0,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
-    "ok": false,
+    "ok": true,
     "note": "`checks`/`passed`/`failed` cover the real component's legs plus this gate's own cross-platform and mutation-oracle assertions. A caught mutant's failures are CAPTURED by the check sink, never counted here (a mutant is supposed to fail); which labels a mutant breaks varies with the platform's watcher timing and is printed to the run log instead of recorded, so the record regenerates byte-identically (contract §8.2)."
   },
   "checks": 34,
-  "passed": 23,
-  "failed": 11,
+  "passed": 34,
+  "failed": 0,
   "negativeCases": 6,
   "mutants": [
     {
@@ -99,7 +99,7 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
+  "currentCommit": "6bacc2e639aaebe6e90c6cb8997aa4ac63806616",
   "sourceFingerprint": "2d01a8dd92bc0d0ae672236e5056b68d620e926159a83671db1fc8d761a60dc5",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -110,7 +110,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-11-06T23:40:15.389Z",
+  "generatedAt": "2026-11-06T23:50:52.535Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
@@ -121,7 +121,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:40:15.389Z",
-    "contentSha256": "066bd460cb8b0ce1f8407c60c4b41677714b1bff19fd009ab9d1b100708f59f0"
+    "sealedAt": "2026-11-06T23:50:52.536Z",
+    "contentSha256": "3e64398557523e6482fe6f79e31aaf7cdb75f1c9967e9bde1ba179474e077164"
   }
 }
