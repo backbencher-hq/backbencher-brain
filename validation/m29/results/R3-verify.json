@@ -5,8 +5,8 @@
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
-  "relevantInputsHash": "a0733d98c328d7baad3caffc54c1175a2761f897",
+  "currentCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "relevantInputsHash": "cabf52a7f051a06e20bf68488f2899bfc6a22866",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "sourceFingerprint": "b82775474d328a36476e2b3e623efaaebcbc4e34fa73e5eb478f09e9fcfeeb5d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -20,11 +20,11 @@
     "script/m29/giant-repo-budget.ts"
   ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-11-06T04:36:00.501Z",
+  "generatedAt": "2026-11-06T05:53:49.246Z",
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T04:36:00.502Z",
-    "contentSha256": "7c430e8294a6d98dcd4d65aeb1816bd5f883587870321f59bd1947e12927f60c"
+    "sealedAt": "2026-11-06T05:53:49.247Z",
+    "contentSha256": "ecaf86ce0613328595f084e8cc3cc4f7b1ec8f78b8710be4274a7716d211c287"
   }
 }

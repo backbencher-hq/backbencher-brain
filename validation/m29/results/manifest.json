@@ -31,13 +31,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "8ccab1071b7432d6448bb9801861cf3e6d786bf3",
+        "currentCommit": "75c5d8728909ecded4158b7a596cd367d02c5d6e",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 69,
-        "failed": 1,
+        "passed": 68,
+        "failed": 2,
         "negativeCases": 10,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: src/ast/real-julia-analyzer.ts"
+        "blockedReason": "2 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: src/ast/real-julia-analyzer.ts"
       }
     },
     {
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+        "currentCommit": "2f99b632e834e81aea1ebc4c42dce48a5f26b7a7",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -129,7 +129,8 @@
         "evidenceFile": "R3-verify.json",
         "passed": 28,
         "failed": 0,
-        "blockedReason": "R1: corpus manifest exists and declares a synthetic kind"
+        "blockedReason": "R1: corpus manifest exists and declares a synthetic kind",
+        "negativeCases": 6
       }
     },
     {
@@ -150,14 +151,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+        "currentCommit": "2f99b632e834e81aea1ebc4c42dce48a5f26b7a7",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 6,
-        "mutantsTotal": 6
+        "mutantsTotal": 6,
+        "negativeCases": 5
       }
     },
     {
@@ -178,14 +180,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+        "currentCommit": "2f99b632e834e81aea1ebc4c42dce48a5f26b7a7",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "negativeCases": 4
       }
     },
     {
@@ -206,7 +209,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+        "currentCommit": "2f99b632e834e81aea1ebc4c42dce48a5f26b7a7",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -214,7 +217,8 @@
         "blockedReason": "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
         "realFailed": 0,
         "mutantsCaught": 5,
-        "mutantsTotal": 5
+        "mutantsTotal": 5,
+        "negativeCases": 3
       }
     },
     {
@@ -235,7 +239,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "07039813002b5a50a90bd8a607eedf4a30bca8c7",
+        "currentCommit": "2f99b632e834e81aea1ebc4c42dce48a5f26b7a7",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -243,7 +247,8 @@
         "blockedReason": "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
         "realFailed": 0,
         "mutantsCaught": 3,
-        "mutantsTotal": 3
+        "mutantsTotal": 3,
+        "negativeCases": 3
       }
     },
     {
@@ -277,7 +282,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T05:00:28.621Z",
-    "contentSha256": "cf527abb56d8f436331da942dac98934142621b292806162313788ce11ac2bfc"
+    "sealedAt": "2026-11-06T05:15:29.754Z",
+    "contentSha256": "20e1d3b73f0032024e7d78e0c3be18ad57863a5fd6d80ae95e4378bf95011b63"
   }
 }

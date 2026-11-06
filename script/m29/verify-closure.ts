@@ -28,7 +28,16 @@ const EVIDENCE_PATH = join(ROOT, "validation/m29/results/X1.json")
 
 // The program ladder in our lane, in dependency order. Co-agent lanes
 // (M14/M37/M40/M41…) are deliberately absent — their gates are theirs.
-const SUITE: Array<{ code: string; script: string; evidenceFiles: string[]; editorLeg?: boolean }> = [
+//
+// `timeoutMs` is per leg because the legs do not cost the same. The default
+// 580 s was applied to every leg, and M29-V1 legitimately exceeds it: V1 is a
+// HARNESS gate, so it spawns the R4 generator and the runner as child
+// processes of its own, then re-runs each with a mutation planted — a gate of
+// gates. Inside the ladder it was killed at the timer and scored `exit=-1`,
+// which reads like a red gate in the closure output and is not one. A timer is
+// infrastructure, not a verdict: the honest bound is per-leg and declared.
+const DEFAULT_LEG_TIMEOUT_MS = 580_000
+const SUITE: Array<{ code: string; script: string; evidenceFiles: string[]; editorLeg?: boolean; timeoutMs?: number }> = [
   { code: "M24", script: "script/m24/verify-governance.ts", evidenceFiles: ["validation/m24/results/G1.json"] },
   { code: "M25", script: "script/m25/verify-governance.ts", evidenceFiles: ["validation/m25/results/G1.json"] },
   { code: "M26", script: "script/m26/verify-governance.ts", evidenceFiles: ["validation/m26/results/G1.json"] },
@@ -39,7 +48,7 @@ const SUITE: Array<{ code: string; script: string; evidenceFiles: string[]; edit
   { code: "M29-R3", script: "script/m29/verify-giant-repo.ts", evidenceFiles: ["validation/m29/results/R3.json"] },
   { code: "M29-R4", script: "script/m29/verify-precision-ledger.ts", evidenceFiles: ["validation/m29/results/R4-verify.json"], afterRegen: true },
   { code: "M29-R5", script: "script/m29/verify-precision-improvements.ts", evidenceFiles: ["validation/m29/results/R5-verify.json"] },
-  { code: "M29-V1", script: "script/m29/verify-wave-harness.ts", evidenceFiles: ["validation/m29/results/V1-verify.json"], afterRegen: true },
+  { code: "M29-V1", script: "script/m29/verify-wave-harness.ts", evidenceFiles: ["validation/m29/results/V1-verify.json"], afterRegen: true, timeoutMs: 1_800_000 },
   { code: "M29-D1", script: "script/m29/verify-m29-docs.ts", evidenceFiles: ["validation/m29/results/D1-verify.json"], afterRegen: true },
 ]
 // Ledger consumers (afterRegen) run AFTER pass 1b regenerates the ledger over
@@ -79,21 +88,24 @@ function lastSummary(s: string): string {
       .pop() ?? ""
   )
 }
-function ladderRun(code: string, script: string): void {
+function ladderRun(code: string, script: string, timeoutMs = DEFAULT_LEG_TIMEOUT_MS): void {
   console.log(`  running ${code}…`)
   let exit = -1
   let summary = ""
   try {
-    summary = lastSummary(String(execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", timeout: 580_000, stdio: ["ignore", "pipe", "ignore"] }) ?? ""))
+    summary = lastSummary(String(execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", timeout: timeoutMs, stdio: ["ignore", "pipe", "ignore"] }) ?? ""))
     exit = 0
   } catch (e) {
     exit = (e as { status?: number }).status ?? -1
     summary = lastSummary(String((e as { stdout?: string }).stdout ?? ""))
+    // A killed leg is not a red gate. Say which one happened, because the exit
+    // code alone cannot distinguish "the gate failed" from "the timer fired".
+    if (exit === -1) summary = `${summary || "leg produced no summary"} (killed at the ${Math.round(timeoutMs / 1000)}s leg timer)`
   }
   exits[code] = exit
   check(`X1: ${code} ladder run green at HEAD`, exit === 0, summary ? `${summary}  (exit=${exit})` : `exit=${exit}`)
 }
-for (const { code, script, afterRegen } of SUITE) if (!afterRegen) ladderRun(code, script)
+for (const { code, script, afterRegen, timeoutMs } of SUITE) if (!afterRegen) ladderRun(code, script, timeoutMs)
 
 // --- Pass 1b: fixpoint regeneration of the published ledger ------------------------
 // The ladder's editor legs (M25 E5/E6, M27 N1/Z1, M29 S6) rewrite their evidence
@@ -117,7 +129,7 @@ for (const { code, script, afterRegen } of SUITE) if (!afterRegen) ladderRun(cod
 }
 // Ledger-consumer legs, now that the ledger reflects the refreshed inputs:
 console.log("\npass 1c: ledger-consumer legs at HEAD (post-regeneration)")
-for (const { code, script } of POST_REGEN) ladderRun(code, script)
+for (const { code, script, timeoutMs } of POST_REGEN) ladderRun(code, script, timeoutMs)
 
 // --- Pass 2: §6 mutant-set coverage re-asserted per surface ------------------------
 console.log("\npass 2: contract §6 mutant-set coverage (per surface, from the suites' own evidence)")

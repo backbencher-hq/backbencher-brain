@@ -4,37 +4,33 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 32,
-  "passed": 22,
-  "failed": 10,
+  "passed": 26,
+  "failed": 6,
   "failures": [
-    "X1: M24 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — L1:stale-commit,L3:stale-commit,D1:status-mismatch  (exit=1)",
-    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) — E5=known-gap  (exit=1)",
-    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (64/70 passed, 10 negative)  (exit=1)",
-    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (69/75 passed, 13 negative)  (exit=1)",
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (74/79 passed, 17 negative)  (exit=1)",
-    "X1: M29-R2 ladder run green at HEAD: R2: KNOWN-GAP (93/121 passed, 5/5 mutants)  (exit=1)",
-    "X1: M29-R3 ladder run green at HEAD: R3: KNOWN-GAP (21/27 passed, 6 negatives)  (exit=1)",
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (69/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (75/77 passed, 15 negative)  (exit=1)",
     "X1: M29-V1 ladder run green at HEAD: CAUGHT: W3: an empty SPEC ledger makes the runner gate FAIL (absence is never silently conformant) — exit=1  (exit=-1)",
-    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1,R1,R2,R3,V1,D1",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:R1 not evidence-verified; pre1:R2 not evidence-verified; pre1:R3 not evidence-verified; pre1:V1 not evidence-verified; pre1:D1 not evidence-verified"
+    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
   ],
   "negativeCases": 3,
   "suiteExits": {
-    "M24": 1,
-    "M25": 1,
+    "M24": 0,
+    "M25": 0,
     "M26": 1,
     "M27": 1,
     "M28": 1,
     "M29-R1": 0,
-    "M29-R2": 1,
-    "M29-R3": 1,
+    "M29-R2": 0,
+    "M29-R3": 0,
     "M29-R5": 0,
     "M29-R4": 0,
     "M29-V1": -1,
     "M29-D1": 0
   },
-  "currentCommit": "cf2b235eafd9b3463dfe4c9c5c4c95d23956dd97",
-  "sourceFingerprint": "9099db250a8c193b8d343d9dbf5c5a5b901394d9214cb237ad4d09895c6c6cad",
+  "currentCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "sourceFingerprint": "550d7cb665382f409036561dcf0965eafcb2c9f9ebe9896cae13704b2c0e0945",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -69,7 +65,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-05T14:01:58.668Z",
+  "generatedAt": "2026-11-06T06:03:41.074Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -78,7 +74,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:01:58.668Z",
-    "contentSha256": "f9ee798e1c5512f42546ae4f1baa8ba646e587562c554a690f6a4e792d44a48e"
+    "sealedAt": "2026-11-06T06:03:41.076Z",
+    "contentSha256": "2923012a539b0043556db27c703f6275a6cc229bf0cce4ab868d378dfc9e1764"
   }
 }
