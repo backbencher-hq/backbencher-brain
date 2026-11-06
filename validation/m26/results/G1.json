@@ -7,24 +7,24 @@
   "passed": 69,
   "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "40c2751b4cca6b4344255c4ea9ba6835e92c8b67",
+  "currentCommit": "bfea7e94c641134d8592046c3f6bee9c8e69e85c",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T20:26:24.226Z",
+  "generatedAt": "2026-11-06T20:26:29.910Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "open",
     "m25GateExit": 0
   },
-  "blockedReason": "not verified at 40c2751b4cca6b4344255c4ea9ba6835e92c8b67: G1: every non-planned ledger item has matching persisted evidence at the current commit",
+  "blockedReason": "not verified at bfea7e94c641134d8592046c3f6bee9c8e69e85c: G1: every non-planned ledger item has matching persisted evidence at the current commit",
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M25 bar; it does not verify graph features.",
     "A run with relevant uncommitted M26 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:26:24.228Z",
-    "contentSha256": "b47786fd718ff83f976e53175e6bb9727e1f41330e194132e1a2dd6ff8079f32"
+    "sealedAt": "2026-11-06T20:26:29.911Z",
+    "contentSha256": "9e6cff53ddc049d71a0a128cc92346079f1b4998b5fa6a12ccab8cb11e0ee498"
   }
 }
