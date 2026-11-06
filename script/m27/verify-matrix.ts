@@ -160,7 +160,7 @@ function generateMatrix(
   lines.push("")
   lines.push("| Editor | Issue | Claim level | Surface | Graph delta | Evidence | Status |")
   lines.push("| --- | --- | --- | --- | --- | --- | --- |")
-  lines.push("| VS Code (v2 baseline) | M26 | I3 (editor session machine-driven) | hover (tiered), definition, references, symbols, call hierarchy, staleness, **graph webview** | graph webview: YES (I3, M26) | [X1.json (M26)](../m26/results/X1.json) | verified (50/50) |")
+  lines.push("| VS Code (v2 baseline) | M26 | I3 (editor session machine-driven) | hover (tiered), definition, references, symbols, call hierarchy, staleness, **graph webview** | graph webview: YES (I3, M26) | [X1.json (M26)](../../validation/m26/results/X1.json) | verified (50/50) |")
   for (const r of rows) {
     lines.push(`| ${r.editor} | ${r.issue} | ${r.claim} | ${r.surface} | ${r.graphDelta} | ${r.evidence} | ${r.status} |`)
   }
