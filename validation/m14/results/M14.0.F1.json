@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "0c9ef329eaee7b77a6feb890b370797c0b9940f42de98b6e760091f383871dfa",
-    "sealedAt": "2026-11-05T16:38:10.000Z"
+    "contentSha256": "04744a34c647190a98161de7b616f0ee066e48de60461ebeeb19b96184ec48fc",
+    "sealedAt": "2026-11-06T05:17:39.000Z"
   },
   "checks": [
     {
@@ -18,8 +18,8 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (47/47 languages pass)",
-      "detail": "47 language(s), every dead literal registered with a reason",
+      "description": "per-literal shrink-only register with reasons (50/50 languages pass)",
+      "detail": "50 language(s), every dead literal registered with a reason",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -30,8 +30,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
-  "committedAt": "2026-11-05T11:38:10-05:00",
+  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "committedAt": "2026-11-06T00:17:39-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -552,6 +552,25 @@
           2
         ]
       },
+      "julia": {
+        "analyzer": "src/ast/real-julia-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 6,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 226,
+        "referencedFieldLiterals": 2,
+        "referencedTypeLiterals": 45,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-julia.wasm"
+        ],
+        "wasmFieldCounts": [
+          6
+        ]
+      },
       "kotlin": {
         "analyzer": "src/ast/real-kotlin-analyzer.ts",
         "fieldless": false,
@@ -647,6 +666,431 @@
         ],
         "wasmFieldCounts": [
           10
+        ]
+      },
+      "nim": {
+        "analyzer": "src/ast/real-nim-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 24,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 325,
+        "referencedFieldLiterals": 19,
+        "referencedTypeLiterals": 149,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [
+          {
+            "justification": "M14.WAVE-B F1 (real-nim-analyzer.ts:4487 `NIM_BUILTIN_TYPES`): this is a TYPE-NAME table (Nim language and `system`-module type names), not a parse-tree node reference. The array is read at real-nim-analyzer.ts:3390 as a membership test on a DECLARED-TYPE payload — `if (NIM_BUILTIN_TYPES.indexOf(leaf) !== -1) return` — i.e. it suppresses a `references` edge to a language builtin whose name no declaration in the project could ever satisfy; nowhere in the analyzer is a string from this array compared against `node.type`. These are semantic type NAMES the grammar does not model: `cstringarray`, `RootObj`, `Endian`, `SomeComparable` have no parse-tree spelling at all, and the generic constructors (`seq`, `array`, `set`, `Table`, `range`, `Ordinal`) name a TYPE the grammar parses as `bracket_expression`, never a node whose type is the literal. The auditor's const-initializer heuristic treats identifiers matching *TYPES/*KINDS as node-type sets, which is why they surface. Same class as the swift `ENUM_RAW_VALUE_TYPES` entry in this file.",
+            "line": 4487,
+            "literal": "int"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "int8"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "int16"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "int32"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "int64"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "uint"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "uint8"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "uint16"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "uint32"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "uint64"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "float"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "float32"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "float64"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "bool"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "char"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "byte"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "string"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cstring"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "void"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "auto"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "untyped"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "typedesc"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "ordinal"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "range"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeInteger"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeFloat"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeNumber"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeOrdinal"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeOrdered"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Natural"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Positive"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Signed"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Unsigned"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Ordinal"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Ordered"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeComparable"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeCopyable"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "SomeDefault"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "seq"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "array"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "openArray"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "set"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "varargs"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "pointer"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Table"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "OrderedTable"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "CountTable"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "HashSet"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "OrderedSet"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "CountSet"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "touches"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "isNil"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "lent"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cpointer"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "clong"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cint"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cshort"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cchar"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cschar"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cuchar"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "csize"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cfloat"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cdouble"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "clonglong"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "culonglong"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "cstringarray"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Object"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "RootObj"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "RootRef"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "rootObj"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "system"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "File"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "FileStream"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "PFile"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "PFileStream"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "StringStream"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "WideString"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "charStream"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "CString"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "TEndian"
+          },
+          {
+            "justification": "M14.WAVE-B NIM_BUILTIN_TYPES type-name table — see the `int` entry in this `nim` block for the full justification (same class as the swift `ENUM_RAW_VALUE_TYPES` precedent).",
+            "line": 4487,
+            "literal": "Endian"
+          }
+        ],
+        "wasm": [
+          "tree-sitter-nim.wasm"
+        ],
+        "wasmFieldCounts": [
+          24
         ]
       },
       "objective-c": {
@@ -1954,6 +2398,25 @@
           7
         ]
       },
+      "solidity": {
+        "analyzer": "src/ast/real-solidity-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 35,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 530,
+        "referencedFieldLiterals": 15,
+        "referencedTypeLiterals": 41,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-solidity.wasm"
+        ],
+        "wasmFieldCounts": [
+          35
+        ]
+      },
       "sql": {
         "analyzer": "src/ast/real-sql-analyzer.ts",
         "fieldless": false,
@@ -2286,8 +2749,8 @@
     },
     "summary": {
       "fail": 0,
-      "languagesAudited": 47,
-      "pass": 47,
+      "languagesAudited": 50,
+      "pass": 50,
       "totalUnknownReferences": 0
     }
   },
@@ -2316,8 +2779,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-11-05T11:38:10-05:00",
-  "regeneratedAtCommit": "5869a6227711b3e363e8d3c2ba26bd00fe39f8b3",
+  "regeneratedAt": "2026-11-06T00:17:39-05:00",
+  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

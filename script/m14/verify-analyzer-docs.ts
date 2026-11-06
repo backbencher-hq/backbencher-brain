@@ -147,6 +147,94 @@ function analyzerLanguages(): string[] {
     .sort()
 }
 
+/**
+ * THE COUNT CONTRACT — one number, several denominators, checked instead of narrated.
+ *
+ * The owner hit this repeatedly: the exact count of analyzers was stated as 47 in one gate's
+ * output, 48 in an artifact table, 49 in a website audit and 50 in the README, because four
+ * different denominators were all being called "the number of analyzers" and one of them (F1's
+ * language table) had silently dropped three lanes — the failure mode that same file's own
+ * protobuf comment documents ("a lane absent from the table is a lane F1 measures nothing for").
+ *
+ * So the canonical statement lives in docs/analyzers/README.md as a machine-readable block, and
+ * this gate compares it to what the tree actually contains:
+ *   analyzers        src/ast/real-*-analyzer.ts files
+ *   analyzerPages    canonical pages this gate verifies (present rows)
+ *   lanes            rows in script/m14/run-fixtures.ts LANGS (one per analyzer)
+ *   grammarAuditRows rows in script/m14/audit-analyzer-grammar.ts LANGUAGES (must equal analyzers)
+ *   routerLanguages  distinct values of src/ast/language-detection.ts EXTENSION_LANGUAGE
+ *   relationshipTypes members of src/ast/types.ts RelationshipType
+ *   pageSections     REQUIRED_SECTIONS.length (the gated template sections)
+ * A mismatch fails with both numbers. The three equalities the campaign actually depends on —
+ * analyzers == pages == lanes == grammar-audit rows — are asserted separately so a gate that
+ * silently stops auditing a lane cannot pass a count that only the docs were told about.
+ */
+const COUNTS_MARKER_START = "<!-- ANALYZER-COUNTS:START -->"
+const COUNTS_MARKER_END = "<!-- ANALYZER-COUNTS:END -->"
+
+function measuredCounts(): Record<string, number> {
+  const analyzers = analyzerLanguages().length
+  const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8")
+  const lanes = (read("script/m14/run-fixtures.ts").match(/^  [a-z0-9+#-]+: \{ wasm:/gm) ?? []).length
+  const grammarAuditRows = (read("script/m14/audit-analyzer-grammar.ts").match(/^  \{ language: /gm) ?? []).length
+  // BRACE-BALANCED EXTRACTION, not "slice up to the first }". The first version of this
+  // measurement read 24 router languages and 12 relationship types, because inline comments in
+  // both literals contain `}` — a count that is wrong by the numbers it reads is exactly the
+  // failure this contract exists to prevent. Scan to the MATCHING brace, skipping strings and
+  // comments, so a comment cannot truncate the denominator.
+  const braceBalanced = (src: string, marker: string): string => {
+    const at = src.indexOf(marker)
+    const open = src.indexOf("{", at)
+    let depth = 0
+    for (let i = open; i < src.length; i++) {
+      const ch = src[i]
+      if (ch === '"' || ch === "'" || ch === "`") {
+        const quote = ch
+        i++
+        while (i < src.length && src[i] !== quote) { if (src[i] === "\\") i++; i++ }
+        continue
+      }
+      if (ch === "/" && src[i + 1] === "/") { i = src.indexOf("\n", i); if (i < 0) break; continue }
+      if (ch === "/" && src[i + 1] === "*") { i = src.indexOf("*/", i + 2); if (i < 0) break; i++; continue }
+      if (ch === "{") depth++
+      else if (ch === "}") { depth--; if (depth === 0) return src.slice(open, i + 1) }
+    }
+    return src.slice(open)
+  }
+  const routerBlock = braceBalanced(read("src/ast/language-detection.ts"), "export const EXTENSION_LANGUAGE")
+  const routerLanguages = new Set([...routerBlock.matchAll(/:\s*"([a-z0-9+#-]+)"/g)].map((m) => m[1])).size
+  const enumBlock = braceBalanced(read("src/ast/types.ts"), "export enum RelationshipType")
+  // THE ENUM CARRIES ALIASES: 14 canonical values plus 8 legacy member names that map onto the
+  // same values (Call=calls, Inheritance=extends, …). The ontology's count is the number of
+  // DISTINCT VALUES, which is what every consumer publishes and every page's table enumerates.
+  const relationshipTypes = new Set([...enumBlock.matchAll(/^\s+\w+ = "([a-z_]+)",/gm)].map((m) => m[1])).size
+  return { analyzers, lanes, grammarAuditRows, routerLanguages, relationshipTypes, pageSections: REQUIRED_SECTIONS.length }
+}
+
+function checkCountContract(pageCount: number): string[] {
+  const problems: string[] = []
+  const readme = readFileSync(path.join(ROOT, "docs/analyzers/README.md"), "utf8")
+  const start = readme.indexOf(COUNTS_MARKER_START)
+  const end = readme.indexOf(COUNTS_MARKER_END)
+  if (start < 0 || end < start) return ["docs/analyzers/README.md is missing the ANALYZER-COUNTS block — the count contract cannot be checked"]
+  let declared: Record<string, number>
+  try {
+    declared = JSON.parse(readme.slice(start + COUNTS_MARKER_START.length, end).trim())
+  } catch (e) {
+    return [`docs/analyzers/README.md ANALYZER-COUNTS block is not valid JSON: ${(e as Error).message}`]
+  }
+  const measured = measuredCounts()
+  // analyzerPages is measured after the per-language rows exist; the caller passes the count of
+  // canonical pages this run actually verified.
+  measured.analyzerPages = pageCount
+  for (const [key, value] of Object.entries(measured)) {
+    if (declared[key] !== value) problems.push(`count contract: ${key} declared ${declared[key]}, tree measures ${value}`)
+  }
+  if (measured.analyzers !== measured.lanes) problems.push(`analyzers (${measured.analyzers}) != fleet lanes (${measured.lanes}) — a lane and an analyzer are one thing`)
+  if (measured.analyzers !== measured.grammarAuditRows) problems.push(`analyzers (${measured.analyzers}) != F1 grammar-audit rows (${measured.grammarAuditRows}) — a lane absent from F1 is a lane nothing grammar-audits`)
+  return problems
+}
+
 const only = process.argv.includes("--lang")
   ? process.argv[process.argv.indexOf("--lang") + 1]
   : null
@@ -171,6 +259,7 @@ for (const lang of only ? [only] : analyzerLanguages()) {
 }
 
 const absent = rows.filter((r) => !r.present)
+const countProblems: string[] = only ? [] : checkCountContract(rows.length - absent.length)
 const sectionShort = rows.filter((r) => r.present && r.missingSections.length > 0)
 const cellGaps = rows.filter((r) => r.ontologyGaps.length > 0)
 const complete = rows.filter((r) => r.present && r.missingSections.length === 0 && r.ontologyGaps.length === 0)
@@ -247,6 +336,7 @@ console.log(`  doc present          ${c.present}/${c.analyzers}${c.absent ? `  (
 console.log(`  all 8 sections       ${c.sectionComplete}/${c.present}`)
 console.log(`  no unexplained cells ${c.analyzers - c.ontologyCellGaps}/${c.analyzers}`)
 console.log(`  FULLY complete       ${c.fullyComplete}/${c.analyzers}`)
+console.log(`  count contract       ${countProblems.length === 0 ? "analyzer=page=lane=F1 row, and the router/ontology denominators match docs/analyzers/README.md" : `${countProblems.length} mismatch(es)`}`)
 if (payload.worklist.unexplainedOntologyCells.length) {
   console.log(`\nunexplained ontology cells (a real gap, not a formatting one):`)
   for (const r of payload.worklist.unexplainedOntologyCells) console.log(`  ${r.lang}: ${r.gaps.slice(0, 3).join("; ")}`)
@@ -261,6 +351,7 @@ console.log(`\n→ ${only ? "(not written: scoped run)" : path.relative(ROOT, OU
 // unexplained ontology cell, so any new absence, missing section or unexplained cell is a
 // REGRESSION and the run must say so with an exit code, not only in a printed count.
 const regressions = [
+  ...countProblems.map((p: string) => `COUNT CONTRACT: ${p}`),
   ...absent.map((r: any) => `${r.lang}: no canonical doc`),
   ...sectionShort.flatMap((r: any) => r.missingSections.map((s: string) => `${r.lang}: missing section ${s}`)),
   ...cellGaps.flatMap((r: any) => r.ontologyGaps.map((g: string) => `${r.lang}: ${g}`)),

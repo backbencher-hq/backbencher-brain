@@ -13,6 +13,37 @@ separated, under [`history/`](./history/) because tracked code and validation ev
 cite them by path. The [session log](./ANALYZER-SESSION-LOG.md) is the campaign's work
 record; it is history, not a contract.
 
+## Counting the analyzers — one number, five denominators
+
+The exact number of language analyzers is **50**, and it is one number because an analyzer *is*
+a lane: 50 `src/ast/real-*-analyzer.ts` implementations, each with one canonical page here, one
+fleet/instrument lane, and one grammar-conformance row. Every other figure you may see in gate
+output (47, 48, 49, 53…) is a *different denominator*, not a different count — and the block
+below is machine-checked by `script/m14/verify-analyzer-docs.ts` on every gate run, so the current
+statement cannot drift from the tree again.
+
+<!-- ANALYZER-COUNTS:START -->
+{"analyzers":50,"analyzerPages":50,"lanes":50,"grammarAuditRows":50,"routerLanguages":53,"relationshipTypes":14,"pageSections":8}
+<!-- ANALYZER-COUNTS:END -->
+
+| quantity | value | what it counts |
+| --- | --- | --- |
+| analyzers | 50 | `src/ast/real-*-analyzer.ts` files — the implementations |
+| analyzer pages | 50 | `docs/analyzers/<lane>.md`, one canonical page per analyzer (this directory) |
+| lanes | 50 | fleet/instrument lanes, one per analyzer (`makefile` is the file name, `make` the lane name) |
+| grammar-audit rows | 50 | F1 conformance rows. **It was 47 until 2026-11-05**: `julia`, `nim` and `solidity` were absent from the F1 table, so F1 measured nothing for them and some outputs read "47/47 languages". The missing rows are added and their literals adjudicated. |
+| router languages | 53 | languages the detector can return = the 50 lanes + 3 route folds that hand a format to an existing analyzer: `tsx`→typescript, `sass`→css, `terraform`→hcl |
+| relationship types | 14 | the canonical ontology (`src/ast/types.ts` `RelationshipType`) |
+| page sections | 8 | measured sections a canonical page must carry with content (`TEMPLATE.md`) |
+
+Older artifacts, the `history/` pages, and the narrative inside individual lane pages legitimately
+quote 43/44/45/46/47/48/49: those were the count at the revision the sentence describes, recorded as
+such (e.g. "the census scanned all 48 analyzers" is a measurement of that revision, not a claim about
+today). The contract above applies to CURRENT statements — this page, the repository README
+(`50 language analyzers`), and the gates' own output — and the three equalities the campaign depends
+on (analyzer = canonical page = fleet lane = F1 grammar-audit row = 50) are asserted by
+`script/m14/verify-analyzer-docs.ts` on every run.
+
 ## The 50 analyzers
 
 | Language | Documentation | Analyzer source |

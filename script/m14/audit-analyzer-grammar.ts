@@ -73,10 +73,12 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "java", wasm: "tree-sitter-java.wasm", analyzer: "real-java-analyzer.ts" },
   { language: "javascript", wasm: "tree-sitter-javascript.wasm", analyzer: "real-javascript-analyzer.ts" },
   { language: "json", wasm: "tree-sitter-json.wasm", analyzer: "real-json-analyzer.ts" },
+  { language: "julia", wasm: "tree-sitter-julia.wasm", analyzer: "real-julia-analyzer.ts" },
   { language: "kotlin", wasm: "tree-sitter-kotlin.wasm", analyzer: "real-kotlin-analyzer.ts" },
   { language: "lua", wasm: "tree-sitter-lua.wasm", analyzer: "real-lua-analyzer.ts" },
   { language: "makefile", wasm: "tree-sitter-make.wasm", analyzer: "real-makefile-analyzer.ts" },
   { language: "markdown", wasm: "tree-sitter-markdown.wasm", analyzer: "real-markdown-analyzer.ts" },
+  { language: "nim", wasm: "tree-sitter-nim.wasm", analyzer: "real-nim-analyzer.ts" },
   { language: "objective-c", wasm: "tree-sitter-objc.wasm", analyzer: "real-objective-c-analyzer.ts" },
   { language: "perl", wasm: "tree-sitter-perl.wasm", analyzer: "real-perl-analyzer.ts" },
   { language: "php", wasm: "tree-sitter-php.wasm", analyzer: "real-php-analyzer.ts" },
@@ -99,6 +101,7 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "rust", wasm: "tree-sitter-rust.wasm", analyzer: "real-rust-analyzer.ts" },
   { language: "scala", wasm: "tree-sitter-scala.wasm", analyzer: "real-scala-analyzer.ts" },
   { language: "sql", wasm: "tree-sitter-sql.wasm", analyzer: "real-sql-analyzer.ts" },
+  { language: "solidity", wasm: "tree-sitter-solidity.wasm", analyzer: "real-solidity-analyzer.ts" },
   { language: "svelte", wasm: "tree-sitter-svelte.wasm", analyzer: "real-svelte-analyzer.ts" },
   { language: "swift", wasm: "tree-sitter-swift.wasm", analyzer: "real-swift-analyzer.ts" },
   { language: "typescript", wasm: "tree-sitter-typescript.wasm", analyzer: "real-typescript-analyzer.ts" },
@@ -108,6 +111,34 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "toml", wasm: "tree-sitter-toml.wasm", analyzer: "real-toml-analyzer.ts" },
   { language: "zig", wasm: "tree-sitter-zig.wasm", analyzer: "real-zig-analyzer.ts" },
 ]
+
+/**
+ * THE TABLE MUST COVER EVERY ANALYZER — checked, not assumed.
+ *
+ * F1's denominator is this table, and a lane absent from it is a lane F1 measures NOTHING for.
+ * That is not hypothetical: on 2026-11-05 the table held 47 rows while the tree had 50 analyzers
+ * (`julia`, `nim`, `solidity` were missing), so F1 printed "47/47 languages pass" while three
+ * lanes had never been grammar-audited at all — and the analyzer count itself read differently in
+ * different documents because of it. The protobuf row's own comment below records the same
+ * failure from an earlier round ("absent from the table, F1 did not skip protobuf quietly").
+ *
+ * The comparison is by ANALYZER FILE, not by language string: the lane name and the file name
+ * legitimately differ (`make` lane ↔ `real-makefile-analyzer.ts`), and comparing names would have
+ * re-created the silent skip under a different spelling. A new analyzer without a row fails
+ * here with the missing file named; a row without a file fails too.
+ */
+{
+  const analyzerFiles = fs.readdirSync(path.join(ROOT, "src/ast")).filter((f) => /^real-.*-analyzer\.ts$/.test(f)).sort()
+  const declared = new Set(LANGUAGES.map((l) => l.analyzer))
+  const missing = analyzerFiles.filter((f) => !declared.has(f))
+  const extra = [...declared].filter((f) => !analyzerFiles.includes(f))
+  if (missing.length > 0 || extra.length > 0) {
+    if (missing.length > 0) console.error(`F1 TABLE INCOMPLETE: ${missing.length} analyzer file(s) have no grammar-audit row — ${missing.join(", ")}. A lane absent from this table is a lane F1 measures nothing for.`)
+    if (extra.length > 0) console.error(`F1 TABLE INVENTED ROW: ${extra.length} row(s) name an analyzer file that does not exist — ${extra.join(", ")}.`)
+    process.exit(2)
+  }
+}
+
 
 // Node-type-consuming helper call names (method suffix/pattern match).
 function isTypeCall(name: string): boolean {

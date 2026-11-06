@@ -5,84 +5,153 @@
 > `MISSING_DOC real-julia-analyzer.ts` while `julia.md` sat beside it). One reference to the old path
 > belongs to a shared file — `script/m14/completeness-inventory.ts:733` — and is reported, not edited.
 
+**Canonical summary sections.** The eight required analyzer-documentation sections come first, filled only from measurements recorded on this page and in the artifacts it cites; each names its instruments and links down to the long-form evidence in the rest of the page. Where the template asks for a datum this lane has never measured, the section says so and names the missing instrument rather than estimating it. Measurement currency: the whole-population arm below is the recorded 2026-10-28 run, and the later F1 grammar-audit correction (two dead literals removed, a keyword-parameter binding named) re-ran the fixture suite, the 5-file incoming check and the deterministic 40-file oracle unchanged; it reclassifies keyword-parameter bindings and changes no relationship count, but the whole-population arm itself was not re-run after it.
+
 ## Language
 
-- Analyzer file: `src/ast/real-julia-analyzer.ts`
-- Parser: `tree-sitter-julia`
-- Language detection: extensions `.jl`
-- Wired in: `engine.ts` `getAnalyzer` → `RealJuliaAnalyzer`
+- **Analyzer file:** `src/ast/real-julia-analyzer.ts` — `RealJuliaAnalyzer`. Wired at `src/ast/engine.ts:2411-2412` (`case "julia"` → `new (await import("./real-julia-analyzer")).RealJuliaAnalyzer()`).
+- **Parser:** tree-sitter-julia, **one grammar only**. `src/ast/engine.ts:317` maps `julia: "tree-sitter-julia"` and `:1165` resolves `wasm/tree-sitter-julia.wasm` through `resolveWasm("tree-sitter-julia/tree-sitter-julia.wasm")`; `LANG_CONFIGS.julia` declares no `companionWasm`, and no julia companion wasm exists in `wasm/`.
+- **Wired bytes, measured 2026-10-28:** `wasm/tree-sitter-julia.wasm`, **5,926,972 B**, sha256 `6a4569abd693ab20…`, md5 `84cd9327586eea3d53d0c2f9d7a9c4c5`. Not the published npm artifact: it is the **P6 rebuild** of the vendored `tree-sitter-julia@0.23.1` after P2 (`∞` unary), P3 (`const global x = 1`), P4 (`abstract type` body), P5 (operator-named functions) and P6 (`const` struct field) — `grammars/tree-sitter-julia/PIN.md`. P6 A/B over the 1,985-file population: **21 files fixed, 0 broken, 1,964 unchanged**. The md5 carried by older corpus notes (`dbcd7975…`) is the pre-P6 build and is left where it is as history.
+- **Grammar shape:** positional. `src/node-types.json` carries **7 field names across 151 named node types**, so most nodes are navigated by child order; qualified access is a nested `field_expression`; `binary_expression`'s operator is a named `operator` child, not a field; a `where` clause wraps the callable in a `where_expression`. The wired build declares **245 ids / 224 unique names** and produces **149 distinct node types** over the 1,985-file population (instrument A, `script/m14/spec/julia-completeness.json`).
+- **Language detection:** extension `.jl` → `julia` in `src/ast/language-detection.ts:115`; `.jul` exists in the wild and is deliberately **not** claimed, because no corpus measures it.
+- **Purity:** symbols and relationships derive from Tree-sitter nodes; **no regex literal remains** (see [§ Regex inventory](#regex-inventory)). The only string handling is on values already extracted from nodes — sigil stripping, quoted-operator unquoting, whitespace collapse in the signature key — plus the `Project.toml` package-name reader, a line/index scan (`projectTomlName`) rather than a pattern match.
 
 ## Symbol contract
 
-| Field | Supported? | How extracted |
+| Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | yes | node name text |
-| kind | yes | module → module; struct/class → class; abstract type → interface; function → function; macro → macro; struct field → property; const binding → constant; local binding → variable |
-| qualified/container name | yes | module-scoped names are container-qualified |
-| ownerName / ownerKind | yes | declarations owned by their enclosing module/function |
-| range (start/end line + column) | yes | node positions |
-| parameters | yes | function/macro parameters from the parameter list |
-| returnType / type | yes | type annotation from the signature |
-| documentation/comments | no | comments are not attached as documentation |
-| complexity metrics | no | no separate complexity metric published |
-| syntax errors | yes | syntax errors are engine-owned |
-| decorators/attributes | no | Julia has no decorator syntax |
+| name | yes | The declaration's positional name: `module_definition`'s `name` field (the grammar's only field here), `type_head` for `struct`/`abstract`/`primitive`, the `signature` or assignment-left callable for functions, the field node inside a struct body, the binding for `const`/assignment. A spliced name (`@eval struct $T … end`) is refused rather than published as `T`; `@` is stripped from macro names; quoted operators are unwrapped (`x.:(==)` → `==`). |
+| kind | yes | Eight `SymbolKind` values and no others: `module` → Module, `struct` → Class (and `Dims{N} = NTuple{N,Int}` parametric aliases), `abstract type`/`primitive type` → Interface, functions → Function (long form, short form `f(x) = …`, callable-headed module assignment), `macro` → Macro, struct fields → Property, `const` → Constant, other module-level bindings → Variable. Over the 1,985 files: function 21,662 · property 7,314 · constant 3,161 · class 3,128 · module 1,139 · macro 555 · variable 858 · interface 362 = **38,179 symbols**. |
+| qualified/container name | yes | `qualifiedName` alias = `ownerName.name`; a file-scope declaration in a file that opens no `module` and belongs to a package with `<projectRoot>/Project.toml` gets `<Package>.<name>`. Measured over the population: **20,245** qualified-name aliases (`julia-gate-whole-2026-10-28c.json`, `population.qualifiedNameAliases`). Qualified names are kept WHOLE, never collapsed to a leaf: over 400 files, 1,352 bare segments appear behind a qualified path and 72 are reachable by more than one path. |
+| ownerName / ownerKind | ownerName yes; ownerKind no | `ownerName` = the enclosing module or type declaration (`undefined` at file scope; `global`/`root` are relationship sources, not owners). No symbol push sets `ownerKind`, so the field is absent on this lane's symbols. **71.9%** of admitted files declare no `module` block (295-file measurement), so most declarations legitimately have no owner. |
+| range (start/end line + column) | yes | The declaration node's `startPosition`/`endPosition` through `range()` (`real-julia-analyzer.ts:2318`), 1-based; the analyzer produces startLine/startColumn/endLine/endColumn and the persisted record carries startLine/endLine/startIndex/endIndex. |
+| parameters | no, by contract | Parameters are **not** symbols: `SymbolKind` has no `Parameter` member (the repo's standing negative contract, csharp M12.07 `ParamsAreNotSymbols`), and they are published as `uses` reads instead. Local bindings — parameters (including keyword parameters, which the grammar spells `named_argument`), loop/`let`/`catch` variables — are deliberately unpublished; the INCOMING census classifies **21,693** endpoints in that bucket on the recorded arm. The one signature the lane records is `overrides`' `metadata.signature`: the whole argument list plus the `where` clause. |
+| returnType / type | no return type; `type` mirrors kind | Julia has no declared return type. `f(x)::T = …` parses as a `typed_expression` and publishes a `references` edge to `T` (reading the wrapper instead of the callable once published `Float64` as the function's name — a positional-grammar trap). The persisted `type` is the engine's lower-case mirror of `kind`; nothing separate is extracted. |
+| documentation/comments | no | No docstring is attached to a symbol; `@doc "…" function g` is a macro application and publishes a `decorates` row instead. The persisted `docstring` field is null for this lane. |
+| complexity metrics | yes | Per-symbol `complexity` from an iterative subtree walk: decision points `if_statement`/`elseif_clause`/`for_statement`/`while_statement` plus `&&`/`||` binary expressions, with a 200,000-node guard. The operator is a named child at index 1 (F1 fixed a field lookup that silently dropped `&&`/`||`); cost and history are in [§ Complexity envelope](#complexity-envelope). |
+| syntax errors | file-level only | The analyzer's own `errors[]` is empty; `parseFile` propagates the grammar's diagnostics in `result.errors` (the fixture `imports-and-exports.jl` surfaces one unexpected node at line 79). No syntax error is attached to a symbol. |
+| decorators/attributes | no, as a symbol field | Published as `decorates` relationships (2,394 edges / 379 files) with `decoratorName`, `decoratedKind`, `isMacroDecorator`. A symbol carries no `decorators[]`; `@inline f(x) = x` declares `f` and the decorator macro is the edge's target. |
+| visibility / export state (extra) | visibility not extracted | Every symbol carries the engine default `visibility: "public"` because no arm sets the field. Julia's export state is recorded on the declaration's metadata (`isExported`, `exportForm`) when the file declares it, and as the `exports` relationship (2,797 edges / 207 files, `declaresNothing: true`). |
+| declaration form metadata (extra) | yes | `metadata.declarationForm` (`struct_definition`/`abstract_definition`/`primitive_definition`, `short_form_assignment`, `module_assignment`, `parametric_alias`), plus `isMutable`, `isStructField`, `isMacro`, `hasBlockBody`, `binding`. |
 
-## Supported constructs
-
-| construct | node type | what it produces |
-| --- | --- | --- |
-| module | module declaration | `module` symbol |
-| struct / abstract type | `struct`/`abstract type` | `class`/`interface` symbol |
-| function / macro | `function`/`macro` | `function`/`macro` symbol |
-| struct field | field access | `property` symbol |
-| const binding | `const` binding | `constant` symbol |
-| local binding | local assignment | `variable` symbol |
-| function call | call expression | `calls` edge |
-| `import`/`using` | import statement | `imports` edge |
-| type reference | type annotation | `references` edge |
-| type construction | constructor call | `instantiates` edge |
-| `extends`/`<:` | subtype declaration | `extends` edge |
-| method override | method redefinition | `overrides` edge |
-| module containment | module → member | `contains` edge |
-| module export | exported name | `exports` edge |
+**Measured over the population:** 0 empty or unknown `SymbolKind`, 0 empty symbol names, 0 crashes, 0 structural fallbacks; **365 of 1,985 files (18.4%) yield zero symbols** and are listed by name in the census output. Every figure here is reproduced by the census and held by `doc-tables-check.ts` ([§ A gate that reads this file's own tables](#a-gate-that-reads-this-files-own-tables--308-cells)).
 
 ## Relationship ontology
 
+Rows below are the fourteen engine types (`src/ast/types.ts` `RelationshipType`), in the register's order. `emitted?` is a claim about the **production path** (`parseFile` → `getAnalyzer("julia")` → `RealJuliaAnalyzer.analyze`), not about the analyzer in isolation.
+
+Edge counts and true distinct-file counts are `validation/m14/measurements/julia-extended-census-2026-10-28c.json`. The resolution triple is the `project` block of `validation/m14/measurements/julia-gate-whole-2026-10-28c.json` (1,985 admitted, 1,985 parsed, 0 failed, 0 degraded, 14 repositories), whose `resolved + ambiguousByDecl + unresolved + bindingVerified + markedExternal` **partitions every type exactly**. No edge in this lane carries confidence below 0.9.
+
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | yes | function/macro call → target declaration | measured; `evidenceClass` on each row |
-| contains | yes | module → member declarations | measured |
-| exports | yes | `ImportInfo[]` channel, filled from the same walk | measured |
-| imports | yes | `ExportInfo[]` channel, filled from the same walk | measured |
-| references | yes | type/variable references | measured |
-| uses | yes | field reads and other uses | measured |
-| overrides | yes | method redefinition | measured |
-| instantiates | yes | type construction | measured |
-| extends | yes | subtype construction | measured |
-| implements | no | RULED: grammar has no `implements` construct; 149 node types across the corpus and none expresses it | - (ruled absent) |
-| mixes_in | no | not part of the Julia object model as analyzed | - (ruled absent) |
-| part_of | yes | module containment | measured |
-| renders | no | RULED: ladder walked, 0 sites | - (ruled absent) |
-| decorates | yes | 2,394 rows over the whole population | measured |
+| `calls` | **EMITTED** — relationship row, **121,938** edges / 1,854 files | callee spelling from `call_expression`; qualified paths kept whole (never collapsed to the leaf); macro applications flagged `isMacroCall`, C symbols `isForeignCall` + `foreignSymbol`/`foreignLibrary`; source is the enclosing declared scope or synthetic `global`. Per-project (2026-10-28 arm): 47,791 resolved / 40,535 ambiguous / 33,612 unresolved (39.2% resolved). | conf **1.0** on every row; `evidenceClass` `usage_contextual`; 0 edges under 0.7; `heuristic=0` in every F5 rotation. |
+| `extends` | **EMITTED** — **2,522** / 536 | declared supertype from the type head's `<:` chain, both links of a chain; `isSubtype: true`; a self-supertype (`struct Foo <: Foo`, 2 corpus sites, both julia's own error tests) is refused. Per-project: 1,429 / 455 / 638 (56.7%). | conf **1.0**; `structural`; 0 edges under 0.7. |
+| `implements` | **NO** — RULED (grammar-absence, JUL-D2) | not emitted; no conformance clause exists to resolve. The wired grammar declares 245 ids / 224 unique names and 0 express a conformance relation; over 1,985 files the grammar produces 149 distinct node types and 0 of the 12 candidate conformance node types; the 449 nearest sites (`<:` naming a same-file `abstract type`, 87 files) are published as `extends`. | 0 edges, so no confidence; the ruling is falsifiable by a non-zero candidate node type or an `implements` row that is not a subtype relation (`script/m14/julia-ruled.ts`, `JULIA_RULED`). |
+| `instantiates` | **EMITTED** — **3,459** / 533 | call whose callee names a type declared in this file, `isTypeConstruction: true`; a qualified constructor is a construction only when the qualifier is a module of this file. Per-project: 3,459 / 0 / 0 (100%). | conf **0.9**; `usage_contextual`; 0 edges under 0.7. |
+| `uses` | **EMITTED** — **37,101** / 1,480 | field member from `field_expression` (the receiver is never the edge; the first version inverted every field read); quoted operator members unwrapped (`x.:(==)`); `isFieldRead` + `isOperatorMember`. Per-project: 19,308 / 10,728 / 7,065 (52.0%). | conf **0.9**; `usage_contextual`; 0 edges under 0.7. |
+| `imports` | **EMITTED** — relationship **and** `ImportInfo[]`, **3,384** / 961 | module path or selected name from `using`/`import`/`selected_import` (`using A, B` names two modules; the 17-module `DataFrames.jl:3-19` statement is one line); source is the importing scope or `root`; `importRenamed` distinguishes `import A as B` from `using A: x`. Per-project: 954 resolved / 335 ambiguous / 851 unresolved / 1,244 external-by-import (28.2% resolved). | conf **1.0**; `import_based`; 0 edges under 0.7. |
+| `exports` | **EMITTED** — relationship **and** `ExportInfo[]`, **2,797** / 207 | owning module or `root` → exported binding name; asserts no kind (`declaresNothing: true`); a `public = expr` contextual-keyword misparse is refused when the statement's first named child is an `ERROR` (2 statements refused, ~115 real exported names kept). Per-project: 1,972 / 496 / 329 (70.5%). | conf **1.0**; `import_based`; 0 edges under 0.7. |
+| `overrides` | **EMITTED** — **3** / 3 | a later declaration of the same (name, signature, `where` clause) in the same declared owner; edge runs enclosing declared owner → method name, `metadata.replacesLine` names the displaced site; four guards (unconditional position, not a local binding, enclosing scope differs, declared owner) refuse 414 candidate pairs. 3/3 resolved both ends (100%). | conf **1.0**; `structural`; 0 edges under 0.7. |
+| `references` | **EMITTED** — **52,122** / 1,664 | declared-type references from typed expressions, annotations, `where` bounds and parametric heads, `isTypeReference`; a nested `field_expression` publishes the whole dotted path with `isQualifiedReference`. Per-project: 21,698 / 12,307 / 18,117 (41.6%). | conf **1.0** on the declaration walk, **0.95** on the qualified-reference path; `import_based`; 0 edges under 0.7. |
+| `contains` | **EMITTED** — **14,803** / 910 | owner → `owner.member` key, where the target string equals the member's own `qualifiedName`; resolved on the SOURCE; same-named siblings collapse because the dedup key carries no line. Per-project: 14,803 / 0 / 0 (100%). | conf **1.0**; `structural`; 0 edges under 0.7. |
+| `decorates` | **EMITTED** — **2,394** / 379 | declaration → decorator macro name (direction fixed by `src/ast/types.ts`: decorated declaration → decorator); the whole macro argument list is scanned because `@doc "…"` puts a string first; `@time f(1)` stays `calls -> time`. Per-project: 345 / 1,335 / 714 (14.4%). | conf **1.0**; `evidenceClass` **not assigned** — `classifyEvidenceTier` has no arm for this type (declared gap below). |
+| `renders` | **NO** — RULED, ladder walked, 0 sites | 0 of 224 declared names and 0 of 149 produced node types name a rendering construct; the nearest construct is 3 ordinary `calls -> render` edges in 2 files. | 0 edges, so no confidence; the ruling is retired only by its stated falsifier (see [§ `renders`](#renders--ruled-ladder-walked-0-sites)). |
+| `mixes_in` | **NO** — RULED, ladder walked, 0 sites | 0 of 224 declared names and 0 of 149 produced node types; the nearest construct is 1,706 `<:` clauses in a declared type's type head across 390 files, all published as `extends`; the corpus carries one lexical mention of `mixin`, in a comment. | 0 edges, so no confidence; falsifier stated in [§ `mixes_in`](#mixes_in--ruled-ladder-walked-0-sites). |
+| `part_of` | **EMITTED** — **826** / 211 | `include("literal path")` → the file's basename with extension; `partRole: "library"`, `partPath` keeps the written path, `isJuliaInclude`; a variable/`joinpath(...)` include stays `calls` (`isDynamicInclude`) and a shadowed `include` becomes a call to the local binding. Per-project: 0 / 0 / 826 — **0 resolved by construction**, because the lane publishes no file symbol. | conf **1.0**; `evidenceClass` not assigned (same gap); all 826 are unresolved by construction and declared. |
+
+Two template rows are **not** engine types here and are deliberately omitted from the claim table: `depends` (dependency is expressed by `imports`, `part_of` and `extends`; no `depends` rows are emitted) and `field_access` (a field read is published as `uses` with `isFieldRead`, not as its own type). The two declared gaps: `decorates` and `part_of` were added after `classifyEvidenceTier`'s arm set, so their rows carry confidence but no `evidenceClass`; their resolution triples are the arm's own and the `part_of` zero is by construction, not a failure.
+
+**Coverage arithmetic: 11 implemented / 11 applicable.** The ten canonical types julia expresses plus the two extended types (`decorates`, `part_of`) are implemented; the denominator is 14 engine types minus the three rulings (`implements`, `renders`, `mixes_in`). `script/m14/spec/julia-completeness.json` also partitions the grammar: **33 handled node types, 57 walked-and-silent types, 0 confirmed emission gaps** (the two silent call shapes — `adjoint_expression` `A'` and `broadcast_call_expression` `f.(x)` — were closed and publish `calls`). The verdict is a statement about TYPES, not about every edge: the whole-population arm's own verdict is **FAIL** on clause 1 (111,762 resolved of 241,349 edges, 46.3%; 66,191 ambiguous, 1,244 external, 62,152 other unresolved, 0 unclassed) and this page does not relabel it — see [§ The completion verdict](#the-completion-verdict-and-the-residual-it-does-not-claim).
+
+## Supported constructs
+
+Each fixture is `validation/m14/fixtures/julia/<name>.jl` with `<name>.expectation.json` beside it.
+
+- **Modules and scope** — `module`, `baremodule`, nested modules, `include`d fragments and file-scope code; 71.9% of admitted files declare no `module` block, so most declarations publish at file scope. `modules-and-scope.jl`, `part-of-include.jl`.
+- **Types** — `struct`, `mutable struct`, parametric `struct S{T<:Real} <: A`, `abstract type` (with body, P4), `primitive type`, typed struct fields, and type aliases `Dims{N} = NTuple{N,Int}` (43 corpus sites; published as `class` + `contains` after JUL-D22). `struct-fields.jl`, `dispatch-and-hierarchy.jl`.
+- **Functions in every declaration form** — long form, short form `f(x) = …`, `f(x)::T = …` (a `typed_expression` left side), `f(x) where {T}` (a `where_expression`), `A.B(x) = …`, operator-named functions (P5), callable/overloaded structs, and the two call shapes with no `call_expression`: `adjoint_expression` (`A'`, 22 corpus files) and `broadcast_call_expression` (`f.(x)`, 74 files). `callable-shapes.jl`, `dispatch-and-hierarchy.jl`.
+- **Keyword parameters** — `f(a; x=1, y::Int=2)` and `f(a; kwargs...)` parse as `named_argument`/`splat_expression` inside `argument_list`; the keyword binding is collected as a local binding, so a call through it publishes `owner\0name` with `metadata.localBinding` (F1 anchor in `dispatch-and-hierarchy.jl`). `dispatch-and-hierarchy.jl`.
+- **Macros** — `macro m() … end`, macro applications as `calls` (`isMacroCall`), and a macro applied to a declaration as `decorates` (`@inline function f`, `Base.@kwdef mutable struct S`, `@doc "…" function g`, `@inline h(x) = x`), with `@time f(1)` kept as a call. `macros-and-foreign.jl`, `decorated-declarations.jl`.
+- **Foreign calls** — all three `ccall` spellings (`ccall(:sym, Cint, ())`, `ccall((:sym, :libc), …)`, `Base.@ccall strlen(…)`): the edge is kept, carries `isForeignCall`/`foreignSymbol`/`foreignLibrary`, and **no C symbol is published as a Julia symbol**. `macros-and-foreign.jl`.
+- **Imports and exports** — `using A, B`, `using A: x` (`selected_import`), `import A as B` (`importRenamed`), relative `import .Foo`, `export`, and `public` as a contextual keyword; 596 statements in a 400-file draw resolve to **52 distinct shapes** (32 two-path, 12 three-path). `imports-and-exports.jl`.
+- **Supertypes and `where` bounds** — `<:`, parametrized supertypes, `where {T<:Real}`, `f{T<:Real}(x)` (no `where_expression` at all), type-head bounds, and `>:` upper bounds. `extends-shapes.jl`, `dispatch-and-hierarchy.jl`.
+- **Method redefinition** — same name + same signature + same `where` in the same declared owner, long and short form, behind four refusal guards. `method-redefinition-overrides.jl`.
+- **File inclusion** — `include("literal")` → `part_of`, including an include inside a callable; a variable/`joinpath(...)` include stays `calls` with `isDynamicInclude`, and a locally shadowed `include` becomes a call to that binding. `part-of-include.jl`.
+- **Ruled constructs' nearest neighbours** — `renders`/`mixes_in`-like sites are pinned as forbid rows beside an implemented `decorates` row. `extended-values.jl`.
+- **Fixture lane:** `bun run script/m14/run-fixtures.ts --lang julia` → **11 pass, 0 fail** (re-run for this page). Expectations are authored from Julia semantics **before** the analyzer runs, and `expectSymbols` matches name AND kind, not name alone. The suite has caught 3 analyzer defects **and 2 errors in its own expectations**; the mutants are in [§ The fixture lane and its mutants](#the-fixture-lane-and-its-mutants).
 
 ## Regex inventory
 
-**Zero.** Line 2129 of this file: "No regex in this lane." No `RegExp` doing syntax work.
+**Zero regex literals remain in this analyzer, and the committed census carries no julia row to classify.** `validation/m12/results/regex-census.json` (generated 2026-11-01) scans 50 analyzers at HEAD and records `totalRegexUsages: 0` with an empty `perFile`, so there is no per-line entry for julia; the analyzer predates that census, and a census row is a verifier-written results artifact this lane may not edit. The nine usages that existed were eliminated, and the table below classifies every one of them:
+
+| Line | Regex | Receiver category | Classification | Justification |
+| --- | --- | --- | --- | --- |
+| removed from `real-julia-analyzer.ts` (4 sites) | `/^@/` | `macro_identifier` leaf | **eliminated** | replaced by the prefix test `stripSigil(text, "@")` — a character comparison, not a pattern |
+| removed (2 sites) | `/^:/` | `quote_expression` leaf | **eliminated** | replaced by `stripSigil(text, ":")` |
+| removed (1 site) | `/^:\(|\)$/g` | quoted operator member | **eliminated** | replaced by `unquoteOperatorMember(text)`, which tests the two delimiters as characters |
+| removed (2 sites) | `/\s+/g` | signature key | **eliminated** | replaced by `collapseSpace(text)`, a single character scan |
+| analyzer at HEAD | **none** | — | **zero unclassified** | measured 0 regex literals in `src/ast/real-julia-analyzer.ts`; the four groups above are the whole historical inventory and each is eliminated with a stated replacement |
+
+Rule: **zero unclassified regex** — satisfied: 0 analyzer regexes, and no `replaceable`/`needs_review` entry remains. The census had 10 regexes of its own, now in the lane's lexical scanner `validation/m14/fixtures/julia/text-util.ts`, and `script/m14/oracles/julia-calls.ts`'s `/^@/` was replaced the same way. After the change the shared scanner finds **0 julia regex usages**; `script/m12/verify-regex-census.ts` passes with julia absent from its entries — a gap in that gate, not a clean bill (§8 row 15) — and the lane's text handling is covered by fixtures. Declared scanner limitation: it is lexical, handles comments/strings/template interpolation, and does **not** disambiguate a `/` that opens a regex from division; its input contains no division expression and it prints the count it feeds on every run.
 
 ## Complexity envelope
 
-No in-tree `julia-complexity.json` artifact exists, so no wall-clock envelope is claimed; none is fabricated here. The lane's census covers 1,985 files and the firing-check reports 9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded.
+**Declared budget: none — julia is absent from the budgeted complexity gate entirely.** `script/m60/analyzer-complexity-gate.ts` prints 44 lanes and no julia row; `validation/m60/analyzer-budget-register.json` has no julia entry; `validation/m12/results/julia-complexity.json` does not exist; and `validation/m12/fixtures/julia` does not exist, so the shared M12 harness (`script/m12/measure-analyzer.ts`) exits before timing. There is therefore **no budgeted lane for this lane to regress**, and the envelope below is the lane-owned measurement in `validation/m14/fixtures/julia/envelope.ts` (through production `parseFile`, writes nothing; #909 requires the file-set digest, byte distribution and measured load beside any ms/file).
+
+| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| envelope, draw `36cef2786b320821`, stride 4, load1 15.70 / 8 cores | 400 | 6,970 | 46,525 | 38,999 | 179 (computed) | 1,193 (computed) | **not measured** |
+| envelope, same draw, earlier run, load1 11.21 | 400 | 6,970 | 46,263 | 39,811 | 175 (computed) | 1,162 (computed) | **not measured** |
+| envelope, same draw, `--record` comparison run | 400 | 6,970 | 46,525 | not printed (ms/file **111.50**) | not printed | not printed | **not measured** |
+| whole corpus, § Measured corpus | 1,985 | 38,179 | 238,129 (nine types) + 2,394 `decorates` + 826 `part_of` | 167,613–207,989 across repeated runs | not printed with the timing | not printed with the timing | **not measured** |
+
+- The instrument prints `throughput: 1,372 outputs/s` and `116.3 relationships/file` for the recorded 400-file run. The committed basis is `validation/m60/results/julia-envelope-baseline.json` (key `36cef2786b320821:400`: 116.313 relationships/file, 17.425 symbols/file, 46,525 relationships, 6,970 symbols, msPerFile 191.46) and comparison is **refused** when the file-set digest differs — a different draw is a different measurement.
+- **ms/file is not a regression signal on this shared box.** The same draw and payload measured 97.50, 99.53 and 111.50 ms/file across runs while `relationships/file` did not move, and the earlier ON/OFF import-emission A/B reversed sign (ON faster in 3 of 3 interleaved rounds). The load is printed beside every number for exactly that reason.
+- **Peak RSS was never measured for the envelope.** The only memory measurement on this lane is `validation/m14/fixtures/julia/tree-lifetime-probe.ts`: three passes over all 1,985 files, retain vs free — RSS 587→649 MB when trees are retained (1,928 of 1,985 files throw by pass 3) versus 124→78 MB with `tree.delete()` (0 throw); the exhaustion is inside the wasm module's linear memory, not host heap.
+- **Hot-path audit: the one per-symbol full-tree walk was found and removed.** `complexity()` used to be called once per symbol over the FILE's tree, giving every symbol the file's complexity — `test/core.jl` took 228 s alone and the corpus 969 s. It now walks only the symbol's own subtree (iterative stack, 200,000-node guard; `test/core.jl` 728 ms, corpus 168–208 s); the residual is tree-sitter's own `parse()` (worst file 16.7 s in `parse()`, 124 ms in the analyzer). No O(n²) scan remains: relationship dedup is one `Map` keyed by type and source→target, declared-type/kind lookup is a `Map` keyed by name, and trees are freed after each file. Re-derive with `npx tsx validation/m14/fixtures/julia/envelope.ts --files 400`.
 
 ## Differential ground truth
 
-- Result `validation/m12/results/julia-differential.json`: this is a grammar-validity oracle (`Meta.parseall`) against Julia's own parser, NOT a symbol/relationship differential. verdictsReturned 949, filesCompared 949, unparsedChildLines 0. The analyzer is compared against the census via `doc-tables-check.ts` (all 308 cells hold) and `arbiter-census-diff.ts` (census vs arbiter, edge for edge).
+- **`validation/m12/ground-truth/julia.json` does not exist.** This lane has no hand-authored M12 ground truth, and this page will not claim one. What exists at the M12 path is a **grammar-validity** differential only: `validation/m12/results/julia-differential.json` (generated 2026-09-30) compares the grammar against **Julia 1.11.3's own parser** via `Meta.parseall` (no shared code, grammar, parse table or data model) over 966 tracked files of `JuliaLang/julia` — 949 compared, **772 clean / 177 rejected-by-tree-sitter**, 0 files Julia rejects that tree-sitter accepts, agreement **81.35%**. Its scope line says outright that it is *not* a symbol or relationship differential; it predates the P2–P6 grammar patches (PIN.md records P6: 21 files fixed, 0 broken, 1,964 unchanged).
+- **Relationship ground truth is lane-owned and deterministic.** Seven oracles in `script/m14/oracles/` — `julia-calls`, `julia-refs`, `julia-contains`, `julia-type-edges`, `julia-imports`, `julia-exports`, `julia-overrides` — each written from Julia's own rule and sharing no rule table, key set or resolver with the analyzer. `validation/m14/fixtures/julia/direct-oracle-check.ts --files 1985` drives both sides over the whole population; the record is `validation/m14/measurements/julia-direct-oracle-whole-2026-10-28g.txt` (1,985 files, 14 of 14 projects, grammar-unreadable 0, `parseFile` threw 0):
+- **Result, whole population:** truth 148,215 vs analyzer 148,267 → **covered 148,099 (99.9%), missing 116, unexplained 168, overall unexplained rate 0.1%.** No precision/recall/FP/FN rates are computed for this lane: the instrument is a name-keyed coverage comparison (`covered`/`missing`/`unexplained`), and its disagreement is classified rather than netted — 109 of the 284 disagreement rows are the SAME edge keyed differently (`same-leaf-under-another-qualifier`: 59 unexplained + 50 missing), leaving **109 unexplained + 66 missing** as the genuine different-leaf residual. Four of the eleven labels are TARGET-only (`calls`, `uses`, `references`, `instantiates`), so their sources are unexamined by any oracle and the artifact carries the honest `srcUnverified` cost per label; the other seven are compared on both ends.
+
+| label | verified side | truth | analyzer | covered | missing | unexplained | covered% |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | TARGET only | 74,202 | 74,240 | 74,185 | 17 | 55 | 99.9% |
+| `uses` | TARGET only | 23,657 | 23,649 | 23,649 | 8 | 0 | 100.0% |
+| `references` | TARGET only | 21,658 | 21,653 | 21,599 | 59 | 54 | 99.8% |
+| `contains` | both ends | 14,778 | 14,803 | 14,760 | 18 | 43 | 99.7% |
+| `extends` | both ends | 2,522 | 2,522 | 2,522 | 0 | 0 | 100.0% |
+| `instantiates` | TARGET only | 1,996 | 1,996 | 1,996 | 0 | 0 | 100.0% |
+| `imports` | both ends | 3,381 | 3,384 | 3,372 | 9 | 12 | 99.6% |
+| `exports` | both ends | 2,797 | 2,797 | 2,794 | 3 | 3 | 99.9% |
+| `decorates` | both ends | 2,395 | 2,394 | 2,393 | 2 | 1 | 100.0% |
+| `part_of` | both ends | 826 | 826 | 826 | 0 | 0 | 100.0% |
+| `overrides` | both ends | 3 | 3 | 3 | 0 | 0 | 100.0% |
+| **TOTAL** | — | **148,215** | **148,267** | **148,099** | **116** | **168** | **99.9%** |
+
+- **The shared F5 harness compares six labels and cannot see the other three.** `script/m14/differential.ts` samples a rotating draw of the 941-file julia repo (`LANG_REPOS` is one corpus directory per lane); its stable facts are structural: **six labels compared** (`calls`, `contains`, `extends`, `instantiates`, `references`, `uses`), **`imports`/`exports`/`overrides` absent from both columns** (DERIVATION wiring gap, §8 row 3), `heuristic=0`, and an unexplained rate inside an **8.5–9.3% band across six recorded draws**. Per-draw counts move and must not be quoted: `covered` moved 94.6–99.1% across six draws and `MISSING` 42–131 across three 40-file draws; the scoped sample's own hash moved between consecutive runs on an unchanged corpus (§8 row 11), so a like-for-like A/B of one scoped invocation is not available. The latest 200-file run read `analyzer-edges=20221 tree-truth=19052 covered=98.9% MISSING=213 unexplained=8.7%` and printed the `COMPARED WITH NO TRUTH: overrides` line. A scoped run writes **no artifact** by design.
+- **Declared limitation:** an oracle is a second walker over the **same grammar**. A grammar bug shared by analyzer and oracle is invisible to every differential in this page, and no differential can see a relationship type neither side derives. Only the grammar inventory (instrument A) and the construct census (instrument B) measure absence.
 
 ## Corpus validation
 
-- Corpus census: 1,985 `.jl` files, 4+ repositories (Aqua.jl, DataFrames.jl, julia/Compiler, julia/test/...), 0 degraded on the firing-check run (`firing-check --files 2000 julia`: 9/10 fired, 235,878 edges, 1,985/1,985 files).
-- The `julia-ruled.ts` instrument exports `JULIA_RULED`, wired into `ontology-coverage-gate.ts`; `npx tsx script/m14/ontology-coverage-gate.ts julia` exits 0 on a first run with no checkpoint.
+- **Corpus target:** `validation/m12/corpus-manifest.json` → the julia row is `julia@6391263(sparse,clean)`, **941 tracked `.jl` files** across the whole `JuliaLang/julia` tree — the original M12 target; the manifest's own note records that 17 of those files are non-Julia IR dumps identified by content.
+- **Population used by every number in this page: 1,985 admitted `.jl` files, no sampling, 14 projects** — `julia` 941, `Graphs.jl` 253, `Pkg.jl` 219, `StaticArrays.jl` 111, `Documenter.jl` 101, `Flux.jl` 100, `DataFrames.jl` 73, `LanguageServer.jl` 57, `Aqua.jl` 51, `Query.jl` 30, `json_jl` 25, `GLM.jl` 14, `DifferentialEquations.jl` 5, `nvim-treesitter` 5. The corpus root is shared with other lanes and not pinned; **0 `.jl` files are excluded over 512 KB** (the 1,176 non-`.jl` large files counted in the same root belong to other lanes).
+- **Files / symbols / relationships / errors / timeouts** (whole-population arm `julia-gate-whole-2026-10-28c.json` plus the extended census over the same population and analyzer bytes):
 
+| quantity | measured |
+| --- | --- |
+| admitted / parsed / failed / degraded | **1,985 / 1,985 / 0 / 0** (`population.excluded.overCap: 0`, 14 repositories) |
+| symbols | **38,179** — function 21,662 · property 7,314 · constant 3,161 · class 3,128 · module 1,139 · macro 555 · variable 858 · interface 362 |
+| relationships | **238,129** in the nine emitted canonical types; **241,349** emitted in all (+2,394 `decorates` +826 `part_of`); `implements` 0 (ruled) |
+| errors | **0 crashes, 0 structural fallbacks, `parseFile` threw 0, 0 grammar-unreadable**; 365 of 1,985 files (18.4%) yield zero symbols (named in the census output); largest single file 1,818 symbols / 3,890 relationships |
+| timeouts | **not counted by the census** — it records throws and degraded files, not per-file timeouts. The shared failure mode is a 120 s parse bomb (a skipped `clearTimeout` after a throwing parse), measured at width 8 in `validation/m14/fixtures/julia/engine-concurrency-probe.ts`; no rate is quoted because the trap is probabilistic (§8 rows 1, 2, 13, 14). |
+| determinism | SHA-256 identical across a reused and a fresh analyzer instance |
+| fixtures / mutants | **11 fixtures pass 0 fail**; **32 mutants, 32 killed, 0 survived** (`validation/m14/fixtures/julia/mutation-check.ts --all`) |
+
+- **Coverage gaps declared rather than averaged:** the corpus is **47.4% one upstream project** (941/1,985); three clone targets this network refuses (`Revise.jl`, `StructTypes.jl`, `Distributions.jl`) leave the corpus without an `eval`-heavy project and with the parametric numeric tower under-sampled; the 365 zero-symbol files are named, not counted away; 83 relationships are deleted by the shared noise filter on source-fragment targets and 123 more on well-formed targets containing `<`/`>` (§8 row 9). See [§ Known limitations](#known-limitations) and [§ Measured corpus](#measured-corpus).
+- **Re-derive the population with** `npx tsx validation/m14/fixtures/julia/census.ts --json /tmp/census.json` (width 1; the width-dependent trap and the degraded-file accounting are in [§ The totals are a whole-population measurement only when the degraded count is 0](#the-totals-are-a-whole-population-measurement-only-when-the-degraded-count-is-0--and-saying-1-mb-fallback-was-wrong)), and its checked cells with `npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json`.
 ## What it extracts
 - **Symbols**: modules, structs (`class`), `abstract type` (`interface`), functions, macros, struct
   fields (`property`), `const` bindings (`constant`), local bindings (`variable`)
@@ -2251,8 +2320,14 @@ than inferred from a count that quietly moved.
 
 ## The fixture lane and its mutants
 
-Eleven fixtures, **86 expected symbols, 81 expected relationships, 53 forbidden relationships, 15
+Eleven fixtures, **86 expected symbols, 82 expected relationships, 54 forbidden relationships, 15
 forbidden symbols**; `bun run script/m14/run-fixtures.ts --lang julia` → 11 pass, 0 fail.
+
+The F1 grammar-audit wave added two assertions to `dispatch-and-hierarchy` and no symbol: one
+expected `calls` row (`Area -> Area\0f` with `meta.localBinding`, the keyword-parameter binding) and
+its forbid (a bare `Area -> f`), plus one `expectComplexity` pin (`scaled` = 3, base 1 + `if` + `&&`).
+Those are the `+1` expected and `+1` forbidden relationship above; both assertions FAIL against the
+pre-fix analyzer and pass after it (verified by running the suite against the HEAD analyzer).
 
 `script/m60/julia-mutants.ts` holds **32 mutants**. It had **zero importers** when this lane started —
 a repo-wide search for `JULIA_MUTANTS` returned only its own declaration — so every one of them was an

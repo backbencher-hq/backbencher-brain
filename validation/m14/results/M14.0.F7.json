@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "4a4fc3aed00aa3532fb15a990ed12b2d73022762cc84ddf113e8e3802b10fef3",
-    "sealedAt": "2026-11-05T16:51:20.000Z"
+    "contentSha256": "f2962eaf6ceee3137fd29abbf48c686aaf1904a55928edb901d04262bb11351b",
+    "sealedAt": "2026-11-06T05:17:39.000Z"
   },
   "checks": [
     {
@@ -157,8 +157,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
-  "committedAt": "2026-11-05T11:51:20-05:00",
+  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "committedAt": "2026-11-06T00:17:39-05:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
@@ -169,8 +169,8 @@
       "description": "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)"
     }
   ],
-  "regeneratedAt": "2026-11-05T11:51:20-05:00",
-  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "regeneratedAt": "2026-11-06T00:17:39-05:00",
+  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)"

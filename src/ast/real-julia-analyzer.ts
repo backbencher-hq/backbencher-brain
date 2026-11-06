@@ -623,7 +623,19 @@ export class RealJuliaAnalyzer {
           if (ks.length < 2) return ""
           return bindName(ks[0])
         }
-        if (b.type === "splat_expression" || b.type === "parameters") {
+        // A KEYWORD PARAMETER IS A `named_argument`, NOT A `parameters` WRAPPER. F1
+        // (grammar audit) reported `parameters` as an unregistered node-type literal:
+        // this grammar has no such node — it is another grammar family's vocabulary.
+        // The construct the branch was reaching for IS real and the grammar spells it
+        // `named_argument`: `f(a; x=1, y::Int=2)` parses as
+        // `argument_list(identifier, named_argument(identifier, operator, …),
+        // named_argument(typed_expression(identifier, identifier), operator, …))`
+        // (dumped from the wired wasm), whose first child is the binding target.
+        // Naming the real construct is the fix, not deleting the branch: without it a
+        // keyword parameter is not collected as a local binding, so a bare reference
+        // to it in the body is not claimed as a local. Pinned by
+        // `validation/m14/fixtures/julia/dispatch-and-hierarchy`.
+        if (b.type === "splat_expression" || b.type === "named_argument") {
           const inner = this.pos(b, 0)
           return inner ? bindName(inner) : ""
         }
@@ -2689,7 +2701,13 @@ export class RealJuliaAnalyzer {
   private inModuleBindingScope(node: Node): boolean {
     let cur: Node | null = node.parent ?? null
     while (cur) {
-      if (cur.type === "module_definition" || cur.type === "baremodule_definition") return true
+      // `baremodule` is the SAME node, not a second one: the grammar has a single
+      // `module_definition` rule whose first token is `choice('module', 'baremodule')`
+      // (`grammars/tree-sitter-julia/grammar.js`), so a `baremodule_definition`
+      // comparison could never match. It was the F1 finding "unregistered node-type
+      // literal `baremodule_definition`" and is DELETED rather than replaced: the
+      // `module_definition` branch above already answers for both spellings.
+      if (cur.type === "module_definition") return true
       if (SCOPE_INTRODUCING_NODES.has(cur.type)) return false
       if (cur.type === "assignment") {
         const head = this.unwrapWhere(this.pos(cur, 0) ?? cur)
@@ -3463,7 +3481,18 @@ export class RealJuliaAnalyzer {
       const n = stack.pop()!
       if (decisions.has(n.type)) c++
       else if (n.type === "binary_expression") {
-        const op = n.childForFieldName("operator")?.text.trim() ?? ""
+        // THE OPERATOR IS A NAMED CHILD, NOT A FIELD. The grammar's
+        // `binary_expression` rule is `seq($._expression, alias(op, $.operator),
+        // $._expression)`, and the grammar's six field names are name, value,
+        // condition, alternative, prefix and suffix — there is no `operator` field.
+        // So `childForFieldName("operator")` returned null on every binary
+        // expression and `&&`/`||` contributed nothing: a ten-guard predicate
+        // measured 1. F1 named the field literal as unregistered; the correct read
+        // is the named child at index 1 (an `operator` node), and the fixture
+        // `validation/m14/fixtures/julia/dispatch-and-hierarchy` pins a `&&` body
+        // at complexity 2 — it read 1 before this fix.
+        const opNode = this.pos(n, 1)
+        const op = opNode && opNode.type === "operator" ? opNode.text.trim() : ""
         if (op === "&&" || op === "||") c++
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {

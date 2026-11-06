@@ -516,14 +516,17 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const fn = node.childForFieldName("function") ?? this.namedChildOfType(node, "identifier")
     if (!fn || fn.type !== "identifier") return null
     if (String(fn.text) !== "runnableExamples") return null
-    // The `argument_list` FIELD is not populated for this node — the grammar
-    // parses `runnableExamples:` as a labelled statement, and the field name is
-    // declared for a different alternative — so `childForFieldName` returns null
-    // while the child is plainly there. Read it as a NAMED CHILD of that type
-    // instead. Verified against nim/lib/system.nim:857, where the call at line
-    // 859 has `function: identifier runnableExamples` and an unlabelled
-    // `argument_list` child holding the example's `statement_list`.
-    const args = node.childForFieldName("argument_list") ?? this.namedChildOfType(node, "argument_list")
+    // `argument_list` is a NODE TYPE in the wired grammar, NOT a field name: the
+    // grammar's own field table (dumped from `wasm/tree-sitter-nim.wasm` for the
+    // 2026-11 F1 grammar-conformance wave) declares 24 fields and none of them is
+    // `argument_list`, so `childForFieldName("argument_list")` returned null on
+    // EVERY node, not just this one — it was a dead read kept beside the live one.
+    // Read the child by its NODE TYPE, which is the only way it is reachable, and
+    // note the call parses `runnableExamples:` as a labelled statement whose
+    // `argument_list` child is unlabelled. Verified against nim/lib/system.nim:857,
+    // where the call at line 859 has `function: identifier runnableExamples` and an
+    // unlabelled `argument_list` child holding the example's `statement_list`.
+    const args = this.namedChildOfType(node, "argument_list")
     if (!args) return null
     // The `argument_list` itself is returned, not the `statement_list` inside it.
     // The frame is applied by comparing a node's own children against the
@@ -930,6 +933,23 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the wrapper, and `type Pair = tuple[x, y: int]` fell through to the
    * catch-all and published a bare `type` — losing the struct kind its own
    * documentation promised.
+   *
+   * ONLY THE SHAPES THE WIRED GRAMMAR ACTUALLY DISTINGUISHES ARE LISTED. Seven
+   * branches here used to test `array_type` / `generic_type` / `sequence_type` /
+   * `set_type` / `table_type` / `range_type` / `ordinal_type` — names from a
+   * different tree-sitter-nim revision. The wired build (`wasm/tree-sitter-nim.wasm`,
+   * 377 named node types) declares NONE of them, and the shapes they were meant
+   * for are not separate nodes at all: `seq[int]`, `array[3, int]`, `set[Color]`,
+   * `Table[string, int]` and `range[0..10]` each parse as
+   * `type_expression > bracket_expression` (each spelling parsed against the wired
+   * wasm on 2026-11-04 to confirm). The classifier below deliberately publishes
+   * every one of those as a type-level name through its catch-all, so the seven
+   * branches were unreachable and no behaviour is lost by deleting them. A
+   * correct-name rewrite (`bracket_expression`) was considered and rejected as a
+   * NO-OP: `typeConstructorLeaf`/`typeArgumentNodes` descend through the wrapper
+   * either way and the classifier's catch-all is the same branch, so the rewrite
+   * would only add code whose reachability no fixture could distinguish. Dead
+   * branches are deleted rather than kept, per the F1 rule.
    */
   private unwrapTypeExpression(node: Node): Node {
     let cur = node
@@ -944,14 +964,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.firstChildOfType(cur, "object_declaration") ??
         this.firstChildOfType(cur, "ref_type") ??
         this.firstChildOfType(cur, "distinct_type") ??
-        this.firstChildOfType(cur, "pointer_type") ??
-        this.firstChildOfType(cur, "array_type") ??
-        this.firstChildOfType(cur, "generic_type") ??
-        this.firstChildOfType(cur, "sequence_type") ??
-        this.firstChildOfType(cur, "set_type") ??
-        this.firstChildOfType(cur, "table_type") ??
-        this.firstChildOfType(cur, "range_type") ??
-        this.firstChildOfType(cur, "ordinal_type")
+        this.firstChildOfType(cur, "pointer_type")
       if (!inner) return cur
       cur = inner
     }
