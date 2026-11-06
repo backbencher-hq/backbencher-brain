@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "4875741b836d751ef573f5b5450b3ebf1e27797a",
+  "currentCommit": "a74a4e7da3c2f315ebe2d28f799efe316a555d92",
   "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
   "sourceFingerprint": "bbbf77447760a220bfe1762a79a3f971894184fddb6208bfe601b5ac2477cb0b",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -20,7 +20,7 @@
     "script/m29/wave-protocol.ts"
   ],
   "evidenceFile": "R2.json",
-  "generatedAt": "2026-11-06T19:50:40.263Z",
+  "generatedAt": "2026-11-06T20:08:36.464Z",
   "approval": {
     "record": "validation/m29/results/wave-1-approval.json",
     "approvedBy": "owner (ishaq2321)",
@@ -219,7 +219,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T19:50:40.263Z",
-    "contentSha256": "e2c39ce4f7ae383694aaa3defc260006af900425c8137d9f1903557ef5dc7e88"
+    "sealedAt": "2026-11-06T20:08:36.464Z",
+    "contentSha256": "5605ec7964a1c080b4c4860d9009a29f8ddc8ddd9a2ece205a8dd86e61bb67e9"
   }
 }

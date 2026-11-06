@@ -4,12 +4,14 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 32,
-  "passed": 29,
-  "failed": 3,
+  "passed": 27,
+  "failed": 5,
   "failures": [
     "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (69/70 passed, 10 negative)  (exit=1)",
     "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (75/77 passed, 15 negative)  (exit=1)"
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
+    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
   ],
   "negativeCases": 3,
   "suiteExits": {
@@ -26,7 +28,7 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "4875741b836d751ef573f5b5450b3ebf1e27797a",
+  "currentCommit": "a74a4e7da3c2f315ebe2d28f799efe316a555d92",
   "sourceFingerprint": "b46f4f6365afdf926e26fdd1d5df20afce0f90e541b6117775842c0eee1013d8",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -62,7 +64,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-06T20:01:42.765Z",
+  "generatedAt": "2026-11-06T20:19:26.127Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -71,7 +73,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:01:42.765Z",
-    "contentSha256": "a74546a17d1f8fa17759e9a1e803981926f68b660149803041aa57eabda99bae"
+    "sealedAt": "2026-11-06T20:19:26.128Z",
+    "contentSha256": "b25777c8b8f9c65047d178b84df3a380b61a863ea5e9337cb74627d317cf28ad"
   }
 }
