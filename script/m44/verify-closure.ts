@@ -322,7 +322,12 @@ function audit(
   // case §8.3 bans, and it is the only way this check can fail - which is why the
   // negative below drives THAT input rather than a low verified count.
   if (forksReasonlessBlocked > 0) v.push(`pre5:${forksReasonlessBlocked} fork leg(s) blocked WITHOUT a reason (never silently omitted)`)
-  if (forksAbsent > 0) v.push(`pre5-declared-absence:${forksAbsent} fork leg(s) declared absent with a reason on this machine - not a closure violation (contract §2 I4, §8.3)`)
+  // A DECLARED ABSENCE IS NOT A VIOLATION, and it must not be pushed into the
+  // violations array. It used to be: the note said "not a closure violation"
+  // in its own text and the caller still required the array to be EMPTY, so
+  // three honestly blocked forks failed the audit that exists to accept them -
+  // the message and the mechanism disagreed, and the mechanism won. The absent
+  // count is reported in the check's detail at the call site instead.
   // Launch record: every row is EVIDENCE (existing, verified file) or carries
   // a non-empty reason AND an owner marker. Rows are machine-marked:
   //   | <item> | <scope> | EVIDENCE | <relative path of a verified evidence file> |
@@ -397,7 +402,11 @@ const forksReasonlessBlocked = forkRecordsNow.filter((f) => {
 }).length
 
 const violations = audit(ledgerSnapshot, launchText, packOk, e5Now?.status ?? "missing", forkCount, exits, forksAbsent, forksReasonlessBlocked)
-check("X1: closure preconditions audited — zero violations", violations.length === 0, violations.join("; ").slice(0, 400))
+check(
+  "X1: closure preconditions audited — zero violations",
+  violations.length === 0,
+  (violations.join("; ") + (forksAbsent > 0 ? `${violations.length ? "; " : ""}${forksAbsent} fork leg(s) declared absent WITH a reason (allowed by contract §2 I4/§8.3)` : "")).slice(0, 400),
+)
 
 // Pass 3b: the closure audit's own can-fail proof (in-memory negatives only).
 console.log("\npass 3b: closure-audit can-fail proof (in-memory negatives)")
