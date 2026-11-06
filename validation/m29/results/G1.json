@@ -7,27 +7,26 @@
   "passed": 72,
   "failed": 3,
   "negativeCases": 10,
-  "currentCommit": "f83622e45003e5fe29333ef14892762925899f18",
+  "currentCommit": "8ccab1071b7432d6448bb9801861cf3e6d786bf3",
   "workingTreeRelevantChanges": [
-    "package.json",
     "src/ast/real-julia-analyzer.ts"
   ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T04:20:38.756Z",
+  "generatedAt": "2026-11-06T05:00:28.611Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
-    "ledgerStatus": "open",
-    "m28GateExit": 1
+    "ledgerStatus": "closed",
+    "m28GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
     "A run with relevant uncommitted M29 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "3 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit - relevant uncommitted files at measure time: package.json, src/ast/real-julia-analyzer.ts",
+  "blockedReason": "3 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: the ledger VALIDATES WHOLE as it now stands on disk (post-projection, not the pre-projection snapshot); G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) - relevant uncommitted files at measure time: src/ast/real-julia-analyzer.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T04:20:38.773Z",
-    "contentSha256": "d14eca8f136c6499ab7c4f7f3fb3306d651d68f8b7aab4117a20d0a2f2ed7443"
+    "sealedAt": "2026-11-06T05:00:28.623Z",
+    "contentSha256": "6d16637f103b468b58537e214cdc484bc02e65e7ae18fbdfc36d934ff89faa31"
   }
 }
