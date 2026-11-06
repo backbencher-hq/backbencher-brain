@@ -7,11 +7,11 @@
   "passed": 73,
   "failed": 2,
   "negativeCases": 10,
-  "currentCommit": "e4d3807cc447cbc34aca89ba4aadeaeadebe2e76",
+  "currentCommit": "6c505dc02540e82249c27fe2bbe6c2e2c7311206",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T23:45:10.683Z",
+  "generatedAt": "2026-11-06T23:45:17.780Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "open",
@@ -24,7 +24,7 @@
   "blockedReason": "2 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:45:10.705Z",
-    "contentSha256": "41c88065467e793ae0f0affce0cca639c212f04a1dbd0f831b58366529dcf057"
+    "sealedAt": "2026-11-06T23:45:17.794Z",
+    "contentSha256": "2f1af4597d7d8f000bc5c329f71cb02335a5e9ac14f02b1600dc9da3012ed636"
   }
 }
