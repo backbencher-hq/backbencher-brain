@@ -346,10 +346,28 @@ function main(): void {
   )
 
   // Contract vocabulary lint over M29 artifacts (acceptance criterion).
+  //
+  // The ledger target is its DESCRIPTIVE text, not the serialized ledger. The
+  // whole-ledger form is self-referential and can never go green again once it
+  // fires: the check's own name quotes the banned pattern, that name lands in
+  // G1's `blockedReason`, the next run serializes the ledger including the
+  // previous run's failure text, finds the same word and fails again. Measured
+  // on m29 — the only occurrence of the word in the manifest was G1 quoting
+  // this very check. Machine-generated verdicts are not prose, and a lint that
+  // cannot distinguish them from the artifact it audits reports itself.
+  const ledgerProse = {
+    title: ledger.title,
+    issues: ledger.issues.map((issue) => ({
+      code: issue.code,
+      scope: issue.scope,
+      acceptanceCriteria: issue.acceptanceCriteria,
+      closureRequirements: issue.closureRequirements,
+    })),
+  }
   const vocabTargets: Array<[string, string]> = [
     ["M29-MASTER-PLAN.md", plan],
     ["IDE-PROGRAM-STATUS.md", statusTracker],
-    ["manifest.json", JSON.stringify(ledger)],
+    ["manifest.json (descriptive fields)", JSON.stringify(ledgerProse)],
   ]
   for (const [name, text] of vocabTargets) {
     for (const pattern of BANNED_PATTERNS) {
@@ -493,7 +511,17 @@ function main(): void {
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
       const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
-      if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
+      // `persisted-failed` applies to entries that CLAIM GREEN only (the m27/m28
+      // scoping, applied here for the same reason they needed it):
+      //
+      //   An honest `known-gap` entry exists BECAUSE its record failed. Applying
+      //   the rule to it makes the honest state *structurally unrecordable* -
+      //   the lane can only go green by hiding the failing record, which is the
+      //   lie the whole ladder exists to prevent. Found live: X1's pass-A
+      //   record (two named preconditions, both true) made G1 report
+      //   `X1:persisted-failed` for ever, so the closure could never clear its
+      //   own precondition - a deadlock dressed as a red check.
+      if (realFailed !== 0 && issue.status === "verified") evidenceErrors.push(`${issue.code}:persisted-failed`)
       const evidenceCommit = persisted["currentCommit"]
       if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
         if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
