@@ -31,13 +31,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
+        "currentCommit": "e4d3807cc447cbc34aca89ba4aadeaeadebe2e76",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 67,
         "failed": 2,
         "negativeCases": 10,
-        "blockedReason": "2 check(s) failed: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md"
+        "blockedReason": "2 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
       }
     },
     {
@@ -283,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:40:29.442Z",
-    "contentSha256": "00be9a05f765536ccec45a18411b32c090d4dfd189e955d1db219bb564d59200"
+    "sealedAt": "2026-11-06T23:45:10.703Z",
+    "contentSha256": "a15429353f6c51878d6002e1e7e272e10d266cd73e4b7158b869159e742205fe"
   }
 }
