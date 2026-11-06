@@ -31,13 +31,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 69,
-        "failed": 0,
+        "passed": 67,
+        "failed": 2,
         "negativeCases": 10,
-        "blockedReason": "no check failed — relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md"
+        "blockedReason": "2 check(s) failed: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: docs/m29/PRECISION-LEDGER.md"
       }
     },
     {
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -86,7 +86,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
         "passed": 261,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
         "passed": 28,
@@ -137,7 +137,7 @@
       "code": "R4",
       "githubIssue": 539,
       "tool": "precision-ledger",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Published per-language/per-feature precision table: claim level, evidence path, differential sampling results, heuristic-edge ratios, limitations. Regeneration script + drift gate (hand-edits reopen the gate).",
       "acceptanceCriteria": [
         "Ledger generated from evidence files; drift-gated",
@@ -150,16 +150,17 @@
         "Owner review recorded"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "status": "known-gap",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
-        "passed": 19,
-        "failed": 0,
-        "realFailed": 0,
+        "passed": 17,
+        "failed": 2,
+        "realFailed": 2,
         "mutantsCaught": 6,
         "mutantsTotal": 6,
-        "negativeCases": 5
+        "negativeCases": 5,
+        "blockedReason": "G1: PRECISION-LEDGER.json regenerates byte-identically: on-disk JSON differs from a fresh build — regenerate with --write"
       }
     },
     {
@@ -180,7 +181,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -209,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -225,7 +226,7 @@
       "code": "D1",
       "githubIssue": 542,
       "tool": "docs",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "The published precision ledger (docs + listing) and the wave protocol documentation.",
       "acceptanceCriteria": [
         "Both artifacts generated from evidence, drift-gated",
@@ -238,14 +239,14 @@
         "Limitations declared"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "status": "known-gap",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
-        "passed": 13,
-        "failed": 0,
+        "passed": 9,
+        "failed": 4,
         "blockedReason": "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
-        "realFailed": 0,
+        "realFailed": 4,
         "mutantsCaught": 3,
         "mutantsTotal": 3,
         "negativeCases": 3
@@ -269,11 +270,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 30,
-        "failed": 2,
+        "passed": 29,
+        "failed": 3,
         "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
         "negativeCases": 3,
         "blockedReason": "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run."
@@ -282,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:12:00.694Z",
-    "contentSha256": "5d22b10fec74949fe61389df598e7b63f479d784eb5b347bbe67e9e7f62b217b"
+    "sealedAt": "2026-11-06T23:40:29.442Z",
+    "contentSha256": "00be9a05f765536ccec45a18411b32c090d4dfd189e955d1db219bb564d59200"
   }
 }

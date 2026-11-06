@@ -11,9 +11,9 @@
     "mutantsTotal": 5,
     "ok": true
   },
-  "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+  "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
-  "sourceFingerprint": "1c173af5b7b16c57c80b904522d2cd7786472c2b7878416efa9344cca2034cac",
+  "sourceFingerprint": "16d056b69e73822fb31b6337802af82a5d5eda9e3d8a8b6a8ebb3a122c317ac2",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-wave-harness.ts",
@@ -24,7 +24,7 @@
     "script/m29/verify-wave-protocol.ts"
   ],
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-11-06T23:08:57.161Z",
+  "generatedAt": "2026-11-06T23:40:15.595Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
@@ -33,7 +33,7 @@
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:08:57.161Z",
-    "contentSha256": "fdb1b4d835c88bce98e98ac2dfbef0fd20516849ddd863c2605a3fc660cf5462"
+    "sealedAt": "2026-11-06T23:40:15.596Z",
+    "contentSha256": "3891ea9d49fd39c8617f913791d5c2563681d9c10f5179cbb831db33aa774f9f"
   }
 }
