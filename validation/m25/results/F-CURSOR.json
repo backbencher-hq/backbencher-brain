@@ -7,22 +7,22 @@
   "blockedReason": "cursor not found — looked at: legacy: /usr/bin/cursor",
   "os": "linux",
   "machine": {
-    "kernel": "Linux 7.2.6-76070206-generic",
+    "kernel": "Linux 7.2.15-76070215-generic",
     "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
     "ramGb": 16.6,
     "node": "v22.22.1",
     "runtime": "fork-run"
   },
-  "currentCommit": "0dce4ec57f3664f021646fccb8148ff705998778",
+  "currentCommit": "7cbed697becfbc3a9b1b51137bdf10208b2ccab7",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-CURSOR.json",
-  "generatedAt": "2026-11-06T17:27:49.461Z",
+  "generatedAt": "2026-11-06T19:37:07.046Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T17:27:49.461Z",
-    "contentSha256": "19a76eb2eb5b333505631c6156db70db914095cae8b457003b3208e76ef3f099"
+    "sealedAt": "2026-11-06T19:37:07.047Z",
+    "contentSha256": "13a61ba87de332b6575cabf94c59e9035c7dee6d87c0453d5496861c7c609220"
   }
 }

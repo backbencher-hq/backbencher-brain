@@ -7,22 +7,22 @@
   "blockedReason": "windsurf not found — looked at: legacy: /usr/bin/windsurf",
   "os": "linux",
   "machine": {
-    "kernel": "Linux 7.2.6-76070206-generic",
+    "kernel": "Linux 7.2.15-76070215-generic",
     "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
     "ramGb": 16.6,
     "node": "v22.22.1",
     "runtime": "fork-run"
   },
-  "currentCommit": "0dce4ec57f3664f021646fccb8148ff705998778",
+  "currentCommit": "7cbed697becfbc3a9b1b51137bdf10208b2ccab7",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-WINDSURF.json",
-  "generatedAt": "2026-11-06T17:27:49.463Z",
+  "generatedAt": "2026-11-06T19:37:07.049Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T17:27:49.463Z",
-    "contentSha256": "03ad668f7e8e75785fac787477e88b53e31848fc4689657c1f3d6f1a71510d36"
+    "sealedAt": "2026-11-06T19:37:07.049Z",
+    "contentSha256": "781883cc07ddc2bc5cba9aeee751d4d77e211cb1f4d8883f91904c6c60004567"
   }
 }
