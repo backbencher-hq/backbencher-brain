@@ -2,15 +2,13 @@
   "issue": "649",
   "code": "H1",
   "milestone": "M42",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 25,
-  "passed": 24,
-  "failed": 1,
-  "failures": [
-    "H1/R5: warm p95 <= 25ms over 200 individually-timed requests (a real p95, not a mean): p95=30.54ms p50=10.48ms max=40.83ms over n=200"
-  ],
+  "passed": 25,
+  "failed": 0,
+  "failures": [],
   "verdict": {
-    "realComponentFailures": 1,
+    "realComponentFailures": 0,
     "mutantsCaught": 8,
     "mutantsTotal": 8,
     "ok": true
@@ -43,8 +41,8 @@
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
-  "sourceFingerprint": "2666051bade29b676a4d8f427bca2d1270f8ea7c8acb8d0e51c260625801b9a8",
+  "currentCommit": "9757a43ea1fdeaa08fb84f111b4d77b9e260d5fd",
+  "sourceFingerprint": "c118768672e9a7df76b89339d32c5be561304af82b0bab1f8587040a1f694d70",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m42/verify-highlight.ts",
@@ -59,16 +57,16 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-10-17T17:23:38.060Z",
+  "generatedAt": "2026-11-06T19:01:41.796Z",
   "limitations": [
-    "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
+    "Lane 6: the warm budget is now a REAL p95 — 200 individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
     "R7 is a LEXICAL scan for try-guarded parseForSafety calls across src/lsp; it cannot prove a handler's catch clause does the right thing, only that a guard exists. The behavioural R6/M5 legs own that half.",
     "The declared tier is observable at the component layer only: server.ts:589 collapses every empty highlight result to wire null, so a client cannot distinguish unsupported_language from not_indexed. That mapping is in a file this lane does not own."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:23:38.064Z",
-    "contentSha256": "99e1f63bd7f3001992df11db7e07403d40073e74b583224cfac024e0dfa47a69"
+    "sealedAt": "2026-11-06T19:01:41.796Z",
+    "contentSha256": "3e89229862c04aa4ef64d1cb9a807f10562a432caa533c13dce5bb923ac39054"
   }
 }

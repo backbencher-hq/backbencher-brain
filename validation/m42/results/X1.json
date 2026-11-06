@@ -4,39 +4,31 @@
   "milestone": "M42",
   "status": "known-gap",
   "checks": 33,
-  "passed": 20,
-  "failed": 13,
+  "passed": 28,
+  "failed": 5,
   "failures": [
-    "X1: M24 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — L1:stale-commit,L3:stale-commit  (exit=1)",
-    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) — E5=known-gap  (exit=1)",
-    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (64/70 passed, 10 negative)  (exit=1)",
-    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (67/73 passed, 11 negative)  (exit=1)",
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (74/79 passed, 17 negative)  (exit=1)",
-    "X1: M29 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — R1:status-mismatch,R2:persisted-failed,R2:stale-commit,R3:persisted-failed,R3:stale-commit,R4:stale-commit,R5:stale-commit,V1:status-mismatch,D1:status-mismatch,X1:persisted-failed,X1:stale-commit  (exit=1)",
     "X1: M42-H1 ladder run green at HEAD: R1: fixture index (real indexer)  (exit=1)",
-    "X1: M42-H2 ladder run green at HEAD: H2: KNOWN-GAP (67/70 passed, 6/7 mutants caught, 1 not judged)  (exit=1)",
     "X1: M42-H3 ladder run green at HEAD: R1: fixture index + enrichment presence (real indexer)  (exit=1)",
     "X1: M42-H4 ladder run green at HEAD: R1: fixture index (real indexer)  (exit=1)",
     "X1: M42-H5 ladder run green at HEAD: R1: fixture index (real indexer)  (exit=1)",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:H1 not evidence-verified; pre1:H2 not evidence-verified; pre1:H3 not evidence-verified; pre1:H4 not evidence-verified; pre2:ladder leg M24 failed (exit=1); pre2:ladder leg M25 failed (exit=1); pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1); pre2:ladder leg M42-H1 ",
-    "X1: the leg for THIS host (linux) is the measured one, stamped at this HEAD: host leg: verified commit=9bc9cec9 (HEAD=60b9444a)"
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:H1 not evidence-verified; pre1:H3 not evidence-verified; pre2:ladder leg M42-H1 failed (exit=1); pre2:ladder leg M42-H3 failed (exit=1); pre2:ladder leg M42-H4 failed (exit=1); pre2:ladder leg M42-H5 failed (exit=1)"
   ],
   "negativeCases": 7,
   "suiteExits": {
-    "M24": 1,
-    "M25": 1,
-    "M26": 1,
-    "M27": 1,
-    "M28": 1,
-    "M29": 1,
+    "M24": 0,
+    "M25": 0,
+    "M26": 0,
+    "M27": 0,
+    "M28": 0,
+    "M29": 0,
     "M42-H1": 1,
-    "M42-H2": 1,
+    "M42-H2": 0,
     "M42-H3": 1,
     "M42-H4": 1,
     "M42-H5": 1,
     "M42-H6": 0
   },
-  "currentCommit": "60b9444a7889b45600dd0f233d702c97b994c303",
+  "currentCommit": "9757a43ea1fdeaa08fb84f111b4d77b9e260d5fd",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -51,7 +43,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-05T14:03:20.786Z",
+  "generatedAt": "2026-11-06T18:49:01.952Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
@@ -59,7 +51,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:03:20.787Z",
-    "contentSha256": "72935c2d85185070a3f3cbe59173e3c805ca02f1479270da461892abd2d673f0"
+    "sealedAt": "2026-11-06T18:49:01.952Z",
+    "contentSha256": "5ba8aa6678eab2a78b1e9bbb803c79b9ee5e20c44c17e76ba295d66ef85065bf"
   }
 }

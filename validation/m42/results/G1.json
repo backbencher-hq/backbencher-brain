@@ -7,13 +7,11 @@
   "passed": 28,
   "failed": 2,
   "negativeCases": 7,
-  "currentCommit": "d3a84d5eff9a2f02a7125a3f9a7a7ccfd0195aff",
-  "workingTreeRelevantChanges": [
-    "package.json"
-  ],
+  "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-15T23:51:38.011Z",
+  "generatedAt": "2026-11-05T23:25:57.326Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -28,10 +26,10 @@
     "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",
     "A run with relevant uncommitted M42 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) - relevant uncommitted files at measure time: package.json",
+  "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-15T23:51:38.112Z",
-    "contentSha256": "8cb9eddac8b6d6d88efafed6ea98eef0498e7fd9d6a96e91ee1d8707b4293be2"
+    "sealedAt": "2026-11-05T23:25:57.338Z",
+    "contentSha256": "40ca33a2a6f799eede33a14b479b3582b638ec7700fa9a0ce2f6df2d10f9d5e2"
   }
 }

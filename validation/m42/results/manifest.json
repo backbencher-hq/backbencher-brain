@@ -26,13 +26,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "d3a84d5eff9a2f02a7125a3f9a7a7ccfd0195aff",
+        "currentCommit": "08d75fb9cbbcd93c031c66b9ed4510323acc7a5d",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 28,
+        "passed": 23,
         "failed": 2,
         "negativeCases": 7,
-        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) - relevant uncommitted files at measure time: package.json"
+        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
       }
     },
     {
@@ -53,7 +53,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
         "passed": 24,
@@ -68,7 +68,7 @@
       "code": "H2",
       "githubIssue": 650,
       "tool": "lsp-hover-composition",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Connected-summary + clickable top usages + definition link in the hover markdown; composes with tiers/staleness/cross-language",
       "acceptanceCriteria": [
         "fixture-first: expected markdown authored before the change (RED then GREEN)",
@@ -82,15 +82,15 @@
         "editor leg evidence"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "status": "verified",
+        "currentCommit": "b1a0e77d8474fdc63c5ac7ceb3a37130bdc82fe5",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
-        "passed": 69,
-        "failed": 2,
+        "passed": 71,
+        "failed": 0,
         "editorLeg": "E5 43/43 (shared H2 assertions + bb.openUsage/openDefinition clicks in real VS Code)",
         "blockedReason": "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
-        "realFailed": 2,
+        "realFailed": 0,
         "mutantsCaught": 7,
         "mutantsTotal": 7
       }
@@ -114,7 +114,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
         "passed": 28,
@@ -130,7 +130,7 @@
       "code": "H4",
       "githubIssue": 652,
       "tool": "lsp-hover-actions",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Command URIs (open in graph, impact, call hierarchy) in the hover; server-side symbol resolution; honest error surface",
       "acceptanceCriteria": [
         "fixture-first: exact command + argument contract authored before implementation (RED then GREEN)",
@@ -144,15 +144,15 @@
         "docs drift gate green"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "status": "verified",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
-        "passed": 32,
-        "failed": 1,
+        "passed": 33,
+        "failed": 0,
         "editorLeg": "E5 57/57 (actions row + real clicks through bb.openGraph/openImpact/showCallHierarchy in VS Code; impact panel over the real client)",
         "blockedReason": "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless",
-        "realFailed": 1,
+        "realFailed": 0,
         "negativeCases": 5,
         "mutantsCaught": 5,
         "mutantsTotal": 5
@@ -177,7 +177,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
         "passed": 43,
@@ -207,10 +207,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "b1a0e77d8474fdc63c5ac7ceb3a37130bdc82fe5",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
-        "passed": 39,
+        "passed": 38,
         "failed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
@@ -236,11 +236,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2c8204aecd491199180f67c2ef6164ae291d18ff",
+        "currentCommit": "b1a0e77d8474fdc63c5ac7ceb3a37130bdc82fe5",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 19,
-        "failed": 14,
+        "passed": 22,
+        "failed": 11,
         "negativeCases": 7,
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)",
         "blockedReason": "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run."
@@ -249,7 +249,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T16:32:19.716Z",
-    "contentSha256": "45f8bdc29140fd6ef6126fbb06da29ca3552835c46537ba02ce4004eeea08f4b"
+    "sealedAt": "2026-11-05T23:25:57.337Z",
+    "contentSha256": "d5439e12bd61f22e73fc354375a1cc131476799301fd6f5a82e67b216c0355c0"
   }
 }

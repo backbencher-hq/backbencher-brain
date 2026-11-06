@@ -39,7 +39,8 @@
 
 import { execFileSync } from "node:child_process"
 import { spawn } from "node:child_process"
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync, mkdtempSync} from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { H2_FILE_APP, H2_REL_APP, H2_REL_MAIN2, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import { writeSealed } from "../lib/evidence.ts"
@@ -124,6 +125,13 @@ if (!existsSync(path.join(ROOT, "dist/lsp/server.js"))) {
   console.log("  (dist missing — building)")
   execFileSync("npx", ["tsup"], { cwd: ROOT, stdio: ["ignore", "ignore", "inherit"], timeout: 420_000 })
 }
+// Isolated store (same defect class as H1): the fixture index and the server
+// this suite starts both inherit BB_DATA_DIR, so the gate never reads or writes
+// the machine's ~/.bb - which is read-only on this host and made R1 fail with
+// an EROFS that read like a product defect.
+const dataDir = mkdtempSync(path.join(os.tmpdir(), "m42-hub-data-"))
+process.env.BB_DATA_DIR = dataDir
+
 const idxOut = execFileSync(BB, ["index", H2_ROOT, "--no-setup"], { cwd: ROOT, encoding: "utf8", timeout: 300_000, stdio: ["ignore", "pipe", "inherit"] })
 check("H5/R1: fixture indexes cleanly", /indexed 2 files/.test(idxOut), idxOut.split("\n").find((l) => l.includes("indexed")) ?? "")
 

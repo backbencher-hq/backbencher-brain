@@ -24,7 +24,8 @@
 
 import { execFileSync } from "node:child_process"
 import { spawn } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync, mkdtempSync} from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import { statSync, readdirSync } from "node:fs"
@@ -72,13 +73,20 @@ writeH2Fixture()
 if (!existsSync(path.join(ROOT, "dist/lsp/server.js"))) {
   execFileSync("npx", ["tsup"], { cwd: ROOT, stdio: ["ignore", "ignore", "inherit"], timeout: 420_000 })
 }
+// Isolated store (same defect class as H1): the fixture index and the server
+// this suite starts both inherit BB_DATA_DIR, so the gate never reads or writes
+// the machine's ~/.bb - which is read-only on this host and made R1 fail with
+// an EROFS that read like a product defect.
+const dataDir = mkdtempSync(path.join(os.tmpdir(), "m42-h3-data-"))
+process.env.BB_DATA_DIR = dataDir
+
 execFileSync(BB, ["index", H2_ROOT, "--no-setup"], { cwd: ROOT, encoding: "utf8", timeout: 300_000, stdio: ["ignore", "pipe", "inherit"] })
 // Read the fixture db the indexer just wrote (project dir is deterministic by
 // root path — the newest project dir with our root).
-// The fixture db is the newest project under ~/.bb (this verifier just indexed
+// The fixture db is the newest project under the isolated BB_DATA_DIR (this verifier just indexed
 // it). Project dirs are keyed by root path, so this is the H2 fixture db.
-const projDir = readdirSync(path.join(process.env.HOME ?? "", ".bb/projects"))
-  .map((p) => path.join(process.env.HOME ?? "", ".bb/projects", p))
+const projDir = readdirSync(path.join(dataDir, "projects"))
+  .map((p) => path.join(dataDir, "projects", p))
   .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)
   .find((p) => existsSync(path.join(p, "brain.db")))
 let enrichedRows = -1

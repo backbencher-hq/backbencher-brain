@@ -42,7 +42,7 @@
 import { execFileSync } from "node:child_process"
 import { spawn } from "node:child_process"
 import { createHash } from "node:crypto"
-import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, realpathSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, realpathSync, mkdtempSync } from "node:fs"
 import Database from "better-sqlite3"
 import os from "node:os"
 import path from "node:path"
@@ -126,6 +126,22 @@ function mutant(label: string, caught: boolean, detail = ""): void {
 
 const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
 
+// The fixture index goes into an ISOLATED data dir, not the developer's store.
+// Both the indexer and the server this suite starts inherit BB_DATA_DIR, so the
+// gate reads a store it created and can never read (or write) the machine's
+// ~/.bb. Found live: on a host whose $HOME is read-only the indexer died with
+// EROFS and this gate reported "R1: fixture index (real indexer)" — a red that
+// said nothing about the product and everything about the environment. The
+// sibling H2 suite already worked this way.
+const dataDir = mkdtempSync(path.join(os.tmpdir(), "m42-h1-data-"))
+process.env.BB_DATA_DIR = dataDir
+
+// The warm-budget sample count is module scope because the record's limitation
+// text states it. It used to be declared inside the measurement block, so the
+// limitation interpolated an out-of-scope name and every run died with
+// "WARM_SAMPLES is not defined" while writing its own evidence.
+const WARM_SAMPLES = 200
+
 // --- R1: fixture indexed -----------------------------------------------------------------
 console.log("R1: fixture index (real indexer)")
 writeH1Fixture()
@@ -189,7 +205,6 @@ class StdioLsp {
   }
 }
 
-const dataDir = path.join(os.homedir(), ".bb")
 const lsp = new StdioLsp(H1_ROOT)
 const fileUri = `file://${H1_FILE}`
 
@@ -250,7 +265,6 @@ try {
   // percentile read off. The sample count is stated because a percentile of the
   // samples drawn is not the distribution. Cold is reported separately, as §3
   // defines it (fresh process, first request, one-time WASM init included).
-  const WARM_SAMPLES = 200
   const warmSamples: number[] = []
   for (let i = 0; i < WARM_SAMPLES; i++) {
     const s = performance.now()
@@ -504,7 +518,7 @@ const result = {
   evidenceFile: "H1.json",
   generatedAt: new Date().toISOString(),
   limitations: [
-    "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
+    `Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.`,
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
     "R7 is a LEXICAL scan for try-guarded parseForSafety calls across src/lsp; it cannot prove a handler's catch clause does the right thing, only that a guard exists. The behavioural R6/M5 legs own that half.",
     "The declared tier is observable at the component layer only: server.ts:589 collapses every empty highlight result to wire null, so a client cannot distinguish unsupported_language from not_indexed. That mapping is in a file this lane does not own.",
