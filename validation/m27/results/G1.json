@@ -7,24 +7,24 @@
   "passed": 70,
   "failed": 1,
   "negativeCases": 11,
-  "currentCommit": "098b6c3ba26965da405b1e73d7956970ccad9ac8",
+  "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T20:21:29.567Z",
+  "generatedAt": "2026-11-06T20:24:41.671Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
     "m26GateExit": 1
   },
-  "blockedReason": "not verified at 098b6c3ba26965da405b1e73d7956970ccad9ac8: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)",
+  "blockedReason": "not verified at 4116f3b10c260be7f2d5af49820638a7b6befd0b: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)",
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters.",
     "A run with relevant uncommitted M27 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:21:29.569Z",
-    "contentSha256": "8c537fff74ea5644beef456ced99135f8b2665c02546538367082087a660376e"
+    "sealedAt": "2026-11-06T20:24:41.673Z",
+    "contentSha256": "76dc2158a3f2266478b63904182d661749f1204656fc5794993d56bef7179b39"
   }
 }
