@@ -2,7 +2,7 @@
   "issue": "495",
   "code": "V1",
   "status": "verified",
-  "currentCommit": "0d9394a24cef231e8aa49a397dd254957eeff983",
+  "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
   "sourceFingerprint": "5218e730873641d38378ce9c519e2a9c80832517a794dc9b91b1db3298b407f9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-11-05T14:57:10.935Z",
+  "generatedAt": "2026-11-06T22:34:20.064Z",
   "passed": 26,
   "failed": 0,
   "failures": [],
@@ -26,9 +26,9 @@
     {
       "runtime": "node-source",
       "status": "verified",
-      "commit": "0d9394a24cef231e8aa49a397dd254957eeff983",
+      "commit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
       "machine": {
-        "kernel": "Linux 7.2.6-76070206-generic",
+        "kernel": "Linux 7.2.15-76070215-generic",
         "kernelSource": "os.type() + os.release()",
         "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "cpuSource": "os.cpus()[0].model",
@@ -46,43 +46,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 8.031865999999809,
+          "p95WarmMs": 8.539598000000296,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 3.05814700000019,
+          "p95WarmMs": 2.79939800000011,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 2.915903000000071,
+          "p95WarmMs": 2.6811069999998836,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 3.6686429999999746,
+          "p95WarmMs": 2.6210869999999886,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 2.959723999999369,
+          "p95WarmMs": 2.6954980000000432,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 3.194695999999567,
+          "p95WarmMs": 2.865810000000238,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 3.8256499999997686,
+          "p95WarmMs": 3.9876640000002226,
           "samples": 60,
           "passed": true
         }
@@ -91,9 +91,9 @@
     {
       "runtime": "node-dist",
       "status": "verified",
-      "commit": "0d9394a24cef231e8aa49a397dd254957eeff983",
+      "commit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
       "machine": {
-        "kernel": "Linux 7.2.6-76070206-generic",
+        "kernel": "Linux 7.2.15-76070215-generic",
         "kernelSource": "os.type() + os.release()",
         "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "cpuSource": "os.cpus()[0].model",
@@ -111,43 +111,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 7.790612000000692,
+          "p95WarmMs": 6.922629999999117,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 2.3614219999999477,
+          "p95WarmMs": 2.3857649999990826,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 2.997624999999971,
+          "p95WarmMs": 2.5146439999989525,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 2.6048680000003515,
+          "p95WarmMs": 2.5012669999996433,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 4.477498999998716,
+          "p95WarmMs": 2.389844000001176,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 2.5967390000005253,
+          "p95WarmMs": 2.20781100000022,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 3.4234900000010384,
+          "p95WarmMs": 3.266389000000345,
           "samples": 60,
           "passed": true
         }
@@ -156,9 +156,9 @@
     {
       "runtime": "bun-source",
       "status": "verified",
-      "commit": "0d9394a24cef231e8aa49a397dd254957eeff983",
+      "commit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
       "machine": {
-        "kernel": "Linux 7.2.6-76070206-generic",
+        "kernel": "Linux 7.2.15-76070215-generic",
         "kernelSource": "os.type() + os.release()",
         "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "cpuSource": "os.cpus()[0].model",
@@ -176,43 +176,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 9.872645999999804,
+          "p95WarmMs": 8.557168999999703,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 5.07607199999984,
+          "p95WarmMs": 3.723869999999806,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 4.461131000000023,
+          "p95WarmMs": 3.038289000000077,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 4.793628000001263,
+          "p95WarmMs": 3.595854999999574,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 3.70991099999992,
+          "p95WarmMs": 2.9246600000005856,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 4.018590000001495,
+          "p95WarmMs": 2.9289930000013555,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 5.585458000001381,
+          "p95WarmMs": 4.0683140000001,
           "samples": 60,
           "passed": true
         }
@@ -223,13 +223,13 @@
     "rule": "every §3 machine fact is a measurement with declared provenance; a fact that cannot be determined is a DECLARED ABSENCE (null) WITH a reason — never 0, never \"\"",
     "owner": "script/m24/lsp_harness.ts machineFacts() — node:os only (os.type/os.release, os.cpus, os.totalmem), no uname, no /proc, no shell",
     "liveReference": {
-      "kernel": "Linux 7.2.6-76070206-generic",
+      "kernel": "Linux 7.2.15-76070215-generic",
       "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
       "ramGb": 16.6
     },
     "measuredOs": {
       "platform": "linux",
-      "release": "7.2.6-76070206-generic",
+      "release": "7.2.15-76070215-generic",
       "arch": "x64"
     },
     "declaredAbsentOses": [
@@ -291,7 +291,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:57:10.940Z",
-    "contentSha256": "618aabe80f8ddfafe3f8de327ee46e2f628e334300ebfaf9ac4a58a9d14fc219"
+    "sealedAt": "2026-11-06T22:34:20.069Z",
+    "contentSha256": "54c4698b33bb7d32c677011498732957f480eb58c9f9c3d84f4aca94b8f24e05"
   }
 }
