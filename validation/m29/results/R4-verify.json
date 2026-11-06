@@ -11,7 +11,7 @@
     "mutantsTotal": 6,
     "ok": true
   },
-  "currentCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "currentCommit": "9b3aecfc39129c9528a08fa5285ebe184b132a85",
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "sourceFingerprint": "a0ad3bbf7af3cba93b43b6164e66fb6fad4d7ff18aec36b82a7a5b87d6362cd2",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -23,11 +23,11 @@
     "script/m29/wave-protocol.ts"
   ],
   "evidenceFile": "R4-verify.json",
-  "generatedAt": "2026-11-06T05:59:41.508Z",
+  "generatedAt": "2026-11-06T16:59:35.329Z",
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T05:59:41.508Z",
-    "contentSha256": "9b0354e87635bcdb7875162e57ae2cdac943d451e6f23751a2ed10793aeecb8c"
+    "sealedAt": "2026-11-06T16:59:35.329Z",
+    "contentSha256": "7c11be8c94991a77f35e649a517317002b18e33e566d7c5b51e0335555eda4f5"
   }
 }
