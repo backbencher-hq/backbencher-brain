@@ -4,33 +4,24 @@
   "milestone": "M44",
   "status": "known-gap",
   "checks": 53,
-  "passed": 43,
-  "failed": 10,
+  "passed": 52,
+  "failed": 1,
   "failures": [
-    "X1: M24 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — L2:persisted-failed,V1:persisted-failed,D1:persisted-failed  (exit=1)",
-    "X1: M25 ladder run green at HEAD: FAIL: G1: E6 capability matrix matches its evidence files (no drift, no hand-edited claims) — antigravity:row-claims-without-evidence  (exit=1)",
-    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (65/70 passed, 10 negative)  (exit=1)",
-    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (70/75 passed, 13 negative)  (exit=1)",
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (75/79 passed, 17 negative)  (exit=1)",
-    "X1: M29 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — R1:persisted-failed,R1:stale-commit,R2:persisted-failed,R3:persisted-failed,V1:persisted-failed,D1:persisted-failed,X1:persisted-failed  (exit=1)",
-    "X1: M42-H1 ladder run green at HEAD: H1: KNOWN-GAP (24/25 passed, 8/8 mutants)  (exit=1)",
-    "X1: M42-H2 ladder run green at HEAD: H2: KNOWN-GAP (69/71 passed, 7/7 mutants caught, 0 not judged)  (exit=1)",
-    "X1: M42-H3 ladder run green at HEAD: H3: KNOWN-GAP (28/29 passed, 5/5 mutants)  (exit=1)",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre2:ladder leg M24 failed (exit=1); pre2:ladder leg M25 failed (exit=1); pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1); pre2:ladder leg M42-H1 failed (exit=1); pre2:ladder leg M42-H2 failed (exit=1); pre2:ladder leg M42-H3 failed (exit=1); pre5-declared-absence:5 for"
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre5-declared-absence:5 fork leg(s) declared absent with a reason on this machine - not a closure violation (contract §2 I4, §8.3); pre6:EVIDENCE row Hub in-editor (forks) — Cursor + Antigravity exercised through the same suite file validation/m25/results/F-CURSOR.json is blocked"
   ],
   "negativeCases": 8,
   "suiteExits": {
     "E5": 0,
     "E6": 0,
-    "M24": 1,
-    "M25": 1,
-    "M26": 1,
-    "M27": 1,
-    "M28": 1,
-    "M29": 1,
-    "M42-H1": 1,
-    "M42-H2": 1,
-    "M42-H3": 1,
+    "M24": 0,
+    "M25": 0,
+    "M26": 0,
+    "M27": 0,
+    "M28": 0,
+    "M29": 0,
+    "M42-H1": 0,
+    "M42-H2": 0,
+    "M42-H3": 0,
     "M42-H4": 0,
     "M42-H5": 0,
     "M42-H6": 0,
@@ -44,7 +35,7 @@
     "e5": "validation/m25/results/E5.json (re-run at this HEAD — full suite incl. the M44 hub legs)",
     "e6": "validation/m25/results/F-CURSOR.json + F-ANTIGRAVITY.json (re-run at this HEAD, terminal gate 26→88); F-WINDSURF blocked-with-reason"
   },
-  "currentCommit": "5d60bc57e31c62eb15801cbba8e7608a21bd81a8",
+  "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
   "verifierCommand": "npx tsx script/m44/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -58,7 +49,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-10-17T17:28:59.731Z",
+  "generatedAt": "2026-11-06T19:13:16.446Z",
   "limitations": [
     "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
@@ -67,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T17:28:59.731Z",
-    "contentSha256": "80dc06c5afcc981d67b7d693e28f2c5ccd210a2c880cecf6397f97314e3bb198"
+    "sealedAt": "2026-11-06T19:13:16.446Z",
+    "contentSha256": "0d056417894b555a27db1bdc730725b0b0ac68aae1a30ecd87a00ec1d32a5d27"
   }
 }

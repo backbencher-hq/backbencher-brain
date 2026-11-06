@@ -10,10 +10,10 @@
   "negativeCases": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "639b9f284bd6da2dcded5b9617aa7ee8c04d1dd6",
+  "currentCommit": "36e0aa03f1ad28067964f053db16179f9a1290df",
   "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-10-17T18:29:56.476Z",
+  "generatedAt": "2026-11-06T19:13:49.105Z",
   "deliverable": {
     "rowAnatomy": "name-first bb-hub-row-main (name + file:line meta) -> relchips (per-type counts + W4 tier) -> enrichment chip (presence-gated) -> chevron; all inside the row (the bridge's click target)",
     "affordance": "data-clickable=1 iff the bridge can navigate (file+line resolved); tabindex=0 + chevron on navigable rows; un-navigable rows declare data-clickable=0, no tab stop, no navigate chevron (SS13.3, visible without hover via left accent + chevron; hover/focus intensify)",
@@ -30,7 +30,7 @@
   "derivedFrom": {
     "record": "validation/m26/results/V1.json",
     "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
-    "contentSha256": "dc2a14388cd4032e4a42e179856e27c82b1d2a27a26b2b9cb08ececa04ad0db8",
+    "contentSha256": "1efe64105cf0d7e5fff0f16fdf85fe0d8fbddc760bfa8c5f8eb1fd4c378fcb62",
     "rule": "U2's acceptance is the m26 webview harness DOM suite; this record is its derivation (M44.U2 owner gate script/m44/verify-hub-list.ts)"
   },
   "limitations": [
@@ -39,7 +39,7 @@
     "This record is a DERIVATION of the m26 webview harness run it names: it re-states that run's numbers and pin, and adds no proof of its own. The harness's record is the evidence; a red or missing harness run derives a RED U2 (law L2)."
   ],
   "derivationErrors": [],
-  "gateCommit": "0df683b360ce4f067c230d81ebcf6c7f0cbea996",
+  "gateCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
   "sourceFingerprint": "0c39d192c6b71f67f9f053c398be0f4fbd31a2d1a3316d53fb75ae1aeabab91a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -49,7 +49,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T18:29:56.477Z",
-    "contentSha256": "e51eb3350bcdc65090bfec69e681640a6fc55e77eb0b036ab95e36d3abc3b0dc"
+    "sealedAt": "2026-11-06T19:13:49.106Z",
+    "contentSha256": "ec6a89a43c364d7e82cd400180002aa472e2cf9df5505428151d24c88e8f835e"
   }
 }
