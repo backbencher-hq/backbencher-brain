@@ -7,11 +7,11 @@
   "passed": 28,
   "failed": 1,
   "negativeCases": 11,
-  "currentCommit": "19ee03da1e252bbb4c217fb3db88691578a8282e",
+  "currentCommit": "73d0e487b78135c49ec435534e4bb164f26ab854",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T23:44:53.218Z",
+  "generatedAt": "2026-11-06T23:44:58.193Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
@@ -20,7 +20,7 @@
   "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:44:53.244Z",
-    "contentSha256": "65c8cbdd78f34c21a0393bbc3b140051f1a603b05cf26990cb80f85cbd6f3fa2"
+    "sealedAt": "2026-11-06T23:44:58.225Z",
+    "contentSha256": "95a681208915434995923cf17f1dc707c03096a1f2f27a452f0828ed8da9be61"
   }
 }
