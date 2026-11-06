@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "8d4513ab338254091ce288887c2dfb1a8824f396",
+        "currentCommit": "2174ecf70ff9b57d3daeefa2d5b3b41c3c36681b",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
@@ -80,18 +80,18 @@
       "code": "P2",
       "githubIssue": 489,
       "tool": "lsp-freshness",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
+        "status": "verified",
+        "currentCommit": "6bacc2e639aaebe6e90c6cb8997aa4ac63806616",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
-        "passed": 23,
-        "failed": 11,
+        "passed": 34,
+        "failed": 0,
         "negativeCases": 6,
         "blockedReason": "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
-        "realFailed": 10,
+        "realFailed": 0,
         "mutantsCaught": 6,
         "mutantsTotal": 6
       },
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:45:24.813Z",
-    "contentSha256": "91c4ca81f38b365333ccd9cb024b88aef6741156226fb28b459534a0607c1b6d"
+    "sealedAt": "2026-11-06T23:52:22.613Z",
+    "contentSha256": "6c3d8f311e11b7151e76ac14120e90f1129c96d5c0f919812d74432fe3133bbc"
   }
 }
