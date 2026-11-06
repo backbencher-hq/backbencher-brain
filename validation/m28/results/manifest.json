@@ -266,8 +266,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:53:11.886Z",
-    "contentSha256": "321f3d4243c8948a5376e88d47b74da2933c48880ff6a435afbbe95cc1ca9756"
+    "sealedAt": "2026-11-06T20:53:17.836Z",
+    "contentSha256": "65b903cfcd1bccf18c1e4d1f546de55f095701fe369bf148451bc4deed5ada3a"
   },
-  "updatedAt": "2026-11-06T20:53:11.886Z"
+  "updatedAt": "2026-11-06T20:53:17.836Z"
 }

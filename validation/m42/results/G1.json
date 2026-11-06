@@ -7,11 +7,11 @@
   "passed": 29,
   "failed": 1,
   "negativeCases": 7,
-  "currentCommit": "5f3cb4b51b7487279c9ba7d127497d3a0897c31a",
+  "currentCommit": "1bd026a43489ad652b402d62232299b40b614760",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-06T20:53:12.149Z",
+  "generatedAt": "2026-11-06T20:53:18.095Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -29,7 +29,7 @@
   "blockedReason": "1 check(s) failed: G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:53:12.160Z",
-    "contentSha256": "21e89ed34360bc8229926a835b3b7914f940ad12e0317ede439563751a076299"
+    "sealedAt": "2026-11-06T20:53:18.104Z",
+    "contentSha256": "fdcced0fe6e4b1d17246c6c372e5816068eb480c8c6ce76610bb92886b5a2026"
   }
 }
