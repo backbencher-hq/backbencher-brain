@@ -30,12 +30,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "465e4c7e1245cb962b3bcf18c0eb2cb485c27d64",
+        "currentCommit": "e5bd6381e5bf5e80ccd6bd09edede6881a32a42f",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 74,
+        "passed": 72,
         "failed": 0,
-        "negativeCases": 14,
+        "negativeCases": 12,
         "blockedReason": "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify MCP tools or annotations."
       }
     },
@@ -266,8 +266,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T17:47:43.383Z",
-    "contentSha256": "f107092302417134742e6a992ba008308ab29483a288ecbafd068ee1f656514f"
+    "sealedAt": "2026-11-06T17:56:35.168Z",
+    "contentSha256": "9e85118214458fb0359d87216fb66ffc82ce5ce2565d8a303df582ee1b9ef988"
   },
-  "updatedAt": "2026-11-06T17:47:43.383Z"
+  "updatedAt": "2026-11-06T17:56:35.168Z"
 }
