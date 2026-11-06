@@ -200,8 +200,20 @@ export function projectEntry(
     if (key === "negativeCases") {
       // m61 nests its negatives as an object: `negatives: { total, caught }`,
       // or `{ planned }` in the older shape.
+      //
+      // The `planned` branch was DOCUMENTED here and MISSING from the code
+      // (found live on m29.R3: `negatives: { planned: 6 }` projected as an
+      // absent count, so the entry was rewritten to `hollow-verified:R3` even
+      // though the record states six negative cases that all fired). A comment
+      // that promises a shape the reader does not implement is worse than no
+      // comment: the next author trusts it and the heal silently drops a real
+      // proof. `planned` is the older m29 shape and it is the only count those
+      // records carry, so it is read after the newer spellings.
       const negs = record.negatives
-      if (negs && typeof negs === "object") return num((negs as Record<string, unknown>).total) ?? num((negs as Record<string, unknown>).caught)
+      if (negs && typeof negs === "object") {
+        const nested = negs as Record<string, unknown>
+        return num(nested.total) ?? num(nested.caught) ?? num(nested.planned)
+      }
       const scalar = num(record.negatives)
       if (scalar !== undefined) return scalar
     }
