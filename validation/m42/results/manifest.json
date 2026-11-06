@@ -3,7 +3,7 @@
   "milestone": "M42",
   "githubMilestone": 42,
   "title": "The Interactive Hover (IDE v6)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m42/M42-MASTER-PLAN.md (Issues / Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§12 Hover Interaction Rules, M42 amendment)",
   "prerequisite": "M29 completion bar met — verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
@@ -26,7 +26,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "09eb87b24706c037a40f99e6abbff06a6e88c49d",
+        "currentCommit": "4120f51c6600f6f83cab38577f1297c4657a16ab",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 25,
@@ -53,7 +53,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
         "passed": 25,
@@ -84,7 +84,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
         "passed": 71,
@@ -116,7 +116,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
         "passed": 29,
@@ -148,7 +148,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
         "passed": 33,
@@ -180,7 +180,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
         "passed": 43,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
         "passed": 38,
@@ -225,7 +225,7 @@
       "code": "X1",
       "githubIssue": 655,
       "tool": "closure-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Program closure for M42 + launch bar: full-ladder audit at HEAD, OS matrix via CI, OpenVSX publish, known-gaps inventory fixed-or-owner-waived, owner spot-check prepared",
       "acceptanceCriteria": [
         "ladder green at HEAD (single-pass fixpoint, machine-readable mutant verdicts)",
@@ -238,12 +238,12 @@
         "board clean: placeholders closed, no silent gaps"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "a903ff5acb80602740a1406a2546fb3391c91ed9",
+        "status": "verified",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 28,
-        "failed": 5,
+        "passed": 33,
+        "failed": 0,
         "negativeCases": 7,
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)",
         "blockedReason": "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run."
@@ -252,7 +252,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:54:45.511Z",
-    "contentSha256": "7f2037d3249b3dba1d0cf7110b377e91281a79b43599da7038aaef5a23d64a95"
+    "sealedAt": "2026-11-06T21:19:27.869Z",
+    "contentSha256": "1239bc36f1a29c33bbec14a5001729d64265cc64d7e11d5587864e596dee9183"
   }
 }
