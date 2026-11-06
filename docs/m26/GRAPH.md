@@ -62,7 +62,7 @@ and it says of itself that it is machine-specific; read it there.
 
 | issue | claim level |
 | --- | --- |
-| G1 | known-gap |
+| G1 | verified |
 | W1 | verified |
 | W2 | verified |
 | W3 | verified |
