@@ -148,7 +148,19 @@ if (process.argv.includes("--self-test")) {
 
 // --- The ladder --------------------------------------------------------------
 console.log(`R1: running the ${GATES.length}-gate lane ladder at ${gitHead().slice(0, 8)}`)
+// The wave legs above RE-MEASURE live timings, and those records are inputs to
+// the generated precision ledger. By the time the ledger's consumers run, the
+// on-disk ledger is one generation behind — so R4 and D1 fail on staleness the
+// ladder's own earlier legs created, not on anything the product did. The M29
+// closure already regenerates in its pass 1b for exactly this reason; the
+// ladder must do the same. Found live: this run, both consumers returned rc=1
+// with "regenerate with --write" — the remedy the gate itself names.
+const LEDGER_CONSUMERS = new Set(["m29-precision-ledger"])
 const results = GATES.map(([name, script]) => {
+  if (LEDGER_CONSUMERS.has(name)) {
+    const regen = spawnSync("npx", ["tsx", "script/m29/generate-precision-ledger.ts", "--write"], { cwd: ROOT, encoding: "utf8", timeout: 120_000 })
+    console.log(`  · regenerated the precision ledger before ${name} (rc=${regen.status ?? "?"})`)
+  }
   const r = runGate(script)
   // `?` for a timeout: neither a pass nor a content failure, and the reason is on
   // the line. A silent pass here would be the same failure as the silent skip in
