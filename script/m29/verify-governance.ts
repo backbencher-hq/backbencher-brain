@@ -323,7 +323,14 @@ function main(): void {
     "G1: ledger status matches issue states (mechanical closed/open)",
     ledger.status === (completedCodes.size === ledger.issues.length ? "closed" : "open"),
   )
-  check("G1: all 9 issue entries are unique and structurally complete", errors.length === 0, errors.join(","))
+  // Structural completeness and dependency order are judged AFTER the
+  // projection, from the ledger re-read from disk (see the post-projection
+  // block below). Judging the snapshot this gate read on entry audits a copy
+  // the projection is about to replace — the defect this file already records
+  // for its own post-projection validation ("a validator that judges a stale
+  // copy is not auditing the artifact"). It fired live: a ledger whose R3
+  // entry predated a projection fix was reported structurally hollow in the
+  // same run that healed it.
   check("G1: authority order is documented in the M29 plan", plan.includes("Decisions") || plan.includes("Issue groups"))
   check("G1: governing contract is wired", ledger.governingContract === "docs/IDE-HONESTY-CONTRACT.md" && contract.includes("Claim levels"))
   check("G1: planned work has no fabricated evidence", ledger.issues.every((issue) => (issue.status === "planned" ? !issue.evidence : true)))
@@ -613,6 +620,11 @@ function main(): void {
 {
   const readBack = parseSealedRecord(ledgerPath) as unknown as typeof ledger
   const postErrors = validateLedger(readBack, plan, contract)
+  check(
+    "G1: all 9 issue entries are unique and structurally complete (post-projection ledger on disk)",
+    postErrors.length === 0,
+    postErrors.join(","),
+  )
   check(
     "G1: the ledger VALIDATES WHOLE as it now stands on disk (post-projection, not the pre-projection snapshot)",
     postErrors.length === 0,
