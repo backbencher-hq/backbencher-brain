@@ -22,11 +22,11 @@
     "note": "A mutant whose module will not import exercises no §13.6 path. This gate booked that as a catch — PROVEN twice: a mutant whose replacement was a bare syntax error printed 'mutant caught', and M4 (the hover-link mutant, written to validation/m44/ where src/lsp/rich_hover.ts's relative imports do not resolve) could never load at all, so the one mutant that proves the link carries the symbol had ZERO coverage while the record read 4/4. Mutants are now written beside the module they mutate, and an unevaluable mutant, a probe that cannot run, and an anchor that no longer matches are all FAILURES (§8.3 silence is guilt)."
   },
   "failures": [],
-  "currentCommit": "4116f3b10c260be7f2d5af49820638a7b6befd0b",
+  "currentCommit": "4179713b01bf0c55f5ce35e87b596a2132bd4da5",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-11-06T20:25:25.246Z",
+  "generatedAt": "2026-11-06T21:21:28.886Z",
   "fixture": {
     "root": "$HOME/mcp/backbencher-brain/.tools/m44-u6-fixture",
     "files": [
@@ -56,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:25:25.246Z",
-    "contentSha256": "cab13262625b6bd11431f78435c66a2dc18200f6c6af4c694b71650f00a12b86"
+    "sealedAt": "2026-11-06T21:21:28.887Z",
+    "contentSha256": "893352d658cd6d5ca3f7b7260fd6ead533586519cd4c68bb781597abd5811b61"
   }
 }
