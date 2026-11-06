@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -30,12 +30,12 @@
         "Clean rerun"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "8d4513ab338254091ce288887c2dfb1a8824f396",
+        "status": "verified",
+        "currentCommit": "76e3f9dd009a933a330677fdda621fc3bb08257d",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 67,
-        "failed": 2,
+        "passed": 69,
+        "failed": 0,
         "negativeCases": 10,
         "blockedReason": "2 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
       }
@@ -283,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:45:25.694Z",
-    "contentSha256": "1beb5690661a3ad50bccb61515cfb696a15742188d8c2a2e053d5322bcf48cf9"
+    "sealedAt": "2026-11-06T23:52:40.973Z",
+    "contentSha256": "bab84a9b356eaf747b213711373f56ee86cc2a17b5d9192e8201a15775f297eb"
   }
 }
