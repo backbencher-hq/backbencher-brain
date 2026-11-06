@@ -26,7 +26,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "5128d2a07448070e8782bc6e2c8fe4c21ba7d89c",
+        "currentCommit": "89bcd1c28fa2c7a33d73e19e71d49f0116a2b682",
         "verifierCommand": "npx tsx script/m44/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 26,
@@ -54,7 +54,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "currentCommit": "800075bceaa8f9e6c405f766df9888e92d02f9d9",
         "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
         "evidenceFile": "U1.json",
         "passed": 20,
@@ -115,7 +115,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "currentCommit": "800075bceaa8f9e6c405f766df9888e92d02f9d9",
         "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
         "evidenceFile": "U3.json",
         "passed": 32,
@@ -143,7 +143,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "currentCommit": "800075bceaa8f9e6c405f766df9888e92d02f9d9",
         "verifierCommand": "npx tsx script/m44/verify-legend.ts",
         "evidenceFile": "U4.json",
         "passed": 25,
@@ -172,7 +172,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "currentCommit": "800075bceaa8f9e6c405f766df9888e92d02f9d9",
         "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
         "evidenceFile": "U5.json",
         "passed": 33,
@@ -212,7 +212,7 @@
         "negativeCases": 2,
         "inEditor": "E5 88/88 (E5-U6 click leg: declared surface + data landing + identity + legacy reveal floor)",
         "docs": "docs/m44/M44-MASTER-PLAN.md U6 decision",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "currentCommit": "800075bceaa8f9e6c405f766df9888e92d02f9d9",
         "blockedReason": "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message)."
       }
     },
@@ -243,7 +243,7 @@
         "launchRecord": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows)",
         "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
         "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
-        "currentCommit": "cdb02c9d9a9fb22340bca273978c95e2385ffe70",
+        "currentCommit": "800075bceaa8f9e6c405f766df9888e92d02f9d9",
         "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs",
         "blockedReason": "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them."
       }
@@ -252,7 +252,7 @@
   "closedAt": "2026-09-09",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T19:14:02.715Z",
-    "contentSha256": "3511b8559f7a26d4c0502e16cddcd0deef62df5d06591ed35366e71b49fdebc2"
+    "sealedAt": "2026-11-06T19:20:30.852Z",
+    "contentSha256": "4bf4258184691547e9490ece42a3998edf33d99ed0f92a40ea72291f50a45ad3"
   }
 }
