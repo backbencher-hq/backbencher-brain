@@ -28,7 +28,7 @@
       ]
     }
   },
-  "currentCommit": "7c5260ab93d8dca5e048d3536b20ba0928fd5703",
+  "currentCommit": "dc87e73a84b1deaae8457ce2de814a6ca9f0f8bd",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
   "sourceFingerprint": "f4a5b32b0339c110ffa52189f2f0ed73f2a6d65fdf8d0c9edb6f0caf38e4629a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -39,10 +39,10 @@
     "src/lsp/cross_language_hover.ts"
   ],
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-11-05T21:52:47.753Z",
+  "generatedAt": "2026-11-06T17:47:19.233Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T21:52:47.754Z",
-    "contentSha256": "332159b2bc067aa5342d1e32269219e324686dbea1c3e1cb68db52b09791e277"
+    "sealedAt": "2026-11-06T17:47:19.234Z",
+    "contentSha256": "236187f0ef4a63c6b99cf600d94a7fbc7fc9db464f6c60a6d03e740327cf532c"
   }
 }
