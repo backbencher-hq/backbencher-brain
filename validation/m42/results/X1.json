@@ -2,25 +2,19 @@
   "issue": "655",
   "code": "X1",
   "milestone": "M42",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 33,
-  "passed": 28,
-  "failed": 5,
-  "failures": [
-    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (69/70 passed, 10 negative)  (exit=1)",
-    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
-    "X1: M29 ladder run green at HEAD: FAIL: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — exit=1  (exit=1)",
-    "X1: closure preconditions audited — zero violations: pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1)"
-  ],
+  "passed": 33,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 7,
   "suiteExits": {
     "M24": 0,
     "M25": 0,
-    "M26": 1,
-    "M27": 1,
-    "M28": 1,
-    "M29": 1,
+    "M26": 0,
+    "M27": 0,
+    "M28": 0,
+    "M29": 0,
     "M42-H1": 0,
     "M42-H2": 0,
     "M42-H3": 0,
@@ -28,7 +22,7 @@
     "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "a903ff5acb80602740a1406a2546fb3391c91ed9",
+  "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -43,7 +37,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-06T20:21:23.989Z",
+  "generatedAt": "2026-11-06T21:19:22.255Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
@@ -51,7 +45,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:21:23.990Z",
-    "contentSha256": "579bc81969899ae6e09577574eb12d3c76256f105e84ae0ba376a9220d8cd54a"
+    "sealedAt": "2026-11-06T21:19:22.255Z",
+    "contentSha256": "0fbcbba833ef990638dfceab0fc33e38737ef4d035737290ffdb532ccbd8621c"
   }
 }

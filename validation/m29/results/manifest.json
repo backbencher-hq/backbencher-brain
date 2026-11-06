@@ -3,7 +3,7 @@
   "milestone": "M29",
   "githubMilestone": 29,
   "title": "M29: Precision Waves (IDE v5)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m29/M29-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -30,12 +30,12 @@
         "Clean rerun"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2105774cd17f25ffb8b79e1dcca09b304ea15ab1",
+        "status": "verified",
+        "currentCommit": "df58f692d3c8936096bcef720ea66f85169f86e3",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 68,
-        "failed": 1,
+        "passed": 69,
+        "failed": 0,
         "negativeCases": 10,
         "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
@@ -282,7 +282,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T21:18:31.668Z",
-    "contentSha256": "7c4e7211ed87f6b42b40a460fd1eccdb13220060ea2fc9fd912b255a85e7a87c"
+    "sealedAt": "2026-11-06T21:18:48.803Z",
+    "contentSha256": "7dde42b4b6f172897e4e0fa573d506ab738958169bfae31b96670ad374b62f95"
   }
 }
