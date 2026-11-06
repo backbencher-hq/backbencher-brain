@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 20,
   "mutantsTotal": 20,
-  "currentCommit": "8aa9125a0f82b66c8526fe4730574efa95991431",
+  "currentCommit": "b2249dd005fa6d40c25cb9c6cd158de3ffacd92d",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
   "sourceFingerprint": "5d2c22ac08a6c3c2e5e79297c4ebe2b245b5dc6448a02b1c0ad7bc742216708e",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -17,7 +17,7 @@
     "src/lsp/impact.ts"
   ],
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-11-06T19:41:58.069Z",
+  "generatedAt": "2026-11-06T20:46:42.455Z",
   "differential": {
     "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
     "l3TotalCount": 4,
@@ -32,7 +32,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T19:41:58.070Z",
-    "contentSha256": "d40396c8b1f4524d1d54f9c214f4b0bc8aeb07728a12e2e5243d6dc0eadd1962"
+    "sealedAt": "2026-11-06T20:46:42.455Z",
+    "contentSha256": "745dd988b33b8ee9c2acb8e6b50a69843baae1c73e107aaaabeae0699338c25d"
   }
 }
