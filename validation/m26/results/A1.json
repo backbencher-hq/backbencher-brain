@@ -1,16 +1,16 @@
 {
   "issue": "M26.A1",
   "githubIssue": 615,
-  "status": "failed",
-  "passed": 10,
-  "failed": 2,
+  "status": "verified",
+  "passed": 12,
+  "failed": 0,
   "mutants": [
     {
       "name": "M1 resolveRelationships normalization suppressed",
-      "caught": false
+      "caught": true
     }
   ],
-  "mutantsCaught": 0,
+  "mutantsCaught": 1,
   "mutantsTotal": 1,
   "fixtures": {
     "java-scala": {
@@ -21,12 +21,14 @@
       ]
     },
     "ts-js": {
-      "flagged": 0,
-      "langs": "",
-      "bridges": []
+      "flagged": 2,
+      "langs": "javascript,typescript",
+      "bridges": [
+        "name-resolution"
+      ]
     }
   },
-  "currentCommit": "2445d19d95ffd277ef0400f35cab029ea05410cb",
+  "currentCommit": "a2914b9e535908b8631f8bbfd96c4a003c2a2478",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
   "sourceFingerprint": "f4a5b32b0339c110ffa52189f2f0ed73f2a6d65fdf8d0c9edb6f0caf38e4629a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -37,10 +39,10 @@
     "src/lsp/cross_language_hover.ts"
   ],
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-11-06T20:52:50.978Z",
+  "generatedAt": "2026-11-06T20:53:54.684Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T20:52:50.979Z",
-    "contentSha256": "cd17af699e4557042a79389fa24d9dd9a2e79b002e8fc897174fc3aa6ffa5cad"
+    "sealedAt": "2026-11-06T20:53:54.684Z",
+    "contentSha256": "6fea9397e1d0a7f4d7dedbb1e07802f18b2cb96bb24ac5aeca985efeb9b3d122"
   }
 }
