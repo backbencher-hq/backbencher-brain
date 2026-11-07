@@ -4,28 +4,26 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 41,
-  "passed": 31,
-  "failed": 10,
-  "realFailed": 10,
+  "passed": 36,
+  "failed": 5,
+  "realFailed": 5,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "8d296b2189fe619b82fc5a10b1f5b8c1217e777f",
-  "workingTreeRelevantChanges": [
-    "docs/m55/VERDICT-PACK.md"
-  ],
+  "currentCommit": "b63f969dfbfd42029cc06b1be5c8e0b8b8245c6a",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-05T14:30:42.015Z",
+  "generatedAt": "2026-11-07T05:28:19.924Z",
   "audit": {
-    "head": "8d296b2189fe619b82fc5a10b1f5b8c1217e777f",
+    "head": "b63f969dfbfd42029cc06b1be5c8e0b8b8245c6a",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "known-gap",
-      "pin": "238fd962f790249ef6bbfdfcc92b3fc1cbffb54d",
-      "green": 25,
+      "pin": "30c28d3e1ba1d1dd365422b64fdd1f180e2b9cbf",
+      "green": 40,
       "total": 41,
       "milestones": {
         "M24": [
@@ -52,8 +50,8 @@
           {
             "gate": "m25-closure",
             "script": "script/m25/verify-closure.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           }
         ],
         "M26": [
@@ -96,8 +94,8 @@
           {
             "gate": "m26-impact-mode",
             "script": "script/m26/verify-impact-mode.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m26-webview-harness",
@@ -108,22 +106,22 @@
           {
             "gate": "m26-closure",
             "script": "script/m26/verify-closure.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           }
         ],
         "M27": [
           {
             "gate": "m27-nvim",
             "script": "script/m27/verify-nvim.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m27-zed",
             "script": "script/m27/verify-zed.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m27-helix",
@@ -134,8 +132,8 @@
           {
             "gate": "m27-closure",
             "script": "script/m27/verify-closure.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           }
         ],
         "M28": [
@@ -180,8 +178,8 @@
           {
             "gate": "m29-precision-ledger",
             "script": "script/m29/verify-precision-ledger.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m29-precision-improvements",
@@ -192,8 +190,8 @@
           {
             "gate": "m29-m29-docs",
             "script": "script/m29/verify-m29-docs.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m29-closure",
@@ -206,26 +204,26 @@
           {
             "gate": "m42-enrichment",
             "script": "script/m42/verify-enrichment-surface.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m42-highlight",
             "script": "script/m42/verify-highlight.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m42-hover-actions",
             "script": "script/m42/verify-hover-actions.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m42-hub",
             "script": "script/m42/verify-hub.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m42-hub-nav",
@@ -236,14 +234,14 @@
           {
             "gate": "m42-rich-hover",
             "script": "script/m42/verify-rich-hover.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           },
           {
             "gate": "m42-closure",
             "script": "script/m42/verify-closure.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           }
         ],
         "M44": [
@@ -286,8 +284,8 @@
           {
             "gate": "m44-closure",
             "script": "script/m44/verify-closure.ts",
-            "exit": 1,
-            "ok": false
+            "exit": 0,
+            "ok": true
           }
         ]
       }
@@ -362,16 +360,11 @@
     "handoffIssue": 816
   },
   "failures": [
-    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=24a48142f5d0 realFailed=3",
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=238fd962f790 green=25/41 lane-changed=1",
-    "C2: G1's bar re-audit records every ladder gate green: [{\"gate\":\"m53-ladder\",\"exit\":1,\"lastLine\":\"  ✓ m28-closure rc=0 :: VERIFIED (31/31 passed, 4 negative)\"},{\"gate\":\"m53-closure\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json\"}]",
-    "C2: M25 — every ladder gate green (3): m25-closure=1",
-    "C2: M26 — every ladder gate green (9): m26-impact-mode=1,m26-closure=1",
-    "C2: M27 — every ladder gate green (4): m27-nvim=1,m27-zed=1,m27-closure=1",
-    "C2: M29 — every ladder gate green (5): m29-precision-ledger=1,m29-m29-docs=1,m29-closure=1",
-    "C2: M42 — every ladder gate green (7): m42-enrichment=1,m42-highlight=1,m42-hover-actions=1,m42-hub=1,m42-rich-hover=1,m42-closure=1",
-    "C2: M44 — every ladder gate green (7): m44-closure=1",
-    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 6001 vs 6004 bytes"
+    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=30c28d3e1ba1 realFailed=2",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=30c28d3e1ba1 green=40/41 lane-changed=0",
+    "C2: G1's bar re-audit records every ladder gate green: [{\"gate\":\"m53-ladder\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json\"},{\"gate\":\"m53-closure\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json\"}]",
+    "C2: M29 — every ladder gate green (5): m29-closure=1",
+    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 6004 vs 6004 bytes"
   ],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
@@ -380,7 +373,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:30:42.019Z",
-    "contentSha256": "d785457d504b59d6b9dcbe986c59e43d2f822017c415672ae339a8bc450d474d"
+    "sealedAt": "2026-11-07T05:28:19.926Z",
+    "contentSha256": "08027a70a0b873827462441b589252558a2ba3773875d2158ff5281a84d8c11a"
   }
 }
