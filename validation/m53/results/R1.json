@@ -3,8 +3,8 @@
   "code": "R1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 39,
-  "failed": 2,
+  "passed": 40,
+  "failed": 1,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -229,9 +229,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (30/32 passed, 3 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -286,7 +286,7 @@
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (31/33 passed, 7 negatives)",
+      "verdict": "KNOWN-GAP (32/33 passed, 7 negatives)",
       "ok": false,
       "timedOut": false
     },
@@ -318,7 +318,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ d48eae41)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ b47307d9)",
       "ok": true,
       "timedOut": false
     },
@@ -347,12 +347,12 @@
       "timedOut": false
     }
   ],
-  "currentCommit": "d48eae4163817320d414efbcc9c104ddfdbd09c9",
+  "currentCommit": "b47307d987fc7820302fd3d37fff665d58d99343",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-07T00:45:29.587Z",
+  "generatedAt": "2026-11-07T01:39:46.060Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T00:45:29.588Z",
-    "contentSha256": "c9946aab571e94efee186ae187f660476f17d4502ef957e1c86b853e986b565e"
+    "sealedAt": "2026-11-07T01:39:46.062Z",
+    "contentSha256": "3204415a917ddfc4ecd1f6e9aed6e92e9edb3a70d53baa2b14c3d9c505e63f95"
   }
 }
