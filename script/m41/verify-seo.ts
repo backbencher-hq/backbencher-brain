@@ -335,10 +335,13 @@ if (faqLd) {
   // The atlas nav carries a <details> mobile menu on every page (no-JS nav),
   // so count only the FAQ disclosures — the contract is one per question.
   const detailsCount = (supportHtmlRaw.match(/<details(?![^>]*class="menu")/g) ?? []).length
-  const missingAnswers = qs.filter((q) => !q.acceptedAnswer?.text || !faqRenderedText.includes(q.acceptedAnswer.text))
+  // The support page renders the FAQ's **bold**/`code` marks as type; compare
+  // the claim modulo presentation (tags and marks), never a different claim.
+  const faqClaim = (s: string) => s.replace(/<[^>]*>/g, "").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/`([^`]+)`/g, "$1")
+  const missingAnswers = qs.filter((q) => !q.acceptedAnswer?.text || !faqClaim(faqRenderedText).includes(faqClaim(q.acceptedAnswer.text)))
   check("S1: FAQPage lists exactly the questions in website/faq.md", JSON.stringify(qs.map((q) => q.name)) === JSON.stringify(sourceQuestions), `ld=${qs.length} source=${sourceQuestions.length}`)
   check("S1: support page renders one <details> per question", detailsCount === qs.length, `details=${detailsCount} questions=${qs.length}`)
-  check("S1: every FAQ question is rendered on the page", qs.every((q) => Boolean(q.name) && faqRenderedText.includes(q.name!)))
+  check("S1: every FAQ question is rendered on the page", qs.every((q) => Boolean(q.name) && faqClaim(faqRenderedText).includes(faqClaim(q.name!))))
   check("S1: every FAQ answer is rendered verbatim on the page", missingAnswers.length === 0, missingAnswers.map((q) => (q.name ?? "?").slice(0, 30)).join(","))
   check("S1: FAQ answers are substantive (>= 80 chars)", qs.every((q) => (q.acceptedAnswer?.text ?? "").length >= 80))
   check("S1: FAQ answers are unique", new Set(qs.map((q) => q.acceptedAnswer?.text)).size === qs.length)
