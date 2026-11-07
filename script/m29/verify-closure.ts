@@ -181,8 +181,13 @@ const readLedger = (): { issues: LedgerIssue[] } =>
 // against its record before it counts as a violation.
 function evidenceVerifiedInRecord(issue: LedgerIssue): boolean {
   if ((issue.evidence?.status ?? issue.status) === "verified") return true
-  const file = issue.evidence?.evidenceFile
-  if (!file || file === "X1.json") return false
+  // The record is named after the code: validation/m29/results/<CODE>.json (the
+  // lane's own convention, and what every other reader in this program uses).
+  // Reading ONLY evidence.evidenceFile silently gave up whenever a manifest entry
+  // omitted it, which turned a verified record into "not evidence-verified" — the
+  // manifest is a projection, so it cannot be the only door to the evidence.
+  const file = issue.evidence?.evidenceFile ?? `${issue.code}.json`
+  if (file === "X1.json") return false
   try {
     const rec = JSON.parse(readFileSync(join(ROOT, "validation/m29/results", file), "utf8")) as { status?: string }
     return rec.status === "verified"
