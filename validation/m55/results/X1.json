@@ -4,42 +4,28 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 41,
-  "passed": 37,
-  "failed": 4,
-  "realFailed": 4,
+  "passed": 31,
+  "failed": 10,
+  "realFailed": 10,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
+  "currentCommit": "8d296b2189fe619b82fc5a10b1f5b8c1217e777f",
   "workingTreeRelevantChanges": [
-    "validation/m55/results/EVID-TREE.json",
-    "validation/m55/results/HOV-COVERAGE.json",
-    "validation/m55/results/HOV-REDTEAM.json",
-    "validation/m55/results/P1.json",
-    "validation/m55/results/T1.json",
-    "validation/m55/results/T2.json",
-    "validation/m55/results/T3.json",
-    "validation/m55/results/T4.json",
-    "validation/m55/results/T5.json",
-    "validation/m55/results/T6.json",
-    "validation/m55/results/V1-action-args.json",
-    "validation/m55/results/V1-blocked-path.json",
-    "validation/m55/results/V1-probe.json",
-    "validation/m55/results/V1-status-panel.json",
-    "validation/m55/results/V1.json"
+    "docs/m55/VERDICT-PACK.md"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-05T05:08:51.835Z",
+  "generatedAt": "2026-11-05T14:30:42.015Z",
   "audit": {
-    "head": "24a48142f5d0b399a7a955354de9cce815726ee4",
+    "head": "8d296b2189fe619b82fc5a10b1f5b8c1217e777f",
     "ladder": {
       "record": "validation/m53/results/R1.json",
-      "status": "verified",
-      "pin": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
-      "green": 41,
+      "status": "known-gap",
+      "pin": "238fd962f790249ef6bbfdfcc92b3fc1cbffb54d",
+      "green": 25,
       "total": 41,
       "milestones": {
         "M24": [
@@ -66,8 +52,8 @@
           {
             "gate": "m25-closure",
             "script": "script/m25/verify-closure.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           }
         ],
         "M26": [
@@ -110,8 +96,8 @@
           {
             "gate": "m26-impact-mode",
             "script": "script/m26/verify-impact-mode.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m26-webview-harness",
@@ -122,22 +108,22 @@
           {
             "gate": "m26-closure",
             "script": "script/m26/verify-closure.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           }
         ],
         "M27": [
           {
             "gate": "m27-nvim",
             "script": "script/m27/verify-nvim.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m27-zed",
             "script": "script/m27/verify-zed.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m27-helix",
@@ -148,8 +134,8 @@
           {
             "gate": "m27-closure",
             "script": "script/m27/verify-closure.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           }
         ],
         "M28": [
@@ -194,8 +180,8 @@
           {
             "gate": "m29-precision-ledger",
             "script": "script/m29/verify-precision-ledger.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m29-precision-improvements",
@@ -206,40 +192,40 @@
           {
             "gate": "m29-m29-docs",
             "script": "script/m29/verify-m29-docs.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m29-closure",
             "script": "script/m29/verify-closure.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           }
         ],
         "M42": [
           {
             "gate": "m42-enrichment",
             "script": "script/m42/verify-enrichment-surface.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m42-highlight",
             "script": "script/m42/verify-highlight.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m42-hover-actions",
             "script": "script/m42/verify-hover-actions.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m42-hub",
             "script": "script/m42/verify-hub.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m42-hub-nav",
@@ -250,14 +236,14 @@
           {
             "gate": "m42-rich-hover",
             "script": "script/m42/verify-rich-hover.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           },
           {
             "gate": "m42-closure",
             "script": "script/m42/verify-closure.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           }
         ],
         "M44": [
@@ -300,8 +286,8 @@
           {
             "gate": "m44-closure",
             "script": "script/m44/verify-closure.ts",
-            "exit": 0,
-            "ok": true
+            "exit": 1,
+            "ok": false
           }
         ]
       }
@@ -353,7 +339,7 @@
         "code": "V1",
         "githubIssue": 777,
         "evidence": "V1.json",
-        "status": "known-gap"
+        "status": "verified"
       },
       {
         "code": "X1",
@@ -376,10 +362,16 @@
     "handoffIssue": 816
   },
   "failures": [
-    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=a0ed9eade700 realFailed=1 stale(docs/m55/M55-MASTER-PLAN.md,docs/m55/SCREENSHOT-PROTOCOL.md,script/m55/verify-governance.ts)",
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=0dbafd74ef4f green=41/41 lane-changed=150",
-    "C2: G1's bar re-audit records the ladder gates it ran: []",
-    "C2: G1's bar re-audit records every ladder gate green: []"
+    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=24a48142f5d0 realFailed=3",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=238fd962f790 green=25/41 lane-changed=1",
+    "C2: G1's bar re-audit records every ladder gate green: [{\"gate\":\"m53-ladder\",\"exit\":1,\"lastLine\":\"  ✓ m28-closure rc=0 :: VERIFIED (31/31 passed, 4 negative)\"},{\"gate\":\"m53-closure\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json\"}]",
+    "C2: M25 — every ladder gate green (3): m25-closure=1",
+    "C2: M26 — every ladder gate green (9): m26-impact-mode=1,m26-closure=1",
+    "C2: M27 — every ladder gate green (4): m27-nvim=1,m27-zed=1,m27-closure=1",
+    "C2: M29 — every ladder gate green (5): m29-precision-ledger=1,m29-m29-docs=1,m29-closure=1",
+    "C2: M42 — every ladder gate green (7): m42-enrichment=1,m42-highlight=1,m42-hover-actions=1,m42-hub=1,m42-rich-hover=1,m42-closure=1",
+    "C2: M44 — every ladder gate green (7): m44-closure=1",
+    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 6001 vs 6004 bytes"
   ],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
@@ -388,7 +380,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T05:08:51.838Z",
-    "contentSha256": "1525e4428c41ec0225cb58ffbba9c504691e29ab85c8c7c22de3fb36a7862014"
+    "sealedAt": "2026-11-05T14:30:42.019Z",
+    "contentSha256": "d785457d504b59d6b9dcbe986c59e43d2f822017c415672ae339a8bc450d474d"
   }
 }

@@ -5,7 +5,7 @@ fails unless the file is byte-identical to a fresh generation, except for exactl
 two declared lines — the `Audit HEAD` line (it moves on every committed run) and
 the owner's verdict line (preserved verbatim, §8.5).
 
-Audit HEAD: `922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d`  ·  capture run: `owner-test-2026-09-21`
+Audit HEAD: `8d296b2189fe619b82fc5a10b1f5b8c1217e777f`  ·  capture run: `owner-test-2026-09-21`
 
 ## The verdict is the owner's
 
@@ -20,12 +20,12 @@ behind them, and the verdict line at the end stays for the owner to write.
 | G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) | `G1.json` | known-gap | 14 | — |
 | T1 | [#770](https://github.com/backbencher-hq/backbencher-brain/issues/770) | `T1.json` | verified | 38 | 5/5 |
 | T2 | [#771](https://github.com/backbencher-hq/backbencher-brain/issues/771) | `T2.json` | verified | 64 | 9/9 |
-| T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) | `T3.json` | verified | 87 | — |
+| T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) | `T3.json` | verified | 92 | — |
 | T4 | [#774](https://github.com/backbencher-hq/backbencher-brain/issues/774) | `T4.json` | verified | 67 | — |
-| T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 72 | — |
+| T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 70 | — |
 | P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) | `P1.json` | verified | 25 | 4/4 |
-| V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | known-gap | 35 | — |
-| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 30 | — |
+| V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | verified | 55 | 14/14 |
+| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 37 | — |
 
 ## 2. Every claim, and the frame behind it
 

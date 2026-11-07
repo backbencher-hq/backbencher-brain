@@ -8,30 +8,14 @@
   "failed": 0,
   "realFailed": 3,
   "negativeCases": 8,
-  "currentCommit": "24a48142f5d0b399a7a955354de9cce815726ee4",
+  "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
   "workingTreeRelevantChanges": [
     "docs/m55/VERDICT-PACK.md",
-    "validation/m55/results/EVID-TREE.json",
-    "validation/m55/results/HOV-COVERAGE.json",
-    "validation/m55/results/HOV-REDTEAM.json",
-    "validation/m55/results/P1.json",
-    "validation/m55/results/T1.json",
-    "validation/m55/results/T2.json",
-    "validation/m55/results/T3.json",
-    "validation/m55/results/T4.json",
-    "validation/m55/results/T5.json",
-    "validation/m55/results/T6.json",
-    "validation/m55/results/V1-action-args.json",
-    "validation/m55/results/V1-blocked-path.json",
-    "validation/m55/results/V1-probe.json",
-    "validation/m55/results/V1-status-panel.json",
-    "validation/m55/results/V1.json",
-    "validation/m55/results/X1.json",
-    "validation/m55/results/manifest.json"
+    "validation/m55/results/X1.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-05T05:46:36.746Z",
+  "generatedAt": "2026-11-07T03:27:00.090Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -58,7 +42,7 @@
       {
         "gate": "m53-ladder",
         "exit": 1,
-        "lastLine": "  ✓ m28-closure rc=0 :: VERIFIED (31/31 passed, 4 negative)"
+        "lastLine": "Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json"
       },
       {
         "gate": "m53-closure",
@@ -68,8 +52,8 @@
     ]
   },
   "failures": [
-    "G1: the M55 ledger is structurally valid at HEAD — evidence-commit-not-ancestor:G1",
-    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD —   ✓ m28-closure rc=0 :: VERIFIED (31/31 passed, 4 negative)",
+    "G1: the M55 ledger is structurally valid at HEAD — evidence-stale:G1(script/m55/verify-governance.ts)",
+    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json",
     "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
   ],
   "limitations": [
@@ -79,7 +63,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T05:46:36.761Z",
-    "contentSha256": "058d1084706d77fdfff619cb9540e8eb906297514d5654be77d01befc4552052"
+    "sealedAt": "2026-11-07T03:27:00.107Z",
+    "contentSha256": "8db83b23ca9d671c0f02621ecfa06502d6b8fc4e899d485e82e8b60390e7b539"
   }
 }
