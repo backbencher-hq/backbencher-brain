@@ -230,7 +230,20 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   ledger = readLedger()
   const pending = ledger.issues.filter((i) => i.code !== "X1" && !evidenceVerifiedInRecord(i))
   if (pending.length === 0) break
+  // NAME THE GATE'S OWN FAILURES, not just the entry that carried them. The
+  // ledger says "G1 not certified" and nothing else, which sent three separate
+  // investigations at the ledger when the gate's record had the answer all
+  // along. A loop that knows why it is looping is the difference between a
+  // measurement and a mystery.
+  let why = ""
+  try {
+    const g1 = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/G1.json"), "utf8")) as { failures?: string[] }
+    why = (g1.failures ?? []).slice(0, 4).map((f) => f.slice(0, 120)).join(" | ")
+  } catch {
+    why = "G1.json unreadable"
+  }
   console.log(`  · projection attempt ${attempt}: ${pending.map((p) => p.code).join(",")} not certified yet — projecting again`)
+  if (why) console.log(`    G1 failures: ${why}`)
 }
 const itemVerified = (i: LedgerIssue): boolean => evidenceVerifiedInRecord(i) || (i.code === "G1" && g1ObservedVerified)
 const nonVerified = ledger.issues.filter((i) => i.code !== "X1" && !itemVerified(i))
@@ -276,7 +289,11 @@ function closurePreconditionViolations(
   return v
 }
 const ledgerSnapshot = ledger.issues.map((i) => ({ ...i }))
-check("X1: closure preconditions audited — zero violations", closurePreconditionViolations(ledgerSnapshot, spotCheckOk).length === 0, closurePreconditionViolations(ledgerSnapshot, spotCheckOk).join("; "))
+// The observation is passed here too: the audit and the item check must judge by
+// the same rule, or the closure reports "every item verified" while its own
+// precondition list still names G1 (measured: 31/32 with exactly that split).
+const preconditionViolations = closurePreconditionViolations(ledgerSnapshot, spotCheckOk, g1ObservedVerified)
+check("X1: closure preconditions audited — zero violations", preconditionViolations.length === 0, preconditionViolations.join("; "))
 {
   const forged = ledgerSnapshot.map((i) => ({ ...i, evidence: { status: i.code === "R5" ? "planned" : (i.evidence?.status ?? i.status) } }))
   negative("X1: negative — the audit fires when an item's evidence regresses to planned", closurePreconditionViolations(forged, spotCheckOk).some((x) => x.startsWith("pre1:R5")))
