@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 86,
@@ -68,7 +68,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
         "evidenceFile": "E1.json",
         "passed": 46,
@@ -98,7 +98,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
         "evidenceFile": "E2.json",
         "passed": 43,
@@ -128,7 +128,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
         "evidenceFile": "E3.json",
         "passed": 32,
@@ -158,7 +158,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
         "evidenceFile": "E4.json",
         "passed": 56,
@@ -188,7 +188,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
         "evidenceFile": "V1.json",
         "passed": 26,
@@ -218,7 +218,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
         "evidenceFile": "E5.json",
         "passed": 91,
@@ -256,7 +256,7 @@
       ],
       "evidence": {
         "status": "blocked",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -311,7 +311,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
         "evidenceFile": "E7-linux.json",
         "os": "linux",
@@ -346,7 +346,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
         "passed": 22,
@@ -378,7 +378,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
         "verifierCommand": "npx tsx script/m25/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 37,
@@ -390,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T07:08:22.750Z",
-    "contentSha256": "dbd4b74ee6ff5d0d374128447294d85d25594d6b683275ce6da8b41be78c2e12"
+    "sealedAt": "2026-11-07T17:24:12.957Z",
+    "contentSha256": "bd0ca30512b8dcef9e422686a06b092aa9453184df6c839910df173fa2a15642"
   }
 }

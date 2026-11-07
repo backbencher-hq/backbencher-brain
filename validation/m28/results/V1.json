@@ -18,7 +18,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
+  "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
   "sourceFingerprint": "36a0428ea83b89808e6ab4deda1fd61cf0926179877c3cff8a78ca50fc551858",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -28,12 +28,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-11-07T06:41:53.193Z",
+  "generatedAt": "2026-11-07T16:58:41.619Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T06:41:53.194Z",
-    "contentSha256": "8ad26c1bb26c0102bcfb300d87ca11c9c4edfc65ba571708c0e7c2835ddb0d8b"
+    "sealedAt": "2026-11-07T16:58:41.619Z",
+    "contentSha256": "77855bb622cc54d4c2599a1c756585e5e7e4a450962ca2ec0cb4526fab03555e"
   }
 }
