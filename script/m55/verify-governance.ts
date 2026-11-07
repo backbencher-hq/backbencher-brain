@@ -505,7 +505,12 @@ function main(): void {
       let exit = 1;
       let out = "";
       try {
-        out = execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 1_800_000 });
+        // The M53 ladder runs the WHOLE m24-m44 lane chain; measured at ~45-50 min on
+        // this machine. The 30-minute timer killed it mid-run and the bar read as a
+        // red gate - a timer is infrastructure, not a verdict (the same lesson the
+        // closure gate's per-leg timers learned). Raised to 90 minutes, with the
+        // budget named here so the next reader does not re-derive it.
+        out = execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 5_400_000 });
         exit = 0;
       } catch (e: any) {
         exit = e.status ?? 1;
