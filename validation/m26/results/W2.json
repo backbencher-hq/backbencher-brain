@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "30c28d3e1ba1d1dd365422b64fdd1f180e2b9cbf",
+  "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
   "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
   "sourceFingerprint": "0f64ddf8595b448cf1f87148020df027bb3548ead3917bb177fe8f121b01b8da",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -18,7 +18,7 @@
     "src/lsp/server.ts"
   ],
   "evidenceFile": "W2.json",
-  "generatedAt": "2026-11-07T04:57:18.105Z",
+  "generatedAt": "2026-11-07T06:38:16.275Z",
   "schemaVersion": 2,
   "method": "bb/graph",
   "limitations": [
@@ -27,7 +27,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T04:57:18.105Z",
-    "contentSha256": "fa250db3101b05365060f36809751fd5ba158028fa81e0a3ee61d7eefb5ac416"
+    "sealedAt": "2026-11-07T06:38:16.276Z",
+    "contentSha256": "8fc23d997cba9bc62808ec73015cc49851d6b9b1fb2a8e8850fb7e3c4da0b52a"
   }
 }

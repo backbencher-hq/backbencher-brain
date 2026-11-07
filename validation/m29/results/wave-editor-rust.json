@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "30c28d3e1ba1d1dd365422b64fdd1f180e2b9cbf",
+  "commit": "460d3b6a877b5e8422c6817138035233c3921bc0",
   "language": "rust",
   "raw": {
     "definition": {
@@ -363,7 +363,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T05:13:19.594Z",
-    "contentSha256": "642ba6e2df0bfdd33688423dcf05c2306e932dbc898277ce00f5de4ebafc6130"
+    "sealedAt": "2026-11-07T06:53:00.679Z",
+    "contentSha256": "34fce3dfbdcd44d1ba6d21bfe1d06315fc5cc0d926af0bf2b58dc99b3934fe3f"
   }
 }

@@ -11,9 +11,9 @@
     "mutantsTotal": 3,
     "ok": true
   },
-  "currentCommit": "30c28d3e1ba1d1dd365422b64fdd1f180e2b9cbf",
+  "currentCommit": "460d3b6a877b5e8422c6817138035233c3921bc0",
   "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
-  "sourceFingerprint": "9c23f97400f74dc1f9f924b32e106fd0ff66f9246c7582986b7199bf8c6f7463",
+  "sourceFingerprint": "7052f7c8d3e346e01245a9ab7ba23131cf6257d11a2da3263c1ff4b9968eef26",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-m29-docs.ts",
@@ -24,7 +24,7 @@
     "script/m29/generate-wave-doc.ts"
   ],
   "evidenceFile": "D1-verify.json",
-  "generatedAt": "2026-11-07T05:23:54.544Z",
+  "generatedAt": "2026-11-07T07:05:04.525Z",
   "limitations": [
     "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
@@ -33,7 +33,7 @@
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T05:23:54.545Z",
-    "contentSha256": "c1fbdb14446fe541c91220f34bc43a7566643d0e56d47dfe55ef17e8f0b6bda1"
+    "sealedAt": "2026-11-07T07:05:04.525Z",
+    "contentSha256": "047529cfb4e4adad3ae5843dbefcfa1737cabe4ee89c0e0beb8583f69894040c"
   }
 }
