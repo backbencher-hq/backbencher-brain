@@ -229,12 +229,18 @@ for (let attempt = 1; attempt <= 3; attempt++) {
     })
     g1ObservedVerified = true
   } catch (e: any) {
-    // The gate's own stdout is where it names the item it refused to certify.
-    // Capturing it turned a twelve-minute loop into a one-line answer.
+    // Name the failure completely: exit status, signal, and the tail of both
+    // streams. A gate that exits non-zero with an empty stdout crashed rather
+    // than refused, and the two need different fixes.
     const out = String(e?.stdout ?? "")
+    const err = String(e?.stderr ?? "")
+    console.log(`    gate exit=${e?.status ?? "?"} signal=${e?.signal ?? "-"}`)
     for (const line of out.split("\n").filter((l) => l.includes("✗")).slice(0, 3)) {
       console.log(`    gate said: ${line.trim().slice(0, 240)}`)
     }
+    const tail = (s: string) => s.split("\n").filter((l) => l.trim() !== "").slice(-3).join(" / ")
+    if (tail(out)) console.log(`    gate stdout tail: ${tail(out).slice(0, 300)}`)
+    if (tail(err)) console.log(`    gate stderr tail: ${tail(err).slice(0, 400)}`)
     // A projection that cannot run is reported by the precondition audit itself;
     // swallowing the exit code here would hide the reason it is about to fail.
   }
