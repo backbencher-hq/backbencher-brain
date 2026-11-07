@@ -163,15 +163,16 @@ const LEDGER_CONSUMERS = new Set(["m29-precision-ledger"])
 // "R4 not evidence-verified" for a gate that just printed VERIFIED. Project the
 // lane immediately before its closure, which is what the closure's own run
 // would do if it could.
-const PROJECT_BEFORE: Record<string, string> = {
-  "m29-closure": "script/m29/verify-governance.ts",
-  "m42-closure": "script/m42/verify-governance.ts",
+const PROJECT_BEFORE: Record<string, string[]> = {
+  "m29-closure": ["script/m29/verify-governance.ts"],
+  // M42's bar spawns the M29 gate, and the legs between the two closures
+  // re-stamp M29 records; project M29 again so its manifest and its spawn agree.
+  "m42-closure": ["script/m29/verify-governance.ts", "script/m42/verify-governance.ts"],
 }
 const results = GATES.map(([name, script]) => {
-  const projection = PROJECT_BEFORE[name]
-  if (projection) {
+  for (const projection of PROJECT_BEFORE[name] ?? []) {
     const p = spawnSync("npx", ["tsx", projection], { cwd: ROOT, encoding: "utf8", timeout: 900_000 })
-    console.log(`  · projected the lane ledger before ${name} (rc=${p.status ?? "?"})`)
+    console.log(`  · projected ${projection} before ${name} (rc=${p.status ?? "?"})`)
   }
   if (LEDGER_CONSUMERS.has(name)) {
     const regen = spawnSync("npx", ["tsx", "script/m29/generate-precision-ledger.ts", "--write"], { cwd: ROOT, encoding: "utf8", timeout: 120_000 })
