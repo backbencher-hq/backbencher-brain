@@ -33,6 +33,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { ISSUE_RELEVANT_FILES } from "./relevance.ts";
 import { readEvidenceAllowingLegacy as readSealedRecord, writeSealed } from "../lib/evidence.ts";
 import { parseSealedRecord } from "../lib/evidence.ts"
@@ -501,6 +502,30 @@ function main(): void {
     barReason = "BB_M55_SKIP_LADDER=1 — the ladder's own gates are run individually by the shared verify chain in this mode (declared, never a silent pass)";
     console.log(`      blocked: ${barReason}`);
   } else {
+    // PREPARE THE PERSISTENT GIANT INDEX BEFORE SPAWNING THE LADDER.
+    //
+    // The ladder runs the m24-m44 chain, and its m29-closure leg includes R3 -
+    // which measures through the persistent index in $TMPDIR/m29-giant-data and
+    // skips its live probe when that index is absent. This environment gives every
+    // shell a fresh /tmp, so a spawned ladder inherits none: R3 went known-gap and
+    // the whole cascade degraded M29 and M53 inside the bar run, which read as a
+    // red bar. The index is built here, in this process, before the spawn - the
+    // same prerequisite the launch test plan documents, applied where it is now
+    // automatic instead of remembered.
+    {
+      const corpus = path.join(ROOT, ".tools", "m29-giant-corpus")
+      const reuseDir = path.join(os.tmpdir(), "m29-giant-data")
+      const marker = path.join(reuseDir, "bb-index-complete.txt")
+      if (!existsSync(corpus)) {
+        console.log("      preparing: generating the giant corpus")
+        execFileSync("npx", ["tsx", "script/m29/generate-giant-corpus.ts"], { cwd: ROOT, stdio: "ignore", timeout: 600_000 })
+      }
+      if (!existsSync(marker)) {
+        console.log("      preparing: building the persistent giant index (~12 min)")
+        execFileSync("npx", ["tsx", "script/m29/giant-repo-budget.ts", "--index-only", "--reuse"], { cwd: ROOT, stdio: "ignore", timeout: 2_400_000 })
+        execFileSync("npx", ["tsx", "script/m29/giant-repo-budget.ts", "--reuse"], { cwd: ROOT, stdio: "ignore", timeout: 1_200_000 })
+      }
+    }
     for (const [gate, script] of [["m53-ladder", "script/m53/verify-r1-ladder.ts"], ["m53-closure", "script/m53/verify-closure.ts"]] as const) {
       let exit = 1;
       let out = "";
