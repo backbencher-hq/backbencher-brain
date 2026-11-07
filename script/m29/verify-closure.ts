@@ -237,8 +237,16 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   // measurement and a mystery.
   let why = ""
   try {
-    const g1 = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/G1.json"), "utf8")) as { failures?: string[] }
-    why = (g1.failures ?? []).slice(0, 4).map((f) => f.slice(0, 120)).join(" | ")
+    const g1 = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/G1.json"), "utf8")) as {
+      failures?: string[]
+      blockedReason?: string
+      workingTreeRelevantChanges?: string[]
+    }
+    const blocked = g1.blockedReason ? `blocked=${g1.blockedReason.slice(0, 400)}` : ""
+    const dirty = (g1.workingTreeRelevantChanges ?? []).join(",")
+    why = [blocked, dirty ? `dirty=${dirty}` : "", (g1.failures ?? []).slice(0, 3).map((f) => f.slice(0, 160)).join(" | ")]
+      .filter(Boolean)
+      .join(" ")
   } catch {
     why = "G1.json unreadable"
   }
