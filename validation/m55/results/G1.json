@@ -4,15 +4,15 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 17,
-  "passed": 14,
+  "passed": 15,
   "failed": 0,
-  "realFailed": 3,
+  "realFailed": 2,
   "negativeCases": 8,
-  "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
+  "currentCommit": "30c28d3e1ba1d1dd365422b64fdd1f180e2b9cbf",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-07T04:26:57.781Z",
+  "generatedAt": "2026-11-07T05:28:18.468Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -49,7 +49,6 @@
     ]
   },
   "failures": [
-    "G1: the M55 ledger is structurally valid at HEAD — evidence-stale:G1(script/m55/verify-governance.ts)",
     "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json",
     "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
   ],
@@ -60,7 +59,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T04:26:57.806Z",
-    "contentSha256": "057a382b8ddf883f88034aec6ac53caa083623f42319ede0a23a2b06dc528ade"
+    "sealedAt": "2026-11-07T05:28:18.485Z",
+    "contentSha256": "83856407147553ab8bff2db5ed7c6f464f887741b29ae6a99a46f8130be5628f"
   }
 }

@@ -5,7 +5,7 @@
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
+  "currentCommit": "30c28d3e1ba1d1dd365422b64fdd1f180e2b9cbf",
   "relevantInputsHash": "cabf52a7f051a06e20bf68488f2899bfc6a22866",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "sourceFingerprint": "b82775474d328a36476e2b3e623efaaebcbc4e34fa73e5eb478f09e9fcfeeb5d",
@@ -20,11 +20,11 @@
     "script/m29/giant-repo-budget.ts"
   ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-11-07T04:11:07.315Z",
+  "generatedAt": "2026-11-07T05:13:37.750Z",
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T04:11:07.315Z",
-    "contentSha256": "e4b2d0c528edba44c06b16818b235987bc5c1053f2c62b0aba5f571f62ba8b61"
+    "sealedAt": "2026-11-07T05:13:37.751Z",
+    "contentSha256": "b506e2f627fc2e18ec8fdcc5d83d9df3c01ea9357d3f07ecd0887d1b734abf91"
   }
 }
