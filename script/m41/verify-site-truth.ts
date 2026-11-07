@@ -84,17 +84,26 @@ check("T2: generated truth parses (version, tables, languages, tools, commands)"
 
 // --- 1. homepage ---------------------------------------------------------------
 
-check("T2: home renders generated version (v" + version + ")", home.includes(`v${version}`))
-check("T2: home renders generated language count", home.includes(`${langCount} Languages Indexed`), `"${langCount} Languages Indexed"`)
-check("T2: home renders dedicated parser count", home.includes(`${dedicated}`))
-check("T2: home renders generated tool count", home.includes(`${uniqueTools.length} Agent Tools`))
-check("T2: home renders generated table count", new RegExp(`>${tables}</div><div[^>]*>DB Tables`).test(home), `pattern >${tables}</div>…DB Tables`)
+// The Evidence Atlas homepage (DESIGN.md v0.3) prints no stat strip: the
+// generated facts appear once each, inside the plates that need them. These
+// checks pin the rendered numbers to the generated sources — a hand-typed count
+// or a stale one fails here.
+const parsersCount = (read("website/src/data/brain-languages.ts").match(/^\s*\{ name: '/gm) ?? []).length
+const relMatch = read("website/src/data/brain-languages.ts").match(/RELATIONSHIP_TYPES = \[([^\]]+)\]/)
+const relTypes = relMatch ? relMatch[1].split(",").filter((entry) => entry.trim()).length : 0
+check("T2: home renders the generated version", home.includes(`bb ${version}`), `bb ${version}`)
+check("T2: home renders the generated language count", home.includes(`${langCount} languages`), `${langCount} languages`)
+check("T2: home renders the generated dedicated-grammar count", home.includes(`${dedicated} dedicated grammars`), `${dedicated} dedicated grammars`)
+check("T2: home renders the generated analyzer count", home.includes(`${parsersCount} analyzers`), `${parsersCount} analyzers`)
+check("T2: home renders the generated relationship-type count", home.includes(`${relTypes} relationship types`), `${relTypes} relationship types`)
+check("T2: home renders the generated tool count", home.includes(`${uniqueTools.length} MCP tools`), `${uniqueTools.length} MCP tools`)
 check("T2: home has no OpenCode attribution", !home.includes("OpenCode") && !home.includes("opencode"))
+check("T2: home prints no legacy hand-typed stat strip", !/(Languages Indexed|DB Tables|Agent Tools)/.test(home))
 
 // --- 2. tools page ---------------------------------------------------------------
 
 check("T2: tools page renders every real tool name", uniqueTools.every((t) => toolsPage.includes(t)), uniqueTools.filter((t) => !toolsPage.includes(t)).join(","))
-check("T2: tools page renders generated tool count", toolsPage.includes(`${uniqueTools.length} Agent Tools`))
+check("T2: tools page renders generated tool count", toolsPage.includes(`${uniqueTools.length} MCP tools`), `${uniqueTools.length} MCP tools`)
 
 const PHANTOMS = ["bb_select", "bb_update", "bb_delete", "bb_insert", "bb_write", "bb_refactor", "bb_refresh", "bb_relationships"]
 check("T2: no phantom tool name renders on tools page", PHANTOMS.every((p) => !toolsPage.includes(p)), PHANTOMS.filter((p) => toolsPage.includes(p)).join(","))
@@ -163,7 +172,11 @@ const installRepo = read("website/src/data/truth.generated.ts").match(/repo: "([
 check("T3: install page states the REAL installer version from truth", installVersion !== "" && installHtml.includes(installVersion), installVersion)
 check("T3: install page states the REAL installer release repo from truth", installRepo !== "" && installHtml.includes(installRepo), installRepo)
 check("T3: install page quotes both real installer commands", installHtml.includes("https://backbencher.cc/install.sh | bash") && installHtml.includes("https://backbencher.cc/install.ps1 | iex"))
-check("T3: install page distinguishes installer channel from engine version", installHtml.includes(`(installer)` ) && installHtml.includes(`engine ${version}`), `engine ${version}`)
+check(
+  "T3: install page distinguishes installer channel from engine version",
+  installHtml.includes(`installer release ${read("website/src/data/truth.generated.ts").match(/install: \{[^}]*version: "([^"]+)"/)?.[1] ?? ""}`) && installHtml.includes(`engine ${version}`),
+  `installer release + engine ${version}`,
+)
 
 check("T3: FAQ renders generated tool count", faqHtml.includes(`${uniqueTools.length} agent tools`))
 check("T3: FAQ renders generated language counts", faqHtml.includes(`${langCount}`) && faqHtml.includes(`${dedicated}`))
@@ -172,7 +185,7 @@ check("T3: FAQ answers the open-source question honestly", faqHtml.includes("Not
 
 check("T3: troubleshooting quotes real remediation commands", ["bb index --changed", "bb index --post", "bb index --force", "bb index --resume", "bb setup show", "bb doctor", "bb health"].every((c) => troubleshootHtml.includes(c)), ["bb index --changed", "bb index --post", "bb index --force", "bb index --resume", "bb setup show", "bb doctor", "bb health"].filter((c) => !troubleshootHtml.includes(c)).join(","))
 check("T3: contact offers only the real support channel", contactHtml.includes("support@backbencher.cc"))
-check("T3: shared footer renders on all T3 pages", [installHtml, faqHtml, troubleshootHtml, contactHtml].every((h) => h.includes("independent, local-first code intelligence engine")))
+check("T3: shared footer renders on all T3 pages", [installHtml, faqHtml, troubleshootHtml, contactHtml].every((h) => h.includes("local-first code intelligence")))
 
 const navSrc = read("website/src/components/Navigation.tsx")
 // M56.I1: the final nav set is six items, one per public surface, in order.
@@ -240,26 +253,26 @@ check("T2: hand-written tool notes are deleted", !existsSync(path.join(SITE, "sr
   }
 }
 
-// N2 (full rebuild mutant): hand-type a stale version into the hero and prove
+// N2 (full rebuild mutant): hand-type a stale version into the atlas hero and prove
 // the rendered-output gate FAILS. This is the end-to-end proof that a
 // hand-typed claim cannot survive this verifier.
 if (buildOk) {
-  const heroPath = path.join(SITE, "src/components/HeroSection.tsx")
+  const heroPath = path.join(SITE, "src/components/atlas/AtlasHero.tsx")
   // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
   // `git commit -a` on the shared checkout once swept the in-repo backup AND
   // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
-  const heroBackup = path.join(tmpdir(), `hero-t2bak-${process.pid}.tsx`)
+  const heroBackup = path.join(tmpdir(), `atlas-hero-t2bak-${process.pid}.tsx`)
   cpSync(heroPath, heroBackup)
   let mutantCaught = false
   let mutantDetail = ""
   try {
-    const mutated = read("website/src/components/HeroSection.tsx").replace(`v{TRUTH.version}`, `v9.9.9`)
+    const mutated = read("website/src/components/atlas/AtlasHero.tsx").replace("{TRUTH.version}", `{"9.9.9"}`)
     writeFileSync(heroPath, mutated)
     try {
       execFileSync("npm", ["run", "build"], { cwd: SITE, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 420_000 })
       const mutantHome = normalize(read("website/.next/server/app/index.html"))
-      mutantCaught = mutantHome.includes("v9.9.9") && !mutantHome.includes(`v${version}`)
-      mutantDetail = "hand-typed v9.9.9 rendered while generated version absent — gate must reject this page"
+      mutantCaught = mutantHome.includes("bb 9.9.9") && !mutantHome.includes(`bb ${version}`)
+      mutantDetail = "hand-typed bb 9.9.9 rendered while the generated version was absent — gate must reject this page"
     } catch {
       mutantCaught = false
       mutantDetail = "mutant build failed for the wrong reason"
@@ -275,7 +288,7 @@ if (buildOk) {
   try {
     execFileSync("npm", ["run", "build"], { cwd: SITE, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 420_000 })
     const restoredHome = normalize(read("website/.next/server/app/index.html"))
-    check("T2: restore-proof — committed source renders generated truth again", restoredHome.includes(`v${version}`) && !restoredHome.includes("v9.9.9"))
+    check("T2: restore-proof — committed source renders generated truth again", restoredHome.includes(`bb ${version}`) && !restoredHome.includes("bb 9.9.9"))
   } catch (e) {
     const err = e as { stdout?: string; stderr?: string }
     check("T2: restore-proof — committed source renders generated truth again", false, String(err.stderr ?? err.message).split("\n").slice(-3).join(" | "))

@@ -169,7 +169,9 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
 
 function gitTrackedFiles(): string[] {
   try {
-    return execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
+    // 20k+ tracked paths exceed execFileSync's 1 MB default and the catch below
+    // turned ENOBUFS into "no repository", silently skipping every hygiene check.
+    return execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 })
       .split("\n")
       .map((f) => f.trim())
       .filter(Boolean)

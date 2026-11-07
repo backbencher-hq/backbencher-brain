@@ -14,30 +14,52 @@
 // key has an explicit `case`. The website repeated that fiction on four pages.
 //
 // So the tier is gone and `emits` replaced it: the relationship vocabulary each
-// family's analyzer can construct. And this gate now DERIVES that from the
-// analyzer modules with the same source scan script/m60/rel-type-coverage-gate.ts
-// uses, then requires the website's dataset to match. A family cannot claim an
-// edge its analyzer cannot build, and a family cannot quietly lose one either —
-// both directions are checked. The capability claim is now a fact about the
-// code, not an editorial label.
+// family's analyzer can construct, derived from source and required to match the
+// website's dataset in both directions.
+//
+// TWO READER REPAIRS SINCE, AND WHY THEY MATTER
+// --------------------------------------------
+// 1. THE ENUM BASIS MOVED. Until the 2026-10-17 consolidation
+//    `export enum RelationshipType` lived in src/ast/engine.ts. It now lives in
+//    src/ast/types.ts (engine.ts re-exports it as `ASTEngine.RelationshipType`),
+//    so this gate's old `indexOf` in engine.ts found nothing, the derived
+//    vocabulary was EMPTY, and every family reported `invented=<all types>`.
+//    The reader now goes through script/site-truth/lib.ts, which refuses a
+//    missing/partial enum instead of returning an empty vocabulary (an empty
+//    basis makes every subset check vacuously pass — a green run measuring
+//    nothing, the exact failure class this programme has paid for before).
+// 2. THE DATASET IS GENERATED AGAIN. `website/src/data/brain-languages.ts` was
+//    hand-maintained while claiming a generator that did not exist, and had
+//    drifted: matlab/vba had analyzers and registry keys but no family, the
+//    vocabulary grew from ten to fourteen, and one family claimed a registry id
+//    (`sass`) the engine routes to a DIFFERENT analyzer than that family's
+//    module. The dataset is now produced by script/site-truth/generate-languages.ts
+//    and this gate proves the generated file still equals what the sources say —
+//    it is the independent check on that generator, not a restatement of it.
 //
 // What this gate proves:
-//   1. DATASET — every PARSERS row parses byte-exactly and matches the imported
-//      module; ids are non-empty; the union of ids equals the registry exactly
-//      with no id claimed twice; `emits` is a subset of the enum.
-//   2. ANALYZERS — every family resolves to a real analyzer module, the
+//   1. BASIS — the registry, the authoritative enum and the analyzer inventory
+//      parse to the pinned snapshot; the emitted vocabulary is the enum's unique
+//      values and agrees with graph.ts's EMITTED/DERIVED split.
+//   2. DATASET — every PARSERS row parses byte-exactly and matches the imported
+//      module; ids are non-empty and the union of ids equals the registry exactly
+//      with no id claimed twice.
+//   3. ROUTING — each family's ids are exactly the registry languages whose
+//      getAnalyzer() route names the family's module. This is what catches the
+//      old `sass`-under-SCSS claim.
+//   4. ANALYZERS — every family resolves to a real analyzer module, the
 //      family↔module mapping is a bijection, and no module is left unclaimed.
-//      There is no generic exemption any more, because there is no generic pass.
-//   3. CAPABILITY — each family's `emits` equals what its analyzer source can
+//   5. CAPABILITY — each family's `emits` equals what its analyzer source can
 //      construct. A drifted dataset fails.
-//   4. SNAPSHOT — the registry, grammar and module counts match an explicit
-//      expectation, so an engine change requires a conscious gate update rather
-//      than a silent site drift.
-//   5. BANDS — every family appears in exactly one ecosystem band.
-//   6. RENDERED — the homepage and /languages each publish, for every family,
+//   6. SNAPSHOT — registry, grammar, module, family and vocabulary counts match
+//      an explicit expectation, so an engine change requires a conscious gate
+//      update rather than a silent site drift.
+//   7. BANDS — every family appears in exactly one ecosystem band.
+//   8. RENDERED — the homepage register draws every family as a data point and
+//      /languages publishes, for every family,
 //      its extensions, its recorded symbols and its relationship vocabulary, and
 //      neither page presents a language the registry cannot index.
-//   7. NEGATIVES — planted mutants prove the detectors can fail.
+//   9. NEGATIVES — planted mutants prove the detectors can fail.
 //
 // Run: npx tsx script/m56/verify-languages-surface.ts
 // Evidence: validation/m56/results/L1.json
@@ -47,10 +69,16 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSy
 import { tmpdir } from "node:os"
 import path from "node:path"
 
-const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+import {
+  ROOT,
+  dedicatedLanguageCount,
+  readEngineTruth,
+  readRepo,
+  type EngineTruth,
+} from "../site-truth/lib.ts"
+
 const SITE = path.join(ROOT, "website")
 const RESULTS = path.join(ROOT, "validation/m56/results")
-const READ_ONLY = process.env.BB_M56_READ_ONLY === "1"
 
 let checks = 0
 let passed = 0
@@ -69,54 +97,87 @@ function negative(label: string, byDesign: boolean, detail = ""): void {
   check(`${label} [negative]`, byDesign, detail)
 }
 
-const read = (rel: string): string => readFileSync(path.join(ROOT, rel), "utf8")
+const read = (rel: string): string => readRepo(rel)
 const site = (rel: string): string => readFileSync(path.join(SITE, rel), "utf8")
 
-// --- the registry -------------------------------------------------------------------
-
-// A JS object literal keeps the LAST value for a repeated key, so the resolved
-// map below must do the same — but the parser also keeps every declaration, in
-// order, because last-wins is how a shadowed key hides a real one. It did:
-// `nim` was declared twice (`tree-sitter-nim`, then `__generic__`), the later key
-// won, and the registry claimed nim had no parser while the wasm switch, the
-// vendored grammar and a pinned fixture set all said otherwise. That history is
-// recorded at src/ast/engine.ts:338 and the duplicate is gone; the declaration
-// list is kept so the L1 check below fails if one ever comes back. Counting a
-// shadowed declaration is the same failure as reading the first of two CSS
-// custom properties: it certifies a value nothing uses.
-function registryLanguages(): { values: Map<string, string>; declarations: string[] } {
-  const src = read("src/ast/engine.ts")
-  const start = src.indexOf("const SUPPORTED_LANGUAGES = {")
-  if (start < 0) throw new Error("SUPPORTED_LANGUAGES not found")
-  const block = src.slice(start, src.indexOf("\n  } as const", start))
-  const values = new Map<string, string>()
-  const declarations: string[] = []
-  for (const line of block.split("\n")) {
-    const m = line.match(/^\s*(?:"([^"]+)"|([a-z0-9_-]+)):\s*"([^"]+)",\s*$/)
-    if (!m) continue
-    declarations.push(m[1] ?? m[2]!)
-    values.set(m[1] ?? m[2]!, m[3]!)
-  }
-  return { values, declarations }
+/** Receipt-only state so a basis failure still emits evidence instead of a stack trace. */
+function writeEvidence(status: "verified" | "failed", extra: Record<string, unknown>): void {
+  mkdirSync(RESULTS, { recursive: true })
+  writeFileSync(
+    path.join(RESULTS, "L1.json"),
+    JSON.stringify(
+      {
+        issue: "M56.L1 — Language surface (#787)",
+        code: "L1",
+        milestone: "m56",
+        status,
+        checks,
+        passed,
+        failed: checks - passed,
+        negativeCases: negatives,
+        currentCommit: (() => {
+          try {
+            return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+          } catch {
+            return "unknown"
+          }
+        })(),
+        verifierCommand: "npx tsx script/m56/verify-languages-surface.ts",
+        evidenceFile: "L1.json",
+        generatedAt: new Date().toISOString(),
+        ...extra,
+        failures,
+      },
+      null,
+      2,
+    ) + "\n",
+  )
 }
 
-const registry = registryLanguages()
-const registryNames = [...registry.values.keys()]
-const genericNames = [...registry.values].filter(([, g]) => g === "__generic__").map(([n]) => n)
-const dedicatedCount = registryNames.length - genericNames.length
+// ============================================================================
+// 0. BASIS — the sources this gate measures against. A failure here means the
+//    gate cannot run, not that the site is wrong; it still exits non-zero.
+// ============================================================================
 
 // The snapshot. An engine change must be reflected here deliberately: this is
 // the line that turns "the site drifted" into "someone changed the contract".
 //
-// Re-cut 2026-10-16 against the live tree. The previous cut (50/49/47/48) was
-// taken when the registry resolved 50 keys with `nim` shadowed to `__generic__`
-// and the dataset carried 47 families. Three engine changes moved it, not site
-// drift: `solidity` — which already had an analyzer and a pinned grammar but no
-// registry key, so nothing could route to it — joined SUPPORTED_LANGUAGES (50→51
-// languages, 47→48 families, +1 dedicated grammar); and the shadowing
-// `nim: "__generic__"` declaration was deleted, so nim now resolves to its real
-// grammar (49→51 dedicated: nim, plus the arrivals above).
-const EXPECTED = { languages: 51, dedicatedParsers: 51, families: 48, analyzers: 48 }
+// Re-cut 2026-11-07 against the live tree. History, because each cut names a real
+// engine move rather than site drift:
+//   · 50/49/47/48 — before `solidity` joined SUPPORTED_LANGUAGES and while `nim`
+//     was shadowed to `__generic__` by a duplicate declaration.
+//   · 51/51/48/48 — after solidity joined and the nim duplicate was removed.
+//   · 53/53/50/50 + 14 types — the M60 VB wave and the MATLAB lane added
+//     `matlab`/`vba` registry keys with their own analyzers (50 modules), and the
+//     2026-10-18 vocabulary extension took the emitted enum from ten to fourteen.
+//     The site dataset was hand-maintained through all of it; that is defect D-03.
+const EXPECTED = {
+  languages: 53,
+  dedicatedParsers: 53,
+  families: 50,
+  analyzers: 50,
+  relationshipTypes: 14,
+}
+
+const REPAIR = "— the basis moved and this gate must be repaired (script/site-truth/lib.ts), not skipped"
+
+let truth: EngineTruth
+try {
+  truth = readEngineTruth()
+} catch (e) {
+  check(`L1: the engine basis parses (registry, enum, analyzer inventory) ${REPAIR}`, false, (e as Error).message)
+  writeEvidence("failed", { contract: { snapshot: EXPECTED } })
+  console.log(`\nL1 gate: FAILED (${passed}/${checks} checks, ${negatives} negative cases)`)
+  process.exit(1)
+}
+
+const registryNames = truth.registry.languages.map((l) => l.name)
+const dedicatedCount = dedicatedLanguageCount(truth.registry)
+const genericNames = truth.registry.languages.filter((l) => l.grammar === "__generic__").map((l) => l.name)
+const analyzerTokens = truth.modules
+const analyzerSet = new Set(analyzerTokens)
+const vocab = truth.vocabulary
+const ENUM_VALUES = vocab.emitted
 
 check(
   `L1: the registry declares ${EXPECTED.languages} languages with ${EXPECTED.dedicatedParsers} dedicated grammars`,
@@ -126,78 +187,56 @@ check(
 // Not `new Set(registryNames).size === registryNames.length` — that compares the
 // map's keys with themselves and passes no matter what the source says. The
 // duplicate that matters is in the SOURCE, so it is counted there.
-const shadowed = registry.declarations.filter((k, i) => registry.declarations.indexOf(k) !== i)
+const shadowed = truth.registry.declarations.filter((k, i) => truth.registry.declarations.indexOf(k) !== i)
 check(
   "L1: no registry language is declared twice",
   shadowed.length === 0,
-  `shadowed=[${[...new Set(shadowed)].join(",")}] declarations=${registry.declarations.length} resolved=${registryNames.length}`,
+  `shadowed=[${[...new Set(shadowed)].join(",")}] declarations=${truth.registry.declarations.length} resolved=${registryNames.length}`,
+)
+check(
+  `L1: the emitted relationship vocabulary is ${EXPECTED.relationshipTypes} values read from src/ast/types.ts`,
+  ENUM_VALUES.length === EXPECTED.relationshipTypes,
+  `types=${ENUM_VALUES.length} [${ENUM_VALUES.join(",")}]`,
+)
+check(
+  `L1: the analyzer inventory is ${EXPECTED.analyzers} modules and matches the registry routes`,
+  analyzerTokens.length === EXPECTED.analyzers && [...truth.analyzerModuleMap.keys()].length === EXPECTED.languages,
+  `modules=${analyzerTokens.length} routedLanguages=${[...truth.analyzerModuleMap.keys()].length}`,
 )
 
-// --- the analyzers, and what they can construct -------------------------------------
-
-const ANALYZER_ALIAS: Record<string, string> = { make: "makefile" }
-const analyzerTokens = readdirSync(path.join(ROOT, "src/ast"))
-  .filter((f) => /^real-.*-analyzer\.ts$/.test(f))
-  .map((f) => f.replace(/^real-/, "").replace(/-analyzer\.ts$/, ""))
-const analyzerSet = new Set(analyzerTokens)
-const analyzerPath = (m: string): string => path.join(ROOT, "src/ast", `real-${m}-analyzer.ts`)
-
-// The engine's RelationshipType enum is the in-force one; src/ast/types.ts is a
-// stale duplicate that nothing imports, and it spells `imports` as
-// `brain_import`. Reading the enum means this gate cannot drift from it.
-const ENUM_VALUE: Record<string, string> = {}
+// Cross-source agreement: src/ast/graph.ts mirrors the enum and splits it into
+// EMITTED and DERIVED blocks — DERIVED_RELATIONSHIP_TYPES is exported as data.
+// The site publishes the EMITTED set; if graph.ts ever disagrees with types.ts
+// about which values are emitted, the published vocabulary is a coin flip.
 {
-  const engine = read("src/ast/engine.ts")
-  const block = engine.slice(engine.indexOf("export enum RelationshipType"), engine.indexOf("}", engine.indexOf("export enum RelationshipType")))
-  for (const m of block.matchAll(/([A-Za-z]+)\s*=\s*"([a-z_]+)"/g)) if (!ENUM_VALUE[m[1]!]) ENUM_VALUE[m[1]!] = m[2]!
-}
-const ENUM_VALUES = [...new Set(Object.values(ENUM_VALUE))]
-
-// Same derivation as script/m60/rel-type-coverage-gate.ts: over-report rather
-// than under-report, because the failure this exists to catch is a family
-// claiming less than its analyzer can do.
-function derivesFromSource(moduleName: string, seen: Set<string> = new Set()): Set<string> {
-  const p = analyzerPath(moduleName)
-  if (!existsSync(p) || seen.has(moduleName)) return new Set()
-  seen.add(moduleName)
-  const src = readFileSync(p, "utf8")
-  const found = new Set<string>()
-  const valid = new Set(ENUM_VALUES)
-  for (const m of src.matchAll(/RelationshipType\.([A-Za-z]+)/g)) {
-    const v = ENUM_VALUE[m[1]!]
-    if (v) found.add(v)
+  const graphSrc = read("src/ast/graph.ts")
+  const derivedBlockStart = graphSrc.indexOf("export const DERIVED_RELATIONSHIP_TYPES")
+  const derivedBlockEnd = graphSrc.indexOf("])", derivedBlockStart)
+  const graphEnumStart = graphSrc.indexOf("export enum RelationshipType")
+  const graphEnumEnd = graphSrc.indexOf("\n  }", graphEnumStart)
+  const graphMemberToValue = new Map<string, string>()
+  if (graphEnumStart >= 0 && graphEnumEnd >= 0) {
+    for (const line of graphSrc.slice(graphEnumStart, graphEnumEnd).split("\n")) {
+      const t = line.trim()
+      if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) continue
+      const m = t.match(/^([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"([^"]+)"/)
+      if (m) graphMemberToValue.set(m[1]!, m[2]!)
+    }
   }
-  // The string-literal forms are filtered to the enum on purpose: an analyzer
-  // also writes `type: "boolean"` and finding kinds like "xss" and
-  // "sql_injection", and an unfiltered scan files those as relationship types.
-  // The value is not always immediately after the colon. The Java analyzer writes
-  //   metadata: { relationshipType: type === "interface_declaration" ? "extends_interface" : "extends" }
-  // so the type is chosen by a ternary. A pattern that insists on adjacency
-  // under-reports Java's `extends` edge, and a lazy pattern that does allow
-  // intervening text fails differently: /g consumes the FIRST quoted token
-  // ("interface_declaration") and never reaches the one that matters.
-  //
-  // Under-reporting is the dangerous direction here — it is exactly how the
-  // deleted `tier` ended up claiming four languages were weaker than they are.
-  // So: take every quoted lowercase token on the remainder of the line and keep
-  // the ones the enum actually declares.
-  for (const m of src.matchAll(/(?:type|relationshipType|label):([^\n]*)/g)) {
-    for (const q of m[1]!.matchAll(/"([a-z_]+)"/g)) if (valid.has(q[1]!)) found.add(q[1]!)
-  }
-  // Some analyzers build edges through a positional helper rather than the enum:
-  // this.rel(scope, "contains", name, node, 1.0). Missing that form made Julia
-  // publish an empty vocabulary — the same under-claim the deleted tier made.
-  for (const m of src.matchAll(/\brel\(\s*[^,()]+,\s*"([a-z_]+)"/g)) if (valid.has(m[1]!)) found.add(m[1]!)
-  // Delegation. HTML resolves inline <script>/<style> blocks through the real
-  // JavaScript/TypeScript/CSS analyzers and merges their relationships, and SCSS
-  // inherits containment and imports from RealCssAnalyzer. Those edges are real
-  // and stored under the host language, so the host's effective vocabulary
-  // includes its delegate's.
-  for (const m of src.matchAll(/require\(\s*["']\.\/real-([a-z0-9-]+)-analyzer["']\s*\)|Real([A-Za-z0-9]+)Analyzer/g)) {
-    const candidate = m[1] ?? m[2]?.toLowerCase() ?? ""
-    if (analyzerSet.has(candidate)) for (const t of derivesFromSource(candidate, seen)) found.add(t)
-  }
-  return found
+  const derivedMembers =
+    derivedBlockStart >= 0 && derivedBlockEnd >= 0
+      ? [...graphSrc.slice(derivedBlockStart, derivedBlockEnd).matchAll(/RelationshipType\.([A-Za-z]+)/g)].map((m) => m[1]!)
+      : []
+  const derivedValues = new Set(derivedMembers.map((m) => graphMemberToValue.get(m)!).filter(Boolean))
+  const graphValues = new Set(graphMemberToValue.values())
+  const overlap = ENUM_VALUES.filter((v) => derivedValues.has(v))
+  const missingFromGraph = ENUM_VALUES.filter((v) => !graphValues.has(v))
+  const unaccounted = [...graphValues].filter((v) => !ENUM_VALUES.includes(v) && !derivedValues.has(v))
+  check(
+    "L1: graph.ts's EMITTED/DERIVED split agrees with the authoritative enum",
+    graphMemberToValue.size > 0 && derivedValues.size > 0 && overlap.length === 0 && missingFromGraph.length === 0 && unaccounted.length === 0,
+    `overlap=[${overlap.join(",")}] missingFromGraph=[${missingFromGraph.join(",")}] unaccounted=[${unaccounted.join(",")}] derived=${derivedValues.size}`,
+  )
 }
 
 // --- the website dataset ------------------------------------------------------------
@@ -212,7 +251,7 @@ const parsed: Family[] = [...langSrc.matchAll(
 }))
 
 const { PARSERS } = (await import(path.join(SITE, "src/data/brain-languages.ts"))) as {
-  PARSERS: { name: string; ext: string; ids: string[]; emits: string[]; extracts: string }[]
+  PARSERS: { name: string; ext: string; ids: string[]; emits: string[]; extracts: string; color: string }[]
 }
 
 check(
@@ -220,8 +259,6 @@ check(
   parsed.length === EXPECTED.families && PARSERS.length === EXPECTED.families,
   `bytes=${parsed.length} module=${PARSERS.length}`,
 )
-// `icon` is a string in the bytes and a React component in the module, so the
-// two are compared field by field over everything the dataset actually claims.
 check(
   "L1: the byte-parsed dataset equals the imported module",
   parsed.length === PARSERS.length && parsed.every((p, i) => {
@@ -234,7 +271,7 @@ check(
 const fams = PARSERS
 check("L1: every family has a name, extensions, a registry id and recorded symbols",
   fams.every((f) => f.name && f.ext && f.ids.length > 0 && f.extracts), "")
-check("L1: every family's emits is a subset of the engine's relationship enum",
+check("L1: every family's emits is a subset of the engine's emitted relationship vocabulary",
   fams.every((f) => f.emits.every((e) => ENUM_VALUES.includes(e))),
   fams.flatMap((f) => f.emits.filter((e) => !ENUM_VALUES.includes(e)).map((e) => `${f.name}:${e}`)).join(","),
 )
@@ -249,45 +286,84 @@ check(
   `site=${new Set(siteIds).size} registry=${registryNames.length}`,
 )
 
-// --- analyzer bijection, with no generic exemption -----------------------------------
+// --- families are the analyzer inventory, and their ids are its routes ---------------
+//
+// The join key is the analyzer MODULE, and a family's ids must be exactly the
+// registry languages whose getAnalyzer() route names that module. A family cannot
+// borrow another module's language (`sass` under SCSS was the shipped version of
+// that) and two families cannot share one module.
+const moduleFor = (f: Family): string | undefined => f.ids.map((id) => truth.analyzerModuleMap.get(id)).find((m) => m && analyzerSet.has(m))
 
-const moduleFor = (f: Family): string | undefined => f.ids.map((id) => ANALYZER_ALIAS[id] ?? id).find((t) => analyzerSet.has(t))
 const analyzerGaps = fams.filter((f) => moduleFor(f) === undefined).map((f) => f.name)
 check("L1: every family is backed by a real analyzer module", analyzerGaps.length === 0, analyzerGaps.join(","))
 
 const claimed = fams.map((f) => moduleFor(f)).filter(Boolean) as string[]
 const unclaimed = analyzerTokens.filter((m) => !claimed.includes(m))
-// solidity has a hand-written analyzer but is not in SUPPORTED_LANGUAGES, so the
-// engine cannot route a .sol file to it. Naming it here keeps the gap visible
-// instead of letting it look like an oversight.
-const KNOWN_UNCLAIMED = ["solidity"]
 check(
   `L1: the analyzer inventory is accounted for (${analyzerTokens.length} modules)`,
   analyzerTokens.length === EXPECTED.analyzers,
   `modules=${analyzerTokens.length}`,
 )
 check(
-  "L1: every analyzer module is claimed by a family, except a known-unregistered one",
-  unclaimed.every((m) => KNOWN_UNCLAIMED.includes(m)),
-  `unclaimed=${unclaimed.join(",")}`,
+  "L1: every analyzer module is claimed by exactly one family",
+  unclaimed.length === 0 && claimed.length === classifierCount(),
+  `unclaimed=[${unclaimed.join(",")}] claimed=${claimed.length} modules=${analyzerTokens.length}`,
 )
+check(
+  "L1: no two families claim the same analyzer module",
+  new Set(claimed).size === claimed.length,
+  claimed.filter((m, i) => claimed.indexOf(m) !== i).join(","),
+)
+check(
+  "L1: each family's registry ids are exactly the languages its analyzer module routes",
+  fams.every((f) => {
+    const module = moduleFor(f)
+    if (!module) return false
+    const routed = truth.languagesByModule.get(module) ?? []
+    return JSON.stringify([...f.ids].sort()) === JSON.stringify([...routed].sort())
+  }),
+  fams
+    .filter((f) => {
+      const module = moduleFor(f)
+      if (!module) return true
+      const routed = truth.languagesByModule.get(module) ?? []
+      return JSON.stringify([...f.ids].sort()) !== JSON.stringify([...routed].sort())
+    })
+    .map((f) => `${f.name}: ids=[${f.ids.join(",")}] routed=[${(truth.languagesByModule.get(moduleFor(f)!) ?? []).join(",")}]`)
+    .join(" · "),
+)
+
+function classifierCount(): number {
+  return new Set(claimed).size
+}
 
 // --- the capability claim, checked in BOTH directions --------------------------------
 
-const capabilityDrift: string[] = []
-for (const f of fams) {
-  const mod = moduleFor(f)
-  if (!mod) continue
-  const fromSource = derivesFromSource(mod)
-  const declared = new Set(f.emits)
-  const under = [...fromSource].filter((t) => !declared.has(t)).sort()
-  const over = [...declared].filter((t) => !fromSource.has(t)).sort()
-  if (under.length || over.length) capabilityDrift.push(`${f.name}(${mod}) missing=${under.join("/")} invented=${over.join("/")}`)
+function capabilityDrift(rows: Family[]): string[] {
+  const drift: string[] = []
+  for (const f of rows) {
+    const mod = moduleFor(f)
+    if (!mod) {
+      drift.push(`${f.name}: no analyzer module`)
+      continue
+    }
+    const fromSource = truth.emitsByModule.get(mod) ?? new Set<string>()
+    if (fromSource.size === 0) {
+      drift.push(`${f.name}(${mod}): analyzer derivation is empty ${REPAIR}`)
+      continue
+    }
+    const declared = new Set(f.emits)
+    const under = [...fromSource].filter((t) => !declared.has(t)).sort()
+    const over = [...declared].filter((t) => !fromSource.has(t)).sort()
+    if (under.length || over.length) drift.push(`${f.name}(${mod}) missing=${under.join("/")} invented=${over.join("/")}`)
+  }
+  return drift
 }
+const capabilityDriftHits = capabilityDrift(fams)
 check(
   "L1: every family's emits equals what its analyzer source can construct",
-  capabilityDrift.length === 0,
-  capabilityDrift.join(" · "),
+  capabilityDriftHits.length === 0,
+  capabilityDriftHits.join(" · "),
 )
 
 // --- bands, rails, ontology ---------------------------------------------------------
@@ -355,24 +431,51 @@ const decodeEntities = (h: string): string =>
   h.replace(/&#x27;/g, "'").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
     .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
 
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+/**
+ * A family the registry cannot index must never be presented as covered. Kept as
+ * a function so the negative probe can prove the detector fires on planted HTML.
+ */
+function phantomCoverageHits(html: string, phantoms: readonly string[]): string[] {
+  return phantoms.filter(
+    (p) =>
+      html.includes(`data-family="${p}"`) ||
+      html.includes(`data-analyzer="${p}"`) ||
+      new RegExp(`>${escapeRe(p)}</h[2-6]>`).test(html),
+  )
+}
+
 const homeHtml = decodeEntities(htmlOf("/"))
 const langHtml = decodeEntities(htmlOf("/languages"))
 const built = homeHtml.length > 0 && langHtml.length > 0
 
-// Every family, on the homepage: name in an <h5>, and within 1000 characters
-// its extensions, its relationship vocabulary and its recorded symbols.
+// The homepage register is a field, not a catalogue: it prints no family list
+// (the old card pin required 1200 characters of text per family, which is the
+// repetition the owner rejected). The gate therefore verifies the drawing
+// carries every analyzer as a data point — name + generated emits count — and
+// that the plate declares the generated total. The per-family depth facts
+// (extensions, ids, vocabulary, recorded symbols) stay pinned on /languages.
+const homePoints = [...homeHtml.matchAll(/<circle[^>]*data-analyzer="([^"]+)"[^>]*data-emits="(\d+)"/g)].map((m) => ({
+  name: m[1]!,
+  emits: Number(m[2]),
+}))
+// Two plates exist (desktop and mobile geometry of the same drawing), so the
+// same analyzer legitimately appears twice in the HTML; coverage is over names.
+const homePointNames = new Set(homePoints.map((p) => p.name))
 const homeGaps: string[] = []
+if (homePointNames.size !== fams.length) homeGaps.push(`points=${homePointNames.size} families=${fams.length}`)
+if (!homeHtml.includes(`data-analyzers="${fams.length}"`)) homeGaps.push(`plate total missing (${fams.length})`)
 for (const f of fams) {
-  const i = homeHtml.indexOf(`>${f.name}</h5>`)
-  if (i < 0) { homeGaps.push(`${f.name}: no <h5>`); continue }
-  const w = homeHtml.slice(i, i + 1000)
-  const missing: string[] = []
-  if (!w.includes(f.ext)) missing.push(`ext(${f.ext})`)
-  if (f.emits.length && !f.emits.every((e) => w.includes(e))) missing.push(`emits(${f.emits.join("/")})`)
-  if (!w.includes(f.extracts)) missing.push("extracts")
-  if (missing.length) homeGaps.push(`${f.name}: ${missing.join(" ")}`)
+  const point = homePoints.find((p) => p.name === f.name)
+  if (!point) homeGaps.push(`${f.name}: no data point`)
+  else if (point.emits !== f.emits.length) homeGaps.push(`${f.name}: emits=${point.emits} data=${f.emits.length}`)
 }
-check(`L1: the homepage publishes every family's facts within 1000 chars of its heading`, built && homeGaps.length === 0, homeGaps.slice(0, 6).join(" · "))
+check(
+  "L1: the homepage register draws every analyzer with its generated emits count",
+  built && homeGaps.length === 0,
+  homeGaps.slice(0, 6).join(" · "),
+)
 
 // Every family, on /languages: name in an <h2>, and within 2600 characters its
 // extensions, its recorded symbols, every registry id as a <code> and its
@@ -398,9 +501,17 @@ check("L1: /languages explains the indexing pipeline and links the docs section"
 check("L1: the docs page carries the pipeline anchor the languages page links to", htmlOf("/docs").includes('id="how-the-index-works"'))
 
 // A language the registry cannot index must never be presented as covered.
-const PHANTOM_FAMILIES = ["Fortran", "COBOL", "MATLAB", "Pascal", "Delphi", "Kotlin Script"]
-const phantoms = PHANTOM_FAMILIES.filter((p) => new RegExp(`>${p}</h[25]>`).test(langHtml) || new RegExp(`>${p}</h[25]>`).test(homeHtml))
-check("L1: no language the registry cannot index is presented as covered", phantoms.length === 0, phantoms.join(","))
+// MATLAB was on this list until the M60/MATLAB lanes gave it a registry key, an
+// analyzer and a family — it is a covered language now, so the list keeps only
+// languages with no registry entry of any kind.
+const PHANTOM_FAMILIES: readonly string[] = ["Fortran", "COBOL", "Pascal", "Delphi", "Kotlin Script", "Racket", "Elm", "OCaml"]
+const phantoms = phantomCoverageHits(langHtml, PHANTOM_FAMILIES).concat(phantomCoverageHits(homeHtml, PHANTOM_FAMILIES))
+check("L1: no language the registry cannot index is presented as covered", phantoms.length === 0, [...new Set(phantoms)].join(","))
+check(
+  "L1: the phantom list itself names no registry language",
+  PHANTOM_FAMILIES.every((p) => !registryNames.includes(p.toLowerCase())),
+  PHANTOM_FAMILIES.filter((p) => registryNames.includes(p.toLowerCase())).join(","),
+)
 
 // The counts the pages publish must be the registry's, not the old snapshot's.
 const truthSrc = site("src/data/truth.generated.ts")
@@ -413,7 +524,9 @@ check(
 )
 check(
   "L1: no surface still publishes the retired counts",
-  !homeHtml.includes("46 dedicated tree-sitter parsers across 49") && !langHtml.includes("41 dedicated analyzer modules"),
+  !homeHtml.includes("46 dedicated tree-sitter parsers across 49")
+    && !homeHtml.includes("51 dedicated tree-sitter parsers across 51")
+    && !langHtml.includes("41 dedicated analyzer modules"),
   "",
 )
 
@@ -428,15 +541,15 @@ negative("N1: an invented relationship type is detected", (() => {
 })())
 
 // N2 (bytes): an under-claim — a family that quietly stops publishing an edge
-// its analyzer can build — must be caught. This is the direction the deleted
-// `tier` failed in, four times, and it is the more dangerous of the two.
+// its analyzer can build — must be caught by the SAME comparator the real check
+// uses, on mutated rows. This is the direction the deleted `tier` failed in, four
+// times, and it is the more dangerous of the two.
 negative("N2: an under-claimed relationship type is detected", (() => {
   const ts = fams.find((f) => f.name === "TypeScript")
-  const mod = ts ? moduleFor(ts) : undefined
-  if (!ts || !mod) return false
-  const fromSource = derivesFromSource(mod)
-  const shrunk = new Set(ts.emits.slice(1))
-  return [...fromSource].some((t) => !shrunk.has(t))
+  if (!ts || ts.emits.length === 0) return false
+  const shrunk = fams.map((f) => (f.name === "TypeScript" ? { ...f, emits: f.emits.slice(1) } : f))
+  const drift = capabilityDrift(shrunk)
+  return drift.some((d) => d.startsWith("TypeScript(")) && capabilityDrift(fams).length === 0
 })())
 
 // N3 (bytes): a generic-pass claim is dead vocabulary and must stay dead.
@@ -446,6 +559,20 @@ negative("N3: the deleted tier vocabulary is detected", TIER_VOCAB.some((v) => `
 negative("N4: a dropped registry id is detected", (() => {
   const shrunk = fams.map((f) => (f.name === "TOML" ? { ...f, ids: f.ids.slice(1) } : f))
   return JSON.stringify([...new Set(shrunk.flatMap((f) => f.ids))].sort()) !== JSON.stringify([...registryNames].sort())
+})())
+
+// N4b (bytes): a family borrowing a registry id whose route names a different
+// analyzer module must be caught by the routing check — this is the shipped
+// `sass`-under-SCSS defect, planted in reverse.
+negative("N4b: a borrowed registry id from another analyzer route is detected", (() => {
+  const scss = fams.find((f) => f.name === "SCSS / Sass")
+  const css = fams.find((f) => f.name === "CSS")
+  const sassId = truth.languagesByModule.get("css")?.includes("sass")
+  if (!scss || !css || !sassId) return false
+  const mutated = fams.map((f) => (f.name === "SCSS / Sass" ? { ...f, ids: [...f.ids, "sass"] } : f))
+  const routes = (row: Family): string[] => [...new Set(row.ids.map((id) => truth.analyzerModuleMap.get(id)!).filter(Boolean))]
+  const bad = mutated.find((f) => f.name === "SCSS / Sass")!
+  return routes(bad).length > 1 && routes(scss).length === 1
 })())
 
 // N5 (bytes): a family losing its analyzer module must be detected.
@@ -461,19 +588,25 @@ negative("N5: a family with no analyzer module is detected", (() => {
 // N6 (real mutation on disk): emptying one family's `emits` must fail the
 // capability check, and the restore must be byte-clean. The backup lives in
 // tmpdir so a broad `git add` can never see it.
+//
+// The dataset's `emits` is an ARRAY now (it was a space-joined string when this
+// negative was written), so the mutation rewrites the bracketed list; the old
+// string form matched nothing and the probe passed for the wrong reason.
 {
   const target = path.join(SITE, "src/data/brain-languages.ts")
   const backup = path.join(tmpdir(), `l1-langs-n6-${process.pid}.ts`)
   const original = readFileSync(target, "utf8")
   writeFileSync(backup, original)
   try {
-    const mutated = original.replace(/(\{ name: 'Rust'[^}]*?emits: ')[^']*(')/, "$1$2")
+    const mutated = original.replace(/(\{ name: 'Rust'[^}]*?emits: )\[[^\]]*\]/, "$1[]")
     writeFileSync(target, mutated)
-    const after = [...mutated.matchAll(/^\s*\{ name: '([^']+)'[^}]*?emits: '([^']*)'/gm)]
+    const after = [...mutated.matchAll(/^\s*\{ name: '([^']+)'[^}]*?emits: \[([^\]]*)\]/gm)]
     const rust = after.find((m) => m[1] === "Rust")
-    const mod = "rust"
-    const drifted = rust ? derivesFromSource(mod).size > 0 && rust[2]!.trim().split(/\s+/).length === 0 : true
-    negative("N6: an emptied emits field fails the capability check", drifted)
+    const rustRow = rust
+      ? { name: "Rust", ext: "", ids: [...(rust[0].match(/ids: \[([^\]]*)\]/)?.[1] ?? "").matchAll(/'([^']+)'/g)].map((x) => x[1]!), icon: "", color: "", emits: [...rust[2]!.matchAll(/'([^']+)'/g)].map((x) => x[1]!), extracts: "" }
+      : undefined
+    const drift = rustRow ? capabilityDrift([rustRow]) : []
+    negative("N6: an emptied emits field fails the capability check", mutated !== original && drift.length > 0, drift.join(" · "))
   } finally {
     writeFileSync(target, original)
     rmSync(backup, { force: true })
@@ -481,61 +614,42 @@ negative("N5: a family with no analyzer module is detected", (() => {
   check("N6 restore-proof: the language dataset is byte-clean again", readFileSync(target, "utf8") === original)
 }
 
-// --- verdict + evidence --------------------------------------------------------------
+// N7 (bytes): the phantom-coverage detector must fire on planted HTML.
+negative("N7: a family the registry cannot index is detected on rendered HTML", (() => {
+  const planted = '<h2>Fortran</h2><p class="x">a language nobody indexes</p>'
+  const notPlanted = `<h2>${fams[0]!.name}</h2>`
+  return phantomCoverageHits(planted, PHANTOM_FAMILIES).length === 1 && phantomCoverageHits(notPlanted, PHANTOM_FAMILIES).length === 0
+})())
+
+// --- verdict + evidence ---------------------------------------------------------------
 
 const failed = checks - passed
 const ok = failed === 0
-mkdirSync(RESULTS, { recursive: true })
-writeFileSync(
-  path.join(RESULTS, "L1.json"),
-  JSON.stringify(
-    {
-      issue: "M56.L1 — Language surface (#787)",
-      code: "L1",
-      milestone: "m56",
-      status: ok ? "verified" : "failed",
-      checks,
-      passed,
-      failed,
-      negativeCases: negatives,
-      currentCommit: (() => {
-        try {
-          return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-        } catch {
-          return "unknown"
-        }
-      })(),
-      verifierCommand: "npx tsx script/m56/verify-languages-surface.ts",
-      evidenceFile: "L1.json",
-      generatedAt: new Date().toISOString(),
-      contract: {
-        snapshot: EXPECTED,
-        registryLanguages: registryNames.length,
-        dedicatedGrammars: dedicatedCount,
-        genericRegistryEntries: genericNames,
-        analyzerModules: analyzerTokens.length,
-        families: fams.length,
-        relationshipEnum: ENUM_VALUES,
-      },
-      summary: [
-        `the registry declares ${registryNames.length} languages, ${dedicatedCount} with a dedicated grammar`,
-        `all ${analyzerTokens.length} analyzer modules are accounted for; ${KNOWN_UNCLAIMED.join(", ") || "none"} is not in SUPPORTED_LANGUAGES and cannot be routed`,
-        "every family is backed by a real analyzer module — there is no generic exemption, because GenericAnalyzer is unreachable",
-        "each family's relationship vocabulary equals what its analyzer source can construct, checked in both directions",
-        "the full/structural/generic depth tier has been removed: it had no definition in src/ and was anti-correlated with measured coverage",
-        "no depth record claims a missing analyzer or a missing call graph",
-        `the homepage and /languages each publish every family's extensions, recorded symbols and relationship vocabulary`,
-      ],
-      limitations: [
-        "`emits` is derived from the analyzer source by regex over RelationshipType sites and literal type strings, the same over-reporting derivation script/m60/rel-type-coverage-gate.ts uses. A relationship built through an indirection neither regex can see would be missed; the derivation errs toward over-reporting so a family's claim is checked against a superset.",
-        "Emission capability is not the same as measured coverage. How much of what an analyzer can emit it actually emits on a corpus is measured by the differential harness (validation/m14/differential-baseline.json), not here.",
-        "The rendered-surface checks read website/.next, so they are skipped when the site has not been built. The dataset, analyzer and capability checks above always run.",
-      ],
-      failures,
-    },
-    null,
-    2,
-  ) + "\n",
-)
+writeEvidence(ok ? "verified" : "failed", {
+  contract: {
+    snapshot: EXPECTED,
+    registryLanguages: registryNames.length,
+    dedicatedGrammars: dedicatedCount,
+    genericRegistryEntries: genericNames,
+    analyzerModules: analyzerTokens.length,
+    families: fams.length,
+    relationshipEnum: ENUM_VALUES,
+  },
+  summary: [
+    `the registry declares ${registryNames.length} languages, ${dedicatedCount} with a dedicated grammar`,
+    `${fams.length} families, one per analyzer module; all ${analyzerTokens.length} modules claimed exactly once`,
+    "each family's registry ids are exactly the languages its analyzer module routes",
+    "each family's relationship vocabulary equals what its analyzer source can construct, checked in both directions",
+    "graph.ts's EMITTED/DERIVED split agrees with the authoritative types.ts enum",
+    "the full/structural/generic depth tier has been removed: it had no definition in src/ and was anti-correlated with measured coverage",
+    "no depth record claims a missing analyzer or a missing call graph",
+    `the homepage register points at every family, and /languages publishes each family's extensions, recorded symbols and relationship vocabulary`,
+  ],
+  limitations: [
+    "`emits` is derived from the analyzer source by regex over RelationshipType sites and literal type strings, the same over-reporting derivation script/m60/rel-type-coverage-gate.ts uses. A relationship built through an indirection neither regex can see would be missed; the derivation errs toward over-reporting so a family's claim is checked against a superset. The independent audit of that derivation is script/m60/rel-type-coverage-gate.ts (differential-audited labels), not this gate.",
+    "The rendered-surface checks read website/.next, so they are skipped when the site has not been built. The dataset, routing, analyzer and capability checks above always run.",
+    "The homepage pin requires a `data-analyzer=\"<name>\"` point with the generated emits count for every family, and `data-analyzers` = the family total; a missing family cannot pass.",
+  ],
+})
 console.log(`\nL1 gate: ${ok ? "VERIFIED" : "FAILED"} (${passed}/${checks} checks, ${negatives} negative cases)`)
 if (!ok) process.exit(1)

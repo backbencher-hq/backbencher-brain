@@ -236,10 +236,19 @@ const pages = {
 
 const missingDescriptions = built ? facts.filter((f) => !pages.tools.includes(f.description) || !pages.docs.includes(f.description)).map((f) => f.name) : []
 check("T1: the tools page and the docs table render every tool's full registry description", built && missingDescriptions.length === 0, missingDescriptions.join(", "))
-const missingSummaries = built ? facts.filter((f) => !pages.tools.includes(f.summary) || !pages.home.includes(f.summary)).map((f) => f.name) : []
-check("T1: the tools page and the homepage render every tool's registry summary", built && missingSummaries.length === 0, missingSummaries.join(", "))
-const missingNames = built ? facts.filter((f) => !pages.tools.includes(f.name) || !pages.docs.includes(f.name) || !pages.home.includes(f.name)).map((f) => f.name) : []
-check("T1: all three surfaces name every public tool (homepage accounts for all 16)", built && missingNames.length === 0, missingNames.join(", "))
+// The Evidence Atlas homepage (DESIGN.md v0.3) prints each fact once: it does
+// not repeat the tool catalogue, it points at it. The rendered contract is
+// therefore: /tools carries every summary, /tools + /docs name every tool, and
+// the homepage states the generated tool count and links to /tools.
+const missingSummaries = built ? facts.filter((f) => !pages.tools.includes(f.summary)).map((f) => f.name) : []
+check("T1: the tools page renders every tool's registry summary", built && missingSummaries.length === 0, missingSummaries.join(", "))
+const missingNames = built ? facts.filter((f) => !pages.tools.includes(f.name) || !pages.docs.includes(f.name)).map((f) => f.name) : []
+check("T1: the tools page and docs table name every public tool", built && missingNames.length === 0, missingNames.join(", "))
+check(
+  "T1: the homepage points at the tools surface without repeating the catalogue",
+  built && pages.home.includes(`${facts.length} MCP tools`) && pages.home.includes("/tools") && !facts.some((f) => pages.home.includes(f.description)),
+  "generated tool count or /tools link missing, or a full tool description leaked onto the homepage",
+)
 const PHANTOMS = ["bb_select", "bb_update", "bb_delete", "bb_insert", "bb_write", "bb_refactor", "bb_refresh", "bb_relationships", "bb_test_suggestions"]
 const phantomRendered = built ? PHANTOMS.filter((p) => pages.tools.includes(p) || pages.docs.includes(p) || pages.home.includes(p)) : []
 check("T1: no phantom tool name renders on any surface", built && phantomRendered.length === 0, phantomRendered.join(", "))

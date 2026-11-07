@@ -79,21 +79,31 @@ console.log("M56.I1 information-architecture verifier")
 // --- 1. the nav ---------------------------------------------------------------------
 
 const navSrc = site("src/components/Navigation.tsx")
-const footerSrc = site("src/components/SiteFooter.tsx")
+const footerSrc = site("src/components/atlas/AtlasFooter.tsx")
 const navEntries = [...navSrc.matchAll(/\{ href: '(\/[a-z0-9-]+)', label: '([^']+)' \},/g)].map((m) => m[1]!.slice(1))
 check("I1: the navigation is exactly the six public surfaces, in contract order", JSON.stringify(navEntries) === JSON.stringify(NAV_CONTRACT), navEntries.join(","))
-const footerEntries = [...footerSrc.matchAll(/\{ href: "(\/[a-z0-9-]+)", label: "[^"]+" \},/g)].map((m) => m[1]!.slice(1))
+const footerEntries = [...footerSrc.matchAll(/<Link href="(\/[a-z0-9-]+)"/g)].map((m) => m[1]!.slice(1))
 check("I1: the footer links every live surface", NAV_CONTRACT.every((r) => footerEntries.includes(r)), footerEntries.join(","))
-check("I1: neither nav nor footer links a retired path", !RETIRED.some((r) => navSrc.includes(`href: '${r}'`) || footerSrc.includes(`href: "${r}"`)))
+check("I1: neither nav nor footer links a retired path", !RETIRED.some((r) => navSrc.includes(`href: '${r}'`) || footerSrc.includes(`href="${r}"`)))
 // Every live surface carries the same footer (the one place that names all six
 // surfaces, the contact inbox, GitHub and the legal pages). A surface that ends
 // at its own bespoke footer is how the site drifted into per-page link sets.
 const SURFACE_PAGES = ["", "install", "docs", "tools", "languages", "editors", "support"].map((r) => `src/app${r === "" ? "" : `/${r}`}/page.tsx`)
+// The homepage is its own surface (the Evidence Atlas) and renders the atlas
+// footer; both footers are shared components and both must link every contract
+// destination. The check below covers the six legacy surfaces on SiteFooter and
+// the homepage on AtlasFooter, so a surface can never ship without a footer.
 const missingFooter = SURFACE_PAGES.filter((p) => {
   const src = site(p)
-  return !src.includes("SiteFooter") || !src.includes("<SiteFooter />")
+  if (src.includes("<SiteFooter />") || src.includes("<AtlasFooter />")) return false
+  // AtlasPage is the shared chrome: it renders AtlasNav + <main> + AtlasFooter.
+  return !src.includes("<AtlasPage")
 })
-check("I1: every live surface renders the shared footer", missingFooter.length === 0, missingFooter.join(","))
+check("I1: every live surface renders a shared footer", missingFooter.length === 0, missingFooter.join(","))
+const atlasFooterSrc = site("src/components/atlas/AtlasFooter.tsx")
+const FOOTER_DESTINATIONS = ["/docs", "/tools", "/privacy", "github.com"]
+const missingFooterLinks = FOOTER_DESTINATIONS.filter((href) => !atlasFooterSrc.includes(href))
+check("I1: the shared footer links every contract destination", missingFooterLinks.length === 0, missingFooterLinks.join(","))
 
 // --- 2. the redirect map ------------------------------------------------------------
 
@@ -211,7 +221,7 @@ check("I1: route discovery sees the built site's routes", built && discovered.le
 {
   const detailPage = "src/app/languages/[slug]/page.tsx"
   const detailRoutes = languageDetailRoutes()
-  check("I1: the language detail route carries the shared footer", detailRoutes.length === 0 || (site(detailPage).includes("<SiteFooter />")), detailPage)
+  check("I1: the language detail route carries the shared footer", detailRoutes.length === 0 || site(detailPage).includes("<SiteFooter />") || site(detailPage).includes("<AtlasPage"), detailPage)
 }
 const expectedSitemap = discovered.filter((r) => !RETIRED.includes(r)).map((r) => `https://backbencher.cc${r}`)
 const published = [...sitemapBody.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
@@ -249,10 +259,10 @@ check(
   const mutated = docsSrc.replaceAll("bb index --force", "bb index --repair")
   negative("I1: a dropped remediation command is detected in the docs page", !FIX_COMMANDS.every((c) => mutated.includes(c)))
 }
-// N7 (bytes): dropping the shared footer from a surface must fail the check.
+// N7 (bytes): dropping the shared chrome from a surface must fail the check.
 {
-  const mutated = site("src/app/tools/page.tsx").replace("<SiteFooter />", "{null}")
-  negative("I1: a surface without the shared footer is detected", !mutated.includes("<SiteFooter />"))
+  const mutated = site("src/app/tools/page.tsx").replace("<AtlasPage>", "<div>")
+  negative("I1: a surface without the shared chrome is detected", !mutated.includes("<AtlasPage"))
 }
 // N6 (real mutation on disk): deleting a declaration entry must fail the map
 // contract, and the restore must be byte-clean. The backup lives outside the

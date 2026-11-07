@@ -230,7 +230,9 @@ if (faqLd) {
   const qs = faqLd.mainEntity ?? []
   const missingAnswers = qs.filter((q) => !q.acceptedAnswer?.text || !rendered.includes(q.acceptedAnswer.text))
   check("S1: FAQPage lists exactly the faq.md questions", JSON.stringify(qs.map((q) => q.name)) === JSON.stringify(mdParsed.qas.map((x) => x.q)), `ld=${qs.length} md=${mdParsed.qas.length}`)
-  const detailsCount = (supportHtmlRaw.match(/<details/g) ?? []).length
+  // The atlas nav renders a <details> mobile menu on every page; the contract
+  // is one FAQ disclosure per question, so exclude the nav disclosure.
+  const detailsCount = (supportHtmlRaw.match(/<details(?![^>]*class="menu")/g) ?? []).length
   check("S1: one <details> per question on the page", detailsCount === qs.length, `details=${detailsCount} questions=${qs.length}`)
   check("S1: every question is rendered", qs.every((q) => Boolean(q.name) && rendered.includes(q.name!)))
   check("S1: every answer is rendered verbatim", missingAnswers.length === 0, missingAnswers.map((q) => (q.name ?? "?").slice(0, 30)).join(","))
@@ -264,7 +266,7 @@ const retiredHrefs = ["/faq", "/contact", "/troubleshooting", "/demos"]
 const linkSurfaces: Array<[string, string]> = [
   ["the rendered /support page", supportHtmlRaw],
   ["Navigation", read("website/src/components/Navigation.tsx")],
-  ["SiteFooter", read("website/src/components/SiteFooter.tsx")],
+  ["AtlasFooter", read("website/src/components/atlas/AtlasFooter.tsx")],
   ["the docs page", read("website/src/app/docs/page.tsx")],
   ["the install page", read("website/src/app/install/page.tsx")],
 ]

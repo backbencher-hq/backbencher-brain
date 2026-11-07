@@ -332,7 +332,9 @@ if (faqLd) {
   // parses the same file; here the gate parses it INDEPENDENTLY so a generator
   // bug cannot validate itself.
   const sourceQuestions = [...read("website/faq.md").matchAll(/^### (.+)$/gm)].map((m) => m[1]!.trim())
-  const detailsCount = (supportHtmlRaw.match(/<details/g) ?? []).length
+  // The atlas nav carries a <details> mobile menu on every page (no-JS nav),
+  // so count only the FAQ disclosures — the contract is one per question.
+  const detailsCount = (supportHtmlRaw.match(/<details(?![^>]*class="menu")/g) ?? []).length
   const missingAnswers = qs.filter((q) => !q.acceptedAnswer?.text || !faqRenderedText.includes(q.acceptedAnswer.text))
   check("S1: FAQPage lists exactly the questions in website/faq.md", JSON.stringify(qs.map((q) => q.name)) === JSON.stringify(sourceQuestions), `ld=${qs.length} source=${sourceQuestions.length}`)
   check("S1: support page renders one <details> per question", detailsCount === qs.length, `details=${detailsCount} questions=${qs.length}`)

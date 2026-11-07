@@ -135,6 +135,24 @@ check(
   BGS.length === 3 && subFloorTokens.length === 0,
   subFloorTokens.map((t) => `--${t.token} ${t.hex} ${t.ratio.toFixed(2)}:1`).join(", "),
 )
+// The atlas is a second surface with its own tokens; the floors above are
+// computed against the legacy dark palette, so audit the paper tokens here or
+// the redesign could ship text the gate never measured.
+const atlasToken = (name: string): string => globals.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))?.[1]?.toLowerCase() ?? ""
+const PAPER = atlasToken("at-paper-3") || atlasToken("at-paper")
+const NIGHT = atlasToken("at-night")
+const atlasPaperTokens = ["at-ink", "at-ink-2", "at-muted", "at-ember"].map((name) => ({ name, value: atlasToken(name) }))
+const atlasNightTokens = ["at-bone", "at-bone-2"].map((name) => ({ name, value: atlasToken(name) }))
+const atlasSubFloor = [
+  ...atlasPaperTokens.filter((token) => !token.value || contrast(token.value, PAPER) < FLOOR).map((token) => `${token.name} ${token.value || "missing"} ${token.value ? contrast(token.value, PAPER).toFixed(2) : "?"}:1 on paper`),
+  ...atlasNightTokens.filter((token) => !token.value || contrast(token.value, NIGHT) < FLOOR).map((token) => `${token.name} ${token.value || "missing"} ${token.value ? contrast(token.value, NIGHT).toFixed(2) : "?"}:1 on night`),
+]
+check(
+  "D2: every atlas text token clears 4.5:1 on its own surface (paper and night)",
+  Boolean(PAPER && NIGHT) && atlasSubFloor.length === 0,
+  atlasSubFloor.join(", "),
+)
+
 check(
   "D2: the ember accent clears 4.5:1 as text",
   contrast(token("ember"), LIGHTEST) >= FLOOR && contrast(token("ember-bright"), LIGHTEST) >= FLOOR,
@@ -293,7 +311,10 @@ for (const [file, symbol] of KIT) {
 const LOCAL_TWIN = /^\s*function (Section|Plate|Callout|Card|Note|Label|Code|Mono)\s*\(/m
 for (const page of ["editors", "support"]) {
   const src = read(`website/src/app/${page}/page.tsx`)
-  check(`D2: /${page} imports the shared kit`, /from '@\/components\/ui\/|from "@\/components\/ui\//.test(src))
+  // The shared kit is either the editorial ui kit or the atlas chrome — both are
+  // shared components; a page may not re-declare a local twin of either.
+  const sharedKit = /from '@\/components\/ui\/|from "@\/components\/ui\//.test(src) || src.includes("@/components/atlas/AtlasPage")
+  check(`D2: /${page} imports the shared kit`, sharedKit)
   const twin = LOCAL_TWIN.exec(src)
   check(`D2: /${page} declares no local copy of a shared component`, !twin, twin ? twin[1] : "")
 }
@@ -419,7 +440,13 @@ negative("N3: an alpha-faded text class is detected", /text-\[(#[0-9A-Fa-f]{6})\
 // N4 (bytes): a cool-grey class must be detected.
 negative("N4: a cool-grey palette class is detected", new RegExp(COOL_GREY.source).test('class="text-zinc-500"'))
 // N5 (bytes): removing the focus rule must fail the focus check.
-negative("N5: a missing :focus-visible rule is detected", !/:focus-visible\s*\{[^}]*outline:/.test(globals.replace(/:focus-visible\s*\{[^}]*\}/, "")))
+negative("N5: a missing :focus-visible rule is detected", (() => {
+  // Scoped focus rules are legitimate (a paper surface needs a darker ring than
+  // the night canvas), so the detector must see absence only when EVERY ring is
+  // stripped — otherwise a second scoped rule would mask the mutation.
+  const stripped = globals.replace(/:focus-visible\s*\{[^}]*\}/g, "")
+  return !/:focus-visible\s*\{[^}]*outline:/.test(stripped)
+})())
 // N6 (bytes): un-guarding an animation must fail the motion check.
 negative(
   "N6: an animation whose class is missing from the reduce block is detected",
