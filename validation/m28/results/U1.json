@@ -34,7 +34,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "d48eae4163817320d414efbcc9c104ddfdbd09c9",
+  "currentCommit": "2976641a574b6880fb3c8d50415b5ec0ecb784d1",
   "sourceFingerprint": "7c4635f131f78bcea7c08e3a86fe971b1a03a003decc5ebc0ca5d93208d8007c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -47,14 +47,14 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-union.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-11-07T00:20:31.251Z",
+  "generatedAt": "2026-11-07T02:09:29.264Z",
   "claimLevel": "verified — MCP answers and IDE answers are machine-proven identical on the shared fixture",
   "limitations": [
     "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T00:20:31.252Z",
-    "contentSha256": "105067d91673cc094a27a585eda869817c2a088d2a53b7993be9bfde20fa4f62"
+    "sealedAt": "2026-11-07T02:09:29.265Z",
+    "contentSha256": "5c25b6bf3463d03bae771acf3431e8d2d4dba2e082603a0ff89493e2d688b858"
   }
 }
