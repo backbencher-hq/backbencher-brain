@@ -41,7 +41,7 @@ machine-local directories are ignored; they are not repository content.
 | look up a tool | [`tools/`](./tools/) (one page per tool), or [`data/public-tools.json`](./data/public-tools.json) for machine-readable contracts |
 | understand the module layout | [`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`GRAPH_ENGINE.md`](./GRAPH_ENGINE.md) |
 | read an analyzer's contract | [`analyzers/README.md`](./analyzers/README.md) — one canonical page per analyzer |
-| use the IDE extension (VS Code, Cursor, Antigravity, Windsurf, Zed, Helix, JetBrains) | [`IDE-LANE-BASELINE.md`](./IDE-LANE-BASELINE.md) for the evidence-backed state; [`IDE-OWNER-TEST-PLAN.md`](./IDE-OWNER-TEST-PLAN.md) for the owner test protocol |
+| use the IDE extension (VS Code, Cursor, Antigravity, Windsurf, Zed, Helix, JetBrains) | [`IDE-PROGRAM-STATUS.md`](./IDE-PROGRAM-STATUS.md) for the current evidence-backed state; [`IDE-LAUNCH-TEST-PLAN.md`](./IDE-LAUNCH-TEST-PLAN.md) for the gates and the human test pass |
 
 ## Indexing
 
