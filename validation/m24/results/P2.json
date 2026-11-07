@@ -99,7 +99,7 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+  "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
   "sourceFingerprint": "2d01a8dd92bc0d0ae672236e5056b68d620e926159a83671db1fc8d761a60dc5",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -110,7 +110,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-11-07T21:43:06.572Z",
+  "generatedAt": "2026-11-07T22:12:39.895Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
@@ -121,7 +121,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T21:43:06.573Z",
-    "contentSha256": "eaf44b43f6df4b01e188d7991e73df0f9d1574eb8ed50b2db4318e4ce6053175"
+    "sealedAt": "2026-11-07T22:12:39.896Z",
+    "contentSha256": "017c5f0950d962cead65a07ca4faa0af23125187bb3eb60e854b870a81db722a"
   }
 }

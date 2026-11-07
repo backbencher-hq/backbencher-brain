@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -30,12 +30,12 @@
         "Clean rerun"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "status": "verified",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 68,
-        "failed": 1,
+        "passed": 69,
+        "failed": 0,
         "negativeCases": 10,
         "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -86,7 +86,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
         "passed": 261,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
         "passed": 28,
@@ -151,7 +151,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
@@ -181,7 +181,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -240,7 +240,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
+        "currentCommit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -270,7 +270,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a21e077d75d183d29dfc3a4c36aab4356e13f4fe",
+        "currentCommit": "58abf55f9f680773770417d63100486cf702ca97",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 30,
@@ -283,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T21:43:24.046Z",
-    "contentSha256": "19925c69c3506a966495e1bdd72dae4eb3da7ff2ab2af0101b7352072416d0c0"
+    "sealedAt": "2026-11-07T22:12:53.327Z",
+    "contentSha256": "f7c4fcf87dca720baab4a7edf715d06710c82cc7ba6c16b7658d69c60e8f9f0d"
   }
 }

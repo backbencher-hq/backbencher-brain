@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "58abf55f9f680773770417d63100486cf702ca97",
+  "commit": "cc85b45367728d0784d264ca1788a5188d2ea40d",
   "language": "typescript",
   "raw": {
     "definition": {
@@ -363,7 +363,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T21:31:02.804Z",
-    "contentSha256": "ddfc554f9f01de9574344e692f20d157edcd49df15ee4d725ac152d58438f71a"
+    "sealedAt": "2026-11-07T22:00:31.121Z",
+    "contentSha256": "cfca1d8a3c1e3db55d441c8491bc2cd6db407b308c04d083e8cc9d467a6d2818"
   }
 }
