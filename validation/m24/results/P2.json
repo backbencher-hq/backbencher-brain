@@ -99,7 +99,7 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "2c11cdf7ba0ae32c5c6916b70efa3ed7f34bf9d6",
+  "currentCommit": "fb111968a1eaf27c06341e743079543839aeafe4",
   "sourceFingerprint": "2d01a8dd92bc0d0ae672236e5056b68d620e926159a83671db1fc8d761a60dc5",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -110,7 +110,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-11-07T20:09:54.573Z",
+  "generatedAt": "2026-11-07T20:29:43.934Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
@@ -121,7 +121,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T20:09:54.573Z",
-    "contentSha256": "6973b085549948fd83a82c88385af638a3748524d71890080c08b97855f319cf"
+    "sealedAt": "2026-11-07T20:29:43.934Z",
+    "contentSha256": "ea7252ee894358fc09ca3cdae54eef1441c5db26ef55eb6a43305ec7f8544a1f"
   }
 }

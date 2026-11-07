@@ -4,9 +4,10 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 32,
-  "passed": 31,
-  "failed": 1,
+  "passed": 30,
+  "failed": 2,
   "failures": [
+    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
     "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
   ],
   "negativeCases": 3,
@@ -24,8 +25,8 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "2c11cdf7ba0ae32c5c6916b70efa3ed7f34bf9d6",
-  "sourceFingerprint": "0b00219ba42de4a1b0bd2039f0003a54b751ce54c956871aeb44af5d6c8b0b0a",
+  "currentCommit": "fb111968a1eaf27c06341e743079543839aeafe4",
+  "sourceFingerprint": "c529f8472f0d380de4cde1370e6e84e4184914cbff90bc28a064ca488b15e2fd",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -60,7 +61,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-07T20:10:34.140Z",
+  "generatedAt": "2026-11-07T20:29:59.919Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -69,7 +70,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T20:10:34.140Z",
-    "contentSha256": "580f5610047e0a67c17e2329db8f84e961e944f95d31fe3689930ba49495a320"
+    "sealedAt": "2026-11-07T20:29:59.919Z",
+    "contentSha256": "2f642279870be9998996dd1fb34850b4884b16b03c55c5022d2d693186218c0a"
   }
 }
