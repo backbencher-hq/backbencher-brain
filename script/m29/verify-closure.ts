@@ -158,6 +158,22 @@ for (const { surface, file, contains } of MUTANT_EVIDENCE) {
 
 // --- Pass 3: closure preconditions (§8.5 spot-check preparation) --------------------
 console.log("\npass 3: closure preconditions — owner spot-check preparation (§8.5)")
+// PROJECT THE LANE LEDGER BEFORE AUDITING ITS PRECONDITIONS.
+//
+// The precondition reads each item's evidence status from the MANIFEST, and only
+// the governance projection writes it. Pass 1c above re-runs the ledger
+// consumers (R4/V1/D1) AFTER the ladder's projection point, so their records were
+// newer than the manifest entries the audit compared them to - the closure
+// reported "R4 not evidence-verified" for gates that had just printed VERIFIED,
+// and that single mismatch kept the whole m53 ladder at 40/41. Project here, as
+// the closure's own first act in this pass, so the audit reads an artifact that
+// reflects the run it is auditing.
+try {
+  execFileSync("npx", ["tsx", "script/m29/verify-governance.ts"], { cwd: ROOT, stdio: "ignore", timeout: 900_000 })
+} catch {
+  // A projection that cannot run is reported by the precondition audit itself;
+  // swallowing the exit code here would hide the reason it is about to fail.
+}
 const ledger = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/manifest.json"), "utf8")) as {
   issues: Array<{ code: string; status: string; evidence?: { status?: string } }>
 }
