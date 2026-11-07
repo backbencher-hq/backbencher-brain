@@ -83,7 +83,7 @@
     }
   ],
   "blockedLegs": [],
-  "currentCommit": "c5f7a6ad6267d53857eef3c9ac1ecf31ee1db1f7",
+  "currentCommit": "1bf30ba4a0eef802d57ba128c6560f2eceddb9f1",
   "sourceFingerprint": "7f97794df5a1d3e1606f2e3d0381d0c754c3de2c4bfad27f47c983b38ed07460",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -94,12 +94,12 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-11-07T17:56:21.064Z",
+  "generatedAt": "2026-11-07T18:54:29.661Z",
   "claimLevel": "verified — store guarantees proven against a real sqlite db; the tool's wire contract, joint reachability, hostile-body rendering and declared bounds proven through a real bb mcp stdio session; five planted handler mutants caught",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T17:56:21.064Z",
-    "contentSha256": "9d8b0d4a74b1973934ed3d0481d61bf36bc2c214ee85e1441dd0b1c71582fa65"
+    "sealedAt": "2026-11-07T18:54:29.661Z",
+    "contentSha256": "44e19048e0452aac13fbae40dbc49364dad65a83d63ce348f004d4ce378606af"
   }
 }
