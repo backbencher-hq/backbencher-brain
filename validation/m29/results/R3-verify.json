@@ -1,11 +1,11 @@
 {
-  "status": "known-gap",
-  "passed": 26,
-  "failed": 1,
+  "status": "verified",
+  "passed": 28,
+  "failed": 0,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+  "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
   "relevantInputsHash": "cabf52a7f051a06e20bf68488f2899bfc6a22866",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "sourceFingerprint": "b82775474d328a36476e2b3e623efaaebcbc4e34fa73e5eb478f09e9fcfeeb5d",
@@ -20,13 +20,11 @@
     "script/m29/giant-repo-budget.ts"
   ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-11-07T03:11:42.484Z",
-  "details": [
-    "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass"
-  ],
+  "generatedAt": "2026-11-07T04:11:07.315Z",
+  "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T03:11:42.485Z",
-    "contentSha256": "9cc7c07925685a1224193f40fa50689dba89f305041bd6c4a7e6ad08f045869e"
+    "sealedAt": "2026-11-07T04:11:07.315Z",
+    "contentSha256": "e4b2d0c528edba44c06b16818b235987bc5c1053f2c62b0aba5f571f62ba8b61"
   }
 }

@@ -8,14 +8,11 @@
   "failed": 0,
   "realFailed": 3,
   "negativeCases": 8,
-  "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
-  "workingTreeRelevantChanges": [
-    "docs/m55/VERDICT-PACK.md",
-    "validation/m55/results/X1.json"
-  ],
+  "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-07T03:27:00.090Z",
+  "generatedAt": "2026-11-07T04:26:57.781Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -63,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T03:27:00.107Z",
-    "contentSha256": "8db83b23ca9d671c0f02621ecfa06502d6b8fc4e899d485e82e8b60390e7b539"
+    "sealedAt": "2026-11-07T04:26:57.806Z",
+    "contentSha256": "057a382b8ddf883f88034aec6ac53caa083623f42319ede0a23a2b06dc528ade"
   }
 }

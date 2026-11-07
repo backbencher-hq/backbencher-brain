@@ -31,7 +31,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 69,
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -86,7 +86,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
         "passed": 261,
@@ -110,7 +110,7 @@
       "code": "R3",
       "githubIssue": 538,
       "tool": "giant-repo-budgets",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Hover/navigation latency on M19-scale corpora (intellij-community subsets etc.) through the IDE stack where feasible; results recorded with machine + corpus revision. Any budget miss is a filed defect, not a footnote.",
       "acceptanceCriteria": [
         "Measured percentiles on named corpora + revisions",
@@ -123,12 +123,12 @@
         "Limitations declared"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "status": "verified",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
-        "passed": 26,
-        "failed": 1,
+        "passed": 28,
+        "failed": 0,
         "blockedReason": "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass",
         "negativeCases": 6
       }
@@ -151,7 +151,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
@@ -181,7 +181,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -240,7 +240,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -270,11 +270,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
+        "currentCommit": "e14712030fb401d8032eac911613514f84eb7422",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 31,
-        "failed": 1,
+        "passed": 30,
+        "failed": 2,
         "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
         "negativeCases": 3,
         "blockedReason": "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run."
@@ -283,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T03:25:30.076Z",
-    "contentSha256": "853a67d2b1b5d9c9f2af94773d14ce620291d58a4361dfaa6f6c1b7c7c042762"
+    "sealedAt": "2026-11-07T04:25:18.515Z",
+    "contentSha256": "ef08f64b19311bf743448c2337420c72efec9eb594e2ab1864ed5b3389b57503"
   }
 }
