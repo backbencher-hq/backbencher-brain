@@ -221,9 +221,20 @@ let ledger = readLedger()
 let g1ObservedVerified = false
 for (let attempt = 1; attempt <= 3; attempt++) {
   try {
-    execFileSync("npx", ["tsx", "script/m29/verify-governance.ts"], { cwd: ROOT, stdio: "ignore", timeout: 900_000 })
+    execFileSync("npx", ["tsx", "script/m29/verify-governance.ts"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 900_000,
+    })
     g1ObservedVerified = true
-  } catch {
+  } catch (e: any) {
+    // The gate's own stdout is where it names the item it refused to certify.
+    // Capturing it turned a twelve-minute loop into a one-line answer.
+    const out = String(e?.stdout ?? "")
+    for (const line of out.split("\n").filter((l) => l.includes("✗")).slice(0, 3)) {
+      console.log(`    gate said: ${line.trim().slice(0, 240)}`)
+    }
     // A projection that cannot run is reported by the precondition audit itself;
     // swallowing the exit code here would hide the reason it is about to fail.
   }
