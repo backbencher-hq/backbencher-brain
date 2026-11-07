@@ -40,7 +40,7 @@
         "failed": 0,
         "realFailed": 1,
         "negativeCases": 8,
-        "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
+        "currentCommit": "c5f7a6ad6267d53857eef3c9ac1ecf31ee1db1f7",
         "blockedReason": "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently."
       }
     },
@@ -292,7 +292,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T17:25:43.424Z",
-    "contentSha256": "f4098f1751c015f8980b1259298d5b9d697572b375c6801b0bfe3fa0d101c615"
+    "sealedAt": "2026-11-07T18:22:27.644Z",
+    "contentSha256": "b3b183df646b28185c4a29873483e1926189e5839348fa35cb395ecd7ae4193c"
   }
 }

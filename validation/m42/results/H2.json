@@ -302,15 +302,15 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 3.67,
-    "p95Ms": 4.72,
-    "maxMs": 12.2,
-    "meanMs": 3.86,
+    "p50Ms": 3.54,
+    "p95Ms": 5.35,
+    "maxMs": 14.32,
+    "meanMs": 3.98,
     "budgetMs": 50,
-    "coldMs": 49.58,
+    "coldMs": 50.3,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "bf2e59719237d05d68823aa2d39c2b0573ae21c2",
+  "currentCommit": "c5f7a6ad6267d53857eef3c9ac1ecf31ee1db1f7",
   "sourceFingerprint": "be53b82ac3ef71cf2c7fef94683fd87a483dad5847e8c033de7058a7f36d8346",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -324,7 +324,7 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-11-07T17:24:27.942Z",
+  "generatedAt": "2026-11-07T18:21:21.425Z",
   "supersededExpectations": [
     {
       "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
@@ -421,7 +421,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T17:24:27.942Z",
-    "contentSha256": "0f33775ccccfb25f7af60ded6ea06f43ff9888d11ee7cdce724845767fc1c4c8"
+    "sealedAt": "2026-11-07T18:21:21.426Z",
+    "contentSha256": "be7e237472f6fb99fad59126f43f2d3f1839b3ec91827156c5661422bfa74add"
   }
 }
