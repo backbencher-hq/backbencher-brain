@@ -1,4 +1,5 @@
 // script/m61/ledger_projection.ts — the ONE owner of the ledger↔record rule.
+// Author: Muhammad Ishaq Khan
 //
 // THE DEFECT THIS PINS (measured at integration/lsp-truth HEAD 462f620be):
 //

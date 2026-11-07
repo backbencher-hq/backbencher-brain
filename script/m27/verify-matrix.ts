@@ -1,4 +1,5 @@
 // script/m27/verify-matrix.ts — M27.V1 verifier + mutation suite (issue #621).
+// Author: Muhammad Ishaq Khan
 //
 // The fork capability matrix v3 is GENERATED, not hand-written. This verifier
 // owns docs/m27/FORK-CAPABILITY-MATRIX.md: it derives every cell from the

@@ -1,4 +1,5 @@
 // script/m29/verify-closure.ts — M29.X1 (issue #543). The program-closure gate.
+// Author: Muhammad Ishaq Khan
 //
 // The LAST issue of the IDE program (M24–M29). Nothing closes without the
 // gate, and this gate closes the whole program: every verifier of every
@@ -168,15 +169,9 @@ console.log("\npass 3: closure preconditions — owner spot-check preparation (�
 // and that single mismatch kept the whole m53 ladder at 40/41. Project here, as
 // the closure's own first act in this pass, so the audit reads an artifact that
 // reflects the run it is auditing.
-try {
-  execFileSync("npx", ["tsx", "script/m29/verify-governance.ts"], { cwd: ROOT, stdio: "ignore", timeout: 900_000 })
-} catch {
-  // A projection that cannot run is reported by the precondition audit itself;
-  // swallowing the exit code here would hide the reason it is about to fail.
-}
-const ledger = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/manifest.json"), "utf8")) as {
-  issues: Array<{ code: string; status: string; evidence?: { status?: string } }>
-}
+type LedgerIssue = { code: string; status: string; evidence?: { status?: string; evidenceFile?: string } }
+const readLedger = (): { issues: LedgerIssue[] } =>
+  JSON.parse(readFileSync(join(ROOT, "validation/m29/results/manifest.json"), "utf8")) as { issues: LedgerIssue[] }
 // WHEN THE MANIFEST AND THE RECORD DISAGREE, THE RECORD IS THE AUTHORITY
 // (contract §8.4). The projection above runs the lane's governance gate, and that
 // run stamps G1 with ITS OWN verdict - which is known-gap whenever the gate is
@@ -184,7 +179,7 @@ const ledger = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/manife
 // is verified. Reading only the manifest therefore made the closure punish the
 // very projection it had just performed. Each non-verified entry is re-checked
 // against its record before it counts as a violation.
-function evidenceVerifiedInRecord(issue: { code: string; status: string; evidence?: { status?: string; evidenceFile?: string } }): boolean {
+function evidenceVerifiedInRecord(issue: LedgerIssue): boolean {
   if ((issue.evidence?.status ?? issue.status) === "verified") return true
   const file = issue.evidence?.evidenceFile
   if (!file || file === "X1.json") return false
@@ -194,6 +189,34 @@ function evidenceVerifiedInRecord(issue: { code: string; status: string; evidenc
   } catch {
     return false
   }
+}
+// CONVERGE THE PROJECTION; DO NOT AUDIT ONE RUN BEHIND IT.
+//
+// Converging takes more than one projection run, and the reason is the gate's own
+// freshness rule: a governance run certifies the RECORD it finds. The first run
+// after any relevant change finds a stale record, re-pins it to this HEAD, and
+// stamps its own ledger entry known-gap; the second run finds a fresh record and
+// certifies it. Auditing after a single projection therefore reads a ledger that
+// is one run behind — measured here as G1 known-gap at 02:05 and the same gate
+// verified at 02:08, with X1 sealed in between, which is exactly the `pre1:G1
+// not evidence-verified` that held the m53 ladder at 40/41.
+//
+// The loop is bounded at three attempts and stops the moment every entry is
+// certified. A lane that cannot certify stays reported as it is: bounding a
+// projection loop is not a waiver, because nothing here can turn a red record
+// green — only re-pin the record the gate then judges.
+let ledger = readLedger()
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    execFileSync("npx", ["tsx", "script/m29/verify-governance.ts"], { cwd: ROOT, stdio: "ignore", timeout: 900_000 })
+  } catch {
+    // A projection that cannot run is reported by the precondition audit itself;
+    // swallowing the exit code here would hide the reason it is about to fail.
+  }
+  ledger = readLedger()
+  const pending = ledger.issues.filter((i) => i.code !== "X1" && !evidenceVerifiedInRecord(i))
+  if (pending.length === 0) break
+  console.log(`  · projection attempt ${attempt}: ${pending.map((p) => p.code).join(",")} not certified yet — projecting again`)
 }
 const nonVerified = ledger.issues.filter((i) => i.code !== "X1" && !evidenceVerifiedInRecord(i))
 check("X1: every M29 ledger item (except X1 itself) is evidence-verified", nonVerified.length === 0, nonVerified.map((i) => i.code).join(","))

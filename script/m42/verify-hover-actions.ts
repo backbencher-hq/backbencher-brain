@@ -1,4 +1,5 @@
 // script/m42/verify-hover-actions.ts — M42.H4 verifier + mutation suite
+// Author: Muhammad Ishaq Khan
 // (issue #652).
 //
 // Proves the hover actions row (open in graph / impact analysis / call

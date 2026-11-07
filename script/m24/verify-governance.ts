@@ -1,4 +1,5 @@
 // script/m24/verify-governance.ts — M24.G1.
+// Author: Muhammad Ishaq Khan
 //
 // Governance is checked before any LSP feature work. This verifier validates
 // the planned ledger without pretending planned issues are verified, and

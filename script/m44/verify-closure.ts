@@ -1,4 +1,5 @@
 // script/m44/verify-closure.ts — M44.X1 (issue #694): the closure gate +
+// Author: Muhammad Ishaq Khan
 // the launch bar's machine-checkable half.
 //
 // Pattern: M42.X1 (which follows M29.X1), applied to the M44 lane.

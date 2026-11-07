@@ -1,4 +1,5 @@
 // script/m42/verify-governance.ts — M42.G1 (issue #648).
+// Author: Muhammad Ishaq Khan
 //
 // Governance for the interactive-hover milestone. Beyond the ledger
 // validation + mutation proofs every IDE gate inherits, this gate owns:

@@ -1,4 +1,5 @@
 // script/m42/verify-highlight.ts — M42.H1 verifier + mutation suite
+// Author: Muhammad Ishaq Khan
 // (issue #649).
 //
 // Proves the document-highlight surface is SEMANTIC and staleness-labeled,

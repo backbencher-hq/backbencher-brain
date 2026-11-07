@@ -1,4 +1,5 @@
 // script/m53/verify-closure.ts — M53.X1 (issue #734): the closure gate +
+// Author: Muhammad Ishaq Khan
 // the INTEGRATION-RECEIPT generator.
 //
 // Pattern: M44.X1 (which follows M42.X1 / M29.X1), applied to the review

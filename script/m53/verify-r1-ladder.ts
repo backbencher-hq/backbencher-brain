@@ -1,4 +1,5 @@
 // script/m53/verify-r1-ladder.ts — M53.R1 (issue #731).
+// Author: Muhammad Ishaq Khan
 //
 // Runs the LSP-lane gate ladder (m24→m44 verify chain — the exact gates the
 // shared npm verify chain carries for this lane) as subprocesses at the

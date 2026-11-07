@@ -1,4 +1,5 @@
 // script/m42/verify-hub.ts — M42.H5 verifier + mutation suite (issue #653),
+// Author: Muhammad Ishaq Khan
 // re-verified under M44.U1 (issue #688) for the GROUPED usages shape.
 //
 // "The hub — usages as list/tree over bb/graph". Fixture-first: the authored

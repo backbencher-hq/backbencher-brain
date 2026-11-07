@@ -1,4 +1,5 @@
 // script/m55/verify-governance.ts — M55.G1 (issue #773).
+// Author: Muhammad Ishaq Khan
 //
 // Governance for "The Hub That Tells the Truth". Beyond the M24/M42/M44-style
 // ledger validation (structure, closure rules, mutant proofs), this gate owns
@@ -512,20 +513,40 @@ function main(): void {
     // red bar. The index is built here, in this process, before the spawn - the
     // same prerequisite the launch test plan documents, applied where it is now
     // automatic instead of remembered.
+    // AN INFRASTRUCTURE FAILURE IS NOT A VERDICT ABOUT THE LANE. The index build
+    // is a prerequisite this gate now performs for itself, and on a loaded machine
+    // it can miss its timer (59,000 files; ~12 min quiet, materially longer under
+    // load). Before this guard it threw straight out of the gate, so a run that had
+    // already measured everything else produced NO record at all — the worst of the
+    // two outcomes: no evidence, and a silent exit. It now records the bar as
+    // `blocked` with the preparation failure as the reason, which is a state the
+    // ledger projects honestly (contract §8.3) instead of a crash.
+    let prepared = true
     {
       const corpus = path.join(ROOT, ".tools", "m29-giant-corpus")
       const reuseDir = path.join(os.tmpdir(), "m29-giant-data")
       const marker = path.join(reuseDir, "bb-index-complete.txt")
-      if (!existsSync(corpus)) {
-        console.log("      preparing: generating the giant corpus")
-        execFileSync("npx", ["tsx", "script/m29/generate-giant-corpus.ts"], { cwd: ROOT, stdio: "ignore", timeout: 600_000 })
-      }
-      if (!existsSync(marker)) {
-        console.log("      preparing: building the persistent giant index (~12 min)")
-        execFileSync("npx", ["tsx", "script/m29/giant-repo-budget.ts", "--index-only", "--reuse"], { cwd: ROOT, stdio: "ignore", timeout: 2_400_000 })
-        execFileSync("npx", ["tsx", "script/m29/giant-repo-budget.ts", "--reuse"], { cwd: ROOT, stdio: "ignore", timeout: 1_200_000 })
+      try {
+        if (!existsSync(corpus)) {
+          console.log("      preparing: generating the giant corpus")
+          execFileSync("npx", ["tsx", "script/m29/generate-giant-corpus.ts"], { cwd: ROOT, stdio: "ignore", timeout: 600_000 })
+        }
+        if (!existsSync(marker)) {
+          console.log("      preparing: building the persistent giant index (~12 min)")
+          execFileSync("npx", ["tsx", "script/m29/giant-repo-budget.ts", "--index-only", "--reuse"], { cwd: ROOT, stdio: "ignore", timeout: 2_400_000 })
+          execFileSync("npx", ["tsx", "script/m29/giant-repo-budget.ts", "--reuse"], { cwd: ROOT, stdio: "ignore", timeout: 1_200_000 })
+        }
+      } catch (e: any) {
+        prepared = false
+        barStatus = "blocked"
+        barReason =
+          `the persistent giant index could not be prepared (${String(e?.signal ?? e?.code ?? e?.message ?? e).slice(0, 120)}); ` +
+          "the M44/M53 bars were not re-audited this run — blocked, never a silent pass"
+        console.log(`      blocked: ${barReason}`)
       }
     }
+    const spawnBars = prepared
+    if (spawnBars) {
     for (const [gate, script] of [["m53-ladder", "script/m53/verify-r1-ladder.ts"], ["m53-closure", "script/m53/verify-closure.ts"]] as const) {
       let exit = 1;
       let out = "";
@@ -551,6 +572,7 @@ function main(): void {
     }
     check("G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD", ladder.find((l) => l.gate === "m53-ladder")?.exit === 0, ladder.find((l) => l.gate === "m53-ladder")?.lastLine ?? "");
     check("G1: the M53 completion bar re-audits green at HEAD", ladder.find((l) => l.gate === "m53-closure")?.exit === 0, ladder.find((l) => l.gate === "m53-closure")?.lastLine ?? "");
+    }
   }
 
   // --- Evidence --------------------------------------------------------------

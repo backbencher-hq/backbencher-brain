@@ -1,4 +1,5 @@
 // script/m29/verify-governance.ts — M29.G1 (issue #535).
+// Author: Muhammad Ishaq Khan
 //
 // Governance for the Precision Waves milestone. Beyond the M24–M28-style
 // ledger validation (structure, closure rules, mutation proofs), this gate

@@ -1,4 +1,5 @@
 // script/m44/verify-governance.ts — M44.G1 (issue #687).
+// Author: Muhammad Ishaq Khan
 //
 // Governance for the "Understandable Hub" milestone (IDE v7). Beyond the
 // ledger validation + mutation proofs every IDE gate inherits, this gate owns:

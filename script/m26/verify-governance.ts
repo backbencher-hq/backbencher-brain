@@ -1,4 +1,5 @@
 // script/m26/verify-governance.ts — M26.G1.
+// Author: Muhammad Ishaq Khan
 //
 // Governance for the graph milestone. Beyond the M24/M25-style ledger
 // validation (structure, closure rules, mutation proofs), this gate owns the

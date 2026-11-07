@@ -1,4 +1,5 @@
 // script/m42/verify-enrichment-surface.ts — M42.H3 verifier + mutation suite
+// Author: Muhammad Ishaq Khan
 // (issue #651).
 //
 // Proves the LSP consumes the index's enrichment layer (role/pattern/

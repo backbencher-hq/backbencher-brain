@@ -1,4 +1,5 @@
 // script/m27/verify-governance.ts — M27.G1 (issue #616).
+// Author: Muhammad Ishaq Khan
 //
 // Governance for the Everywhere milestone. Beyond the M24/M25/M26-style
 // ledger validation (structure, closure rules, mutation proofs), this gate
