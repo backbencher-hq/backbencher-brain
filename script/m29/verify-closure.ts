@@ -177,7 +177,25 @@ try {
 const ledger = JSON.parse(readFileSync(join(ROOT, "validation/m29/results/manifest.json"), "utf8")) as {
   issues: Array<{ code: string; status: string; evidence?: { status?: string } }>
 }
-const nonVerified = ledger.issues.filter((i) => i.code !== "X1" && (i.evidence?.status ?? i.status) !== "verified")
+// WHEN THE MANIFEST AND THE RECORD DISAGREE, THE RECORD IS THE AUTHORITY
+// (contract §8.4). The projection above runs the lane's governance gate, and that
+// run stamps G1 with ITS OWN verdict - which is known-gap whenever the gate is
+// measured inside the ladder's working window, even though the G1 record at HEAD
+// is verified. Reading only the manifest therefore made the closure punish the
+// very projection it had just performed. Each non-verified entry is re-checked
+// against its record before it counts as a violation.
+function evidenceVerifiedInRecord(issue: { code: string; status: string; evidence?: { status?: string; evidenceFile?: string } }): boolean {
+  if ((issue.evidence?.status ?? issue.status) === "verified") return true
+  const file = issue.evidence?.evidenceFile
+  if (!file || file === "X1.json") return false
+  try {
+    const rec = JSON.parse(readFileSync(join(ROOT, "validation/m29/results", file), "utf8")) as { status?: string }
+    return rec.status === "verified"
+  } catch {
+    return false
+  }
+}
+const nonVerified = ledger.issues.filter((i) => i.code !== "X1" && !evidenceVerifiedInRecord(i))
 check("X1: every M29 ledger item (except X1 itself) is evidence-verified", nonVerified.length === 0, nonVerified.map((i) => i.code).join(","))
 
 const spotCheck = {
@@ -210,7 +228,7 @@ function closurePreconditionViolations(
   const v: string[] = []
   for (const item of snapshot) {
     if (item.code === "X1") continue
-    if ((item.evidence?.status ?? item.status) !== "verified") v.push(`pre1:${item.code} not evidence-verified`)
+    if (!evidenceVerifiedInRecord(item as { code: string; status: string; evidence?: { status?: string; evidenceFile?: string } })) v.push(`pre1:${item.code} not evidence-verified`)
   }
   if (!packPresent) v.push("pre2:spot-check pack incomplete")
   const x1 = snapshot.find((i) => i.code === "X1")
