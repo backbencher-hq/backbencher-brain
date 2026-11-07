@@ -156,7 +156,23 @@ console.log(`R1: running the ${GATES.length}-gate lane ladder at ${gitHead().sli
 // ladder must do the same. Found live: this run, both consumers returned rc=1
 // with "regenerate with --write" — the remedy the gate itself names.
 const LEDGER_CONSUMERS = new Set(["m29-precision-ledger"])
+// A closure's precondition reads its LANE LEDGER's evidence status, and the
+// ledger is only written by that lane's governance projection. The ladder
+// re-runs a lane's suite (so its records change) but never projects, so the
+// closure compares fresh records against a stale manifest entry and reports
+// "R4 not evidence-verified" for a gate that just printed VERIFIED. Project the
+// lane immediately before its closure, which is what the closure's own run
+// would do if it could.
+const PROJECT_BEFORE: Record<string, string> = {
+  "m29-closure": "script/m29/verify-governance.ts",
+  "m42-closure": "script/m42/verify-governance.ts",
+}
 const results = GATES.map(([name, script]) => {
+  const projection = PROJECT_BEFORE[name]
+  if (projection) {
+    const p = spawnSync("npx", ["tsx", projection], { cwd: ROOT, encoding: "utf8", timeout: 900_000 })
+    console.log(`  · projected the lane ledger before ${name} (rc=${p.status ?? "?"})`)
+  }
   if (LEDGER_CONSUMERS.has(name)) {
     const regen = spawnSync("npx", ["tsx", "script/m29/generate-precision-ledger.ts", "--write"], { cwd: ROOT, encoding: "utf8", timeout: 120_000 })
     console.log(`  · regenerated the precision ledger before ${name} (rc=${regen.status ?? "?"})`)
