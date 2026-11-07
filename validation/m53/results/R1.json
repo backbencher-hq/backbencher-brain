@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "verified",
-  "passed": 41,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 40,
+  "failed": 1,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -229,9 +229,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
-      "ok": true,
+      "rc": 1,
+      "verdict": "KNOWN-GAP (31/32 passed, 3 negatives)",
+      "ok": false,
       "timedOut": false
     },
     {
@@ -318,7 +318,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 2976641a)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ a0ea3f46)",
       "ok": true,
       "timedOut": false
     },
@@ -347,12 +347,12 @@
       "timedOut": false
     }
   ],
-  "currentCommit": "2976641a574b6880fb3c8d50415b5ec0ecb784d1",
+  "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-07T02:34:59.460Z",
+  "generatedAt": "2026-11-07T03:26:28.706Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T02:34:59.460Z",
-    "contentSha256": "ccc3ababbd2255fe749a7f1c36f0ec3f951d9d9bf5b6792fe89cedbfcad9f15f"
+    "sealedAt": "2026-11-07T03:26:28.707Z",
+    "contentSha256": "1338126582b768cb0d52978aa5bdfcc96db2b7b7c166a76006952915d77f97e2"
   }
 }
