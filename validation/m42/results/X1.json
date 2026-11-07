@@ -7,7 +7,7 @@
   "passed": 31,
   "failed": 2,
   "failures": [
-    "X1: M29 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — X1:status-mismatch,X1:persisted-failed  (exit=1)",
+    "X1: M29 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — R4:status-mismatch,D1:status-mismatch  (exit=1)",
     "X1: closure preconditions audited — zero violations: pre2:ladder leg M29 failed (exit=1)"
   ],
   "negativeCases": 7,
@@ -25,7 +25,7 @@
     "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+  "currentCommit": "d48eae4163817320d414efbcc9c104ddfdbd09c9",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -40,7 +40,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-06T23:10:24.270Z",
+  "generatedAt": "2026-11-07T00:43:12.031Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:10:24.271Z",
-    "contentSha256": "93836bd3529ef38090862bd2a54721ef788e0f68b9316af1a85acda41a9e2044"
+    "sealedAt": "2026-11-07T00:43:12.031Z",
+    "contentSha256": "de52aeac3bedd7dc5f2b77ea4608a8675307ca08bcd04c8481310594898b79e2"
   }
 }

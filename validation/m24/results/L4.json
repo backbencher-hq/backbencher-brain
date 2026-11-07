@@ -2,7 +2,7 @@
   "issue": "493",
   "code": "L4",
   "status": "verified",
-  "currentCommit": "2ad9aab83f117efdd7df4525b92a8d7ce5b8afcc",
+  "currentCommit": "d48eae4163817320d414efbcc9c104ddfdbd09c9",
   "sourceFingerprint": "1cfb28166b063f27fc2ef63154f0303c1ccf2dfd63bb89cd21dfa6e8b26e17d5",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -14,7 +14,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
   "evidenceFile": "L4.json",
-  "generatedAt": "2026-11-06T22:34:00.240Z",
+  "generatedAt": "2026-11-07T00:08:07.838Z",
   "passed": 50,
   "failed": 0,
   "failures": [],
@@ -38,7 +38,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T22:34:00.240Z",
-    "contentSha256": "63bf35103d47bc1323445aa4e9f74e6c2973a19525d6c0a6f1b23e0671e2d5f5"
+    "sealedAt": "2026-11-07T00:08:07.839Z",
+    "contentSha256": "999c7d89d86a1eb7c83236533f63fc1652dffc80d1d354a75022c41d0236ecf9"
   }
 }

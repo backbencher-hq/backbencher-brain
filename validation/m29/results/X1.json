@@ -4,12 +4,11 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 32,
-  "passed": 29,
-  "failed": 3,
+  "passed": 30,
+  "failed": 2,
   "failures": [
-    "X1: M29-D1 ladder run green at HEAD: D1: KNOWN-GAP (9/13 passed, 3 negatives)  (exit=1)",
-    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
+    "X1: every M29 ledger item (except X1 itself) is evidence-verified: R4,D1",
+    "X1: closure preconditions audited — zero violations: pre1:R4 not evidence-verified; pre1:D1 not evidence-verified"
   ],
   "negativeCases": 3,
   "suiteExits": {
@@ -24,10 +23,10 @@
     "M29-R5": 0,
     "M29-R4": 0,
     "M29-V1": 0,
-    "M29-D1": 1
+    "M29-D1": 0
   },
-  "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
-  "sourceFingerprint": "9a0eab44d9f47106c0178f096e4336781c5b4a6d990c733a09e32294681a2a72",
+  "currentCommit": "d48eae4163817320d414efbcc9c104ddfdbd09c9",
+  "sourceFingerprint": "461eecc59daf59661050b04f4eff17ca6a512dec54782f1adfb54fa9255a7fda",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -62,7 +61,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-06T23:40:18.568Z",
+  "generatedAt": "2026-11-07T00:41:56.491Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -71,7 +70,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:40:18.569Z",
-    "contentSha256": "2ebf468822134b46fe2146df7cc5d18ade26b9ded773144153b37e108459389b"
+    "sealedAt": "2026-11-07T00:41:56.491Z",
+    "contentSha256": "b535470f3229ffb810afec2d711f50d835a4c741fb306387930012c4a211a526"
   }
 }

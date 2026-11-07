@@ -1,19 +1,19 @@
 {
-  "status": "known-gap",
-  "passed": 9,
-  "failed": 4,
+  "status": "verified",
+  "passed": 13,
+  "failed": 0,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 4,
+    "realComponentFailures": 0,
     "mutantsCaught": 3,
     "mutantsTotal": 3,
     "ok": true
   },
-  "currentCommit": "2ce4a59353ce8ef26902197dbedec65764982cac",
+  "currentCommit": "d48eae4163817320d414efbcc9c104ddfdbd09c9",
   "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
-  "sourceFingerprint": "c8cc5a7a1e918b6c41bd1a6d24d44b29bb3d189ae742b9a740b59937374d3803",
+  "sourceFingerprint": "5408806815a75fd339876e7411a697cacaa3f2b3448ab27422df6acfe5505d64",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-m29-docs.ts",
@@ -24,21 +24,16 @@
     "script/m29/generate-wave-doc.ts"
   ],
   "evidenceFile": "D1-verify.json",
-  "generatedAt": "2026-11-06T23:40:24.022Z",
+  "generatedAt": "2026-11-07T00:41:55.175Z",
   "limitations": [
     "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
     "The wave doc's registry list is generated from WAVE_LANGUAGES; adding a language to the registry regenerates the doc (drift gate enforces regeneration)."
   ],
-  "details": [
-    "D1: PRECISION-LEDGER.md regenerates byte-identically: hand edit or evidence change — regenerate with --write",
-    "D1: PRECISION-LEDGER.json regenerates byte-identically: hand edit — regenerate with --write",
-    "D3: every claim level in the published MD equals the machine ledger: java: md=I3 machine=I0; python: md=I3 machine=I0; typescript: md=I3 machine=I0; javascript: md=I3 machine=I0; kotlin: md=I3 machine=I0; scala: md=I3 machine=I0",
-    "D3: listing table carries no claim above the machine ledger: | java      | I1    | I1         | I1         | I1      | I1             |; | kotlin    | I1    | I1         | I1         | I1      | I1             |; | scala     | I1    | I1         | I1         | I1      | I1             |; | typescript| I1    | I1         | I1         | I1      | I1             |; | javascript| I1    | I1         | I1         | I1      | I1             |; | python    | I1    | I1         | I1         | I1      | I1             |"
-  ],
+  "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-06T23:40:24.022Z",
-    "contentSha256": "b8440de52c0a9006ca3739557f2a5853c09318240286f9328e3d477b6b780da0"
+    "sealedAt": "2026-11-07T00:41:55.175Z",
+    "contentSha256": "7b57d01bf8c1982f99acf36d62b82ada0b39865350de2e0843f826d20df80a83"
   }
 }
