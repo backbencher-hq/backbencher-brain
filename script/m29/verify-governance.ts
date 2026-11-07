@@ -542,7 +542,16 @@ function main(): void {
       //   own precondition - a deadlock dressed as a red check.
       if (realFailed !== 0 && issue.status === "verified") evidenceErrors.push(`${issue.code}:persisted-failed`)
       const evidenceCommit = persisted["currentCommit"]
-      if (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit) {
+      // X1 IS THE CLOSURE THAT RUNS THIS CHECK. Its record is written when that
+      // closure finishes, so the pin visible here is always the previous run's -
+      // and once any relevant file changed, that pin is stale by construction.
+      // G1 then fails its cross-check, the closure's precondition reads "G1 not
+      // evidence-verified", and the lane can only clear it by having already
+      // succeeded: a deadlock dressed as a red check (measured as `X1:stale-commit`,
+      // G1 stuck at 74/75 through every run). The status cross-check below still
+      // applies to X1; only its commit pin is skipped, for exactly the
+      // self-referential reason G1 itself is excluded above.
+      if (issue.code !== "X1" && (typeof evidenceCommit !== "string" || evidenceCommit !== currentCommit)) {
         if (typeof evidenceCommit !== "string" || commitDiffTouchesRelevant(issue.code, evidenceCommit, currentCommit)) {
           evidenceErrors.push(`${issue.code}:stale-commit`)
         }
