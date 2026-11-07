@@ -2,11 +2,13 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 32,
-  "passed": 32,
-  "failed": 0,
-  "failures": [],
+  "passed": 31,
+  "failed": 1,
+  "failures": [
+    "X1: M29-R3 ladder run green at HEAD: R3: KNOWN-GAP (26/27 passed, 6 negatives)  (exit=1)"
+  ],
   "negativeCases": 3,
   "suiteExits": {
     "M24": 0,
@@ -16,13 +18,13 @@
     "M28": 0,
     "M29-R1": 0,
     "M29-R2": 0,
-    "M29-R3": 0,
+    "M29-R3": 1,
     "M29-R5": 0,
     "M29-R4": 0,
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "2976641a574b6880fb3c8d50415b5ec0ecb784d1",
+  "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
   "sourceFingerprint": "01cc5e9eeed1a6bae80a8c806e883e194c06ba8061daff2f6e94f4bafbc31497",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -58,7 +60,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-07T02:31:17.844Z",
+  "generatedAt": "2026-11-07T03:22:05.908Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -67,7 +69,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T02:31:17.845Z",
-    "contentSha256": "9926fdb372ba1ea4a6647c2eb740de7351e469ab525197f1a9d007ca262ef956"
+    "sealedAt": "2026-11-07T03:22:05.909Z",
+    "contentSha256": "2760ce77978f84dd47f5ab85ca2151acd2d12e00d0bbaf95d74b160f95311aa8"
   }
 }

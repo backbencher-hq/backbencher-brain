@@ -8,7 +8,7 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 3,
-  "currentCommit": "2976641a574b6880fb3c8d50415b5ec0ecb784d1",
+  "currentCommit": "a0ea3f46f5a87331be73969d9414053d7f696ea1",
   "sourceFingerprint": "5d79e12288c0e3c9c32810711d28e51f83a6e3808ee9fdd930923f821ded9d7c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -254,10 +254,10 @@
       }
     ]
   },
-  "generatedAt": "2026-11-07T02:06:25.779Z",
+  "generatedAt": "2026-11-07T02:57:00.402Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T02:06:25.780Z",
-    "contentSha256": "3ee807a92348404e2ac3b2d9bc2b70ffc804ab541756411025f626449aee5a87"
+    "sealedAt": "2026-11-07T02:57:00.402Z",
+    "contentSha256": "d0658ecfd78ec332b14808f414431fce62f9b4ac11098e1259d038811d796de7"
   }
 }
