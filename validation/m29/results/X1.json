@@ -4,10 +4,9 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 32,
-  "passed": 30,
-  "failed": 2,
+  "passed": 31,
+  "failed": 1,
   "failures": [
-    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
     "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
   ],
   "negativeCases": 3,
@@ -25,8 +24,8 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "1bf30ba4a0eef802d57ba128c6560f2eceddb9f1",
-  "sourceFingerprint": "221bb5806c8a50d4342e0166048603f5590fd7a63c8165c52c709e34829ce109",
+  "currentCommit": "2c11cdf7ba0ae32c5c6916b70efa3ed7f34bf9d6",
+  "sourceFingerprint": "0b00219ba42de4a1b0bd2039f0003a54b751ce54c956871aeb44af5d6c8b0b0a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -61,7 +60,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-07T19:49:15.799Z",
+  "generatedAt": "2026-11-07T20:10:34.140Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -70,7 +69,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T19:49:15.799Z",
-    "contentSha256": "ba92cfac7de735a71c4675dfa3a25714916be6ca90402787a86fa24ccfe5e43d"
+    "sealedAt": "2026-11-07T20:10:34.140Z",
+    "contentSha256": "580f5610047e0a67c17e2329db8f84e961e944f95d31fe3689930ba49495a320"
   }
 }
