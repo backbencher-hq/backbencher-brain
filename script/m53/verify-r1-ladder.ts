@@ -186,6 +186,21 @@ const PROJECT_BEFORE: Record<string, string[]> = {
 //     record lists what was resumed, so the receipt never hides its own shape.
 const STATE_PATH = path.join(ROOT, "validation/m53/results/.ladder-state.json")
 interface LadderState { commit: string; gates: Record<string, { rc: number; verdict: string }> }
+/** Paths whose content can change what a gate in this ladder measures. */
+const MEASURED_PREFIXES = ["src/", "script/", "ide/", "dist/", "package.json", "tsconfig.json", "docs/m24", "docs/m25", "docs/m26", "docs/m27", "docs/m28", "docs/m29", "docs/m42", "docs/m44", "docs/m53"]
+/** True when no commit between two trees touched anything a gate measures. */
+function benignMove(fromCommit: string, toCommit: string): boolean {
+  if (fromCommit === toCommit) return true
+  try {
+    const changed = execFileSync("git", ["diff", "--name-only", fromCommit, toCommit], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+    return !changed.some((file) => MEASURED_PREFIXES.some((prefix) => file === prefix || file.startsWith(prefix)))
+  } catch {
+    return false
+  }
+}
 const resume = process.argv.includes("--resume")
 const head = gitHead()
 let prior: LadderState | null = null
@@ -193,7 +208,18 @@ if (resume) {
   try {
     const loaded = JSON.parse(readFileSync(STATE_PATH, "utf8")) as LadderState
     if (loaded.commit === head) prior = loaded
-    else console.log(`R1: state at ${loaded.commit.slice(0, 8)} is from a different tree — starting fresh at ${head.slice(0, 8)}`)
+    else if (!benignMove(loaded.commit, head)) {
+      console.log(`R1: state at ${loaded.commit.slice(0, 8)} is from a different tree — starting fresh at ${head.slice(0, 8)}`)
+    } else {
+      // A commit that only recorded evidence does not change what any gate
+      // measures: the receipt is about the PRODUCT tree, and the gates in this
+      // ladder read src/, the harnesses, the editor sources and the plan docs -
+      // never validation/. Carrying the passes across such a move is what makes the
+      // receipt reachable at all on a shared checkout, where the act of committing
+      // the previous run's evidence otherwise invalidates the run itself.
+      prior = loaded
+      console.log(`R1: ${loaded.commit.slice(0, 8)}..${head.slice(0, 8)} touched nothing a gate measures — carrying ${Object.keys(loaded.gates).length} verdict(s)`)
+    }
   } catch {
     // no state: a normal full run
   }
