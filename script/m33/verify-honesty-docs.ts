@@ -112,7 +112,7 @@ const docMutants: DocMutant[] = [
   },
   {
     name: "fingerprint-only claim weakened in README row",
-    mutate: (src) => src.replace("key as last-4 fingerprint only, never the full key", "key shown safely"),
+    mutate: (src) => src.replaceAll("last-4 fingerprint only, never the full key", "key shown safely"),
     probe: (m) => !m.includes("last-4 fingerprint only"),
   },
   {
