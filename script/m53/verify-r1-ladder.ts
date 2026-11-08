@@ -15,7 +15,7 @@
 // Run: npx tsx script/m53/verify-r1-ladder.ts [--self-test]
 
 import { execFileSync, spawnSync } from "node:child_process"
-import { writeFileSync, mkdirSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
 
@@ -170,7 +170,48 @@ const PROJECT_BEFORE: Record<string, string[]> = {
   // re-stamp M29 records; project M29 again so its manifest and its spawn agree.
   "m42-closure": ["script/m29/verify-governance.ts", "script/m42/verify-governance.ts"],
 }
+// --- Resumable ladder -------------------------------------------------------
+//
+// THE LADDER TAKES ~35 MINUTES AND THIS MACHINE INTERRUPTS LONG RUNS. Eight agents
+// share this checkout; a killed run used to lose every gate it had already passed
+// and start from zero, which is how a working chain kept failing to produce its
+// receipt. `--resume` reuses the verdicts of gates that ALREADY PASSED AT THIS
+// EXACT HEAD, and nothing else:
+//
+//   - the state file records the HEAD it was written at, and a different HEAD
+//     discards it wholesale (a receipt is about one tree, never a mix);
+//   - only passing gates are reused - a red gate always re-runs, so a fix is
+//     measured rather than remembered;
+//   - a gate that is not re-run is still printed, marked `(resumed)`, and the
+//     record lists what was resumed, so the receipt never hides its own shape.
+const STATE_PATH = path.join(ROOT, "validation/m53/results/.ladder-state.json")
+interface LadderState { commit: string; gates: Record<string, { rc: number; verdict: string }> }
+const resume = process.argv.includes("--resume")
+const head = gitHead()
+let prior: LadderState | null = null
+if (resume) {
+  try {
+    const loaded = JSON.parse(readFileSync(STATE_PATH, "utf8")) as LadderState
+    if (loaded.commit === head) prior = loaded
+    else console.log(`R1: state at ${loaded.commit.slice(0, 8)} is from a different tree — starting fresh at ${head.slice(0, 8)}`)
+  } catch {
+    // no state: a normal full run
+  }
+}
+const resumedFrom: string[] = []
+const saveState = (gates: Record<string, { rc: number; verdict: string }>): void => {
+  mkdirSync(path.dirname(STATE_PATH), { recursive: true })
+  writeFileSync(STATE_PATH, JSON.stringify({ commit: head, gates }, null, 2))
+}
+const stateGates: Record<string, { rc: number; verdict: string }> = { ...(prior?.gates ?? {}) }
+
 const results = GATES.map(([name, script]) => {
+  const carried = prior?.gates[name]
+  if (carried && carried.rc === 0) {
+    resumedFrom.push(name)
+    console.log(`  ✓ ${name} rc=0 (resumed) :: ${carried.verdict}`)
+    return { name, script, rc: 0, verdict: carried.verdict, ok: true, timedOut: false }
+  }
   for (const projection of PROJECT_BEFORE[name] ?? []) {
     const p = spawnSync("npx", ["tsx", projection], { cwd: ROOT, encoding: "utf8", timeout: 900_000 })
     console.log(`  · projected ${projection} before ${name} (rc=${p.status ?? "?"})`)
@@ -186,6 +227,8 @@ const results = GATES.map(([name, script]) => {
   const mark = r.timedOut ? "?" : r.rc === 0 ? "✓" : "✗"
   const ok = r.rc === 0
   console.log(`  ${mark} ${name} rc=${r.rc}${r.timedOut ? " TIMED OUT" : ""} :: ${r.verdict}`)
+  stateGates[name] = { rc: r.rc, verdict: r.verdict }
+  saveState(stateGates)
   return { name, script, rc: r.rc, verdict: r.verdict, ok, timedOut: r.timedOut }
 })
 
@@ -215,6 +258,8 @@ const result = {
   checksList,
   canFail: { name: "degenerate-aggregate", flipped: st.flipped, bogusRc: st.rc },
   gatesTotal: results.length,
+  /** Gates whose passing verdict was carried over from a resume at this same HEAD. */
+  resumedGates: resumedFrom,
   gates: results,
   currentCommit: gitHead(),
   verifierCommand: "npx tsx script/m53/verify-r1-ladder.ts",
