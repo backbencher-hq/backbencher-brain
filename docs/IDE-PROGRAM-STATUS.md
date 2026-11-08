@@ -32,7 +32,7 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | v5 | M29 | Precision Waves | **CLOSED** (9/9 verified) | wave-1 languages owner-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant scale measured on a declared-synthetic 59,000-file corpus; budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
 | v6 | M42 | The Interactive Hover | **CLOSED** (8/8 verified) | rich hover + actions live in-editor; click-throughs, panels and the hub tree verified in real VS Code; Cursor and Windsurf declared absent with reasons | [m42 ledger](../validation/m42/results/manifest.json) |
 | v7 | M44 | The Understandable Hub | **CLOSED** (8/8 verified) | I3-equivalent for the hub surfaces (grouped rows, tree, legend, impact fallback, reference fallback); three fork legs declared absent with reasons, per contract §2 I4/§8.3; owner spot check pending | [m44 ledger](../validation/m44/results/manifest.json), [launch record](./m44/LAUNCH-RECORD.md) |
-| v8 | M55 | The Hub That Tells the Truth | **CLOSED on GitHub** (7/9 verified) — G1 `known-gap` (the M53 ladder must finish its run on a quiet machine), X1 downstream of it | I1 for protocol-level gates; the verified set is the one the ledger names | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
+| v8 | M55 | The Hub That Tells the Truth | **CLOSED** (9/9 verified) — G1 17/17 (the M44/M53 bars re-audited by a full 41-gate ladder run), X1 41/41 | I1 for protocol-level gates; the verified set is the one the ledger names | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
 | v9 | M62 | Address Truth | **CLOSED on GitHub** (4/5 verified) — G1 `known-gap` at HEAD; the last verification pins at `a943047e5c` (2026-09-28) | I1 (machine-level address truth); the editor-visible half is the owner's I3 spot-check, which is scheduled, not recorded | [m62/M62-MASTER-PLAN.md](./m62/M62-MASTER-PLAN.md), [ledger](../validation/m62/results/manifest.json) |
 
 Nothing on this page is a fork- or editor-verified claim until a milestone's
@@ -194,18 +194,21 @@ red bars are, in dependency order:
 2. **M27 / M28** — `known-gap`, correctly: their ledger projections now publish
    the red records (M27.N1 `blocked` — no nvim; M28 T1/U1/A2/V1 `known-gap`).
    These lanes are honest-red, not drifting.
-3. **M55** — **12 of 14 records verified at HEAD `24a48142f`**; the two `known-gap` records are:
-   - G1: the M44/M53 bar needs the 41-gate M53 ladder to run uninterrupted to the end on a
-     quiet machine. Its ledger check is down to a single item, and the two gate
-     defects that made it un-passable (recording another lane's dirty files as its own
-     relevant changes; demanding its own last verdict, which made one failure permanent)
-     are fixed. The last attempt's ladder died after `m28-closure` without re-sealing
-     `validation/m53/results/R1.json`, which still carries a 2026-09-20 pass.
-   - X1: downstream of G1; no independent defect.
-   
-   **None is blocked on a known product defect.** The honest summary: *"Twelve of
-   fourteen M55 records are verified at HEAD; the remaining two are the governance bar
-   and its closure — a quiet-machine re-audit, not an unfixed defect."*
+3. **M55** — **14 records, all verified at HEAD**: G1 17/17 and X1 41/41. The bar
+   that had been `known-gap` for so long was never a product defect: it re-audits the
+   M44/M53 completions by spawning the 41-gate ladder, and three separate gate defects
+   made that spawn unpassable — the ladder had no message budget for a 35-minute run,
+   an in-editor leg that could not start retracted the verified evidence it was trying
+   to repeat, and several closures compared commit SHAs where the program's own rule is
+   relevance. Each is fixed and measured: the ladder is resumable at one HEAD,
+   the editor legs keep the evidence they measured, and a record stays valid while
+   nothing it depends on changed. **The M53 receipt now reads R1 41/41 and X1 7/7.**
+
+**Nothing here is blocked on a known product defect.** All fourteen M55 records verify
+   at HEAD, and both M53 receipts do too. What is still open is named and measured, not
+   pending: M25's E6 fork legs are `blocked` because Cursor and Windsurf are not
+   installed on this machine (the searched paths are in the records), and the macOS and
+   Windows legs are CI-pending by design.
    
    Detail worth keeping, because each of these flipped from red to verified by FIXING
    the thing rather than by re-running it: T6 (type-inference warm p95 59.49ms) and
