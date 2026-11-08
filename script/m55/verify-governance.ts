@@ -556,7 +556,14 @@ function main(): void {
         // red gate - a timer is infrastructure, not a verdict (the same lesson the
         // closure gate's per-leg timers learned). Raised to 90 minutes, with the
         // budget named here so the next reader does not re-derive it.
-        out = execFileSync("npx", ["tsx", script], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 5_400_000 });
+        // The bar re-audits the two closures. The ladder behind them is resumable
+        // AT ONE HEAD, and this gate is the one place where losing 35 minutes of
+        // measured gates to an interruption would turn a green bar into an
+        // unevaluable one - so the spawn resumes the passes already recorded at
+        // this HEAD and re-runs every gate that did not pass. The receipt declares
+        // which gates it carried, so nothing is hidden.
+        const ladderArgs = ["tsx", script, ...(script.includes("verify-r1-ladder") ? ["--resume"] : [])]
+        out = execFileSync("npx", ladderArgs, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 5_400_000 });
         exit = 0;
       } catch (e: any) {
         exit = e.status ?? 1;
