@@ -41,7 +41,7 @@
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
   "sourceFingerprint": "02bef1860188b2fe7e2245fe597769ae2bced09232b0852c5f6dfa5a1513e059",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -57,7 +57,7 @@
   ],
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-11-08T03:29:11.753Z",
+  "generatedAt": "2026-11-08T05:44:43.225Z",
   "limitations": [
     "Lane 6: the warm budget is now a REAL p95 — 200 individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
@@ -66,7 +66,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T03:29:11.753Z",
-    "contentSha256": "4f44f7cd081cefba8f38f648bc0bc6924e9d49b1d3aea437bc39f9af5914cc3e"
+    "sealedAt": "2026-11-08T05:44:43.225Z",
+    "contentSha256": "e803db41d9cd1230c895b6d87373250ff998692bb027673b7df3c713dd3f4af7"
   }
 }

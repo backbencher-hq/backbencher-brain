@@ -8,6 +8,6 @@ inheritance (contract §1/§2).
 | --- | --- | --- | --- | --- | --- |
 | cursor | — | — | unset (blocked) | [F-CURSOR.json](../../validation/m25/results/F-CURSOR.json) | blocked: cursor not found — looked at: legacy: /usr/bin/cursor |
 | windsurf | — | — | unset (blocked) | [F-WINDSURF.json](../../validation/m25/results/F-WINDSURF.json) | blocked: windsurf not found — looked at: legacy: /usr/bin/windsurf |
-| antigravity | 1.107.0 | linux | I4 (verified in this fork) | [F-ANTIGRAVITY.json](../../validation/m25/results/F-ANTIGRAVITY.json) | verified (91/91) |
+| antigravity | 1.107.0 | linux | I4 (verified in this fork) | [F-ANTIGRAVITY.json](../../validation/m25/results/F-ANTIGRAVITY.json) | verified (90/90) |
 
 Owner spot-check: pending (scheduled per issue #504 closure requirements).

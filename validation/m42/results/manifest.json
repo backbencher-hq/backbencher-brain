@@ -12,7 +12,7 @@
       "code": "G1",
       "githubIssue": 648,
       "tool": "governance-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract §12)",
       "acceptanceCriteria": [
         "ledger structurally sound, dependency order enforced, X1 last",
@@ -25,12 +25,12 @@
         "master plan lint-clean (banned vocabulary = zero)"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "status": "verified",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 24,
-        "failed": 1,
+        "passed": 25,
+        "failed": 0,
         "negativeCases": 7,
         "blockedReason": "1 check(s) failed: G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
       }
@@ -53,7 +53,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
         "passed": 25,
@@ -84,7 +84,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
         "passed": 71,
@@ -116,7 +116,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
         "passed": 29,
@@ -148,7 +148,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
         "passed": 33,
@@ -180,7 +180,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
         "passed": 43,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
         "passed": 38,
@@ -239,7 +239,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
+        "currentCommit": "cd2949eeec331c24765a546fdbe2a2f4e617f045",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 27,
@@ -252,7 +252,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T03:26:36.709Z",
-    "contentSha256": "ca0e82497daee64805aebd3f6ab817aed70bd939cfca99eb2aeab6ad491c0745"
+    "sealedAt": "2026-11-08T05:39:56.818Z",
+    "contentSha256": "f9065a3c11948638b1cdacdc06124597a9713efdc09fd6bdce37344725869214"
   }
 }

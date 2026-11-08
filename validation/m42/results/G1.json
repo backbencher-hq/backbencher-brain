@@ -2,16 +2,16 @@
   "issue": "M42.G1",
   "code": "G1",
   "milestone": "M42",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 30,
-  "passed": 29,
-  "failed": 1,
+  "passed": 30,
+  "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-08T03:26:36.700Z",
+  "generatedAt": "2026-11-08T05:39:56.810Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -20,16 +20,15 @@
     "hubOpenP95Ms": 300
   },
   "m29Bar": {
-    "gateExit": 1
+    "gateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",
     "A run with relevant uncommitted M42 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "1 check(s) failed: G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T03:26:36.710Z",
-    "contentSha256": "45a7d93c3badab1a5b844832bce2301e773a11b511386ef8c19469cc6e85739b"
+    "sealedAt": "2026-11-08T05:39:56.819Z",
+    "contentSha256": "b4eb703614f783e6ff95ed35e31dfed87564d7712b9b1a462fb73a825d23dedc"
   }
 }

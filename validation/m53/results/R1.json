@@ -3,8 +3,8 @@
   "code": "R1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 37,
-  "failed": 4,
+  "passed": 40,
+  "failed": 1,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -17,6 +17,48 @@
     "bogusRc": 1
   },
   "gatesTotal": 41,
+  "resumedGates": [
+    "m24-closure",
+    "m25-auto-index",
+    "m25-harness-core",
+    "m25-closure",
+    "m26-webview-core",
+    "m26-content-security",
+    "m26-cross-lang",
+    "m26-evidence-badges",
+    "m26-graph-docs",
+    "m26-graph-transport",
+    "m26-impact-mode",
+    "m26-webview-harness",
+    "m26-closure",
+    "m27-nvim",
+    "m27-zed",
+    "m27-helix",
+    "m27-closure",
+    "m28-union",
+    "m28-mcp-tools",
+    "m28-annotation-store",
+    "m28-annotation-ui",
+    "m28-closure",
+    "m29-wave-protocol",
+    "m29-precision-ledger",
+    "m29-precision-improvements",
+    "m29-m29-docs",
+    "m29-closure",
+    "m42-enrichment",
+    "m42-highlight",
+    "m42-hover-actions",
+    "m42-hub",
+    "m42-hub-nav",
+    "m42-rich-hover",
+    "m42-closure",
+    "m44-hub-tree",
+    "m44-impact-resolution",
+    "m44-legend",
+    "m44-hub-list",
+    "m44-usages-fallback",
+    "m44-usages-groups"
+  ],
   "gates": [
     {
       "name": "m24-closure",
@@ -45,9 +87,9 @@
     {
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (33/37 passed, 3 negative)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (37/37 passed, 3 negative)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -229,9 +271,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (26/32 passed, 3 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -285,9 +327,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (25/33 passed, 7 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (33/33 passed, 7 negatives)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -318,7 +360,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 871e692e)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 94adedbf)",
       "ok": true,
       "timedOut": false
     },
@@ -342,17 +384,17 @@
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (45/55 passed, 8 negatives)",
+      "verdict": "KNOWN-GAP (52/53 passed, 8 negatives)",
       "ok": false,
       "timedOut": false
     }
   ],
-  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-08T03:30:02.229Z",
+  "generatedAt": "2026-11-08T05:45:24.040Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T03:30:02.229Z",
-    "contentSha256": "4e7f80c1601ee142e386f3e39c22bb3a3ac7166cf5b895914b5592df66cd2834"
+    "sealedAt": "2026-11-08T05:45:24.041Z",
+    "contentSha256": "aa19c1fd8e546c7619d518aeeb2b6e359d036d407f9c00747cdc48046323acca"
   }
 }

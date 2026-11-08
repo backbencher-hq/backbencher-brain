@@ -2,14 +2,11 @@
   "issue": "507",
   "code": "X1",
   "milestone": "M25",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 37,
-  "passed": 35,
-  "failed": 2,
-  "failures": [
-    "X1: D1 verifier passes at HEAD, or is a declared block with a recorded reason — D1: KNOWN-GAP (21/22 passed, 4 negative)  (exit=1)",
-    "X1: D1 regeneration run passes — D1: KNOWN-GAP (21/22 passed, 4 negative)  (exit=1)"
-  ],
+  "passed": 37,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
   "suiteExits": {
     "E1": 0,
@@ -20,7 +17,7 @@
     "E5": 0,
     "E6": 0,
     "E7": 0,
-    "D1": 1,
+    "D1": 0,
     "D1i": 0
   },
   "section6": [
@@ -65,10 +62,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "cd2949eeec331c24765a546fdbe2a2f4e617f045",
+  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-08T04:59:18.776Z",
+  "generatedAt": "2026-11-08T05:13:16.381Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -76,7 +73,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T04:59:18.777Z",
-    "contentSha256": "200fca4598f386763b89705cdf17901301427411746235d446ba015ef37ce02c"
+    "sealedAt": "2026-11-08T05:13:16.382Z",
+    "contentSha256": "0e7cc95a75c038191f79c18b77bccbb6481c55db0161938a17ff3662b97d9d1d"
   }
 }

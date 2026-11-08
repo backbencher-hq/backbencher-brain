@@ -2,20 +2,20 @@
   "issue": "M28.G1",
   "code": "G1",
   "milestone": "M28",
-  "status": "known-gap",
-  "checks": 74,
+  "status": "verified",
+  "checks": 72,
   "passed": 72,
-  "failed": 2,
-  "negativeCases": 14,
-  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
+  "failed": 0,
+  "negativeCases": 12,
+  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m28/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-08T03:29:03.601Z",
+  "generatedAt": "2026-11-08T05:44:37.917Z",
   "ledger": "validation/m28/results/manifest.json",
   "m27Bar": {
-    "ledgerStatus": "open",
-    "m27GateExit": 1
+    "ledgerStatus": "closed",
+    "m27GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify MCP tools or annotations.",
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T03:29:03.604Z",
-    "contentSha256": "c79b91793ca4dc21b399c7f0a517486626585f50a52ba271f6205827c1f38c02"
+    "sealedAt": "2026-11-08T05:44:37.918Z",
+    "contentSha256": "d4b692b75edd3c6d299c07363a6aec6dd3ffc7a1fb38f1c8349af25d41e6b889"
   }
 }
