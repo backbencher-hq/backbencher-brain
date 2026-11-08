@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.test/wave.schema.json",
+  "title": "Wave fixture schema",
+  "type": "object",
+  "properties": {
+    "user": { "$ref": "#/$defs/User" },
+    "team": { "$ref": "#/$defs/Team" }
+  },
+  "$defs": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" }
+      }
+    },
+    "Team": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/User" }
+        }
+      }
+    }
+  }
+}

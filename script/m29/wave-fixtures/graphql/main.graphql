@@ -1,0 +1,45 @@
+# Wave fixture pack — graphql lane (M29 wave 3).
+schema {
+  query: Query
+}
+
+type Query {
+  user(id: ID!): User
+  team(id: ID!): Team
+}
+
+interface Node {
+  id: ID!
+}
+
+type User implements Node {
+  id: ID!
+  name: String!
+  email: String
+}
+
+type Team implements Node {
+  id: ID!
+  title: String!
+  members: [User!]!
+}
+
+input UserFilter {
+  name: String
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+fragment UserFields on User {
+  id
+  name
+}
+
+query FindUser($id: ID!) {
+  user(id: $id) {
+    ...UserFields
+  }
+}

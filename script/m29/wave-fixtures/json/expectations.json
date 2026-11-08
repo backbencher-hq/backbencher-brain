@@ -1,0 +1,27 @@
+{
+  "language": "json",
+  "hover": {
+    "symbol": "User",
+    "contains": [
+      "User"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "User",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "User",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 10,
+  "definitionLine": 10
+}

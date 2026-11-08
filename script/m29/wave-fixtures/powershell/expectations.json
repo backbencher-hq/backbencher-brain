@@ -1,0 +1,27 @@
+{
+  "language": "powershell",
+  "hover": {
+    "symbol": "Greet",
+    "contains": [
+      "Greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 6,
+  "definition": {
+    "symbol": "Greet",
+    "minLocations": 1
+  },
+  "definitionLine": 6,
+  "references": {
+    "symbol": "Greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main.ps1"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

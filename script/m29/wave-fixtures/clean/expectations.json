@@ -1,0 +1,27 @@
+{
+  "language": "clean",
+  "hover": {
+    "symbol": "greet",
+    "contains": [
+      "greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 17,
+  "definition": {
+    "symbol": "Greeter",
+    "minLocations": 1
+  },
+  "definitionLine": 7,
+  "references": {
+    "symbol": "greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

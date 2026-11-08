@@ -1,0 +1,27 @@
+{
+  "language": "sql",
+  "hover": {
+    "symbol": "users",
+    "contains": [
+      "users"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "users",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "users",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "users"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 5,
+  "definitionLine": 5
+}

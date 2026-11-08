@@ -1,0 +1,27 @@
+{
+  "language": "terraform",
+  "hover": {
+    "symbol": "app_name",
+    "contains": [
+      "app_name"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 3,
+  "definition": {
+    "symbol": "app_name",
+    "minLocations": 1
+  },
+  "definitionLine": 3,
+  "references": {
+    "symbol": "app_name",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

@@ -1,0 +1,26 @@
+/* Wave fixture pack — css lane (M29 wave 3). */
+:root {
+  --brand-color: #1a5fb4;
+  --space-md: 12px;
+}
+
+.card {
+  color: var(--brand-color);
+  padding: var(--space-md);
+  border: 1px solid #c0c0c0;
+}
+
+.card-title {
+  font-weight: 600;
+  color: var(--brand-color);
+}
+
+#orders-table {
+  border-collapse: collapse;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: var(--space-md);
+  }
+}

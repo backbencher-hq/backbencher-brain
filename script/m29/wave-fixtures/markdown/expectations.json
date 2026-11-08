@@ -1,0 +1,27 @@
+{
+  "language": "markdown",
+  "hover": {
+    "symbol": "Configure",
+    "contains": [
+      "Configure"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "Configure",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "Configure",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "Wave fixture document"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 9,
+  "definitionLine": 9
+}

@@ -1,0 +1,15 @@
+// Wave fixture pack — sass lane (M29 wave 3). Indented syntax: no braces, no semicolons.
+$brand-color: #1a5fb4
+$space-md: 12px
+
+=card-surface($pad)
+  padding: $pad
+  border: 1px solid $brand-color
+
+.card
+  +card-surface($space-md)
+  color: $brand-color
+
+.card-title
+  font-weight: 600
+  color: $brand-color

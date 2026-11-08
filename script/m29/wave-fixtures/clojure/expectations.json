@@ -1,0 +1,27 @@
+{
+  "language": "clojure",
+  "hover": {
+    "symbol": "greet",
+    "contains": [
+      "greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 8,
+  "definition": {
+    "symbol": "greeter",
+    "minLocations": 1
+  },
+  "definitionLine": 8,
+  "references": {
+    "symbol": "greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "greeter"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

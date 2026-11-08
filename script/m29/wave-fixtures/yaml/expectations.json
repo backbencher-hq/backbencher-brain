@@ -1,0 +1,27 @@
+{
+  "language": "yaml",
+  "hover": {
+    "symbol": "service",
+    "contains": [
+      "service"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "service",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "service",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "service"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 3,
+  "definitionLine": 3
+}

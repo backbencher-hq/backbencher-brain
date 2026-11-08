@@ -1,0 +1,27 @@
+{
+  "language": "make",
+  "hover": {
+    "symbol": "greet",
+    "contains": [
+      "greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 7,
+  "definition": {
+    "symbol": "greet",
+    "minLocations": 1
+  },
+  "definitionLine": 7,
+  "references": {
+    "symbol": "greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main.mk"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

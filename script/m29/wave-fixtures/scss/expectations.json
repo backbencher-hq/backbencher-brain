@@ -1,0 +1,27 @@
+{
+  "language": "scss",
+  "hover": {
+    "symbol": "$brand-color",
+    "contains": [
+      "$brand-color"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "$brand-color",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "$brand-color",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    ".card"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 1,
+  "definitionLine": 1
+}

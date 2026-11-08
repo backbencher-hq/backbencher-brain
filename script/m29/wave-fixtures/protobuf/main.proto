@@ -1,0 +1,40 @@
+// Wave fixture pack — protobuf lane (M29 wave 3).
+syntax = "proto3";
+
+package wave.v1;
+
+// A user record: the message is the declaration, field and rpc types are
+// protobuf's own reference form.
+message User {
+  string name = 1;
+  string email = 2;
+  Address address = 3;
+}
+
+message Address {
+  string city = 1;
+  string country = 2;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ADMIN = 1;
+  ROLE_MEMBER = 2;
+}
+
+service UserService {
+  rpc GetUser(GetUserRequest) returns (User);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message ListUsersRequest {
+  int32 page_size = 1;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Wave fixture pack — xml lane (M29 wave 3). An XML Schema document:
+     `ref` attributes are XML's own cross-declaration reference form. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://example.test/wave">
+  <xs:element name="catalog" type="wave:CatalogType"/>
+  <xs:complexType name="CatalogType">
+    <xs:sequence>
+      <xs:element name="item" type="wave:ItemType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ItemType">
+    <xs:sequence>
+      <xs:element name="sku" type="xs:string"/>
+      <xs:element name="title" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element ref="wave:catalog"/>
+</xs:schema>

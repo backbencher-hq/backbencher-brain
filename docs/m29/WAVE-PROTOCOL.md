@@ -39,7 +39,7 @@ reason in `blockers[]`; silence is guilt (contract §8.3).
 npx tsx script/m29/wave-protocol.ts --language <lang> --out validation/m29/results/wave-<lang>.json
 ```
 
-Registry (21 candidates): java, groovy, kotlin, scala, typescript, javascript, vue, svelte, go, rust, python, csharp, dart, ruby, php, c, cpp, zig, haskell, objc, swift.
+Registry (53 candidates): java, groovy, kotlin, scala, typescript, javascript, vue, svelte, go, rust, python, csharp, dart, ruby, php, c, cpp, zig, haskell, objc, swift, tsx, html, css, scss, sass, json, yaml, toml, markdown, xml, graphql, protobuf, sql, perl, lua, elixir, erlang, clojure, julia, r, bash, powershell, make, fsharp, nim, vb, vba, matlab, clean, solidity, hcl, terraform.
 Exit 0 = every non-blocked step passed; exit 1 = any real failure; exit
 2 = usage error. The verdict JSON lists every step's status and detail,
 the computed cap, and the blockers.

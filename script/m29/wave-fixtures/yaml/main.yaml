@@ -1,0 +1,16 @@
+# Wave fixture pack — yaml lane (M29 wave 3).
+# YAML's own reference mechanism is the anchor/alias pair: `&service` declares a
+# mapping and the merge key `<<: *service` composes it into another mapping.
+service: &service
+  image: ghcr.io/example/wave-api:1.4.0
+  port: 8080
+  healthcheck:
+    path: /healthz
+
+primary:
+  <<: *service
+  replicas: 2
+
+replica:
+  <<: *service
+  replicas: 1

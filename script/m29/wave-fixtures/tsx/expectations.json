@@ -1,0 +1,27 @@
+{
+  "language": "tsx",
+  "hover": {
+    "symbol": "Greeting",
+    "contains": [
+      "Greeting"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "Greeting",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "Greeting",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "Greeting"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 8,
+  "definitionLine": 8
+}

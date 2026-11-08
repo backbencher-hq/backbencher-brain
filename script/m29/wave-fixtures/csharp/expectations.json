@@ -1,0 +1,27 @@
+{
+  "language": "csharp",
+  "hover": {
+    "symbol": "Greet",
+    "contains": [
+      "Greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 19,
+  "definition": {
+    "symbol": "Greeter",
+    "minLocations": 1
+  },
+  "definitionLine": 9,
+  "references": {
+    "symbol": "Greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "WaveTest"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

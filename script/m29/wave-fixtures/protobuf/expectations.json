@@ -1,0 +1,27 @@
+{
+  "language": "protobuf",
+  "hover": {
+    "symbol": "User",
+    "contains": [
+      "User"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "User",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "User",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "wave.v1"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 7,
+  "definitionLine": 7
+}

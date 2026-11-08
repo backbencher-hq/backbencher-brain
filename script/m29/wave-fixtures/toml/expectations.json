@@ -1,0 +1,27 @@
+{
+  "language": "toml",
+  "hover": {
+    "symbol": "versions",
+    "contains": [
+      "versions"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "versions",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "versions",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 4,
+  "definitionLine": 4
+}

@@ -1,0 +1,14 @@
+# Wave fixture pack — toml lane (M29 wave 3).
+# A Gradle version catalogue: `version.ref` is the reference form this analyzer
+# publishes, and a table header is a declaration the index can place.
+
+[versions]
+groovy = "3.0.21"
+junit = "5.10.2"
+
+[libraries]
+groovy-core = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+
+[bundles]
+testing = ["junit-jupiter"]

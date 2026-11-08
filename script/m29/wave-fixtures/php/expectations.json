@@ -1,0 +1,27 @@
+{
+  "language": "php",
+  "hover": {
+    "symbol": "greet",
+    "contains": [
+      "greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 16,
+  "definition": {
+    "symbol": "Greeter",
+    "minLocations": 1
+  },
+  "definitionLine": 16,
+  "references": {
+    "symbol": "greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "Greeter"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

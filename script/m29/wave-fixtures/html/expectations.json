@@ -1,0 +1,27 @@
+{
+  "language": "html",
+  "hover": {
+    "symbol": "email",
+    "contains": [
+      "email"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "email",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "email",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 11,
+  "definitionLine": 11
+}

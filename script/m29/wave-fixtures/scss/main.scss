@@ -1,0 +1,18 @@
+// Wave fixture pack — scss lane (M29 wave 3).
+$brand-color: #1a5fb4;
+$space-md: 12px;
+
+@mixin card-surface($pad) {
+  padding: $pad;
+  border: 1px solid $brand-color;
+}
+
+.card {
+  @include card-surface($space-md);
+  color: $brand-color;
+}
+
+.card-title {
+  font-weight: 600;
+  color: $brand-color;
+}

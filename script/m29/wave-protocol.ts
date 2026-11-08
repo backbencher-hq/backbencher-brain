@@ -44,6 +44,18 @@ export const WAVE_LANGUAGES: Record<string, string> = {
   go: "go", rust: "rs", python: "py", csharp: "cs", dart: "dart",
   ruby: "rb", php: "php", c: "c", cpp: "cpp", zig: "zig",
   haskell: "hs", objc: "m", swift: "swift",
+  // Wave 3 (2026-11-08): the remaining analyzers, onboarded in bulk. The
+  // extension is the language's FIXTURE identity — `main.<ext>` under
+  // script/m29/wave-fixtures/<lang>/. A language whose extension cannot be
+  // resolved unambiguously from a path (objc/matlab both use .m) will report
+  // that as its blocker rather than guess.
+  tsx: "tsx", html: "html", css: "css", scss: "scss", sass: "sass",
+  json: "json", yaml: "yaml", toml: "toml", markdown: "md", xml: "xml",
+  graphql: "graphql", protobuf: "proto", sql: "sql", perl: "pl",
+  lua: "lua", elixir: "ex", erlang: "erl", clojure: "clj", julia: "jl",
+  r: "r", bash: "sh", powershell: "ps1", make: "mk", fsharp: "fs",
+  nim: "nim", vb: "vb", vba: "bas", matlab: "m", clean: "icl",
+  solidity: "sol", hcl: "hcl", terraform: "tf",
 }
 
 export type StepStatus = "pass" | "fail" | "blocked"

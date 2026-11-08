@@ -1,0 +1,27 @@
+{
+  "language": "graphql",
+  "hover": {
+    "symbol": "User",
+    "contains": [
+      "User"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "User",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "User",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "User"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 14,
+  "definitionLine": 14
+}

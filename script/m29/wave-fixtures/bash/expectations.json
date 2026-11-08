@@ -1,0 +1,27 @@
+{
+  "language": "bash",
+  "hover": {
+    "symbol": "greet",
+    "contains": [
+      "greet"
+    ],
+    "evidenceClassRequired": true
+  },
+  "hoverLine": 9,
+  "definition": {
+    "symbol": "greet",
+    "minLocations": 1
+  },
+  "definitionLine": 9,
+  "references": {
+    "symbol": "greet",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "main.sh"
+  ],
+  "declaredAbsence": {
+    "symbol": "nonexistent_symbol_xyz",
+    "note": "absence must be declared, never fabricated"
+  }
+}

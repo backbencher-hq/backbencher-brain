@@ -1,0 +1,27 @@
+{
+  "language": "xml",
+  "hover": {
+    "symbol": "catalog",
+    "contains": [
+      "catalog"
+    ],
+    "evidenceClassRequired": true
+  },
+  "definition": {
+    "symbol": "catalog",
+    "minLocations": 1
+  },
+  "references": {
+    "symbol": "catalog",
+    "minCount": 1
+  },
+  "documentSymbols": [
+    "xs:schema"
+  ],
+  "declaredAbsence": {
+    "symbol": "waveAbsentSymbolProbe",
+    "note": "absence must be declared, never fabricated"
+  },
+  "hoverLine": 5,
+  "definitionLine": 5
+}
