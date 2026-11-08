@@ -17,7 +17,48 @@
     "bogusRc": 1
   },
   "gatesTotal": 41,
-  "resumedGates": [],
+  "resumedGates": [
+    "m24-closure",
+    "m25-auto-index",
+    "m25-harness-core",
+    "m25-closure",
+    "m26-webview-core",
+    "m26-content-security",
+    "m26-cross-lang",
+    "m26-evidence-badges",
+    "m26-graph-docs",
+    "m26-graph-transport",
+    "m26-impact-mode",
+    "m26-webview-harness",
+    "m26-closure",
+    "m27-nvim",
+    "m27-zed",
+    "m27-helix",
+    "m27-closure",
+    "m28-union",
+    "m28-mcp-tools",
+    "m28-annotation-store",
+    "m28-annotation-ui",
+    "m28-closure",
+    "m29-wave-protocol",
+    "m29-precision-ledger",
+    "m29-precision-improvements",
+    "m29-m29-docs",
+    "m29-closure",
+    "m42-enrichment",
+    "m42-highlight",
+    "m42-hover-actions",
+    "m42-hub",
+    "m42-hub-nav",
+    "m42-rich-hover",
+    "m44-hub-tree",
+    "m44-impact-resolution",
+    "m44-legend",
+    "m44-hub-list",
+    "m44-usages-fallback",
+    "m44-usages-groups",
+    "m44-closure"
+  ],
   "gates": [
     {
       "name": "m24-closure",
@@ -319,7 +360,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 1ae42bb7)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 7152eeae)",
       "ok": true,
       "timedOut": false
     },
@@ -348,12 +389,12 @@
       "timedOut": false
     }
   ],
-  "currentCommit": "1ae42bb72bc591edec017d2d24c74c1e3e551b26",
+  "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-08T07:57:54.062Z",
+  "generatedAt": "2026-11-08T09:35:22.062Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T07:57:54.063Z",
-    "contentSha256": "4bf35cedfb4e5e102f68eba66c9ec2ce7d6be8e81132d2406b1ee28cf0e350be"
+    "sealedAt": "2026-11-08T09:35:22.063Z",
+    "contentSha256": "75ef48a8eb21b21341115843497f1e77ccee2814f6c4f692c1bf329346b8bd8b"
   }
 }
