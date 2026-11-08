@@ -230,6 +230,21 @@ function declaredBlockReason(evidenceFiles: readonly string[]): string | null {
 
 const exits: Record<string, number> = {}
 for (const { code, script, editorLeg, evidenceFiles } of SUITE) {
+  // The listing gate (D1) compares the published claim levels against the LEDGER
+  // and the per-fork evidence. The legs before it just re-sealed that evidence, and
+  // only a governance projection writes the ledger - so without this the gate read a
+  // one-run-old claim table and reported drift for a fork that had just verified:
+  //   "antigravity: verified in evidence but not claimed I4 on the listing".
+  // Project first, exactly as the m29 closure does before its own precondition
+  // audit, so the artifact the gate reads reflects the run that produced it.
+  if (code === "D1") {
+    try {
+      execFileSync("npx", ["tsx", "script/m25/verify-governance.ts"], { cwd: ROOT, stdio: "ignore", timeout: 600_000 })
+      console.log("  · projected the M25 ledger before the listing gate")
+    } catch {
+      // a projection that cannot run is reported by the gate that needs it
+    }
+  }
   console.log(`  running ${code} (${editorLeg ? "editor leg" : "deterministic"})…`)
   const r = runVerifier(script, code === "E5" || code === "D1i" ? { E5_OUT: join(tmpdir(), `x1-${code}-${Date.now()}`) } : undefined)
   exits[code] = r.code

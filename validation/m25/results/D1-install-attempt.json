@@ -1,0 +1,20 @@
+{
+  "code": "D1-install-attempt",
+  "milestone": "M25",
+  "status": "no-measurement",
+  "attempts": 1,
+  "reason": "in-editor host did not run: Error: Test run failed with code 1",
+  "retainedEvidence": {
+    "file": "D1-install.json",
+    "status": "verified",
+    "currentCommit": "f37dcd8879a67ae07d5372c95f74e84a10e73069",
+    "passed": 21
+  },
+  "os": "linux",
+  "generatedAt": "2026-11-08T04:12:44.324Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T04:12:44.324Z",
+    "contentSha256": "c9182844133971260a24f89297ec5fa32c8fe33fbbf56200a416b9d6ea4a5eb8"
+  }
+}

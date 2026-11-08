@@ -1,0 +1,20 @@
+{
+  "code": "E5-attempt",
+  "milestone": "M25",
+  "status": "no-measurement",
+  "attempts": 2,
+  "reason": "Error: Test run failed with code 1",
+  "retainedEvidence": {
+    "file": "E5.json",
+    "status": "verified",
+    "currentCommit": "f37dcd8879a67ae07d5372c95f74e84a10e73069",
+    "passed": 91
+  },
+  "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
+  "generatedAt": "2026-11-08T04:45:17.695Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T04:45:17.696Z",
+    "contentSha256": "1cecabf9d2d56831c4e59cb36a9de1a1282175937cc94eb817a2538b32c03d25"
+  }
+}

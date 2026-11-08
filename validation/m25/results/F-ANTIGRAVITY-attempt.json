@@ -1,0 +1,21 @@
+{
+  "code": "F-ANTIGRAVITY-attempt",
+  "milestone": "M25",
+  "status": "no-measurement",
+  "attempts": 1,
+  "reason": "the fork started no extension host, so zero checks ran",
+  "retainedEvidence": {
+    "file": "F-ANTIGRAVITY.json",
+    "status": "verified",
+    "currentCommit": "f37dcd8879a67ae07d5372c95f74e84a10e73069",
+    "passed": null
+  },
+  "os": "linux",
+  "fork": "antigravity",
+  "generatedAt": "2026-11-08T04:45:35.462Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T04:45:35.462Z",
+    "contentSha256": "eeb8684fb7cc9148d2925a7676d9a73ed5d9e00383704d0ecf832fb32a49245f"
+  }
+}

@@ -190,7 +190,13 @@ function readLeg(rel: string): LegEvidence | null {
   //      and its hub legs, OR blocked WITH a reason. A `known-gap`, a `planned`,
   //      or a `blocked` with no reason still FAILS: that is the case §8.3 bans.
   const forkDir = join(ROOT, "validation/m25/results")
-  const forkFiles = existsSync(forkDir) ? readdirSync(forkDir).filter((f) => f.startsWith("F-") && f.endsWith(".json")).sort() : []
+  // Attempt records share the F- prefix and live in the same directory, but they are
+  // records of a run that measured nothing - not forks. Counting them made the census
+  // read "forks=7 declaredAbsent=5" and then demand hub legs from a file that exists
+  // precisely because no hub leg ran.
+  const forkFiles = existsSync(forkDir)
+    ? readdirSync(forkDir).filter((f) => f.startsWith("F-") && f.endsWith(".json") && !f.includes("-attempt")).sort()
+    : []
   check("X1: the fork census is not empty (a zero-fork audit passes vacuously)", forkFiles.length > 0, `forks=${forkFiles.length}`)
   const declaredForkAbsences: string[] = []
   for (const file of forkFiles) {

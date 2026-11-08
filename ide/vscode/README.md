@@ -78,7 +78,7 @@ from per-fork evidence and drift-gated by the D1 verifier:
 |--------|-------|----------|
 | VS Code | I3 — in-editor run at pinned 1.85.0, 91/91 checks, 0 failed (recorded 2026-11-08 at commit `dfac3448a`) | `validation/m25/results/E5.json` |
 | Cursor | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-CURSOR.json` |
-| Antigravity | blocked — the pinned fork (1.107.0) launches but starts no extension host, so zero checks ran; nothing is claimed for it | `validation/m25/results/F-ANTIGRAVITY.json` |
+| Antigravity | I4 — in-fork run at pinned 1.107.0, 90/90 checks, 0 failed (recorded 2026-11-08 at commit `cd2949eee`) | `validation/m25/results/F-ANTIGRAVITY.json` |
 | Windsurf | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-WINDSURF.json` |
 | Zed | blocked — no pinned run on this machine. The integration ships as an LSP config (`ide/zed/bb-lsp/`) whose shape is validated by `script/m27/verify-zed.ts`; a validated config is not a recorded editor run, so no claim is made | `script/m27/verify-zed.ts` |
 | JetBrains (LSP4IJ) | blocked — no pinned run on this machine. The integration ships as an LSP4IJ descriptor (`ide/lsp4ij/bb-lsp/`), validated by the M27 config family; a validated descriptor is not a run | `script/m27/verify-closure.ts` (M27 family) |
@@ -88,8 +88,8 @@ from per-fork evidence and drift-gated by the D1 verifier:
 Seven editors are named here because seven are what this project ships an
 integration for. **Five of them carry no claim**, and that is the honest state
 rather than a gap in the table: a config that parses, and a protocol that
-answers, are not an editor run. Only VS Code and Antigravity have a pinned,
-recorded run, and both are captured against the current bundle.
+answers, are not an editor run. Only VS Code (I3) and Antigravity (I4) have a
+pinned, recorded run, and both are captured against the current bundle.
 
 ## Complement stance (contract §7)
 
