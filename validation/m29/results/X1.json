@@ -22,7 +22,7 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
+  "currentCommit": "da68260def9569f5d4eb1b410979f64dddfde26c",
   "sourceFingerprint": "61681ce843391e19ed76683a46acd8afe9fc19ecc1e70fefd72fdde87dfd90bb",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -58,7 +58,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-08T06:27:46.839Z",
+  "generatedAt": "2026-11-08T07:11:19.546Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -67,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T06:27:46.839Z",
-    "contentSha256": "c7dc1ec6a78b2e8d98885fde2f9f10777dc96039963dffa64237c4304ed425fb"
+    "sealedAt": "2026-11-08T07:11:19.546Z",
+    "contentSha256": "ff8c63fe9c83fc182b438faf293145a47b2957bb6679cdabb49ec0b209e11f13"
   }
 }

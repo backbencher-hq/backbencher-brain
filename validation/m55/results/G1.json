@@ -4,15 +4,15 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 17,
-  "passed": 15,
+  "passed": 16,
   "failed": 0,
-  "realFailed": 2,
+  "realFailed": 1,
   "negativeCases": 8,
-  "currentCommit": "c5f7a6ad6267d53857eef3c9ac1ecf31ee1db1f7",
+  "currentCommit": "da68260def9569f5d4eb1b410979f64dddfde26c",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-07T18:22:27.631Z",
+  "generatedAt": "2026-11-08T07:14:53.353Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -33,24 +33,23 @@
     "rules": 6
   },
   "bar": {
-    "status": "failed",
-    "reason": "m53-ladder exit=1, m53-closure exit=1",
+    "status": "verified",
+    "reason": "",
     "ladder": [
       {
         "gate": "m53-ladder",
-        "exit": 1,
+        "exit": 0,
         "lastLine": "Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json"
       },
       {
         "gate": "m53-closure",
-        "exit": 1,
+        "exit": 0,
         "lastLine": "Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
       }
     ]
   },
   "failures": [
-    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/R1.json",
-    "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/mcp/backbencher-brain/validation/m53/results/X1.json"
+    "G1: the M55 ledger is structurally valid at HEAD — evidence-stale:G1(script/m55/verify-governance.ts)"
   ],
   "limitations": [
     "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
@@ -59,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T18:22:27.646Z",
-    "contentSha256": "8998273401a31f8ede4af733ab09e8e1fe4eb6c1af1dc3656dbf161ff5d870d0"
+    "sealedAt": "2026-11-08T07:14:53.359Z",
+    "contentSha256": "c06702c7e2f1668c2d401e81745bd9d783398b8b7b475fa9b52b34e8e77729b3"
   }
 }

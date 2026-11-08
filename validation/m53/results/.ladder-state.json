@@ -1,5 +1,5 @@
 {
-  "commit": "803dace77ac3843f86d3f81d8633366f29bff64f",
+  "commit": "da68260def9569f5d4eb1b410979f64dddfde26c",
   "gates": {
     "m24-closure": {
       "rc": 0,
@@ -151,7 +151,7 @@
     },
     "m44-hub-list": {
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 803dace7)"
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ da68260d)"
     },
     "m44-usages-fallback": {
       "rc": 0,
