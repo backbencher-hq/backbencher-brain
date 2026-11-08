@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "682258bb6f425a19adbb178e5f86be3ab034a5f4",
+  "inputsHash": "8432cc4b5f1dc95d02826bfb9de8d10cdc380de4",
   "inputs": [
     "validation/m29/results/wave-1-approval.json",
     "validation/m29/results/wave-2-approval.json",
@@ -157,12 +157,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.19,
-          "definition": 3.29,
-          "references": 3.04,
-          "documentSymbol": 2.59,
-          "workspaceSymbol": 3.1,
-          "prepareCallHierarchy": 3.26
+          "hover": 4.66,
+          "definition": 2.36,
+          "references": 2.82,
+          "documentSymbol": 5.47,
+          "workspaceSymbol": 2.91,
+          "prepareCallHierarchy": 2.74
         },
         "budgetViolations": []
       },
@@ -209,12 +209,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.27,
-          "definition": 2.26,
-          "references": 3.43,
-          "documentSymbol": 3.11,
-          "workspaceSymbol": 2.69,
-          "prepareCallHierarchy": 3.38
+          "hover": 11.59,
+          "definition": 2.99,
+          "references": 2.73,
+          "documentSymbol": 2.8,
+          "workspaceSymbol": 2.57,
+          "prepareCallHierarchy": 2.71
         },
         "budgetViolations": []
       },
@@ -261,12 +261,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 7.59,
-          "definition": 2.15,
-          "references": 3.26,
-          "documentSymbol": 2.22,
-          "workspaceSymbol": 2.36,
-          "prepareCallHierarchy": 2.52
+          "hover": 7.02,
+          "definition": 2.53,
+          "references": 3.44,
+          "documentSymbol": 3.53,
+          "workspaceSymbol": 2.88,
+          "prepareCallHierarchy": 2.55
         },
         "budgetViolations": []
       },
@@ -313,12 +313,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.56,
-          "definition": 3.42,
-          "references": 3.57,
-          "documentSymbol": 3.23,
-          "workspaceSymbol": 3.14,
-          "prepareCallHierarchy": 3.49
+          "hover": 5.08,
+          "definition": 2.88,
+          "references": 2.81,
+          "documentSymbol": 2.95,
+          "workspaceSymbol": 2.99,
+          "prepareCallHierarchy": 2.92
         },
         "budgetViolations": []
       },
@@ -365,12 +365,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.83,
-          "definition": 2.61,
-          "references": 2.97,
-          "documentSymbol": 2.6,
-          "workspaceSymbol": 2.59,
-          "prepareCallHierarchy": 2.91
+          "hover": 6.02,
+          "definition": 3.07,
+          "references": 3.42,
+          "documentSymbol": 3.12,
+          "workspaceSymbol": 2.58,
+          "prepareCallHierarchy": 2.58
         },
         "budgetViolations": []
       },
@@ -417,12 +417,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 4.89,
-          "definition": 3.13,
-          "references": 2.52,
-          "documentSymbol": 2.31,
-          "workspaceSymbol": 2.18,
-          "prepareCallHierarchy": 2.4
+          "hover": 4.55,
+          "definition": 3.36,
+          "references": 3.5,
+          "documentSymbol": 3.25,
+          "workspaceSymbol": 3.38,
+          "prepareCallHierarchy": 3.33
         },
         "budgetViolations": []
       },
@@ -469,12 +469,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.93,
-          "definition": 2.1,
-          "references": 2.31,
-          "documentSymbol": 2.43,
-          "workspaceSymbol": 2.43,
-          "prepareCallHierarchy": 3.32
+          "hover": 7.17,
+          "definition": 2.61,
+          "references": 2.69,
+          "documentSymbol": 3.03,
+          "workspaceSymbol": 2.71,
+          "prepareCallHierarchy": 3
         },
         "budgetViolations": []
       },
@@ -521,12 +521,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 10.51,
-          "definition": 3.32,
-          "references": 4.22,
-          "documentSymbol": 2.84,
-          "workspaceSymbol": 2.67,
-          "prepareCallHierarchy": 3.28
+          "hover": 7.23,
+          "definition": 2.78,
+          "references": 2.81,
+          "documentSymbol": 2.97,
+          "workspaceSymbol": 3.48,
+          "prepareCallHierarchy": 2.81
         },
         "budgetViolations": []
       },
@@ -573,12 +573,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.21,
-          "definition": 2.3,
-          "references": 2.82,
-          "documentSymbol": 2.85,
-          "workspaceSymbol": 2.62,
-          "prepareCallHierarchy": 2.96
+          "hover": 6.09,
+          "definition": 2.77,
+          "references": 2.53,
+          "documentSymbol": 3.1,
+          "workspaceSymbol": 3.54,
+          "prepareCallHierarchy": 2.77
         },
         "budgetViolations": []
       },
@@ -625,12 +625,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 10.74,
-          "definition": 2.87,
-          "references": 2.46,
-          "documentSymbol": 2.41,
-          "workspaceSymbol": 2.44,
-          "prepareCallHierarchy": 2.56
+          "hover": 9.7,
+          "definition": 2.78,
+          "references": 2.41,
+          "documentSymbol": 2.25,
+          "workspaceSymbol": 2.48,
+          "prepareCallHierarchy": 2.54
         },
         "budgetViolations": []
       },
@@ -677,12 +677,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 4.41,
-          "definition": 2.1,
-          "references": 1.82,
-          "documentSymbol": 3.07,
-          "workspaceSymbol": 3.73,
-          "prepareCallHierarchy": 3.06
+          "hover": 4.25,
+          "definition": 2.53,
+          "references": 2.9,
+          "documentSymbol": 2.94,
+          "workspaceSymbol": 2.23,
+          "prepareCallHierarchy": 2.52
         },
         "budgetViolations": []
       },
@@ -729,12 +729,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 4.05,
-          "definition": 2.1,
+          "hover": 4.33,
+          "definition": 2.34,
           "references": 3.02,
-          "documentSymbol": 2.61,
-          "workspaceSymbol": 2.26,
-          "prepareCallHierarchy": 2.21
+          "documentSymbol": 2.47,
+          "workspaceSymbol": 2.32,
+          "prepareCallHierarchy": 3.09
         },
         "budgetViolations": []
       },
@@ -781,12 +781,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.96,
-          "definition": 1.79,
-          "references": 2.99,
-          "documentSymbol": 2.58,
+          "hover": 4.16,
+          "definition": 2.22,
+          "references": 2.72,
+          "documentSymbol": 2.6,
           "workspaceSymbol": 2.54,
-          "prepareCallHierarchy": 2.87
+          "prepareCallHierarchy": 2.97
         },
         "budgetViolations": []
       },
@@ -833,12 +833,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 8.77,
-          "definition": 2.11,
-          "references": 3.23,
-          "documentSymbol": 2.9,
-          "workspaceSymbol": 2.31,
-          "prepareCallHierarchy": 3.58
+          "hover": 10.65,
+          "definition": 3.09,
+          "references": 3.38,
+          "documentSymbol": 3.38,
+          "workspaceSymbol": 3.14,
+          "prepareCallHierarchy": 3.5
         },
         "budgetViolations": []
       },
@@ -885,12 +885,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 11.71,
-          "definition": 2.51,
-          "references": 2.83,
-          "documentSymbol": 2.67,
-          "workspaceSymbol": 2.56,
-          "prepareCallHierarchy": 2.87
+          "hover": 13.31,
+          "definition": 2.75,
+          "references": 3.26,
+          "documentSymbol": 2.88,
+          "workspaceSymbol": 2.67,
+          "prepareCallHierarchy": 3.14
         },
         "budgetViolations": []
       },
@@ -937,12 +937,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.67,
-          "definition": 2.29,
-          "references": 2.69,
-          "documentSymbol": 2.58,
-          "workspaceSymbol": 2,
-          "prepareCallHierarchy": 2.2
+          "hover": 5.73,
+          "definition": 2.59,
+          "references": 3.06,
+          "documentSymbol": 2.76,
+          "workspaceSymbol": 2.7,
+          "prepareCallHierarchy": 2.88
         },
         "budgetViolations": []
       },
@@ -989,12 +989,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.61,
-          "definition": 2.26,
-          "references": 2.67,
-          "documentSymbol": 2.06,
-          "workspaceSymbol": 2.43,
-          "prepareCallHierarchy": 2.66
+          "hover": 7.04,
+          "definition": 2.54,
+          "references": 2.58,
+          "documentSymbol": 1.98,
+          "workspaceSymbol": 2.41,
+          "prepareCallHierarchy": 2.49
         },
         "budgetViolations": []
       },
@@ -1041,12 +1041,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 7.12,
-          "definition": 2.73,
-          "references": 2.76,
-          "documentSymbol": 2.62,
-          "workspaceSymbol": 2.56,
-          "prepareCallHierarchy": 2.29
+          "hover": 6.94,
+          "definition": 3.25,
+          "references": 2.8,
+          "documentSymbol": 2.78,
+          "workspaceSymbol": 2.77,
+          "prepareCallHierarchy": 3.21
         },
         "budgetViolations": []
       },
@@ -1093,11 +1093,11 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.41,
-          "definition": 2.53,
-          "references": 3.33,
-          "documentSymbol": 2.41,
-          "workspaceSymbol": 3.1,
+          "hover": 5.54,
+          "definition": 2.42,
+          "references": 2.67,
+          "documentSymbol": 2.57,
+          "workspaceSymbol": 2.54,
           "prepareCallHierarchy": 2.31
         },
         "budgetViolations": []
@@ -1145,12 +1145,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.05,
-          "definition": 3.59,
-          "references": 4.12,
-          "documentSymbol": 4.07,
-          "workspaceSymbol": 3.1,
-          "prepareCallHierarchy": 4.02
+          "hover": 6.86,
+          "definition": 4.11,
+          "references": 5.27,
+          "documentSymbol": 5.01,
+          "workspaceSymbol": 4.63,
+          "prepareCallHierarchy": 3.99
         },
         "budgetViolations": []
       },
@@ -1197,12 +1197,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 10.61,
-          "definition": 3.08,
-          "references": 2.98,
-          "documentSymbol": 2.53,
-          "workspaceSymbol": 2.46,
-          "prepareCallHierarchy": 2.43
+          "hover": 10.74,
+          "definition": 2.47,
+          "references": 2.44,
+          "documentSymbol": 2.47,
+          "workspaceSymbol": 2.34,
+          "prepareCallHierarchy": 2.95
         },
         "budgetViolations": []
       },
@@ -1249,12 +1249,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 8.31,
-          "definition": 2.09,
-          "references": 2.43,
-          "documentSymbol": 2.12,
-          "workspaceSymbol": 2.07,
-          "prepareCallHierarchy": 1.9
+          "hover": 10.56,
+          "definition": 2.25,
+          "references": 3.12,
+          "documentSymbol": 2.85,
+          "workspaceSymbol": 2.15,
+          "prepareCallHierarchy": 3.42
         },
         "budgetViolations": []
       },
@@ -1301,12 +1301,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 12.05,
-          "definition": 2.31,
-          "references": 2.59,
-          "documentSymbol": 3.35,
-          "workspaceSymbol": 2.51,
-          "prepareCallHierarchy": 2.39
+          "hover": 11.43,
+          "definition": 2.6,
+          "references": 3.43,
+          "documentSymbol": 3.95,
+          "workspaceSymbol": 2.65,
+          "prepareCallHierarchy": 2.41
         },
         "budgetViolations": []
       },
@@ -1353,12 +1353,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.84,
-          "definition": 2.03,
-          "references": 2.49,
-          "documentSymbol": 5.98,
-          "workspaceSymbol": 2.86,
-          "prepareCallHierarchy": 2.68
+          "hover": 5.22,
+          "definition": 2.49,
+          "references": 2.69,
+          "documentSymbol": 3.04,
+          "workspaceSymbol": 3.01,
+          "prepareCallHierarchy": 2.23
         },
         "budgetViolations": []
       },
@@ -1405,12 +1405,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.17,
-          "definition": 2.67,
-          "references": 3.22,
-          "documentSymbol": 2.75,
-          "workspaceSymbol": 2.65,
-          "prepareCallHierarchy": 2.98
+          "hover": 6.58,
+          "definition": 3.19,
+          "references": 2.87,
+          "documentSymbol": 2.67,
+          "workspaceSymbol": 2.82,
+          "prepareCallHierarchy": 2.53
         },
         "budgetViolations": []
       },
@@ -1457,12 +1457,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.05,
-          "definition": 2.29,
-          "references": 2.43,
-          "documentSymbol": 2.3,
-          "workspaceSymbol": 2.26,
-          "prepareCallHierarchy": 2.31
+          "hover": 4.48,
+          "definition": 1.93,
+          "references": 2.46,
+          "documentSymbol": 2.81,
+          "workspaceSymbol": 2.63,
+          "prepareCallHierarchy": 2.43
         },
         "budgetViolations": []
       },
@@ -1509,12 +1509,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 3.86,
-          "definition": 1.99,
-          "references": 2.41,
-          "documentSymbol": 2.29,
+          "hover": 4.86,
+          "definition": 2.43,
+          "references": 2.76,
+          "documentSymbol": 2.2,
           "workspaceSymbol": 2.07,
-          "prepareCallHierarchy": 2.69
+          "prepareCallHierarchy": 2.82
         },
         "budgetViolations": []
       },
@@ -1561,12 +1561,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 4.89,
-          "definition": 2.5,
-          "references": 2.65,
-          "documentSymbol": 3.48,
-          "workspaceSymbol": 2.22,
-          "prepareCallHierarchy": 2.33
+          "hover": 4.91,
+          "definition": 2.49,
+          "references": 2.98,
+          "documentSymbol": 4.03,
+          "workspaceSymbol": 2.94,
+          "prepareCallHierarchy": 2.23
         },
         "budgetViolations": []
       },
@@ -1613,12 +1613,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 8.77,
-          "definition": 3.31,
-          "references": 3.57,
-          "documentSymbol": 3.55,
-          "workspaceSymbol": 3.49,
-          "prepareCallHierarchy": 2.76
+          "hover": 10.79,
+          "definition": 4.07,
+          "references": 4.82,
+          "documentSymbol": 3.94,
+          "workspaceSymbol": 3.16,
+          "prepareCallHierarchy": 2.95
         },
         "budgetViolations": []
       },
@@ -1665,12 +1665,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 10.58,
-          "definition": 2.38,
-          "references": 2.56,
-          "documentSymbol": 2.96,
-          "workspaceSymbol": 2.19,
-          "prepareCallHierarchy": 2.24
+          "hover": 10.09,
+          "definition": 2.06,
+          "references": 2.51,
+          "documentSymbol": 2.55,
+          "workspaceSymbol": 3.66,
+          "prepareCallHierarchy": 2.77
         },
         "budgetViolations": []
       },
@@ -1717,12 +1717,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 7.05,
-          "definition": 2.47,
-          "references": 3.05,
-          "documentSymbol": 2.71,
-          "workspaceSymbol": 2.34,
-          "prepareCallHierarchy": 2.47
+          "hover": 7.83,
+          "definition": 2.42,
+          "references": 3.23,
+          "documentSymbol": 2.38,
+          "workspaceSymbol": 2.85,
+          "prepareCallHierarchy": 2.96
         },
         "budgetViolations": []
       },
@@ -1769,12 +1769,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 10.29,
-          "definition": 6.09,
-          "references": 6.77,
-          "documentSymbol": 6.37,
-          "workspaceSymbol": 6.07,
-          "prepareCallHierarchy": 5.83
+          "hover": 10.9,
+          "definition": 6.04,
+          "references": 7.06,
+          "documentSymbol": 6.1,
+          "workspaceSymbol": 5.9,
+          "prepareCallHierarchy": 6.28
         },
         "budgetViolations": []
       },
@@ -1821,12 +1821,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 1.99,
-          "definition": 1.71,
-          "references": 2.41,
-          "documentSymbol": 1.77,
-          "workspaceSymbol": 2.71,
-          "prepareCallHierarchy": 2.46
+          "hover": 2.37,
+          "definition": 1.99,
+          "references": 2.57,
+          "documentSymbol": 1.9,
+          "workspaceSymbol": 2.13,
+          "prepareCallHierarchy": 2.21
         },
         "budgetViolations": []
       },
@@ -1873,12 +1873,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 7.58,
-          "definition": 1.93,
-          "references": 2.62,
-          "documentSymbol": 2.27,
-          "workspaceSymbol": 2.25,
-          "prepareCallHierarchy": 3.03
+          "hover": 7.46,
+          "definition": 2.47,
+          "references": 2.99,
+          "documentSymbol": 2.72,
+          "workspaceSymbol": 2.59,
+          "prepareCallHierarchy": 3.08
         },
         "budgetViolations": []
       },
@@ -1925,12 +1925,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 12.47,
-          "definition": 2.38,
-          "references": 2.1,
-          "documentSymbol": 2.76,
-          "workspaceSymbol": 2,
-          "prepareCallHierarchy": 1.96
+          "hover": 12.58,
+          "definition": 2.48,
+          "references": 3.17,
+          "documentSymbol": 3.79,
+          "workspaceSymbol": 2.62,
+          "prepareCallHierarchy": 2.64
         },
         "budgetViolations": []
       },
@@ -1977,12 +1977,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.79,
-          "definition": 2.44,
-          "references": 3.28,
-          "documentSymbol": 2.52,
-          "workspaceSymbol": 2.37,
-          "prepareCallHierarchy": 2.98
+          "hover": 4.41,
+          "definition": 2.35,
+          "references": 3.44,
+          "documentSymbol": 2.59,
+          "workspaceSymbol": 2.53,
+          "prepareCallHierarchy": 2.65
         },
         "budgetViolations": []
       },
@@ -2029,12 +2029,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.77,
-          "definition": 3.5,
-          "references": 3.28,
-          "documentSymbol": 3.29,
-          "workspaceSymbol": 4.14,
-          "prepareCallHierarchy": 4.29
+          "hover": 7.25,
+          "definition": 4.04,
+          "references": 4.76,
+          "documentSymbol": 4.63,
+          "workspaceSymbol": 4.49,
+          "prepareCallHierarchy": 4.41
         },
         "budgetViolations": []
       },
@@ -2081,12 +2081,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.8,
-          "definition": 2.47,
-          "references": 3.45,
-          "documentSymbol": 4.58,
-          "workspaceSymbol": 3.32,
-          "prepareCallHierarchy": 3.16
+          "hover": 5.9,
+          "definition": 2.8,
+          "references": 3.27,
+          "documentSymbol": 4.55,
+          "workspaceSymbol": 3.08,
+          "prepareCallHierarchy": 2.73
         },
         "budgetViolations": []
       },
@@ -2133,12 +2133,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.43,
-          "definition": 2.96,
-          "references": 3.11,
-          "documentSymbol": 2.4,
-          "workspaceSymbol": 2.5,
-          "prepareCallHierarchy": 2.92
+          "hover": 9.86,
+          "definition": 2.25,
+          "references": 2.42,
+          "documentSymbol": 2.48,
+          "workspaceSymbol": 2.26,
+          "prepareCallHierarchy": 2.35
         },
         "budgetViolations": []
       },
@@ -2185,12 +2185,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.62,
-          "definition": 2.74,
-          "references": 2.66,
-          "documentSymbol": 2.62,
-          "workspaceSymbol": 2.65,
-          "prepareCallHierarchy": 2.49
+          "hover": 9.47,
+          "definition": 2.22,
+          "references": 3.21,
+          "documentSymbol": 2.93,
+          "workspaceSymbol": 2.93,
+          "prepareCallHierarchy": 3.05
         },
         "budgetViolations": []
       },
@@ -2237,12 +2237,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.86,
-          "definition": 3.17,
-          "references": 2.61,
-          "documentSymbol": 1.95,
-          "workspaceSymbol": 2.75,
-          "prepareCallHierarchy": 2.65
+          "hover": 4.82,
+          "definition": 2.64,
+          "references": 3.26,
+          "documentSymbol": 3.31,
+          "workspaceSymbol": 2.54,
+          "prepareCallHierarchy": 3.37
         },
         "budgetViolations": []
       },
@@ -2289,12 +2289,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.37,
-          "definition": 3.48,
-          "references": 3.33,
-          "documentSymbol": 2.18,
-          "workspaceSymbol": 2.05,
-          "prepareCallHierarchy": 2.01
+          "hover": 5.35,
+          "definition": 3.34,
+          "references": 2.75,
+          "documentSymbol": 2.59,
+          "workspaceSymbol": 2.66,
+          "prepareCallHierarchy": 2.49
         },
         "budgetViolations": []
       },
@@ -2341,12 +2341,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 4.16,
-          "definition": 2.05,
-          "references": 4.12,
-          "documentSymbol": 4.2,
-          "workspaceSymbol": 3.52,
-          "prepareCallHierarchy": 3.44
+          "hover": 5.11,
+          "definition": 2.29,
+          "references": 2.98,
+          "documentSymbol": 2.66,
+          "workspaceSymbol": 2.42,
+          "prepareCallHierarchy": 2.44
         },
         "budgetViolations": []
       },
@@ -2393,12 +2393,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 5.34,
-          "definition": 2.32,
-          "references": 2.62,
-          "documentSymbol": 2.79,
-          "workspaceSymbol": 2.16,
-          "prepareCallHierarchy": 2.91
+          "hover": 4.56,
+          "definition": 2.94,
+          "references": 3.27,
+          "documentSymbol": 3.57,
+          "workspaceSymbol": 2.84,
+          "prepareCallHierarchy": 3.11
         },
         "budgetViolations": []
       },
@@ -2445,12 +2445,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.46,
-          "definition": 5.34,
-          "references": 5.26,
-          "documentSymbol": 4.47,
-          "workspaceSymbol": 4.17,
-          "prepareCallHierarchy": 4.61
+          "hover": 8.15,
+          "definition": 4.43,
+          "references": 4.56,
+          "documentSymbol": 4.9,
+          "workspaceSymbol": 4.29,
+          "prepareCallHierarchy": 4.87
         },
         "budgetViolations": []
       },
@@ -2497,12 +2497,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 7.86,
-          "definition": 3.49,
-          "references": 3.92,
-          "documentSymbol": 4.98,
-          "workspaceSymbol": 4.23,
-          "prepareCallHierarchy": 4.34
+          "hover": 5.74,
+          "definition": 2.47,
+          "references": 3.08,
+          "documentSymbol": 3.18,
+          "workspaceSymbol": 2.42,
+          "prepareCallHierarchy": 3.3
         },
         "budgetViolations": []
       },
@@ -2549,12 +2549,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 3.87,
-          "definition": 1.88,
-          "references": 2.49,
-          "documentSymbol": 2.37,
-          "workspaceSymbol": 2.3,
-          "prepareCallHierarchy": 2.2
+          "hover": 5.26,
+          "definition": 2.95,
+          "references": 2.51,
+          "documentSymbol": 2.72,
+          "workspaceSymbol": 2.73,
+          "prepareCallHierarchy": 2.43
         },
         "budgetViolations": []
       },
@@ -2601,12 +2601,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.52,
-          "definition": 3.48,
-          "references": 4.76,
-          "documentSymbol": 4.33,
-          "workspaceSymbol": 3.8,
-          "prepareCallHierarchy": 4.06
+          "hover": 7.98,
+          "definition": 4.68,
+          "references": 4.54,
+          "documentSymbol": 4.51,
+          "workspaceSymbol": 4.47,
+          "prepareCallHierarchy": 4.3
         },
         "budgetViolations": []
       },
@@ -2653,12 +2653,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.96,
-          "definition": 2.5,
-          "references": 2.25,
-          "documentSymbol": 2.05,
-          "workspaceSymbol": 1.88,
-          "prepareCallHierarchy": 2.16
+          "hover": 7.18,
+          "definition": 2.57,
+          "references": 3.26,
+          "documentSymbol": 3.04,
+          "workspaceSymbol": 3.3,
+          "prepareCallHierarchy": 2.39
         },
         "budgetViolations": []
       },
@@ -2705,12 +2705,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 6.44,
-          "definition": 3.92,
-          "references": 3.18,
-          "documentSymbol": 2.62,
-          "workspaceSymbol": 2.76,
-          "prepareCallHierarchy": 2.57
+          "hover": 6.24,
+          "definition": 4.11,
+          "references": 3.79,
+          "documentSymbol": 4.12,
+          "workspaceSymbol": 3.24,
+          "prepareCallHierarchy": 3.48
         },
         "budgetViolations": []
       },
@@ -2757,12 +2757,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 7.9,
-          "definition": 2.56,
-          "references": 3.15,
-          "documentSymbol": 3.84,
-          "workspaceSymbol": 2.69,
-          "prepareCallHierarchy": 3.82
+          "hover": 6.77,
+          "definition": 3.71,
+          "references": 3.71,
+          "documentSymbol": 4.55,
+          "workspaceSymbol": 3.78,
+          "prepareCallHierarchy": 4.14
         },
         "budgetViolations": []
       },
@@ -2809,12 +2809,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 4.38,
-          "definition": 2.48,
-          "references": 2.65,
-          "documentSymbol": 3.51,
-          "workspaceSymbol": 2.82,
-          "prepareCallHierarchy": 2.27
+          "hover": 4.66,
+          "definition": 2.95,
+          "references": 2.72,
+          "documentSymbol": 3.37,
+          "workspaceSymbol": 2.46,
+          "prepareCallHierarchy": 2.37
         },
         "budgetViolations": []
       },

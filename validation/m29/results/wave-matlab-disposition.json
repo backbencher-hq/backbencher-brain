@@ -11,11 +11,11 @@
     "L5: call hierarchy only for a callable symbol (item, or declared absence naming the kind)"
   ],
   "evidence": "validation/m29/results/wave-matlab.json",
-  "declaredAt": "2026-11-08T19:20:01.467Z",
+  "declaredAt": "2026-11-08T22:14:18.415Z",
   "declaredBy": "lead (post-wave-3 measurement)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:20:01.467Z",
-    "contentSha256": "6e14d5b28a894140587ad13f8ddca396ff2b4c74e30fab7f8d849760724268fc"
+    "sealedAt": "2026-11-08T22:14:18.415Z",
+    "contentSha256": "cbc5dfbd68327c097934ebc7b3ba2fdbfdafc988c2d7ae781251bc9c0afedcc9"
   }
 }

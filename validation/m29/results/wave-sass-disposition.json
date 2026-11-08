@@ -8,11 +8,11 @@
     "L5: call hierarchy only for a callable symbol (item, or declared absence naming the kind)"
   ],
   "evidence": "validation/m29/results/wave-sass.json",
-  "declaredAt": "2026-11-08T19:20:01.465Z",
+  "declaredAt": "2026-11-08T22:14:18.412Z",
   "declaredBy": "lead (post-wave-3 measurement)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:20:01.465Z",
-    "contentSha256": "d157991ef9f64aa89969c2b3202db76c0f261b7aa7a2829a2bd94e665adb4c5c"
+    "sealedAt": "2026-11-08T22:14:18.413Z",
+    "contentSha256": "6b5ab127fff2b596f72c7919445c68e8ac516fd31eeb839ebbb770c791724c37"
   }
 }
