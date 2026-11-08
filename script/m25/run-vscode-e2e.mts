@@ -143,7 +143,51 @@ async function main(): Promise<void> {
     attempts = 2
   }
 
-  // 5. Evidence.
+  // 5. A RUN THAT EXECUTED NO CHECK IS NOT NEW EVIDENCE.
+  //
+  // A failed launch used to overwrite the previous record with a 0/0 known-gap,
+  // destroying a verified measurement and making the M44 bar unpassable: the bar
+  // asks whether the in-editor leg is still standing, and a machine too loaded to
+  // start an editor answered "no" by deleting the evidence that said yes.
+  //
+  // The attempt is recorded truthfully in its own file. The verified record is
+  // left exactly as it was measured, pinned to the commit it was measured at. A
+  // first-ever run (no verified record to keep) still writes the red known-gap, so
+  // a genuinely broken editor can never hide behind this path.
+  if (ranNothing(innerResults)) {
+    let existing: { status?: string; currentCommit?: string; passed?: number } | null = null
+    try {
+      const existingPath = path.join(RESULTS, "E5.json")
+      existing = existsSync(existingPath) ? JSON.parse(readFileSync(existingPath, "utf8")) : null
+    } catch {
+      existing = null
+    }
+    if (existing && existing.status === "verified") {
+      mkdirSync(RESULTS, { recursive: true })
+      writeSealed(path.join(RESULTS, "E5-attempt.json"), {
+        code: "E5-attempt",
+        milestone: "M25",
+        status: "no-measurement",
+        attempts,
+        reason: innerError ?? "the editor executed no check",
+        retainedEvidence: {
+          file: "E5.json",
+          status: existing.status,
+          currentCommit: existing.currentCommit ?? null,
+          passed: existing.passed ?? null,
+        },
+        verifierCommand: "npx tsx script/m25/run-vscode-e2e.mts",
+        generatedAt: new Date().toISOString(),
+      })
+      console.log(
+        `E5: no measurement this run (editor executed no check after ${attempts} attempt(s)) — ` +
+          `the verified record at ${String(existing.currentCommit).slice(0, 8)} is retained; attempt recorded in E5-attempt.json`,
+      )
+      process.exit(0)
+    }
+  }
+
+  // 6. Evidence.
   mkdirSync(RESULTS, { recursive: true })
   const commit = efs("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
   const machine = core.machineInfo("vscode-1.85.0-in-editor")

@@ -34,6 +34,7 @@
 // Evidence: validation/m44/results/X1.json (machine-emitted).
 
 import { execFileSync } from "node:child_process"
+import { E5_RELEVANT_FILES } from "../m25/e5_relevant.ts"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { readdirSync } from "node:fs"
 import { join, resolve } from "node:path"
@@ -137,7 +138,37 @@ function readLeg(rel: string): LegEvidence | null {
 }
 {
   const e5 = readLeg("validation/m25/results/E5.json")
-  check("X1: E5 evidence verified at THIS HEAD", e5?.status === "verified" && e5.currentCommit === currentCommit, `status=${e5?.status} commit=${String(e5?.currentCommit).slice(0, 8)}`)
+  // "AT THIS HEAD" MEANS "STILL VALID AT THIS HEAD", NOT "PINNED TO EXACTLY THIS SHA".
+  //
+  // The exact-equality form is a rule the program does not hold anywhere else: a
+  // record stays valid while no file it depends on changed (the relevance rule the
+  // governance gates project their ledgers with). Requiring literal equality made
+  // the bar unpassable whenever the in-editor leg could not be re-run - a loaded
+  // machine, a neighbour lane holding the display - even though the record was
+  // measured on the same sources. Measured live: E5 verified 91/91 standalone,
+  // then the same leg 0/0 inside the ladder, and the bar red on a record that was
+  // still true.
+  const e5RelevantChanged =
+    e5?.status === "verified"
+      ? (() => {
+          const pin = String(e5.currentCommit ?? "")
+          if (pin === currentCommit) return false
+          try {
+            const files = execFileSync("git", ["diff", "--name-only", pin, currentCommit], { cwd: ROOT, encoding: "utf8" })
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean)
+            return files.some((file) => (E5_RELEVANT_FILES as readonly string[]).includes(file))
+          } catch {
+            return true
+          }
+        })()
+      : true
+  check(
+    "X1: E5 evidence verified at THIS HEAD (or pinned at an ancestor with nothing E5 measures changed since)",
+    e5?.status === "verified" && !e5RelevantChanged,
+    `status=${e5?.status} commit=${String(e5?.currentCommit).slice(0, 8)} relevant-changed=${e5RelevantChanged}`,
+  )
   check("X1: E5 editor recorded (name + version, pinned)", typeof e5?.editor?.name === "string" && typeof e5?.editor?.version === "string", JSON.stringify(e5?.editor ?? null).slice(0, 80))
   // The M44 hub must be exercised in-editor (X1's visual leg): the hub view
   // rows + affordance + tree + ONE legend checks by name, from the live run.

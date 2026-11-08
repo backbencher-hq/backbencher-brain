@@ -22,6 +22,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
+import { E5_RELEVANT_FILES } from "./e5_relevant.ts"
 import path from "node:path"
 import { writeSealed, parseSealedRecord, readEvidenceAllowingLegacy } from "../lib/evidence.ts"
 import { projectLaneLedger } from "../m61/ledger_gate_wiring.ts"
@@ -189,16 +190,8 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   E3: ["ide/vscode/src/status-model.ts", "ide/vscode/src/extension.ts", "ide/vscode/package.json", "script/m25/verify-status-surface.ts", "docs/m24/TOOL-DOC.md"],
   E4: ["ide/vscode/package.json", "ide/vscode/.vscodeignore", "ide/vscode/publish-openvsx.mjs", "ide/vscode/esbuild-extension.mjs", "ide/vscode/README.md", "ide/vscode/CHANGELOG.md", "LICENSE", "script/m25/verify-packaging.ts"],
   V1: ["script/m25/feature-assertions.ts", "script/m25/vscode-test-runner.ts", "script/m25/fork-runner.ts", "script/m25/verify-harness-core.ts"],
-  E5: [
-    "script/m25/run-vscode-e2e.mts",
-    "script/m25/e5-inner.js",
-    "script/m25/feature-assertions.ts",
-    "ide/vscode/src/extension.ts",
-    "ide/vscode/esbuild-extension.mjs",
-    "src/lsp/server.ts",
-    "src/lsp/freshness.ts",
-    "src/ast/parallel-indexer.ts",
-  ],
+  // Single owner: script/m25/e5_relevant.ts (the M44 closure asks the same question).
+  E5: [...E5_RELEVANT_FILES],
   E6: [
     "script/m25/run-fork-e2e.mts",
     "script/m25/fork-runner.ts",
