@@ -76,6 +76,8 @@ import {
   readRepo,
   type EngineTruth,
 } from "../site-truth/lib.ts"
+import { FAMILY_SLUGS } from "../../website/src/data/language-depth/slugs.ts"
+import { buildLanguageRulings, serializeLanguageRulings } from "./generate-language-rulings.ts"
 
 const SITE = path.join(ROOT, "website")
 const RESULTS = path.join(ROOT, "validation/m56/results")
@@ -500,6 +502,54 @@ check("L1: /languages renders its eyebrow and title", /Languages & analyzers/.te
 check("L1: /languages explains the indexing pipeline and links the docs section", langHtml.includes("What happens when you index") && langHtml.includes("/docs#how-the-index-works"))
 check("L1: the docs page carries the pipeline anchor the languages page links to", htmlOf("/docs").includes('id="how-the-index-works"'))
 
+// --- the ledger's other half: ruled vs merely not constructed ------------------------
+// The generated table is the page's source for "ruled absent" states. It is
+// byte-compared against a fresh derivation, so neither a hand edit nor an
+// analyzer page changing without a regeneration can pass.
+const rulingSource = site("src/data/language-rulings.generated.ts")
+const rulingRegenerated = serializeLanguageRulings()
+check(
+  "L1: the generated ruling table is byte-identical to the analyzer pages and family rows",
+  rulingSource.length > 0 && rulingSource === rulingRegenerated,
+  rulingSource === rulingRegenerated ? "" : "regenerate: npx tsx script/m56/generate-language-rulings.ts --write",
+)
+
+const rulingRows = buildLanguageRulings().rows
+const rulingGaps: string[] = []
+for (const f of fams) {
+  const slug = FAMILY_SLUGS[f.name]
+  const row = slug ? rulingRows[slug] : undefined
+  if (!row) { rulingGaps.push(`${f.name}: no ruling entry`); continue }
+  const absent = vocab.emitted.filter((t) => !f.emits.includes(t))
+  const union = [...row.ruled, ...row.unrecorded]
+  if (union.length !== absent.length || new Set(union).size !== absent.length || !absent.every((t) => union.includes(t))) {
+    rulingGaps.push(`${f.name}: partition != absent types`)
+  }
+  if (row.ruled.length > 0 && !row.documented) rulingGaps.push(`${f.name}: rulings without a complete analyzer page`)
+  if (row.delegatedTypes.some((t) => !f.emits.includes(t))) rulingGaps.push(`${f.name}: delegated type it does not publish`)
+  if (row.delegates.length === 0 && row.delegatedTypes.length > 0) rulingGaps.push(`${f.name}: delegated type without a named delegate`)
+  if (row.delegates.length > 0 && row.delegatedTypes.length === 0) rulingGaps.push(`${f.name}: named delegate with no attributed type`)
+}
+check("L1: every family's ruling entry partitions exactly its absent types", rulingGaps.length === 0, rulingGaps.slice(0, 5).join(" · "))
+check("L1: the detail page reads the generated ruling table", site("src/app/languages/[slug]/page.tsx").includes("LANGUAGE_RULINGS"))
+
+const rulingRenders: string[] = []
+if (built) {
+  const zigHtml = htmlOf("/languages/zig")
+  const javaHtml = htmlOf("/languages/java")
+  const htmlHtml = htmlOf("/languages/html")
+  if (!zigHtml.includes("ruled absent") || !zigHtml.includes("written reason")) rulingRenders.push("zig: ruled absent not rendered")
+  if (!javaHtml.includes("not constructed") || !javaHtml.includes("does not carry a per-type ruling")) rulingRenders.push("java: unrecorded absence not disclosed")
+  if (!htmlHtml.includes("published through delegated analyzers") || !htmlHtml.includes("hosts for inline blocks")) rulingRenders.push("html: delegation not disclosed")
+  if (!langHtml.includes("A missing type is a ruling, not a gap.")) rulingRenders.push("register: heading")
+}
+check("L1: rendered ledgers label ruled absences, unrecorded absences and delegation", built && rulingRenders.length === 0, rulingRenders.join(" · "))
+
+negative("N8: a hand-edited ruling table is detected", (() => {
+  const planted = rulingRegenerated.replace("documented: true", "documented: false")
+  return planted !== rulingRegenerated && planted !== rulingSource
+})())
+
 // A language the registry cannot index must never be presented as covered.
 // MATLAB was on this list until the M60/MATLAB lanes gave it a registry key, an
 // analyzer and a family — it is a covered language now, so the list keeps only
@@ -644,10 +694,12 @@ writeEvidence(ok ? "verified" : "failed", {
     "the full/structural/generic depth tier has been removed: it had no definition in src/ and was anti-correlated with measured coverage",
     "no depth record claims a missing analyzer or a missing call graph",
     `the homepage register points at every family, and /languages publishes each family's extensions, recorded symbols and relationship vocabulary`,
+    "the language ledger's other half is generated: an absent type is ruled absent only where the family's analyzer page records the ruling, and unrecorded otherwise",
   ],
   limitations: [
     "`emits` is derived from the analyzer source by regex over RelationshipType sites and literal type strings, the same over-reporting derivation script/m60/rel-type-coverage-gate.ts uses. A relationship built through an indirection neither regex can see would be missed; the derivation errs toward over-reporting so a family's claim is checked against a superset. The independent audit of that derivation is script/m60/rel-type-coverage-gate.ts (differential-audited labels), not this gate.",
     "The rendered-surface checks read website/.next, so they are skipped when the site has not been built. The dataset, routing, analyzer and capability checks above always run.",
+    "The ledger's ruled/non-constructed split is generated from the canonical analyzer pages in docs/analyzers: a page with no complete, source-consistent relationship table leaves its family's absences marked unrecorded rather than filling them in. The table is byte-checked against a fresh derivation on every run.",
     "The homepage pin requires a `data-analyzer=\"<name>\"` point with the generated emits count for every family, and `data-analyzers` = the family total; a missing family cannot pass.",
   ],
 })
