@@ -64,6 +64,12 @@ export function retainVerifiedEvidence(input: RetentionInput): boolean {
       currentCommit: existing.currentCommit ?? null,
       passed: existing.passed ?? null,
     },
+    // Contract §10 rule 1: every evidence record carries the OS it was recorded on,
+    // and the cross-platform audit reads EVERY record in this directory. An attempt
+    // record is a record, so it carries the field too - without it the audit failed
+    // with "F-ANTIGRAVITY-attempt: evidence record carries no OS field", which is a
+    // finding about the record shape, not about the platform claim.
+    os: process.platform,
     ...(input.extra ?? {}),
     generatedAt: new Date().toISOString(),
   })

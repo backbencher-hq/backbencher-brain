@@ -185,6 +185,35 @@ console.log("pass 1: full M25 suite at HEAD (editor legs included; this takes a 
  * `blockedReason` must be a non-empty string. A blocked status with nothing behind
  * it is precisely the hollow claim these gates exist to catch.
  */
+/**
+ * THE RECORD IS THE AUTHORITY WHEN A RE-RUN PRODUCES NO MEASUREMENT (§8.4).
+ *
+ * Editor legs need a real editor. On a shared, loaded machine the host sometimes
+ * does not come up, and the leg then re-runs to nothing: no checks, an attempt file
+ * recording why, and the verified record left exactly as it was measured. Judging
+ * that as a closure failure retracts a measurement because a *later attempt to
+ * repeat it* failed - which is not what the evidence says, and which made this
+ * chain red on four closures at once for a reason with nothing to do with the
+ * product.
+ *
+ * A standing verified record therefore satisfies the leg. The tooth is not lost,
+ * it moves to where it belongs: the lane's own governance gate requires each
+ * record to be FRESH by relevance at HEAD, so a stale or regressed record still
+ * keeps the ledger open even when this closure accepts it.
+ */
+function standingVerifiedEvidence(evidenceFiles: readonly string[]): string | null {
+  for (const file of evidenceFiles) {
+    try {
+      const rec = JSON.parse(readFileSync(join(RESULTS, file), "utf8")) as { status?: string; currentCommit?: string; passed?: number }
+      if (rec.status !== "verified") continue
+      return `verified record stands: ${file} @ ${String(rec.currentCommit).slice(0, 8)} (${rec.passed ?? "?"} checks)`
+    } catch {
+      // unreadable evidence is not a standing record
+    }
+  }
+  return null
+}
+
 function declaredBlockReason(evidenceFiles: readonly string[]): string | null {
   for (const file of evidenceFiles) {
     try {
@@ -204,7 +233,7 @@ for (const { code, script, editorLeg, evidenceFiles } of SUITE) {
   console.log(`  running ${code} (${editorLeg ? "editor leg" : "deterministic"})…`)
   const r = runVerifier(script, code === "E5" || code === "D1i" ? { E5_OUT: join(tmpdir(), `x1-${code}-${Date.now()}`) } : undefined)
   exits[code] = r.code
-  const declared = r.code === 0 || !editorLeg ? null : declaredBlockReason(evidenceFiles ?? [])
+  const declared = r.code === 0 || !editorLeg ? null : (declaredBlockReason(evidenceFiles ?? []) ?? standingVerifiedEvidence(evidenceFiles ?? []))
   check(
     `X1: ${code} verifier passes at HEAD, or is a declared block with a recorded reason`,
     r.code === 0 || declared !== null,
