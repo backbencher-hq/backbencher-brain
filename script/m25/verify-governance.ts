@@ -214,7 +214,12 @@ const SHARED_RELEVANT_FILES = [
   "docs/m25/M25-MASTER-PLAN.md",
   "docs/IDE-HONESTY-CONTRACT.md",
   "docs/IDE-PROGRAM-DECISIONS.md",
-  "docs/IDE-PROGRAM-STATUS.md",
+  // docs/IDE-PROGRAM-STATUS.md is DELIBERATELY NOT here, for the same reason as
+  // manifest.json below: it is the living status page, updated at every closure,
+  // and a page updated by every closure cannot be an input to every closure. The
+  // vocabulary lint still reads it on every run (a live check, not a pinned input),
+  // so a banned claim in the tracker is still caught - it just no longer retracts
+  // four lanes' evidence every time a count changes.
   // manifest.json is DELIBERATELY NOT here. It is the ledger — the OUTPUT of
   // the evidence cycle, not an input to what a verifier run proves. Keeping
   // it relevant caused infinite regress: every evidence pin updates the

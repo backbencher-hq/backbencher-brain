@@ -227,7 +227,12 @@ const SHARED_RELEVANT_FILES = [
   "docs/m44/M44-MASTER-PLAN.md",
   "docs/IDE-HONESTY-CONTRACT.md",
   "docs/IDE-PROGRAM-DECISIONS.md",
-  "docs/IDE-PROGRAM-STATUS.md",
+  // docs/IDE-PROGRAM-STATUS.md is DELIBERATELY NOT here, for the same reason as
+  // manifest.json below: it is the living status page, updated at every closure,
+  // and a page updated by every closure cannot be an input to every closure. The
+  // vocabulary lint still reads it on every run (a live check, not a pinned input),
+  // so a banned claim in the tracker is still caught - it just no longer retracts
+  // four lanes' evidence every time a count changes.
 ]
 
 function relevantFilesFor(issueCode: string): Set<string> {
