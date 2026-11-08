@@ -76,9 +76,9 @@ from per-fork evidence and drift-gated by the D1 verifier:
 
 | Editor | Claim | Evidence |
 |--------|-------|----------|
-| VS Code | I3 — in-editor run at pinned 1.85.0, 91/91 checks (recorded 2026-10-17; the run predates the 2026-11-04 bundle, so frames must be re-captured before this is cited at HEAD) | `validation/m25/results/E5.json` |
+| VS Code | I3 — in-editor run at pinned 1.85.0, 91/91 checks, 0 failed (recorded 2026-11-08 at commit `dfac3448a`) | `validation/m25/results/E5.json` |
 | Cursor | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-CURSOR.json` |
-| Antigravity | I4 — pinned fork run at 1.107.0, 90/90 in-editor checks against the current bundle | `validation/m25/results/F-ANTIGRAVITY.json` |
+| Antigravity | blocked — the pinned fork (1.107.0) launches but starts no extension host, so zero checks ran; nothing is claimed for it | `validation/m25/results/F-ANTIGRAVITY.json` |
 | Windsurf | blocked — no pinned run on this machine (binary not present; no display-verified run) | `validation/m25/results/F-WINDSURF.json` |
 | Zed | blocked — no pinned run on this machine. The integration ships as an LSP config (`ide/zed/bb-lsp/`) whose shape is validated by `script/m27/verify-zed.ts`; a validated config is not a recorded editor run, so no claim is made | `script/m27/verify-zed.ts` |
 | JetBrains (LSP4IJ) | blocked — no pinned run on this machine. The integration ships as an LSP4IJ descriptor (`ide/lsp4ij/bb-lsp/`), validated by the M27 config family; a validated descriptor is not a run | `script/m27/verify-closure.ts` (M27 family) |
