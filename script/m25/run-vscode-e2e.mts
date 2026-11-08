@@ -9,7 +9,7 @@
 // Run: npx tsx script/m25/run-vscode-e2e.mts
 // Evidence: validation/m25/results/E5.json (+ E5-inner.json from the host)
 import { writeSealed } from "../lib/evidence.ts"
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
@@ -70,23 +70,27 @@ async function main(): Promise<void> {
   // checks passed", indistinguishable from "the editor refused to run the tests".
   // Point every XDG location at a writable directory inside the workspace. Same
   // class of fix as the nvim XDG pinning in script/m27/verify-nvim.ts.
-  const xdgRoot = path.join(outDir, "xdg")
-  for (const dir of ["runtime", "config", "cache", "data", "state"]) {
-    mkdirSync(path.join(xdgRoot, dir), { recursive: true })
+  const pointXdgAt = (root: string): void => {
+    for (const dir of ["runtime", "config", "cache", "data", "state"]) {
+      mkdirSync(path.join(root, dir), { recursive: true })
+    }
+    process.env["XDG_RUNTIME_DIR"] = path.join(root, "runtime")
+    process.env["XDG_CONFIG_HOME"] = path.join(root, "config")
+    process.env["XDG_CACHE_HOME"] = path.join(root, "cache")
+    process.env["XDG_DATA_HOME"] = path.join(root, "data")
+    process.env["XDG_STATE_HOME"] = path.join(root, "state")
+    // Electron refuses a runtime dir without 0700.
+    chmodSync(process.env["XDG_RUNTIME_DIR"], 0o700)
   }
-  process.env["XDG_RUNTIME_DIR"] = path.join(xdgRoot, "runtime")
-  process.env["XDG_CONFIG_HOME"] = path.join(xdgRoot, "config")
-  process.env["XDG_CACHE_HOME"] = path.join(xdgRoot, "cache")
-  process.env["XDG_DATA_HOME"] = path.join(xdgRoot, "data")
-  process.env["XDG_STATE_HOME"] = path.join(xdgRoot, "state")
-  // Electron refuses a runtime dir without 0700.
-  chmodSync(process.env["XDG_RUNTIME_DIR"], 0o700)
+  pointXdgAt(path.join(outDir, "xdg"))
+  const readE5Results = (): any =>
+    existsSync(path.join(outDir, "results.json")) ? JSON.parse(readFileSync(path.join(outDir, "results.json"), "utf8")) : null
   const testElectronUrl = pathToFileURL(path.join(EXT_ROOT, "node_modules/@vscode/test-electron/out/index.js")).href
   const { runTests } = await import(testElectronUrl)
   const { execFileSync: efs } = await import("node:child_process")
-  let innerError: string | null = null
-  try {
-    await runTests({
+  const launchEditor = async (): Promise<string | null> => {
+    try {
+      await runTests({
       version: "1.85.0",
       extensionDevelopmentPath: EXT_ROOT,
       extensionTestsPath: innerPath,
@@ -107,16 +111,40 @@ async function main(): Promise<void> {
         E5_COLD_FIRST_LAUNCH: "true",
       },
     })
-  } catch (err) {
-    innerError = String(err).slice(0, 1000)
-    console.error("E5: in-editor run failed —", innerError)
+      return null
+    } catch (err) {
+      const msg = String(err).slice(0, 1000)
+      console.error("E5: in-editor run failed —", msg)
+      return msg
+    }
+  }
+  // A 0/0 RUN IS AN INFRASTRUCTURE FAILURE, NOT A VERDICT.
+  //
+  // `checks.length === 0` means no in-editor check executed: the editor did not
+  // start, or its extension host never came up. That is the measurement failing to
+  // happen, and it reads identically to "the editor refused to run the tests" -
+  // exactly the ambiguity that made a neighbour lane's concurrent Electron work
+  // look like five red closures in the M53 ladder (measured: five closures down,
+  // every one of them tracing to E5 KNOWN-GAP 0/0).
+  //
+  // So the leg retries ONCE, with a fresh XDG tree and a cleared results file, and
+  // records how many attempts it took. A second 0/0 is still a red gate: this is a
+  // retry of a measurement that did not happen, never a waiver of one that failed.
+  let innerError: string | null = await launchEditor()
+  let innerResults = readE5Results()
+  let attempts = 1
+  const ranNothing = (r: any): boolean => r === null || !Array.isArray(r.checks) || r.checks.length === 0
+  if (ranNothing(innerResults)) {
+    console.log("E5: the editor executed no check (0/0) — measurement did not happen; retrying once with a fresh profile")
+    pointXdgAt(path.join(outDir, "xdg-retry"))
+    rmSync(path.join(outDir, "results.json"), { force: true })
+    innerError = await launchEditor()
+    innerResults = readE5Results()
+    attempts = 2
   }
 
   // 5. Evidence.
   mkdirSync(RESULTS, { recursive: true })
-  const innerResults = existsSync(path.join(outDir, "results.json"))
-    ? JSON.parse(readFileSync(path.join(outDir, "results.json"), "utf8"))
-    : null
   const commit = efs("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
   const machine = core.machineInfo("vscode-1.85.0-in-editor")
   const checks = innerResults?.checks ?? []
@@ -182,6 +210,8 @@ async function main(): Promise<void> {
     passed: passedInner,
     failed: failedInner,
     innerError,
+    /** How many editor launches this verdict cost: 2 means the first executed no check. */
+    attempts,
     budgets: core.IN_EDITOR_WARM_BUDGETS,
     verifierCommand: "npx tsx script/m25/run-vscode-e2e.mts",
     evidenceFile: "E5.json",
