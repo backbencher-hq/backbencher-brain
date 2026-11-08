@@ -2229,7 +2229,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // never implemented, because the check was only `type === "string"`
             // and an interpolated path IS a string.
             // Measured: 217 sites (rails 208, rubocop 9, mastodon 0) per
-            // fixtures/repositories.
+            // the fixture corpus.
             if (cleanText.indexOf("#{") >= 0) continue
             this.pushLoadFacts(node, arg, cleanText, methodName, relationships, imports)
           }

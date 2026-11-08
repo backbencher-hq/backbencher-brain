@@ -8,7 +8,7 @@ Commit at generation: `01917660d010a1b9f02a5b90c39dc557b915e29f`. Status: **veri
 
 ## Why this document exists
 
-The owner asked for a hover that tells the user most of what is known about a
+The hover must tell the user most of what is known about a
 symbol — its relationships, its uses, and so on. That is a claim about a
 RATIO, and no gate had ever measured the ratio. So the state before this lane
 was: the index knew a great deal, the hover rendered a part of it, and

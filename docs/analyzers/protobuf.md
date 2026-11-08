@@ -8,7 +8,7 @@ pinned** grammar.
 | Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,885 lines, re-measured 2026-11-01) |
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
-| Replaced WASM | 72,342 B, sha256 `dbbde8a8f047b6b6…` — **not a stored artifact.** `ensureBaseline()` in `script/m14/tmp/protobuf/paths.mts:93` rebuilds it from `.upstream-revision` and checks the sha. *(This cell previously named `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm`; that directory was deleted, and the header kept naming a path with nothing behind it while the body had already recorded the relocation.)* |
+| Replaced WASM | 72,342 B, sha256 `dbbde8a8f047b6b6…` — **not a stored artifact.** `ensureBaseline()` in `script/m14/tmp/protobuf/paths.mts:93` rebuilds it from `.upstream-revision` and checks the sha. *(This cell previously named `<fixture-root>/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm`; that directory was deleted, and the header kept naming a path with nothing behind it while the body had already recorded the relocation.)* |
 | Probes | `script/m14/tmp/protobuf/` — `run-all.sh` runs every gate. `probe/store-binding.mts` indexes a scratch project through the real store (pass 5). `probe/protoc-oracle.py` adjudicates every `uses` target against `protoc` (pass 8) |
 | Review | `reviews/protobuf/master-review.md` |
 
@@ -476,7 +476,7 @@ hand-derived truth.
 script/m14/tmp/protobuf/run-all.sh
 ```
 
-Artifacts land in `fixtures/protobuf/out/`: `grammar-census.json`,
+Artifacts land in `<fixture-root>/protobuf/out/`: `grammar-census.json`,
 `grammar-gaps.json`, `corpus.json`, `extraction-ab.json`, `contract-battery.json`,
 `production-path.json`, `robustness.json`, `no-text-scan.json`.
 
@@ -493,7 +493,7 @@ corpus grew rather than because the analyzer changed, that is said. Pass 1's ver
 were re-probed; one of them did not survive.
 
 Measured on **821 `.proto` files in 18 repositories**, the whole corpus walked rather
-than sampled (`$HOME/fixtures/repositories`, walked as a working tree, not
+than sampled (`<corpus-root>`, walked as a working tree, not
 `git ls-files` — three of these corpora are sparse checkouts, where `git ls-files`
 lists tracked paths that are not on disk). Revisions in
 `script/m14/tmp/protobuf/corpus-manifest.json`.
@@ -4027,7 +4027,7 @@ This lane's census numbers are quoted from a single named run for that reason.
 
 ```
 // parse-variance.mts:50
-const TARGET = "$HOME/fixtures/repositories/pb-googleapis/google/api/expr/v1beta1/source.proto"
+const TARGET = "<corpus-root>/pb-googleapis/google/api/expr/v1beta1/source.proto"
 ```
 
 That path is the victim one run happened to print. The probe can only ever re-measure
@@ -5007,7 +5007,7 @@ this lane's probes — an instrument that discards the evidence it needs.
 
 ## The corpus is shared, and it moved DURING this pass
 
-The corpus root `$HOME/fixtures/repositories` is shared by ten lanes and it is
+The corpus root `<corpus-root>` is shared by ten lanes and it is
 not stable while they work. Measured across this pass:
 
 | when | `.proto` files | repositories |

@@ -149,7 +149,7 @@ BB_DATA_DIR=$PWD/validation/tools/bb_search/bbdata BB_NO_AUTO_REFRESH=1 \
 BB_DATA_DIR=$PWD/validation/tools/bb_search/bbdata BB_NO_AUTO_REFRESH=1 \
   bun --preload ./validation/tools/bb_search/work/harness-redirect.ts ./script/m13/verify-search-honesty.ts
 BB_DATA_DIR=$PWD/validation/tools/bb_search/bbdata BB_NO_AUTO_REFRESH=1 \
-  BB_CORPUS_ROOT=$HOME/fixtures/repositories \
+  BB_CORPUS_ROOT=<corpus-root> \
   bun --preload ./validation/tools/bb_search/work/harness-redirect.ts ./script/m13/verify-search-corpus.ts
 bun --preload ./validation/tools/bb_search/work/harness-redirect.ts ./script/m13/verify-search-docs.ts
 npx tsx validation/tools/bb_search/work/regex-edge-tests.ts

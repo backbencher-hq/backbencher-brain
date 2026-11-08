@@ -1,7 +1,7 @@
 # IDE Program Decision Record
 
 Status: **RATIFIED — the constitution for the Backbencher IDE program.**
-Decisions below were made with the owner on 2026-08-30 and bind all IDE
+Decisions below were made on 2026-08-30 and bind all IDE
 milestones (M24–M29). Changing any of them requires a written amendment here.
 
 ## The bet
@@ -116,7 +116,7 @@ diverge — and they are not six of a kind:
 That single choice decides which entries can ever be sealed. It is a statement about which
 milestone's rules govern, so it is recorded here rather than inferred from a type error.
 
-**Recommendation, if the owner wants one:** adopt **m62** as the single core. Three of the
+**Recommendation:** adopt **m62** as the single core. Three of the
 six divergences are m62 supersets, the fourth is a milestone-specific pair that is not a
 conflict, the fifth is a one-line message worth carrying over, and only `isClosable` is a
 genuine question. Adopting m61 would lose `recordSealedAt` from the drift rule.

@@ -213,7 +213,7 @@ Kernel builtin call sites.
 
 Branch `analyzer/ELIXIR_FIX2`, 2026-10-05. Every number below was produced at
 commit `590023910` on the **derived whole population**: 601 `.ex`/`.exs` files
-under `fixtures/repositories/{elixir,otp}` (568 in `elixir`, 42 in `otp`, 9 of
+under `<corpus-root>/{elixir,otp}` (568 in `elixir`, 42 in `otp`, 9 of
 them under `_build/`/`deps/` fixture trees that the walk excludes, and 0 files
 under 8 bytes), produced by `readdir` — never a hand-written list, because the
 honesty contract's rule is that a count without its denominator is a claim.
@@ -743,7 +743,7 @@ carries `structural_inference`. The rule states `structural` because a directive
 *names* the module — the evidence is syntax, not context — and `usage_contextual` is
 the `pushRel` default, which that pin's wave recorded without changing. The four
 findings are left visible instead of smoothed over: which label the lane publishes for
-a directive is the owner's call, and the third instance in this group (`references`, in
+a directive is a project-level decision, and the third instance in this group (`references`, in
 the same pin) points at a vocabulary question rather than at this analyzer's reading of
 the language.
 

@@ -187,7 +187,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // deliberately use `.graphqls` and `.gql` so a regression that keys on one
   // extension cannot pass.
   graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
-  // --- from the m60 grammar-governance merge: two lanes the other laptop's wave had
+  // --- from the m60 grammar-governance merge: two lanes a different machine's wave had
   // not registered. A fixture lane is not a directory, it is a directory this map
   // NAMES — and `payload-matrix.ts` enumerates the payload languages from
   // `validation/m14/fixtures/*`, so an unregistered lane has no P1 row to convict it.

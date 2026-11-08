@@ -297,7 +297,7 @@ identical — and which are what the four RULED verdicts actually rest on. **No 
 
 **And the specific candidate this section could not previously choose between is chosen.**
 `84970cf3d`'s 185,957 was published from a run that lost whole files to this fault. The
-corpus-growth candidate is ruled out directly: `find $HOME/fixtures/repositories
+corpus-growth candidate is ruled out directly: `find <corpus-root>
 -type f -newermt '2026-10-04 11:00'` returns **0 files**, so no corpus file content changed
 between the publishing run and the re-measures, and `git diff 84970cf3d HEAD -- src/ast/`
 is **empty**, so no analyzer state differs either. What differed was the run.
@@ -2037,7 +2037,7 @@ census had been right the whole time and the prose had drifted.
 || /\s/.test(ref)`** at the `PEReference` branch, the analyzer's last regular
 expression. The comment beside it claimed the corpus proved the test necessary, and
 cited measurements from **libxml2's own test suite, which is not in
-`$HOME/fixtures`** — so the number in the comment could not be
+`<fixture-root>`** — so the number in the comment could not be
 reproduced from the committed corpus. Re-measured: **0 `PEReference` nodes across
 the entire 11,456-file admitted population.** The 22 admitted files whose text
 carries `<!ENTITY %` are bare `.dtd` fragments this grammar cannot root (its
@@ -2177,7 +2177,7 @@ same bug counted twice. The analyzer walks an explicit worklist carrying the own
 *up* a precomputed parent map.
 
 **It was vendored, not re-measured.** The probe used to live in a sibling
-worktree at `fixtures/xml/probes/` while the artifact it produces,
+worktree at `<fixture-root>/xml/probes/` while the artifact it produces,
 `validation/m12/results/corpus-differential.json`, was version-controlled and cited
 here — so the evidence was in the repository and the instrument was not, and a
 fresh checkout could read the number with no way to re-derive it. Only four paths

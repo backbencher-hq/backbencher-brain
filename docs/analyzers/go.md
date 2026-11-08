@@ -1292,7 +1292,7 @@ reason the emission vocabulary is closed.
 - **Grammar-recovery shapes.** Where the pinned grammar cannot parse valid Go, the analysis is
   incomplete rather than wrong: the analyzer reports the region as a parse error and continues.
   The M12 census measured 5 grammar-error files in 400 on the older `go-tools` corpus; the
-  `go-tools` checkout is **no longer present** on this box (`fixtures/repositories` has
+  `go-tools` checkout is **no longer present** on this box (`<corpus-root>` has
   `go-stdlib` and `cobra` for Go), so the differential's pinned primary corpus for this lane
   cannot be run as pinned — every number in this document is on `go-stdlib`/`cobra` instead.
 - **Grammar-version drift.** The analyzer references 54 node types of `tree-sitter-go`; the
@@ -1399,7 +1399,7 @@ including the analyzer itself. Under `docs/M14-HONESTY-CONTRACT.md` §2, evidenc
 have drifted is L0 and may not be documented as working.
 
 **The M12 differential cannot be re-run for this lane as pinned**: its primary corpus is
-`go-tools`, and `$HOME/fixtures/repositories/go-tools` does not exist on this box.
+`go-tools`, and `<corpus-root>/go-tools` does not exist on this box.
 What was run instead, on 2026-10-03, is a **scoped** differential
 (`--lang go --repo go-stdlib --sample 120`), which is what the six-questions table above quotes;
 it writes no evidence artifact and refuses to replace the milestone's claim. The two runs were
@@ -1436,7 +1436,7 @@ substantive content and they still match the source:
 ## Corpus validation
 
 - Corpus: `go-stdlib` @ `6f5c275e` ("cmd/go: read go.mod under the lock when selecting the
-  toolchain"), external clone root `$HOME/fixtures/repositories/go-stdlib`, plus
+  toolchain"), external clone root `<corpus-root>/go-stdlib`, plus
   `cobra` @ `adbc881` as a second corpus. 11,826 admitted files between them.
 - Earlier figures in this document — `go-tools` @ `bf54bcd2…`, 1,931 tracked files, a
   deterministic-first-400 sample, 5/400 grammar-error files, 20,149 ms — described a corpus that

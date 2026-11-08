@@ -165,7 +165,7 @@ A claim about the editor is a claim about **the installed bundle** (Truth Rule 5
 than testing whatever is already in the profile:
 
 ```
-cd $HOME/mcp/backbencher-brain
+cd "$HOME/mcp/backbencher-brain"
 npm run build                                     # dist/lsp/server.js (the server under test)
 cd ide/vscode
 node ./esbuild-extension.mjs                      # extension bundle + staged server

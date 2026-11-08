@@ -70,4 +70,4 @@ gate passes from a clean source state with only intended M23 files staged.
 
 - `~/.bb/projects` (this machine: 16 GB / 1,178 dirs) — read-only inspection.
 - Controlled fixtures (temp projects) for move/rebind/removal; optionally a real
-  repo from `$HOME/fixtures/repositories` for the portability test.
+  repo from `<corpus-root>` for the portability test.

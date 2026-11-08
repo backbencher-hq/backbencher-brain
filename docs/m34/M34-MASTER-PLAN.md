@@ -50,7 +50,7 @@ breaks fresh installs is caught, not discovered by a user.
   (M24–M29), no tool-documentation work (M31), no behavior changes to
   M32/M33 commands (their gates pin the current strings).
 - **No CI changes in M34.** A CI job running a verify-fast subset is
-  explicitly parked until the owner approves touching shared workflow files.
+  explicitly parked until shared workflow files may change.
 - No new product features; this milestone only proves and guards what
   exists.
 

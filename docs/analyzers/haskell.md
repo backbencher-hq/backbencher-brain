@@ -2,7 +2,7 @@
 
 > **VERIFY_HS9 (2026-10-04) — independent re-derivation of the 10-type verdict.**
 > This lane re-derived every type from scratch (no HASKELL lane summary read).
-> Corpus: `$HOME/fixtures/repositories/haskell` = **GHC** at
+> Corpus: `<corpus-root>/haskell` = **GHC** at
 > `54381079`, 14,039 `.hs` files (2,900 ≥ 1 KB). NOTE the corpus identity changed
 > under this lane: the doc below registers against `cabal` + `hledger`, both
 > absent from this box since 2026-09-29; what is here now is the GHC source tree,

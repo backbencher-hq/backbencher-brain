@@ -319,10 +319,10 @@ corpus and an independent fact source.
 ## Corpus validation
 
 **This is an analyzer-present, corpus-absent lane.** Measured 2026-11-02, corpus root
-`$HOME/fixtures/repositories`:
+`<corpus-root>`:
 
 ```
-find $HOME/fixtures/repositories -type f \
+find <corpus-root> -type f \
   \( -iname '*.bas' -o -iname '*.cls' -o -iname '*.frm' -o -iname '*.vba' \) | sort
 ```
 
@@ -360,7 +360,7 @@ What the lane does publish, measured 2026-11-02:
 - **Grammar pin:** wired sha256 matches `validation/m14/vba-grammar-pin.json` (0 drift),
   but the pin row is unregistered in the two lane tables named in the Language section.
 
-What would close condition 2: a genuine VBA corpus (owner decision pending; the matlab
+What would close condition 2: a genuine VBA corpus (recorded decision pending; the matlab
 lane carries an identical finding), then
 `npx tsx script/m14/sliced-declaration.ts --lang vba --slices <dir> --exts vba,bas,cls,frm
 --expect-population <the gate's own admitted N> [--closure <merge>] --write`. The fleet's

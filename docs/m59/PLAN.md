@@ -58,7 +58,7 @@ Expected values derived from **source**, comparing against what the analyzers ac
 npx tsx script/m59/oracle-callsite.ts --files-per-lang=4
 ```
 
-21 onboarded languages, 80 files (4/lang) from `$HOME/fixtures/repositories`:
+21 onboarded languages, 80 files (4/lang) from `<corpus-root>`:
 
 ```
 lang         files    rels  withLine  noLine

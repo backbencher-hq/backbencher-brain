@@ -285,7 +285,7 @@ Full table and reasoning in "What was RULED" below. The two decisive additions t
   decorator's own line; one row per decorator, none for its arguments. This REPLACED the
   per-decorator `references` row, so the label the differential's oracle derives
   (`deriveJavaScriptEdges`'s decorator block still pushes `references`) is now the OLD contract —
-  a known, reported mismatch in a Lead-owned file, not a silent one.
+  a known, reported mismatch in a maintainer-owned file, not a silent one.
 - **Confident**: 1.0 (the name is written in the file). The decorator's arguments remain
   measurements of the call/read walks' suppression (`inDecoratorPosition`), pinned by
   `javascript/decorator-arguments-not-decorates`.

@@ -374,7 +374,7 @@ things a blocked record must say: status `blocked`, the missing fixture named as
 the reason, zero captured flows, and no frames directory written. `M11` plants
 the defect (a blocked session reported as captured).
 
-This matters because the fixture is external by owner decision and is not
+This matters because the fixture is external by recorded decision and is not
 vendored: on a machine without it, the honest outcome is a declared blocked leg,
 and this is the machine proof that the rig does that rather than producing a
 plausible-looking green run.

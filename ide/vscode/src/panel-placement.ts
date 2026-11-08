@@ -6,7 +6,7 @@
 // `ViewColumn.Beside` and no panel set `preserveFocus`, so two hover actions in
 // one session produced FOUR editor columns on a 1920px display
 // (`app.ts │ hub(main) │ store.ts │ hub(Store)`) and each click moved the
-// cursor out of the file. In the owner's real layout (explorer left, chat
+// cursor out of the file. In a real editor layout (explorer left, chat
 // right, terminal bottom) every click shrank the editor — that is what "the
 // middle window is tiny" actually was.
 //

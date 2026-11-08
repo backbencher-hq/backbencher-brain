@@ -32,7 +32,7 @@ Rule going forward, enforced by CI:
 > product but not on the site is a defect, and so is a surface on the site with no
 > verifier behind it.**
 
-## Owner decisions recorded before work started (2026-09-12)
+## Decisions recorded before work started (2026-09-12)
 
 - **/demos is retired.** The two films were withdrawn by the owner after review
   (pacing and craft, not truth). The machine-verified session *stills* are reused
@@ -264,7 +264,7 @@ Implementation notes (as built):
   `/docs`, `/tools`, `/languages` and `/editors`, which previously ended at
   bespoke footers; a live surface without the shared footer fails the gate.
 - **`/demos` retirement is recorded, not deleted.** M45.T1's scope changed: the
-  films were withdrawn by owner review, their 16 MB of derived cuts were removed
+  films were withdrawn by maintainer review, their 16 MB of derived cuts were removed
   from `website/public/demos` (the verified takes stay in
   `validation/m45/results/demo-session/`, and `script/m45/post-production.ts` can
   re-derive cuts if that decision ever reverses), and the surviving

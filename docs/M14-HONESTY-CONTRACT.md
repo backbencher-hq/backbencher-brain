@@ -70,7 +70,7 @@ unknown node types and zero dead branches (branches whose predicate can never ma
 per the grammar).
 
 ### L3 — DIFFERENTIALLY-CHECKED
-On pinned real repositories (fixtures corpus), sampled symbols/relationships were
+On pinned real repositories (the fixture corpus), sampled symbols/relationships were
 compared against an independent second opinion (tree-sitter CLI query dumps or
 hand-audited samples recorded with reviewer = human or a different agent than the fix
 author).

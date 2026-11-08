@@ -134,7 +134,7 @@ same field is marked `exact` and is a measurement. The two are never mixed in th
 
 ## Results
 
-Completed run `2026-10-12T20:47:35Z` over `$HOME/fixtures/repositories` (199 repositories), after the
+Completed run `2026-10-12T20:47:35Z` over `<corpus-root>` (199 repositories), after the
 extension-shape correction recorded below. Every number here is read from
 `validation/m14/measurements/unrouted-extension-census.json`, and the artifact's own arithmetic was re-checked
 independently: the bucket counts sum to the row count, each bucket equals its conclusion field, no fixable row
@@ -274,5 +274,5 @@ trusted, and it runs in under a minute because it needs no production data.
   local `npm run verify` chain rather than GitHub CI, because its population is the machine-local corpus.
   What it still cannot do: see a format no walked corpus contains, re-price keys already registered (that
   stays this census's job), or decide anything about the 121 keys with no ruling and the 13 content
-  proposals — those remain owner decisions, and a gate that ruled on them would be the taste the lanes'
+  proposals — those remain recorded decisions, and a gate that ruled on them would be the taste the lanes'
   own standard refuses.

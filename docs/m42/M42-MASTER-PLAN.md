@@ -84,7 +84,7 @@ Parallel tracks (not M42 issues, riding alongside):
    OpenVSX published, marketplace listing regenerated from the ledger,
    placeholder milestones closed, every known gap fixed or owner-waived.
 4. X1 full-ladder audit green at current HEAD; owner spot-check (§8.5)
-   recorded — the achieved/not-achieved verdict stays with the owner.
+   recorded — the achieved/not-achieved verdict stays a recorded human judgement.
 
 ## Negative list
 

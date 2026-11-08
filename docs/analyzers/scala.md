@@ -204,7 +204,7 @@ the language's construct and then an implementation.
     counts: calls:7222 references:4181 contains:2544 uses:1696
             instantiates:1178 extends:234 overrides:131 implements:20
 
-Sample: code-bearing `.scala` from `fixtures/repositories/scala` (dotty, 18,965
+Sample: code-bearing `.scala` from `<corpus-root>/scala` (dotty, 18,965
 `.scala` files on disk). First two sampled: `project/VersionUtil.scala`,
 `project/Versions.scala`.
 
@@ -244,7 +244,7 @@ Not done; reported to master instead.
     bun script/m14/tmp/scala3-ontology-census-v2.mts shard <i> 64      # x64
     bun script/m14/tmp/scala3-ontology-census-v2.mts merge 64
 
-Corpus: `fixtures/repositories/scala` (dotty), 18,965 `.scala`/`.sbt` files
+Corpus: `<corpus-root>/scala` (dotty), 18,965 `.scala`/`.sbt` files
 discovered by directory walk. **Covered 18,965 — missed 0, read/parse fail 0,
 analyze threw 0, size-capped 0.** 513 files carry a tree-sitter ERROR/MISSING node
 (2,380 nodes) and **513 of the 513 published a diagnostic**.
@@ -291,7 +291,7 @@ Blanket-`Set` count (spelling list `_ * ? unknown n/a null nil TODO - -- ???`):
 `contains '?'` 12, `instantiates '_'` 10, `calls '--'` 10, `references '*'` 8,
 `uses '_'` 8, `calls 'unknown'` 7, and 60 more across 22 spellings.
 
-**This number is an upper bound and I will not report it as 1,221 defects.** `*`,
+**This number is an upper bound and is not reported as 1,221 defects.** `*`,
 `-` and `--` are LEGAL Scala method names (`def *(x: T)`, `def unary_-`), so a
 `contains` edge `Foo -> *` can name a real symbol, and `?` is legal in Scala 3. Rule
 R7 forbids a placeholder that NAMES NOTHING; it does not forbid a legal operator

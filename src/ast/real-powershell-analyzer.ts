@@ -555,7 +555,7 @@ const isAsciiUpper = (c: number): boolean => c >= 65 && c <= 90
  */
 /** PS-RELATIVE-PATH (fleet baseline 2026-10-19; WIDENED 2026-10-20 — the second refuted claim):
  *  a RELATIVE path naming one of the lane's ADMITTED spellings is a PROJECT FILE reference, not an
- *  external target. Character scan, not a regex: the fleet's no-regex policy applies to the Lead's
+ *  external target. Character scan, not a regex: the fleet's no-regex policy applies to the shared
  *  own edits exactly as it does to a lane's.
  *
  *  ## WHY THE FIRST VERSION OF THIS PREDICATE WAS TOO NARROW, AND WHAT THE ARBITER ACTUALLY ASKS
@@ -686,7 +686,7 @@ const isRelativeProjectFilePath = (t: string): boolean => {
   // admitted file list, so IT can resolve a `$PSScriptRoot` path and settle all 76 derivable rows —
   // turning the 58 false claims into VISIBLE refutations, and the 18 into NAMED REFUSALS. The arbiter
   // does not do that today, which is why all 123 rows of the shape read as "unverifiable" (wall W9,
-  // the Lead's instrument, filed as a proposal WITH THE PATCH AND ITS MEASURED EFFECT).
+  // the shared instrument, filed as a proposal WITH THE PATCH AND ITS MEASURED EFFECT).
 
   // A PATH THAT NAMES SOMETHING OUTSIDE ANY PROJECT — and so can never be one of the project's
   // own files. The shapes mirror the arbiter's own `WINDOWS_DRIVE` and `URI_SCHEME` tests, because
@@ -956,7 +956,7 @@ const arbiterCanCheckOwner = (t: string): boolean => {
  * (Grace/scripts/capture-artifact-size.ps1). 113 rows read `externalRefuted` for that reason: 85 at
  * the committed analyzer and 28 more added by the depth pass. The refutation is false — a variable
  * is not a type and no file declares a type named `Text` — and the instrument that produces it is
- * the Lead's, so the lane's part of the fix is to stop asking the wrong question about a target
+ * not this lane's, so the lane's part of the fix is to stop asking the wrong question about a target
  * whose root only LOOKS like a project name.
  *
  * THE LIST IS THE FRAMEWORK'S, NOT THE CORPUS'S: the direct children of the `System` namespace in
@@ -2988,7 +2988,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // compile nothing at all, where this analyzer has no evidence to act on. Clause 4 would go 0 → 6.
     //
     // So the publication waits for the arbiter's `typeNames` patch (an owner claim may be refuted only
-    // by a declaration that could BE an owner — a TYPE), which is already filed with the Lead. The
+    // by a declaration that could BE an owner — a TYPE), which is already filed as a proposal. The
     // price of that patch on this lane is now MEASURED rather than estimated: **+62 resolved**, and 0
     // refuted once the owner question is type-aware. `addTypeDeclarations` is kept because the
     // static-call rule below needs the names; the symbols are the part that waits.

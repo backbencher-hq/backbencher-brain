@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "0.3.0",
+  "packageVersion": "0.1.0",
   "generatedFrom": [
     "src/mcp/tool-registry.ts",
     "script/verify-tool-docs.ts"
@@ -1336,7 +1336,6 @@
         "Formatting is best-effort and MEASURED, never assumed: an extension with no mapping (`.rb`, `.swift`, `.kt`, `.yaml`, …), a formatter that is not installed, a non-zero exit, and the 1.5s timeout all report `formatted: false` with the per-file reason in `formatting`. The tool never installs a formatter and does not read a project's own formatter configuration — it invokes the standard binary for the extension (prettier/rustfmt/gofmt/clang-format/black-or-ruff) that it can resolve from `node_modules/.bin` or `PATH`.",
         "`write` replacing an existing file is GUARDED rather than free: with `overwrite` omitted, a replacement that removes at least half of the file's lines and at least 5 lines is refused as a probable mistake (a body fragment sent to `write` instead of `update`, or the wrong `filePath`), and the refusal states both line counts, the share that would be lost, and both ways forward. `overwrite: true` replaces it whatever the size; `overwrite: false` is create-only. A 41-line file replaced by one line is therefore refused rather than reported `ok` with nothing distinguishing it from an intentional rewrite",
         "The pre-image check covers staleness on the WRITE side too, and it is not about the index: every target's sha256 is taken as the plan reads it and compared with the bytes the commit is about to replace, immediately before the first write of the batch. A file that changed in that window — an editor saving during a multi-file refactor — is refused with NOTHING written and both hashes named, rather than overwritten from a plan computed against its previous contents. A path the plan intended to create must still not exist; a file that appeared there is refused the same way.",
-        null,
         "Import cleanup after `delete` is TypeScript/JavaScript-only and AST-driven: the tree names the import statements and identifier occurrences decide usage, so dead bindings are removed and still-used (including aliased and namespace) bindings are kept. In every other language the file is left byte-for-byte unchanged and the answer DECLARES it (`importPruning.attempted: false` with the language and the reason) plus a warning — a leftover import never breaks a build, while an import removed on a pattern can",
         "Writes are refused inside `.git/`, `.hg/`, `.svn/`, `node_modules/`, and the index data directory, by resolved path and by name. That is a safety list beside the security boundary (containment in the project), so a typo'd `filePath` cannot rewrite version-control state or the database the tool's answers come from",
         "A formatter may rewrite a file's line endings with its own: `gofmt -w` turns a CRLF file into LF. The engine restores the file's own ending after formatting and declares the repair on that file's `formatting` entry (`lineEndingRestored: true`), so an edit never silently migrates a file to another line-ending convention",

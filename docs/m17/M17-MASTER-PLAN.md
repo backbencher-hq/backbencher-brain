@@ -33,7 +33,7 @@ Both were found by **running the tools live**, not by reading code:
    script) that can FAIL. No auto-pass constants, no `>= 0` tautologies, no
    `|| true` — the M17 closure gate scans for these.
 2. **Real repos.** E2E must run against real repositories on disk:
-   - targeted families at `~/fixtures/repositories/` (rake·Ruby, element-plus·Vue/TS,
+   - targeted families at `~/<corpus-root>/` (rake·Ruby, element-plus·Vue/TS,
      lodash·JS, powershell, rebar3·Erlang, cabal·Haskell, terraform·HCL, swift-nio·Swift,
      zig, mojo, cython, grails-core·Groovy, scala3, Exposed·Kotlin, cats-effect·Scala …)
    - larger clones under `~/` — `~/ProxiCall` (Android/Java), `~/openclaw` (Python/TS),

@@ -315,7 +315,7 @@ export function rustModuleFileCandidates(
  *     shelter anything it did not name;
  *   - it can never refute a name the project declares (the internal resolution wins first).
  *
- * PRE-REGISTERED FALSIFIER, agreed with the Lead before the arbiter half landed: **any `extFAIL` on
+ * PRE-REGISTERED FALSIFIER, pre-registered before the arbiter half landed: **any `extFAIL` on
  * the rows this reaches REFUTES this emission rule.** The roots are exactly the three system crates;
  * adding a fourth name to this list without a measurement is the laundering this claim exists to
  * prevent. The `::`-separator matcher this needs is Lead-owned (`script/m14/incoming-rule.ts`):
@@ -4492,7 +4492,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `mod`-ownership precedent is OWNERSHIP/SPLIT, NOT TEXTUAL PART-OF, and the contract's own
     // sentence agrees: "a part shares the library's single scope, imports nothing, and CANNOT BE
     // RESOLVED AS A SEPARATE MODULE". `mod x;` IS a separate module, IS resolvable as `x::item`,
-    // and shares nothing — a RESOLVABLE UNIT IS THE OPPOSITE OF A FRAGMENT. The Lead approved
+    // and shares nothing — a RESOLVABLE UNIT IS THE OPPOSITE OF A FRAGMENT. The ruling approved
     // `mod` for this cell and the correction is the lane's, upheld: the fleet's implemented
     // `part_of` set is UNANIMOUSLY textual file inclusion (cpp `#include`, fsharp `#load`, php
     // `include`/`require`, erlang `-include`, typescript `/// <reference path>`).

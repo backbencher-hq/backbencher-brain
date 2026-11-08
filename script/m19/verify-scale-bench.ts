@@ -74,7 +74,7 @@ async function main() {
 
   const bench = JSON.parse(readFileSync(path.join(ROOT_DIR, "validation/m18/benchmark/benchmark.json"), "utf8"))
   const anchors = (bench.corpora || []).map((c: any) => ({ tag: c.tag, path: c.source }))
-  // The three giants were literal paths on the owner's other laptop. None of them exists
+  // The three giants were literal paths on another machine. None of them exists
   // here, and this gate reported 0/16 with no explanation — it walked paths that were
   // never there. Now resolved through script/lib/optional-corpus.ts (env override first,
   // then the known locations), so a machine that HAS a clone uses it and a machine that

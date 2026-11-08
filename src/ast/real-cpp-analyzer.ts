@@ -52,7 +52,7 @@ function cppCitationFacts(qualified: string, leaf: string): Record<string, unkno
   if (t.split("::")[0]?.trim() !== "std") return {}
   // NARROWING CONTRACT (Lead , importedName precedent): the companion policy marker says this
   // citation may speak ONLY for a row the NAME MODEL has nothing to say about (project declaration
-  // count 0). The Lead adds the arbiter field that honors it for cpp rows; without it the claim is a
+  // count 0). The arbiter field that honors it was added for cpp rows; without it the claim is a
   // plain namespace claim, so the arm that measures the narrowing must carry the arbiter change.
   return { languageNamespace: [leaf], languageNamespacePolicy: "strict-absent" }
 }

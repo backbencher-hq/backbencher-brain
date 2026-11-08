@@ -120,7 +120,7 @@ defect (§13.6) and its string is gone. Gated by
 4 mutants incl. the acceptance criterion's message-only regression) and the
 E5 in-editor click leg.
 
-### U3 decision (2026-09-07, owner-approved "true nested tree")
+### U3 decision (2026-09-07, contract-approved "true nested tree")
 
 The tree nests by the **placement parent** — the parent endpoint of the group's
 shallowest stored row (ties: root-first, then parentName, then rowId). Every
@@ -180,7 +180,7 @@ KNOWN-GAPS inventory, and proves the audit CAN FAIL (7 in-memory negatives).
   legs now resolve rejections to declared markers and retry once on a
   canceled attempt (close/refocus/re-click) — the suite can no longer die on
   editor-async cancellation.
-- **The §8.5 verdict stays with the owner**: spot-check pack at
+- **The §8.5 verdict stays a recorded human judgement**: spot-check pack at
   validation/m44/results/SPOT-CHECK-PACK.md; launch-bar owner rows
   (OpenVSX publish, Windsurf install decision, darwin/win persistence) are
   recorded with reasons, machine-audited, never silent.

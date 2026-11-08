@@ -27,7 +27,7 @@
 //               findings document's own open verdicts.
 //   C4 hand-off: docs/m55/HANDOFF-cross-language.md exists, names the filed
 //               issue, carries the stored row's facts, and those facts are
-//               re-read from the owner's index when it is present (declared
+//               re-read from the recorded index when it is present (declared
 //               blocked-with-reason when it is not).
 //   C5 mutants: four planted defects (a planned issue treated as closable, a
 //               stale ladder pin, a claim naming a frame that does not exist, a
@@ -481,7 +481,7 @@ check("C4: the hand-off note exists", handoffNote.length > 0, path.relative(ROOT
 check("C4: the ledger records the filed issue number", typeof handoffIssue === "number" && handoffIssue > 0, String(handoffIssue))
 if (typeof handoffIssue === "number") {
   check("C4: the note names the filed issue and carries the stored row's facts", handoffIsLinked(handoffNote, handoffIssue), `issue #${handoffIssue}`)
-  // The facts are re-read from the owner's index when it is present. The index is
+  // The facts are re-read from the recorded index when it is present. The index is
   // external by owner decision, so an absent one is a declared blocked read —
   // never a green claim about a row nobody looked at.
   const fixtureDb = path.join(
@@ -489,7 +489,7 @@ if (typeof handoffIssue === "number") {
     ".bb/projects/693ac0d258eee9282c48710e76362d6ba159c7af/brain.db",
   )
   if (!existsSync(fixtureDb)) {
-    blocked("C4: the stored row is re-read from the owner's index", `no index at ${fixtureDb} (external fixture by owner decision)`)
+    blocked("C4: the stored row is re-read from the recorded index", `no index at ${fixtureDb} (external fixture by owner decision)`)
   } else {
     const { default: Database } = (await import("better-sqlite3")) as unknown as {
       default: new (p: string, o?: Record<string, unknown>) => { prepare: (q: string) => { get: (...a: unknown[]) => unknown; all: (...a: unknown[]) => unknown[] }; close: () => void }

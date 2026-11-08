@@ -1508,7 +1508,7 @@ docLines.push(`Commit at generation: \`${currentCommit}\`. Status: **${evidence.
 docLines.push("")
 docLines.push("## Why this document exists")
 docLines.push("")
-docLines.push("The owner asked for a hover that tells the user most of what is known about a")
+docLines.push("The hover must tell the user most of what is known about a")
 docLines.push("symbol — its relationships, its uses, and so on. That is a claim about a")
 docLines.push("RATIO, and no gate had ever measured the ratio. So the state before this lane")
 docLines.push("was: the index knew a great deal, the hover rendered a part of it, and")

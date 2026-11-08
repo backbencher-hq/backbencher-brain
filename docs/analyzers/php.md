@@ -1535,7 +1535,7 @@ invisible to the harness even with independent truths in place.
 
 **What writing a second implementation cost, recorded because it is the argument for doing it.** The
 first draft of the independent callee rule computed the leaf as `lastIndexOf(sep, i)` after
-advancing past the leading separators, which searches *backwards* and finds the **leading**
+advancing past the maintainering separators, which searches *backwards* and finds the **leading**
 separator: `\Foo\Bar\baz` yielded `Foo\Bar\baz`. The differential still read **0 unexplained and
 100% coverage**, because `normTarget` is the last segment and discards the qualifier. What caught it
 was the truth **row count** moving (888 → 901) with coverage unchanged — a shape no coverage figure
@@ -3208,7 +3208,7 @@ arbiter will ever look at in one run.
 NOTE ON A MOVING TARGET, because it changed the answer's shape mid-round: when this round
 opened, `pickFiles` returned the first N files in DIRECTORY ORDER, and on phpunit that is 300
 vendored PHPStan files under `tools/.phpstan/vendor/**` — the 120- and 400-file samples never
-reached `tests/` at all. The instrument has since been fixed (by the Lead) to walk a bounded
+reached `tests/` at all. The instrument has since been fixed (by the maintainer) to walk a bounded
 population, sort it and stride EVENLY, which is strictly better: the sample is now
 representative. Both readings give SILENT for these two types, and the second one is the
 interesting one — a representative sample still shows nothing, which is exactly why the
@@ -3422,7 +3422,7 @@ counted against the lane).
 The narrow, checkable fix belongs in the rule and not in this lane: when a target has no
 identifier-shaped owner, verify the TARGET itself (`decls === 0` is the same fact the owner
 lookup already uses, and the claim still cannot raise `resolved`, so it is not a laundering
-hole). That file is the Lead's, so it is named here as the next step rather than worked around.
+hole). That file is the maintainer's, so it is named here as the next step rather than worked around.
 
 ## What this round could NOT determine
 
@@ -3448,7 +3448,7 @@ MY OWN INSTRUMENT was wrong.
 
 ## 0. The rule fix, reproduced
 
-`verifyExternalClaim` no longer requires a dotted owner (the Lead's `7321881c1`, implementing
+`verifyExternalClaim` no longer requires a dotted owner (the maintainer's `7321881c1`, implementing
 the fix this lane proposed). Re-run on this lane:
 
 ```
@@ -3550,7 +3550,7 @@ named `A.php` and `B.php`. They were the probe's, not the analyzer's: the corpus
 `tests/end-to-end/regression/6294/IssueTest6294.php:18` — `require_once 'A.php';` — and
 `tests/end-to-end/regression/6294/A.php` is the file declaring `class A`. The probe split every
 target on its last dot, so an INCLUDE PATH got "owner" `A`, found `class A` in the same project,
-and called it a defect. It is the exact mistake the Lead's rule fix names: a path cannot be a
+and called it a defect. It is the exact mistake the maintainer's rule fix names: a path cannot be a
 published name, so a lookup returning 0 — or 1 — proves nothing. Path-shaped targets now have
 their own bucket (172 at project scope) and are never called defects, and the defect column reads
 **0**.

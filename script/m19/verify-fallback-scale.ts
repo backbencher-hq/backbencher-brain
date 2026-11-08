@@ -42,7 +42,7 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+// WAS: a literal foreign path — a clone on a different machine. This machine has
 //  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
 //  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
 //

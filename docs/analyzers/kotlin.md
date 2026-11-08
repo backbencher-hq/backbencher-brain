@@ -30,7 +30,7 @@
 The ten engine types, plus the one extended vocabulary value this analyzer emits (`renders`), each with a verdict and a number; the detailed verdict table follows.
 
 Verdicts are from `script/m14/kotlin-ontology-census.ts` over a **stratified
-deterministic draw** of `fixtures/repositories/kotlin@9b80c8ff99f3a63fcf578010bb2712697f4886aa`
+deterministic draw** of `<corpus-root>/kotlin@9b80c8ff99f3a63fcf578010bb2712697f4886aa`
 (69,816 tracked `.kt`/`.kts`), through the production entry `parseFile`.
 Sample: `--sample-strata 2400`, proportional across the first path segment by
 largest remainder, evenly spread inside each stratum, 21 strata.
@@ -488,7 +488,7 @@ path is not source text and there is no node for it.
 | fixtures | 53 | — | — | — | — |
 | corpus, every-Nth draw (`kotlin-payload-latency.ts --sample 600`) | 600 | 14,458 | 75,133 | 180,077 (cold sweep) | 417 |
 
-Latency note: 300 ms/file cold on `fixtures/repositories/kotlin` is **not**
+Latency note: 300 ms/file cold on `<corpus-root>/kotlin` is **not**
 comparable to the doc's earlier 31 ms/file figure, which was measured on
 `intellij-community` — a different repository with much smaller files. The
 number that is comparable across waves is the payload ratio below.

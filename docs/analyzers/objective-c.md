@@ -537,7 +537,7 @@ plausible-looking number about the wrong analyzer. Both defects are in
 `script/m14/**`, which this lane does not own; they are reported, not fixed.
 
 **This lane's sampling population is 153 files and cannot grow.** The instrument's
-lane row for this analyzer is `exts: [".m"]`, and `$HOME/fixtures/repositories/objc`
+lane row for this analyzer is `exts: [".m"]`, and `<corpus-root>/objc`
 holds exactly 153 `.m` files (sdwebimage + afnetworking). So NFILES=200 samples
 the whole `.m` population. The brief's warning that file count moves the score is
 real in general (Ruby 1/10 at 25 vs 8/10 at 200) but cannot bite this lane

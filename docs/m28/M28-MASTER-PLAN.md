@@ -1,6 +1,6 @@
 # M28 — The Union (MCP + agent) — Master Plan
 
-> **STATUS: DRAFT — awaiting owner review.**
+> **STATUS: DRAFT — awaiting maintainer review.**
 > Nothing below is a verified claim. Every claim becomes one only when an
 > issue's ledger cell pins a verifier, a run, and a machine (contract §2).
 

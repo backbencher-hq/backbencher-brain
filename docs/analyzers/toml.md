@@ -721,7 +721,7 @@ Turing-complete language, and the limits below are the ones that follow from tha
    the evidence: both live in repositories neither corpus contains.
 7. **The corpus is shared and growing.** The census read 1,140 files and then 1,141
    across consecutive runs. Every number here is a point-in-time census of git
-   -tracked files under `$HOME/fixtures/repositories`; re-running
+   -tracked files under `<corpus-root>`; re-running
    `census.ts` reproduces it against whatever that directory holds at the time.
 8. **One production edge is lost to a cross-language filter** (D3). The analyzer's
    own output is correct there; the pipeline drops it, and the file is shared

@@ -253,7 +253,7 @@ through production `parseFile` from `src/ast/pool-worker.ts` (not `analyze()`, w
 per-file unit that skips the pool, the timeouts, the truncation and the enhancements).
 Corpus admission is identical to the arbiter's, so the two measure one population and not
 two that happen to look alike: `git ls-files` over every repo under
-`BB_CORPUS_ROOT` (`$HOME/fixtures/repositories`), gated on
+`BB_CORPUS_ROOT` (`<corpus-root>`), gated on
 `detectLanguageFromPath(abs, text) === "powershell"`.
 
 **Sampling method: the WHOLE admitted set — 1,108 of 1,108 files, no sampling cut.**
@@ -2599,7 +2599,7 @@ no evidence at all. Clause 4 would go 0 → 6, so **the publication is not shipp
 
 **What this prices, exactly:** the arbiter's `typeNames` patch (an owner claim may be refuted only by a
 declaration that could BE an owner — a TYPE) is worth **+62 resolved, 0 refuted** on this lane, measured
-rather than estimated. It is already filed with the Lead.
+rather than estimated. It is already filed with the maintainer.
 
 ### 2 · What IS shipped: the call reading, and the type mention
 

@@ -26,7 +26,7 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+// WAS: a literal foreign path — a clone on a different machine. This machine has
 //  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
 //  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
 //
@@ -77,7 +77,7 @@ async function main() {
   // The check RECORDS a missing repo but does not stop, and the next line walks it —
   // the same shape as the m15 `winner` bug found earlier today: a non-aborting guard
   // followed by unguarded use. With intellij-community absent (it is the owner's clone
-  // on the other laptop) the gate died with `ENOENT … scandir 'REPO_UNRESOLVED'` AFTER
+  // on a different machine) the gate died with `ENOENT … scandir 'REPO_UNRESOLVED'` AFTER
   // printing "S3: repo exists", so the failure mode was a stack trace rather than the
   // declared block the resolver just produced.
   //

@@ -340,7 +340,7 @@ an oracle is `script/m14/differential.ts`, master-owned. Reported, not edited.
 
 | field | value |
 | --- | --- |
-| corpus | `fixtures/repositories/java-lib` (guava; 3,275 `.java` on disk) |
+| corpus | `<corpus-root>/java-lib` (guava; 3,275 `.java` on disk) |
 | files sampled / parsed | 200 / 200 |
 | relationship-channel types fired | **8/10** — `calls extends implements uses contains references overrides instantiates` |
 | silent | `imports`, `exports` |
@@ -354,7 +354,7 @@ The two silent types are channel facts, not edge facts — both are measured nex
 
 Instrument: `script/m14/tmp/javawork-census.mts` (lane-owned, no regex). Production path
 (`getParser -> parse -> analyze`). Population derived by walk, **not** a hand-written list:
-3,275 `.java` files exist under `fixtures/repositories/java-lib`; 200 code-bearing files
+3,275 `.java` files exist under `<corpus-root>/java-lib`; 200 code-bearing files
 sampled (6.1%), all 200 parsed, 0 failed, 2,457 symbols. Resolution ladder mirrors
 `parallel-indexer.ts:3427-3441` (bare name, leaf, `endsWith(":<name>")`, `endsWith(".<name>")`,
 qualified name) applied to **the analyzer's own symbol set for that file**.
@@ -488,7 +488,7 @@ discrepancy with the documented model — it is the documented model, and it mea
 ### JOB 2 — construct probes over the WHOLE java corpus (3,275 files, not a sample)
 
 Instrument: `script/m14/tmp/javawork-construct-probe.mts`. Population derived by walk over
-`fixtures/repositories/java-lib`; **every** `.java` file in it, no file-count cutoff. Node
+`<corpus-root>/java-lib`; **every** `.java` file in it, no file-count cutoff. Node
 tallies from a tree-sitter walk, no source-text matching.
 
 #### PROBE A — Java HAS an explicit exports construct (JPMS, JLS 7.7.2). Verdict: **GAP**.
@@ -681,7 +681,7 @@ resolution". This lane's depth wave added, on the SAME owner channel and with NO
 
 The arbiter's `namespace` claim (`metadata.languageNamespace`) is a CITATION: a target whose leading
 segments match a declared root verifies (extOK, `verifiedBy: "namespace"`), never folds into
-`resolved`, and REFUTES an undeclared root — so the analyzer declares only a SUBSET of the Lead-owned
+`resolved`, and REFUTES an undeclared root — so the analyzer declares only a SUBSET of the maintainer-owned
 registry `script/m14/citations.ts` (`jakarta`, `androidx`, `org.yaml`, `dotty.tools`), copied with the
 registry id. Two forms: **dotted prefix** for module/type paths (`jakarta.persistence.Entity` →
 `["jakarta"]`), and **bare symbol** for a bare type name whose SINGLE-TYPE import path is under a
@@ -690,7 +690,7 @@ import licenses no bare citation (the file cannot state which library type it br
 outside the registry (`com.google.*`) are never claimed. Fixture `java/library-namespace-citations`
 pins dotted positives, bare positives, and both negatives; the undeclared-root-refutes polarity is the
 shared gate selfTest's control. Measured: fixtures 73/0, light cap-50 gate extFAIL 0 (extOK 1,422,
-ext? 2 on 5,713 edges); the whole-population movement is measured by the Lead's arm.
+ext? 2 on 5,713 edges); the whole-population movement is measured by the maintainer's arm.
 
 ### 2026-10-19c — CITATION EMISSION NARROWED AFTER THE OVER-CLAIM AUDIT (measured)
 
@@ -712,7 +712,7 @@ pairs (JLS 6.5.5.1). Fixtures: flat fail-closed pin + new sub-directory `java/ci
 
 `import static pkg.Type.member;` brings a member name into the file's scope; when that name is used
 unqualified the calls/uses edge's target IS the imported binding, and a name model that resolves it
-against a project declaration is wrong. The lane now publishes the Lead's imported-binding claim:
+against a project declaration is wrong. The lane now publishes the maintainer's imported-binding claim:
 * **evidence** on every static single-member import edge — `metadata.importedBindings: [member]` and
   `metadata.module: <container as written>`, the exact key/specifier the gate builds its
   `importsByFile` evidence map from;
@@ -724,7 +724,7 @@ The arbiter verifies the claim from the run's own import evidence into its own c
 never folds it into `resolved`, and a contradicted claim is a failure. Fixture
 `java/library-import-binding` pins the evidence (array + scalar), the project-static-import refusal,
 the file-shadowed refusal and the receiver refusal; the positive claim is now pinned in the fixture
-too (object-meta matcher added by the Lead).
+too (object-meta matcher added by the maintainer).
 
 MEASURED AND CLOSED (Lead-reproduced population arm at `e6a586379`): **bindOK 391 · bindFAIL 0**,
 with resolved −85 · amb −47 · extOK −259 (85+47+259 = 391 exactly) — 259 rows moved from a verified

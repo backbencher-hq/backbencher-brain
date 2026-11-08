@@ -72,7 +72,7 @@ instantiate nothing. So **the score at NFILES=25 is a correct number about a
 population that cannot contain the construct**, which is the same defect the
 whole workstream exists to catch, one level up. 8/10 is the reported number and
 it is stated with its sample: 200 files, 200 parsed, of the code-bearing
-`.ts`/`.tsx` files under `fixtures/repositories/element-plus`.
+`.ts`/`.tsx` files under `<corpus-root>/element-plus`.
 
 ### Two harness defects this lane hit while running it
 

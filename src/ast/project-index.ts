@@ -298,7 +298,7 @@ export const SOLIDITY_DECLARATION_SPEC: DeclarationSpec = {
  * (`script/m14/cpp-decl-proto.ts`); the SIZING evidence is in CPP-INDEX-SIZING.md.
  *
  * DELIBERATE OMISSIONS, each with its reason:
- *   · MACROS (`preproc_def` / `preproc_function_def`) are NOT nameOnly declarations. The Lead ruled
+ *   · MACROS (`preproc_def` / `preproc_function_def`) are NOT nameOnly declarations. The ruling is
  *     (charter §18.8 B) that a `#define` name is a preprocessor name, not a declaration — the C lane
  *     reached the same ruling for its macro-spelled wall. The resolver still reads them (one line to
  *     enable if the ruling ever changes); the size of that block is priced in CPP-INDEX-SIZING.md.
@@ -476,7 +476,7 @@ function staticRubyConstantPath(n: Node | null): string | null {
 }
 
 /**
- * RUBY (task-22, RUBY_DECLARATION_SPEC — proposal; the Lead applies this patch).
+ * RUBY (task-22, RUBY_DECLARATION_SPEC — proposal; this patch applies here).
  *
  * WHAT IT IS FOR. The ruby analyzer is per-file, so on the 989-file/15-repo arm A 3,013 `overrides` are
  * declared first-parent GUESSES and 1,590 type-relation rows (instantiates/extends/mixes_in) are ambiguous
@@ -1424,8 +1424,8 @@ export const FSHARP_DECLARATION_SPEC: DeclarationSpec = {
  * instead, and both shapes are defensible; the java/dart one is the shape this lane takes, because
  * the CLOJURE SPEC IS NOT LANGUAGE-LOCAL AND THE LEAD COMMITS THE SHARED FILE: the spec is a
  * DECLARATION RULE, and the rule is the lane's to write — a spec written by the wrong author is a
- * second instrument. The Lead does not guess at Clojure's declaration rules; this file's clojure
- * region is that author, and the Lead commits it.
+ * second instrument. This file does not guess at Clojure's declaration rules; this file's clojure
+ * region is that author, and it is committed.
  *
  * ## THE SPEC IS BUILT FROM THE EXISTING HOOKS — IT ADDS NO BUILDER FEATURE
  *

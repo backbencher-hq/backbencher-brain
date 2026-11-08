@@ -283,7 +283,7 @@ comparison can see. That is the whole argument for having built the instrument: 
 Every one of the ten types carries a measured verdict. The instrument is
 `script/m14/python-ontology-census.ts`, which runs the analyzer through the PRODUCTION
 entry (`parseFile` from `src/ast/pool-worker.ts`) over the **whole** pinned population:
-**5,365 tracked `.py`/`.pyi` in 5 git checkouts under `fixtures/repositories/python-corpus/`**
+**5,365 tracked `.py`/`.pyi` in 5 git checkouts under `<corpus-root>/python-corpus/`**
 (ansible 1,857 · django 2,933 · flask 83 · pydantic 455 · requests 37), plus the
 **unpinned `python-corpus/cpython-stdlib`** (621 files) measured on separate counters and
 never merged. 5,365/5,365 parsed, 0 parse failures, 0 degraded, 108,689 symbols,
@@ -1475,7 +1475,7 @@ implements 140 → 3; `imports` is unchanged at 64,462 (see the proposal).
 
 **THE PROJECT-ABSOLUTE REFINER, AND WHAT IT CHANGED (commit `8def4a5d5`, 2026-10-17).** A per-file
 analyzer cannot tell `from grace_generated_openapi_probe.x import Y` (the project's own code, imported
-absolutely) from `from pydantic import BaseModel` (outside it). The Lead's refiner reads
+absolutely) from `from pydantic import BaseModel` (outside it). The maintainer's refiner reads
 `metadata.externalSpecifier` — the field this claim was already publishing — and turns a verified
 claim into `externalUnverified` (ext?) when the specifier's root names a module the PROJECT ships (a
 directory basename or file stem of the admitted list). It is fail-closed: a claim changes LABEL, never
@@ -1491,7 +1491,7 @@ specifier rather than a bare boolean.
 dispatch class is not in the file — keeps NO claim; the receiver's runtime type is in neither the
 grammar nor the corpus, and `PYTHON-FIX.md` §3 proved a declared-cause relabel is REFUTED for a bare
 leaf (`targetOwner` is null). `imports` targets (`pathlib:Path`, `os:*`) are also NOT claimed: every
-claim kind refuses the colon shape, and fixing that needs a rule change in the Lead-owned
+claim kind refuses the colon shape, and fixing that needs a rule change in the maintainer-owned
 `script/m14/incoming-rule.ts` — priced in
 `validation/m14/proposals/python-imports-module-namespace-claim.md` (3,554 of 6,661 imports edges on
 the first-400 slice name a stdlib module; ≈53,000 at whole population, 17.8% of the residual).
@@ -1599,7 +1599,7 @@ index-less and incremental run is byte-identical to the pre-capability behaviour
 ABSENT-field case an older payload produces). Locality is read from the index's own `modules` as a dotted-path
 suffix match of **at least two segments** (the repo root is not python's `sys.path` root — ansible's files sit
 under `lib/` while the import is rooted at `ansible`); a one-segment module is `unknown`, NEVER local, and a
-relative module is never asked about because **the leading dot is part of the rule** (the 6-false-verified-
+relative module is never asked about because **the maintainering dot is part of the rule** (the 6-false-verified-
 external-edges defect recorded above).
 
 | class | action | guard |
@@ -1612,7 +1612,7 @@ Pinned by `validation/m14/fixtures/python/project-index-import-edge.mts` — 10 
 project, PASS, and **proven capable of failing**: removing the count guard fails B, removing the suppression
 fails E (while the third-party control still passes, so the check is directional), and a `complete === false`
 guard fails F. **Activation measurement is QUEUED, not claimed:** it needs a whole walk
-(`incoming-gate python py,pyi,pyw 0 --index`) because only cap-0 states `complete === true`, and the Lead's
+(`incoming-gate python py,pyi,pyw 0 --index`) because only cap-0 states `complete === true`, and the maintainer's
 resource hold forbids that arm; the cap-50 non-index run is a deliberate no-op for this pass.
 
 ## Depth campaign §18 (2026-10-19) — static receiver proofs and a binding claim

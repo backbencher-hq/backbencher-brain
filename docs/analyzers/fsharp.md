@@ -446,7 +446,7 @@ rather than edited here:
 
 | | |
 |---|---|
-| corpus | `$HOME/fixtures/repositories` → one repo, `fsharp` |
+| corpus | `<corpus-root>` → one repo, `fsharp` |
 | admitted | 6,619 git-tracked `.fs`/`.fsi`/`.fsx` files ≤ 512 KB (the arbiter's own ceiling) |
 | sampled | 400 (6.0%), seeded shuffle, seed `0x5f5a1`, `slice(0, 400)` — a pure function of the corpus contents, no clock, no unseeded RNG |
 | parsed | 400/400, 0 failures, 5,750 symbols |
@@ -3821,4 +3821,4 @@ the artifact and fixing the two other lanes are `script/m12/**` and their owners
 | `npx tsx script/m12/verify-regex-census.ts` | exit 1 on **12** missing literals, **0 of them this file's** (dart 8, yaml 4) |
 | `bash script/m14/no-regex-gate.sh` | shell exit 0; prints the verifier's FAILED above — unchanged by this pass except that this lane is gone from it |
 | `npx tsc --noEmit` | clean |
-| full fixture suite | **zig 0 → 2 and dart 0 → 7 regressions, REPORTED BY THE LEAD'S RUN AND NOT RE-RUN BY THIS PASS** — not this lane's (the lead re-ran both and assigned owners); this lane's own `--lang fsharp` run is green, and neither analyzer is touched by the two changes above |
+| full fixture suite | **zig 0 → 2 and dart 0 → 7 regressions, REPORTED BY THE MAINTAINER'S RUN AND NOT RE-RUN BY THIS PASS** — not this lane's (the maintainer re-ran both and assigned owners); this lane's own `--lang fsharp` run is green, and neither analyzer is touched by the two changes above |

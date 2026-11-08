@@ -77,14 +77,72 @@ const tools = toolList
   }))
   .sort((a, b) => a.name.localeCompare(b.name))
 
-// Cross-reference: every public tool name must appear in the executable
-// registry layer (the JSON is the contract authority; the registry is the
+// Cross-reference: the executable registry layer must assemble exactly the
+// public tool set (the JSON is the contract authority; the registry is the
 // implementation it must match).
+//
+// READ IT STRUCTURALLY, NOT AS A SUBSTRING. This check used to assert the
+// registry source CONTAINED the literal `"bb_analyze"`. It did while the
+// registry was sixteen `import { bb_x }` lines; then the registry was refactored
+// to `import { descriptor as bb_analyze } from "./tools/bb_analyze/descriptor"` +
+// an assembled `descriptors` array, the literal disappeared, and the check could
+// never pass again — a generator that can only fail is as dead as one that can
+// only pass, and the site's truth file froze while the product moved on.
+//
+// So the shape this reads is the registry's actual contract:
+//   1. every descriptor is imported with a binding from its tool directory
+//      (`import { descriptor as <binding> } from "./tools/<tool>/descriptor"`);
+//   2. the assembled array lists each binding once;
+//   3. the set of array entries equals the public contract, in both directions —
+//      a missing tool fails, and a tool wired into the registry but absent from
+//      the public contract fails too (an "extra" tool is the same lie class).
+// A refactor that renames the array or changes the import form fails LOUDLY
+// ("the registry shape moved") rather than silently certifying nothing.
 const registrySrc = read("src/mcp/tool-registry.ts")
+
+const importedDescriptors: { binding: string; tool: string }[] = []
+for (const m of registrySrc.matchAll(/^import \{ descriptor as ([A-Za-z0-9_$]+) \} from "\.\/tools\/([^"/]+)\/descriptor"$/gm)) {
+  // The tool's identity is its directory under ./tools/, not the local binding
+  // name: the binding can be renamed, the directory is the contract's name.
+  importedDescriptors.push({ binding: m[1]!, tool: m[2]! })
+}
+if (importedDescriptors.length === 0) {
+  fail("no `import { descriptor as <binding> } from \"./tools/<tool>/descriptor\"` lines found in src/mcp/tool-registry.ts — the registry shape moved, so the JSON/registry cross-reference cannot run (repair this reader, do not remove the check)")
+}
+
+const descriptorsStart = registrySrc.indexOf("const descriptors = [")
+const descriptorsEnd = registrySrc.indexOf("] as const satisfies", descriptorsStart)
+if (descriptorsStart < 0 || descriptorsEnd < 0) {
+  fail("the assembled `const descriptors = [...] as const satisfies readonly ToolDescriptor[]` array not found in src/mcp/tool-registry.ts — the registry shape moved, so the JSON/registry cross-reference cannot run")
+}
+const assembled = [...registrySrc.slice(descriptorsStart, descriptorsEnd).matchAll(/^\s*([A-Za-z0-9_$]+),\s*$/gm)].map((m) => m[1]!)
+if (assembled.length === 0) fail("the assembled descriptors array in src/mcp/tool-registry.ts lists no bindings — refusing to certify an empty registry")
+
+const assembledTools = assembled.map((binding) => {
+  const imported = importedDescriptors.find((entry) => entry.binding === binding)
+  if (!imported) fail(`src/mcp/tool-registry.ts assembles an unimported binding ${binding} — the registry is internally inconsistent`)
+  return imported
+})
+const duplicateAssembled = assembledTools.filter((entry, i) => assembledTools.findIndex((other) => other.tool === entry.tool) !== i)
+if (duplicateAssembled.length) fail(`src/mcp/tool-registry.ts assembles the same tool twice: ${duplicateAssembled.map((e) => e.tool).join(",")}`)
+
+const publicNames = new Set(tools.map((t) => t.name as string))
 for (const t of tools) {
-  if (!registrySrc.includes(`"${t.name}"`)) {
-    fail(`public tool ${t.name} not found in src/mcp/tool-registry.ts — JSON and registry disagree`)
+  if (!importedDescriptors.some((entry) => entry.tool === t.name)) {
+    fail(`public tool ${t.name} is not imported in src/mcp/tool-registry.ts — docs/data/public-tools.json and the executable registry disagree`)
   }
+  const binding = importedDescriptors.find((entry) => entry.tool === t.name)?.binding
+  if (!binding || !assembled.includes(binding)) {
+    fail(`public tool ${t.name} is imported but not assembled into the descriptors array in src/mcp/tool-registry.ts — the JSON contract and the executable registry disagree`)
+  }
+}
+for (const entry of assembledTools) {
+  if (!publicNames.has(entry.tool)) {
+    fail(`src/mcp/tool-registry.ts wires tool ${entry.tool}, which docs/data/public-tools.json does not declare — the JSON contract and the executable registry disagree`)
+  }
+}
+if (assembledTools.length !== tools.length) {
+  fail(`registry assembles ${assembledTools.length} descriptors but docs/data/public-tools.json declares ${tools.length} public tools — they disagree`)
 }
 
 // --- table count ------------------------------------------------------------

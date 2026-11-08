@@ -15,7 +15,7 @@
   **2,440,507 B** and a 729-id surface — the **pre-V11** build. The wired file is
   12,620,599 B, so `bun run script/m14/verify-grammar-pins.ts` reports a drifted
   sha for `sql` until the record is regenerated (an explicit `--write` act, and
-  regenerating it is a lane-owner decision because the regeneration rewrites 27
+  regenerating it is a lane-recorded decision because the regeneration rewrites 27
   lanes at once). The figures quoted in this file are therefore measured against
   the wired bytes **directly**, not read out of the pin.
 - Wiring: `ASTEngine.parseFile` → `RealSqlAnalyzer`; the engine also hands the analyzer its
@@ -35,7 +35,7 @@ statement scaffolding** (`IF/ELSIF/ELSE/END IF`, `LOOP`, `WHILE`, `FOR … IN`,
 The plpgsql group reuses `$._expression` and `$.statement` unchanged rather than
 reimplementing plpgsql expressions; the measurement that scoped it is that the expression
 grammar was never the problem. The pristine build is kept at
-`fixtures/sql/grammar/pristine-sql.wasm` so the A/B stays reproducible. The lane is registered
+`<fixture-root>/sql/grammar/pristine-sql.wasm` so the A/B stays reproducible. The lane is registered
 in the pin contract (`validation/m14/grammar-pins.json`), by sha256 + surface + provenance
 rather than source rebuildability — a rebuild attempt produced a parser.c 111,557 bytes off the
 wired one, so the source is *not* claimed to rebuild these bytes, and the pin says so.
@@ -463,7 +463,7 @@ denominator of 7 is not in dispute.
 scoped run exits with "derived ZERO truth edges". Today it does not even get that far:
 
 ```
-$ BB_CORPUS_ROOT=$HOME/fixtures/repositories npx tsx script/m14/differential.ts --lang sql
+$ BB_CORPUS_ROOT=<corpus-root> npx tsx script/m14/differential.ts --lang sql
 [lane] SKIP sql: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured
 probe run (--lang sql): measured 0 lane(s) — M14.0.F5 NOT written.
 ```
@@ -2097,9 +2097,9 @@ is part of the row.
 | construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
 | ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) and the 8-shard arbiter (`run-sharded-arbiter.mts`) | **re-run at this HEAD: `emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`, with 8/8 shards answering all ten rows** and per-type edge counts identical to the census (3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21) | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. Its patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal. Its printed node-type count is wrong — see *Instrument A's denominator* |
 | `keepSymbol` census | re-measured at this HEAD: **18,485 symbols emitted by `analyze()` over 1,955 files, 3 refused (0.016 %)** — 2 `function:root`, 1 `property:program` — and **18,485 − 3 = 18,482, exactly the symbol count production `parseFile` publishes**, so `keepSymbol` accounts for the whole analyzer-to-index difference. SQL-G13, filed not fixed | this is the row that settles limitation 19. The pass-3 incoming probe's `0` was not a competing measurement: it reads `parseFile` output, which is already filtered, so a drop is structurally unobservable there. Artifact `measurements/pass5-keep-symbol-census.json` |
-| contract battery (`fixtures/sql/probe/contract-battery.mts`) | **not runnable on this machine** — the directory does not exist here; the recorded 54 / 54 is from 2026-09-27 and is **unverified by this round** | — |
-| node-type gate (`script/m12/sql-node-types-compare.ts`) | **not re-run by this round**, for pass 1's reason: re-running it without `fixtures/sql/probe/dialects` lowers its own observation surface from 6 probe files to 0 and would re-baseline a shared artifact downward | — |
-| resync corpus gate | not re-run — `fixtures/sql` is absent from this machine | impossible bars → **exit 1** |
+| contract battery (`<fixture-root>/sql/probe/contract-battery.mts`) | **not runnable on this machine** — the directory does not exist here; the recorded 54 / 54 is from 2026-09-27 and is **unverified by this round** | — |
+| node-type gate (`script/m12/sql-node-types-compare.ts`) | **not re-run by this round**, for pass 1's reason: re-running it without `<fixture-root>/sql/probe/dialects` lowers its own observation surface from 6 probe files to 0 and would re-baseline a shared artifact downward | — |
+| resync corpus gate | not re-run — `<fixture-root>/sql` is absent from this machine | impossible bars → **exit 1** |
 | pin contract | **does NOT validate** — `validation/m14/grammar-pins.json` records the pre-V11 sha for `sql`, so `bun run script/m14/verify-grammar-pins.ts` reports a drifted sha | unchanged from pass 1/2 and still a §8 item; every figure on this page is measured against the wired bytes directly |
 | regex census | no sql finding. Pass 3 separately removed the lane's last **probe** regexes (seven) and states why two remain in `run-ruling-table.mts` | — |
 | perf gate (`script/m60/sql-perf-gate.ts`, `verify:m60-sql-perf`) | not re-run this round | bars are a regression detector, not a benchmark |
@@ -2417,7 +2417,7 @@ expressions), `uses` is smaller (the CTE scope fixes removed fabricated edges), 
 - The node-type gate proves every node type the analyzer *names* is one the grammar emits. It
   says nothing about types the grammar produces that nobody reads.
 - F11 (`script/m14/verify-grammar-leaves.ts`) still reports **INADMISSIBLE**. Every sub-verdict
-  is adjudicated in `fixtures/sql/REVIEW.md` §3 — 138 of the 177 "lost" symbols are
+  is adjudicated in `<fixture-root>/sql/REVIEW.md` §3 — 138 of the 177 "lost" symbols are
   `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE … ENABLE ROW LEVEL
   SECURITY`, and all 5 changed-shape files gain a `having` node. The gate has no bucket for
   either, and its verdict has not been changed.
@@ -2494,7 +2494,7 @@ above can be used for.
    and not of the file. This is also why the shared ontology coverage gate cannot produce a SQL
    verdict unaided on an arbitrary machine: it walks the same corpus through the same entry
    point. See *Reproducibility* for the numbers this costs.
-7. **Two gates could not be run on this machine.** `fixtures/sql/` is absent, so the contract
+7. **Two gates could not be run on this machine.** `<fixture-root>/sql/` is absent, so the contract
    battery (recorded 54 / 54) and the dialect probe set are prior results, not current ones. The
    node-type gate was deliberately **not** re-run, because doing so without the probe set lowers
    its own observation surface and would have re-baselined a shared artifact downward.
@@ -2671,7 +2671,7 @@ Carried forward from pass 2 and still the correctness instruments: `ontology-cen
   `validation/m14/fixtures/sql/run-ruling-table.mts`
 - Ontology mutants and their runner: `script/m60/sql-ontology-mutants.ts` (21, five of them
   pass-3), `script/m60/run-sql-ontology-mutants.ts`
-- Review: `fixtures/sql/REVIEW.md` — **absent from this machine**
+- Review: `<fixture-root>/sql/REVIEW.md` — **absent from this machine**
 - Fixtures: `validation/m12/fixtures/sql/`, `validation/m14/fixtures/sql/sqld1..sqld15`
   (`sqld14` is the pass-2 regression fixture, `sqld15` the pass-3 one; reverting the analyzer
   makes `sqld15` fail with 6 named problems)
@@ -2734,7 +2734,7 @@ emission claim moved. The `error` row was a SPELLING bug, not drift — the wasm
 channel is unchanged.
 
 **Section status, all eight** (measured with the CURRENT gate and only the proposed `LANG_CONFIG`
-injected — the config itself is a Lead-owned file): **A, B, C, D, G, H pass; E and F are DECLARED
+injected — the config itself is a maintainer-owned file): **A, B, C, D, G, H pass; E and F are DECLARED
 ABSENT.** Section B was the one false positive and the gate fixed it at the root: its reverse check used
 to parse every top-level non-JSON file in a fixtures directory, and this lane keeps ~25 `.ts`/`.mts`
 instruments beside its fixtures, so `sql-contains-oracle.mts` was parsed as TypeScript and its `exports`

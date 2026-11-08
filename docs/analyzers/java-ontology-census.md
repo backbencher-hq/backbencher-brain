@@ -1,6 +1,6 @@
 # EXPORTS_JAVA2 — ontology census, running ledger
 
-Branch `analyzer/EXPORTS_JAVA2`. Corpus `$HOME/fixtures/repositories/java-lib`
+Branch `analyzer/EXPORTS_JAVA2`. Corpus `<corpus-root>/java-lib`
 (Guava, **3,275 `.java` files**, all measured — not a sample). Every number below
 is produced by `script/m14/lanes/java-ontology-census.ts` on the **production
 path** (`getParser` → `parse` → `RealJavaAnalyzer.analyze`), or by

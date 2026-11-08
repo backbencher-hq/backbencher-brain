@@ -99,7 +99,7 @@ const M15_VERIFIERS = [
 
 ## Real Repositories
 
-Available in `$HOME/fixtures/repositories/` (29 repos, 20+ languages):
+Available in `<corpus-root>/` (29 repos, 20+ languages):
 
 | Language | Repos |
 |----------|-------|
@@ -179,7 +179,7 @@ These are disclosed, and the re-verification work (next section) covers them whe
 - | GitHub issues | **79/79 closed, 0 open** (incl. #302 infra test) |
 - | Evidence files | **86/86 verified=true, failed=0** in `validation/m15/results/` |
 - | Verifier scripts | `script/m15/verify-*.ts` — one per issue group (C1, C2, C3, E1-E8, S1-S8, A1-N8, H1-H8, P1-P8, X1-X8, D1-D8, V1-V4, M1-M4, C4+C5+C6) |
-| Repos in matrix | 35 (`fixtures/` 30 + `$HOME/` 5: TypeScript, vscode, openclaw, paperclip, ProxiCall) |
+| Repos in matrix | 35 (`<fixture-root>/` 30 + `$HOME/` 5: TypeScript, vscode, openclaw, paperclip, ProxiCall) |
 | Unique languages in repos | 25 |
 | Analyzers | 41 (`src/ast/real-*-analyzer.ts`) |
 | Tree-sitter WASMs | 62 in `wasm/` |

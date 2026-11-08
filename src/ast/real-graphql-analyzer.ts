@@ -713,7 +713,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // =====================================================================
     // The walk. Every construct the grammar can produce is either handled here
     // or descended through by the default arm; the census probe
-    // (fixtures/graphql/probe/grammar-census.mts) reports any node type the
+    // (fixture-corpus probe: graphql/probe/grammar-census.mts) reports any node type the
     // grammar produces that this switch never names, so a blind spot shows up
     // as a measurement rather than as silence.
     // =====================================================================

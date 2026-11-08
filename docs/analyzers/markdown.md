@@ -343,7 +343,7 @@ score a row with no `loadRule` and no `corpusManifest` for exactly this reason
 Added 2026-10-03; **whole-corpus figures added 2026-10-04**. Every number below comes from
 the production entry point `parseFile` (`src/ast/pool-worker.ts`) or from the pinned parse
 trees, and every one is re-derivable by a script named beside it. Corpus root
-`$HOME/fixtures/repositories`.
+`<corpus-root>`.
 
 **There is no sample any more.** `whole-corpus-census.ts` walks every file the gate's own
 admission test admits — `detectLanguageFromPath(abs, text) === "markdown"`, the same test,
@@ -1448,7 +1448,7 @@ nobody has watched fail is a claim.
   §1 banned terms** — checked by hand against the list, term by term.
 
 - **Corpus** — 12,729 admitted `.md`/`.markdown` files across 138 repositories at
-  `$HOME/fixtures/repositories` for the census work. The differential's two
+  `<corpus-root>` for the census work. The differential's two
   pinned corpora remain `scala3@18df09c0` (738 tracked `.md`) and `kubernetes` (595).
   Four `[BB-PARSE-ERR] … memory access out of bounds` and one 120 s parse hang are named
   above and are grammar-level, not analyzer-level.

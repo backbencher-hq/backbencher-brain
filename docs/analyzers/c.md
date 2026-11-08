@@ -825,7 +825,7 @@ guess.
 | P13 floor for the sqlite slice | **UNRECORDED — 119 `#define` directives carry no macro symbol; reported, not scored** |
 
 **The measured-cost check's default path is broken**: `verify-c-lane.ts:1527` defaults
-`C_LANE_PERF_FILE` to `$HOME/ishaq/fixtures/repositories/redis/src/server.c` —
+`C_LANE_PERF_FILE` to `<corpus-root>/redis/src/server.c` —
 another user's home directory — so it **SKIPS and reports nothing** on this box. The row
 above was produced by pointing the env var at a real file this corpus owns.
 
@@ -1215,7 +1215,7 @@ census whose denominator depends on whatever else is checked out is not evidence
 
 ```
 bun run script/m14/tmp/c-audit/census.ts \
-  --repos $HOME/ishaq/fixtures/repositories/{curl,libgit2,redis} \
+  --repos <corpus-root>/{curl,libgit2,redis} \
   --ext .c,.h --limit 900
 ```
 
@@ -1305,7 +1305,7 @@ it was unbounded and crashed).
   M60/#910, 1 `instantiates` row the allocator branch deliberately removed, and 5
   assignment-LHS rows that the SCD1/CGD1 ruling says are writes rather than reads
   (there is no `writes` relationship type, so the fact is representable nowhere) —
-  and a reviewed re-baseline is the owner's call, not this lane's. The
+  and a reviewed re-baseline is a project-level decision, not this lane's. The
   thirteenth was a **real missing edge**: `rel:Negative.c:references:pick_color:Color`,
   a function's typedef-spelled return type, which CGD34's parent-only gate had
   been suppressing for every such function. Fixed (#935); the probe now reports 80.
@@ -1313,7 +1313,7 @@ it was unbounded and crashed).
   Three claims in the earlier version of this bullet were false, and running the
   lane is what proved it:
   - `CORPUS_ROOT` does default to another user's home
-    (`$HOME/fixtures/repositories`), and it is overridable with
+    (`<corpus-root>`), and it is overridable with
     `BB_CORPUS_ROOT`.
   - The C lane's **primary** corpus is `sqlite` (`LANG_REPOS.c = "sqlite"`), which
     is indeed absent here — but C is **absent from `LANG_REPOS_SECOND` entirely**.
@@ -1349,7 +1349,7 @@ it was unbounded and crashed).
   **How to run it:**
 
 ```
-BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
+BB_CORPUS_ROOT=<corpus-root> \
   bun run script/m14/differential.ts --lang c --repo zig
 ```
 
@@ -1413,7 +1413,7 @@ whose denominator depends on whatever else is checked out is not evidence:
 
 ```
 bun run script/m14/tmp/c-audit/census.ts \
-  --repos $HOME/ishaq/fixtures/repositories/{curl,libgit2,redis} \
+  --repos <corpus-root>/{curl,libgit2,redis} \
   --ext .c,.h --limit 900
 ```
 
@@ -2013,7 +2013,7 @@ commit. Neither commit shows the deletion in its subject. The `--commit-tree`
 helper (`script/m14/stage-shared.sh`) commits exact blobs without touching the
 shared index, which prevents an agent from *accidentally* clobbering others — but
 it does not stop an agent who has a stale working tree from staging the whole
-file. **This needs an owner decision, not another workaround**: either a per-lane
+file. **This needs a recorded decision, not another workaround**: either a per-lane
 fork of the differential oracles, or a pre-commit check that a staged hunk does
 not silently delete another lane's committed code.
 
@@ -2044,7 +2044,7 @@ between runs — the direction does not):
   itself (recorded `091f9498bd`) and 30 other lanes' analyzers — so it describes
   a tree that no longer exists, and **no script in the tree writes it by that
   name**, so its producer is absent. Writing a fresh one under that name is an
-  owner decision, not this lane's. **The M12
+  recorded decision, not this lane's. **The M12
   differential is a FIXTURE differential, though** — `truthSource: manual_audit`
   over `validation/m12/fixtures/c/*.{c,h}` — which is why the drift above is
   measurable here at all, and that is the argument for keeping the fixture-based
@@ -2060,7 +2060,7 @@ between runs — the direction does not):
   assignment targets, i.e. the write-vs-read question below. **Fixing the analyzer
   to satisfy these 5 rows would have broken correct code.**
 - **The artifact cannot be regenerated in this checkout.** The F5 harness reads
-  `CORPUS_ROOT = $HOME/fixtures/repositories` (overridable with
+  `CORPUS_ROOT = <corpus-root>` (overridable with
   `BB_CORPUS_ROOT`), that path does not exist here, and the run aborts on the first
   pinned repo. No script in the tree writes `c-differential.json` by that name, so
   the artifact's producer is not present either. **The M12 differential is a
@@ -2124,7 +2124,7 @@ Measured write targets with no edge: **4,125** (`redis/src`, 200 files), **826**
 M12 truth pins `uses:buffer_create:capacity` for `buf->capacity = clamp(...)`, a
 write, so truth says a write is a `uses` and the analyzer says it is not. There is
 no `writes` relationship type in the ontology, so the fact is currently
-representable nowhere. **This is an open decision, and it is the owner's call** —
+representable nowhere. **This is an open decision, and it is a project-level decision** —
 see the two open questions below. `c/field-access-offsetof-955` records the
 analyzer's current behaviour in a `forbidRelationships` row without settling it, so
 whichever way it is decided, the fixture changes rather than the code silently.
@@ -2381,7 +2381,7 @@ is free:**
 
 (d) is ruled out by rulings this lane already made twice, and (a) is the status quo the
 oracle reported as a phantom. Between (b) and (c) there is no evidence to prefer one — the
-question is which loss a consumer can better absorb, and that is the owner's call, not an
+question is which loss a consumer can better absorb, and that is a project-level decision, not an
 agent's. **Not taken**, and now for a stated reason rather than a shrug: the class is
 proven, the size is measured, and the only remaining input is a preference.
 
@@ -2834,7 +2834,7 @@ reproduced arm.
 
 - The corpus is **three independently cloned repositories**, one of which is the
   M12 pinned target family: `curl` (1,048 C/H files), `libgit2` (1,190), `redis`
-  (788). Cloned into `$HOME/ishaq/fixtures/repositories`; the census pins each
+  (788). Cloned into `<corpus-root>`; the census pins each
   set by a `setDigest` so a rerun is the same set.
 - Per corpus: files, symbols, relationships, grammar-error files, **crash files
   = 0**, and the symbol/edge hygiene dimensions above all at zero.
@@ -2866,7 +2866,7 @@ Rows that fail are left failing and named; nothing here is re-baselined.
 | M14.0.F1 grammar conformance | **PASS**, 68 refs, unknown 0, unknownFields 0 (was 67 refs) | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F1 as a whole | **RED on other lanes** — cpp 2 unknown, rust 2, sql 1; reported, not touched | same |
 | C-lane gate, fixtures only | **all properties hold · 48/48 live mutants caught · 5 retired with a stated reason** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts` |
-| C-lane gate + sqlite corpus | **RED: 6 property violations**, mutants 48/48 | `… --corpus $HOME/fixtures/repositories/sqlite --max-files 200`. At handover the same command reported **15**: #991 removed all 9 `P7` rows. The 6 remaining are `P6` 1 (a `property` literally named `unknown`, which is a REAL field — an R7 false positive) and `P8` 5 (three `enum ops` in `ext/wasm/libcmpp.c` under one owner — O1 above). Left red |
+| C-lane gate + sqlite corpus | **RED: 6 property violations**, mutants 48/48 | `… --corpus <corpus-root>/sqlite --max-files 200`. At handover the same command reported **15**: #991 removed all 9 `P7` rows. The 6 remaining are `P6` 1 (a `property` literally named `unknown`, which is a REAL field — an R7 false positive) and `P8` 5 (three `enum ops` in `ext/wasm/libcmpp.c` under one owner — O1 above). Left red |
 | ontology coverage gate (the ARBITER) | **emitted 8/10 · ruled-sound 2 · FALSIFIED 0 · ruled-without-justification 0 · exit 0** over 4,421 admitted C/H files | `bun run script/m14/ontology-coverage-gate.ts c **--fresh**`. WITHOUT `--fresh` it reports **0/10, exit 1** — the resumable checkpoint makes the walk skip every file while the tallies live only in memory (defect S4) |
 | differential, C lane | **MISSING 1 / 8,304 analyzer edges, 21 unexplained (0.3%), heuristic 0, covered 8,283/8,284 (100%)** · **exit 6** | `BB_CORPUS_ROOT=… bun run script/m14/differential.ts --lang c --repo sqlite`. Exit 6 is the harness's own *"COMPARED A LABEL WITH NO TRUTH"* for `overrides` (19 comparable, 0 truth) — the DERIVATION finding, not a fabrication. The one MISSING is `uses (expr) -> cmpp_tt__last` (`ext/wasm/libcmpp.c:13778`), a read inside a `printf` macro argument, which **#988 already ruled on** (measured: 83.7% of macro arguments name nothing the file declares) and which the shared oracle does not carry. An unscoped run aborts on a corpus repo absent from this box (`grails-core`) |
 | `contains` vs clang 14 (independent parser) | **421/421 = 100.00%** members over 33 records; 0 missed, 1 phantom (the declared #957 `#ifdef _WIN32` superset) | `bun run script/m14/tmp/c-audit/contains-vs-clang.ts --dir <sqlite>/src --max-files 120` |
@@ -3034,7 +3034,7 @@ rather than remembered.
   `validation/m14/grammar-pins.json`
 - re-runnable: `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` →
   `validation/m14/results/archive/c-grammar-pin.json`
-- the pristine and rebuilt wasms are kept at `$HOME/ishaq/fixtures/c/grammar/`
+- the pristine and rebuilt wasms are kept at `<fixture-root>/c/grammar/`
   with a `SHA256SUMS.txt`, so the A/B survives the network copy disappearing
 
 **One tool trap, recorded because it cost a run:** `--lane` is read *inside*

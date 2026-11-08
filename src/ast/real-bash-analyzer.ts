@@ -3096,7 +3096,7 @@ private extractAssignment(
     // and Windows-drive (`C:\...`) spellings.
     if (cmdName.startsWith("/")) return { isExternal: true, externalEvidence: "pathInvokedCommand" }
     // Windows drive (`C:\x` / `C:/x`), CHAR SCAN not a regex (the no-regex policy caught this
-    // line once already — the Lead runs the census with every edit now).
+    // line once already — the census runs with every edit now).
     if (
       cmdName.length >= 3 &&
       ((cmdName.charCodeAt(0) >= 65 && cmdName.charCodeAt(0) <= 90) || (cmdName.charCodeAt(0) >= 97 && cmdName.charCodeAt(0) <= 122)) &&

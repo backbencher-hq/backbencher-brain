@@ -483,7 +483,7 @@ found.
    independent check on these ten verdicts is the fixtures and the mutants, not the
    arbiter. That is a weaker position than an arbiter reporting a verdict, and it is not
    the same thing.
-9. **Corpus drift.** `$HOME/fixtures/repositories` is shared and was growing
+9. **Corpus drift.** `<corpus-root>` is shared and was growing
    during this round (123 directories at the final count; the admitted yaml count moved
    16,290 → 16,371 between two runs of the same script). Every count here states the
    population it came from; none should be read as a property of the corpus at a later

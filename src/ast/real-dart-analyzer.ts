@@ -1243,7 +1243,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // declarations are two facts — and a key that carries neither the scope nor the
         // line cannot tell them apart.
         //
-        // WHY THIS IS NEEDED, and it is the Lead's condition on the interpolation fix
+        // WHY THIS IS NEEDED, and it is a condition on the interpolation fix
         // ("a dedup that merges two distinct declarations is a resolution LOSS wearing a
         // dedup's clothes"). The spelling of a local read is `<callable>\u0000<name>`, and
         // the CALLABLE is the enclosing function — so two reads of two DIFFERENT
@@ -1273,7 +1273,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // different declarations do not. Measured on the lane's own
         // `nested-block-shadows-member` fixture: the reads at 48 and 53 share the body
         // local's scope (ONE row) and the read at 51 has the nested local's scope (a
-        // SECOND row) — 2 rows, which is the count the Lead's ruling asks for.
+        // SECOND row) — 2 rows, which is the count the ruling asks for.
         //
         // SO THE SCOPE JOINS THE KEY ONLY FOR A ROW WHOSE IDENTITY IS THE OCCURRENCE — a
         // row carrying the local-binding claim. Every other row keeps the key it had, byte

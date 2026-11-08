@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M10",
   "issue": 114,
-  "packageVersion": "0.3.0",
+  "packageVersion": "0.1.0",
   "declaredAt": "2026-08-10",
   "budgetBasis": {
     "fixtureHint": "contract-fixture (~6 source files, 1 test)",

@@ -227,7 +227,7 @@ Two different instruments are often both called "the differential". Lua is cover
   `script/m14/differential.ts`'s `LANGS` has **no `lua` entry**, so `npx tsx script/m14/differential.ts
   --lang lua` measures **0 lanes**. Against that harness every lua type is a DERIVATION finding
   (spec `BD-no-oracle`). Closing it needs a `LANGS.lua` entry plus a baseline row in the shared file —
-  a Lead-owned instrument, so it is reported here rather than edited.
+  a maintainer-owned instrument, so it is reported here rather than edited.
 - **The lane's own truth oracle — PRESENT, with a stated coverage boundary.**
   `script/m60/lua-truth-oracle.ts` derives truth from the **parse tree**, not from the analyzer's output,
   and diffs both directions. It audits **6 of the 10 emitted types** — `calls`, `contains`, `extends`,
@@ -308,7 +308,7 @@ current measurement and the journal row carries its date.**
 - Analyzer: `src/ast/real-lua-analyzer.ts`
 - Parser: `tree-sitter-lua` WASM at `wasm/tree-sitter-lua.wasm`
 - Grammar: `@tree-sitter-grammars/tree-sitter-lua` 0.4.1
-- Corpus: `$HOME/fixtures/repositories`, **3,252 tracked `*.lua`
+- Corpus: `<corpus-root>`, **3,252 tracked `*.lua`
   files** across 19 repos, every one parsed through `parseFile`. Not a sample: the
   draw predicate is `git ls-files '*.lua'` per repo, sorted, no cap, so the file
   set is identical on every machine. Every run records a `drawDigest` over
@@ -1615,7 +1615,7 @@ lane now uses it.** The bucket is not the `metadata.moduleTarget` exclusion prop
 proposal is **WITHDRAWN by its own author**, because an exclusion says *do not look* while the thing
 this class needs is a statement the project can **check**.
 
-What exists instead, landed by the Lead in `57aa3be79` and shared by eight lanes:
+What exists instead, landed by the maintainer in `57aa3be79` and shared by eight lanes:
 `metadata.importProjectFile` (`FILE_CLAIM_KEY`, `src/ast/file-claim.ts`). A relationship whose target
 names no declaration may state that the project carries the **FILE** the target names; the arbiter
 (`verifyFileClaim`, `script/m14/incoming-rule.ts`) looks the candidate up in the project's own

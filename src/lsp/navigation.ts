@@ -93,7 +93,7 @@ import { isUsageSiteRow } from "./relations";
 //      references handler, which is precisely the "silent empty result that
 //      looks like 'no references found'" the contract calls a violation.
 //   2. the launch set reached navigation through hover, one hop too far. The
-//      set changes by an owner-approved wave record; a consumer two modules
+//      set changes by a contract-approved wave record; a consumer two modules
 //      away from the owner is a drift hazard the moment hover's re-export
 //      changes shape. The owner is imported directly now; the re-export at the
 //      bottom of this file is kept (callers import it from here) but names the

@@ -107,7 +107,7 @@ const LOW_CONFIDENCE_EXCLUDED = "lowConfidence"
 // symbol; neither is a consumer. The previous oracle in the corpus probe
 // accidentally included both and reported that 86% of orphan candidates were
 // "provably still used", which is an artifact of counting the indexer's own
-// bookkeeping as a consumer — see fixtures/bb_patterns/probes/probe-p9.
+// bookkeeping as a consumer — see the fixture corpus (bb_patterns/probes/probe-p9).
 const NON_USAGE_TYPES = ["contains", "exports"]
 
 // The symbol types the orphan rules report on. This set is the REPORTING scope
@@ -256,7 +256,7 @@ type FileRow = { id: string; relativePath: string; language: string | null; line
 // Strict orphan detection.
 //
 // Correctness model. Every clause below is a measured fix; the numbers are from
-// a 9-repository corpus in fixtures/bb_patterns/REVIEW-PLAN.md.
+// a 9-repository corpus in the fixture corpus (bb_patterns/REVIEW-PLAN.md).
 //
 //   1. A symbol is "used" iff it is the target of a resolved USAGE edge, or an
 //      unambiguous name-matched cross-file reference. `contains` and `exports`
@@ -748,7 +748,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   // record this one. That is a coverage gap, and "no incoming edge" and "the
   // index did not look here enough" are indistinguishable from inside the engine
   // and very different to a reader. A finding in that state says so, and the
-  // probe in fixtures asserts the disclosure does NOT fire where there is no
+  // probe in the fixture corpus asserts the disclosure does NOT fire where there is no
   // asymmetry to report — a caveat that fires everywhere is read nowhere.
   //
   // `contains` and `exports` are excluded from both inputs, for the same reason

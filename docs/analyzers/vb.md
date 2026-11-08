@@ -376,7 +376,7 @@ rather than replace a bigger claim with a smaller one. See `docs/analyzers/histo
 
 The handover claim for this lane was "**10/10 labels, 0 unexplained endpoints**".
 Measured through the production path (`getParser` → `parse` → `analyze`) on
-`fixtures/repositories/roslyn-vb`, it is **7/10**, and it is 7/10 at every file
+`<corpus-root>/roslyn-vb`, it is **7/10**, and it is 7/10 at every file
 count tried. The three silent types are real absences, not sampling artefacts.
 
 ## The baseline, and why 10/10 was wrong
@@ -657,5 +657,5 @@ a baseline. Two honest qualifications, both measured rather than asserted:
    the measurement a lane can make and a reader can re-run.
 
 `ast-walk-cost.ts`, the shared instrument that would put this next to the other
-lanes, has a hardcoded `$HOME/ishaq/fixtures/repositories` corpus that does not
+lanes, has a hardcoded `<corpus-root>` corpus that does not
 exist on this machine and carries no vb sample. Reported to master; not edited.

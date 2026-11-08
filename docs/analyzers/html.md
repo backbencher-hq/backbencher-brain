@@ -63,7 +63,7 @@ recovered from every one without inserting a token. That split — `ERROR` handl
 **This section is the MEASUREMENT; the claim table is the `## Relationship ontology` section below.** It keeps its own `type | verdict` shape on purpose: the emission gate compares the first ontology-shaped table it finds, and a second table with an `Emitted?` column would be a second place to keep the same fact true.
 
 Measured on the production `ASTEngine.parseFile` path over **1,652 `.html`/`.htm`
-files enumerated by readdir** from `$HOME/fixtures/repositories`
+files enumerated by readdir** from `<corpus-root>`
 (1,652 parsed, 0 failed), by `script/m14/html-origin-census.ts`. Origin is
 measured by **differencing the production path against the same path with the
 inline-block seam switched off**, so it reads no metadata field and cannot

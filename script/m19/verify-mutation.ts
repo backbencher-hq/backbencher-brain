@@ -72,7 +72,7 @@ async function main() {
   restore(s1Path, s1Backup)
   ck("X9: measured-scale poison turns gate red", scaleExit === 1, "exit=" + scaleExit)
 
-    // WAS a literal foreign path — the owner's clone on the OTHER laptop, absent here, so
+    // WAS a literal foreign path — a clone on a different machine, absent here, so
 //  this leg measured nothing. Resolved through script/lib/optional-corpus.ts (env
 //  override first, then the known locations) so a machine that HAS the clone uses it.
   const corpusPath = resolveOptionalCorpus("aspnetcore", "BB_ASPNET_REPO") ?? "corpusPath_UNRESOLVED"

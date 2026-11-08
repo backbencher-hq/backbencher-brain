@@ -18,7 +18,7 @@ loudly rather than falling back to something else.
 Two facts about this order, both learned the hard way:
 
 - **The node list is not decoration.** Zed, like every GUI application, does not
-  inherit a shell's PATH. On the owner's machine node lives at
+  inherit a shell's PATH. On this machine node may live at
   `~/.local/node/bin/node` and is *not* on the default PATH, so a bare
   `command = "node"` fails. The same defect made the VS Code extension report
   "bb: server down" until it was fixed there.

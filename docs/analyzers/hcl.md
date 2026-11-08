@@ -228,7 +228,7 @@ Measured with `validation/m14/measurements/hcl/hcl-corpus-census.ts` (production
 `parseFile` from `src/ast/pool-worker.ts`, never `analyze()`) and
 `validation/m14/measurements/hcl/hcl-construct-probe.ts` (instruments A and B).
 Corpus — **TWO populations, and every count on this page says which one it is.** The **CENSUS** is
-**9,329 tracked files / 16 repositories / 2,035,319 nodes** (root `$HOME/fixtures/repositories`,
+**9,329 tracked files / 16 repositories / 2,035,319 nodes** (root `<corpus-root>`,
 exts `tf,hcl,tfvars,tofu`, files present on disk and ≤1 MiB; the lane's own walk) — every construct count
 below is a CENSUS count. **THE ARM POPULATION IS 11,139 admitted** (the gate's own line, root
 `$PWD/.corpus`, same extensions; 38 width-300 slices, contiguous [0, 11,139), closure exact 307,748) and

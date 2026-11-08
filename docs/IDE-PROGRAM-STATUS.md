@@ -29,7 +29,7 @@ Contract: [IDE-HONESTY-CONTRACT.md](./IDE-HONESTY-CONTRACT.md)
 | v2 | M26 | The Graph | **CLOSED** (11/11 verified) | I3 (graph panel live in VS Code, in-editor verified); cross-language per-pair with declared absence; 53 mutants caught across the eleven suite records | [m26 ledger](../validation/m26/results/manifest.json) |
 | v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (7/7 verified) | N1 I3 (Neovim headless, machine-driven); J1/Z1/H1 I2 (config + wire capabilities, blocked legs recorded); 22 mutants caught across the suite records | [m27 ledger](../validation/m27/results/manifest.json), [matrix](./m27/FORK-CAPABILITY-MATRIX.md) |
 | v4 | M28 | The Union (MCP + agent) | **CLOSED** (7/7 verified) | U1 I3-equivalent (MCP answers machine-proven identical to IDE answers on the shared fixture); annotations schema-enforced provenance + real headless-editor leg; 23 mutants caught across the suite records | [m28 ledger](../validation/m28/results/manifest.json), [surface](./m28/MCP-SURFACE.md) |
-| v5 | M29 | Precision Waves | **CLOSED** (9/9 verified) | wave-1 languages owner-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant scale measured on a declared-synthetic 59,000-file corpus; budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
+| v5 | M29 | Precision Waves | **CLOSED** (9/9 verified) | wave-1 languages contract-approved (java/python/ts/js/kotlin/scala) verified through real editors; giant scale measured on a declared-synthetic 59,000-file corpus; budgets within contract §3 | [m29 ledger](../validation/m29/results/manifest.json) |
 | v6 | M42 | The Interactive Hover | **CLOSED** (8/8 verified) | rich hover + actions live in-editor; click-throughs, panels and the hub tree verified in real VS Code; Cursor and Windsurf declared absent with reasons | [m42 ledger](../validation/m42/results/manifest.json) |
 | v7 | M44 | The Understandable Hub | **CLOSED** (8/8 verified) | I3-equivalent for the hub surfaces (grouped rows, tree, legend, impact fallback, reference fallback); three fork legs declared absent with reasons, per contract §2 I4/§8.3; owner spot check pending | [m44 ledger](../validation/m44/results/manifest.json), [launch record](./m44/LAUNCH-RECORD.md) |
 | v8 | M55 | The Hub That Tells the Truth | **CLOSED** (9/9 verified) — G1 17/17 (the M44/M53 bars re-audited by a full 41-gate ladder run), X1 41/41 | I1 for protocol-level gates; the verified set is the one the ledger names | [m55/M55-MASTER-PLAN.md](./m55/M55-MASTER-PLAN.md), [ledger](../validation/m55/results/manifest.json) |
@@ -110,10 +110,10 @@ stays in the server; the client owns launch, consent, and the status surface:
 | Marketplace listing truthfulness (drift-gated claims, per-editor install doc) | I1 | `validation/m25/results/D1.json` |
 | In-editor verification (pinned VS Code 1.85.0, shared assertion core) | I3 | `validation/m25/results/E5.json` |
 | Fork verification: Cursor 3.18.9 + Antigravity 1.107.0 verified; Windsurf blocked-with-reason | I4 | `validation/m25/results/F-CURSOR.json`, `F-ANTIGRAVITY.json`, `F-WINDSURF.json` |
-| Cross-platform honesty: Linux verified; macOS/Windows recorded blocked (no runner — owner decision open) | §10 | `validation/m25/results/E7-linux.json`, `E7-darwin.json`, `E7-windows.json` |
+| Cross-platform honesty: Linux verified; macOS/Windows recorded blocked (no runner — recorded decision open) | §10 | `validation/m25/results/E7-linux.json`, `E7-darwin.json`, `E7-windows.json` |
 
 Honest gaps carried forward: macOS/Windows OS-matrix runners (or waiver) are
-an owner decision; OpenVSX live publish awaits `OVSX_PAT` (E4 declares the
+a recorded decision; OpenVSX live publish awaits `OVSX_PAT` (E4 declares the
 package verified, the listing not yet live); owner spot-check passes are
 scheduled in the issue-closure comments.
 
@@ -215,7 +215,7 @@ red bars are, in dependency order:
    HOV-COVERAGE (busy-shape p95 51.31ms) both cleared when the hover collector stopped
    resolving a location it then discarded — measured 51.31ms → 9.82ms under load 20.7.
    V1 cleared when the gate stopped failing a frames leg it had itself declared blocked
-   (the declared external fixture is by owner decision not vendored). HOV-REDTEAM
+   (the declared external fixture is by recorded decision not vendored). HOV-REDTEAM
    cleared when its mutation target became committed rather than dirty.
 4. **Every lane's governance gate whose bar depends on the above** — M25, M26,
    M29 and M44 all report RED for `stale-commit` pins and inherited bar

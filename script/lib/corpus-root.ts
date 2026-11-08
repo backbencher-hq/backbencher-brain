@@ -1,9 +1,8 @@
-// script/lib/corpus-root.ts — where the fixtures corpus lives on THIS machine.
+// script/lib/corpus-root.ts — where the fixture corpus lives on THIS machine.
 //
-// WHY THIS EXISTS. 54 gate scripts in `npm run verify` hardcoded
-// `$HOME/fixtures/repositories` — the other laptop's home directory. On any
-// machine but that one, every one of those gates either crashed with ENOENT or resolved
-// to nothing and passed vacuously.
+// WHY THIS EXISTS. 54 gate scripts in `npm run verify` used to hardcode one absolute
+// `/home/<user>/fixtures/repositories` path. On any other machine, every one of those
+// gates either crashed with ENOENT or resolved to nothing and passed vacuously.
 //
 // Measured on script/m13/verify-ask-e2e-corpus.ts, changing only the corpus root:
 //
@@ -19,17 +18,14 @@
 // pass. `resolveCorpusRoot()` returning null is the signal to do that.
 //
 // ORDER MATTERS and is deliberate:
-//   1. an explicit env var, because the owner may keep the corpus anywhere;
-//   2. the legacy location, because if someone still HAS it there this should work
-//      unchanged rather than break a machine that was fine yesterday;
-//   3. $HOME/fixtures/repositories, the natural per-user location;
-//   4. a sibling of the repo, which is where it actually lives in this checkout;
-//   5. inside the repo itself.
+//   1. an explicit env var, because a machine may keep the corpus anywhere;
+//   2. $HOME/fixtures/repositories, the natural per-user location;
+//   3. a sibling of the repo, which is where it is checked out in the reference
+//      workspace;
+//   4. inside the repo itself.
 //
-// The legacy path is kept as a candidate on purpose. It is not a foreign path once it
-// exists on the machine you are standing on — it is simply where the corpus was, and
-// removing it would break the other laptop for no gain. What must not happen is
-// relying on it WITHOUT checking, which is what these 54 gates did.
+// No absolute home path for a specific user appears here. A gate that needs a corpus
+// must SEARCH and then declare where it looked — never assume one machine's layout.
 
 import { existsSync } from "node:fs"
 import path from "node:path"
@@ -39,8 +35,6 @@ export function corpusRootCandidates(repoRoot: string): string[] {
   return [
     process.env.BB_CORPUS_ROOT,
     process.env.BB_SECURITY_CORPUS_ROOT,
-    // Where the corpus lived on the other machine. Still honoured if present here.
-    "$HOME/fixtures/repositories",
     path.join(process.env.HOME ?? "", "fixtures", "repositories"),
     path.join(repoRoot, "fixtures", "repositories"),
     path.resolve(repoRoot, "../fixtures/repositories"),
@@ -71,7 +65,7 @@ export function resolveCorpusRoot(repoRoot: string = process.cwd()): string | nu
 export function corpusMissingMessage(repoRoot?: string): string {
   const searched = corpusRootCandidates(repoRoot ?? process.cwd())
   return (
-    "no corpus found. Set BB_CORPUS_ROOT to a fixtures/repositories directory. " +
+    "no corpus found. Set BB_CORPUS_ROOT to a fixture-corpus directory. " +
     `Searched: ${searched.join(", ")}`
   )
 }

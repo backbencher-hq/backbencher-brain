@@ -491,7 +491,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // than 0 when the symbol carried no range (#823).
           ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
           metadata: {
-            // The vocabulary is the java lane's, and it is the Lead-adjudicated
+            // The vocabulary is the java lane's, and it is the adjudicated
             // one (java/exported-types, task-9, 2026-10-18): `exported_type` was
             // superseded by `<lang>_exportable_unit` + `exportForm` when java's
             // export edge was folded into ONE post-pass, and the surviving

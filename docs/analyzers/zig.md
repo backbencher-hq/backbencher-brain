@@ -282,7 +282,7 @@ Every count below comes from the PRODUCTION entry point, `parseFile` from
 and skips the pipeline stages, so a count taken from it is a count of the analyzer
 rather than of the indexer.
 
-**Corpus.** `$HOME/fixtures/repositories`, **100% of the admitted zig
+**Corpus.** `<corpus-root>`, **100% of the admitted zig
 files: 3,834 of 3,834** — the whole population, not a sample. `zig` 2,938 parsed, `ghostty` 805, `zls` 90,
 `nvim-treesitter` 1. Admission is the same `git ls-files -- '*.zig'` walk per repo
 the coverage gate uses, ordered by `sha256(seed|<repo>/<rel>)`; with no truncation
@@ -1653,7 +1653,7 @@ reproduces.
 | F3 fixtures | the project's own `runLang("zig")` | **7 / 7 pass**, including 8 hand-computed complexity pins, 7 reason-code assertions and the Z46 blank-identifier pair; calibrated at **5 / 7** with the `contains` reason code removed — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners`, `declared-type-leaf`, `relationship-classes` |
 | F4 mutations | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **50 / 50 CAUGHT**, one per fixed class plus payload reverts. A mutant transforms the ANALYZER, so the count cannot reach an ORACLE defect — Z40 and Z41 were both mirror-side and neither had a mutant, which is the argument for the lane gates rather than a larger registry |
 | F8 completeness census | `completeness-inventory.ts --lang zig` | **RE-RUN 2026-10-03: section-b FAILS. 98 types classified, 7 of 8 sections pass.** `section-b-relationship-kinds — EMITTED but absent from requiredKinds: exports, instantiates`. The analyzer publishes both (24,114 `exports` and 4,306 `instantiates` edges, measured through production `parseFile` at the 3,834-file draw), and the zig `requiredKinds` row in `script/m14/completeness-inventory.ts` still lists only `["calls","uses","contains","references","imports"]` — pass 1 added the two emissions without updating the contract row, and the row is a §8 shared file. The comment above that row still asserts "no `exports` GRAPH edge … would be a phantom", which Z33 made false: `exports` targets resolve at 99.99% and 0 of them name a non-public symbol. **The 2026-09-30 row's "sections A–H 8/8 pass" is therefore retracted**: it was true before `exports` and `instantiates` were emitted and stopped being true when they were, and the gate that says so has been saying so since. Sections A, C, D, E, F, G, H all pass (E: floor zig:zig missing=0 unexplained=0; F: 85.5 ms/file; H: 12 checks). Earlier note retained: it runs under `npx tsx`; it had been recorded as bun-only, which was hiding a real section-A failure on the universal `ERROR`/`MISSING` pair (Z50) |
-| **F5 differential, LANE-OWNED** | `zigw-lane-differential.ts 400` | **RE-RUN AT PASS 3, IDENTICAL TO THE PUBLISHED ROW: 60,280 truth rows, 100.00% covered, MISSING 0, unexplained 0** of 56,906 analyzer edges, on the same draw `sha256:6ba81e3b477b`, and 0/0 on the STRICT axis too (per class: contains 8,306/8,349, uses 21,897/20,804, calls 16,037/15,573, references 7,940/6,080, imports 2,339/2,339, exports 2,930/2,930, instantiates 831/831). It needs `BB_CORPUS_ROOT` set — the corpus root in that instrument defaults to a path that does not exist here — and **0 on the STRICT axis too** (the rule that keeps the dotted qualifier, which is the axis Z40 hid on). The 2026-09-30 figures were 60,107 / 58,303 on draw `sha256:afee5618d093`; the draw is now `sha256:6ba81e3b477b` because the corpus grew (`ghostty` 805 → 807 tracked `.zig` files), so the two rows are different file sets and neither is a regression. Reproduces the shared harness's semantics exactly (same `normTarget`, same `label + normTarget(target)` key), so the numbers are comparable. Calibrated: `--calibrate` reports 2 MISSING and 1 unexplained. **The corpus root in `script/m14/tmp/zigw-harness.ts` and `zigw-lane-differential.ts` defaults to `$HOME/ishaq/fixtures/repositories`, a path that does not exist here — these instruments only run with `BB_CORPUS_ROOT` set** |
+| **F5 differential, LANE-OWNED** | `zigw-lane-differential.ts 400` | **RE-RUN AT PASS 3, IDENTICAL TO THE PUBLISHED ROW: 60,280 truth rows, 100.00% covered, MISSING 0, unexplained 0** of 56,906 analyzer edges, on the same draw `sha256:6ba81e3b477b`, and 0/0 on the STRICT axis too (per class: contains 8,306/8,349, uses 21,897/20,804, calls 16,037/15,573, references 7,940/6,080, imports 2,339/2,339, exports 2,930/2,930, instantiates 831/831). It needs `BB_CORPUS_ROOT` set — the corpus root in that instrument defaults to a path that does not exist here — and **0 on the STRICT axis too** (the rule that keeps the dotted qualifier, which is the axis Z40 hid on). The 2026-09-30 figures were 60,107 / 58,303 on draw `sha256:afee5618d093`; the draw is now `sha256:6ba81e3b477b` because the corpus grew (`ghostty` 805 → 807 tracked `.zig` files), so the two rows are different file sets and neither is a regression. Reproduces the shared harness's semantics exactly (same `normTarget`, same `label + normTarget(target)` key), so the numbers are comparable. Calibrated: `--calibrate` reports 2 MISSING and 1 unexplained. **The corpus root in `script/m14/tmp/zigw-harness.ts` and `zigw-lane-differential.ts` defaults to `<corpus-root>`, a path that does not exist here — these instruments only run with `BB_CORPUS_ROOT` set** |
 | file-scope declaration coverage | `zigw-decl-coverage.ts` | **20,944 declared, 20,944 published, 100.00%**, zero files short across all three corpora. Exits non-zero below 100% |
 | `contains` gate | `zigw-contains.ts 200` | **PHANTOM 0, MISSING 0** (owner-keyed, bidirectional) |
 | `imports` gate | `zigw-imports.ts 200` | **PHANTOM 0, MISSING 0** (site-keyed, bidirectional) |
@@ -3538,7 +3538,7 @@ finish at all.
   **`4 of 1 flagged files covered`**. It is now counted from the flagged side, where zero overlap
   reads as `0`.
 - The gate prints **corpus-absolute** paths; they were being joined onto `CORPUS`, producing
-  `/home/…/repositories/home/isaq2321/…`.
+  `/home/…/repositories$HOME/…`.
 - And after the first commit, a **fourth**: one run names the same file twice (`[BB-PARSE-ERR]` then
   the `[BB-HANG]` that follows it), so run 2's population read `2` over one file and the summary
   claimed 2 of 2 were covered. Deduplicated in first-seen order; run 1 re-checked and unchanged at
@@ -5868,7 +5868,7 @@ spelling. Not diagnosed here — §G.
 | ontology arbiter, full root, run 1 | `npx tsx script/m14/ontology-coverage-gate.ts zig` | walk **3834/3834 (100.0%)**, **7/10 EMITTED, RULED-SOUND 3, FALSIFIED 0, unjustified 0**; `calls` 87,401 · `uses` 100,414 · `contains` 66,284 · `imports` 5,728 · `references` 20,354 · `exports` 19,612 · `instantiates` 3,384 |
 | ontology arbiter, full root, run 2 | same command, corpus unchanged | **§A — `emitted 0/10`, exit 1, false** |
 | arbiter resume repro | `bash validation/m14/fixtures/zig/arbiter-resume-repro.sh` | §A table reproduces, ~1 min |
-| A/B/C classification | `npx tsx validation/m14/fixtures/zig/incoming-abc-class.ts $HOME/fixtures/repositories 80` | §B, §C, §D |
+| A/B/C classification | `npx tsx validation/m14/fixtures/zig/incoming-abc-class.ts <corpus-root> 80` | §B, §C, §D |
 | honesty gate | `npx tsx script/m14/verify-honesty.ts` | 36 failures, exit 6; **0 naming this document or any of this pass's four new files**. The failures are shared-artifact lineage (`M14.0.F1`…`F9`) and banned-term hits in **other lanes'** artifacts plus this lane's own **pre-existing** `measurements/p23/raw-*.json`, `p27/raw-*.json`, `ambiguity-split-p27.json` |
 
 ### F. Z66, restated with this pass's numbers
@@ -6282,7 +6282,7 @@ in use are 1.0, 0.9, 0.85 and 0.75, all at or above the 0.7 threshold.
   declaration. *Why, measured:* §B — 0 of 432,468 edges satisfy the guarded condition and
   5,097 satisfy the unguarded one, all of them wrong bindings. *Not mine:* the brief is the
   supervisor's; the measurement is this lane's and is reproducible with
-  `npx tsx validation/m14/fixtures/zig/absent-class.ts $HOME/fixtures/repositories 3848`.
+  `npx tsx validation/m14/fixtures/zig/absent-class.ts <corpus-root> 3848`.
 
 ---
 
@@ -6855,7 +6855,7 @@ one process per arm) with the current analyzer and corpus,
 | `productionRuleBPopulation.edges` | 2,189 | **8,020** |
 | `productionArm.unresolvedTargets` | 3,383 | 9,005 |
 
-Both cited numbers moved. The Lead landed the corrected citation in `incoming-rule.ts`
+Both cited numbers moved. The maintainer landed the corrected citation in `incoming-rule.ts`
 (commit `099d95eb3`); this lane's artifact is
 `validation/m14/fixtures/zig/measurements/incoming-abc-400-M14B-rederive.json`.
 

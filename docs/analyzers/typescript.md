@@ -403,7 +403,7 @@ invocation become `typescript ts,tsx 400` so React is inside the measured popula
 optional: the code below is landed, the FIXTURES are executed, and the cap-50 arm was
 MEASURED on 2026-10-18 against the gate with its owner channel green (numbers in §5). The
 WHOLE-PROJECT indexed arm (the one that decides the imports B-class and turns claims on) is
-still QUEUED under the Lead's resource hold — no whole-population number appears in this
+still QUEUED under the maintainer's resource hold — no whole-population number appears in this
 section.**
 
 ### 1 · Two relabels into the extended vocabulary (owner-admitted, `src/ast/types.ts`)
@@ -469,7 +469,7 @@ their MEMBERS in `symbolNames`/`symbolCounts`; free functions and module-scope b
 in it. So workspace-package imports of a `const`/`function` (e.g. `@element-plus/utils:isString`)
 stay unresolved until the spec is widened with `nameOnlyNodes` (function/variable/namespace
 declarations) AND the name-only branch increments `symbolCounts`. That is a shared-file change
-(`src/ast/project-index.ts`, Lead-owned) and is reported as a need, not made here.
+(`src/ast/project-index.ts`, maintainer-owned) and is reported as a need, not made here.
 
 ### 3 · Receiver typing: four syntactic forms, one store channel, evidence per form
 

@@ -221,7 +221,7 @@ check("G1: real issue-number policy declared", ledger.issueNumberPolicy?.state =
 check("G1: ledger numbers match the filed GitHub issues exactly", EXPECTED_CODES.every((c) => ledger.issues.find((i) => i.code === c)?.githubIssue === REAL_ISSUE_NUMBERS[c]))
 check("G1: single-source rule declared in the plan", plan.includes("exactly one authoring source") && plan.includes("never re-typed beside it"))
 check("G1: missing-surface rule declared in the plan", plan.includes("A surface that exists in the\n> product but not on the site is a defect"))
-check("G1: owner decisions recorded before work started", plan.includes("Owner decisions recorded before work started") && plan.includes("/demos is retired") && plan.includes("FAQ has one source"))
+check("G1: decisions recorded before work started", plan.includes("Decisions recorded before work started") && plan.includes("/demos is retired") && plan.includes("FAQ has one source"))
 check("G1: editor publishing honesty rule declared", plan.includes("publishing is pending") && plan.includes("may never claim marketplace availability"))
 check("G1: one-deploy fold-in declared (M41 closes on this push)", plan.includes("One deploy closes both milestones"))
 check("G1: evidence-batch procedure is mechanical", plan.includes("sync-ledger.ts --milestone m56") && plan.includes("then stop re-running gates"))

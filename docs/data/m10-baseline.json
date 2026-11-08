@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M10",
   "issue": 116,
-  "packageVersion": "0.3.0",
+  "packageVersion": "0.1.0",
   "runtimeMcp": {
     "toolNames": [
       "bb_search",

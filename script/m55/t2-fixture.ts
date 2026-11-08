@@ -2,7 +2,7 @@
 // fix (F7 rule: fixture-first).
 //
 // The fixture reproduces, in miniature, every shape the step-zero wire probe
-// found on the owner's real index — plus the shapes the contract must hold for
+// found on the recorded index — plus the shapes the contract must hold for
 // but no demo symbol provides:
 //
 //   store.ts     a member calling a SAME-NAMED method on another receiver

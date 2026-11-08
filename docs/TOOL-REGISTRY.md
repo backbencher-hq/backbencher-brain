@@ -71,7 +71,7 @@ The server does not maintain a second registry or a name-based conditional dispa
 
 `serializeToolMetadata()` returns registry metadata as JSON without importing handler code or MCP transport state. `TOOL_DESCRIPTORS` and the serializer are exported from the package root.
 
-This is the initial source for future generated documentation. The website at `$HOME/mcp/website` must not import `src/mcp/server.ts`; it can later consume a generated JSON artifact based on the serializer. M9.19 defines the final artifact and website integration contract.
+This is the initial source for future generated documentation. The website beside the repo (`/mcp/website`) must not import `src/mcp/server.ts`; it can later consume a generated JSON artifact based on the serializer. M9.19 defines the final artifact and website integration contract.
 
 ## Version Source
 

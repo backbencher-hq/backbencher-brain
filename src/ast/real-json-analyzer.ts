@@ -936,7 +936,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             // counts against the lane, and "the project does not carry this file" is a statement,
             // not a gap. A path-shaped target carrying `isExternal` is UNVERIFIABLE by the
             // arbiter's owner lookup by design (`verifyExternalClaim` refuses to read a stem as an
-            // owner — a rule the Lead fixed in `5a611de4b`), which is exactly right for it.
+            // owner — a rule fixed in `5a611de4b`), which is exactly right for it.
             ...(claimedFile ? { importProjectFile: claimedFile } : { isExternal: true }),
             evidenceClass: "structural",
           },

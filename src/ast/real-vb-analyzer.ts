@@ -45,7 +45,7 @@
  *     field read, or a character-code scan with the equivalence argued inline.
  *     A regex on parser output re-parses text the grammar already classified and
  *     drifts the moment the grammar moves; the M12 census exists because
- *     regex-driven analyzers published phantom edges. `fixtures` runs the M49.R2
+ *     regex-driven analyzers published phantom edges. the fixture corpus runs the M49.R2
  *     census over `src/ast` on every build, so a new regex here is a red build.
  *
  *  2. EVERY RELATIONSHIP CARRIES ITS SITE LINE (M59.A7 / #825). 1-based, on the
@@ -512,7 +512,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    * files from two corpora plus five edge cases, the two agree everywhere except
    * the empty string, where the split form returns 1 and this returns 0 — and the
    * old code's own `content.length === 0 ? 0 : …` guard already forced 0 there.
-   * (`script/m14/tmp/`-style probe: `fixtures/probes/linecount-equiv.ts`.)
+   * (`script/m14/tmp/`-style probe: the fixture corpus (`probes/linecount-equiv.ts`).)
    */
   private lineCount(content: string): number {
     if (content.length === 0) return 0

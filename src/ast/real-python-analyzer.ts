@@ -433,7 +433,7 @@ interface PythonContext {
    * authoritative, and `ownerEvidence` says which class of syntax proved it so each can be priced
    * separately. Absent on every file where nothing is proven — a missing owner is a name-strategy
    * row, which is exactly today's behaviour; a WRONG owner is worse, because the store withdraws
-   * the name binding and then declines (see the Lead's ruling).
+   * the name binding and then declines (see the ruling).
    */
   receiverTypeOwner?: (receiverName: string, line: number) => { owner: string; evidence: "annotation" | "assignment" | "annotation-element" } | undefined
   /**
@@ -1461,7 +1461,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.certifyOwnerMemberAbsentClaims(rootNode, ctx, context)
     // THE `importedName` CLAIM — REBUILT AND LIVE (2026-10-20, the lane's D7 depth round). It was
     // HELD here from 2026-10-19 ("the cap-50 arm with the claim live read bindOK 266 / bindFAIL 2
-    // and erodes extOK by 125") and PARKED as an INSTRUMENT GAP by the Lead's ruling §18.30
+    // and erodes extOK by 125") and PARKED as an INSTRUMENT GAP by the §18.30 ruling
     // ("extOK −16,025, ext? −7,540, bindOK +23,204, bindFAIL 361" on a full-population arm). The
     // rebuild replaces the lane-maintained vocabulary gate with the PROJECT's OWN answer, so the
     // claim lands exactly on the class the arbiter's project-absolute refiner leaves UNVERIFIABLE
@@ -2939,7 +2939,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // use this spelling** (`asyncio/coroutines.py` line 1 is
       // `__all__ = 'coroutine', 'iscoroutinefunction', 'iscoroutine'`), so 3.8% of the
       // standard library's declared public surfaces were invisible for a reason that
-      // has nothing to do with the author. On the pinned fixtures corpus the count is
+      // has nothing to do with the author. On the pinned fixture corpus the count is
       // **0** — no `__all__` there uses this shape — and that is reported as 0 rather
       // than folded into the stdlib number, because a measurement from outside the
       // pinned corpus is a different measurement.
@@ -6066,7 +6066,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    *
    * THE EDGE IS (decorated declaration symbol) -> (the decorator expression's NAME, as
    * written): `@lib.inject("db")` -> `lib.inject`, `@pkg.decorator` -> `pkg.decorator`,
-   * `@login` -> `login`. That is the Lead's spelling for this vocabulary and it is
+   * `@login` -> `login`. That is the spelling for this vocabulary and it is
    * deliberately NOT the leaf+`metadata.qualified` shape the ten legacy labels use: the
    * decorator's name is the thing a reader navigates to, and `decorates` has no legacy
    * consumer to stay compatible with. `metadata.qualified` still carries the written chain
@@ -6098,7 +6098,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         //
         //   1. a def/class inside a FUNCTION BODY is a LOCAL on this family's contract
         //      (PY-28). It publishes no symbol, so the decorator has no declaration in the
-        //      graph to be applied TO. The Lead's ruling for this emission is explicit: no
+        //      graph to be applied TO. The ruling for this emission is explicit: no
         //      row, and do not re-attribute it to the enclosing symbol — a decorator is
         //      part of the DEF's identity, not a fact about the body that contains it.
         //   2. a SHADOWED definition (`phantoms`, #748) is a body the runtime rebound away;
@@ -6243,7 +6243,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * depends on `lib.inject`, and the `"db"` in the parens is an argument of that call, not a
    * second dependency of the decorated declaration.
    *
-   * The TARGET is the written chain (`lib.inject`, `login`) — the Lead's spelling for this
+   * The TARGET is the written chain (`lib.inject`, `login`) — the spelling for this
    * emission — and `chain` is present only when the written name HAS a chain, so the
    * import-evidence claim can read the route it needs. Anything that names no readable
    * decorator (a lambda, a comprehension) returns null rather than a text-sliced guess.
@@ -6631,7 +6631,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * module-level import binds to the specifier it came from (`from tempfile import mkstemp` ->
    * mkstemp -> tempfile), which the analyzer already certifies. A row is claimed only when that map
    * resolves the name, and only for specifiers whose ROOT is in the committed `python-stdlib`
-   * vocabulary — the principled restriction the Lead set: third-party roots can be the project's own
+   * vocabulary — the principled restriction this file sets: third-party roots can be the project's own
    * code in their checkout (kotlinx precedent) and project-rooted imports are local, so neither is
    * cited; those stay NAMED in the D7 ledger until a project-module test exists.
    */
@@ -6707,7 +6707,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (target.includes(":") || target.includes(".")) continue
       if (md.importedName !== undefined) continue
       // FAIL-CLOSED AGAINST DECOYS THE LANE CAN SEE: a name THIS FILE declares itself resolves
-      // locally; claiming it would withdraw a real resolution (the decoy class the Lead's
+      // locally; claiming it would withdraw a real resolution (the decoy class the
       // "resolved must not fall" guard names). Cross-file declarations are not visible without the
       // project index, and that residual is MEASURED and reported rather than hidden.
       if (ctx.declaredTypes.has(target)) continue

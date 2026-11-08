@@ -258,7 +258,7 @@ check("T2: hand-written tool notes are deleted", !existsSync(path.join(SITE, "sr
 // prove the rendered-output gate FAILS. This is the end-to-end proof that a
 // hand-typed claim cannot survive this verifier.
 if (buildOk) {
-  const heroPath = path.join(SITE, "src/app/page.tsx")
+  const heroPath = path.join(SITE, "src/components/cobalt/CobaltColophon.tsx")
   // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
   // `git commit -a` on the shared checkout once swept the in-repo backup AND
   // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
@@ -267,7 +267,7 @@ if (buildOk) {
   let mutantCaught = false
   let mutantDetail = ""
   try {
-    const mutated = read("website/src/app/page.tsx").replace("{TRUTH.version}", `{"9.9.9"}`)
+    const mutated = read("website/src/components/cobalt/CobaltColophon.tsx").replace("{TRUTH.version}", `{"9.9.9"}`)
     writeFileSync(heroPath, mutated)
     try {
       execFileSync("npm", ["run", "build"], { cwd: SITE, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 420_000 })

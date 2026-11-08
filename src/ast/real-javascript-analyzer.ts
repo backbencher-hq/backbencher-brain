@@ -3306,7 +3306,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         // and the identifier's name is the LOCAL BINDING the default value refers to — EVIDENCE,
         // never a public name. Publishing it here fabricated an export the module does not have
         // (found while writing the exports-claim contract; the differential oracle mirrors the same
-        // branch and is being corrected by the Lead, so both instruments stop sharing the premise).
+        // branch and is being corrected, so both instruments stop sharing the premise).
         foundNamed = true
         exports.push({ name: child.text, isDefault, range: this.nodeToRange(child) })
       } else if (child.type === "export_clause") {

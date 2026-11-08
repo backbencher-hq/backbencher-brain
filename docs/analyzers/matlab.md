@@ -312,7 +312,7 @@ the measurement that forced the dedicated root to exist.
 
 **(b) Shared-root finding — retained (spec `_shared_corpus_finding_2026_10_31`).**
 Measured by `npx tsx validation/m14/fixtures/matlab/census-constructs.ts` over
-`$HOME/fixtures/repositories`:
+`<corpus-root>`:
 
 - **412 tracked `.m`** = **3 admitted** + **153 tracked-but-absent/unreadable** + **256
   routed to objective-c** by content — the arithmetic reproduces the tracking total

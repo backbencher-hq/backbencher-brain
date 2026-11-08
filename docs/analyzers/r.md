@@ -10,7 +10,7 @@
 - Corpora: **13 repositories, 1,890 files** measured in this pass —
   `dplyr`, `ggplot2`, `usethis`, `nvim-treesitter`, `r-Rcpp`, `r-air`, `r-cli`,
   `r-pkgdown`, `r-rlang`, `r-scales`, `r-testthat`, `r-vctrs`, `r-withr` under
-  `$HOME/fixtures/repositories`. Nine of the thirteen were cloned for
+  `<corpus-root>`. Nine of the thirteen were cloned for
   this pass; the corpus held four and 637 R files at handover. Earlier revisions of
   this document measured `dplyr`, `Matrix`, `ggplot2`, `shiny`, `testthat`.
   <!-- provenance: find-grammar-provenance -->
@@ -1782,7 +1782,7 @@ refuses a hand edit.
 - **Edge, line and name audit** — `validation/m12/results/r-edge-line-audit.json`:
   every edge located and correct, 0 unknown symbol names, 0 inconsistent ranges,
   and the relationship-type coverage count.
-- **Corpus-scale line audit** (`fixtures/corpus/line-audit.mts`, re-derived from
+- **Corpus-scale line audit** (`<fixture-root>/corpus/line-audit.mts`, re-derived from
   the parse tree without consulting the analyzer): **36,734 edges, all carry a
   line, 0 land on a line that does not contain their target; 8,410 symbols, all
   range/line/column/byteIndex self-consistent; 0 names that the grammar did not
@@ -1807,7 +1807,7 @@ refuses a hand edit.
 
 ## Complexity envelope
 
-`fixtures/corpus/complexity.mts`. The extraction walk carries the chain of
+`<fixture-root>/corpus/complexity.mts`. The extraction walk carries the chain of
 enclosing `function_definitions` on an explicit stack, so attributing a call to
 its enclosing symbol is O(nested functions) rather than O(tree depth); resolving
 each definition's owner happens once, on entry. Relationship and `contains`

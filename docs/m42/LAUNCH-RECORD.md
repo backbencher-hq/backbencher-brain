@@ -51,5 +51,5 @@ recorded at the §8.5 spot check). None is silent.
 
 The spot-check pack (validation/m42/results/SPOT-CHECK-PACK.md) lists what to
 try and the not-achieved items. The achieved/not-achieved verdict for the
-program stays with the owner (ishaq2321) — this record only proves the audit
+program stays with the project maintainer — this record only proves the audit
 can fail and the board is clean.

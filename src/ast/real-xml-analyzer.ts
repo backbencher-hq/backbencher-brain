@@ -3333,7 +3333,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `PEReference` node obtainable from the corpus, the lane's fixtures and eight
    * synthetic shapes.
    *
-   *   - corpus: 0 nodes. The branch is not exercised by `$HOME/fixtures`
+   *   - corpus: 0 nodes. The branch is not exercised by the fixture corpus
    *     at all, so no corpus number can decide this. The 22 admitted files whose
    *     text contains `<!ENTITY %` are bare `.dtd` fragments, which this grammar
    *     cannot root (no `document`), and the one admitted `.xml` — libxslt's

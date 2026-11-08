@@ -199,7 +199,7 @@ if (broken.length > 0) {
       "      convention already used by script/m15/verify-security-deep.ts.\n" +
       "    - the corpus is OPTIONAL: search a real location and say so, rather than\n" +
       "      resolving a path that cannot exist here.\n\n" +
-      "  Note that $HOME is the other laptop. A gate pointing at it either CRASHES\n" +
+      "  Note that $HOME is a different machine. A gate pointing at it either CRASHES\n" +
       "  (ENOENT, as script/m15/verify-edit-e2e-docs.ts does) or silently exercises nothing\n" +
       "  and passes vacuously. The second is worse: a gate that cannot see its subject\n" +
       "  reports green.",

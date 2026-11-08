@@ -3508,7 +3508,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // instrument, `validation/m14/fixtures/clojure/package-scope-price.ts`, whole admitted
     // population, farm root): publishing the claim on EVERY libspec the file declares gives
     // **629 rows the project's manifest confirms** (calls 299 · references 290 · imports 40) and
-    // **977 rows it does not** — which, under the Lead's 2026-10-20 semantics ruling, are
+    // **977 rows it does not** — which, under the 2026-10-20 semantics ruling, are
     // UNVERIFIABLE rather than REFUTED, so they stay unresolved and count against clause 1. The
     // lane GAINS on the 629 and LOSES NOTHING on the 977, and it CANNOT filter them: whether a
     // project declares a dependency is a PROJECT fact a one-file analyzer cannot see. The 629/977

@@ -49,7 +49,7 @@ bundle**. Every M55 closure requires a fresh-install frame, and V1 makes that me
 ### 2. Re-shooting exposed six defects that are real at HEAD
 
 All six are reproduced in `wire-truth.json` (the stdio probe against the real server and the
-owner's real index) and in the frames.
+recorded index) and in the frames.
 
 1. **Call hierarchy is structurally wrong** (`T2`). On `get` (`src/store.ts:10`):
    `incomingCalls` returns `[main, get]` (the root as *its own caller*), `outgoingCalls`
@@ -105,7 +105,7 @@ honestly as `inferred`.
 | T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) One usage count, one list | "usages" means stored usage sites; hover / graph / references agree or state their declared filter |
 | T4 | [#774](https://github.com/backbencher-hq/backbencher-brain/issues/774) Human signatures | one signature renderer; no raw JSON on any surface; unresolved types render a declared unknown |
 | T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) One tier classifier | one evidence-tier rule for members, fields, classes and externals; hover/row/legend/stored rows agree |
-| P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) Panel placement + focus | default = preview tab in the current editor group (owner decision, 2026-09-12); panels reused, never duplicated; `preserveFocus`; `bb.panelPlacement` setting remembered |
+| P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) Panel placement + focus | default = preview tab in the current editor group (recorded decision, 2026-09-12); panels reused, never duplicated; `preserveFocus`; `bb.panelPlacement` setting remembered |
 | V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) The live-surface gate | the filing rig promoted to `script/m55/` — fresh-install screenshot protocol + wire probe + reads-back assertions, wired into the verify chains and provably fail-able |
 | X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) Closure + verdict + hand-off | M24→M55 closure audit at one HEAD; the owner's v8 verdict pack (every claim with its frame); the cross-language false-positive hand-off note to the analyzer lane |
 

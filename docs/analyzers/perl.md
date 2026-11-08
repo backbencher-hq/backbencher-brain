@@ -126,7 +126,7 @@ prints the population beside every number:
     bun script/m14/perl-ontology-census.mts --fresh
 
 **The population.** `git ls-files` per repository under
-`$HOME/fixtures/repositories`, files at most 512 KiB, whose
+`<corpus-root>`, files at most 512 KiB, whose
 `detectLanguageFromPath` is `perl` -- the same derivation
 `script/m14/ontology-coverage-gate.ts` uses, so the two instruments describe one
 surface. Measured on this disk: **5,127 admitted files across 27 repositories**,
@@ -253,7 +253,7 @@ fabricated 0 or a container's line copied onto every member scores identically t
 right one. Two fixtures, two pins and six mutants now hold the rule.
 
 The per-label table and the census total are two instruments and they agree to
-the edge: `fixtures/perl/census.mts` and `fixtures/perl/lineless.mts` both sum to
+the edge: `<fixture-root>/perl/census.mts` and `<fixture-root>/perl/lineless.mts` both sum to
 107,513. They did not agree for most of this wave (107,838 vs 107,870, a 32-edge
 gap) because the two instruments walked different file sets -- see
 [the file-surface section](#the-file-surface-is-production-s-exactly).
@@ -804,8 +804,8 @@ name line differs from the declaration start -- so a fixture is the only thing
 holding that rule, and that is stated rather than left implied.
 
 ### The file surface is production's, exactly
-Three instruments walk the corpora -- `fixtures/perl/census.mts`,
-`fixtures/perl/lineless.mts` and the F5 lane in `script/m14/differential.ts` --
+Three instruments walk the corpora -- `<fixture-root>/perl/census.mts`,
+`<fixture-root>/perl/lineless.mts` and the F5 lane in `script/m14/differential.ts` --
 and for most of this wave they walked **three different file sets**, which is
 why no two of their numbers agreed (107,838 / 107,870 / 111,106+2,395).
 why no two of their numbers agreed (107,838 / 107,870 / 111,106+2,393).
@@ -977,7 +977,7 @@ is a scheduled grammar bump with an analyzer change and a re-baseline, not a
 silent swap -- and the measurement that decides it lives in the pin registry, not
 in a comment.
 
-> The forward-compatibility instrument (`fixtures/perl/forward-compat.mts`) was
+> The forward-compatibility instrument (`<fixture-root>/perl/forward-compat.mts`) was
 > reconstructed on 2026-09-27 after a full disk truncated it to zero bytes, and
 > its digest is now strictly wider than the original's (it covers decorators,
 > evidence tiers and parse-error text). So "5,750 of 5,774" is comparable only to

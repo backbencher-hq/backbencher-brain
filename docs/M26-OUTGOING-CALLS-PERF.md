@@ -131,7 +131,7 @@ BEFORE  worst case  85 ms
 AFTER   worst case 393 ms
 ```
 
-(measured on a throwaway copy of the DB, never on the owner's index). Shipped
+(measured on a throwaway copy of the DB, never on a live index). Shipped
 without measurement it would have looked like the obvious fix.
 
 The other candidate — pushing the LIMIT into each `UNION ALL` branch so each

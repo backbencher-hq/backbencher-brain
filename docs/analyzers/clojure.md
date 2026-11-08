@@ -273,7 +273,7 @@ conversions carry their equivalence argument inline.
 
 ## Corpus validation
 
-- Corpus `validation/m12/results/clojure-corpus-errors.json`: `fixtures/repositories/clojure`, extensions `*.clj` / `*.cljc` / `*.edn`, 0 error files, 0 crash files.
+- Corpus `validation/m12/results/clojure-corpus-errors.json`: `<corpus-root>/clojure`, extensions `*.clj` / `*.cljc` / `*.edn`, 0 error files, 0 crash files.
 - Differential `validation/m12/results/clojure-differential.json`: `passed: true`, expected 49, truePositive 49, falsePositive 0, falseNegative 0, unknown 0, precision 1, recall 1 (manual audit).
 - Complexity `validation/m12/results/clojure-complexity.json`: fixtures 2 files / 21 symbols / 29 relationships / 141.9 ms; corpus subset 141 files / 4,450 symbols / 8,708 relationships / 2,047.7 ms (peak 423.6 MiB).
 

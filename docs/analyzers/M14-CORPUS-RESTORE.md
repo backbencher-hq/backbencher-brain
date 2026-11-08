@@ -239,7 +239,7 @@ the first landed without the second. `script/m14/differential.ts` declares `perl
 `LANG_REPOS` and `perl: "plack"` in `SECOND_CORPUS` — re-registered by the perl lane's own round, with
 the merge history recorded in the maps' own comments. The lane could not run at all:
 
-    error: corpus repo missing: $HOME/fixtures/repositories/mojo
+    error: corpus repo missing: <corpus-root>/mojo
 
 `mojo` was absent from the corpus root, and `plack` was present but useless — a git checkout of
 `https://github.com/miyagawa/Plack` whose **upstream HEAD is a single `README.md`** (`git ls-remote

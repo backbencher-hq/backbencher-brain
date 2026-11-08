@@ -1,6 +1,6 @@
 # M27 — Everywhere (JetBrains / Zed / Neovim / Helix) — Master Plan
 
-> **STATUS: DRAFT — awaiting owner review.**
+> **STATUS: DRAFT — awaiting maintainer review.**
 > Nothing below is a verified claim. Every claim becomes one only when an
 > issue's ledger cell pins a verifier, a run, and a machine (contract §2).
 
@@ -51,7 +51,7 @@ pretend otherwise.
 | D-4 | Helix via **`languages.toml`**; verified at configuration level against bb_lsp's declared capabilities; any deeper claim requires a driven session — recorded honestly if not achievable here | Helix has no headless assertion path on this machine class; honesty over aspiration. |
 | D-5 | One **fixture workspace + one assertion vocabulary** shared by all four legs (the M25 fixture pattern, reused) | Differential honesty: the same questions asked of every editor, so the matrix compares like with like. |
 | D-6 | The graph webview ships **VS Code-only in v3**; the matrix records the delta per editor | Declared scope, not a silent gap. |
-| D-7 | Toolchain provisioning (owner decision, 2026-09-04): **Neovim + Helix + Zed** as portable binaries in git-ignored `.tools/`; **JetBrains is not downloaded** — its runIde leg is attempted only as a declared blocked-with-reason record, and J1 verifies at configuration level (I2) | Strongest I3 leg funded without a 1.2 GB IDE download; the bar's "≥1 I3 leg" is met by Neovim; honesty carried by the blocked record. |
+| D-7 | Toolchain provisioning (recorded decision, 2026-09-04): **Neovim + Helix + Zed** as portable binaries in git-ignored `.tools/`; **JetBrains is not downloaded** — its runIde leg is attempted only as a declared blocked-with-reason record, and J1 verifies at configuration level (I2) | Strongest I3 leg funded without a 1.2 GB IDE download; the bar's "≥1 I3 leg" is met by Neovim; honesty carried by the blocked record. |
 
 ## Issues (planned order)
 

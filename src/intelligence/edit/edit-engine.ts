@@ -312,7 +312,7 @@ function replaceRange(text: string, start: number, end: number, replacement: str
 //
 // A tool that writes source must not change anything the caller did not ask it to
 // change. Three things it WAS changing, each measured rather than assumed (see
-// fixtures/bb_edit/probe-e2-file-fidelity.ts):
+// the fixture corpus (bb_edit/probe-e2-file-fidelity.ts)):
 //
 //   * a 0755 file came back 0644, because the commit path is
 //     writeFileSync(temp) + renameSync and the temp inherits the process umask;

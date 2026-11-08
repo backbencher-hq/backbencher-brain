@@ -146,7 +146,7 @@ the index.
 | SOL-1 | The file is the module | The `module` symbol is the file's basename **with** its extension, and it OWNS every file-scope declaration. No synthesised `global` scope symbol. | A `.sol` file holds several top-level declarations (389 files → 325 contracts, 75 interfaces, 65 libraries), so no single declaration names the file. `isIndexArtifactName` rejects `global`, so a synthetic scope makes every file-scope edge unresolvable. |
 | SOL-2 | Declaration / reference / call / **read** | A read is an `identifier` whose **parent is an `expression`**. Positional, not a name list. | Every declaration name in Solidity is the `name:` field of its declaration node, so a declaration name can never sit under an `expression` and the two classes cannot overlap. A name list would need ~40 suppressions and would still leak. |
 | SOL-3 | The public state-variable getter | **Published**, as a method named with its external signature — `bal()` — plus a `references` edge from the variable to it. | `uint256 public bal` makes the compiler synthesise a getter written nowhere in the source. A Solidity identifier cannot contain `(`, so `bal()` cannot collide with `bal`. **The first draft recorded the getter in `metadata` and published nothing, and measurement killed it**: `parseFile` returns every symbol with `metadata: undefined`, because `src/ast/pool-worker.ts` drops the object at the worker boundary — the same seam that cost PowerShell its `is_static = 0`. A decision the store never received. |
-| SOL-4 | `constructor`, `receive`, `fallback` | Names **read off the leading keyword token**, not synthesised. | `constructor_definition` has no `name:` field — but Solidity writes the literal word, so the line is the real name line and needs no null-line handling. `fallback_receive_definition` is ONE rule for two keywords. |
+| SOL-4 | `constructor`, `receive`, `fallback` | Names **read off the maintainering keyword token**, not synthesised. | `constructor_definition` has no `name:` field — but Solidity writes the literal word, so the line is the real name line and needs no null-line handling. `fallback_receive_definition` is ONE rule for two keywords. |
 | SOL-5 | `is` is not always `extends` | An ancestor bound to an `interface_declaration` **in this file** is `implements`; everything else is `extends`. | Solidity has one heritage construct with no `interface` keyword in the list, so the tree does not say which kind each ancestor is — the distinction lives in the ancestor's own declaration. |
 | SOL-6 | Recovery regions | **Nothing** is emitted from a source line the parser invented. The rule is a line RANGE, not an `ERROR` subtree. | On `recovery-regions-sol6.sol` the parser emits an `ERROR` covering only `is not ) valid solidity ( at`; the tokens `this` and `all` are **siblings** of it. The subtree rule published a symbol named `all`. |
 | SOL-7 | EVM globals | A global's **members** are not project members. `msg.sender` publishes nothing; `this.f()` and `super.f()` keep their `calls` edge. | `msg`/`block`/`tx`/`super`/`this` are **not** grammar tokens — 262 alphabetic anonymous tokens and none of these five is among them, `externals` is empty — so `GLOBAL_OBJECTS` is DECLARED and labelled as declared, not presented as measured. |
@@ -292,7 +292,7 @@ and trades ZERO resolutions. Evidence page: `SOLIDITY-D3.md`.
 **D4 — the audit, MEASURED on the wired digest (Lead `174f35fda` + lane `86e39a889`).** All ten emitted
 labels derived AND admitted; `imports` was the last (m60: emitted 10 / audited 9). The lane found that
 `normTarget` collapses every module path to its extension segment (`./A.sol` → `sol`), which would have
-made the imports audit vacuous; the Lead fixed the matcher globally for path-like imports. Post-wiring
+made the imports audit vacuous; the maintainer fixed the matcher globally for path-like imports. Post-wiring
 draws: `--repo solidity --sample 60` → truth 2,567 · covered 2,565 (**99.9%**) · MISSING 2 · analyzer 1,875
 · unexplained 21 (1.1%) · heuristic 0 · hash e9708e75; stride draw → truth 3,799 · covered 3,792 (**99.8%**)
 · MISSING 7 · analyzer 2,414 · unexplained 33 (1.4%) · heuristic 0 · hash 8de36144 — **`imports`
@@ -308,7 +308,7 @@ allowance consumed) · inventory **126 types / lane-pass 8/8** (caveat quoted) �
 AST census CLEAN (0 regex literals, 0 constructors, 0 regex args; 6 allowed string arguments) and the lane
 is **absent from the fresh shared census** (0 solidity rows); the older M60 gate PASSes but its own
 `--selftest` reports `MUTANT 3` not caught — **a defect in that gate (outside this lane's write scope),
-reported to the Lead**, which is why the lane's D5 evidence uses its own AST census · **perf row** measured
+reported to the maintainer**, which is why the lane's D5 evidence uses its own AST census · **perf row** measured
 on the M60 baseline's exact population/surface (389 production files × 2 trials, `parseFile`): min **11.494
 ms/file** · median 21.544 · analyzer share 83.1% · 1.653 ms/KiB · ratio **0.19×** against the recorded
 baseline 59.738 ms/file (which was itself load-29-contended and unqualified) — **UNSCORED** per the `#871`

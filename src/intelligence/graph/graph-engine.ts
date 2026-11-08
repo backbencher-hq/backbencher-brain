@@ -325,7 +325,7 @@ type EdgeRow = {
  * interpolated — so every symbol in a walk re-compiles a byte-identical
  * statement. Measured on the pinned tree: 84–132 compilations per call across
  * only 11–12 distinct statements, the busiest text compiled 52 times per call
- * (`fixtures/bb_graph/suites/27-statement-cost.ts`).
+ * (the fixture corpus (`bb_graph/suites/27-statement-cost.ts`)).
  *
  * Keyed on the connection so that a closed database and its statements are
  * collected together, and so a pooled replacement never inherits a dead

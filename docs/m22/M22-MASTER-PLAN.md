@@ -9,7 +9,7 @@ This document is the local proposal. The GitHub milestone is created from the re
 
 ## Measured baseline (M22 ground-truth probe)
 
-Run on `i7-8650U / 8 cores / 15 GB`, cold worker-pool index of three fixtures corpus repos, with `onProgress` captured and worker/WASM/AST-engine errors collected. Source: `validation/m22/results/probe-index-ux.json`.
+Run on `i7-8650U / 8 cores / 15 GB`, cold worker-pool index of three fixture-corpus repos, with `onProgress` captured and worker/WASM/AST-engine errors collected. Source: `validation/m22/results/probe-index-ux.json`.
 
 | repo | tracked files | candidates | parsed | symbols | workers | wall | parse | dbFlush | progress events |
 |---|---|---|---|---|---|---|---|---|---|
@@ -77,7 +77,7 @@ Each issue states: (1) the exact current broken behavior with evidence, (2) the 
 
 ## Required resources
 
-- `$HOME/fixtures/repositories/{rake,vue-core,element-plus}` (probe baseline).
+- `<corpus-root>/{rake,vue-core,element-plus}` (probe baseline).
 - Optionally `$HOME` projects (TypeScript, VSCode, openclaw, paperclip) for larger-scale resume/status tests. Active repos must not be reset/cleaned/rewritten.
 
 ## Closure requirements

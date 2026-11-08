@@ -717,7 +717,7 @@ not a corpus figure and should never be read as one.
 
 §8 item (h) recorded 9.4 G free of 460 G at 11:55 on 2026-10-04. At 13:40 the same
 `df -h /` reads **2.5 G avail of 460 G, Use% 100%**, with
-`$HOME/fixtures/repositories` at **8.0 GB across 183 repositories**. This lane's
+`<corpus-root>` at **8.0 GB across 183 repositories**. This lane's
 own admitted set is 1,255 of those files, and every gate above ran at that reading, so the
 figures in this pass are not affected — but the margin for the next lane is gone, and
 `firing-check.ts`'s 120 s hang guard (§8 item (f)) is a wall-clock budget that a machine
@@ -1267,7 +1267,7 @@ behaviour.
 ## timed rather than argued
 
 Pass 6 and pass 7 each found the corpus where the previous pass left it. This round checked
-first and found it again: **`$HOME/fixtures/repositories` is the same 1,255 files
+first and found it again: **`<corpus-root>` is the same 1,255 files
 / 79 repositories** those passes measured, so every headline figure below is a *fourth*
 reproduction rather than a re-measurement. The corpus root now holds 183 repositories and the
 disk is at **98% (9.4 G free)** — worth the supervisor's attention as a shared resource, and
@@ -1447,7 +1447,7 @@ unchanged in substance and larger in scope than pass 6 stated it.
 ## PASS 6 — the corpus did NOT move, every gate reproduced, and the ruled table was carrying four pass-4 figures
 
 Pass 5's finding was that the shared corpus grows under the figures, so this round first
-checked whether it had moved again. **It had not**: `$HOME/fixtures/repositories`
+checked whether it had moved again. **It had not**: `<corpus-root>`
 was last written at 06:01 and pass 5 committed at 08:05, so the corpus is the same
 **1,255 files / 79 repositories** pass 5 measured. Every headline figure therefore
 reproduced rather than moved, which is the first time in this lane's history that a pass
@@ -1580,7 +1580,7 @@ asserted from a comment or from a spec file.
 
 | | |
 | --- | --- |
-| Corpus root | `$HOME/fixtures/repositories` (override: `BB_CORPUS_ROOT`) |
+| Corpus root | `<corpus-root>` (override: `BB_CORPUS_ROOT`) |
 | Admission rule | git-tracked, a real directory, ≤ 512 KB, `detectLanguageFromPath(abs, text) === "css"` — the rule `ontology-coverage-gate.ts` uses, **copied** rather than imported so the file set cannot drift with an edit to shared machinery. The **two-argument** call is load-bearing: pass 4 measured a 1,171-vs-1,180 gap caused by a one-argument transcription, and the probe no longer drops zero-byte files either |
 | Sampling | **NONE — the census is the whole admitted set.** No stride, no sample. **1,255 files / 79 repositories**, re-measured in pass 5 (1,180 / 76 at pass 4; 1,131 / 65 at pass 2) |
 | Growth, milestone 1 | 681 → 1,114 files. Cloned `twbs/bootstrap`, `jgthms/bulma`, `primer/css`, `picocss/pico`, `kognise/water.css`, `picturepan2/spectre`, `sass/sass-spec`. `open-prose` and `less-js-doc` failed to clone and `mdn/content` was cloned then deleted: it carries 0 `.css` files (its stylesheets are inlined into markdown), so it was 260 MB of walk cost for no admitted file |
@@ -2570,7 +2570,7 @@ number answers only whether a type fires at all.
 **(h) ADDED IN PASS 8 — the shared corpus is at 98% of the disk, and the arbiter's hang guard
 is the mechanism that will make that someone's problem first.** Measured at 11:55 on
 2026-10-04 from this lane: `df -h /` reports **9.4 G free of 460 G (98% used)**, and
-`$HOME/fixtures/repositories` holds **183 repositories** against the ~90 the lane
+`<corpus-root>` holds **183 repositories** against the ~90 the lane
 brief described. **RE-MEASURED IN PASS 9, TWO HOURS LATER, AND IT IS WORSE: `df -h /` reads
 `2.5G avail / 460G / Use% 100%`, and the corpus directory reads 8.0 GB.** So the 9.4 G
 margin was consumed in the time it took one pass to run, by other lanes' clones, and the
@@ -3169,7 +3169,7 @@ From `validation/m12/results/css-complexity.json`:
 | fixtures | 2 | 24 | 19 | 1446.6 | 149.0 | 33.90 | no | 202.1 MB |
 | corpus_subset | 185 | 788 | 125 | 6037.8 | 15.9 | 31.76 | no | 246.0 MB |
 
-Corpus: `$HOME/fixtures/repositories/svelte` @ `26786e92`, 185
+Corpus: `<corpus-root>/svelte` @ `26786e92`, 185
 non-empty `*.css` files, 54,453 bytes total (avg 294 B/file) — the manifest and
 the sample file now name ONE file set.
 
@@ -3468,7 +3468,7 @@ rewritten to agree with it.
 ## Scope, stated before any number
 
 `incoming-gate.ts` walks the whole corpus (every `.css` file of every git checkout under
-`fixtures/repositories`), stride-samples it, and resolves every emitted edge against the
+`<corpus-root>`), stride-samples it, and resolves every emitted edge against the
 **file's own project** — production's scope. Two populations are used below and they are 37x
 apart on ambiguity, because a stride sample truncates each project's symbol table:
 

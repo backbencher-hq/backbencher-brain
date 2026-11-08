@@ -74,14 +74,14 @@ These facts establish an observability/reliability gap. They do not establish th
 ### X — Real-repository acceptance
 
 - **X1:** cold controlled fixture with known file/symbol/relationship ground truth.
-- **X2:** real small, medium, and large repositories selected from `$HOME` and `$HOME/fixtures`.
+- **X2:** real small, medium, and large repositories selected from `$HOME` and `<fixture-root>`.
 - **X3:** final report that classifies each observed bottleneck as confirmed, disproven, or unresolved.
 
 ## Required repositories
 
 The corpus registry should include exact revisions for suitable repositories from:
 
-- `$HOME/fixtures/repositories`;
+- `<corpus-root>`;
 - `$HOME/TypeScript`;
 - `$HOME/intellij-community`;
 - `$HOME/aspnetcore`;

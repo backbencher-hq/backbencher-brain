@@ -41,7 +41,7 @@
  * `Owner.member`: the resolver's key space is declaration names) or carry a claim the arbiter
  * verifies — `metadata.isExternal*` through `externalClaimOf`/`verifyExternalClaim`, and the
  * family binding spelling `${caller}${BINDING_SEP}${binding}` with `metadata.localBinding`.
- * `script/m14/**` is the Lead's; this file only consumes those rules.
+ * `script/m14/**` owns them; this file only consumes those rules.
  *
  * 2026-10-18 COMPLETE-SURFACE WAVE (all of it measured; see docs/analyzers/java.md):
  *   - ANNOTATION type mentions emit `references` (+ isAnnotation/annotatedKind) in every position,
@@ -598,7 +598,7 @@ type JavaReceiverTypeIndex = {
 }
 
 /**
- * LIBRARY-NAMESPACE CITATIONS — the analyzer's copy of the Lead-owned vocabulary
+ * LIBRARY-NAMESPACE CITATIONS — the analyzer's copy of the shared vocabulary
  * `java-platform-libraries` (`script/m14/citations.ts`), and the rule that makes it safe:
  * THE DECLARED LIST MUST BE A SUBSET OF THE REGISTRY. The arbiter's `namespace` claim
  * (`metadata.languageNamespace`) verifies a target whose LEADING SEGMENTS match a declared
@@ -2311,7 +2311,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // difference being the argument list) — and until this site existed NEITHER
         // emitted a relationship: the names reached `decorators`/
         // `metadata.annotations` as PAYLOAD only, so the type-usage graph had no
-        // edge to the annotation class. Measured by the Lead's census over a
+        // edge to the annotation class. Measured by the shared census over a
         // 203-file draw: 1,475 `marker_annotation` + 119 `annotation` nodes, 0
         // relationship rows. Probe on the fixture authored for this site: pre-fix
         // `java/annotation-references` emitted 0 rows carrying `isAnnotation`.
@@ -3770,7 +3770,7 @@ currentPackage,
 
   /**
    * LIBRARY-NAMESPACE CITATIONS — attach the arbiter's `languageNamespace` claim to targets whose
-   * LEADING SEGMENTS name a root in the Lead-owned registry `java-platform-libraries`.
+   * LEADING SEGMENTS name a root in the shared registry `java-platform-libraries`.
    *
    * WHAT IT MOVES AND WHAT IT CANNOT. The arbiter's namespace claim is a CITATION: a target whose
    * leading segments equal a declared root is `externalVerified` (`verifiedBy: "namespace"`), is
@@ -3791,7 +3791,7 @@ currentPackage,
     projectIndex: ProjectIndex | undefined,
   ): void {
     // A CITATION NEEDS A PROJECT KEY SPACE. Without a COMPLETE index the analyzer cannot know
-    // whether the project itself owns the target — and the Lead's reproduction measured what
+    // whether the project itself owns the target — and the recorded reproduction measured what
     // happens when it claims anyway: 468 previously-RESOLVED rows were withdrawn, most of them
     // TRUE project references (scala3's own `dotty.tools.xsbt.*` classes, the androidx sources
     // vendored inside flutter's repo). The arbiter's namespace claim is the SOLE authority for
@@ -5216,7 +5216,7 @@ currentPackage,
    * DECLARATIONS. Returns null — never a guess — for every receiver whose type this file
    * does not state: an implicit `this`, a class-qualified static call, `super`, chained
    * access on an untyped receiver, an inherited field, and a `var` local. The four
-   * evidence classes are the declarations the Lead's contract names: field / param /
+   * evidence classes are the declarations the contract names: field / param /
    * local / return.
    */
   private javaReceiverOwnerTypeFromFile(
@@ -5870,7 +5870,7 @@ currentPackage,
       //   marker must not say: an unproven marker hides a genuine unresolved edge behind a claim the file
       //   cannot make. They stay counted against the lane until a rule can prove them."*
       // That refusal was RIGHT about a per-file analyzer, which has no project key space. It became
-      // WRONG on 2026-10-17 when the Lead landed `ProjectIndex.complete` — the index can now state that
+      // WRONG on 2026-10-17 when `ProjectIndex.complete` landed — the index can now state that
       // it saw the project's WHOLE admitted file set, which turns "the project declares no such name"
       // from a guess into a statement a claim may rest on.
       //

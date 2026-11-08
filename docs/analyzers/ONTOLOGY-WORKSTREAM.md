@@ -103,7 +103,7 @@ An agent that needs a shared change **reports the need**; the master makes it.
 
 ## Corpus
 
-`$HOME/fixtures/repositories/` — real git repos, indexed through the
+`<corpus-root>/` — real git repos, indexed through the
 production entry. A ruling with no corpus is worthless. Disk is tight: check
 `df -h /`, clone shallow (`--depth 1`), delete build artifacts, never source.
 
@@ -249,7 +249,7 @@ wide graph that is not.
 
 ## Corpus
 
-`$HOME/fixtures/repositories/`, ~6.1 GB across ~90 repositories.
+`<corpus-root>/`, ~6.1 GB across ~90 repositories.
 Override with `BB_CORPUS_ROOT`.
 
 A ruling with no corpus is worthless. If your language's corpus is thin, clone

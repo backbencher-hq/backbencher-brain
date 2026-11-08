@@ -25,7 +25,7 @@
 The pinned grammar enumerates **353 node-type ids, 284 distinct node-type names**
 (`nodeTypeCount` / `nodeTypeForId`) and **32 fields**. A corpus sweep of
 **8,514 `.rb` files / 4,024,840 named nodes** (`script/m14/tmp/rb-node-coverage.ts`; corpora
-`rails` 3,468, `rubocop` 1,780, `mastodon` 3,266 under `fixtures/repositories`) establishes:
+`rails` 3,468, `rubocop` 1,780, `mastodon` 3,266 under `<corpus-root>`) establishes:
 
 - **62** node types are referenced by the analyzer's dispatch;
 - **57** node types the analyzer never names **do occur** in real Ruby, and each is ruled with a reason in
@@ -143,7 +143,7 @@ not applicable, and `extends` no longer carries `extend`.
 ### Handover baseline: production-path firing check
 
 `NFILES=200 bun script/m14/firing-check-v2.mjs RUBY`, corpus
-`fixtures/repositories/ruby`, 200/200 parsed: **8/10 fired**, `imports[] 214 in 120 files`,
+`<corpus-root>/ruby`, 200/200 parsed: **8/10 fired**, `imports[] 214 in 120 files`,
 silent `imports exports`.
 
 Two facts about that instrument that this lane's own numbers confirm, because they are

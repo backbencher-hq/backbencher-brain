@@ -491,7 +491,7 @@ well as in this census: `nim_import` rows are `imports` and `nim_include` rows a
 `part_of`** — one 1:1 label move, the same source/target/line/confidence, with
 `metadata.relationshipType` keeping the two subkinds distinguishable exactly as this table
 records them. The numbers below therefore still describe the two SUBKINDS' resolution
-behaviour (the target rule did not move, by the Lead's ruling — see *`include` is
+behaviour (the target rule did not move, by the maintainer's ruling — see *`include` is
 `part_of`*), while the stored kind of the second row is now `part_of`.
 `s18-import-probe.txt`, 6,063 files, 1 worker, analyzer
 sha256 `deeab0756e0c4c1f` unchanged on both sides:
@@ -565,7 +565,7 @@ lane owns.
 ## The ten relationship types measured at the ontology round — and the two added 2026-10-23 (`part_of`, `decorates`)
 
 Every number below comes from production `parseFile` (`src/ast/pool-worker.ts`,
-not `analyze()`) over the corpus at `$HOME/fixtures/repositories`, via
+not `analyze()`) over the corpus at `<corpus-root>`, via
 the lane's own instrument `validation/m14/fixtures/nim/census.ts` (committed and
 re-runnable). **Corpus: 6,063 tracked files over 8 repositories** — `nim` 3,968,
 `nimony` 1,508, `nim-lang-nimble` 435, `graphql-nim` 55, `nimterop` 45,
@@ -1248,7 +1248,7 @@ contained:
 | shape | corpus occurrences | example |
 | --- | --- | --- |
 | generic target `of Foo[T]` | 2 edges | `nimony/tests/nimony/concepts/tconceptinheritnotgeneric.nim:7` `Bar = concept of Foo[T]`; `tconceptinvocationbody.nim:39` `MutableIndexable*[T] = concept of Indexable[T]` |
-| qualified target `of mod.Contract` | 0 on this corpus | the leading `.` parses as an `ERROR` node with no field — the same shape *Limitations* 7 records for `export mod.Name` |
+| qualified target `of mod.Contract` | 0 on this corpus | the maintainering `.` parses as an `ERROR` node with no field — the same shape *Limitations* 7 records for `export mod.Name` |
 | self-cycle `of Cycle` | 1 file, 0 edges | `nimony/tests/nimony/concepts/tconceptcycle.nim`, upstream `.msgs` reading `Error: concept inheritance cycle detected` |
 
 All three are now fixture rows with mutants behind them
@@ -1967,7 +1967,7 @@ returns **0**, so the gate is not reading this lane's oracle at all.
 `script/m14/differential.ts`:
 
 1. `LANG_REPOS` (line ~393) has no `nim` key. Add `nim: "nim"`. The clone is
-   already at `$HOME/fixtures/repositories/nim`. This is what makes
+   already at `<corpus-root>/nim`. This is what makes
    `--lang nim` stop printing `[lane] SKIP nim`.
 2. Add `import { deriveNimEdges } from "./nim-truth-oracle"` and one branch
    feeding it for `lang === "nim"`.
@@ -2807,7 +2807,7 @@ column, which is what a consumer of the reverse walk actually loses an edge to, 
   present/absent split, and a document that read the summary rather than the rows.
   Measured: `nimble`, `arraymancer`, `prologue`, `pixie`, `nitter`, `nigui`,
   `jester`, `nimtest`, `torrentinim` and `mosdepth` are all absent from
-  `$HOME/fixtures/repositories`. The totals block now carries
+  `<corpus-root>`. The totals block now carries
   `corporaDeclared`, `corporaMeasured` and `corporaAbsent[]` beside the old
   `corpora` field, and the console line prints
   `corpora=13 declared, 3 measured (absent: …)`. **A declared corpus list is a
@@ -2974,7 +2974,7 @@ column, which is what a consumer of the reverse walk actually loses an edge to, 
   differential's 60-file rotation reported 0 unexplained on nearly every draw,
   which is a COVERAGE limit, not a clean bill — two defect classes hid in files
   the rotation simply did not sample. Running the oracle over all 3,914 tracked
-  `.nim` files of the Nim compiler (`fixtures/nim/probes/hunt-diff.ts`, per-file
+  `.nim` files of the Nim compiler (`<fixture-root>/nim/probes/hunt-diff.ts`, per-file
   truth-vs-analyzer target sets) found them immediately, and both are now fixed:
   a `{.all.}` qualifier being published inside the module path, and the
   declared-type pass accepting a callable or a boolean literal as a type name.
@@ -3013,7 +3013,7 @@ column, which is what a consumer of the reverse walk actually loses an edge to, 
   mismatches" and left every one of them unadjudicated.
   A rotation-only lane would have reported 0% unexplained through all of the above
   except by luck. That is the single most important methodological finding in this
-  lane, and it is why the sweep is a tool in `fixtures/nim/probes/` rather than a
+  lane, and it is why the sweep is a tool in `<fixture-root>/nim/probes/` rather than a
   thing to remember to run.
 - **Mutation** (`script/m14/mutate-analyzer.ts`, `BB_MUTANT_ONLY="nim/"`):
   **58 nim mutants registered, 58 caught, 0 survived** under the shared runner
@@ -3234,7 +3234,7 @@ quiet machine will cover all 5,227 through the production path.
    a grammar-level production for it competes with the scanner that owns it. A real
    fix has to reach the scanner, not just the grammar — which is a different piece
    of work, honestly scoped rather than left as a hopeful patch. The patch
-   (`$HOME/fixtures/nim/out/0001-nim-dopragma.patch`) and the candidate
+   (`<fixture-root>/nim/out/0001-nim-dopragma.patch`) and the candidate
    (`grammars/_vendored/nim/0001-nim-dopragma.patch`) and the candidate
    wasm (5,914,156 B) are both preserved for whoever takes it on.
 
@@ -3689,7 +3689,7 @@ quiet machine will cover all 5,227 through the production path.
       six questions is silent for this language and every question-3 number in
       this document comes from the lane's own oracle instead. What is needed is one
       entry — `nim: <repo path under CORPUS_ROOT>`, and `nim` itself is a
-      3,968-file clone already at `$HOME/fixtures/repositories/nim` —
+      3,968-file clone already at `<corpus-root>/nim` —
       and one `import { deriveNimEdges } from "./nim-truth-oracle"` with a branch
       feeding it for `lang === "nim"`. `grep -c "nim-truth-oracle\|deriveNimEdges"
       script/m14/differential.ts` returns **0**, which is the mechanical form of the
@@ -4256,7 +4256,7 @@ quiet machine will cover all 5,227 through the production path.
     | mutation | verdict |
     | --- | --- |
     | drop the `skipSpace()` before the separator — kills `std / x` | **CAUGHT**, `nim/module-target` fails |
-    | drop the leading-quote branch | SURVIVES |
+    | drop the maintainering-quote branch | SURVIVES |
     | drop the trailing-backslash strip | SURVIVES |
 
     The quote branch survives because it is unreachable on the production path:

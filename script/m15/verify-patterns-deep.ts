@@ -200,7 +200,7 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       ck("P5: real repo present", false, "missing " + rake)
     }
     // Second real repo: graphql-js/src (TypeScript) via the full PatternBrainTools path
-      // WAS a literal foreign path — the owner's clone on the OTHER laptop, absent here, so
+      // WAS a literal foreign path — a clone on a different machine, absent here, so
 //  this leg measured nothing. Resolved through script/lib/optional-corpus.ts (env
 //  override first, then the known locations) so a machine that HAS the clone uses it.
   const gql_ROOT = resolveOptionalCorpus("TypeScript", "BB_TYPESCRIPT_REPO")

@@ -99,7 +99,7 @@ export function resolveServerLaunch(input: ResolutionInput): ServerLaunch | { er
 
 // --- Version-compatibility matrix ----------------------------------------
 
-/** Compare two semver-ish version strings ("0.3.0"). Returns true when
+/** Compare two semver-ish version strings ("0.1.0"). Returns true when
  *  `actual` satisfies `minimum`. Pre-release/extra segments are ignored for
  *  the comparison; unparsable versions never satisfy the minimum (fail
  *  closed) — a server that does not declare its version is not trusted. */

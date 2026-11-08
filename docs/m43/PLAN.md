@@ -23,7 +23,7 @@ GitHub issues (enforced by the ledger): P1=#656, A1=#657, A2=#658, A3=#659, A4=#
 | A1 (#657) | MCP read-path auto-refresh: when staleness detection (M35) finds stale/missing files within budget (<= N files and <= B bytes, env-tunable, defaults documented), run reindexFilesParallel inline before answering; response declares "auto-refreshed N files in Xms" or honestly declines with the budget reason. Opt-out flag. |
 | A2 (#658) | CLI read-path auto-refresh: same mechanism for bb search / bb status with --no-auto-refresh opt-out; help text updated. |
 | A3 (#659) | Flag/config semantics: every new flag/env enters the A5-style whitelist matrix; test hooks quarantined behind BB_TEST_HOOKS (M40.A8 rule); FRESHNESS_REMEDIATION strings updated to name the automatic behavior. |
-| A4 (#660) | E2E corpus on real repos (fixtures/): edit outside bb_edit -> read -> prove auto-repair; concurrency corpus: parallel readers + user-run bb index under the lock; budget-exceeded path proves honest decline. |
+| A4 (#660) | E2E corpus on real repos (<fixture-root>/): edit outside bb_edit -> read -> prove auto-repair; concurrency corpus: parallel readers + user-run bb index under the lock; budget-exceeded path proves honest decline. |
 | G1 (#661) | Governance: ledger, gates registry, mutation gate selftest, evidence policy (M40 pattern). |
 | X1 (#662) | Closure gate: all subordinate gates live-green at HEAD, evidence converged, milestone close with evidence comments. |
 

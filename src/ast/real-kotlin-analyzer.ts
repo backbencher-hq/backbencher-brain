@@ -2581,7 +2581,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * in this grammar, so it arrives as an ordinary call and was published as one:
    * `calls[Global -> context]` at 0.7 for every header — a real statement
    * attributed to a symbol no kotlin file declares. Measured on a 400-file
-   * stratified draw of fixtures/repositories/kotlin@9b80c8ff: 20 headers in 4
+   * stratified draw of the pinned fixture corpus (kotlin@9b80c8ff): 20 headers in 4
    * files, 28 of the sample's 524 `Global` call edges (the other 496 are Gradle
    * `.kts` script statements, which have no owner either).
    *
@@ -4673,7 +4673,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * kotlin and in no file of the corpus.
    *
    * MEASURED, by script/m14/kotlin-r7-endpoint-probe.ts on a 1,200-file
-   * every-Nth draw of fixtures/repositories/kotlin@9b80c8ff: 1,290 `Global`
+   * every-Nth draw of the pinned fixture corpus (kotlin@9b80c8ff): 1,290 `Global`
    * sources in files the analyzer reported as CLEAN, i.e. where the grammar had
    * no trouble at all and the fallback was standing in for nothing. Two real
    * files, both ordinary shipped `.kt`:
@@ -4845,7 +4845,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // relationship ever built from an import was a 0.9 `references` edge, so the
     // dependency lived under one label while the ontology's other name for it
     // stored nothing. Measured before this change on 300 tracked files of
-    // fixtures/repositories/kotlin@9b80c8ff: 11,040 `import_header` declarations
+    // the pinned fixture corpus (kotlin@9b80c8ff): 11,040 `import_header` declarations
     // in 1,158 of 3,000 files, and 0 `imports` edges.
     //
     // `imports` is the DEPENDENCY and `references` is the MENTION — the same
@@ -4915,7 +4915,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           // built from an import was a 0.9 `references` edge, so the dependency
           // was stored under one of its two ontology names and not the other.
           // Measured before this change on 300 tracked files of
-          // fixtures/repositories/kotlin@9b80c8ff: 11,040 `import_header`
+          // the pinned fixture corpus (kotlin@9b80c8ff): 11,040 `import_header`
           // declarations in 1,158 of 3,000 files, and 0 `imports` edges.
           //
           // `imports` is the DEPENDENCY and `references` is the MENTION — the
@@ -5006,7 +5006,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * BEFORE: the loop in `analyze()` filled `ParseResult.exports` and NONE of its
    * rows reached a relationship, so the lane published a public-API list and no
    * graph edge. Measured on 300 tracked files of
-   * fixtures/repositories/kotlin@9b80c8ff before this change: 0 `exports`
+   * the pinned fixture corpus (kotlin@9b80c8ff) before this change: 0 `exports`
    * edges. On a 1,500-file window the `ExportInfo` list held 2,809 rows and the
    * relationship list held none.
    *

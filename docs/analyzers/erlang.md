@@ -858,7 +858,7 @@ differential's own 60-file otp draw at this commit:
 
 The committed version of this row said 1,665 comparable and 42.7%, taken when the
 corpus draw also covered `rebar3`. **`rebar3` and `cowboy` are no longer on this
-machine** (`$HOME/fixtures/repositories/` holds neither), and
+machine** (`<corpus-root>/` holds neither), and
 `differential.ts`'s `LANG_REPOS.erlang` is still `rebar3`, so the erlang differential
 now only runs with an explicit `--repo`. The census corpus (otp + elixir) is
 unaffected and reproduced exactly twice, so the difference is the draw, not the

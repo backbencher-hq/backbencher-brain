@@ -2093,7 +2093,7 @@ deliberately external: the 1.2 GB third-party corpus, fetched by
 
 Run it with `script/m14/tmp/graphql/run-all.sh --corpus`. Every probe invocation in
 that runner is relative to the lane directory, and a claim enforces it: when gate
-8c was first added, a gate still pointed at the **old** `fixtures` fixture path:
+8c was first added, a gate still pointed at the **old** fixture path:
 it passed in the working tree because the two copies were identical at the time,
 and it failed in the suite the moment they diverged. A gate that reads
 a copy of its own fixture is a gate that can pass without testing anything.

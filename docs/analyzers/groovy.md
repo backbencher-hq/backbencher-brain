@@ -120,7 +120,7 @@ Measured verdicts (M60, analyzer/GROOVY); the detailed table follows this canoni
 Every row below is a MEASUREMENT through the production entry
 (`src/ast/pool-worker.ts` `parseFile`, which is what `parallel-indexer` stores),
 over **all 2,825 tracked `*.groovy`/`*.gradle` files** of the pinned corpus
-`$HOME/fixtures/repositories/groovy`, in **15 shards of 200 with none
+`<corpus-root>/groovy`, in **15 shards of 200 with none
 lost** (`script/m60/groovy-ontology-census.ts --from N --max 200`). The shard flag
 exists because the engine's per-file watchdog kills the whole process on a
 wall-clock timeout, which on a shared box truncates a single-pass corpus run
@@ -464,7 +464,7 @@ decision, not a bug fix.
 ### Corpus pin and declared exclusions
 
 The corpus is pinned by absolute path to a real checkout,
-`$HOME/fixtures/xml/repos/grails-core` (7,114 tracked `.groovy` files). The earlier
+`<fixture-root>/xml/repos/grails-core` (7,114 tracked `.groovy` files). The earlier
 pin named a directory that did not exist, so the lane audited **0 files** and reported a clean
 result over an empty measurement; the audit now fails on a zero-file universe.
 

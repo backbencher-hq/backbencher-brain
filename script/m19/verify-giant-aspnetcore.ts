@@ -25,7 +25,7 @@ const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m19/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
-// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+// WAS: a literal foreign path — a clone on a different machine. This machine has
 //  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
 //  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
 //
@@ -34,7 +34,7 @@ if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 //  "not available here" reads differently from "the measurement failed".
 
 const REPO = resolveOptionalCorpus("aspnetcore", "BB_ASPNET_REPO") ?? "REPO_UNRESOLVED"
-// WAS: a literal foreign path — the owner's clone on the OTHER laptop. This machine has
+// WAS: a literal foreign path — a clone on a different machine. This machine has
 //  no such checkout, so the gate measured nothing: one crashed, one reported 5/7 with the
 //  corpus legs silently absent, one reported 0/16. Three shapes for one condition.
 //
@@ -75,7 +75,7 @@ async function main() {
   console.log("-- S2 giant aspnetcore + paperclip index verification --")
   // As in script/m19/verify-giant-intellij.ts: these two RECORDED a missing repo and
   // then walked it, so the gate died with ENOENT on a stack trace instead of reporting
-  // the absence. Both corpora are the owner's clones on the other laptop; neither is
+  // the absence. Both corpora are the owner's clones on a different machine; neither is
   // here. Report the absence and return.
   // NOT `return`, for the reason established in script/m19/verify-giant-intellij.ts: a
   // return here would exit main() before the process.exit at the bottom and the gate

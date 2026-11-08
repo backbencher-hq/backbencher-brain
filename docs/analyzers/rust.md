@@ -681,7 +681,7 @@ checks the target against THAT LIST, never against the project's declaration tab
 that ships a same-named symbol cannot refute it, and a target outside the list is refused rather
 than sheltered. The emission (`rustSystemNamespaceOf`) fires only when the file claim did NOT (a
 system path names no project file) and refuses a single-segment `std` (a legal project module name).
-The matcher (`namespaceMatchOf`, Lead-owned) now splits `::` as well as `.`; before that change Rust
+The matcher (`namespaceMatchOf`, maintainer-owned) now splits `::` as well as `.`; before that change Rust
 paths collapsed to one dotted segment and the claim was structurally unreachable. **Pre-registered
 falsifier: any `extFAIL` on the rows this reaches refutes the emission rule.** Measured: 234 claims
 (`std` 233 · `core` 1), **234 verified · 0 refuted**; imports unresolved 799 → **565**.
@@ -740,7 +740,7 @@ Import rows whose written path is rooted at a Rust SYSTEM crate carry `metadata.
 list (`RUST_SYSTEM_NAMESPACES`), never the project's declaration table: a root the list does not name
 reads `externalRefuted` (extFAIL), and the internal resolution still wins first. The claim is emitted
 only where the file claim did not fire, and single-segment targets are refused. The arbiter half
-(`namespaceMatchOf` splitting `.` and `::`) is Lead-owned. Measured at cap 400: imports unresolved
+(`namespaceMatchOf` splitting `.` and `::`) is maintainer-owned. Measured at cap 400: imports unresolved
 799 → 565, extOK 861 → 1,095, extFAIL 0, arbitraryTwin byte-identical at 13,191, fixtures 26/4
 unchanged.
 

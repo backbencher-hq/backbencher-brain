@@ -21,7 +21,7 @@ headless editor runs (M25.E5, M26.E5, M42.E5/E6). A visitor who has never seen t
 hover portal or the graph panel cannot *believe* those surfaces exist from prose alone;
 the standard every modern dev-tool site meets is a real, short product video.
 
-## Production model (owner decisions 2026-09-07)
+## Production model (recorded decisions 2026-09-07)
 
 A demo is a **film**, not a screen recording. It has two layers that never touch:
 
@@ -40,7 +40,7 @@ A demo is a **film**, not a screen recording. It has two layers that never touch
   nothing. Every hold and anchor is machine-checked in `D1-post*.json`.
 
 > Decision record (owner, 2026-09-07): the originally planned Remotion Layer 2 was
-> tried (storyboard + stills composition) and rejected after owner review — camera
+> tried (storyboard + stills composition) and rejected after maintainer review — camera
 > moves over stills read as synthetic, and early renders had wrong zoom targets and
 > unreadable pacing. The approved model is real session footage + the light anchored
 > post above. Remotion was removed before any film shipped; no film claims it.
@@ -87,7 +87,7 @@ claim). Reduced-motion users get the poster frame (rule 6).
 - M41 website bar green (the embed lives in M41's truth-gated site).
 - M42 bar green (the hover portal scenes are M42 surface).
 - M44 bar green **before hub scenes are captured** (U1–U6 are the co-agent's open lane;
-  the harness and non-hub scenes do not wait, per owner decision 2026-09-07).
+  the harness and non-hub scenes do not wait, per recorded decision 2026-09-07).
 
 ## Issue groups
 

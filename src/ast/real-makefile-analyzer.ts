@@ -50,7 +50,7 @@ import { ASTEngine } from "./engine"
  *     environment, or another makefile. Publishing those as project-internal
  *     references asserts a declaration that does not exist — measured over the
  *     corpus, 464 of 577 unresolved edge ends were exactly that, and
- *     `fixtures/make/out/dangle-adjudication.json` classifies every one.
+ *     `the fixture corpus (make/out/dangle-adjudication.json)` classifies every one.
  *
  * ## Facts this file gets from node positions rather than from text
  *

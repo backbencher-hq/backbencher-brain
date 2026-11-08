@@ -35,7 +35,7 @@ Command:
 
     cd $HOME/backbencher-brain && NFILES=200 bun script/m14/firing-check-v2.mjs SWIFT
 
-Result, 2026-10-04/05, corpus `$HOME/fixtures/repositories/swift-corpus`:
+Result, 2026-10-04/05, corpus `<corpus-root>/swift-corpus`:
 
     SWIFT           8/10  200/200 parsed · imports[] 472 in 199 files
        fired:  calls extends implements uses contains references overrides instantiates

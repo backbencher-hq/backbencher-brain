@@ -80,7 +80,7 @@ async function main() {
   ck("C1: zero hollow patterns across " + verifiers.length + " M19 verifiers", hollow === 0, "hollow=" + hollow)
 
   // ── 3. Scale corpus presence ───────────────────────────────────────────
-  // WAS: literal paths on the owner's other laptop. Neither clone exists on this machine,
+  // WAS: literal paths on another machine. Neither clone exists on this machine,
   // so both legs checked a path that could never be present. Resolved through
   // script/lib/optional-corpus.ts now, and reported as a DECLARED BLOCK rather than a bare
   // failure so "the clone is not here" reads differently from "the corpus is here and the

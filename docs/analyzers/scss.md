@@ -1980,7 +1980,7 @@ arithmetic that says so.
 
 | | |
 | --- | --- |
-| corpus root | `$HOME/fixtures/repositories` |
+| corpus root | `<corpus-root>` |
 | admitted | **4,433** `.scss` files across **25** repositories |
 | admission rule | git-tracked, `< 512 KB`, `detectLanguageFromPath(abs, text) === "scss"` |
 | **concentration** | **consul alone is 3,042 of 4,433 (68.6%)**; bulma 179, element-plus 170, wagtail 133, bootstrap 122, primer-css 113, vault 108, nomad 98 |
@@ -2153,7 +2153,7 @@ lane's files.
 ### Population, stated before every number
 
 `find <CR> -name '*.scss' -type f | sort | head -600`, `BB_CORPUS_ROOT` default
-`$HOME/fixtures/repositories`. Deterministic — no sampling choice — so a
+`<corpus-root>`. Deterministic — no sampling choice — so a
 before/after pair is a statement about the SAME files. 600 files, 0 parse failures, all
 figures through production `ASTEngine.parseFile`, never `analyze()`, because `analyze()`
 is a per-file unit that skips the pipeline stages (pool-worker, timeouts, truncation,

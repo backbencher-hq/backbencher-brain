@@ -63,7 +63,7 @@
 238,205 relationships). Re-runnable:
 
 ```bash
-BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
+BB_CORPUS_ROOT=<corpus-root> \
   bun run script/cpp-review/defect-register.ts     # exits non-zero on any gated class > 0
 ```
 
@@ -311,9 +311,9 @@ number `bb_graph`'s payload budget actually cares about.
 ### CPP4 — the corpus was ABSENT, so the table above was re-measured from nothing
 
 The table above was written by three earlier rounds in this lane. **The corpus those
-rounds measured is not on this machine**: `$HOME/fixtures/repositories` was
+rounds measured is not on this machine**: `<corpus-root>` was
 an empty directory at the start of the CPP4 session, and the earlier rounds recorded
-their run paths as `$HOME/ishaq/fixtures/repositories` — a laptop-local path that
+their run paths as `<corpus-root>` — a laptop-local path that
 does not exist here. So none of the numbers in this section could be re-checked by
 reading them; they were re-derived.
 
@@ -331,7 +331,7 @@ fetches of the same upstream is evidence; it is not a pin, and it is not one eit
 never `analyze()` directly):
 
 ```
-corpus $HOME/fixtures/repositories | repos sqlite,cpp-sample
+corpus <corpus-root> | repos sqlite,cpp-sample
 candidates 162 | cpp files analysed 128 | symbols 6060 | relationships 10339 | parseErrorFiles 0
 admitted as cpp : {"cpp-sample/cpp":117,"sqlite/cpp":11}
 EXCLUDED (another lane's language): {"cpp-sample/c":3,"sqlite/c":31}
@@ -1375,7 +1375,7 @@ deciding side, the `.h`-by-content population boundary, the `friend-definition-b
   soft=0`, so the published rule hid nothing.
 - **Those two lanes CANNOT be re-run on this laptop.** `script/m14/differential.ts`
   pins `LANG_REPOS.cpp = "fmt"` and `SECOND_CORPUS` adds `nlohmann-json`, and
-  neither repo is present under `fixtures/repositories` on this machine — a scoped
+  neither repo is present under `<corpus-root>` on this machine — a scoped
   run without `--repo` dies with `corpus repo missing: …/element-plus`, which is the
   harness refusing to run against a corpus it was not pinned to. The two pinned C++
   corpora WERE run instead, and both are reported here rather than substituted
@@ -1693,7 +1693,7 @@ rewritten by its own last writer.
 - **Defect register (the gate): `validation/m14/results/archive/cpp-defect-register.json`** —
   **NOT re-runnable on this machine**: the five corpora it names (fmt,
   nlohmann-json, Catch2, abseil-cpp, spdlog, zig) are all absent from
-  `$HOME/fixtures/repositories`, and the corpus it was measured over is
+  `<corpus-root>`, and the corpus it was measured over is
   1,722 files against this round's 162. Its numbers are quoted here as the ontology
   round recorded them and are NOT restated as current.
 - Probes and their disciplines: `script/cpp-review/README.md`
@@ -1779,7 +1779,7 @@ made. Each item states the measurement that makes the need specific.
 | 6 | `script/m14/verify-grammar-pins.ts` | the gate measures **files the repo gitignores**: `grammars/tree-sitter-*/src/*` (`.gitignore:46`), so `src/parser.c`, `src/grammar.json`, `src/node-types.json` and `src/tree_sitter/*.h` are absent from every fresh clone. 69 pin failures at HEAD in the root worktree, 77 in a clean worktree, for **every** language | pre-existing and unrelated to this round; it makes the pin gate unusable as a drift check |
 | 7 | `validation/m60/rel-type-coverage-baseline.json` | the two new DERIVATION findings from the ontology round (`imports`, `exports`) are reported as REGRESSIONS by a shrink-only gate, because the baseline records 3 cpp findings and the live count is 5 | `validation/m60/rel-type-coverage-baseline.json`'s own `rule` field |
 | 8 | `validation/m14/results/*.json` (F2–F9) | the honesty gate reports **21 evidence-freshness failures** — every one of them is "N declared input(s) changed since <sha>". **The same 21 fail with this round's analyzer change stashed**, so the analyzer change adds to the count rather than causing it. Regeneration needs a machine holding the full 41-language corpus | `bun run script/m14/verify-honesty.ts`, both arms |
-| 9 | `script/cpp-review/defect-register.ts` + `validation/m14/results/archive/cpp-defect-register.json` | not re-runnable on this machine: all five of its corpora (fmt, nlohmann-json, Catch2, abseil-cpp, spdlog, zig) are **absent** from `$HOME/fixtures/repositories`, and it measured 1,722 files against this round's 162. Its D1–D8 table is therefore quoted here as the ontology round recorded it, not as current | the corpus listing, plus the doc correction under *Evidence pointers* |
+| 9 | `script/cpp-review/defect-register.ts` + `validation/m14/results/archive/cpp-defect-register.json` | not re-runnable on this machine: all five of its corpora (fmt, nlohmann-json, Catch2, abseil-cpp, spdlog, zig) are **absent** from `<corpus-root>`, and it measured 1,722 files against this round's 162. Its D1–D8 table is therefore quoted here as the ontology round recorded it, not as current | the corpus listing, plus the doc correction under *Evidence pointers* |
 | 10 | `src/ast/types.ts` / family | the question `implements` was asked to settle has a **family answer, not a C++ answer**: C++'s only spelling of interface satisfaction is a pure virtual on the BASE, so the label would depend on which TU is read (measured 5 of 25 same-file). If the family wants that relation queryable across languages, the right shape is a metadata flag on `extends` (`meta.interfaceSatisfaction: "abstract-base" | "declared-interface"` with a reason code) rather than a second edge type that duplicates `extends` — 6 lanes already treat the two labels as an exclusive partition of one heritage list | `cpp2-implements-instrument.ts` ARM D: 24 lanes, 49 push sites, 6 exclusive-partition |
 | 11 | `script/m14/run-fixtures.ts` | **no change needed, and that is worth saying**: `meta.x: null` on `expectSymbols` is what lets the new fixture state that a class must **not** be abstract, and `expectSymbolCount`/`equals` is what pins "0 symbols named `anonymous`" as an exact count rather than "≥ 1 match". Both already existed | `cpp/unnamed-scope-919`, `cpp/pure-virtual-abstract-919` and `cpp/class-scope-constructor` are written entirely in existing matcher features |
 | 12 | `script/m14/differential.ts` | **the shared cpp oracle needs D25's arm, or this round's fix will read as a regression.** The oracle derives `calls` by walking `call_expressions`, so it will still derive the 9 constructor rows the analyzer no longer publishes — and analyzer-only rows are what the differential counts as `unexplained`. The predicted delta is **+9 unexplained `calls` rows on a 60-file draw that includes one of those six files**, from a *removal*. If it does not appear, the differential has a different blind spot and that is worth knowing too | 9 rows over 6 files, each verified against its source line; the files are `reporter.h`, `state.h`, `sysinfo.h`, `mutex.h`, `perf_counters.h`, `benchmark_api.h` |
@@ -1904,7 +1904,7 @@ made. Each item states the measurement that makes the need specific.
   full 41-language corpus; the cpp lane's own numbers are above and in the
   register.
 - `script/m14/verify-name-surface-924.ts` and `verify-include-names-924.ts` both
-  hardcode `$HOME/fixtures/repositories`, so on any other machine they
+  hardcode `<corpus-root>`, so on any other machine they
   read **0 files** and report their own checks as "dead". Verified against the
   real corpus by pointing that path elsewhere: name-surface **3/3 + V4 selftest
   pass** over 3,839 files (the pre-fix derivation independently flags V2 at 38 —

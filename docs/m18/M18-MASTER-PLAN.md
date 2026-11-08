@@ -33,7 +33,7 @@ GitHub milestone #18 · Issues #411–#417 · Started 2026-08-24
 ## 3. Protocol (every issue)
 
 1. Verifier first — script under `script/m18/` that CAN FAIL; no auto-pass.
-2. Real corpora on disk: `~/fixtures/repositories/{rake,lodash,element-plus}`.
+2. Real corpora on disk: `~/<corpus-root>/{rake,lodash,element-plus}`.
    Missing corpus = reported, never silently skipped.
 3. Evidence file `validation/m18/results/<CODE>.json`: `verified, checks, passed, failed, negatives, measured, generatedAt` — measured values COMPUTED at runtime, never hardcoded.
 4. Ground-truth provenance: every gold answer records WHO wrote it and WHY it is correct, against the ACTUAL indexed symbol (no invented gold).

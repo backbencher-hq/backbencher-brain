@@ -41,7 +41,7 @@ writes the missing claims.
 
 **Priority 2 — no stone unturned (real testing of all 16 tools):**
 - **C1 (#699):** real corpus — every tool executed and recorded on real
-  repositories (this repo + ≥4 in `$HOME/fixtures/repositories`).
+  repositories (this repo + ≥4 in `<corpus-root>`).
 - **C2 (#700):** edge + mutation cases for every tool family.
 - **D1 (#701):** tool documentation truth — cross-references, categories,
   contradiction fixes, regeneration.

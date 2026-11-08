@@ -45,7 +45,7 @@ reports zero failed checks. Statuses:
    tracked-file count, and deterministic content digest. The active checkout
    state remains visible in `C2-registry.json`; the snapshot-backed corpus is
    now evidence-eligible. The extra local repositories in `$HOME/` and
-   `$HOME/fixtures/repositories` are preserved separately.
+   `<corpus-root>` are preserved separately.
 2. **Security sink classification is heuristic.** `bb_security` produces
    findings for sinks that are written with parameterized/escaped queries
    (e.g. SQL where the data flow is not literally concatenated). The tool

@@ -1799,7 +1799,7 @@ named here because the previous version of this block did not name it** — it q
 any reader could check. The file set is the one below and it is fixed:
 
 ```
-R=$HOME/fixtures/repositories
+R=<corpus-root>
 npx tsx script/m14/incoming-check.ts julia \
   $R/julia/Compiler/test/contextual.jl \
   $R/julia/test/meta.jl \

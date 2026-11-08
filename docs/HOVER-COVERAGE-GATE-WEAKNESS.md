@@ -163,7 +163,7 @@ different claims and only one of them is supported.
   latency check is legitimately red and an exit-code oracle would call every
   mutant "detected" for the wrong reason.
 
-## The fix, if the owner wants the gate to be worth its 13/13
+## The fix, if the gate is to be worth its 13/13
 
 Three checks, each naming the defect class above. They are small, and two of them
 need no new plumbing:

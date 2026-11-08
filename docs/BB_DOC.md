@@ -301,8 +301,8 @@ been observed red on a planted or real regression before being observed green.
 | `bun run script/verify-doc.ts` | engine-level smoke over all seven modes, citation resolution, stale labelling, budget failure, no source mutation |
 | `bun run script/verify-doc-design.ts` | this specification still states the required contract sections |
 
-The real-repository corpus companion named in older revisions (`fixtures/bb_doc/verify-corpus.ts`,
+The real-repository corpus companion named in older revisions (the fixture-corpus corpus verifier (`bb_doc/verify-corpus.ts`),
 ten repositories) is not present in this checkout; the corpus legs that can run here use
-`rake`, `rebar3`, `clojure` and `zig` from `$HOME/fixtures/repositories`. The other six
+`rake`, `rebar3`, `clojure` and `zig` from the fixture corpus. The other six
 repositories (`lua`, `go_tools`, `typescript`, `perl5`, `openssl`, `cpython`) are absent, so that
 leg is recorded as blocked rather than green.

@@ -25,7 +25,7 @@ in one place, instead of a README in every directory that can drift from the cod
 | `test/` | Harness suites and fixtures that are not part of the gate suite (CLI surface, indexing lifecycle, demo fixtures): [`../test/README.md`](../test/README.md). |
 | `plans/` | Small machine-readable plan inputs still read by milestone instruments (for example the M11 corpus plan). |
 
-`node_modules/`, `dist/`, `local-archive/`, `dsh-local-patches/`, the client-tooling worktrees and other
+`node_modules/`, `dist/`, `local-archive/`, `dsh-local-patches/`, local agent-tool worktrees and other
 machine-local directories are ignored; they are not repository content.
 
 ## Start here

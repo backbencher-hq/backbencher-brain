@@ -228,7 +228,7 @@ Recorded so it is process, not memory.
 
 ## Matrix 3b — Owner review status (per language)
 
-Rule: a language may reach L5 ONLY with at least one owner review round ON
+Rule: a language may reach L5 ONLY with at least one maintainer review round ON
 THE POST-FIX STATE recorded here, plus the formal sign-off ritual. Agent
 self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 
@@ -289,7 +289,7 @@ Java pilot progress (2026-08-26): inventory machinery live —
 classify ALL 143 pinned tree-sitter-java node types mechanically
 (70 handled_verified, 60 internal_silent). Wired into `npm run verify`
 as `audit:completeness`; evidence `M14.0.SPEC.json`.
-Gap closure (owner-approved, fixture-first ritual):
+Gap closure (contract-approved, fixture-first ritual):
 - G1 array_access → Uses edge (fixture java/array-access-uses, mutant
   java/drop-array-access CAUGHT)
 - G2 explicit_constructor_invocation → Calls edge (fixture
@@ -299,12 +299,12 @@ Gap closure (owner-approved, fixture-first ritual):
 - G4 calls in initializers/field-init/enum bodies → Calls edge attributed
   to enclosing type (fixture java/initializer-calls, mutant
   java/drop-initializer-calls CAUGHT)
-Rulings (owner-approved 2026-08-26): G5 module-info DECLARED OUT OF
+Rulings (contract-approved 2026-08-26): G5 module-info DECLARED OUT OF
 SCOPE; G6 generic type bounds DECLARED LIMITATION; S1 java-spec-table
 corrected (throw/assert/try-with-resources removed from complexity).
 Java fixtures now 31; mutation suite 54/54 caught (java 11 + groovy 13 + kotlin 14 + others).
 
-Kotlin #419 wave (2026-08-27, owner-approved gap list K1-K8 / rulings S1-S6):
+Kotlin #419 wave (2026-08-27, contract-approved gap list K1-K8 / rulings S1-S6):
 - K1 indexing Uses (indexing-uses fixture; kotlin/drop-expression-uses CAUGHT)
 - K2 ctor delegation Calls (ctor-delegation; kotlin/drop-ctor-delegation CAUGHT)
 - K3 callable-reference refs (callable-refs; kotlin/drop-callable-refs CAUGHT)
@@ -326,12 +326,12 @@ INVENTORY-DONE / GAPS-CLOSED / CONFORMANT.
 | Language | #419 status | A | B (11 kinds) | C (payloads) | D (tiers) | E (differential) | F (perf) | G (docs) | H (CC1) |
 |---|---|---|---|---|---|---|---|---|---|
 | java | CONFORMANT (2026-08-26) | 143/143 types | 11/11 (imports pinned via java/import-edges + mutant) | 7/7 Matrix 1b rows (parameters pinned via java/parameters-payload + mutant) | 2 tiers | grails-core 100%/0% | 7.9 ms/file | java.md + java.md | 3/3 checks |
-| groovy | CONFORMANT (2026-08-27, owner-approved plan; second reference implementation) | 151/151 types | 9/9 (contains-edges + import-edges pins) | 7/7 (parameters-payload incl. varargs) | 3 tiers (structural, import_based, usage_contextual) | grails-core 100%/0% | 7.5 ms/file | groovy.md + groovy.md | 3/3 checks |
-| kotlin | CONFORMANT (2026-08-27, owner-approved plan; third reference implementation) | 152/152 types | 9/9 (instantiates-edges + import-edges pins) | 7/7 (kdoc comment pin, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | Exposed:kotlin 100%/0% (floor residuals were ORACLE defects — fixed in differential.ts) | 25.5 ms/file | kotlin.md + kotlin.md | 3/3 checks |
-| scala | CONFORMANT (2026-08-27, owner-approved plan; fourth reference implementation — JVM family terminal) | 189/189 types | 11/11 (implements-edges + import-edges pins, both halves of G1) | 7/7 (visibility-payload, parameters-payload incl. repeated params) | 3 tiers (import_based, structural, usage_contextual) | scala3:scala 100%/0% (floor unchanged by the wave; pinned at sample 60) | 9.2 ms/file | scala.md + scala.md | 3/3 checks |
-| typescript | CONFORMANT (2026-08-27, owner-approved plan; first web-family reference implementation) | 191/191 types | 10/10 (contains-overrides + exports-edges + import-edges pins) | 7/7 (generic-constraints typeParameters, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | vue-core:typescript 100%/0% (floor verified; ledger 0.9% note stale) | 95 ms/file | typescript.md + typescript.md | 3/3 checks |
-| javascript | CONFORMANT (2026-08-27, owner-approved plan; second web-family reference implementation) | 125/125 types | 9/9 (instantiations + contains-overrides + import-edges pins) | 6/6 (visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | lodash:javascript 100%/0% (floor unchanged by the wave) | 193.7 ms/file | javascript.md + javascript.md | 3/3 checks |
-| vue | CONFORMANT (2026-08-27, owner-approved plan; third web-family reference implementation) | 37/37 types | 9/9 (script-relations pins + generic-props-emits + template-member-uses; expectRelationshipCount added — dedupe is now a permanent gate class) | 3/3 (payload-pins: complexity/visibility/parameters) | 3 tiers (structural, usage_contextual, import_based) | vue-core:vue 100%/0% (floor unchanged by the wave) | recorded in baseline | vue.md + vue.md | 3/3 checks |
+| groovy | CONFORMANT (2026-08-27, contract-approved plan; second reference implementation) | 151/151 types | 9/9 (contains-edges + import-edges pins) | 7/7 (parameters-payload incl. varargs) | 3 tiers (structural, import_based, usage_contextual) | grails-core 100%/0% | 7.5 ms/file | groovy.md + groovy.md | 3/3 checks |
+| kotlin | CONFORMANT (2026-08-27, contract-approved plan; third reference implementation) | 152/152 types | 9/9 (instantiates-edges + import-edges pins) | 7/7 (kdoc comment pin, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | Exposed:kotlin 100%/0% (floor residuals were ORACLE defects — fixed in differential.ts) | 25.5 ms/file | kotlin.md + kotlin.md | 3/3 checks |
+| scala | CONFORMANT (2026-08-27, contract-approved plan; fourth reference implementation — JVM family terminal) | 189/189 types | 11/11 (implements-edges + import-edges pins, both halves of G1) | 7/7 (visibility-payload, parameters-payload incl. repeated params) | 3 tiers (import_based, structural, usage_contextual) | scala3:scala 100%/0% (floor unchanged by the wave; pinned at sample 60) | 9.2 ms/file | scala.md + scala.md | 3/3 checks |
+| typescript | CONFORMANT (2026-08-27, contract-approved plan; first web-family reference implementation) | 191/191 types | 10/10 (contains-overrides + exports-edges + import-edges pins) | 7/7 (generic-constraints typeParameters, visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | vue-core:typescript 100%/0% (floor verified; ledger 0.9% note stale) | 95 ms/file | typescript.md + typescript.md | 3/3 checks |
+| javascript | CONFORMANT (2026-08-27, contract-approved plan; second web-family reference implementation) | 125/125 types | 9/9 (instantiations + contains-overrides + import-edges pins) | 6/6 (visibility-payload, parameters-payload) | 3 tiers (structural, usage_contextual, import_based) | lodash:javascript 100%/0% (floor unchanged by the wave) | 193.7 ms/file | javascript.md + javascript.md | 3/3 checks |
+| vue | CONFORMANT (2026-08-27, contract-approved plan; third web-family reference implementation) | 37/37 types | 9/9 (script-relations pins + generic-props-emits + template-member-uses; expectRelationshipCount added — dedupe is now a permanent gate class) | 3/3 (payload-pins: complexity/visibility/parameters) | 3 tiers (structural, usage_contextual, import_based) | vue-core:vue 100%/0% (floor unchanged by the wave) | recorded in baseline | vue.md + vue.md | 3/3 checks |
 | svelte | CONFORMANT (2026-08-27 baseline; S5/S6 review hardening verified 2026-08-28) | 74/74 types | 9/9 (relationship-kinds pins all kinds; S1 template-uses pin; S5 collision fixture adds scope coverage) | 3/3 (payload-pins complexity + relationship-kinds parameters/visibility; S6 reactive-dedupe adds symbol-count coverage) | 3 tiers (structural, usage_contextual, import_based) | svelte:svelte 100%/0% (floor unchanged) | recorded in baseline | svelte.md + svelte.md | 3/3 checks |
 
 Java is the reference implementation: the first analyzer to be L5-closed
@@ -453,7 +453,7 @@ H. Cross-language consistency
 
 No partial closure. "Future work" absorption is banned by Matrix 3b/4b rules.
 
-### Dotted-name convention — RATIFIED (owner decision)
+### Dotted-name convention — RATIFIED (recorded decision)
 
 All analyzers emit FULL DOTTED NAMES as relationship targets when types are
 qualified (`collection.mutable.ArrayBuffer`, not `ArrayBuffer`). Rationale:
@@ -691,7 +691,7 @@ Full line-by-line re-read of real-swift-analyzer.ts (1,303 lines) + deriveSwiftE
 
 ## 2026-09-07 — M37.15 objc dual-lens pass (OBJCD5–D6): #608
 
-Line-by-line read of real-objective-c-analyzer.ts (526 lines) + deriveObjcEdges. Per #608's requirement, the pass acquired a REAL corpus: Clyde had only 4 .m files. Downloaded afnetworking (49 .m) + sdwebimage (104 .m) into fixtures/repositories; the standing objc lanes (F5 differential + F8 census + inventory perfKey + differential baseline) now point at sdwebimage (104 files), with afnetworking as the second corpus in the differential evidence.
+Line-by-line read of real-objective-c-analyzer.ts (526 lines) + deriveObjcEdges. Per #608's requirement, the pass acquired a REAL corpus: Clyde had only 4 .m files. Downloaded afnetworking (49 .m) + sdwebimage (104 .m) into the fixture corpus; the standing objc lanes (F5 differential + F8 census + inventory perfKey + differential baseline) now point at sdwebimage (104 files), with afnetworking as the second corpus in the differential evidence.
 
 - **OBJCD5** (relationship-loss, the biggest class): pointer/object-return C helper functions (`static NSArray * fn(...)`) were silently dropped — the defining declarator parses NESTED (pointer_declarator > function_declarator; generic returns add a generic_specifier sibling) but the name lookup only checked DIRECT function_declarator/identifier children. Because the function was never symbolized, activeScope stayed global and the function's ENTIRE body (calls/uses/instantiates) was suppressed. 46 of 110 C helpers across the two corpora; 180 differential-missing edges (afnetworking 60 + sdwebimage 120; both corpora only ~97% covered). Fix: name = first function_declarator outside the compound_statement, then its first identifier. Only the analyzer changed (the oracle derives these edges already). Both corpora → 100% / 0 / 0.
 - **OBJCD6** (relationship-fabrication): macro-invocation-as-declaration in an @implementation ivar block (`SD_LOCK_DECLARE(_lock);` → `os_unfair_lock _lock;`) parses as a call_expression at class scope; the scope-only gate fabricated `calls Foo -> SD_LOCK_DECLARE` (sole unexplained edge in sdwebimage). Fix: the walk carries an isInBody flag (set only by method_definition/method_declaration/function_definition/block_literal); message/call/uses edges require a real execution body. 
@@ -710,7 +710,7 @@ Second critical re-read of real-objective-c-analyzer.ts + deriveObjcEdges after 
 
 ## 2026-09-07 — Two-corpus standing gate + cross-language implicit-override sweep
 
-Architectural hardening (asked-for once, then delivered): every gated language now runs the F5 differential on TWO corpora in the default sweep (42 lanes: primary + second per language; ~10 languages gained real second corpora — downloaded into fixtures/repositories, corpus pins + samplingRule updated). The gate immediately paid for itself on the first canonical run. Findings fixed end to end (analyzer + oracle + fixtures + mutants + spec decisions), each verified on real parses:
+Architectural hardening (asked-for once, then delivered): every gated language now runs the F5 differential on TWO corpora in the default sweep (42 lanes: primary + second per language; ~10 languages gained real second corpora — downloaded into the fixture corpus, corpus pins + samplingRule updated). The gate immediately paid for itself on the first canonical run. Findings fixed end to end (analyzer + oracle + fixtures + mutants + spec decisions), each verified on real parses:
 
 - **python PYD-total** (requests:python): `class X(TypedDict, total=False)` — the keyword_argument `total=False` was read as a base class, fabricating `extends X -> total`. Analyzer base extraction now skips keyword arguments (oracle already did).
 - **ruby RB-A..RB-E** (rack:ruby — 10 missing / 3 unexplained → 100/0/0): RB-A `Class.new { ... }.new` expression receivers leaked junk `calls:new` (3 fabrications in spec_lock.rb) — suppressed when no constant/owner resolves (self.new / self.class.new inside classes still resolve to the enclosing class; lowercase receivers stay genuine calls). RB-B default-argument VALUE expressions (`mutex = Mutex.new`, `params = Rack::Utils.default_query_parser`, `app = @app`) were never walked — new walkParamDefaults under the method owner; oracle local-collection also fixed to add param NAMES only (default-value `challenge` is a method call, handler.rb). RB-C `class Body < Struct.new(...)` superclass expressions construct the base — analyzer now visits superclass call nodes. RB-D spec/DSL member reads with no enclosing def (minitest `it`/`before`) were dropped by the method-only walk — class/top-level DFS now emits memberRead uses under owner||Global. RB-E alias_method edge (`calls:alias` + aliasedTo metadata) had no oracle mirror — mirrored. New fixture ruby/rack-wave-regressions + 5 mutants.

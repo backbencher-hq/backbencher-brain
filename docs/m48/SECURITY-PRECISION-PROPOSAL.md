@@ -133,7 +133,7 @@ the reported line" is the loosest one available, and even it is a proxy.
 Before any of B or C can be accepted, there must be:
 
 1. A **planted-defect corpus**: real vulnerable files with a known ground truth,
-   ideally drawn from CVE-fix commits (the fix is the label). `fixtures` is the
+   ideally drawn from CVE-fix commits (the fix is the label). The fixture corpus is the
    natural home and does not exist on every box.
 2. A **measured precision/recall pair**, published with the corpus, so a change
    can be argued about rather than asserted.
@@ -170,7 +170,7 @@ oracle — it filters a number that is currently calibrated to the wrong thing.
 
 ## Evidence for every number quoted
 
-Reproduce with `BB_SECURITY_CORPUS_ROOT` pointed at a `fixtures/repositories`
+Reproduce with `BB_SECURITY_CORPUS_ROOT` pointed at a `<corpus-root>`
 directory; `script/m15/verify-security-deep.ts` X5 is the corpus leg and records
 `skipped` with a reason when no corpus is present, so its absence is never
 mistaken for a pass.

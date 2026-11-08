@@ -14,7 +14,7 @@ Two different things are called "the gap table" and they disagree:
 2. The **product** gap: what the canonical 10 relationship kinds at
    `src/mcp/tool-registry.ts:259` (`calls, extends, implements, uses,
    instantiates, overrides, contains, references, imports, exports`) do on the
-   hover **as a kind**, on a real index. That is what the owner's question is
+   hover **as a kind**, on a real index. That is what the question is
    about, and no gate measured it.
 
 Both are below. (2) is derived from the renderer source and is a code reading,
@@ -235,7 +235,7 @@ Three distinct outcomes, and the distinction matters:
    `usages` list. An **outgoing** row — the symbol uses something, or references
    something — renders nowhere. For `references` that is arguably right (a
    reference is a usage, not a connection). For **`uses`** it is the "what does
-   this symbol depend on" half of the owner's question, and it is missing.
+   this symbol depend on" half of the question, and it is missing.
 3. **`imports` — no verb, no fixture row, no measurement.** In the canonical
    list at `src/mcp/tool-registry.ts:259`, in **neither** verb table, and in
    **zero** fixture rows. Unmeasured end to end. Declared rather than asserted:
@@ -266,7 +266,7 @@ in (`hover.ts:412`, `:417`); they read `none stored` on this fixture because the
 fixture authors stored none — declared absence, not a missing wire-up. Staleness
 renders (`hover.ts:420`), as do definition, actions and the signature.
 
-So the honest answer to the owner's question is: **the incoming half, yes; the
+So the honest answer to the question is: **the incoming half, yes; the
 outgoing half, mostly no** — and the audit's own `70.6%` figure cannot see that,
 because it counts English words.
 
