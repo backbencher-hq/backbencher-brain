@@ -9,10 +9,10 @@
   "mutantsCaught": 3,
   "mutantsTotal": 3,
   "negativeCases": 0,
-  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+  "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
   "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
   "evidenceFile": "E1.json",
-  "generatedAt": "2026-11-08T05:11:10.232Z",
+  "generatedAt": "2026-11-08T05:59:27.754Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:11:10.232Z",
-    "contentSha256": "65d5707cb2cf735fedb9199e0462264663cd583e79ec1d567e4a310841b78f07"
+    "sealedAt": "2026-11-08T05:59:27.755Z",
+    "contentSha256": "67dfa072a05f10831cf99575b6eab80d12374c8f293ee69b1b4b89a9fa631427"
   }
 }

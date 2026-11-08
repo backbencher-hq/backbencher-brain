@@ -7,14 +7,14 @@
   "retainedEvidence": {
     "file": "E5.json",
     "status": "verified",
-    "currentCommit": "cd2949eeec331c24765a546fdbe2a2f4e617f045",
+    "currentCommit": "fdf9d77a3b69846729c7af03fafcc284743eb9e2",
     "passed": 91
   },
   "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
-  "generatedAt": "2026-11-08T05:44:07.309Z",
+  "generatedAt": "2026-11-08T06:29:39.202Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:44:07.309Z",
-    "contentSha256": "a3c4b3e374a1e176a772eaf3748df9dc1a218678b20a28878d9fb011b6bc89c3"
+    "sealedAt": "2026-11-08T06:29:39.203Z",
+    "contentSha256": "d06e0f1d96c32053272d72ba17e3de978e9a6944e869598203f7f7fd0f4a1798"
   }
 }

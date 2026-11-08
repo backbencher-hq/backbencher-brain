@@ -7,15 +7,15 @@
   "retainedEvidence": {
     "file": "F-ANTIGRAVITY.json",
     "status": "verified",
-    "currentCommit": "cd2949eeec331c24765a546fdbe2a2f4e617f045",
+    "currentCommit": "fdf9d77a3b69846729c7af03fafcc284743eb9e2",
     "passed": null
   },
   "os": "linux",
   "fork": "antigravity",
-  "generatedAt": "2026-11-08T05:44:22.808Z",
+  "generatedAt": "2026-11-08T06:29:54.906Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:44:22.808Z",
-    "contentSha256": "6b5e707328a98c93ded7009a233024ad5ebb0379b43896bd4c1015972666211e"
+    "sealedAt": "2026-11-08T06:29:54.906Z",
+    "contentSha256": "d177bce8aa810645c352f8ca186aedb50618ab91f3dab5ab576164af85a56079"
   }
 }

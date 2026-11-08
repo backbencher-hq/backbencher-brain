@@ -7,11 +7,11 @@
   "passed": 30,
   "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+  "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-08T05:39:56.810Z",
+  "generatedAt": "2026-11-08T06:28:21.405Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -28,7 +28,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:39:56.819Z",
-    "contentSha256": "b4eb703614f783e6ff95ed35e31dfed87564d7712b9b1a462fb73a825d23dedc"
+    "sealedAt": "2026-11-08T06:28:21.416Z",
+    "contentSha256": "fabfd38506ab45179128895ba7a690b3454d034376d1d3b32e91550a0204f9f1"
   }
 }

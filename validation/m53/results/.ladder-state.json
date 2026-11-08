@@ -1,5 +1,5 @@
 {
-  "commit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+  "commit": "803dace77ac3843f86d3f81d8633366f29bff64f",
   "gates": {
     "m24-closure": {
       "rc": 0,
@@ -151,7 +151,7 @@
     },
     "m44-hub-list": {
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 94adedbf)"
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 803dace7)"
     },
     "m44-usages-fallback": {
       "rc": 0,
@@ -162,8 +162,8 @@
       "verdict": "VERIFIED (20/20 passed, 6/6 mutants caught)"
     },
     "m44-closure": {
-      "rc": 1,
-      "verdict": "KNOWN-GAP (52/53 passed, 8 negatives)"
+      "rc": 0,
+      "verdict": "VERIFIED (53/53 passed, 8 negatives)"
     }
   }
 }

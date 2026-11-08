@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 40,
-  "failed": 1,
+  "status": "verified",
+  "passed": 41,
+  "failed": 0,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -17,48 +17,7 @@
     "bogusRc": 1
   },
   "gatesTotal": 41,
-  "resumedGates": [
-    "m24-closure",
-    "m25-auto-index",
-    "m25-harness-core",
-    "m25-closure",
-    "m26-webview-core",
-    "m26-content-security",
-    "m26-cross-lang",
-    "m26-evidence-badges",
-    "m26-graph-docs",
-    "m26-graph-transport",
-    "m26-impact-mode",
-    "m26-webview-harness",
-    "m26-closure",
-    "m27-nvim",
-    "m27-zed",
-    "m27-helix",
-    "m27-closure",
-    "m28-union",
-    "m28-mcp-tools",
-    "m28-annotation-store",
-    "m28-annotation-ui",
-    "m28-closure",
-    "m29-wave-protocol",
-    "m29-precision-ledger",
-    "m29-precision-improvements",
-    "m29-m29-docs",
-    "m29-closure",
-    "m42-enrichment",
-    "m42-highlight",
-    "m42-hover-actions",
-    "m42-hub",
-    "m42-hub-nav",
-    "m42-rich-hover",
-    "m42-closure",
-    "m44-hub-tree",
-    "m44-impact-resolution",
-    "m44-legend",
-    "m44-hub-list",
-    "m44-usages-fallback",
-    "m44-usages-groups"
-  ],
+  "resumedGates": [],
   "gates": [
     {
       "name": "m24-closure",
@@ -360,7 +319,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 94adedbf)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 803dace7)",
       "ok": true,
       "timedOut": false
     },
@@ -383,18 +342,18 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (52/53 passed, 8 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (53/53 passed, 8 negatives)",
+      "ok": true,
       "timedOut": false
     }
   ],
-  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+  "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-08T05:45:24.040Z",
+  "generatedAt": "2026-11-08T06:30:56.473Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:45:24.041Z",
-    "contentSha256": "aa19c1fd8e546c7619d518aeeb2b6e359d036d407f9c00747cdc48046323acca"
+    "sealedAt": "2026-11-08T06:30:56.474Z",
+    "contentSha256": "7731388034104c139933e483c2263112b05ede695bd3480c747eac6a882e2071"
   }
 }

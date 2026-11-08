@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 24,
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
         "passed": 142,
@@ -154,7 +154,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
         "passed": 58,
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -214,7 +214,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
         "passed": 50,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,7 +274,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
         "passed": 26,
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 47,
@@ -330,7 +330,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+        "currentCommit": "803dace77ac3843f86d3f81d8633366f29bff64f",
         "verifierCommand": "npx tsx script/m24/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 69,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:44:37.572Z",
-    "contentSha256": "8b1a549031f5cbc7e69bcccfb6a4134b14969423116feb1558741dd5578e8e83"
+    "sealedAt": "2026-11-08T06:30:10.184Z",
+    "contentSha256": "9ae61ec4aff0ba31d114831b0d627c2ca1fcd1486fa33d313e0824a9a39f1149"
   }
 }
