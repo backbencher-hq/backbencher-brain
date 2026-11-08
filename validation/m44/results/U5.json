@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "94adedbfa7ae187d9c2042f50f2402c25b51d2e4",
+  "currentCommit": "fdf9d77a3b69846729c7af03fafcc284743eb9e2",
   "sourceFingerprint": "0025a65e91c3979bd4c810026e471b0fd019e9ee400b3fec637a0365e98cfbff",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -22,7 +22,7 @@
   ],
   "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
   "evidenceFile": "U5.json",
-  "generatedAt": "2026-11-08T05:45:20.254Z",
+  "generatedAt": "2026-11-08T05:48:19.697Z",
   "fixture": "script/m44/u5-fixture.ts (real indexer + real dist server)",
   "laws": [
     "R0 fixture truth from the REAL indexer (seed can never drift)",
@@ -39,7 +39,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T05:45:20.254Z",
-    "contentSha256": "5a597f36fb8ef53695077c354299cff59ab8492e65710b2a193f4e430c1400fa"
+    "sealedAt": "2026-11-08T05:48:19.698Z",
+    "contentSha256": "a15edd93e8c21d3345c47c1cbf9edd6bef35ae686689a1a84199b4159a82ccb4"
   }
 }

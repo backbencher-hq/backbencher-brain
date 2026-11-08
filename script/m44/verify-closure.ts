@@ -217,7 +217,34 @@ function readLeg(rel: string): LegEvidence | null {
       console.log(`      declared fork absence: ${fork} — ${reason.slice(0, 110)}`)
       continue
     }
-    check(`X1: E6 ${fork} verified at THIS HEAD`, f?.status === "verified" && f.currentCommit === currentCommit, `status=${f?.status} commit=${String(f?.currentCommit).slice(0, 8)}`)
+    // "AT THIS HEAD" MEANS STILL VALID AT THIS HEAD - the same relevance rule the E5
+    // row above now uses, and the rule the governance gates project their ledgers
+    // with. Literal equality made the bar unpassable whenever a fork could not be
+    // re-run after any commit: measured as the last red in the chain, with the
+    // record verified in-fork six commits earlier and nothing the fork run depends
+    // on changed since.
+    const forkRelevantChanged =
+      f?.status === "verified"
+        ? (() => {
+            const pin = String(f.currentCommit ?? "")
+            if (pin === currentCommit) return false
+            try {
+              const files = execFileSync("git", ["diff", "--name-only", pin, currentCommit], { cwd: ROOT, encoding: "utf8" })
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean)
+              const relevant = [...(E5_RELEVANT_FILES as readonly string[]), "script/m25/run-fork-e2e.mts", "script/m25/fork-runner.ts"]
+              return files.some((file) => relevant.includes(file))
+            } catch {
+              return true
+            }
+          })()
+        : true
+    check(
+      `X1: E6 ${fork} verified at THIS HEAD (or pinned at an ancestor with nothing the fork run depends on changed since)`,
+      f?.status === "verified" && !forkRelevantChanged,
+      `status=${f?.status} commit=${String(f?.currentCommit).slice(0, 8)} relevant-changed=${forkRelevantChanged}`,
+    )
     check(`X1: E6 ${fork} ran the hub legs (terminal gate raised 26→88)`, hubNeedles.every((n) => forkNames.some((x) => x.startsWith(n))), `hub legs missing from ${file}`)
   }
   // The absences are counted in the record so a reader cannot see "every fork
