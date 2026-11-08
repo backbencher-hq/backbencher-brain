@@ -7,9 +7,9 @@
   "passed": 26,
   "failed": 6,
   "failures": [
-    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) — E5=known-gap  (exit=1)",
-    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (66/70 passed, 10 negative)  (exit=1)",
-    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (71/73 passed, 11 negative)  (exit=1)",
+    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — E5:stale-commit,D1:persisted-failed,X1:persisted-failed  (exit=1)",
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (67/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
     "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
     "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1",
     "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified"
@@ -29,8 +29,8 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
-  "sourceFingerprint": "ed2e0880ee8d42258e541346dd9a9c30003e13ec457f48235277306822070c4b",
+  "currentCommit": "d8c064bc4d2c0b378e70fe01b96470a3ac6e7559",
+  "sourceFingerprint": "61681ce843391e19ed76683a46acd8afe9fc19ecc1e70fefd72fdde87dfd90bb",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -65,7 +65,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-08T00:47:26.265Z",
+  "generatedAt": "2026-11-08T01:40:48.753Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -74,7 +74,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T00:47:26.266Z",
-    "contentSha256": "baf9d28f0bb4699c2bdd5b67e641d41b97f24e7fd9a876c8053b509e46b71266"
+    "sealedAt": "2026-11-08T01:40:48.754Z",
+    "contentSha256": "4d7e375d6fbc56ae4e3ede5108d759c290c88f845376d0e9292fcee7188abd13"
   }
 }

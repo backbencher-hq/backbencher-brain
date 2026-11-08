@@ -3,8 +3,8 @@
   "code": "R1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 36,
-  "failed": 5,
+  "passed": 37,
+  "failed": 4,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -46,7 +46,7 @@
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (32/37 passed, 3 negative)",
+      "verdict": "KNOWN-GAP (33/37 passed, 3 negative)",
       "ok": false,
       "timedOut": false
     },
@@ -117,9 +117,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (48/50 passed, 3 negative)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (50/50 passed, 3 negative)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -318,7 +318,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 9ea2efb6)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ a6d1b760)",
       "ok": true,
       "timedOut": false
     },
@@ -342,17 +342,17 @@
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (40/52 passed, 8 negatives)",
+      "verdict": "KNOWN-GAP (45/52 passed, 8 negatives)",
       "ok": false,
       "timedOut": false
     }
   ],
-  "currentCommit": "1e627784ae416406f7095493d512b78ea0290839",
+  "currentCommit": "d8c064bc4d2c0b378e70fe01b96470a3ac6e7559",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-08T00:51:32.936Z",
+  "generatedAt": "2026-11-08T01:44:26.766Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T00:51:32.937Z",
-    "contentSha256": "723002534a24b7d28118ed26aeccd57816b0d452c4a3aec6d7cb678dc862e684"
+    "sealedAt": "2026-11-08T01:44:26.767Z",
+    "contentSha256": "ec5a538c9dc0b24c806b3c3bb375e55843ef9bff09d37df1000dd0f434fbc1fa"
   }
 }
