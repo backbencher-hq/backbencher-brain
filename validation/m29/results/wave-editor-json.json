@@ -1,0 +1,981 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class User → object\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to r",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class User → object\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to r",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 5,\n      line = 16\n    },\n    start = {\n      character = 4,\n      line = 10\n    }\n  },\n  uri = \"file://$HOME",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "3",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "json",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 5,
+          "line": 16
+        },
+        "start": {
+          "character": 4,
+          "line": 10
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/json/main.json"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:$schema:2",
+              "notIndexed": false
+            },
+            "detail": "main.$schema",
+            "kind": 10,
+            "name": "$schema",
+            "range": {
+              "end": {
+                "character": 60,
+                "line": 1
+              },
+              "start": {
+                "character": 3,
+                "line": 1
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 10,
+                "line": 1
+              },
+              "start": {
+                "character": 3,
+                "line": 1
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:$id:3",
+              "notIndexed": false
+            },
+            "detail": "main.$id",
+            "kind": 10,
+            "name": "$id",
+            "range": {
+              "end": {
+                "character": 48,
+                "line": 2
+              },
+              "start": {
+                "character": 2,
+                "line": 2
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 48,
+                "line": 2
+              },
+              "start": {
+                "character": 2,
+                "line": 2
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:title:4",
+              "notIndexed": false
+            },
+            "detail": "main.title",
+            "kind": 10,
+            "name": "title",
+            "range": {
+              "end": {
+                "character": 32,
+                "line": 3
+              },
+              "start": {
+                "character": 2,
+                "line": 3
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 32,
+                "line": 3
+              },
+              "start": {
+                "character": 2,
+                "line": 3
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:type:5",
+              "notIndexed": false
+            },
+            "detail": "main.type",
+            "kind": 10,
+            "name": "type",
+            "range": {
+              "end": {
+                "character": 18,
+                "line": 4
+              },
+              "start": {
+                "character": 2,
+                "line": 4
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 18,
+                "line": 4
+              },
+              "start": {
+                "character": 2,
+                "line": 4
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "children": [],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:$ref:7",
+                      "notIndexed": false
+                    },
+                    "detail": "main.properties.user.$ref",
+                    "kind": 10,
+                    "name": "$ref",
+                    "range": {
+                      "end": {
+                        "character": 36,
+                        "line": 6
+                      },
+                      "start": {
+                        "character": 14,
+                        "line": 6
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 36,
+                        "line": 6
+                      },
+                      "start": {
+                        "character": 14,
+                        "line": 6
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:user:7",
+                  "notIndexed": false
+                },
+                "detail": "main.properties.user",
+                "kind": 5,
+                "name": "user",
+                "range": {
+                  "end": {
+                    "character": 38,
+                    "line": 6
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 6
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 38,
+                    "line": 6
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 6
+                  }
+                }
+              },
+              {
+                "children": [
+                  {
+                    "children": [],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:$ref:8",
+                      "notIndexed": false
+                    },
+                    "detail": "main.properties.team.$ref",
+                    "kind": 10,
+                    "name": "$ref",
+                    "range": {
+                      "end": {
+                        "character": 36,
+                        "line": 7
+                      },
+                      "start": {
+                        "character": 14,
+                        "line": 7
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 36,
+                        "line": 7
+                      },
+                      "start": {
+                        "character": 14,
+                        "line": 7
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:team:8",
+                  "notIndexed": false
+                },
+                "detail": "main.properties.team",
+                "kind": 5,
+                "name": "team",
+                "range": {
+                  "end": {
+                    "character": 38,
+                    "line": 7
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 7
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 38,
+                    "line": 7
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 7
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:properties:6",
+              "notIndexed": false
+            },
+            "detail": "main.properties",
+            "kind": 5,
+            "name": "properties",
+            "range": {
+              "end": {
+                "character": 3,
+                "line": 8
+              },
+              "start": {
+                "character": 2,
+                "line": 5
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 3,
+                "line": 8
+              },
+              "start": {
+                "character": 2,
+                "line": 5
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "children": [],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:type:12",
+                      "notIndexed": false
+                    },
+                    "detail": "main.$defs.User.type",
+                    "kind": 10,
+                    "name": "type",
+                    "range": {
+                      "end": {
+                        "character": 22,
+                        "line": 11
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 11
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 22,
+                        "line": 11
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 11
+                      }
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "children": [
+                          {
+                            "children": [],
+                            "data": {
+                              "evidenceTier": "indexed",
+                              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:type:14",
+                              "notIndexed": false
+                            },
+                            "detail": "main.$defs.User.properties.name.type",
+                            "kind": 10,
+                            "name": "type",
+                            "range": {
+                              "end": {
+                                "character": 34,
+                                "line": 13
+                              },
+                              "start": {
+                                "character": 18,
+                                "line": 13
+                              }
+                            },
+                            "selectionRange": {
+                              "end": {
+                                "character": 34,
+                                "line": 13
+                              },
+                              "start": {
+                                "character": 18,
+                                "line": 13
+                              }
+                            }
+                          }
+                        ],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:name:14",
+                          "notIndexed": false
+                        },
+                        "detail": "main.$defs.User.properties.name",
+                        "kind": 5,
+                        "name": "name",
+                        "range": {
+                          "end": {
+                            "character": 36,
+                            "line": 13
+                          },
+                          "start": {
+                            "character": 8,
+                            "line": 13
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 36,
+                            "line": 13
+                          },
+                          "start": {
+                            "character": 8,
+                            "line": 13
+                          }
+                        }
+                      },
+                      {
+                        "children": [
+                          {
+                            "children": [],
+                            "data": {
+                              "evidenceTier": "indexed",
+                              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:type:15",
+                              "notIndexed": false
+                            },
+                            "detail": "main.$defs.User.properties.email.type",
+                            "kind": 10,
+                            "name": "type",
+                            "range": {
+                              "end": {
+                                "character": 35,
+                                "line": 14
+                              },
+                              "start": {
+                                "character": 19,
+                                "line": 14
+                              }
+                            },
+                            "selectionRange": {
+                              "end": {
+                                "character": 35,
+                                "line": 14
+                              },
+                              "start": {
+                                "character": 19,
+                                "line": 14
+                              }
+                            }
+                          }
+                        ],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:email:15",
+                          "notIndexed": false
+                        },
+                        "detail": "main.$defs.User.properties.email",
+                        "kind": 5,
+                        "name": "email",
+                        "range": {
+                          "end": {
+                            "character": 37,
+                            "line": 14
+                          },
+                          "start": {
+                            "character": 8,
+                            "line": 14
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 37,
+                            "line": 14
+                          },
+                          "start": {
+                            "character": 8,
+                            "line": 14
+                          }
+                        }
+                      }
+                    ],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:properties:13",
+                      "notIndexed": false
+                    },
+                    "detail": "main.$defs.User.properties",
+                    "kind": 5,
+                    "name": "properties",
+                    "range": {
+                      "end": {
+                        "character": 7,
+                        "line": 15
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 12
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 7,
+                        "line": 15
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 12
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:User:11",
+                  "notIndexed": false
+                },
+                "detail": "main.$defs.User",
+                "kind": 5,
+                "name": "User",
+                "range": {
+                  "end": {
+                    "character": 5,
+                    "line": 16
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 10
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 5,
+                    "line": 16
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 10
+                  }
+                }
+              },
+              {
+                "children": [
+                  {
+                    "children": [],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:type:19",
+                      "notIndexed": false
+                    },
+                    "detail": "main.$defs.Team.type",
+                    "kind": 10,
+                    "name": "type",
+                    "range": {
+                      "end": {
+                        "character": 22,
+                        "line": 18
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 18
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 22,
+                        "line": 18
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 18
+                      }
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "children": [
+                          {
+                            "children": [],
+                            "data": {
+                              "evidenceTier": "indexed",
+                              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:type:22",
+                              "notIndexed": false
+                            },
+                            "detail": "main.$defs.Team.properties.members.type",
+                            "kind": 10,
+                            "name": "type",
+                            "range": {
+                              "end": {
+                                "character": 25,
+                                "line": 21
+                              },
+                              "start": {
+                                "character": 10,
+                                "line": 21
+                              }
+                            },
+                            "selectionRange": {
+                              "end": {
+                                "character": 25,
+                                "line": 21
+                              },
+                              "start": {
+                                "character": 10,
+                                "line": 21
+                              }
+                            }
+                          },
+                          {
+                            "children": [
+                              {
+                                "children": [],
+                                "data": {
+                                  "evidenceTier": "indexed",
+                                  "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:$ref:23",
+                                  "notIndexed": false
+                                },
+                                "detail": "main.$defs.Team.properties.members.items.$ref",
+                                "kind": 10,
+                                "name": "$ref",
+                                "range": {
+                                  "end": {
+                                    "character": 43,
+                                    "line": 22
+                                  },
+                                  "start": {
+                                    "character": 21,
+                                    "line": 22
+                                  }
+                                },
+                                "selectionRange": {
+                                  "end": {
+                                    "character": 43,
+                                    "line": 22
+                                  },
+                                  "start": {
+                                    "character": 21,
+                                    "line": 22
+                                  }
+                                }
+                              }
+                            ],
+                            "data": {
+                              "evidenceTier": "indexed",
+                              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:items:23",
+                              "notIndexed": false
+                            },
+                            "detail": "main.$defs.Team.properties.members.items",
+                            "kind": 5,
+                            "name": "items",
+                            "range": {
+                              "end": {
+                                "character": 45,
+                                "line": 22
+                              },
+                              "start": {
+                                "character": 10,
+                                "line": 22
+                              }
+                            },
+                            "selectionRange": {
+                              "end": {
+                                "character": 45,
+                                "line": 22
+                              },
+                              "start": {
+                                "character": 10,
+                                "line": 22
+                              }
+                            }
+                          }
+                        ],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:members:21",
+                          "notIndexed": false
+                        },
+                        "detail": "main.$defs.Team.properties.members",
+                        "kind": 5,
+                        "name": "members",
+                        "range": {
+                          "end": {
+                            "character": 9,
+                            "line": 23
+                          },
+                          "start": {
+                            "character": 8,
+                            "line": 20
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 9,
+                            "line": 23
+                          },
+                          "start": {
+                            "character": 8,
+                            "line": 20
+                          }
+                        }
+                      }
+                    ],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:properties:20",
+                      "notIndexed": false
+                    },
+                    "detail": "main.$defs.Team.properties",
+                    "kind": 5,
+                    "name": "properties",
+                    "range": {
+                      "end": {
+                        "character": 7,
+                        "line": 24
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 19
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 7,
+                        "line": 24
+                      },
+                      "start": {
+                        "character": 6,
+                        "line": 19
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:Team:18",
+                  "notIndexed": false
+                },
+                "detail": "main.$defs.Team",
+                "kind": 5,
+                "name": "Team",
+                "range": {
+                  "end": {
+                    "character": 5,
+                    "line": 25
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 17
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 5,
+                    "line": 25
+                  },
+                  "start": {
+                    "character": 4,
+                    "line": 17
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:$defs:10",
+              "notIndexed": false
+            },
+            "detail": "main.$defs",
+            "kind": 5,
+            "name": "$defs",
+            "range": {
+              "end": {
+                "character": 3,
+                "line": 26
+              },
+              "start": {
+                "character": 2,
+                "line": 9
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 3,
+                "line": 26
+              },
+              "start": {
+                "character": 2,
+                "line": 9
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "f5d485257df01ece219d886074d813adba885ddc:main.json:main:1",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "kind": 2,
+        "name": "main",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 28
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 28
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic class User → object\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**User** — class, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: referenced by [$ref](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A22%2C%22character%22%3A0%7D%5D), [$ref — main.json:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [$ref — main.json:23](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A22%2C%22character%22%3A0%7D%5D)\n2. [$ref — main.json:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 2 members, declared in 1 (declaration containment; never a usage)\ndeclares [properties](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A12%2C%22character%22%3A6%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A11%2C%22character%22%3A6%7D%5D)\ndeclared in [$defs](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A9%2C%22character%22%3A2%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/json/main.json:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: referenced by [$ref](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A22%2C%22character%22%3A0%7D%5D), [$ref — main.json:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)",
+          "containmentSection": "**contained** — declares 2 members, declared in 1 (declaration containment; never a usage)\ndeclares [properties](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A12%2C%22character%22%3A6%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A11%2C%22character%22%3A6%7D%5D)\ndeclared in [$defs](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A9%2C%22character%22%3A2%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 4,
+            "line": 10
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/json/main.json",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 17,
+          "lineStart": 11,
+          "name": "User",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "main.$defs.User",
+          "signature": "public class User → object",
+          "stale": false,
+          "symbolType": "class",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "User",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 2,
+          "usagesSection": "**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [$ref — main.json:23](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A22%2C%22character%22%3A0%7D%5D)\n2. [$ref — main.json:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjson%2Fmain.json%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 5,
+          "line": 16
+        },
+        "start": {
+          "character": 4,
+          "line": 10
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 22
+          },
+          "start": {
+            "character": 0,
+            "line": 22
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/json/main.json"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 6
+          },
+          "start": {
+            "character": 0,
+            "line": 6
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/json/main.json"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 5,
+            "line": 16
+          },
+          "start": {
+            "character": 4,
+            "line": 10
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/json/main.json"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:16.030Z",
+    "contentSha256": "c508a3d1db7dd413c7e0b84b368a008a900299330809efd422cea945d1e97f6c"
+  }
+}

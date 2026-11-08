@@ -1,0 +1,508 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic variable app_name\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to repor",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic variable app_name\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to repor",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 1,\n      line = 7\n    },\n    start = {\n      character = 0,\n      line = 3\n    }\n  },\n  uri = \"file://$HOMEha",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "3",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "terraform",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 1,
+          "line": 7
+        },
+        "start": {
+          "character": 0,
+          "line": 3
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:type:5",
+                  "notIndexed": false
+                },
+                "detail": "app_name.type",
+                "kind": 10,
+                "name": "type",
+                "range": {
+                  "end": {
+                    "character": 22,
+                    "line": 4
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 4
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 6,
+                    "line": 4
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 4
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:description:6",
+                  "notIndexed": false
+                },
+                "detail": "app_name.description",
+                "kind": 10,
+                "name": "description",
+                "range": {
+                  "end": {
+                    "character": 42,
+                    "line": 5
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 5
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 13,
+                    "line": 5
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 5
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:default:7",
+                  "notIndexed": false
+                },
+                "detail": "app_name.default",
+                "kind": 10,
+                "name": "default",
+                "range": {
+                  "end": {
+                    "character": 25,
+                    "line": 6
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 6
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 9,
+                    "line": 6
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 6
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:app_name:4",
+              "notIndexed": false
+            },
+            "detail": "app_name",
+            "kind": 13,
+            "name": "app_name",
+            "range": {
+              "end": {
+                "character": 1,
+                "line": 7
+              },
+              "start": {
+                "character": 0,
+                "line": 3
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 1,
+                "line": 7
+              },
+              "start": {
+                "character": 0,
+                "line": 3
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:triggers:11",
+                  "notIndexed": false
+                },
+                "detail": "null_resource.greeter.triggers",
+                "kind": 10,
+                "name": "triggers",
+                "range": {
+                  "end": {
+                    "character": 3,
+                    "line": 12
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 10
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 10,
+                    "line": 10
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 10
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:null_resource.greeter:10",
+              "notIndexed": false
+            },
+            "detail": "null_resource.greeter",
+            "kind": 5,
+            "name": "null_resource.greeter",
+            "range": {
+              "end": {
+                "character": 1,
+                "line": 13
+              },
+              "start": {
+                "character": 0,
+                "line": 9
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 1,
+                "line": 13
+              },
+              "start": {
+                "character": 0,
+                "line": 9
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:description:17",
+                  "notIndexed": false
+                },
+                "detail": "greeting.description",
+                "kind": 10,
+                "name": "description",
+                "range": {
+                  "end": {
+                    "character": 54,
+                    "line": 16
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 16
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 13,
+                    "line": 16
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 16
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:value:18",
+                  "notIndexed": false
+                },
+                "detail": "greeting.value",
+                "kind": 10,
+                "name": "value",
+                "range": {
+                  "end": {
+                    "character": 39,
+                    "line": 17
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 17
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 7,
+                    "line": 17
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 17
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:greeting:16",
+              "notIndexed": false
+            },
+            "detail": "greeting",
+            "kind": 13,
+            "name": "greeting",
+            "range": {
+              "end": {
+                "character": 1,
+                "line": 18
+              },
+              "start": {
+                "character": 0,
+                "line": 15
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 1,
+                "line": 18
+              },
+              "start": {
+                "character": 0,
+                "line": 15
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "48034e7d9404ecfe10d24bbbee85cd649c9f7524:main.tf:main:1",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "kind": 2,
+        "name": "main",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 19
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 19
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic variable app_name\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**app_name** — variable, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified\n\n**connected**: referenced by [greeting](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), [null_resource.greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [greeting — main.tf:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n2. [null_resource.greeter — main.tf:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [default](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D), [description](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A5%2C%22character%22%3A2%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A4%2C%22character%22%3A2%7D%5D)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n_(also declared by contains, exports)_\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf:4](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22app_name%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: referenced by [greeting](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), [null_resource.greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)",
+          "containmentSection": "**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [default](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D), [description](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A5%2C%22character%22%3A2%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A4%2C%22character%22%3A2%7D%5D)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n_(also declared by contains, exports)_",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 3
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "reference_qualified"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 8,
+          "lineStart": 4,
+          "name": "app_name",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "app_name",
+          "signature": "public variable app_name",
+          "stale": false,
+          "symbolType": "variable",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "app_name",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 2,
+          "usagesSection": "**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [greeting — main.tf:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n2. [null_resource.greeter — main.tf:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fterraform%2Fmain.tf%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 1,
+          "line": 7
+        },
+        "start": {
+          "character": 0,
+          "line": 3
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 17
+          },
+          "start": {
+            "character": 0,
+            "line": 17
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 11
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 7
+          },
+          "start": {
+            "character": 0,
+            "line": 3
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/terraform/main.tf"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:25:18.807Z",
+    "contentSha256": "24701d282f943aceb196e0e4996d6e55ccaba4cd0fc39dd848825287bd615464"
+  }
+}

@@ -1,0 +1,307 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic type Configure\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic type Configure\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 0,\n      line = 10\n    },\n    start = {\n      character = 0,\n      line = 9\n    }\n  },\n  uri = \"file://$HOMEh",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"Wave fixture document\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "markdown",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 10
+        },
+        "start": {
+          "character": 0,
+          "line": 9
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f7b8be488b543dfe74306715622dea01565a7682:main.md:Install:6",
+              "notIndexed": false
+            },
+            "detail": "Wave fixture document.Install",
+            "kind": 2,
+            "name": "Install",
+            "range": {
+              "end": {
+                "character": 0,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 5
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 0,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 5
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f7b8be488b543dfe74306715622dea01565a7682:main.md:Advanced tuning:14",
+                  "notIndexed": false
+                },
+                "detail": "Wave fixture document.Configure.Advanced tuning",
+                "kind": 2,
+                "name": "Advanced tuning",
+                "range": {
+                  "end": {
+                    "character": 0,
+                    "line": 14
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 13
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 0,
+                    "line": 14
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 13
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f7b8be488b543dfe74306715622dea01565a7682:main.md:Configure:10",
+              "notIndexed": false
+            },
+            "detail": "Wave fixture document.Configure",
+            "kind": 2,
+            "name": "Configure",
+            "range": {
+              "end": {
+                "character": 0,
+                "line": 10
+              },
+              "start": {
+                "character": 0,
+                "line": 9
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 0,
+                "line": 10
+              },
+              "start": {
+                "character": 0,
+                "line": 9
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "f7b8be488b543dfe74306715622dea01565a7682:main.md:Wave fixture document:1",
+          "notIndexed": false
+        },
+        "detail": "Wave fixture document",
+        "kind": 2,
+        "name": "Wave fixture document",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 1
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 1
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic type Configure\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**Configure** — type, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified\n\n**connected**: referenced by [Install](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [Install — main.md:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 1 member, declared in 1 (declaration containment; never a usage)\ndeclares [Advanced tuning](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A13%2C%22character%22%3A0%7D%5D)\ndeclared in [Wave fixture document](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Configure%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: referenced by [Install](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 1 member, declared in 1 (declaration containment; never a usage)\ndeclares [Advanced tuning](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A13%2C%22character%22%3A0%7D%5D)\ndeclared in [Wave fixture document](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 9
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "reference_qualified"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 11,
+          "lineStart": 10,
+          "name": "Configure",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "Wave fixture document.Configure",
+          "signature": "public type Configure",
+          "stale": false,
+          "symbolType": "type",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "Configure",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [Install — main.md:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmarkdown%2Fmain.md%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 10
+        },
+        "start": {
+          "character": 0,
+          "line": 9
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 9
+          },
+          "start": {
+            "character": 0,
+            "line": 9
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 10
+          },
+          "start": {
+            "character": 0,
+            "line": 9
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/markdown/main.md"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:21.581Z",
+    "contentSha256": "803afe48bfa5ba42618b999f46fefc0b62b24883d6dafbb3fb36e9bf4aa8b1be"
+  }
+}

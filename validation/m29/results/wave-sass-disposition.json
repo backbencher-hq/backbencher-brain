@@ -1,0 +1,18 @@
+{
+  "language": "sass",
+  "disposition": "blocked",
+  "reason": "No tree-sitter-sass grammar exists: .sass routes to the CSS analyzer and the indented syntax parses to ERROR, so the index publishes only the file module. Hover, workspace symbols and call hierarchy cannot be served from a module with no symbols. Blocked on a grammar, not on a fixture — indented-syntax support is a roadmap item.",
+  "failingChecks": [
+    "L2: hover renders the symbol",
+    "L4: workspace symbol finds it",
+    "L5: call hierarchy only for a callable symbol (item, or declared absence naming the kind)"
+  ],
+  "evidence": "validation/m29/results/wave-sass.json",
+  "declaredAt": "2026-11-08T19:20:01.465Z",
+  "declaredBy": "lead (post-wave-3 measurement)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:20:01.465Z",
+    "contentSha256": "d157991ef9f64aa89969c2b3202db76c0f261b7aa7a2829a2bd94e665adb4c5c"
+  }
+}

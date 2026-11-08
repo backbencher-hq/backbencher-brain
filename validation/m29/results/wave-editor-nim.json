@@ -1,0 +1,364 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic function greet(greeter: Greeter) → string\n```\n\ntype: string _(stored in the bb index · its explicit-vs-inf",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic function greet(greeter: Greeter) → string\n```\n\ntype: string _(stored in the bb index · its explicit-vs-inf",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 31,\n      line = 11\n    },\n    start = {\n      character = 0,\n      line = 10\n    }\n  },\n  uri = \"file:///home/i",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main\", \"Greeter\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "nim",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 31,
+          "line": 11
+        },
+        "start": {
+          "character": 0,
+          "line": 10
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/nim/main.nim"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "57e831341709d664f2506b0c9e1513240ed2c7c0:main.nim:newGreeter:8",
+              "notIndexed": false
+            },
+            "detail": "newGreeter",
+            "kind": 12,
+            "name": "newGreeter",
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 8
+              },
+              "start": {
+                "character": 0,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 23,
+                "line": 8
+              },
+              "start": {
+                "character": 0,
+                "line": 7
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "57e831341709d664f2506b0c9e1513240ed2c7c0:main.nim:greet:11",
+              "notIndexed": false
+            },
+            "detail": "greet",
+            "kind": 12,
+            "name": "greet",
+            "range": {
+              "end": {
+                "character": 31,
+                "line": 11
+              },
+              "start": {
+                "character": 0,
+                "line": 10
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 31,
+                "line": 11
+              },
+              "start": {
+                "character": 0,
+                "line": 10
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "57e831341709d664f2506b0c9e1513240ed2c7c0:main.nim:greeter:15",
+              "notIndexed": false
+            },
+            "detail": "greeter",
+            "kind": 13,
+            "name": "greeter",
+            "range": {
+              "end": {
+                "character": 39,
+                "line": 14
+              },
+              "start": {
+                "character": 6,
+                "line": 14
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 13,
+                "line": 14
+              },
+              "start": {
+                "character": 6,
+                "line": 14
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "57e831341709d664f2506b0c9e1513240ed2c7c0:main.nim:main:1",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "kind": 2,
+        "name": "main",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 16
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 16
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "57e831341709d664f2506b0c9e1513240ed2c7c0:main.nim:items:6",
+              "notIndexed": false
+            },
+            "detail": "Greeter.items",
+            "kind": 10,
+            "name": "items",
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 5
+              },
+              "start": {
+                "character": 4,
+                "line": 5
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 9,
+                "line": 5
+              },
+              "start": {
+                "character": 4,
+                "line": 5
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "57e831341709d664f2506b0c9e1513240ed2c7c0:main.nim:Greeter:5",
+          "notIndexed": false
+        },
+        "detail": "Greeter",
+        "kind": 23,
+        "name": "Greeter",
+        "range": {
+          "end": {
+            "character": 23,
+            "line": 5
+          },
+          "start": {
+            "character": 2,
+            "line": 4
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 9,
+            "line": 4
+          },
+          "start": {
+            "character": 2,
+            "line": 4
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic function greet(greeter: Greeter) → string\n```\n\ntype: string _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**greet** — function, 0 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual, reference_qualified\n\n**connected**: references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A4%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_; uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A5%2C%22character%22%3A4%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/nim/main.nim:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A4%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_; uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A5%2C%22character%22%3A4%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fnim%2Fmain.nim%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 10
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual",
+            "reference_qualified"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/nim/main.nim",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 12,
+          "lineStart": 11,
+          "name": "greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "parameters": [
+            {
+              "isOptional": false,
+              "isRest": false,
+              "name": "greeter",
+              "type": "Greeter"
+            }
+          ],
+          "qualifiedName": "greet",
+          "signature": "public function greet(greeter: Greeter) → string",
+          "stale": false,
+          "symbolType": "function",
+          "typeLine": {
+            "provenance": "stored",
+            "reason": "type as stored in the index; the index records no marker of whether the analyzer read it from an explicit annotation or inferred it, so its own provenance is unstated",
+            "stale": false,
+            "storedProvenanceUnknown": true,
+            "text": "string"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 0,
+          "usagesSection": ""
+        }
+      },
+      "range": {
+        "end": {
+          "character": 31,
+          "line": 11
+        },
+        "start": {
+          "character": 0,
+          "line": 10
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 31,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 10
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/nim/main.nim"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:25:07.651Z",
+    "contentSha256": "0762146279b14cae93e6e5726081b533517cdaac78f4d0e200661e88e43570bd"
+  }
+}

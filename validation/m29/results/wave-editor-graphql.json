@@ -1,0 +1,927 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class User\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class User\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 15,\n      line = 17\n    },\n    start = {\n      character = 1,\n      line = 12\n    }\n  },\n  uri = \"file:///home/i",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "4",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"schema\", \"Query\", \"Node\", \"User\", \"Team\", \"UserFilter\", \"Role\", \"UserFields\", \"FindUser\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "graphql",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 15,
+          "line": 17
+        },
+        "start": {
+          "character": 1,
+          "line": 12
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:query:3",
+              "notIndexed": false
+            },
+            "detail": "schema.query",
+            "kind": 10,
+            "name": "query",
+            "range": {
+              "end": {
+                "character": 12,
+                "line": 2
+              },
+              "start": {
+                "character": 0,
+                "line": 2
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 12,
+                "line": 2
+              },
+              "start": {
+                "character": 0,
+                "line": 2
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:schema:2",
+          "notIndexed": false
+        },
+        "detail": "schema",
+        "kind": 2,
+        "name": "schema",
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 2
+          },
+          "start": {
+            "character": 47,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 14,
+            "line": 2
+          },
+          "start": {
+            "character": 47,
+            "line": 0
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:user:7",
+              "notIndexed": false
+            },
+            "detail": "Query.user",
+            "kind": 10,
+            "name": "user",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 19,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:team:8",
+              "notIndexed": false
+            },
+            "detail": "Query.team",
+            "kind": 10,
+            "name": "team",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 7
+              },
+              "start": {
+                "character": 0,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 19,
+                "line": 7
+              },
+              "start": {
+                "character": 0,
+                "line": 7
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:Query:6",
+          "notIndexed": false
+        },
+        "detail": "Query",
+        "kind": 5,
+        "name": "Query",
+        "range": {
+          "end": {
+            "character": 21,
+            "line": 7
+          },
+          "start": {
+            "character": 1,
+            "line": 3
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 21,
+            "line": 7
+          },
+          "start": {
+            "character": 1,
+            "line": 3
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:id:12",
+              "notIndexed": false
+            },
+            "detail": "Node.id",
+            "kind": 10,
+            "name": "id",
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 11
+              },
+              "start": {
+                "character": 0,
+                "line": 11
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 7,
+                "line": 11
+              },
+              "start": {
+                "character": 0,
+                "line": 11
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:Node:11",
+          "notIndexed": false
+        },
+        "detail": "Node",
+        "kind": 11,
+        "name": "Node",
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 11
+          },
+          "start": {
+            "character": 1,
+            "line": 8
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 9,
+            "line": 11
+          },
+          "start": {
+            "character": 1,
+            "line": 8
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:id:16",
+              "notIndexed": false
+            },
+            "detail": "User.id",
+            "kind": 10,
+            "name": "id",
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 15
+              },
+              "start": {
+                "character": 0,
+                "line": 15
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 7,
+                "line": 15
+              },
+              "start": {
+                "character": 0,
+                "line": 15
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:name:17",
+              "notIndexed": false
+            },
+            "detail": "User.name",
+            "kind": 10,
+            "name": "name",
+            "range": {
+              "end": {
+                "character": 13,
+                "line": 16
+              },
+              "start": {
+                "character": 0,
+                "line": 16
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 13,
+                "line": 16
+              },
+              "start": {
+                "character": 0,
+                "line": 16
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:email:18",
+              "notIndexed": false
+            },
+            "detail": "User.email",
+            "kind": 10,
+            "name": "email",
+            "range": {
+              "end": {
+                "character": 13,
+                "line": 17
+              },
+              "start": {
+                "character": 0,
+                "line": 17
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 13,
+                "line": 17
+              },
+              "start": {
+                "character": 0,
+                "line": 17
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:User:15",
+          "notIndexed": false
+        },
+        "detail": "User",
+        "kind": 5,
+        "name": "User",
+        "range": {
+          "end": {
+            "character": 15,
+            "line": 17
+          },
+          "start": {
+            "character": 1,
+            "line": 12
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 15,
+            "line": 17
+          },
+          "start": {
+            "character": 1,
+            "line": 12
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:id:22",
+              "notIndexed": false
+            },
+            "detail": "Team.id",
+            "kind": 10,
+            "name": "id",
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 21
+              },
+              "start": {
+                "character": 0,
+                "line": 21
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 7,
+                "line": 21
+              },
+              "start": {
+                "character": 0,
+                "line": 21
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:title:23",
+              "notIndexed": false
+            },
+            "detail": "Team.title",
+            "kind": 10,
+            "name": "title",
+            "range": {
+              "end": {
+                "character": 14,
+                "line": 22
+              },
+              "start": {
+                "character": 0,
+                "line": 22
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 14,
+                "line": 22
+              },
+              "start": {
+                "character": 0,
+                "line": 22
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:members:24",
+              "notIndexed": false
+            },
+            "detail": "Team.members",
+            "kind": 10,
+            "name": "members",
+            "range": {
+              "end": {
+                "character": 17,
+                "line": 23
+              },
+              "start": {
+                "character": 0,
+                "line": 23
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 17,
+                "line": 23
+              },
+              "start": {
+                "character": 0,
+                "line": 23
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:Team:21",
+          "notIndexed": false
+        },
+        "detail": "Team",
+        "kind": 5,
+        "name": "Team",
+        "range": {
+          "end": {
+            "character": 19,
+            "line": 23
+          },
+          "start": {
+            "character": 1,
+            "line": 18
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 19,
+            "line": 23
+          },
+          "start": {
+            "character": 1,
+            "line": 18
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:name:28",
+              "notIndexed": false
+            },
+            "detail": "UserFilter.name",
+            "kind": 10,
+            "name": "name",
+            "range": {
+              "end": {
+                "character": 12,
+                "line": 27
+              },
+              "start": {
+                "character": 0,
+                "line": 27
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 12,
+                "line": 27
+              },
+              "start": {
+                "character": 0,
+                "line": 27
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:UserFilter:27",
+          "notIndexed": false
+        },
+        "detail": "UserFilter",
+        "kind": 5,
+        "name": "UserFilter",
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 27
+          },
+          "start": {
+            "character": 1,
+            "line": 24
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 14,
+            "line": 27
+          },
+          "start": {
+            "character": 1,
+            "line": 24
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:ADMIN:32",
+              "notIndexed": false
+            },
+            "detail": "Role.ADMIN",
+            "kind": 2,
+            "name": "ADMIN",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 31
+              },
+              "start": {
+                "character": 0,
+                "line": 31
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 31
+              },
+              "start": {
+                "character": 0,
+                "line": 31
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:MEMBER:33",
+              "notIndexed": false
+            },
+            "detail": "Role.MEMBER",
+            "kind": 2,
+            "name": "MEMBER",
+            "range": {
+              "end": {
+                "character": 6,
+                "line": 32
+              },
+              "start": {
+                "character": 0,
+                "line": 32
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 6,
+                "line": 32
+              },
+              "start": {
+                "character": 0,
+                "line": 32
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:Role:31",
+          "notIndexed": false
+        },
+        "detail": "Role",
+        "kind": 13,
+        "name": "Role",
+        "range": {
+          "end": {
+            "character": 8,
+            "line": 32
+          },
+          "start": {
+            "character": 1,
+            "line": 28
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 8,
+            "line": 32
+          },
+          "start": {
+            "character": 1,
+            "line": 28
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:UserFields:36",
+          "notIndexed": false
+        },
+        "detail": "UserFields",
+        "kind": 6,
+        "name": "UserFields",
+        "range": {
+          "end": {
+            "character": 6,
+            "line": 37
+          },
+          "start": {
+            "character": 1,
+            "line": 33
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 6,
+            "line": 37
+          },
+          "start": {
+            "character": 1,
+            "line": 33
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:$id:41",
+              "notIndexed": false
+            },
+            "detail": "FindUser.$id",
+            "kind": 13,
+            "name": "$id",
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 40
+              },
+              "start": {
+                "character": 13,
+                "line": 40
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 21,
+                "line": 40
+              },
+              "start": {
+                "character": 13,
+                "line": 40
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "b537a1063cbc43eb0025503b09c9e8074943a515:main.graphql:FindUser:41",
+          "notIndexed": false
+        },
+        "detail": "FindUser",
+        "kind": 6,
+        "name": "FindUser",
+        "range": {
+          "end": {
+            "character": 3,
+            "line": 43
+          },
+          "start": {
+            "character": 1,
+            "line": 38
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 3,
+            "line": 43
+          },
+          "start": {
+            "character": 1,
+            "line": 38
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic class User\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**User** — class, 3 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: implements [Node](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A8%2C%22character%22%3A1%7D%5D) · _role implementor · pattern adapter · layer core→core · 3 referring rows · low criticality · framework contract (enriched by index)_; used by [UserFields](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A35%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_; referenced by [members](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A23%2C%22character%22%3A0%7D%5D), [user](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**usages** — 3 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [UserFields — main.graphql:36](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A35%2C%22character%22%3A0%7D%5D)\n2. [members — main.graphql:24](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A23%2C%22character%22%3A0%7D%5D)\n3. [user — main.graphql:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 3 members, declared in 0 (declaration containment; never a usage)\ndeclares [email](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), [id](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D), [name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql:13](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A12%2C%22character%22%3A1%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: implements [Node](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A8%2C%22character%22%3A1%7D%5D) · _role implementor · pattern adapter · layer core→core · 3 referring rows · low criticality · framework contract (enriched by index)_; used by [UserFields](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A35%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 4 referring rows · low criticality (enriched by index)_; referenced by [members](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A23%2C%22character%22%3A0%7D%5D), [user](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)",
+          "containmentSection": "**contained** — declares 3 members, declared in 0 (declaration containment; never a usage)\ndeclares [email](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), [id](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D), [name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 1,
+            "line": 12
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 19,
+          "lineStart": 15,
+          "name": "User",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "User",
+          "signature": "public class User",
+          "stale": false,
+          "symbolType": "class",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "User",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 3,
+          "usagesSection": "**usages** — 3 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [UserFields — main.graphql:36](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A35%2C%22character%22%3A0%7D%5D)\n2. [members — main.graphql:24](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A23%2C%22character%22%3A0%7D%5D)\n3. [user — main.graphql:7](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgraphql%2Fmain.graphql%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 15,
+          "line": 17
+        },
+        "start": {
+          "character": 1,
+          "line": 12
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 35
+          },
+          "start": {
+            "character": 0,
+            "line": 35
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 23
+          },
+          "start": {
+            "character": 0,
+            "line": 23
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 6
+          },
+          "start": {
+            "character": 0,
+            "line": 6
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 15,
+            "line": 17
+          },
+          "start": {
+            "character": 1,
+            "line": 12
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/graphql/main.graphql"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:27.307Z",
+    "contentSha256": "d6c7ef85151ab6feb919518758c08efca485c847fbbef319891248ed22780710"
+  }
+}

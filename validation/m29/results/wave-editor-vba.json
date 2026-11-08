@@ -1,0 +1,346 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic function Greet(greeter: Greeter) → String\n```\n\n''' <summary>Returns the greeting for a greeter.</summary>\n\n",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic function Greet(greeter: Greeter) → String\n```\n\n''' <summary>Returns the greeting for a greeter.</summary>\n\n",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 12,\n      line = 14\n    },\n    start = {\n      character = 0,\n      line = 12\n    }\n  },\n  uri = \"file:///home/i",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"Greeter\", \"Greet\", \"GreetAll\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "vba",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 12,
+          "line": 14
+        },
+        "start": {
+          "character": 0,
+          "line": 12
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/vba/main.bas"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "40ea8d9febb3bf1f7879e1cc060b71ddeb08b47c:main.bas:Items:9",
+              "notIndexed": false
+            },
+            "detail": "Greeter.Items",
+            "kind": 13,
+            "name": "Items",
+            "range": {
+              "end": {
+                "character": 20,
+                "line": 8
+              },
+              "start": {
+                "character": 4,
+                "line": 8
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 9,
+                "line": 8
+              },
+              "start": {
+                "character": 4,
+                "line": 8
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "40ea8d9febb3bf1f7879e1cc060b71ddeb08b47c:main.bas:Greeter:8",
+          "notIndexed": false
+        },
+        "detail": "Greeter",
+        "kind": 2,
+        "name": "Greeter",
+        "range": {
+          "end": {
+            "character": 8,
+            "line": 9
+          },
+          "start": {
+            "character": 0,
+            "line": 7
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 8,
+            "line": 9
+          },
+          "start": {
+            "character": 0,
+            "line": 7
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "40ea8d9febb3bf1f7879e1cc060b71ddeb08b47c:main.bas:Greet:13",
+          "notIndexed": false
+        },
+        "detail": "Greet",
+        "kind": 12,
+        "name": "Greet",
+        "range": {
+          "end": {
+            "character": 12,
+            "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 12
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 12,
+            "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 12
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "40ea8d9febb3bf1f7879e1cc060b71ddeb08b47c:main.bas:greeter:19",
+              "notIndexed": false
+            },
+            "detail": "GreetAll.greeter",
+            "kind": 13,
+            "name": "greeter",
+            "range": {
+              "end": {
+                "character": 26,
+                "line": 18
+              },
+              "start": {
+                "character": 4,
+                "line": 18
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 26,
+                "line": 18
+              },
+              "start": {
+                "character": 4,
+                "line": 18
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "40ea8d9febb3bf1f7879e1cc060b71ddeb08b47c:main.bas:GreetAll:18",
+          "notIndexed": false
+        },
+        "detail": "GreetAll",
+        "kind": 6,
+        "name": "GreetAll",
+        "range": {
+          "end": {
+            "character": 7,
+            "line": 21
+          },
+          "start": {
+            "character": 0,
+            "line": 17
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 7,
+            "line": 21
+          },
+          "start": {
+            "character": 0,
+            "line": 17
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic function Greet(greeter: Greeter) → String\n```\n\n''' <summary>Returns the greeting for a greeter.</summary>\n\n\n\ntype: String _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**Greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual, inferred\n\n**connected**: uses [Items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A8%2C%22character%22%3A4%7D%5D), [greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D); called by [GreetAll](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A20%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [GreetAll — main.bas:21](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A20%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/vba/main.bas:13](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: uses [Items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A8%2C%22character%22%3A4%7D%5D), [greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D); called by [GreetAll](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A20%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; references [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 12
+          },
+          "docComment": "''' <summary>Returns the greeting for a greeter.</summary>",
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual",
+            "inferred"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/vba/main.bas",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 15,
+          "lineStart": 13,
+          "name": "Greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "parameters": [
+            {
+              "isOptional": false,
+              "isRest": false,
+              "name": "greeter",
+              "type": "Greeter"
+            }
+          ],
+          "qualifiedName": "Greet",
+          "signature": "public function Greet(greeter: Greeter) → String",
+          "stale": false,
+          "symbolType": "function",
+          "typeLine": {
+            "provenance": "stored",
+            "reason": "type as stored in the index; the index records no marker of whether the analyzer read it from an explicit annotation or inferred it, so its own provenance is unstated",
+            "stale": false,
+            "storedProvenanceUnknown": true,
+            "text": "String"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "Greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [GreetAll — main.bas:21](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvba%2Fmain.bas%22%2C%22line%22%3A20%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 12,
+          "line": 14
+        },
+        "start": {
+          "character": 0,
+          "line": 12
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 20
+          },
+          "start": {
+            "character": 0,
+            "line": 20
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/vba/main.bas"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 12,
+            "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 12
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/vba/main.bas"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:25:11.510Z",
+    "contentSha256": "9250b1832d7e0c551978d365b6488e4d08a04d7dfe880b9218397203654cafbd"
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\ninternal method greet(…) → String\n```\n\nReturns the greeting for the stored items.\n\n\n\ntype: String _(stored in th",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\ninternal method greet(…) → String\n```\n\nReturns the greeting for the stored items.\n\n\n\ntype: String _(stored in th",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 14,\n      line = 14\n    },\n    start = {\n      character = 9,\n      line = 14\n    }\n  },\n  uri = \"file:///home/i",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"Greeter\", \"main\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "swift",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 14,
+          "line": 14
+        },
+        "start": {
+          "character": 9,
+          "line": 14
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/swift/main.swift"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d0f3d7b98a1c11a265955570dbe8711361eb7369:main.swift:items:8",
+              "notIndexed": false
+            },
+            "detail": "items",
+            "kind": 10,
+            "name": "items",
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 7
+              },
+              "start": {
+                "character": 16,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 21,
+                "line": 7
+              },
+              "start": {
+                "character": 16,
+                "line": 7
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d0f3d7b98a1c11a265955570dbe8711361eb7369:main.swift:constructor:10",
+              "notIndexed": false
+            },
+            "detail": "constructor",
+            "kind": 9,
+            "name": "constructor",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 11
+              },
+              "start": {
+                "character": 4,
+                "line": 9
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 11
+              },
+              "start": {
+                "character": 4,
+                "line": 9
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d0f3d7b98a1c11a265955570dbe8711361eb7369:main.swift:greet:15",
+              "notIndexed": false
+            },
+            "detail": "greet",
+            "kind": 6,
+            "name": "greet",
+            "range": {
+              "end": {
+                "character": 14,
+                "line": 14
+              },
+              "start": {
+                "character": 9,
+                "line": 14
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 14,
+                "line": 14
+              },
+              "start": {
+                "character": 9,
+                "line": 14
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "d0f3d7b98a1c11a265955570dbe8711361eb7369:main.swift:Greeter:7",
+          "notIndexed": false
+        },
+        "detail": "Greeter",
+        "kind": 5,
+        "name": "Greeter",
+        "range": {
+          "end": {
+            "character": 13,
+            "line": 6
+          },
+          "start": {
+            "character": 6,
+            "line": 6
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 13,
+            "line": 6
+          },
+          "start": {
+            "character": 6,
+            "line": 6
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "d0f3d7b98a1c11a265955570dbe8711361eb7369:main.swift:main:20",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "kind": 12,
+        "name": "main",
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 19
+          },
+          "start": {
+            "character": 5,
+            "line": 19
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 9,
+            "line": 19
+          },
+          "start": {
+            "character": 5,
+            "line": 19
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\ninternal method greet(…) → String\n```\n\nReturns the greeting for the stored items.\n\n\n\ntype: String _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**greet** — method, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual, inferred\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A7%2C%22character%22%3A16%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.swift:22](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A6%2C%22character%22%3A6%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/swift/main.swift:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A14%2C%22character%22%3A9%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A7%2C%22character%22%3A16%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A6%2C%22character%22%3A6%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 9,
+            "line": 14
+          },
+          "docComment": "Returns the greeting for the stored items.",
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual",
+            "inferred"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/swift/main.swift",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 15,
+          "lineStart": 15,
+          "name": "greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "greet",
+          "signature": "internal method greet(…) → String",
+          "stale": false,
+          "symbolType": "method",
+          "typeLine": {
+            "provenance": "stored",
+            "reason": "type as stored in the index; the index records no marker of whether the analyzer read it from an explicit annotation or inferred it, so its own provenance is unstated",
+            "stale": false,
+            "storedProvenanceUnknown": true,
+            "text": "String"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [main — main.swift:22](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fswift%2Fmain.swift%22%2C%22line%22%3A21%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 14,
+          "line": 14
+        },
+        "start": {
+          "character": 9,
+          "line": 14
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 21
+          },
+          "start": {
+            "character": 0,
+            "line": 21
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/swift/main.swift"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 14
+          },
+          "start": {
+            "character": 9,
+            "line": 14
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/swift/main.swift"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:56.917Z",
+    "contentSha256": "02adf7f07d2cc0dd914dc143f80106cfea92e511df44fbc81261a3a57977d18b"
+  }
+}

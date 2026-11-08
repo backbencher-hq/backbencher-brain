@@ -1,0 +1,305 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\nglobal function greet(…)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type coverage for ",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\nglobal function greet(…)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type coverage for ",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 0,\n      line = 8\n    },\n    start = {\n      character = 0,\n      line = 4\n    }\n  },\n  uri = \"file://$HOMEha",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main.mk\", \"GREETING\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "make",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 8
+        },
+        "start": {
+          "character": 0,
+          "line": 4
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "eedf45509eac723a5aea02453a115021416f71b5:main.mk:greet:5",
+              "notIndexed": false
+            },
+            "detail": "greet",
+            "kind": 12,
+            "name": "greet",
+            "range": {
+              "end": {
+                "character": 0,
+                "line": 8
+              },
+              "start": {
+                "character": 0,
+                "line": 4
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 0,
+                "line": 8
+              },
+              "start": {
+                "character": 0,
+                "line": 4
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "eedf45509eac723a5aea02453a115021416f71b5:main.mk:all:11",
+              "notIndexed": false
+            },
+            "detail": "all",
+            "kind": 12,
+            "name": "all",
+            "range": {
+              "end": {
+                "character": 0,
+                "line": 14
+              },
+              "start": {
+                "character": 0,
+                "line": 10
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 3,
+                "line": 10
+              },
+              "start": {
+                "character": 0,
+                "line": 10
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "eedf45509eac723a5aea02453a115021416f71b5:main.mk:main.mk:1",
+          "notIndexed": false
+        },
+        "detail": "main.mk",
+        "kind": 2,
+        "name": "main.mk",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 15
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 15
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "eedf45509eac723a5aea02453a115021416f71b5:main.mk:GREETING:9",
+          "notIndexed": false
+        },
+        "detail": "GREETING",
+        "kind": 2,
+        "name": "GREETING",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 10
+          },
+          "start": {
+            "character": 0,
+            "line": 8
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 8,
+            "line": 8
+          },
+          "start": {
+            "character": 0,
+            "line": 8
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\nglobal function greet(…)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type coverage for make; it returned nothing rather than a type)_\n\n**greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [all](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [all — main.mk:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [main.mk](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk:5](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: called by [all](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [main.mk](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 4
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 9,
+          "lineStart": 5,
+          "name": "greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "greet",
+          "signature": "global function greet(…)",
+          "stale": false,
+          "symbolType": "function",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "the inference engine has no node-type coverage for make; it returned nothing rather than a type",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "language-not-covered"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [all — main.mk:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fmake%2Fmain.mk%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 8
+        },
+        "start": {
+          "character": 0,
+          "line": 4
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 11
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 8
+          },
+          "start": {
+            "character": 0,
+            "line": 4
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/make/main.mk"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:54.953Z",
+    "contentSha256": "a833a28ea766e3b8c1361b9a1c4b6a52e3fd232d211ffec4bc141bcdeac57d8c"
+  }
+}

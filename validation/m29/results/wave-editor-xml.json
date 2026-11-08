@@ -1,0 +1,936 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class catalog\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class catalog\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 52,\n      line = 5\n    },\n    start = {\n      character = 0,\n      line = 5\n    }\n  },\n  uri = \"file://$HOMEh",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"xs:schema\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "xml",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 52,
+          "line": 5
+        },
+        "start": {
+          "character": 0,
+          "line": 5
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/xml/main.xml"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:xs:4",
+              "notIndexed": false
+            },
+            "detail": "xs:schema.xs",
+            "kind": 2,
+            "name": "xs",
+            "range": {
+              "end": {
+                "character": 52,
+                "line": 3
+              },
+              "start": {
+                "character": 9,
+                "line": 3
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 52,
+                "line": 3
+              },
+              "start": {
+                "character": 9,
+                "line": 3
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:targetNamespace:5",
+              "notIndexed": false
+            },
+            "detail": "xs:schema.targetNamespace",
+            "kind": 10,
+            "name": "targetNamespace",
+            "range": {
+              "end": {
+                "character": 52,
+                "line": 4
+              },
+              "start": {
+                "character": 9,
+                "line": 4
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 52,
+                "line": 4
+              },
+              "start": {
+                "character": 9,
+                "line": 4
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:name:6",
+                  "notIndexed": false
+                },
+                "detail": "catalog.name",
+                "kind": 10,
+                "name": "name",
+                "range": {
+                  "end": {
+                    "character": 26,
+                    "line": 5
+                  },
+                  "start": {
+                    "character": 12,
+                    "line": 5
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 26,
+                    "line": 5
+                  },
+                  "start": {
+                    "character": 12,
+                    "line": 5
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:type:6",
+                  "notIndexed": false
+                },
+                "detail": "catalog.type",
+                "kind": 10,
+                "name": "type",
+                "range": {
+                  "end": {
+                    "character": 50,
+                    "line": 5
+                  },
+                  "start": {
+                    "character": 27,
+                    "line": 5
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 50,
+                    "line": 5
+                  },
+                  "start": {
+                    "character": 27,
+                    "line": 5
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:catalog:6",
+              "notIndexed": false
+            },
+            "detail": "xs:schema.catalog",
+            "kind": 5,
+            "name": "catalog",
+            "range": {
+              "end": {
+                "character": 52,
+                "line": 5
+              },
+              "start": {
+                "character": 0,
+                "line": 5
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 52,
+                "line": 5
+              },
+              "start": {
+                "character": 0,
+                "line": 5
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:name:7",
+                  "notIndexed": false
+                },
+                "detail": "CatalogType.name",
+                "kind": 10,
+                "name": "name",
+                "range": {
+                  "end": {
+                    "character": 34,
+                    "line": 6
+                  },
+                  "start": {
+                    "character": 16,
+                    "line": 6
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 34,
+                    "line": 6
+                  },
+                  "start": {
+                    "character": 16,
+                    "line": 6
+                  }
+                }
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:name:9",
+                          "notIndexed": false
+                        },
+                        "detail": "item.name",
+                        "kind": 10,
+                        "name": "name",
+                        "range": {
+                          "end": {
+                            "character": 27,
+                            "line": 8
+                          },
+                          "start": {
+                            "character": 16,
+                            "line": 8
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 27,
+                            "line": 8
+                          },
+                          "start": {
+                            "character": 16,
+                            "line": 8
+                          }
+                        }
+                      },
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:type:9",
+                          "notIndexed": false
+                        },
+                        "detail": "item.type",
+                        "kind": 10,
+                        "name": "type",
+                        "range": {
+                          "end": {
+                            "character": 48,
+                            "line": 8
+                          },
+                          "start": {
+                            "character": 28,
+                            "line": 8
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 48,
+                            "line": 8
+                          },
+                          "start": {
+                            "character": 28,
+                            "line": 8
+                          }
+                        }
+                      },
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:maxOccurs:9",
+                          "notIndexed": false
+                        },
+                        "detail": "item.maxOccurs",
+                        "kind": 10,
+                        "name": "maxOccurs",
+                        "range": {
+                          "end": {
+                            "character": 70,
+                            "line": 8
+                          },
+                          "start": {
+                            "character": 49,
+                            "line": 8
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 70,
+                            "line": 8
+                          },
+                          "start": {
+                            "character": 49,
+                            "line": 8
+                          }
+                        }
+                      }
+                    ],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:item:9",
+                      "notIndexed": false
+                    },
+                    "detail": "xs:sequence.item",
+                    "kind": 5,
+                    "name": "item",
+                    "range": {
+                      "end": {
+                        "character": 72,
+                        "line": 8
+                      },
+                      "start": {
+                        "character": 4,
+                        "line": 8
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 72,
+                        "line": 8
+                      },
+                      "start": {
+                        "character": 4,
+                        "line": 8
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:xs:sequence:8",
+                  "notIndexed": false
+                },
+                "detail": "CatalogType.xs:sequence",
+                "kind": 5,
+                "name": "xs:sequence",
+                "range": {
+                  "end": {
+                    "character": 16,
+                    "line": 9
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 7
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 16,
+                    "line": 9
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 7
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:CatalogType:7",
+              "notIndexed": false
+            },
+            "detail": "xs:schema.CatalogType",
+            "kind": 5,
+            "name": "CatalogType",
+            "range": {
+              "end": {
+                "character": 17,
+                "line": 10
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 17,
+                "line": 10
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:name:12",
+                  "notIndexed": false
+                },
+                "detail": "ItemType.name",
+                "kind": 10,
+                "name": "name",
+                "range": {
+                  "end": {
+                    "character": 31,
+                    "line": 11
+                  },
+                  "start": {
+                    "character": 16,
+                    "line": 11
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 31,
+                    "line": 11
+                  },
+                  "start": {
+                    "character": 16,
+                    "line": 11
+                  }
+                }
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:name:14",
+                          "notIndexed": false
+                        },
+                        "detail": "sku.name",
+                        "kind": 10,
+                        "name": "name",
+                        "range": {
+                          "end": {
+                            "character": 26,
+                            "line": 13
+                          },
+                          "start": {
+                            "character": 16,
+                            "line": 13
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 26,
+                            "line": 13
+                          },
+                          "start": {
+                            "character": 16,
+                            "line": 13
+                          }
+                        }
+                      },
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:type:14",
+                          "notIndexed": false
+                        },
+                        "detail": "sku.type",
+                        "kind": 10,
+                        "name": "type",
+                        "range": {
+                          "end": {
+                            "character": 43,
+                            "line": 13
+                          },
+                          "start": {
+                            "character": 27,
+                            "line": 13
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 43,
+                            "line": 13
+                          },
+                          "start": {
+                            "character": 27,
+                            "line": 13
+                          }
+                        }
+                      }
+                    ],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:sku:14",
+                      "notIndexed": false
+                    },
+                    "detail": "xs:sequence.sku",
+                    "kind": 5,
+                    "name": "sku",
+                    "range": {
+                      "end": {
+                        "character": 45,
+                        "line": 13
+                      },
+                      "start": {
+                        "character": 4,
+                        "line": 13
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 45,
+                        "line": 13
+                      },
+                      "start": {
+                        "character": 4,
+                        "line": 13
+                      }
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:name:15",
+                          "notIndexed": false
+                        },
+                        "detail": "title.name",
+                        "kind": 10,
+                        "name": "name",
+                        "range": {
+                          "end": {
+                            "character": 28,
+                            "line": 14
+                          },
+                          "start": {
+                            "character": 16,
+                            "line": 14
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 28,
+                            "line": 14
+                          },
+                          "start": {
+                            "character": 16,
+                            "line": 14
+                          }
+                        }
+                      },
+                      {
+                        "children": [],
+                        "data": {
+                          "evidenceTier": "indexed",
+                          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:type:15",
+                          "notIndexed": false
+                        },
+                        "detail": "title.type",
+                        "kind": 10,
+                        "name": "type",
+                        "range": {
+                          "end": {
+                            "character": 45,
+                            "line": 14
+                          },
+                          "start": {
+                            "character": 29,
+                            "line": 14
+                          }
+                        },
+                        "selectionRange": {
+                          "end": {
+                            "character": 45,
+                            "line": 14
+                          },
+                          "start": {
+                            "character": 29,
+                            "line": 14
+                          }
+                        }
+                      }
+                    ],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:title:15",
+                      "notIndexed": false
+                    },
+                    "detail": "xs:sequence.title",
+                    "kind": 5,
+                    "name": "title",
+                    "range": {
+                      "end": {
+                        "character": 47,
+                        "line": 14
+                      },
+                      "start": {
+                        "character": 4,
+                        "line": 14
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 47,
+                        "line": 14
+                      },
+                      "start": {
+                        "character": 4,
+                        "line": 14
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:xs:sequence:13",
+                  "notIndexed": false
+                },
+                "detail": "ItemType.xs:sequence",
+                "kind": 5,
+                "name": "xs:sequence",
+                "range": {
+                  "end": {
+                    "character": 16,
+                    "line": 15
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 12
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 16,
+                    "line": 15
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 12
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:ItemType:12",
+              "notIndexed": false
+            },
+            "detail": "xs:schema.ItemType",
+            "kind": 5,
+            "name": "ItemType",
+            "range": {
+              "end": {
+                "character": 17,
+                "line": 16
+              },
+              "start": {
+                "character": 0,
+                "line": 11
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 17,
+                "line": 16
+              },
+              "start": {
+                "character": 0,
+                "line": 11
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:ref:18",
+                  "notIndexed": false
+                },
+                "detail": "xs:element.ref",
+                "kind": 10,
+                "name": "ref",
+                "range": {
+                  "end": {
+                    "character": 30,
+                    "line": 17
+                  },
+                  "start": {
+                    "character": 12,
+                    "line": 17
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 30,
+                    "line": 17
+                  },
+                  "start": {
+                    "character": 12,
+                    "line": 17
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:xs:element:18",
+              "notIndexed": false
+            },
+            "detail": "xs:schema.xs:element",
+            "kind": 5,
+            "name": "xs:element",
+            "range": {
+              "end": {
+                "character": 32,
+                "line": 17
+              },
+              "start": {
+                "character": 0,
+                "line": 17
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 32,
+                "line": 17
+              },
+              "start": {
+                "character": 0,
+                "line": 17
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "d100e929d0c75bb68d6016ef3a078feb34d8d467:main.xml:xs:schema:4",
+          "notIndexed": false
+        },
+        "detail": "xs:schema",
+        "kind": 5,
+        "name": "xs:schema",
+        "range": {
+          "end": {
+            "character": 10,
+            "line": 18
+          },
+          "start": {
+            "character": 72,
+            "line": 2
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 10,
+            "line": 18
+          },
+          "start": {
+            "character": 72,
+            "line": 2
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic class catalog\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**catalog** — class, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, reference_qualified, inferred\n\n**connected**: references [CatalogType](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; uses [xs](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A3%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 10 referring rows · medium criticality (enriched by index)_; referenced by [xs:element](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [xs:element — main.xml:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 2 members, declared in 1 (declaration containment; never a usage)\ndeclares [name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A12%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A27%7D%5D)\ndeclared in [xs:schema](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A2%2C%22character%22%3A72%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22catalog%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22catalog%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22catalog%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/xml/main.xml:6](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22catalog%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22catalog%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22catalog%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: references [CatalogType](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; uses [xs](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A3%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 10 referring rows · medium criticality (enriched by index)_; referenced by [xs:element](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 2 members, declared in 1 (declaration containment; never a usage)\ndeclares [name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A12%7D%5D), [type](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A5%2C%22character%22%3A27%7D%5D)\ndeclared in [xs:schema](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A2%2C%22character%22%3A72%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 5
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "reference_qualified",
+            "inferred"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/xml/main.xml",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 6,
+          "lineStart": 6,
+          "name": "catalog",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "xs:schema.catalog",
+          "signature": "public class catalog",
+          "stale": false,
+          "symbolType": "class",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "catalog",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [xs:element — main.xml:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fxml%2Fmain.xml%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 52,
+          "line": 5
+        },
+        "start": {
+          "character": 0,
+          "line": 5
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 17
+          },
+          "start": {
+            "character": 0,
+            "line": 17
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/xml/main.xml"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 52,
+            "line": 5
+          },
+          "start": {
+            "character": 0,
+            "line": 5
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/xml/main.xml"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:24.843Z",
+    "contentSha256": "c1a17100b3e3927fb52c0a06ef4959bfe9eb914885d8286a6daae35aa409affc"
+  }
+}

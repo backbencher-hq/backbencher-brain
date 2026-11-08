@@ -3,14 +3,14 @@
   "code": "R2",
   "milestone": "M29",
   "status": "verified",
-  "checks": 261,
-  "passed": 261,
+  "checks": 800,
+  "passed": 800,
   "failed": 0,
-  "mutantsCaught": 5,
-  "mutantsTotal": 5,
-  "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+  "mutantsCaught": 9,
+  "mutantsTotal": 9,
+  "currentCommit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
   "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
-  "sourceFingerprint": "bbbf77447760a220bfe1762a79a3f971894184fddb6208bfe601b5ac2477cb0b",
+  "sourceFingerprint": "9e1f2acb4d60c30dfb2cdf0eb9718deff459f7b84114a6b54bf9dbd1832c845f",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-wave-execution.ts",
@@ -20,7 +20,7 @@
     "script/m29/wave-protocol.ts"
   ],
   "evidenceFile": "R2.json",
-  "generatedAt": "2026-11-08T09:20:58.058Z",
+  "generatedAt": "2026-11-08T19:25:18.830Z",
   "approval": {
     "record": "validation/m29/results/wave-1-approval.json",
     "approvedBy": "owner (ishaq2321)",
@@ -38,7 +38,45 @@
       "c",
       "cpp",
       "vue",
-      "svelte"
+      "svelte",
+      "tsx",
+      "html",
+      "css",
+      "scss",
+      "sass",
+      "json",
+      "yaml",
+      "toml",
+      "markdown",
+      "xml",
+      "graphql",
+      "protobuf",
+      "sql",
+      "perl",
+      "ruby",
+      "php",
+      "lua",
+      "elixir",
+      "erlang",
+      "haskell",
+      "clojure",
+      "julia",
+      "r",
+      "bash",
+      "powershell",
+      "make",
+      "swift",
+      "dart",
+      "csharp",
+      "fsharp",
+      "nim",
+      "vb",
+      "vba",
+      "matlab",
+      "clean",
+      "solidity",
+      "hcl",
+      "terraform"
     ]
   },
   "s5Legs": [
@@ -122,6 +160,238 @@
     },
     {
       "language": "svelte",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "tsx",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "html",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "css",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "scss",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "sass",
+      "status": "failed",
+      "steps": 12,
+      "budgetsOk": true,
+      "terminal": "blocked",
+      "dispositionReason": "blocked: No tree-sitter-sass grammar exists: .sass routes to the CSS analyzer and the indented syntax parses to ERROR, so the index publishes only the file module. Hover, workspace symbols and call hierarchy cannot be served from a module with no symbols. Blocked on a grammar, not on a fixture — indented-syntax support is a roadmap item. (covers 3 failed check(s); evidence validation/m29/results/wave-sass.json)"
+    },
+    {
+      "language": "json",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "yaml",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "toml",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "markdown",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "xml",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "graphql",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "protobuf",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "sql",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "perl",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "ruby",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "php",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "lua",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "elixir",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "erlang",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "haskell",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "clojure",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "julia",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "r",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "bash",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "powershell",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "make",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "swift",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "dart",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "csharp",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "fsharp",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "nim",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "vb",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "vba",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "matlab",
+      "status": "failed",
+      "steps": 12,
+      "budgetsOk": true,
+      "terminal": "blocked",
+      "dispositionReason": "blocked: `.m` is shared by MATLAB and Objective-C. The indexer resolves it by content sniffing and stores main.m as matlab, but the LSP's extension-only path resolver deliberately refuses to guess an identity, so every surface returns a declared absence. Blocked on content-aware language resolution in the LSP, not on the analyzer. (covers 6 failed check(s); evidence validation/m29/results/wave-matlab.json)"
+    },
+    {
+      "language": "clean",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "solidity",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "hcl",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "terraform",
       "status": "verified",
       "steps": 12,
       "budgetsOk": true
@@ -211,15 +481,260 @@
       "status": "verified",
       "checks": 10,
       "failed": 0
+    },
+    {
+      "language": "tsx",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "html",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "css",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "scss",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "sass",
+      "status": "terminal-blocked",
+      "checks": 0,
+      "failed": 0,
+      "terminal": "blocked",
+      "dispositionReason": "blocked: No tree-sitter-sass grammar exists: .sass routes to the CSS analyzer and the indented syntax parses to ERROR, so the index publishes only the file module. Hover, workspace symbols and call hierarchy cannot be served from a module with no symbols. Blocked on a grammar, not on a fixture — indented-syntax support is a roadmap item. (covers 3 failed check(s); evidence validation/m29/results/wave-sass.json)"
+    },
+    {
+      "language": "json",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "yaml",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "toml",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "markdown",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "xml",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "graphql",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "protobuf",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "sql",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "perl",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "ruby",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "php",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "lua",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "elixir",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "erlang",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "haskell",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "clojure",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "julia",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "r",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "bash",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "powershell",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "make",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "swift",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "dart",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "csharp",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "fsharp",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "nim",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "vb",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "vba",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "matlab",
+      "status": "terminal-blocked",
+      "checks": 0,
+      "failed": 0,
+      "terminal": "blocked",
+      "dispositionReason": "blocked: `.m` is shared by MATLAB and Objective-C. The indexer resolves it by content sniffing and stores main.m as matlab, but the LSP's extension-only path resolver deliberately refuses to guess an identity, so every surface returns a declared absence. Blocked on content-aware language resolution in the LSP, not on the analyzer. (covers 6 failed check(s); evidence validation/m29/results/wave-matlab.json)"
+    },
+    {
+      "language": "clean",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "solidity",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "hcl",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "terraform",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    }
+  ],
+  "terminalDispositions": [
+    {
+      "language": "sass",
+      "disposition": "blocked",
+      "reason": "blocked: No tree-sitter-sass grammar exists: .sass routes to the CSS analyzer and the indented syntax parses to ERROR, so the index publishes only the file module. Hover, workspace symbols and call hierarchy cannot be served from a module with no symbols. Blocked on a grammar, not on a fixture — indented-syntax support is a roadmap item. (covers 3 failed check(s); evidence validation/m29/results/wave-sass.json)"
+    },
+    {
+      "language": "matlab",
+      "disposition": "blocked",
+      "reason": "blocked: `.m` is shared by MATLAB and Objective-C. The indexer resolves it by content sniffing and stores main.m as matlab, but the LSP's extension-only path resolver deliberately refuses to guess an identity, so every surface returns a declared absence. Blocked on content-aware language resolution in the LSP, not on the analyzer. (covers 6 failed check(s); evidence validation/m29/results/wave-matlab.json)"
     }
   ],
   "limitations": [
     "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed.",
-    "S5/S6 legs exercise the six owner-approved languages; languages outside the approval record are not onboarded this wave (the binding forbids it)."
+    "S5/S6 legs exercise exactly the languages named by the wave approval records; languages outside the approval record are not onboarded this wave (the binding forbids it).",
+    "An approved language whose S5 leg is not verified is accepted as a TERMINAL blocked / not-lsp-appropriate state only when a sealed validation/m29/results/wave-<lang>-disposition.json exists whose failingChecks are a subset of the leg's REAL failed steps and whose evidence record exists. It is printed with its reason and never counted as verified; a missing leg is always a failure."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:20:58.058Z",
-    "contentSha256": "63398ccf0beabcc056ccd15587a61330ed55ab4a711b7b7efabac06f4448da09"
+    "sealedAt": "2026-11-08T19:25:18.830Z",
+    "contentSha256": "d5ebf6939b0913a0576109edd69892cfb4475ccee1493ea95870fa771f954de9"
   }
 }

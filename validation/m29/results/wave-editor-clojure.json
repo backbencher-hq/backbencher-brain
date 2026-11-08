@@ -1,0 +1,314 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic function greet(items: Any)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type covera",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic function greet(items: Any)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type covera",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 35,\n      line = 9\n    },\n    start = {\n      character = 0,\n      line = 8\n    }\n  },\n  uri = \"file://$HOMEh",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"greeter\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "clojure",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 35,
+          "line": 9
+        },
+        "start": {
+          "character": 0,
+          "line": 8
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/clojure/main.clj"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4236048ae412ed1a0907be6a77248ad56e8a098f:main.clj:greeting:7",
+              "notIndexed": false
+            },
+            "detail": "greeter/greeting",
+            "kind": 13,
+            "name": "greeting",
+            "range": {
+              "end": {
+                "character": 22,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 22,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4236048ae412ed1a0907be6a77248ad56e8a098f:main.clj:greet:9",
+              "notIndexed": false
+            },
+            "detail": "greeter/greet",
+            "kind": 12,
+            "name": "greet",
+            "range": {
+              "end": {
+                "character": 35,
+                "line": 9
+              },
+              "start": {
+                "character": 0,
+                "line": 8
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 35,
+                "line": 9
+              },
+              "start": {
+                "character": 0,
+                "line": 8
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4236048ae412ed1a0907be6a77248ad56e8a098f:main.clj:-main:12",
+              "notIndexed": false
+            },
+            "detail": "greeter/-main",
+            "kind": 12,
+            "name": "-main",
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 13
+              },
+              "start": {
+                "character": 0,
+                "line": 11
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 21,
+                "line": 13
+              },
+              "start": {
+                "character": 0,
+                "line": 11
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "4236048ae412ed1a0907be6a77248ad56e8a098f:main.clj:greeter:5",
+          "notIndexed": false
+        },
+        "detail": "greeter",
+        "kind": 2,
+        "name": "greeter",
+        "range": {
+          "end": {
+            "character": 12,
+            "line": 4
+          },
+          "start": {
+            "character": 0,
+            "line": 4
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 12,
+            "line": 4
+          },
+          "start": {
+            "character": 0,
+            "line": 4
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic function greet(items: Any)\n```\n\ntype: unknown _(not resolved — the inference engine has no node-type coverage for clojure; it returned nothing rather than a type)_\n\n**greet** — function, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [-main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [-main — main.clj:13](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n_(also declared by contains, exports)_\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/clojure/main.clj:9](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: called by [-main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 3 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n_(also declared by contains, exports)_",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 8
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/clojure/main.clj",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 10,
+          "lineStart": 9,
+          "name": "greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "parameters": [
+            {
+              "isOptional": false,
+              "isRest": false,
+              "name": "items",
+              "type": "Any"
+            }
+          ],
+          "qualifiedName": "greeter/greet",
+          "signature": "public function greet(items: Any)",
+          "stale": false,
+          "symbolType": "function",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "the inference engine has no node-type coverage for clojure; it returned nothing rather than a type",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "language-not-covered"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [-main — main.clj:13](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fclojure%2Fmain.clj%22%2C%22line%22%3A12%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 35,
+          "line": 9
+        },
+        "start": {
+          "character": 0,
+          "line": 8
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 12
+          },
+          "start": {
+            "character": 0,
+            "line": 12
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/clojure/main.clj"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 35,
+            "line": 9
+          },
+          "start": {
+            "character": 0,
+            "line": 8
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/clojure/main.clj"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:45.232Z",
+    "contentSha256": "e58be27ac7577ddd23e4d3e67a801627d3004d0f291c39d0e091b0c86a8a8146"
+  }
+}

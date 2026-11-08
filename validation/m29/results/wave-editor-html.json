@@ -1,0 +1,338 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class email\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n*",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class email\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n*",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 63,\n      line = 11\n    },\n    start = {\n      character = 8,\n      line = 11\n    }\n  },\n  uri = \"file:///home/i",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "html",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 63,
+          "line": 11
+        },
+        "start": {
+          "character": 8,
+          "line": 11
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/html/main.html"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f9f78221a4483938950591f3c4b76acfd39de9f9:main.html:page-title:9",
+                  "notIndexed": false
+                },
+                "detail": "page-title",
+                "kind": 5,
+                "name": "page-title",
+                "range": {
+                  "end": {
+                    "character": 43,
+                    "line": 8
+                  },
+                  "start": {
+                    "character": 6,
+                    "line": 8
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 43,
+                    "line": 8
+                  },
+                  "start": {
+                    "character": 6,
+                    "line": 8
+                  }
+                }
+              },
+              {
+                "children": [
+                  {
+                    "children": [],
+                    "data": {
+                      "evidenceTier": "indexed",
+                      "id": "f9f78221a4483938950591f3c4b76acfd39de9f9:main.html:email:12",
+                      "notIndexed": false
+                    },
+                    "detail": "email",
+                    "kind": 5,
+                    "name": "email",
+                    "range": {
+                      "end": {
+                        "character": 63,
+                        "line": 11
+                      },
+                      "start": {
+                        "character": 8,
+                        "line": 11
+                      }
+                    },
+                    "selectionRange": {
+                      "end": {
+                        "character": 63,
+                        "line": 11
+                      },
+                      "start": {
+                        "character": 8,
+                        "line": 11
+                      }
+                    }
+                  }
+                ],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "f9f78221a4483938950591f3c4b76acfd39de9f9:main.html:signup:10",
+                  "notIndexed": false
+                },
+                "detail": "signup",
+                "kind": 5,
+                "name": "signup",
+                "range": {
+                  "end": {
+                    "character": 13,
+                    "line": 13
+                  },
+                  "start": {
+                    "character": 6,
+                    "line": 9
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 13,
+                    "line": 13
+                  },
+                  "start": {
+                    "character": 6,
+                    "line": 9
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f9f78221a4483938950591f3c4b76acfd39de9f9:main.html:content:8",
+              "notIndexed": false
+            },
+            "detail": "content",
+            "kind": 5,
+            "name": "content",
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 15
+              },
+              "start": {
+                "character": 4,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 11,
+                "line": 15
+              },
+              "start": {
+                "character": 4,
+                "line": 7
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "f9f78221a4483938950591f3c4b76acfd39de9f9:main.html:main:1",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "kind": 2,
+        "name": "main",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 18
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 18
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic class email\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**email** — class, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: used by [signup](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [signup — main.html:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [signup](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22email%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22email%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22email%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/html/main.html:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22email%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22email%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22email%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: used by [signup](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [signup](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 8,
+            "line": 11
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/html/main.html",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 12,
+          "lineStart": 12,
+          "name": "email",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "email",
+          "signature": "public class email",
+          "stale": false,
+          "symbolType": "class",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "email",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [signup — main.html:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fhtml%2Fmain.html%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 63,
+          "line": 11
+        },
+        "start": {
+          "character": 8,
+          "line": 11
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 10
+          },
+          "start": {
+            "character": 0,
+            "line": 10
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/html/main.html"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 63,
+            "line": 11
+          },
+          "start": {
+            "character": 8,
+            "line": 11
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/html/main.html"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:10.707Z",
+    "contentSha256": "5dba95bde02e67d9776679966369f151336acc3467a0571017d1ec568842e343"
+  }
+}

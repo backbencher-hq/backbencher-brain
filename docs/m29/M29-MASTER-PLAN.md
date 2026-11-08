@@ -24,7 +24,7 @@ precision is the differentiator no incumbent matches.
 |------|-------|-------------|
 | G1 | Governance + v4-bar check | ledger; closure gate; M28 bar still green |
 | R1 | Wave protocol | the repeatable onboarding protocol: analyzer #419 conformance → position gate → freshness gate → IDE fixtures → mutants → latency budget → claim-level assignment; protocol documented as a checklist a new language walks |
-| R2 | Wave 1 execution | onboard the next languages by the R1 protocol (candidates by ledger state: javascript INVENTORY-DONE, vue NOT-STARTED — actual set chosen by #419 ledger at execution time, owner-approved) |
+| R2 | Wave 1 execution | onboard the next languages by the R1 protocol (candidates by ledger state: javascript INVENTORY-DONE, vue NOT-STARTED — actual set chosen by #419 ledger at execution time, contract-approved) |
 | R3 | Giant-repo budgets | hover/navigation latency on M19-scale corpora (intellij-community subsets etc.), in-editor where feasible; results recorded with machine + corpus revision |
 | R4 | Precision ledger | published per-language/per-feature precision table: claim level, evidence path, differential sampling results, known limitations; regeneration script; staleness policy |
 | R5 | Precision improvements | evidence-driven precision work surfaced by R4 (e.g. heuristic-edge reduction feeding the inferred-tier ratio); each fix lands fixture-first with a mutant (F7 rule) |

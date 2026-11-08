@@ -1,0 +1,585 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class users\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n*",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class users\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n*",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 21,\n      line = 5\n    },\n    start = {\n      character = 16,\n      line = 5\n    }\n  },\n  uri = \"file://$HOME",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main.sql\", \"wave\", \"users\", \"orders\", \"order_totals\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "sql",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 21,
+          "line": 5
+        },
+        "start": {
+          "character": 16,
+          "line": 5
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/sql/main.sql"
+    },
+    "documentSymbol": [
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:main.sql:1",
+          "notIndexed": false
+        },
+        "detail": "main.sql",
+        "kind": 2,
+        "name": "main.sql",
+        "range": {
+          "end": {
+            "character": 18,
+            "line": 23
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 18,
+            "line": 23
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:wave:4",
+          "notIndexed": false
+        },
+        "detail": "main.sql::wave",
+        "kind": 2,
+        "name": "wave",
+        "range": {
+          "end": {
+            "character": 16,
+            "line": 3
+          },
+          "start": {
+            "character": 12,
+            "line": 3
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 16,
+            "line": 3
+          },
+          "start": {
+            "character": 12,
+            "line": 3
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:id:7",
+              "notIndexed": false
+            },
+            "detail": "main.sql::users.id",
+            "kind": 10,
+            "name": "id",
+            "range": {
+              "end": {
+                "character": 2,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 2,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:email:8",
+              "notIndexed": false
+            },
+            "detail": "main.sql::users.email",
+            "kind": 10,
+            "name": "email",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 7
+              },
+              "start": {
+                "character": 0,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 7
+              },
+              "start": {
+                "character": 0,
+                "line": 7
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:display_name:9",
+              "notIndexed": false
+            },
+            "detail": "main.sql::users.display_name",
+            "kind": 10,
+            "name": "display_name",
+            "range": {
+              "end": {
+                "character": 12,
+                "line": 8
+              },
+              "start": {
+                "character": 0,
+                "line": 8
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 12,
+                "line": 8
+              },
+              "start": {
+                "character": 0,
+                "line": 8
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:users:6",
+          "notIndexed": false
+        },
+        "detail": "main.sql::users",
+        "kind": 5,
+        "name": "users",
+        "range": {
+          "end": {
+            "character": 21,
+            "line": 5
+          },
+          "start": {
+            "character": 16,
+            "line": 5
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 21,
+            "line": 5
+          },
+          "start": {
+            "character": 16,
+            "line": 5
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:id:13",
+              "notIndexed": false
+            },
+            "detail": "main.sql::orders.id",
+            "kind": 10,
+            "name": "id",
+            "range": {
+              "end": {
+                "character": 2,
+                "line": 12
+              },
+              "start": {
+                "character": 0,
+                "line": 12
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 2,
+                "line": 12
+              },
+              "start": {
+                "character": 0,
+                "line": 12
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:user_id:14",
+              "notIndexed": false
+            },
+            "detail": "main.sql::orders.user_id",
+            "kind": 10,
+            "name": "user_id",
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 13
+              },
+              "start": {
+                "character": 0,
+                "line": 13
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 7,
+                "line": 13
+              },
+              "start": {
+                "character": 0,
+                "line": 13
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:total_cents:15",
+              "notIndexed": false
+            },
+            "detail": "main.sql::orders.total_cents",
+            "kind": 10,
+            "name": "total_cents",
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 14
+              },
+              "start": {
+                "character": 0,
+                "line": 14
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 11,
+                "line": 14
+              },
+              "start": {
+                "character": 0,
+                "line": 14
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:placed_at:16",
+              "notIndexed": false
+            },
+            "detail": "main.sql::orders.placed_at",
+            "kind": 10,
+            "name": "placed_at",
+            "range": {
+              "end": {
+                "character": 9,
+                "line": 15
+              },
+              "start": {
+                "character": 0,
+                "line": 15
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 9,
+                "line": 15
+              },
+              "start": {
+                "character": 0,
+                "line": 15
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:orders_by_user:19",
+              "notIndexed": false
+            },
+            "detail": "main.sql::orders.orders_by_user",
+            "kind": 2,
+            "name": "orders_by_user",
+            "range": {
+              "end": {
+                "character": 25,
+                "line": 18
+              },
+              "start": {
+                "character": 11,
+                "line": 18
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 25,
+                "line": 18
+              },
+              "start": {
+                "character": 11,
+                "line": 18
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:orders:12",
+          "notIndexed": false
+        },
+        "detail": "main.sql::orders",
+        "kind": 5,
+        "name": "orders",
+        "range": {
+          "end": {
+            "character": 22,
+            "line": 11
+          },
+          "start": {
+            "character": 16,
+            "line": 11
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 22,
+            "line": 11
+          },
+          "start": {
+            "character": 16,
+            "line": 11
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "4e52e9e344483c176809011b4f08d7b3ea7b11f7:main.sql:order_totals:21",
+          "notIndexed": false
+        },
+        "detail": "main.sql::order_totals",
+        "kind": 5,
+        "name": "order_totals",
+        "range": {
+          "end": {
+            "character": 27,
+            "line": 20
+          },
+          "start": {
+            "character": 15,
+            "line": 20
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 27,
+            "line": 20
+          },
+          "start": {
+            "character": 15,
+            "line": 20
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic class users\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**users** — class, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: referenced by [orders](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A11%2C%22character%22%3A16%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [orders — main.sql:12 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A11%2C%22character%22%3A16%7D%5D)\n\n**contained** — declares 3 members, declared in 0 (declaration containment; never a usage)\ndeclares [display_name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D), [email](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D), [id](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22users%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22users%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22users%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/sql/main.sql:6](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22users%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22users%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22users%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A5%2C%22character%22%3A16%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: referenced by [orders](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A11%2C%22character%22%3A16%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 3 members, declared in 0 (declaration containment; never a usage)\ndeclares [display_name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D), [email](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D), [id](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 16,
+            "line": 5
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/sql/main.sql",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 6,
+          "lineStart": 6,
+          "name": "users",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "main.sql::users",
+          "signature": "public class users",
+          "stale": false,
+          "symbolType": "class",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "users",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — the index stores no call-site line for these, so each opens the referencing declaration _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [orders — main.sql:12 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsql%2Fmain.sql%22%2C%22line%22%3A11%2C%22character%22%3A16%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 21,
+          "line": 5
+        },
+        "start": {
+          "character": 16,
+          "line": 5
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 22,
+            "line": 11
+          },
+          "start": {
+            "character": 16,
+            "line": 11
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/sql/main.sql"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 21,
+            "line": 5
+          },
+          "start": {
+            "character": 16,
+            "line": 5
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/sql/main.sql"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:30.996Z",
+    "contentSha256": "e5594511a77f9e39f9495f9495b56b6d5c6263810b9ceb11bd85a66f3bd1d8ad"
+  }
+}

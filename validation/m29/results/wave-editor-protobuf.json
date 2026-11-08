@@ -1,0 +1,852 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class User\n```\n\n// protobuf's own reference form.\n\n\n\ntype: unknown _(not resolved — not a callable symbol; ",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic class User\n```\n\n// protobuf's own reference form.\n\n\n\ntype: unknown _(not resolved — not a callable symbol; ",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 22,\n      line = 10\n    },\n    start = {\n      character = 32,\n      line = 6\n    }\n  },\n  uri = \"file:///home/i",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "3",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"wave.v1\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "protobuf",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 22,
+          "line": 10
+        },
+        "start": {
+          "character": 32,
+          "line": 6
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/protobuf/main.proto"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:name:9",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.User.name",
+                "kind": 10,
+                "name": "name",
+                "range": {
+                  "end": {
+                    "character": 16,
+                    "line": 8
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 8
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 16,
+                    "line": 8
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 8
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:email:10",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.User.email",
+                "kind": 10,
+                "name": "email",
+                "range": {
+                  "end": {
+                    "character": 17,
+                    "line": 9
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 9
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 17,
+                    "line": 9
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 9
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:address:11",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.User.address",
+                "kind": 10,
+                "name": "address",
+                "range": {
+                  "end": {
+                    "character": 20,
+                    "line": 10
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 10
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 20,
+                    "line": 10
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 10
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:User:8",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.User",
+            "kind": 5,
+            "name": "User",
+            "range": {
+              "end": {
+                "character": 22,
+                "line": 10
+              },
+              "start": {
+                "character": 32,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 22,
+                "line": 10
+              },
+              "start": {
+                "character": 32,
+                "line": 6
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:city:15",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.Address.city",
+                "kind": 10,
+                "name": "city",
+                "range": {
+                  "end": {
+                    "character": 16,
+                    "line": 14
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 14
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 16,
+                    "line": 14
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 14
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:country:16",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.Address.country",
+                "kind": 10,
+                "name": "country",
+                "range": {
+                  "end": {
+                    "character": 19,
+                    "line": 15
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 15
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 19,
+                    "line": 15
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 15
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:Address:14",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.Address",
+            "kind": 5,
+            "name": "Address",
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 15
+              },
+              "start": {
+                "character": 1,
+                "line": 11
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 21,
+                "line": 15
+              },
+              "start": {
+                "character": 1,
+                "line": 11
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:ROLE_UNSPECIFIED:20",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.Role.ROLE_UNSPECIFIED",
+                "kind": 2,
+                "name": "ROLE_UNSPECIFIED",
+                "range": {
+                  "end": {
+                    "character": 21,
+                    "line": 19
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 19
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 21,
+                    "line": 19
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 19
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:ROLE_ADMIN:21",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.Role.ROLE_ADMIN",
+                "kind": 2,
+                "name": "ROLE_ADMIN",
+                "range": {
+                  "end": {
+                    "character": 15,
+                    "line": 20
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 20
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 15,
+                    "line": 20
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 20
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:ROLE_MEMBER:22",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.Role.ROLE_MEMBER",
+                "kind": 2,
+                "name": "ROLE_MEMBER",
+                "range": {
+                  "end": {
+                    "character": 16,
+                    "line": 21
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 21
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 16,
+                    "line": 21
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 21
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:Role:19",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.Role",
+            "kind": 13,
+            "name": "Role",
+            "range": {
+              "end": {
+                "character": 18,
+                "line": 21
+              },
+              "start": {
+                "character": 1,
+                "line": 16
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 18,
+                "line": 21
+              },
+              "start": {
+                "character": 1,
+                "line": 16
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:GetUser:26",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.UserService.GetUser",
+                "kind": 6,
+                "name": "GetUser",
+                "range": {
+                  "end": {
+                    "character": 43,
+                    "line": 25
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 25
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 43,
+                    "line": 25
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 25
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:ListUsers:27",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.UserService.ListUsers",
+                "kind": 6,
+                "name": "ListUsers",
+                "range": {
+                  "end": {
+                    "character": 60,
+                    "line": 26
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 26
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 60,
+                    "line": 26
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 26
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:UserService:25",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.UserService",
+            "kind": 11,
+            "name": "UserService",
+            "range": {
+              "end": {
+                "character": 62,
+                "line": 26
+              },
+              "start": {
+                "character": 1,
+                "line": 22
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 62,
+                "line": 26
+              },
+              "start": {
+                "character": 1,
+                "line": 22
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:id:31",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.GetUserRequest.id",
+                "kind": 10,
+                "name": "id",
+                "range": {
+                  "end": {
+                    "character": 14,
+                    "line": 30
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 30
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 14,
+                    "line": 30
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 30
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:GetUserRequest:30",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.GetUserRequest",
+            "kind": 5,
+            "name": "GetUserRequest",
+            "range": {
+              "end": {
+                "character": 16,
+                "line": 30
+              },
+              "start": {
+                "character": 1,
+                "line": 27
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 16,
+                "line": 30
+              },
+              "start": {
+                "character": 1,
+                "line": 27
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:page_size:35",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.ListUsersRequest.page_size",
+                "kind": 10,
+                "name": "page_size",
+                "range": {
+                  "end": {
+                    "character": 20,
+                    "line": 34
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 34
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 20,
+                    "line": 34
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 34
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:ListUsersRequest:34",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.ListUsersRequest",
+            "kind": 5,
+            "name": "ListUsersRequest",
+            "range": {
+              "end": {
+                "character": 22,
+                "line": 34
+              },
+              "start": {
+                "character": 1,
+                "line": 31
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 22,
+                "line": 34
+              },
+              "start": {
+                "character": 1,
+                "line": 31
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:users:39",
+                  "notIndexed": false
+                },
+                "detail": "wave.v1.ListUsersResponse.users",
+                "kind": 10,
+                "name": "users",
+                "range": {
+                  "end": {
+                    "character": 24,
+                    "line": 38
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 38
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 24,
+                    "line": 38
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 38
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:ListUsersResponse:38",
+              "notIndexed": false
+            },
+            "detail": "wave.v1.ListUsersResponse",
+            "kind": 5,
+            "name": "ListUsersResponse",
+            "range": {
+              "end": {
+                "character": 26,
+                "line": 38
+              },
+              "start": {
+                "character": 1,
+                "line": 35
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 26,
+                "line": 38
+              },
+              "start": {
+                "character": 1,
+                "line": 35
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "9deff712009ffe084f6f657992daeb2d0bd708a5:main.proto:wave.v1:4",
+          "notIndexed": false
+        },
+        "detail": "wave.v1",
+        "kind": 2,
+        "name": "wave.v1",
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 3
+          },
+          "start": {
+            "character": 18,
+            "line": 1
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 14,
+            "line": 3
+          },
+          "start": {
+            "character": 18,
+            "line": 1
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic class User\n```\n\n// protobuf's own reference form.\n\n\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**User** — class, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: referenced by [GetUser](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A25%2C%22character%22%3A0%7D%5D), [users](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A38%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [GetUser — main.proto:26](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A25%2C%22character%22%3A0%7D%5D)\n2. [users — main.proto:39](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A38%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [address](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D), [email](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D), [name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D)\ndeclared in [wave.v1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A1%2C%22character%22%3A18%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/protobuf/main.proto:7](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22User%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A6%2C%22character%22%3A32%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: referenced by [GetUser](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A25%2C%22character%22%3A0%7D%5D), [users](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A38%2C%22character%22%3A0%7D%5D)",
+          "containmentSection": "**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [address](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D), [email](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D), [name](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A8%2C%22character%22%3A0%7D%5D)\ndeclared in [wave.v1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A1%2C%22character%22%3A18%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 32,
+            "line": 6
+          },
+          "docComment": "// protobuf's own reference form.",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/protobuf/main.proto",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 12,
+          "lineStart": 8,
+          "name": "User",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "wave.v1.User",
+          "signature": "public class User",
+          "stale": false,
+          "symbolType": "class",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "User",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 2,
+          "usagesSection": "**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [GetUser — main.proto:26](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A25%2C%22character%22%3A0%7D%5D)\n2. [users — main.proto:39](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fprotobuf%2Fmain.proto%22%2C%22line%22%3A38%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 22,
+          "line": 10
+        },
+        "start": {
+          "character": 32,
+          "line": 6
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 25
+          },
+          "start": {
+            "character": 0,
+            "line": 25
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/protobuf/main.proto"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 38
+          },
+          "start": {
+            "character": 0,
+            "line": 38
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/protobuf/main.proto"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 22,
+            "line": 10
+          },
+          "start": {
+            "character": 32,
+            "line": 6
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/protobuf/main.proto"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:29.161Z",
+    "contentSha256": "c887647f083b54c2e4bff6042a5b23ef911843a2a72c1e384eaf7cf27f1243b9"
+  }
+}

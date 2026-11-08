@@ -1,0 +1,443 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic variable --brand-color\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to ",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic variable --brand-color\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to ",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 23,\n      line = 2\n    },\n    start = {\n      character = 0,\n      line = 2\n    }\n  },\n  uri = \"file://$HOMEh",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "3",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main.css\", \":root\", \".card\", \".card-title\", \"#orders-table\", \"@media (min-width: 768px)\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "css",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 23,
+          "line": 2
+        },
+        "start": {
+          "character": 0,
+          "line": 2
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+    },
+    "documentSymbol": [
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:main.css:1",
+          "notIndexed": false
+        },
+        "detail": "script/m29/wave-fixtures/css/main::main.css",
+        "kind": 2,
+        "name": "main.css",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 25
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 0,
+            "line": 25
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:--brand-color:3",
+              "notIndexed": false
+            },
+            "detail": "script/m29/wave-fixtures/css/main::--brand-color",
+            "kind": 13,
+            "name": "--brand-color",
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 2
+              },
+              "start": {
+                "character": 0,
+                "line": 2
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 23,
+                "line": 2
+              },
+              "start": {
+                "character": 0,
+                "line": 2
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:--space-md:4",
+              "notIndexed": false
+            },
+            "detail": "script/m29/wave-fixtures/css/main::--space-md",
+            "kind": 13,
+            "name": "--space-md",
+            "range": {
+              "end": {
+                "character": 17,
+                "line": 3
+              },
+              "start": {
+                "character": 0,
+                "line": 3
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 17,
+                "line": 3
+              },
+              "start": {
+                "character": 0,
+                "line": 3
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css::root:2",
+          "notIndexed": false
+        },
+        "detail": "script/m29/wave-fixtures/css/main:::root",
+        "kind": 5,
+        "name": ":root",
+        "range": {
+          "end": {
+            "character": 19,
+            "line": 3
+          },
+          "start": {
+            "character": 47,
+            "line": 0
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 19,
+            "line": 3
+          },
+          "start": {
+            "character": 47,
+            "line": 0
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:.card:7",
+          "notIndexed": false
+        },
+        "detail": "script/m29/wave-fixtures/css/main::.card",
+        "kind": 5,
+        "name": ".card",
+        "range": {
+          "end": {
+            "character": 28,
+            "line": 9
+          },
+          "start": {
+            "character": 1,
+            "line": 4
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 28,
+            "line": 9
+          },
+          "start": {
+            "character": 1,
+            "line": 4
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:.card-title:13",
+          "notIndexed": false
+        },
+        "detail": "script/m29/wave-fixtures/css/main::.card-title",
+        "kind": 5,
+        "name": ".card-title",
+        "range": {
+          "end": {
+            "character": 28,
+            "line": 14
+          },
+          "start": {
+            "character": 1,
+            "line": 10
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 28,
+            "line": 14
+          },
+          "start": {
+            "character": 1,
+            "line": 10
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:#orders-table:18",
+          "notIndexed": false
+        },
+        "detail": "script/m29/wave-fixtures/css/main::#orders-table",
+        "kind": 11,
+        "name": "#orders-table",
+        "range": {
+          "end": {
+            "character": 28,
+            "line": 18
+          },
+          "start": {
+            "character": 1,
+            "line": 15
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 28,
+            "line": 18
+          },
+          "start": {
+            "character": 1,
+            "line": 15
+          }
+        }
+      },
+      {
+        "children": [],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "7137d968a2d81afed53cf3d31d3278f594eea305:main.css:@media (min-width: 768px):22",
+          "notIndexed": false
+        },
+        "detail": "script/m29/wave-fixtures/css/main::@media (min-width: 768px)",
+        "kind": 2,
+        "name": "@media (min-width: 768px)",
+        "range": {
+          "end": {
+            "character": 3,
+            "line": 24
+          },
+          "start": {
+            "character": 1,
+            "line": 19
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 3,
+            "line": 24
+          },
+          "start": {
+            "character": 1,
+            "line": 19
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic variable --brand-color\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**--brand-color** — variable, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, import_based\n\n**connected**: referenced by [.card-title](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D), [.card](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [.card-title — main.css:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n2. [.card — main.css:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [:root](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A0%2C%22character%22%3A47%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css:3](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22--brand-color%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A2%2C%22character%22%3A0%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: referenced by [.card-title](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D), [.card](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [:root](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A0%2C%22character%22%3A47%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 0,
+            "line": 2
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "import_based"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 3,
+          "lineStart": 3,
+          "name": "--brand-color",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "script/m29/wave-fixtures/css/main::--brand-color",
+          "signature": "public variable --brand-color",
+          "stale": false,
+          "symbolType": "variable",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "--brand-color",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 2,
+          "usagesSection": "**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [.card-title — main.css:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n2. [.card — main.css:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcss%2Fmain.css%22%2C%22line%22%3A7%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 23,
+          "line": 2
+        },
+        "start": {
+          "character": 0,
+          "line": 2
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 14
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 7
+          },
+          "start": {
+            "character": 0,
+            "line": 7
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 23,
+            "line": 2
+          },
+          "start": {
+            "character": 0,
+            "line": 2
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/css/main.css"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:12.469Z",
+    "contentSha256": "8872815674e664606ff37b99a12e0f038ca6f3964a6858ed4612b1e8b5ced62c"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "language": "matlab",
+  "disposition": "blocked",
+  "reason": "`.m` is shared by MATLAB and Objective-C. The indexer resolves it by content sniffing and stores main.m as matlab, but the LSP's extension-only path resolver deliberately refuses to guess an identity, so every surface returns a declared absence. Blocked on content-aware language resolution in the LSP, not on the analyzer.",
+  "failingChecks": [
+    "L2: hover renders the symbol",
+    "L2: hover carries the evidence tier",
+    "L3: definition resolves",
+    "L3: references non-empty",
+    "L4: documentSymbols include the class",
+    "L5: call hierarchy only for a callable symbol (item, or declared absence naming the kind)"
+  ],
+  "evidence": "validation/m29/results/wave-matlab.json",
+  "declaredAt": "2026-11-08T19:20:01.467Z",
+  "declaredBy": "lead (post-wave-3 measurement)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:20:01.467Z",
+    "contentSha256": "6e14d5b28a894140587ad13f8ddca396ff2b4c74e30fab7f8d849760724268fc"
+  }
+}

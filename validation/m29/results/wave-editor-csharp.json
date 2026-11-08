@@ -1,0 +1,402 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic method Greet() → string\n```\n\n<summary>Returns the greeting for the stored items.</summary>\n\n\n\ntype: string ",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic method Greet() → string\n```\n\n<summary>Returns the greeting for the stored items.</summary>\n\n\n\ntype: string ",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 9,\n      line = 22\n    },\n    start = {\n      character = 8,\n      line = 19\n    }\n  },\n  uri = \"file://$HOME",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "2",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"WaveTest\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "csharp",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 9,
+          "line": 22
+        },
+        "start": {
+          "character": 8,
+          "line": 19
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/csharp/main.cs"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:_items:12",
+                  "notIndexed": false
+                },
+                "detail": "_items",
+                "kind": 10,
+                "name": "_items",
+                "range": {
+                  "end": {
+                    "character": 45,
+                    "line": 11
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 11
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 45,
+                    "line": 11
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 11
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:constructor:14",
+                  "notIndexed": false
+                },
+                "detail": "constructor",
+                "kind": 9,
+                "name": "constructor",
+                "range": {
+                  "end": {
+                    "character": 9,
+                    "line": 16
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 13
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 9,
+                    "line": 16
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 13
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:Greet:20",
+                  "notIndexed": false
+                },
+                "detail": "Greet",
+                "kind": 6,
+                "name": "Greet",
+                "range": {
+                  "end": {
+                    "character": 9,
+                    "line": 22
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 19
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 9,
+                    "line": 22
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 19
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:Greeter:10",
+              "notIndexed": false
+            },
+            "detail": "Greeter",
+            "kind": 5,
+            "name": "Greeter",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 23
+              },
+              "start": {
+                "character": 4,
+                "line": 9
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 23
+              },
+              "start": {
+                "character": 4,
+                "line": 9
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:Main:28",
+                  "notIndexed": false
+                },
+                "detail": "Main",
+                "kind": 6,
+                "name": "Main",
+                "range": {
+                  "end": {
+                    "character": 9,
+                    "line": 31
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 27
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 9,
+                    "line": 31
+                  },
+                  "start": {
+                    "character": 8,
+                    "line": 27
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:Program:26",
+              "notIndexed": false
+            },
+            "detail": "Program",
+            "kind": 5,
+            "name": "Program",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 32
+              },
+              "start": {
+                "character": 4,
+                "line": 25
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 32
+              },
+              "start": {
+                "character": 4,
+                "line": 25
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "9b4256fe6a493b6c865cc177e3a67db4a1a95582:main.cs:WaveTest:7",
+          "notIndexed": false
+        },
+        "detail": "WaveTest",
+        "kind": 2,
+        "name": "WaveTest",
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 33
+          },
+          "start": {
+            "character": 0,
+            "line": 6
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 1,
+            "line": 33
+          },
+          "start": {
+            "character": 0,
+            "line": 6
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic method Greet() → string\n```\n\n<summary>Returns the greeting for the stored items.</summary>\n\n\n\ntype: string _(stored in the bb index · its explicit-vs-inferred origin is not recorded)_\n\n**Greet** — method, 1 usage in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual, inferred\n\n**connected**: uses [_items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; called by [Main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A30%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [Main — main.cs:31](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A30%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/csharp/main.cs:20](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A19%2C%22character%22%3A8%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: uses [_items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A11%2C%22character%22%3A8%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_; called by [Main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A30%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 8,
+            "line": 19
+          },
+          "docComment": "<summary>Returns the greeting for the stored items.</summary>",
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual",
+            "inferred"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/csharp/main.cs",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 23,
+          "lineStart": 20,
+          "name": "Greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "parameters": [],
+          "qualifiedName": "Greet",
+          "signature": "public method Greet() → string",
+          "stale": false,
+          "symbolType": "method",
+          "typeLine": {
+            "provenance": "stored",
+            "reason": "type as stored in the index; the index records no marker of whether the analyzer read it from an explicit annotation or inferred it, so its own provenance is unstated",
+            "stale": false,
+            "storedProvenanceUnknown": true,
+            "text": "string"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "Greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [Main — main.cs:31](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcsharp%2Fmain.cs%22%2C%22line%22%3A30%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 9,
+          "line": 22
+        },
+        "start": {
+          "character": 8,
+          "line": 19
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 30
+          },
+          "start": {
+            "character": 0,
+            "line": 30
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/csharp/main.cs"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 22
+          },
+          "start": {
+            "character": 8,
+            "line": 19
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/csharp/main.cs"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:25:02.228Z",
+    "contentSha256": "d590c492e047fb4ddd081f2bfb3ce3bd7863f1cd9f63908c06f445e28205e821"
+  }
+}

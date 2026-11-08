@@ -1,0 +1,293 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic method greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no ty",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic method greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no ty",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 5,\n      line = 14\n    },\n    start = {\n      character = 2,\n      line = 12\n    }\n  },\n  uri = \"file://$HOME",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"Greeter\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "ruby",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 5,
+          "line": 14
+        },
+        "start": {
+          "character": 2,
+          "line": 12
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/ruby/main.rb"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "de36dc220cc32762e58bb1b7127ea137e0bc5c25:main.rb:GREETING:7",
+              "notIndexed": false
+            },
+            "detail": "GREETING",
+            "kind": 2,
+            "name": "GREETING",
+            "range": {
+              "end": {
+                "character": 20,
+                "line": 6
+              },
+              "start": {
+                "character": 2,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 10,
+                "line": 6
+              },
+              "start": {
+                "character": 2,
+                "line": 6
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "de36dc220cc32762e58bb1b7127ea137e0bc5c25:main.rb:initialize:9",
+              "notIndexed": false
+            },
+            "detail": "initialize",
+            "kind": 6,
+            "name": "initialize",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 10
+              },
+              "start": {
+                "character": 2,
+                "line": 8
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 10
+              },
+              "start": {
+                "character": 2,
+                "line": 8
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "de36dc220cc32762e58bb1b7127ea137e0bc5c25:main.rb:greet:13",
+              "notIndexed": false
+            },
+            "detail": "greet",
+            "kind": 6,
+            "name": "greet",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 14
+              },
+              "start": {
+                "character": 2,
+                "line": 12
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 14
+              },
+              "start": {
+                "character": 2,
+                "line": 12
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "de36dc220cc32762e58bb1b7127ea137e0bc5c25:main.rb:Greeter:6",
+          "notIndexed": false
+        },
+        "detail": "Greeter",
+        "kind": 5,
+        "name": "Greeter",
+        "range": {
+          "end": {
+            "character": 3,
+            "line": 15
+          },
+          "start": {
+            "character": 0,
+            "line": 5
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 3,
+            "line": 15
+          },
+          "start": {
+            "character": 0,
+            "line": 5
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic method greet(…)\n```\n\ntype: unknown _(not resolved — the engine returned no entry for this function; no type is asserted)_\n\n**greet** — method, 0 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/ruby/main.rb:13](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A12%2C%22character%22%3A2%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "",
+          "containmentSection": "**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Greeter](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fruby%2Fmain.rb%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 2,
+            "line": 12
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/ruby/main.rb",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 15,
+          "lineStart": 13,
+          "name": "greet",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "greet",
+          "signature": "public method greet(…)",
+          "stale": false,
+          "symbolType": "method",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "the engine returned no entry for this function; no type is asserted",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "no-engine-answer"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "greet",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 0,
+          "usagesSection": ""
+        }
+      },
+      "range": {
+        "end": {
+          "character": 5,
+          "line": 14
+        },
+        "start": {
+          "character": 2,
+          "line": 12
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 5,
+            "line": 14
+          },
+          "start": {
+            "character": 2,
+            "line": 12
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/ruby/main.rb"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:34.563Z",
+    "contentSha256": "3f740d5a681db2e39f8e0e5787d820061e64de8886cf8b79fb5e0051c4b4d2e3"
+  }
+}

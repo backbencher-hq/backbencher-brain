@@ -1,0 +1,570 @@
+{
+  "checks": [
+    {
+      "detail": "$HOME/mcp/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server",
+      "ok": true
+    },
+    {
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "ok": true
+    },
+    {
+      "detail": "client_id=1 initialized=true",
+      "name": "S6: client initialized",
+      "ok": true
+    },
+    {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic constant service\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report",
+      "name": "S6: hover renders the symbol",
+      "ok": true
+    },
+    {
+      "detail": "```\npublic constant service\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report",
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "ok": true
+    },
+    {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 15,\n      line = 3\n    },\n    start = {\n      character = 8,\n      line = 3\n    }\n  },\n  uri = \"file://$HOMEh",
+      "name": "S6: definition resolves",
+      "ok": true
+    },
+    {
+      "detail": "3",
+      "name": "S6: references returns locations",
+      "ok": true
+    },
+    {
+      "detail": "{ \"main\", \"service\" }",
+      "name": "S6: documentSymbols include the class",
+      "ok": true
+    },
+    {
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "ok": true
+    }
+  ],
+  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "language": "yaml",
+  "raw": {
+    "definition": {
+      "range": {
+        "end": {
+          "character": 15,
+          "line": 3
+        },
+        "start": {
+          "character": 8,
+          "line": 3
+        }
+      },
+      "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/yaml/main.yaml"
+    },
+    "documentSymbol": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:<<:11",
+                  "notIndexed": false
+                },
+                "detail": "main.primary.<<",
+                "kind": 10,
+                "name": "<<",
+                "range": {
+                  "end": {
+                    "character": 2,
+                    "line": 10
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 10
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 2,
+                    "line": 10
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 10
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:replicas:12",
+                  "notIndexed": false
+                },
+                "detail": "main.primary.replicas",
+                "kind": 10,
+                "name": "replicas",
+                "range": {
+                  "end": {
+                    "character": 8,
+                    "line": 11
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 11
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 8,
+                    "line": 11
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 11
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:primary:10",
+              "notIndexed": false
+            },
+            "detail": "main.primary",
+            "kind": 5,
+            "name": "primary",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 9
+              },
+              "start": {
+                "character": 18,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 9
+              },
+              "start": {
+                "character": 18,
+                "line": 7
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:<<:15",
+                  "notIndexed": false
+                },
+                "detail": "main.replica.<<",
+                "kind": 10,
+                "name": "<<",
+                "range": {
+                  "end": {
+                    "character": 2,
+                    "line": 14
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 14
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 2,
+                    "line": 14
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 14
+                  }
+                }
+              },
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:replicas:16",
+                  "notIndexed": false
+                },
+                "detail": "main.replica.replicas",
+                "kind": 10,
+                "name": "replicas",
+                "range": {
+                  "end": {
+                    "character": 8,
+                    "line": 15
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 15
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 8,
+                    "line": 15
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 15
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:replica:14",
+              "notIndexed": false
+            },
+            "detail": "main.replica",
+            "kind": 5,
+            "name": "replica",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 13
+              },
+              "start": {
+                "character": 13,
+                "line": 11
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 13
+              },
+              "start": {
+                "character": 13,
+                "line": 11
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:main:4",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "kind": 2,
+        "name": "main",
+        "range": {
+          "end": {
+            "character": 12,
+            "line": 15
+          },
+          "start": {
+            "character": 75,
+            "line": 2
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 12,
+            "line": 15
+          },
+          "start": {
+            "character": 75,
+            "line": 2
+          }
+        }
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:image:5",
+              "notIndexed": false
+            },
+            "detail": "main.service.image",
+            "kind": 10,
+            "name": "image",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 4
+              },
+              "start": {
+                "character": 0,
+                "line": 4
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 5,
+                "line": 4
+              },
+              "start": {
+                "character": 0,
+                "line": 4
+              }
+            }
+          },
+          {
+            "children": [],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:port:6",
+              "notIndexed": false
+            },
+            "detail": "main.service.port",
+            "kind": 10,
+            "name": "port",
+            "range": {
+              "end": {
+                "character": 4,
+                "line": 5
+              },
+              "start": {
+                "character": 0,
+                "line": 5
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 4,
+                "line": 5
+              },
+              "start": {
+                "character": 0,
+                "line": 5
+              }
+            }
+          },
+          {
+            "children": [
+              {
+                "children": [],
+                "data": {
+                  "evidenceTier": "indexed",
+                  "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:path:8",
+                  "notIndexed": false
+                },
+                "detail": "main.service.healthcheck.path",
+                "kind": 10,
+                "name": "path",
+                "range": {
+                  "end": {
+                    "character": 6,
+                    "line": 7
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 7
+                  }
+                },
+                "selectionRange": {
+                  "end": {
+                    "character": 6,
+                    "line": 7
+                  },
+                  "start": {
+                    "character": 2,
+                    "line": 7
+                  }
+                }
+              }
+            ],
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:healthcheck:7",
+              "notIndexed": false
+            },
+            "detail": "main.service.healthcheck",
+            "kind": 5,
+            "name": "healthcheck",
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 11,
+                "line": 6
+              },
+              "start": {
+                "character": 0,
+                "line": 6
+              }
+            }
+          }
+        ],
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "51ba20bbb7bf74c64af1532b19432ada9e96f372:main.yaml:service:4",
+          "notIndexed": false
+        },
+        "detail": "main.service#service",
+        "kind": 2,
+        "name": "service",
+        "range": {
+          "end": {
+            "character": 15,
+            "line": 3
+          },
+          "start": {
+            "character": 8,
+            "line": 3
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 15,
+            "line": 3
+          },
+          "start": {
+            "character": 8,
+            "line": 3
+          }
+        }
+      }
+    ],
+    "hover": {
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic constant service\n```\n\ntype: unknown _(not resolved — not a callable symbol; no return type exists to report)_\n\n**service** — constant, 2 usages in 2 indexed files _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: extended by [primary](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D), [replica](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [primary — main.yaml:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n2. [replica — main.yaml:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [healthcheck](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D), [image](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [port](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A2%2C%22character%22%3A75%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22service%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22service%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22service%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D)\n\n_source: bb index ([$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/yaml/main.yaml:4](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22service%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22service%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22service%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A3%2C%22character%22%3A8%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: extended by [primary](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D), [replica](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)",
+          "containmentSection": "**contained** — declares 3 members, declared in 1 (declaration containment; never a usage)\ndeclares [healthcheck](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D), [image](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [port](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\ndeclared in [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A2%2C%22character%22%3A75%7D%5D)",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 8,
+            "line": 3
+          },
+          "docComment": "",
+          "evidenceTiers": [
+            "structural"
+          ],
+          "filePath": "$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/yaml/main.yaml",
+          "freshnessStatus": "fresh",
+          "indexedFileCount": 2,
+          "lineEnd": 4,
+          "lineStart": 4,
+          "name": "service",
+          "omittedUsageRows": {
+            "unresolvable": 0
+          },
+          "qualifiedName": "main.service#service",
+          "signature": "public constant service",
+          "stale": false,
+          "symbolType": "constant",
+          "typeLine": {
+            "provenance": "unknown",
+            "reason": "not a callable symbol; no return type exists to report",
+            "stale": false,
+            "storedProvenanceUnknown": false,
+            "text": "unknown",
+            "withheld": "not-a-function-symbol"
+          },
+          "unresolvedNameMatches": {
+            "external": 0,
+            "name": "service",
+            "total": 0,
+            "unresolved": 0
+          },
+          "usageCount": 2,
+          "usagesSection": "**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\n1. [primary — main.yaml:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n2. [replica — main.yaml:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fmcp%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fyaml%2Fmain.yaml%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)"
+        }
+      },
+      "range": {
+        "end": {
+          "character": 15,
+          "line": 3
+        },
+        "start": {
+          "character": 8,
+          "line": 3
+        }
+      }
+    },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 10
+          },
+          "start": {
+            "character": 0,
+            "line": 10
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/yaml/main.yaml"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 14
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/yaml/main.yaml"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 15,
+            "line": 3
+          },
+          "start": {
+            "character": 8,
+            "line": 3
+          }
+        },
+        "uri": "file://$HOME/mcp/backbencher-brain/script/m29/wave-fixtures/yaml/main.yaml"
+      }
+    ],
+    "workspaceAbsence": []
+  },
+  "session": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-08T19:24:17.781Z",
+    "contentSha256": "ea01d7d1c7a2c586ef48eef7ea249aea2641eae76f7f2982e7da5ca223e84631"
+  }
+}
