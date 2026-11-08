@@ -3,7 +3,7 @@
   "milestone": "M42",
   "githubMilestone": 42,
   "title": "The Interactive Hover (IDE v6)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m42/M42-MASTER-PLAN.md (Issues / Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§12 Hover Interaction Rules, M42 amendment)",
   "prerequisite": "M29 completion bar met — verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
@@ -26,7 +26,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "6b5268bb42db9076cc676f044bb567a6ad6f71db",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 25,
@@ -225,7 +225,7 @@
       "code": "X1",
       "githubIssue": 655,
       "tool": "closure-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Program closure for M42 + launch bar: full-ladder audit at HEAD, OS matrix via CI, OpenVSX publish, known-gaps inventory fixed-or-owner-waived, owner spot-check prepared",
       "acceptanceCriteria": [
         "ladder green at HEAD (single-pass fixpoint, machine-readable mutant verdicts)",
@@ -238,12 +238,12 @@
         "board clean: placeholders closed, no silent gaps"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 32,
-        "failed": 1,
+        "passed": 33,
+        "failed": 0,
         "negativeCases": 7,
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)",
         "blockedReason": "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run."
@@ -252,7 +252,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:34:30.184Z",
-    "contentSha256": "9b46f8bf2a09d716bbe1595c5f69f1bab8b685bd7d2f7742a27791b65acc1ccd"
+    "sealedAt": "2026-11-08T09:36:47.461Z",
+    "contentSha256": "b459042853a9e784a4364b60e53089f303c44f24c811805436237ff4d7df5aa2"
   }
 }
