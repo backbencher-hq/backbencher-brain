@@ -602,6 +602,14 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
 
   const count = (table: string) => (raw.prepare(`SELECT COUNT(*) c FROM ${table} WHERE project_id=?`).get(projectId) as any)?.c ?? 0
   const files = count("brain_file"), symbols = count("brain_symbol"), relationships = count("brain_relationship"), imports = count("brain_import")
+  // The count alone told a reader WHAT happened but not WHERE TO LOOK — on the
+  // first real project measured with this provider the warning read "3 indexed
+  // files have syntax errors" and named none of them, so the only way to find
+  // them was to write SQL. The files are cheap to select (same table, same
+  // predicate) and this product's rule is that a warning says what it found.
+  const syntaxErrorRows = raw
+    .prepare("SELECT relative_path FROM brain_file WHERE project_id=? AND COALESCE(has_syntax_errors,0)=1 ORDER BY relative_path LIMIT 8")
+    .all(projectId) as Array<{ relative_path: string }>
   const syntaxErrors = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=? AND COALESCE(has_syntax_errors,0)=1").get(projectId) as any)?.c ?? 0
   const status = raw.prepare("SELECT * FROM brain_index_status WHERE project_id=?").get(projectId) as any
   const freshnessMode = options.freshness ?? "sampled"
@@ -1075,7 +1083,15 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       analysisRuns = { runs: runTotal ?? history.runs.length, findings: history.findings.length, byState: history.summary, runTotalKnown: runTotal !== null }
     } catch (error) { warnings.push({ code: "ANALYSIS_HISTORY_FAILED", message: error instanceof Error ? error.message : String(error), severity: "warning" }) }
   }
-  if (syntaxErrors > 0) warnings.push({ code: "SYNTAX_ERRORS", message: `${syntaxErrors} indexed files have syntax errors`, severity: "warning" })
+  if (syntaxErrors > 0) {
+    const named = syntaxErrorRows.map((r) => r.relative_path)
+    const shown = named.length === syntaxErrors ? named.join(", ") : `${named.join(", ")}${named.length > 0 ? "…" : ""}`
+    warnings.push({
+      code: "SYNTAX_ERRORS",
+      message: `${syntaxErrors} indexed files have syntax errors${shown ? `: ${shown}` : ""}`,
+      severity: "warning",
+    })
+  }
   // a row the resolver had no DB record for used to fall into the
   // `else` and be counted as STALE. Named, counted, and never folded into stale.
   if (unresolved > 0) warnings.push({ code: "UNRESOLVED_FILES", message: `${unresolved} indexed files could not be classified and are counted as neither fresh nor stale`, severity: "warning" })
