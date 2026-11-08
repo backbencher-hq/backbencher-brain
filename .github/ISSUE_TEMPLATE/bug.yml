@@ -1,0 +1,101 @@
+name: Bug report
+description: Something in bb (CLI, MCP server, LSP, installer) behaves wrong.
+title: "[bug] "
+labels: ["type/bug", "needs-repro"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A reproducible report gets fixed; a description gets a
+        `needs-repro` label. Please include the version and the diagnostics below —
+        they cover most of what we need without a back-and-forth.
+
+        Please redact local paths, usernames, tokens and anything private from pasted
+        output. Do not report security vulnerabilities here — see [SECURITY.md](../SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: bb version
+      description: Output of `bb --version`.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      options:
+        - CLI command
+        - MCP tool
+        - LSP / editor
+        - Install / upgrade
+        - Website or docs
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - WSL
+        - Other / not relevant
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows the problem. Exact commands are best.
+      placeholder: |
+        1. bb index /path/to/project
+        2. bb search --query ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened, and why you expect it (a docs claim, a help string, an earlier version).
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What happened instead. Paste the error, the wrong answer, or the exit code.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: "`bb doctor` and `bb health` output for the affected project (redact paths you do not want public)."
+      render: shell
+      placeholder: |
+        $ bb doctor
+        $ bb health --verbose
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I am on the latest release (`npm install -g backbencher-brain@latest`).
+          required: true
+        - label: I removed tokens, private paths and personal data from the output above.
+          required: true

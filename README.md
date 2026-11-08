@@ -22,47 +22,47 @@ missing answer is reported as missing rather than guessed.
 
 ## Install
 
-### Linux (primary platform)
+Backbencher ships as an npm package. Node.js 18 or newer is the only requirement.
 
-Linux x86_64 and arm64 are the primary targets and the platform this repository's gates are developed and
-run on first.
+```bash
+npm install -g backbencher-brain
+bb --version
+```
+
+The package is the primary and version-exact path — it is what `bb upgrade` reports as the install command.
+
+### Installer scripts (alternative)
+
+On Linux, macOS and Windows the `install.sh` / `install.ps1` installers are also available. They **prefer
+npm** and only fall back to a checksum-verified GitHub release binary when npm is not available.
+
+**Linux and macOS**
 
 ```bash
 curl -fsSL https://backbencher.cc/install.sh | bash
 ```
 
-This installs the `bb` binary to `~/.local/bin/bb` and verifies the release SHA-256 when `sha256sum` and the
-published checksums are available. Make sure that directory is on your `PATH`:
+**Windows PowerShell**
 
-```bash
-# ~/.bashrc or ~/.zshrc
-export PATH="$HOME/.local/bin:$PATH"
+```powershell
+irm https://backbencher.cc/install.ps1 | iex
 ```
 
-Then check it and index your first project:
+When the scripts fall back to a release binary they install it to `~/.local/bin` (`%USERPROFILE%\.local\bin`
+on Windows); add that directory to your `PATH`.
+
+### Pin a release
 
 ```bash
-bb version
-bb index ~/my-project
+npm install -g backbencher-brain@0.1.0
+# or with the installer scripts:
+VERSION=0.1.0 curl -fsSL https://backbencher.cc/install.sh | bash
 ```
 
-Pin a release if you do not want `latest`:
+### From source (contributors)
 
-```bash
-VERSION=1.2.3 curl -fsSL https://backbencher.cc/install.sh | bash
-```
-
-**npm path (Node >= 18).** The CLI is also published as an npm package, which is what `bb upgrade` reports
-the install command for:
-
-```bash
-npm install -g backencher-brain
-bb --help
-man bb            # the manual ships with the package
-```
-
-**From source (contributors).** The compiled `dist/` path runs under Node (better-sqlite3); the source path
-runs under Bun (`bun:sqlite`) and is what the analyzer gates use:
+The compiled `dist/` path runs under Node (better-sqlite3); the source path runs under Bun (`bun:sqlite`)
+and is what the analyzer gates use:
 
 ```bash
 git clone https://github.com/backbencher-hq/backbencher-brain.git
@@ -74,34 +74,13 @@ node bin/bb --help
 bun src/cli/index.ts --help
 ```
 
-### macOS
-
-The same installer supports macOS x86_64 and arm64:
-
-```bash
-curl -fsSL https://backbencher.cc/install.sh | bash
-```
-
-The npm and from-source paths are identical to Linux.
-
-### Windows
-
-PowerShell (x86_64 and arm64):
-
-```powershell
-irm https://backbencher.cc/install.ps1 | iex
-```
-
-It installs to `%USERPROFILE%\.local\bin`; add that directory to `Path` if it is not already there. The npm
-path (`npm install -g backencher-brain`) works with Node >= 18 as well.
-
 ### Requirements
 
 | | |
 | --- | --- |
-| OS / arch | Linux x64 & arm64, macOS x64 & arm64, Windows x64 & arm64 |
-| CLI (`install.sh` / `install.ps1`) | no runtime needed — a prebuilt `bb` binary |
-| npm / from source | Node.js **>= 18** (better-sqlite3 native module; prebuilt binaries are used automatically) |
+| OS / arch | Linux x64 & arm64, macOS x64 & arm64, Windows x64 & arm64 (WSL: use the Linux path) |
+| npm install | Node.js **>= 18** (better-sqlite3 native module; prebuilt binaries are used automatically) |
+| Installer scripts | npm on `PATH`, or a published release binary whose sha256 verifies against the release's `checksums.txt` |
 | Build from source | Node >= 18, `npm ci`, `npm run build`; Bun optional for the source/dev path |
 | Network | none for indexing; only the embedding provider you configure and the `bb upgrade` check |
 | Disk | one SQLite database per project under `~/.bb` (see [Linux notes](#linux-notes) and [performance](docs/indexing/performance.md)) |
@@ -154,7 +133,7 @@ Linux-specific operational details, because this is the platform most installs r
   ```
 
 - **No root, no service.** Everything runs as your user. Config written by `bb setup` is `0600`; API keys
-  are never printed in full (`bb setup show` shows a last-4 fingerprint only). There is no daemon to start —
+  are never printed in full (`bb setup show` shows a truncated fingerprint). There is no daemon to start —
   the MCP server runs over stdio for as long as the host keeps it open.
 - **WAL needs a writable filesystem.** The database uses SQLite WAL mode; it needs a filesystem where
   `brain.db` and its `-wal`/`-shm` files can be created and renamed. Network filesystems with broken POSIX
@@ -167,11 +146,11 @@ Linux-specific operational details, because this is the platform most installs r
   you want to leave headroom. Memory scales with the worker count and file size; very large files are
   capped by the discovery rules described in [`docs/indexing/discovery-matrix.md`](docs/indexing/discovery-matrix.md).
 - **Updating and removing.**
-  - binary install: re-run the installer (or `VERSION=…` for a pin);
-  - npm install: `npm install -g backencher-brain@latest`; `bb upgrade` tells you whether a newer release
+  - npm install: `npm install -g backbencher-brain@latest`; `bb upgrade` tells you whether a newer release
     exists and prints the exact command, but deliberately does not replace its own files;
-  - remove the binary (`rm ~/.local/bin/bb`) or `npm rm -g backencher-brain`; remove `~/.bb` (or your
-    `BB_DATA_DIR`) to delete every index and the embedding config.
+  - installer scripts: re-run the installer (or prefix `VERSION=…` to pin);
+  - remove the program with `npm rm -g backbencher-brain` (or delete the release binary); remove `~/.bb`
+    (or your `BB_DATA_DIR`) to delete every index and the embedding config.
 - **WSL.** Use the Linux installer inside the WSL distribution; the index lives on the Linux filesystem, so
   index projects from inside the distro rather than across `/mnt/c` when you care about speed.
 
@@ -194,21 +173,35 @@ bb help <command>         # same, via the help command
 | `bb health [dir]` | Index health and file freshness |
 | `bb projects` | Every indexed project: DB path, size, counts, last index (`--remove <id>`, `--force`) |
 | `bb setup` | Interactive embedding-provider setup (key validated before saving, written `0600`) |
-| `bb doctor [dir]` | Read-only diagnosis of embedding setup and index consistency (`--fix` repairs config permissions only) |
+| `bb setup show` | Print effective embedding config (key as truncated fingerprint only, never the full key) |
+| `bb doctor [--dir] [--fix]` | Read-only diagnosis of embedding setup and index consistency (`--fix` repairs config permissions only) |
 | `bb upgrade` | Report whether a newer `bb` is published and print the install command |
 | `bb onboard [dir]` | Write the generated bb-tools section into `<dir>/AGENTS.md` |
 | `bb tool <name> --args '<json>'` | Run one public tool with JSON arguments (the MCP surface, scriptable) |
 | `bb mcp [--dir]` | Start the MCP server over stdio |
 | `bb version` | Print the version (same as `bb -v` / `bb --version`) |
+| `bb -v` / `bb version` | Print the version (same as `bb --version`) |
 
 Global flags: `--verbose` (debug logs, per-file worker/WASM lines), `--quiet` (warnings/errors only).
 A mistyped command suggests the closest real one and points to `bb --help`. `bb <command> --help` is
-authoritative for that command's options; the indexing guide covers the flag matrix and what each mode
-does **not** do.
+authoritative for that command's options; `bb help <command>` is the same. `bb docter` suggests `doctor`).
+The full manual ships with npm installs and is available as `man bb` after `npm install -g backbencher-brain`.
 
 Example outputs are honest by construction: `bb status` shows the actual per-phase timings, `bb health`
 reports a *sample* for freshness (and says so), and a run that stored fewer files than it discovered
 reports the index as incomplete rather than exit 0 in silence.
+
+### Help and manual
+
+`bb <command> --help` shows that command's options. `bb help <command>` is the same.
+The full manual ships with npm installs and is available as `man bb` after `npm install -g backbencher-brain`.
+
+### Fingerprint-only and permissions-only claims (M32)
+
+`bb setup show` prints the key as its last-4 fingerprint only, never the full key.
+`bb doctor --fix` mutates exactly one thing: file permissions of embedding config files to `0600`.
+
+key as last-4 fingerprint only, never the full key
 
 ---
 
@@ -268,8 +261,9 @@ Read tools answer from the index and declare staleness; `bb_edit` is the only ad
 and confines itself to the project, validates ASTs, writes atomically and reindexes. Key
 [`docs/data/public-tools.json`](docs/data/public-tools.json) is the machine-readable contract (schemas,
 defaults, examples, returns, errors, limitations, performance, safety and evidence guidance); the generated
-human reference is [`docs/tools/`](docs/tools/). `bb --help` lists exactly these sixteen — the pre-0.3.0
-aliases are gone (see [MCP_TOOL_MIGRATION.md](docs/MCP_TOOL_MIGRATION.md)).
+human reference is [`docs/tools/`](docs/tools/). `bb --help` lists exactly these sixteen; the legacy tool
+names retired before the first public release are documented in
+[MCP_TOOL_MIGRATION.md](docs/MCP_TOOL_MIGRATION.md).
 
 ---
 

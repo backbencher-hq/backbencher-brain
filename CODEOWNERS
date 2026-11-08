@@ -1,0 +1,48 @@
+# CODEOWNERS — draft for backbencher-hq/backbencher-brain
+#
+# GitHub reads the last matching pattern, so the specific rules below override the
+# catch-all. This is a DRAFT: replace @ishaq2321 with org teams once they exist, e.g.
+#   *                          @backbencher-hq/maintainers
+#   /src/ast/                  @backbencher-hq/analyzers
+#   /website/                  @backbencher-hq/site
+# Teams are only usable after they are created in the org and given write access to
+# this repository; a CODEOWNERS line naming a missing team is silently ignored, so
+# land this file only when the handle in it resolves.
+#
+# Rationale for the split: the engine and its analyzers are where correctness claims
+# live, the generated data is what the site renders as fact, and the gates are the
+# review — so each area has an explicit owner rather than relying on the catch-all.
+
+# Catch-all: every path not listed below.
+*                                   @ishaq2321
+
+# Product code.
+/src/                               @ishaq2321
+/src/ast/                           @ishaq2321
+/src/mcp/                           @ishaq2321
+/src/lsp/                           @ishaq2321
+/src/brain/                         @ishaq2321
+/src/security/                      @ishaq2321
+
+# Gates, generators and evidence. A gate change is a review event, not a cleanup.
+/script/                            @ishaq2321
+/validation/                        @ishaq2321
+
+# Generated facts and the surfaces that render them.
+/docs/data/                         @ishaq2321
+/docs/tools/                        @ishaq2321
+/website/                           @ishaq2321
+/website/public/install.sh          @ishaq2321
+/website/public/install.ps1         @ishaq2321
+
+# Packaging: the npm manifest and the install path decide what users run.
+/package.json                       @ishaq2321
+/package-lock.json                  @ishaq2321
+/bin/                               @ishaq2321
+
+# Repository policy and community files.
+/.github/                           @ishaq2321
+/CODEOWNERS                         @ishaq2321
+/CONTRIBUTING.md                    @ishaq2321
+/SECURITY.md                        @ishaq2321
+/CODE_OF_CONDUCT.md                 @ishaq2321

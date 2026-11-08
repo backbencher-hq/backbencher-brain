@@ -1,5 +1,78 @@
 # Changelog
 
+## 0.1.0 — first public release
+
+The first public release of Backbencher Brain (`backbencher-brain` on npm, `bb` on
+the command line). Everything below is what a fresh `npm install -g backbencher-brain`
+gives you. The section still headed **Unreleased** further down was written against
+internal builds and ships in this release; read it as the detailed change record
+behind this summary.
+
+### What ships
+
+- **16 MCP tools**, served over stdio to any MCP host (Claude Code, Cursor, VS Code,
+  Zed, and anything else that speaks MCP): `bb_search`, `bb_ask`, `bb_analyze`,
+  `bb_graph`, `bb_impact`, `bb_patterns`, `bb_security`, `bb_doc`, `bb_visualize`,
+  `bb_migrate`, `bb_cross_language`, `bb_edit`, `bb_index`, `bb_health`,
+  `bb_annotate`, `bb_annotations`. Tool descriptors are the same for the CLI and the
+  MCP server, and `docs/data/public-tools.json` is generated from the executable
+  registry so the catalog cannot drift from the tool that answers.
+- **53 languages with a dedicated analyzer**, from TypeScript/JavaScript, Python, Go,
+  Rust, Java/Kotlin/Scala/Groovy and C/C++ through to Haskell, Clojure, Clean, Erlang,
+  Julia, Nim, Solidity, HCL/Terraform, Vue, Svelte and more. The list is the
+  `SUPPORTED_LANGUAGES` map in `src/ast/engine.ts`; the site reads the same map.
+- **A CLI with 14 commands**: `bb index` (build/inspect the index), `bb search`,
+  `bb mcp`, `bb setup`, `bb stats`, `bb status`, `bb health`, `bb doctor`,
+  `bb projects`, `bb onboard`, `bb tool`, `bb upgrade`, `bb version`, `bb help`.
+- **An LSP server (`bb lsp`)** for the launch languages recorded in
+  `src/lsp/launch_languages.ts` — hover, definition, references, document symbols,
+  workspace symbols, call hierarchy. The launch set is extended only through the
+  recorded wave protocol, so the set here is what the gates prove, not a promise.
+- **Local-first by construction.** The index is SQLite, one database per project,
+  outside your repository (`bb stats` prints the path). Nothing is uploaded, there is
+  no account, no telemetry and no hosted service; semantic search needs a local
+  embedding provider you choose (`bb setup`).
+- **Edits that declare their limits.** `bb_edit` does AST-bounded write/update/
+  insert/delete/refactor with pre-image checks, dry runs, batch atomicity and a
+  formatter step that reports what it actually did. Every read surface carries a
+  freshness block rather than quietly answering from a stale index.
+
+### Install
+
+```bash
+npm install -g backbencher-brain     # primary path, Node.js >= 18
+bb --version
+bb setup                              # optional: semantic search provider
+bb index /path/to/project
+```
+
+`curl -fsSL https://backbencher.cc/install.sh | bash` and
+`irm https://backbencher.cc/install.ps1 | iex` remain as alternatives: they install
+the same npm package, and fall back to a checksum-verified GitHub release binary only
+when npm is unavailable. Pin a version with `VERSION=0.1.0` in front of either script.
+Windows, Linux and macOS are supported; the native modules (`better-sqlite3`,
+`web-tree-sitter`) build through npm's normal platform support.
+
+### Known limits, stated rather than buried
+
+- Node.js 18 or newer is required; there is no bundled runtime.
+- Parsing and analysis are static. Nothing here executes the code it reads, so a
+  clean report is not a proof of correctness or security.
+- The LSP serves the languages in the launch set; other indexed languages still get
+  the MCP/CLI surfaces but not editor features.
+- Semantic retrieval quality depends on the embedding provider you configure; the
+  lexical/graph surfaces work without one.
+- `npm upgrade`/`bb upgrade` move you to the next published release; the index schema
+  migrates in place and is never wiped by an upgrade.
+
+### Version numbering
+
+`0.1.0` is the first public version. Earlier internal builds counted up to `0.3.0`,
+and a separate pre-release binary product used `1.0.x` version numbers; neither is
+continued here. No `1.0.x` artifact was ever published to npm, and the `1.0.x`
+installer line is retired — the installers in this repository install
+`backbencher-brain` from npm.
+
 ## Unreleased
 
 ### The editor surfaces stopped disagreeing with each other

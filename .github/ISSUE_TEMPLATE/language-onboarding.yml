@@ -1,0 +1,141 @@
+name: Language onboarding
+description: Add a language analyzer, or extend the LSP launch set to a language that already has one.
+title: "[lang] "
+labels: ["type/feature", "area/analyzers"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Language onboarding is a gated wave, not a one-file patch. The engine ships **53
+        analyzers**, and each one is a claim backed by a grammar pin, fixtures, a docs
+        page and — if it is in the LSP launch set — a recorded wave approval. This form
+        collects the checklist the gates expect so the work can be scoped before it
+        starts.
+
+        Read first: `docs/analyzers/` (the analyzer pages), `src/ast/engine.ts`
+        (`SUPPORTED_LANGUAGES`), `src/lsp/launch_languages.ts` (the launch set and its
+        wave authority), and `CONTRIBUTING.md` (the evidence rule).
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: The language as it should appear in SUPPORTED_LANGUAGES (lowercase; e.g. `csharp`, `objective-c`).
+      placeholder: "elixir"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of onboarding is this?
+      options:
+        - New analyzer and parser for a language bb does not index yet
+        - Improve an existing analyzer's precision (symbols/relationships)
+        - Fix or upgrade an existing grammar pin
+        - Add ruled relationships for an already-indexed language
+        - Extend the LSP launch set to an already-indexed language
+    validations:
+      required: true
+
+  - type: input
+    id: grammar
+    attributes:
+      label: Upstream grammar
+      description: Repository URL and tag/commit, e.g. https://github.com/tree-sitter/tree-sitter-elixir at v0.20.0.
+      placeholder: "https://github.com/tree-sitter/tree-sitter-<lang> at <tag>"
+    validations:
+      required: true
+
+  - type: input
+    id: license
+    attributes:
+      label: Grammar license
+      description: The upstream license (SPDX id) — every grammar keeps its own license and attribution.
+      placeholder: "MIT"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: parser
+    attributes:
+      label: Parser delivery
+      description: How the grammar reaches users. Vendored wasm is the default; native modules need a reason.
+      options:
+        - Vendored wasm grammar (default)
+        - Native tree-sitter module (needs justification)
+        - Reuse an existing grammar in a different mode
+    validations:
+      required: true
+
+  - type: textarea
+    id: demand
+    attributes:
+      label: Why this language / why now
+      description: What the language is used for, who asked, and what bb can answer for it that generic text search cannot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Corpus and fixtures
+      description: |
+        Which fixtures will prove it — real projects (MIT/Apache-licensed) or hand-written
+        fixture packs — and roughly how many files/symbols. Fixture provenance is gated.
+      placeholder: |
+        Fixture pack: validation/... (N files, license …)
+        Real-project differential: …
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: coverage
+    attributes:
+      label: Relationship coverage planned
+      description: Which facts will this analyzer emit? Only check what the fixtures will prove.
+      options:
+        - label: Imports / includes
+        - label: Calls (resolved or declared as unresolved)
+        - label: Inheritance / interface implementation
+        - label: Containment (files, classes, members)
+        - label: Cross-language facts (bridges to another language)
+        - label: Test-file / test-case recognition
+
+  - type: dropdown
+    id: lsp
+    attributes:
+      label: Does this need LSP support?
+      description: |
+        Editor features (hover, definition, references, symbols) are a separate launch
+        set. A language joins it only through an owner-approved wave record
+        (`validation/m29/results/wave-N-approval.json`), drift-gated by
+        `script/m29/verify-wave-protocol.ts`.
+      options:
+        - "No — analyzer only (MCP/CLI surfaces)"
+        - "Yes — a wave approval record is attached below"
+    validations:
+      required: true
+
+  - type: input
+    id: wave
+    attributes:
+      label: Launch-wave record (if LSP)
+      description: Path to the approval record, e.g. validation/m29/results/wave-3-approval.json.
+      placeholder: "validation/m29/results/wave-<N>-approval.json"
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: Wave checklist
+      description: Tick what is already done; the rest is the work plan.
+      value: |
+        - [ ] Grammar pinned and recorded in the grammar survey (`npm run grammar:survey:build`)
+        - [ ] Analyzer module with the language registered in `SUPPORTED_LANGUAGES`
+        - [ ] Imports / symbols / relationships extracted and proven on fixtures
+        - [ ] Docs/analyzers page written from the same derivation the gates read
+        - [ ] Language surface + site dataset regenerated (`npx tsx script/site-truth/generate-languages.ts`)
+        - [ ] Fixtures and provenance recorded (`audit:fixtures`, `audit:fixture-provenance`)
+        - [ ] Analyzer gates green (`npm run audit:grammar-pins`, `audit:analyzer-docs`, matching verify chain)
+        - [ ] LSP wave record attached (only if editor features are in scope)
+        - [ ] `npm run verify:fast` green

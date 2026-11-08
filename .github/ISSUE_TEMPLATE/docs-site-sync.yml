@@ -1,0 +1,82 @@
+name: Docs / site sync
+description: A page, generated dataset or tool reference drifted from the source it claims to describe.
+title: "[docs] "
+labels: ["type/docs", "area/website"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The site and the docs render **generated facts**. A wrong page is usually a
+        wrong generator input, not a typo to patch — hand-editing a generated file is a
+        red gate by design. This form records which fact is wrong, where its home is,
+        and what the generators currently say.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page or file
+      description: URL, or project-relative path (e.g. website/src/app/docs/page.tsx, docs/tools/bb_edit.md).
+      placeholder: "https://backbencher.cc/install"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong?
+      options:
+        - Page copy contradicts the tool/CLI behaviour
+        - A number or version on the page is stale
+        - A generated dataset is behind its generator
+        - A generator emits the wrong fact
+        - The page is missing something the product does
+        - Link / navigation / SEO structure
+    validations:
+      required: true
+
+  - type: input
+    id: artifact
+    attributes:
+      label: Owning artifact / generator
+      description: The generated file and its generator, if known (see docs/website/TRUTH-PIPELINE.md).
+      placeholder: "website/src/data/truth.generated.ts <- script/m41/generate-site-truth.ts"
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the source of truth says
+      description: The command or file that proves the correct value (e.g. `bb --version`, docs/data/public-tools.json, the CLI help).
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What the page currently says
+      description: Quote the wrong text, or paste the `--check` failure.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: check_output
+    attributes:
+      label: Generator check output (if run)
+      description: "The relevant `--check` command and its output, e.g. `npx tsx script/m41/generate-site-truth.ts --check`."
+      render: shell
+      placeholder: |
+        $ npx tsx script/m41/generate-site-truth.ts --check
+        generate-site-truth: stale …
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I did not hand-edit a file whose header says it is generated.
+          required: true
+        - label: I ran (or named) the generator check for this artifact.
+          required: true
+        - label: This is not a security issue (those go to SECURITY.md).
+          required: true

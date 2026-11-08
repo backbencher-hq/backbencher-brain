@@ -1,8 +1,17 @@
 {
   "name": "backbencher-brain",
-  "version": "0.3.0",
-  "description": "Universal code intelligence: index any project with 40+ language analyzers, query via CLI or any MCP host (Claude Code, Cursor, VS Code).",
+  "version": "0.1.0",
+  "description": "Universal code intelligence: index any project with 53 language analyzers, query via CLI or any MCP host (Claude Code, Cursor, VS Code).",
   "type": "module",
+  "author": "Muhammad Ishaq Khan <ishaq2321@users.noreply.github.com>",
+  "homepage": "https://backbencher.cc",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/backbencher-hq/backbencher-brain.git"
+  },
+  "bugs": {
+    "url": "https://github.com/backbencher-hq/backbencher-brain/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -146,14 +155,24 @@
   },
   "keywords": [
     "mcp",
+    "mcp-server",
     "code-intelligence",
+    "code-search",
+    "static-analysis",
     "ast",
     "tree-sitter",
     "semantic-search",
+    "code-graph",
+    "lsp",
     "cross-language",
+    "developer-tools",
+    "local-first",
     "backbencher"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "imports": {
     "#db": {
       "bun": "./src/storage/db.bun.ts",
