@@ -52,6 +52,20 @@ function approvalRecord(): { languages: string[]; approvedBy?: string; ownerStat
   return { languages, approvedBy, ownerStatement, waves: files }
 }
 const APPROVAL = path.join(ROOT, "validation/m29/results/wave-1-approval.json")
+
+/** True when any input that can change this language's measured behaviour has
+ *  changed since `commit`. The same relevance rule R2 applies to an S5 leg, so
+ *  a resumed record is never trusted across a real change. */
+function staleSince(commit: string, language: string): boolean {
+  try {
+    const changed = execFileSync("git", ["diff", "--name-only", commit, "HEAD", "--", ...staleRelevantPaths(language)], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean)
+    return changed.length > 0
+  } catch {
+    return true
+  }
+}
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
 
 // Neovim refuses to start when it cannot create its state directory
@@ -180,15 +194,7 @@ for (const lang of approval?.languages ?? []) {
   // exactly the coupling contract §9 says a wave must not have (language N+1
   // joins as a ROUTINE wave). The fixture path is now the language's OWN pack
   // plus the shared server/launch-set sources that really are common inputs.
-  let legStale = false
-  try {
-    const changed = execFileSync("git", ["diff", "--name-only", leg.commit, "HEAD", "--", ...staleRelevantPaths(lang)], { cwd: ROOT, encoding: "utf8" })
-      .split("\n")
-      .filter(Boolean)
-    legStale = changed.length > 0
-  } catch {
-    legStale = true
-  }
+  const legStale = staleSince(leg.commit, lang)
   check(`R2: ${lang} S5 inputs unchanged since its run`, !legStale, `${leg.commit.slice(0, 12)} vs HEAD`)
   check(`R2: ${lang} S5 real index non-empty`, (leg.indexCounts?.files ?? 0) > 0 && (leg.indexCounts?.symbols ?? 0) > 0, JSON.stringify(leg.indexCounts))
   const fails = leg.steps.filter((s) => s.status === "fail")
@@ -225,6 +231,26 @@ if (existsSync(NVIM) && approval) {
       check(`R3: ${lang} in-editor leg terminal ${terminal.disposition} (sealed disposition)`, true, terminal.reason)
       editorSummaries.push({ language: lang, status: `terminal-${terminal.disposition}`, checks: 0, failed: 0, terminal: terminal.disposition, dispositionReason: terminal.reason })
       continue
+    }
+    // RESUME RULE. Fifty real nvim sessions per invocation is why this gate
+    // could never finish on a shared checkout: one interruption and the whole
+    // measurement was lost. A prior in-editor leg is reusable only when it is
+    // SEALED, VERIFIED and FRESH under the same relevance rule R2 uses — a
+    // tampered record, a red record or a record measured before a relevant
+    // change is re-run, never trusted.
+    const editorPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
+    if (existsSync(editorPath)) {
+      try {
+        const prior = parseSealedRecord(editorPath) as { status?: string; commit?: string; checks?: unknown[] } & Record<string, unknown>
+        const priorChecks = Array.isArray(prior.checks) ? prior.checks.length : 0
+        if (prior.status === "verified" && typeof prior.commit === "string" && priorChecks > 0 && !staleSince(prior.commit, lang)) {
+          check(`R3: ${lang} in-editor leg verified (resumed — sealed, verified, fresh)`, true, `${prior.commit.slice(0, 8)} · ${priorChecks} checks`)
+          editorSummaries.push({ language: lang, status: "verified", checks: priorChecks, failed: 0 })
+          continue
+        }
+      } catch {
+        // unreadable or tampered — fall through and re-measure
+      }
     }
     const packDir = path.join(ROOT, "script/m29/wave-fixtures", lang)
     const ext = WAVE_LANGUAGES[lang]
