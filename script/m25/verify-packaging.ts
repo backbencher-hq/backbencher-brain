@@ -205,27 +205,40 @@ try {
   const launchMatch = /LAUNCH_LANGUAGES = \[([\s\S]*?)\]/.exec(launchSrc)
   const launchLanguages = launchMatch ? [...launchMatch[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]) : []
   check("G1c: launch languages derived from the single owner", launchLanguages.length >= 5, launchLanguages.join(","))
-  const GRAMMAR_BY_LANGUAGE: Record<string, string[]> = {
-    typescript: ["tree-sitter-typescript.wasm", "tree-sitter-tsx.wasm"],
-    javascript: ["tree-sitter-javascript.wasm"],
-    java: ["tree-sitter-java.wasm"],
-    kotlin: ["tree-sitter-kotlin.wasm"],
-    scala: ["tree-sitter-scala.wasm"],
-    python: ["tree-sitter-python.wasm"],
-    groovy: ["tree-sitter-groovy.wasm"],
-    zig: ["tree-sitter-zig.wasm"],
-    go: ["tree-sitter-go.wasm"],
-    rust: ["tree-sitter-rust.wasm"],
-    c: ["tree-sitter-c.wasm"],
-    cpp: ["tree-sitter-cpp.wasm"],
-    vue: ["tree-sitter-vue.wasm"],
-    svelte: ["tree-sitter-svelte.wasm"],
+  // The grammar map is OWNED by the extension build. This gate used to keep a
+  // second 14-entry copy of it, which went stale the moment wave 3 shipped 38
+  // new languages — a gate-internal duplicate of the very table it checks. It is
+  // read from the shipped build now, so a language added to the map is checked
+  // here, and a language missing from the map fails the same check.
+  const extBuildSrc = readFileSync(path.join(ROOT, "ide", "vscode", "esbuild-extension.mjs"), "utf8")
+  const mapAt = extBuildSrc.indexOf("const GRAMMAR_BY_LANGUAGE")
+  const mapEnd = mapAt < 0 ? -1 : extBuildSrc.indexOf("\n    }", mapAt)
+  const GRAMMAR_BY_LANGUAGE: Record<string, string[]> = {}
+  if (mapAt >= 0 && mapEnd > mapAt) {
+    for (const m of extBuildSrc.slice(mapAt, mapEnd).matchAll(/(\w+):\s*\[([^\]]*)\]/g)) {
+      GRAMMAR_BY_LANGUAGE[m[1]!] = [...m[2]!.matchAll(/"([^"]+)"/g)].map((x) => x[1]!)
+    }
   }
-  const expectedWasms = ["tree-sitter.wasm", ...launchLanguages.flatMap((l) => {
+  check("G1c: the extension build declares a grammar map", Object.keys(GRAMMAR_BY_LANGUAGE).length > 0, `${Object.keys(GRAMMAR_BY_LANGUAGE).length} entries`)
+  const declaredWasms = ["tree-sitter.wasm", ...launchLanguages.flatMap((l) => {
     const f = GRAMMAR_BY_LANGUAGE[l]
-    if (!f) { check(`G1c: grammar mapping exists for launch language "${l}"`, false, "add it to verify-packaging GRAMMAR_BY_LANGUAGE and esbuild-extension GRAMMAR_BY_LANGUAGE") ; return [] }
+    if (!f) {
+      check(`G1c: grammar mapping exists for launch language "${l}"`, false, "add it to ide/vscode/esbuild-extension.mjs GRAMMAR_BY_LANGUAGE")
+      return []
+    }
     return f
   })]
+  // A declared grammar that does not exist in the repo is a documented limitation
+  // (sass has no tree-sitter-sass — docs/KNOWN-ISSUES.md §3), not a packaging
+  // defect: the build warns honestly and hover answers declared absence.
+  const KNOWN_MISSING_GRAMMARS = new Set(["tree-sitter-sass.wasm"])
+  const missingDeclared = declaredWasms.filter((w) => !existsSync(path.join(ROOT, "wasm", w)))
+  check(
+    "G1c: every declared grammar exists in the repo except the documented limitation",
+    missingDeclared.every((w) => KNOWN_MISSING_GRAMMARS.has(w)),
+    missingDeclared.join(","),
+  )
+  const expectedWasms = declaredWasms.filter((w) => existsSync(path.join(ROOT, "wasm", w)))
   for (const wasm of expectedWasms) {
     check(`G1c: staged grammar wasm present: ${wasm}`, existsSync(path.join(EXT_ROOT, "dist/wasm", wasm)), "missing — the bundled server cannot parse this launch language")
   }

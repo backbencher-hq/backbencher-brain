@@ -131,7 +131,7 @@ const upgradeFact = read("website/src/data/docs.generated.ts")
 const upgradeSummary = /"name": "upgrade"[\s\S]{0,240}?"summary": "([^"]+)"/.exec(upgradeFact)?.[1] ?? ""
 check(
   "T2: docs states the real upgrade path and what `bb upgrade` actually does",
-  docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") &&
+  docsPage.includes("re-run the installer") && docsPage.includes("no separate in-place") &&
     (upgradeSummary.length === 0 || !docsPage.includes("bb upgrade") || docsPage.includes(upgradeSummary)),
   upgradeSummary.length === 0 ? "no upgrade summary in the generated docs facts" : "",
 )
@@ -262,13 +262,18 @@ if (buildOk) {
   // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
   // `git commit -a` on the shared checkout once swept the in-repo backup AND
   // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
+  // The homepage render sites of the generated version. The colophon is no longer
+  // on the homepage (the page was redesigned to AtlasHero + SiteFooter), so the
+  // mutant targets every site that actually renders it: mutating one while
+  // another still prints the honest version proves nothing.
+  const VERSION_SITES = ["website/src/components/atlas/AtlasHero.tsx", "website/src/components/site/SiteFooter.tsx"]
   const heroBackup = path.join(tmpdir(), `homepage-t2bak-${process.pid}.tsx`)
   cpSync(heroPath, heroBackup)
+  const siteBackups = VERSION_SITES.map((rel) => ({ rel, bytes: read(rel) }))
   let mutantCaught = false
   let mutantDetail = ""
   try {
-    const mutated = read("website/src/components/cobalt/CobaltColophon.tsx").replace("{TRUTH.version}", `{"9.9.9"}`)
-    writeFileSync(heroPath, mutated)
+    for (const site of siteBackups) writeFileSync(path.join(ROOT, site.rel), site.bytes.replaceAll("{TRUTH.version}", `{"9.9.9"}`))
     try {
       execFileSync("npm", ["run", "build"], { cwd: SITE, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 420_000 })
       const mutantHome = normalize(read("website/.next/server/app/index.html"))
@@ -281,6 +286,7 @@ if (buildOk) {
   } finally {
     cpSync(heroBackup, heroPath)
     rmSync(heroBackup)
+    for (const site of siteBackups) writeFileSync(path.join(ROOT, site.rel), site.bytes)
   }
   // The gate rule the mutant must violate, evaluated on the mutant output:
   negative("T2: hand-typed stale version in rendered output is detectable", mutantCaught, mutantDetail)
