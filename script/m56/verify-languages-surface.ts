@@ -536,10 +536,11 @@ check("L1: the detail page reads the generated ruling table", site("src/app/lang
 const rulingRenders: string[] = []
 if (built) {
   const zigHtml = htmlOf("/languages/zig")
-  const javaHtml = htmlOf("/languages/java")
+  const unrecorded = Object.entries(buildLanguageRulings().rows).find(([, r]) => !r.documented && r.unrecorded.length > 0)
+  const unrecordedHtml = unrecorded ? htmlOf(`/languages/${unrecorded[0]}`) : ""
   const htmlHtml = htmlOf("/languages/html")
   if (!zigHtml.includes("ruled absent") || !zigHtml.includes("written reason")) rulingRenders.push("zig: ruled absent not rendered")
-  if (!javaHtml.includes("not constructed") || !javaHtml.includes("does not carry a per-type ruling")) rulingRenders.push("java: unrecorded absence not disclosed")
+  if (unrecordedHtml && (!unrecordedHtml.includes("not constructed") || !unrecordedHtml.includes("does not agree with the analyzer-source derivation"))) rulingRenders.push(`${unrecorded?.[0]}: unrecorded absence not disclosed`)
   if (!htmlHtml.includes("published through delegated analyzers") || !htmlHtml.includes("hosts for inline blocks")) rulingRenders.push("html: delegation not disclosed")
   if (!langHtml.includes("A missing type is a ruling, not a gap.")) rulingRenders.push("register: heading")
 }

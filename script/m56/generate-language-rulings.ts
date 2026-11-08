@@ -13,8 +13,17 @@
  *
  * The page used to collapse both into "empty", and asserted the format fact for
  * every absent row. That was wrong for exactly the families whose record has no
- * ruling. This generator reads the canonical analyzer pages under docs/analyzers
- * and emits, per family:
+ * ruling. This generator reads, in order of authority:
+ *
+ *   1. the machine completeness record script/m14/spec/<lang>-completeness.json
+ *      (`coverage.implemented` / `coverage.excluded`) — the ruling table the
+ *      ontology workstream wrote per language, used only when its implemented
+ *      set equals the analyzer-source derivation;
+ *   2. the canonical analyzer page docs/analyzers/<lang>.md, as a fallback and
+ *      only when its table is complete and agrees with the source;
+ *   3. nothing: the family is reported as unrecorded and the page makes no claim.
+ *
+ * Per family it emits:
  *
  *   documented  the page's relationship table is complete (all 14 rows, every
  *               verdict parseable) AND its emitted set equals the derives-from-
@@ -81,6 +90,9 @@ const SLUG_BY_FAMILY: Record<string, string> = (() => {
 const DOC_BASE: Record<string, string> = { terraform: "hcl", makefile: "make", "visual-basic": "vb" }
 /** Analyzer module token: the slug, except for the two whose module name differs. */
 const MODULE_BY_SLUG: Record<string, string> = { terraform: "hcl", "visual-basic": "vb" }
+/** Completeness-spec base name: the module token, except where the spec file differs. */
+const SPEC_BASE: Record<string, string> = { terraform: "hcl", makefile: "make", "visual-basic": "vb", "objective-c": "objc" }
+const SPEC_DIR = path.join(ROOT, "script/m14/spec")
 const MODULES = new Set(
   readdirSync(AST).filter((f) => /^real-.*-analyzer\.ts$/.test(f)).map((f) => f.replace(/^real-/, "").replace(/-analyzer\.ts$/, "")),
 )
@@ -159,6 +171,30 @@ function ownEmittedTypes(module: string): Set<string> {
   return found
 }
 
+type SpecRow = { documented: boolean; ruled: string[] }
+/**
+ * The completeness spec (`script/m14/spec/<base>-completeness.json`) is the
+ * machine-written per-language record: `coverage.implemented` lists the types
+ * production work emits and `coverage.excluded` carries one entry per ruled
+ * absence with an evidence kind, a written `from` and, for corpus rulings, a
+ * measured `count`. It is used only when it AGREES with the analyzer-source
+ * derivation this site already publishes; a spec that disagrees is stale and is
+ * reported rather than believed.
+ */
+function rulingsFromSpec(slug: string, family: { name: string; emits: string[] }): SpecRow | null {
+  const base = SPEC_BASE[slug] ?? MODULE_BY_SLUG[slug] ?? slug
+  const file = path.join(SPEC_DIR, `${base}-completeness.json`)
+  if (!existsSync(file)) return null
+  const coverage = (JSON.parse(readFileSync(file, "utf8")) as { coverage?: { implemented?: string[]; excluded?: { label?: string }[] } }).coverage
+  if (!coverage) return null
+  const implemented = coverage.implemented ?? []
+  const absent = RELATIONSHIP_TYPES.filter((t) => !family.emits.includes(t))
+  const parity = implemented.length === family.emits.length && implemented.every((t) => family.emits.includes(t))
+  const excluded = new Set((coverage.excluded ?? []).map((e) => e.label).filter((l): l is string => Boolean(l)))
+  if (!parity || !absent.every((t) => excluded.has(t))) return null
+  return { documented: true, ruled: absent }
+}
+
 /** Analyzer modules this module hands work to (delegation, not inheritance). */
 function delegatesOf(module: string): string[] {
   // Comments discuss other analyzers; only code that actually requires/instantiates
@@ -193,18 +229,26 @@ export function buildLanguageRulings(): { rows: Record<string, Ruling>; sourceDi
     const docBase = DOC_BASE[slug] ?? slug
     const page = parseRulingsPage(path.join(DOCS, `${docBase}.md`))
     const absent = RELATIONSHIP_TYPES.filter((t) => !family.emits.includes(t))
-    let complete = false
-    if (page?.complete) {
+    const fromSpec = rulingsFromSpec(slug, family)
+    if (!fromSpec && existsSync(path.join(SPEC_DIR, `${SPEC_BASE[slug] ?? MODULE_BY_SLUG[slug] ?? slug}-completeness.json`))) {
+      stalePages.push(`${family.name}: script/m14/spec completeness record disagrees with the analyzer-source derivation`)
+    }
+    let complete = Boolean(fromSpec)
+    let ruledFrom = complete ? fromSpec!.ruled : []
+    if (fromSpec) {
+      // spec is the machine record; no page parsing needed
+    } else if (page?.complete) {
       const docEmitted = RELATIONSHIP_TYPES.filter((t) => page.rows.get(t) === "yes")
       const parity = docEmitted.length === family.emits.length && docEmitted.every((t) => family.emits.includes(t))
       complete = parity
-      if (!parity) stalePages.push(`${family.name}: docs/analyzers/${docBase}.md emitted set disagrees with the analyzer-source derivation`)
+      if (parity) ruledFrom = absent.filter((t) => page!.rows.get(t) === "no")
+      else stalePages.push(`${family.name}: docs/analyzers/${docBase}.md emitted set disagrees with the analyzer-source derivation`)
     } else if (existsSync(path.join(DOCS, `${docBase}.md`))) {
       stalePages.push(`${family.name}: docs/analyzers/${docBase}.md has no complete relationship ontology table`)
     } else {
       stalePages.push(`${family.name}: docs/analyzers/${docBase}.md is missing`)
     }
-    const ruled = complete ? absent.filter((t) => page!.rows.get(t) === "no") : []
+    const ruled = complete ? ruledFrom : []
     const unrecorded = absent.filter((t) => !ruled.includes(t))
     const delegateModules = delegatesOf(module)
     const own = ownEmittedTypes(module)
