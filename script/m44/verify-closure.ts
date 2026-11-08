@@ -196,7 +196,12 @@ function readLeg(rel: string): LegEvidence | null {
   for (const file of forkFiles) {
     const fork = file.replace(/^F-/, "").replace(/\.json$/, "").toLowerCase()
     const f = readLeg(`validation/m25/results/${file}`)
-    const reason = String(f?.reason ?? "").trim()
+    // THE CANONICAL FIELD IS `blockedReason` (what the fork runner writes and
+    // every other reader in the program reads). This audit looked only for
+    // `reason`, so a fork that was blocked WITH a recorded reason read as
+    // "reason=(NONE)" - a recorded absence reported as a missing one, which is
+    // the defect class this gate exists to catch, inside the gate.
+    const reason = String(f?.blockedReason ?? f?.reason ?? "").trim()
     const forkNames = (f?.checks ?? []).map((c) => c.name ?? "")
     if (f?.status === "blocked") {
       // Declared absence: recorded, counted, and reported - never counted as a
