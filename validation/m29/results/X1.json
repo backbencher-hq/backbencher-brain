@@ -7,7 +7,7 @@
   "passed": 26,
   "failed": 6,
   "failures": [
-    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — X1:persisted-failed  (exit=1)",
+    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned ledger item has matching persisted evidence at the current commit — E7:persisted-failed,D1:persisted-failed,X1:persisted-failed  (exit=1)",
     "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (67/70 passed, 10 negative)  (exit=1)",
     "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
     "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
@@ -29,7 +29,7 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
   "sourceFingerprint": "61681ce843391e19ed76683a46acd8afe9fc19ecc1e70fefd72fdde87dfd90bb",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -65,7 +65,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-08T02:32:11.333Z",
+  "generatedAt": "2026-11-08T03:25:48.943Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -74,7 +74,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T02:32:11.334Z",
-    "contentSha256": "6b346c3e3587ac27a93eb65db10da9278cdefbaf01d624fd236a87a1f5b7f8e9"
+    "sealedAt": "2026-11-08T03:25:48.944Z",
+    "contentSha256": "2a128963f725ec3ac3542c98bf21c2373d8ab3f8540253031d716959adbc92e2"
   }
 }

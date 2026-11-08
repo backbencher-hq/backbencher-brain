@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
+        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 85,
@@ -68,7 +68,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
         "evidenceFile": "E1.json",
         "passed": 46,
@@ -98,7 +98,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
         "evidenceFile": "E2.json",
         "passed": 43,
@@ -128,7 +128,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
         "evidenceFile": "E3.json",
         "passed": 32,
@@ -158,7 +158,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
         "evidenceFile": "E4.json",
         "passed": 56,
@@ -188,7 +188,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
         "evidenceFile": "V1.json",
         "passed": 26,
@@ -256,7 +256,7 @@
       ],
       "evidence": {
         "status": "blocked",
-        "currentCommit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
+        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -297,7 +297,7 @@
       "code": "E7",
       "githubIssue": 544,
       "tool": "cross-platform",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "extension end-to-end verified on Linux, macOS, Windows (OS-matrix runners); every claim records the OS it was measured on (contract §10); platform bug classes (BB_DATA_DIR home-dir nondeterminism, path-separator bugs) get dedicated mutation cases",
       "acceptanceCriteria": [
         "extension end-to-end verified on at least two OSes; the third is either verified or blocked with reason",
@@ -310,8 +310,8 @@
         "no banned vocabulary in the issue thread"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
+        "status": "known-gap",
+        "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
         "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
         "evidenceFile": "E7-linux.json",
         "os": "linux",
@@ -320,9 +320,9 @@
           "E7-windows.json"
         ],
         "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) — two-OS acceptance stays open for X1/owner",
-        "blockedReason": "Native Linux leg executed on this machine (linux); the other two OSes are machine-emitted blocked records (E7-darwin.json, E7-windows.json) — the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist.",
-        "passed": 56,
-        "failed": 0,
+        "blockedReason": "2 check(s) failed on Linux (process.platform=linux): G1: zero records missing the OS field — F-ANTIGRAVITY-attempt: evidence record carries no OS field (contract §10 rule 1) | G1: OS-scoped — F-ANTIGRAVITY-attempt ran on undefined",
+        "passed": 55,
+        "failed": 2,
         "negativeCases": 4,
         "mutantsCaught": 4,
         "mutantsTotal": 4
@@ -332,7 +332,7 @@
       "code": "D1",
       "githubIssue": 506,
       "tool": "marketplace-docs",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "OpenVSX/VS Code marketplace listing text as a governed artifact: features, claim levels, limitations, complement stance; install/verification docs per editor",
       "acceptanceCriteria": [
         "listing linted with contract vocabulary (D1 verifier reads the listing source)",
@@ -345,12 +345,12 @@
         "limitations non-empty or justified"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "status": "known-gap",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
-        "passed": 22,
-        "failed": 0,
+        "passed": 21,
+        "failed": 1,
         "negativeCases": 4,
         "installFollowAlong": {
           "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
@@ -378,11 +378,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
+        "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
         "verifierCommand": "npx tsx script/m25/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 35,
-        "failed": 2,
+        "passed": 33,
+        "failed": 4,
         "negativeCases": 3,
         "blockedReason": "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract."
       }
@@ -390,7 +390,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T02:35:18.442Z",
-    "contentSha256": "2fd12354fe324eefbaba963819fdec7dd958625e1e51cd9206c14ff1b55a9e9d"
+    "sealedAt": "2026-11-08T03:29:03.183Z",
+    "contentSha256": "39fd845e365cf4c832c6ebf09af8a1bd571e7a4f49be97e2c714f7807b5ebbd0"
   }
 }

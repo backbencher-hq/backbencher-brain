@@ -46,7 +46,7 @@
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (35/37 passed, 3 negative)",
+      "verdict": "KNOWN-GAP (33/37 passed, 3 negative)",
       "ok": false,
       "timedOut": false
     },
@@ -286,7 +286,7 @@
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (27/33 passed, 7 negatives)",
+      "verdict": "KNOWN-GAP (25/33 passed, 7 negatives)",
       "ok": false,
       "timedOut": false
     },
@@ -318,7 +318,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 0dff18c8)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 871e692e)",
       "ok": true,
       "timedOut": false
     },
@@ -342,17 +342,17 @@
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (46/52 passed, 8 negatives)",
+      "verdict": "KNOWN-GAP (45/55 passed, 8 negatives)",
       "ok": false,
       "timedOut": false
     }
   ],
-  "currentCommit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
+  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-08T02:36:21.182Z",
+  "generatedAt": "2026-11-08T03:30:02.229Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T02:36:21.183Z",
-    "contentSha256": "244508d85e8e058c15917807313a667b76516081ea9300b23f373f7156163f1b"
+    "sealedAt": "2026-11-08T03:30:02.229Z",
+    "contentSha256": "4e7f80c1601ee142e386f3e39c22bb3a3ac7166cf5b895914b5592df66cd2834"
   }
 }

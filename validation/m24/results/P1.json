@@ -79,7 +79,7 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 189,
+    "filesScanned": 190,
     "spawnSitesJudged": 699,
     "spawnSitesByReach": {
       "directCallSitesResolvedByName": 281,
@@ -315,7 +315,7 @@
     ],
     "ok": true
   },
-  "currentCommit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
+  "currentCommit": "871e692ebed40756a6373b4926a33a20bc9e6128",
   "sourceFingerprint": "47aef49b62616c43a43b999ca66441c410dbfd977f4c890efbb051ad3d439c5c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -326,7 +326,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-11-08T02:29:46.321Z",
+  "generatedAt": "2026-11-08T03:23:24.909Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -340,7 +340,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T02:29:46.322Z",
-    "contentSha256": "1349385296ed15eab572b69729259b0ed43b04736465521f79be6c35d07abbbf"
+    "sealedAt": "2026-11-08T03:23:24.910Z",
+    "contentSha256": "1b6a46455f28a16ab212d24b10aced7a765960c39a23d81bfeb9403296b7fef3"
   }
 }

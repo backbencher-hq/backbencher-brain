@@ -11,10 +11,10 @@
     "passed": 91
   },
   "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
-  "generatedAt": "2026-11-08T02:34:27.635Z",
+  "generatedAt": "2026-11-08T03:28:17.835Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T02:34:27.635Z",
-    "contentSha256": "d79e9ada067c53fb6c3c05816267e828878ffb842ffbde4761b081be3692d9df"
+    "sealedAt": "2026-11-08T03:28:17.836Z",
+    "contentSha256": "e83541130e892ae2bf9600af4b4cf5165ad37f8e5cc2d5542226c6caeb392720"
   }
 }
