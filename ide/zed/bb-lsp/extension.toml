@@ -8,7 +8,7 @@ repository = "https://github.com/backbencher-hq/backbencher-brain"
 
 [language_servers.bb-lsp]
 languages = ["TypeScript", "JavaScript"]
-# WHY THIS BLOCK WAS INCOMPLETE (found 2026-10-07, when the owner's Zed leg was
+# WHY THIS BLOCK WAS INCOMPLETE (found 2026-10-07, when the Zed leg was
 # finally attempted). This manifest declared which languages the server handles
 # and nothing else — there was NO `command`, so Zed had nothing to launch and the
 # integration could never have worked. It was never exercised, so nothing failed
