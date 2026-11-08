@@ -2,21 +2,34 @@
   "issue": "694",
   "code": "X1",
   "milestone": "M44",
-  "status": "verified",
-  "checks": 53,
-  "passed": 53,
-  "failed": 0,
-  "failures": [],
+  "status": "known-gap",
+  "checks": 52,
+  "passed": 40,
+  "failed": 12,
+  "failures": [
+    "X1: E5 (VS Code, full 88-check suite incl. the M44 hub) leg green at HEAD: E5: KNOWN-GAP (0/0 in-editor checks passed)  (exit=1)",
+    "X1: E5 evidence verified at THIS HEAD: status=known-gap commit=8d940bf1",
+    "X1: E5 ran the hub leg \"E5-H5: hub renders all three views…\"",
+    "X1: E5 ran the hub leg \"E5-H5: navigable rows declare the click affo…\"",
+    "X1: E5 ran the hub leg \"E5-U4: the ONE legend renders in the hub pan…\"",
+    "X1: E6 antigravity is declared-absent WITH a reason (never omitted, never assumed): status=blocked reason=(NONE)",
+    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) — E5=known-gap  (exit=1)",
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (66/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (71/73 passed, 11 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
+    "X1: M29 ladder run green at HEAD: FAIL: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — exit=1  (exit=1)",
+    "X1: closure preconditions audited — zero violations: pre2:ladder leg E5 failed (exit=1); pre2:ladder leg M25 failed (exit=1); pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1); pre4:E5 editor leg not verified (known-gap); pre5:1 fork leg(s) blocked WITHOUT a reason (never silently omitted); pre6:EVIDENCE row Hub in-editor (VS Code) — grouped rows, click "
+  ],
   "negativeCases": 8,
   "suiteExits": {
-    "E5": 0,
+    "E5": 1,
     "E6": 0,
     "M24": 0,
-    "M25": 0,
-    "M26": 0,
-    "M27": 0,
-    "M28": 0,
-    "M29": 0,
+    "M25": 1,
+    "M26": 1,
+    "M27": 1,
+    "M28": 1,
+    "M29": 1,
     "M42-H1": 0,
     "M42-H2": 0,
     "M42-H3": 0,
@@ -33,7 +46,7 @@
     "e5": "validation/m25/results/E5.json (re-run at this HEAD — full suite incl. the M44 hub legs)",
     "e6": "validation/m25/results/F-CURSOR.json + F-ANTIGRAVITY.json (re-run at this HEAD, terminal gate 26→88); F-WINDSURF blocked-with-reason"
   },
-  "currentCommit": "c5f7a6ad6267d53857eef3c9ac1ecf31ee1db1f7",
+  "currentCommit": "8d940bf1910a581d953f1f5c92e1e4f9b0981ac7",
   "verifierCommand": "npx tsx script/m44/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -47,7 +60,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-07T18:21:57.521Z",
+  "generatedAt": "2026-11-08T00:01:17.168Z",
   "limitations": [
     "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
@@ -56,7 +69,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T18:21:57.521Z",
-    "contentSha256": "cb22ee7ff04e37fe188a2ac04f990d6bd1147ec327a87cafb02b735a3bb3ecb3"
+    "sealedAt": "2026-11-08T00:01:17.168Z",
+    "contentSha256": "1e1f0c1d481bfe713dae6eadcf87fcdeef79f0c5a037b7fd024246ba96aad710"
   }
 }

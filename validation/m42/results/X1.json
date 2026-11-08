@@ -2,19 +2,26 @@
   "issue": "655",
   "code": "X1",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 33,
-  "passed": 33,
-  "failed": 0,
-  "failures": [],
+  "passed": 27,
+  "failed": 6,
+  "failures": [
+    "X1: M25 ladder run green at HEAD: FAIL: G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow) — E5=known-gap  (exit=1)",
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (66/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (71/73 passed, 11 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
+    "X1: M29 ladder run green at HEAD: FAIL: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — exit=1  (exit=1)",
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre2:ladder leg M25 failed (exit=1); pre2:ladder leg M26 failed (exit=1); pre2:ladder leg M27 failed (exit=1); pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1)"
+  ],
   "negativeCases": 7,
   "suiteExits": {
     "M24": 0,
-    "M25": 0,
-    "M26": 0,
-    "M27": 0,
-    "M28": 0,
-    "M29": 0,
+    "M25": 1,
+    "M26": 1,
+    "M27": 1,
+    "M28": 1,
+    "M29": 1,
     "M42-H1": 0,
     "M42-H2": 0,
     "M42-H3": 0,
@@ -22,7 +29,7 @@
     "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "c5f7a6ad6267d53857eef3c9ac1ecf31ee1db1f7",
+  "currentCommit": "8d940bf1910a581d953f1f5c92e1e4f9b0981ac7",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -37,7 +44,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-07T18:19:35.413Z",
+  "generatedAt": "2026-11-07T23:58:50.528Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
@@ -45,7 +52,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T18:19:35.413Z",
-    "contentSha256": "9c3b7c87b2bdc3854ec4aee9ec42b0acb2cdacdef7ec5e7325e5e86d7cadfc8e"
+    "sealedAt": "2026-11-07T23:58:50.529Z",
+    "contentSha256": "5c259fa5a668ba90794de84537fa7f3a3c88ffdb99c52b099b63019cd6ab40b5"
   }
 }

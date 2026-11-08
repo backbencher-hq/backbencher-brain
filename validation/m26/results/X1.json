@@ -2,13 +2,16 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 50,
-  "passed": 50,
-  "failed": 0,
-  "failures": [],
+  "passed": 48,
+  "failed": 2,
+  "failures": [
+    "X1: the in-editor graph-leg evidence exists (E5 records the panel render)",
+    "X1: v2 completion bar audited item-by-item — zero violations"
+  ],
   "negativeCases": 3,
-  "currentCommit": "1bf30ba4a0eef802d57ba128c6560f2eceddb9f1",
+  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
   "sourceFingerprint": "5d79e12288c0e3c9c32810711d28e51f83a6e3808ee9fdd930923f821ded9d7c",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -27,7 +30,9 @@
     "script/m26/verify-webview-harness.ts"
   ],
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
-  "barViolations": [],
+  "barViolations": [
+    "bar1: graph panel not verified rendering in-editor (E5 leg)"
+  ],
   "perMutantRecords": {
     "W1": [
       {
@@ -254,10 +259,10 @@
       }
     ]
   },
-  "generatedAt": "2026-11-07T18:50:25.882Z",
+  "generatedAt": "2026-11-07T23:28:31.425Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T18:50:25.882Z",
-    "contentSha256": "b0ec0d68f2bbea3247c69a8da27639bb6e74934276307f31adb7351153597dee"
+    "sealedAt": "2026-11-07T23:28:31.426Z",
+    "contentSha256": "758348d730ab354ae7a1cfae6f05b2d3c001a28330e4e3faf97b746f0bbea1d7"
   }
 }

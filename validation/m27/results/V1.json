@@ -30,7 +30,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "1bf30ba4a0eef802d57ba128c6560f2eceddb9f1",
+  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
   "sourceFingerprint": "ae0b2084ed05bae767544db3bdf7eb0ac4d42b7f556837dabb73f02895352aa2",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -40,7 +40,7 @@
   ],
   "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-11-07T18:52:20.557Z",
+  "generatedAt": "2026-11-07T23:30:41.851Z",
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
     "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files.",
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T18:52:20.557Z",
-    "contentSha256": "75060afbbe4ee30c2df92e028f1b9db8166a5b3fc8851a50d57f8c7423d5b118"
+    "sealedAt": "2026-11-07T23:30:41.852Z",
+    "contentSha256": "a3569a6e4b4cc26ec824d18b0aaf17eab8ef983c08920658935940bf301b7919"
   }
 }

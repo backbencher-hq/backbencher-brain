@@ -2,11 +2,17 @@
   "issue": "507",
   "code": "X1",
   "milestone": "M25",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 37,
-  "passed": 37,
-  "failed": 0,
-  "failures": [],
+  "passed": 32,
+  "failed": 5,
+  "failures": [
+    "X1: E5 verifier passes at HEAD, or is a declared block with a recorded reason — E5: KNOWN-GAP (0/0 in-editor checks passed)  (exit=1)",
+    "X1: D1 verifier passes at HEAD, or is a declared block with a recorded reason — D1: KNOWN-GAP (21/22 passed, 4 negative)  (exit=1)",
+    "X1: D1i verifier passes at HEAD, or is a declared block with a recorded reason — S4 — deactivate the clean profile  (exit=1)",
+    "X1: v1 completion bar audited item-by-item — zero violations — bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)",
+    "X1: D1 regeneration run passes — D1: KNOWN-GAP (21/22 passed, 4 negative)  (exit=1)"
+  ],
   "negativeCases": 3,
   "suiteExits": {
     "E1": 0,
@@ -14,11 +20,11 @@
     "E3": 0,
     "E4": 0,
     "V1": 0,
-    "E5": 0,
+    "E5": 1,
     "E6": 0,
     "E7": 0,
-    "D1": 0,
-    "D1i": 0
+    "D1": 1,
+    "D1i": 1
   },
   "section6": [
     {
@@ -62,10 +68,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "0c7ab0b6b4dbbad7230f95d9b12848a2490cf428",
+  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-07T23:10:31.074Z",
+  "generatedAt": "2026-11-07T23:25:29.334Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -73,7 +79,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:10:31.075Z",
-    "contentSha256": "57ed5cef7f14d039843fd188fa39872459856fd043940a76dc189fbfebf44a08"
+    "sealedAt": "2026-11-07T23:25:29.335Z",
+    "contentSha256": "a663856f1c5cd0fcb7245a9b0d58071f3b34bd3c27b310ca8bcb9554a4eef812"
   }
 }
