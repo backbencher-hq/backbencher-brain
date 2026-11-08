@@ -5,7 +5,7 @@ fails unless the file is byte-identical to a fresh generation, except for exactl
 two declared lines — the `Audit HEAD` line (it moves on every committed run) and
 the owner's verdict line (preserved verbatim, §8.5).
 
-Audit HEAD: `fcd9133269985c30a9e9982c649224c172bb33d1`  ·  capture run: `owner-test-2026-09-21`
+Audit HEAD: `f1f8604596d453a320fb3db7d8a8401aebc207ae`  ·  capture run: `owner-test-2026-09-21`
 
 ## The verdict is the owner's
 
@@ -17,7 +17,7 @@ behind them, and the verdict line at the end stays for the owner to write.
 
 | Issue | GitHub | Evidence | Status | Passed | Mutants |
 |---|---|---|---|---|---|
-| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) | `G1.json` | known-gap | 14 | — |
+| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) | `G1.json` | verified | 14 | — |
 | T1 | [#770](https://github.com/backbencher-hq/backbencher-brain/issues/770) | `T1.json` | verified | 38 | 5/5 |
 | T2 | [#771](https://github.com/backbencher-hq/backbencher-brain/issues/771) | `T2.json` | verified | 64 | 9/9 |
 | T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) | `T3.json` | verified | 92 | — |
@@ -25,7 +25,7 @@ behind them, and the verdict line at the end stays for the owner to write.
 | T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 70 | — |
 | P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) | `P1.json` | verified | 25 | 4/4 |
 | V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | verified | 55 | 14/14 |
-| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 37 | — |
+| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 39 | — |
 
 ## 2. Every claim, and the frame behind it
 
