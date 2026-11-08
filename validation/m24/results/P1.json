@@ -80,10 +80,10 @@
       "win32"
     ],
     "filesScanned": 190,
-    "spawnSitesJudged": 701,
+    "spawnSitesJudged": 703,
     "spawnSitesByReach": {
       "directCallSitesResolvedByName": 283,
-      "localWrapperCallSitesArgumentScanned": 368,
+      "localWrapperCallSitesArgumentScanned": 370,
       "commandComputedAtRuntimeNotJudgedByName": 50
     },
     "findings": [],
@@ -93,52 +93,52 @@
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 1388 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1394 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 1388 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1394 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 1388 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1394 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 1388 (non-portable-binary: timeout)"
+        "detail": "caught at line 1394 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 1388 (platform-only-path: /proc)"
+        "detail": "caught at line 1394 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 1388 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1394 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 1388 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1394 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 1388 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1394 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 1388 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1394 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 1389 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1395 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -315,8 +315,8 @@
     ],
     "ok": true
   },
-  "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
-  "sourceFingerprint": "47aef49b62616c43a43b999ca66441c410dbfd977f4c890efbb051ad3d439c5c",
+  "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+  "sourceFingerprint": "3ffbd5c625e16383dc9eddca674a9ed6ddf2492212fa2247ec92474330743d25",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m24/verify-positions.ts",
@@ -326,7 +326,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-11-08T09:28:59.052Z",
+  "generatedAt": "2026-11-08T20:34:33.881Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -340,7 +340,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:28:59.052Z",
-    "contentSha256": "23882aba4883c2203622d683329d645a958cc2abe782d9d05569f8dfa7cd143e"
+    "sealedAt": "2026-11-08T20:34:33.882Z",
+    "contentSha256": "07829757703407b8e870ed67e8ff7634e8ebcfc863f37eedcb2abd29d25f16e9"
   }
 }

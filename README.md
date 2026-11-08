@@ -1,7 +1,7 @@
 # Backbencher Brain (`bb`)
 
 **Evidence-first code intelligence, local-first and runtime-agnostic.** `bb` indexes a repository with
-**50 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
+**52 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
 questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
 supported. No telemetry, no server, no account required.
 
@@ -269,7 +269,7 @@ names retired before the first public release are documented in
 
 ## Language support
 
-**50 language analyzers**, all first-class in discovery, parsing, relationship extraction and the
+**52 language analyzers**, all first-class in discovery, parsing, relationship extraction and the
 cross-language graph:
 
 Bash, C, C#, C++, Clean, Clojure, CSS, Dart, Elixir, Erlang, F#, Go, GraphQL, Groovy, Haskell, HCL, HTML,

@@ -297,7 +297,7 @@ async function testHonesty(): Promise<void> {
   // failure mode §11.1 exists to catch. The assertions below are STRUCTURAL:
   // each one is a fact about the shape of the response that a fabricated
   // entry could not satisfy.
-  const result2 = await hover(raw, { filePath: join(dir, "fixture.rb"), position: { line: 0, character: 0 } })
+  const result2 = await hover(raw, { filePath: join(dir, "fixture.zzz"), position: { line: 0, character: 0 } })
   check("G3: unsupported language returns null contents", result2.contents === null)
   check("G3: unsupported language provenance explains launch set", (result2.provenance.limitations.join(" ") || "").includes("launch"))
 
@@ -309,8 +309,12 @@ async function testHonesty(): Promise<void> {
   // every one of its 25 entries' values is a member of LAUNCH_LANGUAGES. So
   // `hover()`'s `!isLaunchLanguage(language)` branch is reached ONLY with
   // `language === null`, and the wording `${language} is not a launch
-  // language (launch: …)` is UNREACHABLE at this commit. `.rb` is not in the
-  // map at all, so it takes the file-type branch, not the language branch.
+  // language (launch: …)` is UNREACHABLE at this commit. `.zzz` (like `.m`, the
+  // one ambiguous extension the map deliberately refuses) is not in the map at
+  // all, so it takes the file-type branch, not the language branch. Wave 3 made
+  // `.rb` a LAUNCH mapping — the old fixture had stopped being an off-launch
+  // example without anyone noticing, which is why the gate now names that fact
+  // positively below.
   //
   // That is a real observation about the surface, not a failure of the
   // contract: a `.rb` file still gets a declared absence with a machine-
@@ -340,13 +344,15 @@ async function testHonesty(): Promise<void> {
     LAUNCH_EXTS.every((ext) => {
       const lang = languageForPath(`x${ext}`)
       return lang !== null && LAUNCH_LANGUAGES.includes(lang as never)
-    }) && languageForPath("x.rb") === null && languageForPath("x.zzz") === null,
+    }) && languageForPath("x.zzz") === null && languageForPath("x.m") === null && languageForPath("x.rb") === "ruby",
     "languageForPath gained a non-launch language — the hover's language-named branch is now REACHABLE and this fact must be re-stated, and the G7 assertions below for a named non-launch language will start applying",
   )
 
-  // A Ruby file specifically — the case a user actually hits.
-  const result3 = await hover(raw, { filePath: join(dir, "app.rb"), position: { line: 0, character: 0 } })
-  negative("G7: a .rb file is declared absent, never answered from the fixture double", result3.contents === null && result3.data === null && result3.range === null)
+  // Ruby is a launch language since M29 wave 3: the honest assertion flipped from
+  // "declared absent" to "served". The absence case keeps its own fixture (.zzz).
+  check("G7: .rb resolves to ruby now that wave 3 launched it", languageForPath("app.rb") === "ruby")
+  const result3 = await hover(raw, { filePath: join(dir, "app.zzz"), position: { line: 0, character: 0 } })
+  negative("G7: an unmapped file type is declared absent, never answered from the fixture double", result3.contents === null && result3.data === null && result3.range === null)
 
   // A file with NO extension: still declared absence, still no fabricated card.
   const result4 = await hover(raw, { filePath: join(dir, "Makefile"), position: { line: 0, character: 0 } })

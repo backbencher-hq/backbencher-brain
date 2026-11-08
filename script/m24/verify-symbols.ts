@@ -43,6 +43,7 @@ import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { hashFileContent } from "../../src/brain/freshness.ts"
+import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 import {
   findInlinePositionArithmetic,
   selfTestSurvivors,
@@ -94,14 +95,14 @@ const FIXTURE_MAIN = `class Greeter {
 const MAIN_REL = "main.ts"
 
 /** A language the launch set does NOT serve. `languageForPath` knows no
- *  language outside the launch set, so a `.rb` file resolves to `null` and the
+ *  language outside the launch set, so a `.zzz` file resolves to `null` and the
  *  declared code is `file_type_unknown` (the honest answer for "we do not know
  *  this file type"). The `.zzz` file exercises the same branch; the
  *  `language_outside_launch_set` branch is the forward case (a language the map
  *  knows but the approved set does not contain) and is reachable the moment the
  *  map gains one. */
-const OFF_LAUNCH_REL = "fixture.rb"
-const OFF_LAUNCH_SOURCE = "# ruby fixture\nclass Widget\n  def spin\n  end\nend\n"
+const OFF_LAUNCH_REL = "fixture.zzz"
+const OFF_LAUNCH_SOURCE = "# unmapped file type fixture\nclass Widget\n  def spin\n  end\nend\n"
 
 interface FixtureSymbol {
   id: string
@@ -381,7 +382,7 @@ async function testDeclaredAbsence(): Promise<void> {
   negative("G6: a file outside the launch set renders NO symbols even though the index has rows", offLaunch.symbols.length === 0, JSON.stringify(offLaunch.symbols.map((s: any) => s.name)))
   negative("G6: a file outside the launch set is not indexed", offLaunch.notIndexed === true && offLaunch.evidenceTier === "not_indexed")
   negative("G6: a file outside the launch set carries a MACHINE-READABLE absence code", offLaunch.absence?.code === "file_type_unknown", JSON.stringify(offLaunch.absence))
-  negative("G6: the absence names the launch set so a client can render the scope", Array.isArray(offLaunch.absence?.launchLanguages) && offLaunch.absence.launchLanguages.includes("java") && offLaunch.absence.launchLanguages.length === 14, JSON.stringify(offLaunch.absence?.launchLanguages))
+  negative("G6: the absence names the launch set so a client can render the scope", Array.isArray(offLaunch.absence?.launchLanguages) && offLaunch.absence.launchLanguages.includes("java") && offLaunch.absence.launchLanguages.length === LAUNCH_LANGUAGES.length, JSON.stringify(offLaunch.absence?.launchLanguages))
   negative("G6: the absence message is human-readable (never empty)", typeof offLaunch.absence?.message === "string" && offLaunch.absence.message.length > 20, JSON.stringify(offLaunch.absence?.message))
 
   const unknownType = sym.documentSymbols(raw, join(dir, "notes.zzz"))

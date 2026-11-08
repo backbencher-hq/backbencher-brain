@@ -51,7 +51,7 @@
 //     catch, which now fails the suite (contract §8.7, "the fixture that
 //     cannot fail").
 
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, dirname } from "node:path"
 import { PassThrough } from "node:stream"
@@ -107,6 +107,7 @@ import {
 } from "./mutant-anchor-gate.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
+const RESULTS = join(ROOT, "validation", "m24", "results")
 const COMPONENT = join(ROOT, "src", "lsp", "server.ts")
 const LANGUAGES_COMPONENT = join(ROOT, "src", "lsp", "launch_languages.ts")
 /** The analyzer whose throw the seam's backstop arm recognises. Read by the
@@ -513,10 +514,19 @@ async function testLanguages(): Promise<void> {
   check("G5: languageForPath maps .kt to kotlin", languageForPath("src/Main.kt") === "kotlin")
   check("G5: languageForPath maps .py to python (M29 wave 1)", languageForPath("src/main.py") === "python")
   check("G5: languageForPath maps .js to javascript (M29 wave 1)", languageForPath("src/main.js") === "javascript")
+  // The approved set is the UNION of every sealed wave approval record — never a
+  // literal. Wave 3 (M29) added 38 languages; a hardcoded wave-1+wave-2 list was
+  // exactly the kind of gate-internal copy the single-owner rule forbids, and it
+  // went red the moment a third wave landed.
+  const approved = new Set<string>()
+  for (const file of readdirSync(join(ROOT, "validation", "m29", "results")).filter((f) => /^wave-\d+-approval\.json$/.test(f)).sort()) {
+    const rec = JSON.parse(readFileSync(join(ROOT, "validation", "m29", "results", file), "utf8")) as { languages?: string[] }
+    for (const language of rec.languages ?? []) approved.add(language)
+  }
   check(
-    "G5: launch set matches the owner-approved wave records exactly (wave 1 + wave 2)",
-    JSON.stringify([...LAUNCH_LANGUAGES].sort()) ===
-      JSON.stringify(["c", "cpp", "go", "groovy", "java", "javascript", "kotlin", "python", "rust", "scala", "svelte", "typescript", "vue", "zig"]),
+    "G5: launch set matches every owner-approved wave record exactly (waves 1+2+3)",
+    approved.size > 0 && JSON.stringify([...LAUNCH_LANGUAGES].sort()) === JSON.stringify([...approved].sort()),
+    `${LAUNCH_LANGUAGES.length} launched vs ${approved.size} approved`,
   )
   // Declared absence for an extension outside the map: null, never a guess.
   // A guess here would render as "no references found" for a file the server
