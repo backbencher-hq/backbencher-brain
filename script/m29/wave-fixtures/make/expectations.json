@@ -7,12 +7,12 @@
     ],
     "evidenceClassRequired": true
   },
-  "hoverLine": 7,
+  "hoverLine": 4,
   "definition": {
     "symbol": "greet",
     "minLocations": 1
   },
-  "definitionLine": 7,
+  "definitionLine": 4,
   "references": {
     "symbol": "greet",
     "minCount": 1

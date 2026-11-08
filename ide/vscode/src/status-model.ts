@@ -30,12 +30,26 @@ export type { LaunchLanguage }
 
 /**
  * Declared per-language claim levels, shipped with the extension.
+ *
+ * The language SET derives from the single launch-set owner
+ * (src/lsp/launch_languages.ts, LAUNCH_LANGUAGES) — it is imported, never
+ * re-typed, so every launched language has an entry here. The claim LEVEL per
+ * language stays evidence-derived: the languages carried over from M24/M29
+ * keep their recorded levels (I1, protocol-passed). The M29 wave-3 languages
+ * (tsx, html, css, …, terraform — owner-approved 2026-11-08) have no
+ * recorded claim in the extension's claim table yet, so they receive I0
+ * (UNVERIFIED), the lowest claim. A launched-but-not-yet-measured language
+ * renders honestly as unverified; it is never inflated to a level the
+ * evidence chain has not recorded.
+ *
  * DRIFT-GATED: script/m25/verify-status-surface.ts parses the generated
  * docs/m24/TOOL-DOC.md and fails this suite on any divergence. The value is
  * the WEAKEST feature level for the language (features are only as strong
  * as the weakest claim — contract §2).
  */
 export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
+  // M24 launch five + M29 wave 1 (javascript, python) + M29 wave 2
+  // (groovy, zig, go, rust, c, cpp, vue, svelte): recorded claim I1.
   java: "I1",
   groovy: "I1",
   kotlin: "I1",
@@ -43,9 +57,6 @@ export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
   typescript: "I1",
   javascript: "I1",
   python: "I1",
-  // Wave 2 (owner-approved 2026-09-14): the packs are authored and S1–S4
-  // pass; the S5/S6 legs record the honest level per language on execution.
-  // I1 is the claim the current evidence supports — never higher.
   zig: "I1",
   go: "I1",
   rust: "I1",
@@ -53,6 +64,46 @@ export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
   cpp: "I1",
   vue: "I1",
   svelte: "I1",
+  // M29 wave 3 (owner-approved 2026-11-08): launched but not yet measured by
+  // the extension's claim table — lowest claim, never inflated.
+  tsx: "I0",
+  html: "I0",
+  css: "I0",
+  scss: "I0",
+  sass: "I0",
+  json: "I0",
+  yaml: "I0",
+  toml: "I0",
+  markdown: "I0",
+  xml: "I0",
+  graphql: "I0",
+  protobuf: "I0",
+  sql: "I0",
+  perl: "I0",
+  ruby: "I0",
+  php: "I0",
+  lua: "I0",
+  elixir: "I0",
+  erlang: "I0",
+  haskell: "I0",
+  clojure: "I0",
+  julia: "I0",
+  r: "I0",
+  bash: "I0",
+  powershell: "I0",
+  make: "I0",
+  swift: "I0",
+  dart: "I0",
+  csharp: "I0",
+  fsharp: "I0",
+  nim: "I0",
+  vb: "I0",
+  vba: "I0",
+  matlab: "I0",
+  clean: "I0",
+  solidity: "I0",
+  hcl: "I0",
+  terraform: "I0",
 }
 
 /** Human-readable expansion of a claim level — CONTRACT §2 ladder (single source).

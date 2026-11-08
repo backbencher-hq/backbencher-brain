@@ -137,7 +137,7 @@ export function absenceProviderPayload(): Record<string, unknown> {
     carriers: [ABSENCE_METHOD, "window/logMessage"],
     /** The reason vocabulary, advertised so a client renders known reasons
      *  correctly instead of string-matching on prose. */
-    reasons: ["language_not_launched", "not_indexed", "unresolvable_location", "unsupported_language"],
+    reasons: ["language_not_launched", "not_indexed", "unresolvable_location", "unsupported_language", "not_callable"],
     /** What a client is being told, stated plainly: an EMPTY standard result
      *  on these methods is not evidence that nothing exists. */
     emptyResultMeans: "absent-or-unserved — not 'nothing found'; read the bb/absence notice for which",
@@ -424,6 +424,10 @@ export type AbsenceReason =
   | "not_indexed"
   | "unresolvable_location"
   | "unsupported_language"
+  /** the symbol IS indexed and served, but its kind has no call hierarchy —
+   *  a call tree is defined over callables, so a class/property/variable/module
+   *  answers absence naming its kind instead of a fabricated caller list. */
+  | "not_callable"
 
 export interface DeclaredAbsence {
   /** The method whose answer is being declared absent. */
@@ -475,6 +479,26 @@ export class DocumentUnroutable extends Error {
 }
 
 /** A component raising this answers with `null` AND emits the absence notice. */
+/** Map a component's declared-absence code onto the wire vocabulary. The
+ *  component knows WHY it could not answer (symbols.ts DeclaredAbsenceCode);
+ *  the wire carries the reason a client can act on, and the two sets are not
+ *  identical on purpose: several component codes collapse onto one wire reason
+ *  ("never searched"), while `no_stored_calls` is its own fact when the symbol
+ *  was found but its kind cannot have callers. */
+function absenceReasonFor(code: string): AbsenceReason {
+  switch (code) {
+    case "language_outside_launch_set":
+    case "file_type_unknown":
+      return "language_not_launched"
+    case "unsupported_language":
+      return "unsupported_language"
+    case "no_stored_calls":
+      return "not_callable"
+    default:
+      return "not_indexed"
+  }
+}
+
 export class DeclaredAbsenceThrow extends Error {
   readonly absence: DeclaredAbsence
   constructor(absence: DeclaredAbsence) {
@@ -1330,8 +1354,26 @@ export function wireFeatures(server: BbLspServer): void {
     })
     // Wire: CallHierarchyItem[] | null. The item's `data` (symbolId) is what
     // expand requests echo back — the client converter preserves it.
+    //
+    // A null with a computed absence is NOT a bare "nothing here": the reason
+    // travels on the `bb/absence` carrier (M29 wave 3 measured a config
+    // attribute prepared as a CallHierarchyItem — a false call tree). The
+    // response stays wire `null`, which is the protocol's shape for "no item";
+    // the notice is what tells an editor WHY.
+    if (r.item === null && r.absence) {
+      const code = r.absence.code
+      throw new DeclaredAbsenceThrow({
+        method: "textDocument/prepareCallHierarchy",
+        reason: absenceReasonFor(code),
+        language: r.absence.language ?? null,
+        detail: r.absence.message,
+        evidenceTier: null,
+        searchedIndex: code !== "language_outside_launch_set" && code !== "file_type_unknown",
+        totalCount: null,
+      })
+    }
     return r.item === null ? null : [r.item]
-  })
+  }, { absentable: true })
 
   server.register("callHierarchy/incomingCalls", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)

@@ -15,8 +15,8 @@
 //                     JSON; the listing's table matches the ledger's claims
 //   D4 cross-refs:    evidence paths named by the docs exist on disk
 //   M1-M3:            mutants — hand-edited protocol step, an "always"
-//                     vocabulary violation, a listing claim above the ledger
-//                     — each caught
+//                     vocabulary violation, a published claim mutated upward —
+//                     each caught (and each records a detail on escape)
 //
 // Run: npx tsx script/m29/verify-m29-docs.ts
 // Evidence: validation/m29/results/D1-verify.json (machine-emitted)
@@ -143,16 +143,36 @@ const tamperedWave = waveDisk.replace("S6 `S6-editor-leg`", "S6 `S6-editor-leg-T
 negative("M1: hand-edited wave doc fails regeneration", tamperedWave !== waveDisk && tamperedWave !== waveFresh)
 // M2: an "always" claim in the ledger fails the vocabulary lint.
 negative("M2: banned vocabulary in a doc is caught", BANNED_PATTERNS.some((p) => p.test("This server always works in Cursor.")))
-// M3: a listing claim above the ledger is caught — groovy (not in the wave,
-// no computed ledger claim) claiming I2 would violate the match rule.
-negative("M3: a listing row claiming above the ledger is caught", (() => {
-  const fakeRow = "| groovy    | I2    | I2         | I2         | I2      | I2             |"
-  const claim = /\b(I[0-3])\b/.exec(fakeRow)?.[1]
-  const ledgerClaim = machine.languages.find((l) => l.language === "groovy")?.claim
-  // groovy has NO machine claim (not wave-onboarded): any I-level above I1 is
-  // an overclaim by definition (the listing floor is I1).
-  return claim !== undefined && ledgerClaim === undefined && claim !== "I1"
-})())
+// M3: mutating a PUBLISHED claim upward is caught by the D3 match. The needle
+// is derived from today's ledger, never hardcoded: this mutant used to assume
+// "groovy has NO machine claim (not wave-onboarded)" — true only while the
+// ledger published wave 1 — so wave-2 aggregation gave groovy a claim, killed
+// the premise and the mutant ESCAPED a red gate. The premise is now
+// data-derived: take a row whose claim is the LOWEST currently published (an I0
+// row, which exists while any approved language lacks a verified S5 leg), find
+// its real published MD row, mutate the claim upward to I2, and re-run the same
+// D3 extraction the claim-match check uses — the mutation MUST be detected, and
+// the detail is recorded when it is not (§8.3: an escape must never be silent).
+const m3Candidate = machine.languages.find((r) => r.claim === "I0")
+const m3ForgedClaim = "I2"
+const m3Detail = m3Candidate
+  ? `mutated ${m3Candidate.language}'s published claim ${m3Candidate.claim} -> ${m3ForgedClaim} (row derived from the ledger, not hardcoded)`
+  : "no I0 row in the machine ledger — re-derive this mutant rather than leaving it unable to fail"
+negative(
+  "M3: mutating a published ledger claim upward is caught by the D3 claim match",
+  (() => {
+    if (!m3Candidate) return false
+    const re = new RegExp(`\\| ${m3Candidate.language} \\| (I[0-3]) \\|`)
+    const realClaim = re.exec(ledgerDisk)?.[1]
+    if (realClaim !== m3Candidate.claim) return false
+    const mutated = ledgerDisk.replace(re, `| ${m3Candidate.language} | ${m3ForgedClaim} |`)
+    const mutatedClaim = re.exec(mutated)?.[1]
+    // The D3 loop compares every published claim to the machine ledger; the
+    // mutation must make the two disagree, and it must be a real change.
+    return mutated !== ledgerDisk && mutatedClaim === m3ForgedClaim && mutatedClaim !== m3Candidate.claim
+  })(),
+  m3Detail,
+)
 
 // ---------------------------------------------------------------------------
 // Emit evidence + verdict

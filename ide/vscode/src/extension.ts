@@ -104,6 +104,46 @@ export const VSCODE_LANGUAGE_ID: Record<LaunchLanguage, string> = {
   cpp: "cpp",
   vue: "vue",
   svelte: "svelte",
+  // M29 wave 3 (owner-approved 2026-11-08): VS Code language ids are identity
+  // mappings for these languages, so each maps to itself.
+  tsx: "tsx",
+  html: "html",
+  css: "css",
+  scss: "scss",
+  sass: "sass",
+  json: "json",
+  yaml: "yaml",
+  toml: "toml",
+  markdown: "markdown",
+  xml: "xml",
+  graphql: "graphql",
+  protobuf: "protobuf",
+  sql: "sql",
+  perl: "perl",
+  ruby: "ruby",
+  php: "php",
+  lua: "lua",
+  elixir: "elixir",
+  erlang: "erlang",
+  haskell: "haskell",
+  clojure: "clojure",
+  julia: "julia",
+  r: "r",
+  bash: "bash",
+  powershell: "powershell",
+  make: "make",
+  swift: "swift",
+  dart: "dart",
+  csharp: "csharp",
+  fsharp: "fsharp",
+  nim: "nim",
+  vb: "vb",
+  vba: "vba",
+  matlab: "matlab",
+  clean: "clean",
+  solidity: "solidity",
+  hcl: "hcl",
+  terraform: "terraform",
 } as const
 
 export type ActivationReport = {
@@ -161,7 +201,7 @@ function readLaunchConfig(): { mode: SourceMode; serverPath: string; minVersion:
   const cfg = workspace.getConfiguration()
   const mode = cfg.get<SourceMode>(BB_SOURCE_MODE_SETTING) ?? "auto"
   const serverPath = cfg.get<string>(BB_SERVER_PATH_SETTING) ?? ""
-  const minVersion = cfg.get<string>(BB_MIN_SERVER_VERSION_SETTING) ?? "0.3.0"
+  const minVersion = cfg.get<string>(BB_MIN_SERVER_VERSION_SETTING) ?? "0.1.0"
   const budgetMs = cfg.get<number>(BB_ACTIVATION_BUDGET_SETTING) ?? 150
   return { mode, serverPath, minVersion, budgetMs }
 }

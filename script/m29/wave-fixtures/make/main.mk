@@ -1,14 +1,15 @@
 # PINS the make wave fixture pack (M29 wave 3, language-onboarding protocol).
-# A makefile is a build DSL: targets are rules, variables are substitution
-# templates, and there is no call graph. The pack is authored so the analyzer's
-# real symbol surface can be measured, not so call hierarchy can be claimed.
+# A makefile is a build DSL: the callable unit is a macro invoked with
+# $(call NAME,...); a rule target is a dependency node, not a function.
+
+define greet
+	@echo "$(1) from make"
+endef
 
 GREETING := hello
 
-greet:
-	@echo "$(GREETING) from make"
+all:
+	@$(call greet,make)
+	@echo "$(GREETING)"
 
-all: greet
-	@echo done
-
-.PHONY: greet all
+.PHONY: all

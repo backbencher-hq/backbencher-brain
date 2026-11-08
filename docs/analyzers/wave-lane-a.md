@@ -223,13 +223,14 @@ M14 ledger entry, not a wave-leg defect.
    needs the in-editor leg the Lead / editor lane owns.
 6. **S2/S3 and the wave-protocol runner were not run by this lane** — they spawn
    the expensive gates; no claim about them is made here.
-7. **Freshness relevance gap for aliased analyzers.** `staleRelevantPaths("tsx")`
-   and `staleRelevantPaths("sass")` name `src/ast/real-tsx-analyzer.ts` /
-   `src/ast/real-sass-analyzer.ts`, which do not exist: tsx is served by
-   `real-typescript-analyzer.ts` and sass by `real-css-analyzer.ts`, so a change
-   to those real analyzers would NOT stale the tsx/sass legs. Minor, but it is
-   a real hole in the per-language relevance rule (wave-2 rule) for aliased
-   languages.
+7. **Freshness relevance for aliased analyzers** (state as of wave-3 execution):
+   `staleRelevantPaths("tsx")` / `("sass")` then named
+   `src/ast/real-tsx-analyzer.ts` / `src/ast/real-sass-analyzer.ts`, which do not
+   exist — tsx is served by `real-typescript-analyzer.ts`, sass by
+   `real-css-analyzer.ts` — so a change to the real analyzer would not stale
+   those legs. **Lane B has since closed this in the executor** with
+   `LANGUAGE_ANALYZER_INPUTS` (`script/m29/wave-execute.ts:257-269`); the
+   relevance gate has not caught up (see the follow-up below).
 8. **No fixture edits are needed for the 12 verified languages** — their launch
    set entries can stay as the Lead added them.
 
@@ -244,3 +245,296 @@ M14 ledger entry, not a wave-leg defect.
 No shared file was edited by this lane; `script/m29/wave-protocol.ts`,
 `src/lsp/launch_languages.ts`, the approval records and other lanes' packs were
 left untouched.
+
+# Follow-up — the precision ledger tells the truth about all 52 approved languages
+
+Follow-up request: `docs/m29/PRECISION-LEDGER.md` had six rows while 52
+languages were owner-approved (waves 1-3) and 49 S5 legs were verified. The
+generator read a single hardcoded record (`wave-1-approval.json`); a reader saw
+less than the evidence.
+
+## Generator change (only file hand-edited: `script/m29/generate-precision-ledger.ts`)
+
+- **`approvedLanguages()` now aggregates every sealed approval record.** It
+  reads every `validation/m29/results/wave-\d+-approval.json`
+  (`readdirSync(...).filter(...).sort()`, the same pattern as
+  `script/m29/wave-execute.ts`), parses each with `parseSealedRecord`, unions
+  the languages, de-duplicates (first admitting wave wins), and orders rows by
+  **wave then language name**. New exports: `approvalRecords()`,
+  `approvedLanguages()`; the hardcoded `APPROVAL` constant is gone.
+- **Every approved language gets a row, and a language with no S5 leg reads
+  I0, never a crash.** The missing-evidence path now runs the same binding
+  (`computeCap`) over declared steps: S1 from the SPEC ledger, S2/S3 from P1/P2,
+  S4/S5 failed with a declared absence, S6 blocked/failed. No row is omitted.
+- **The authority is in the hash.** All approval records joined the declared
+  inputs (111 inputs now, up from 17), so an approval change stales the ledger
+  instead of leaving the old row set published. `approvalWaves` records
+  wave/record/language-count in the JSON.
+- **Wave column.** MD/JSON rows carry `wave` (the record that admitted the
+  language); the MD column order is `language | claim | wave | …` so the
+  existing D3 claim-match regex (`| <lang> | <I-level> |`) still works.
+- **Fixed the S6 evidence rendering.** Previously an EXISTING
+  `wave-editor-<lang>.json` rendered as "S6 absent (declared)" (the renderer
+  tested `.present`, which a present record does not carry) — the old ledger
+  said S6 was absent for all six wave-1 languages that actually have editor
+  legs. Present records now render `(status verified)`; declared-absent legs
+  render "absent" and carry NO path (naming a non-existent path would fail the
+  docs gate D4 on a truthful absence).
+- **Limitations rewritten for the real row set**: the stale "wave-1 covers the
+  six languages" sentence is replaced by the wave-union authority, the
+  no-leg⇒I0 rule, and the S1-ledger-gap rule.
+
+`git diff --numstat` (hand-edited files): generator **+168/−49**, ledger MD
+**+112/−16**, this report **+158/−7**. The JSON ledger and the three gate
+evidence records are machine outputs, not hand edits.
+
+**No-leg path exercised, not just reasoned about.** An isolated copy of the
+generator (in a temp tree, against a fake `wave-9-approval.json` naming `alpha`
+and with no `wave-alpha.json`) produced exactly one row: `claim I0`,
+`evidence.s5 {present:false}`, all feature flags false, the declared limitation
+— no crash. The real tree has a leg for all 52 approved languages today, so the
+path is not reachable from the committed evidence; it is there for the next
+approval wave.
+
+## Row count and claim distribution
+
+| | before | after |
+|---|---|---|
+| ledger rows | 6 (wave 1 only) | **52** (waves 1-3) |
+| declared inputs | 17 | 111 |
+| inputs hash | `500f4633…` | `4ad2777e…` |
+| claim distribution | I3 × 6 | **I3 × 14, I2 × 22, I1 × 1, I0 × 15** |
+
+Per wave: wave 1 = 6 × I3; wave 2 = 8 × I3; wave 3 = 22 × I2, 1 × I1 (make),
+15 × I0. The I0s are honest: 15 approved languages (tsx, sass, json, graphql,
+protobuf, sql, lua, r, powershell, nim, vb, vba, matlab, clean, terraform) are
+absent from the committed #419 SPEC ledger, so S1 fails and `computeCap` caps
+them at I0 even where the S5 leg is verified; `sass` and `matlab` also have
+failed S5 legs (recorded). The 22 I2s are verified S5 legs whose in-editor S6
+leg has not been recorded yet (only 14 `wave-editor-*.json` exist). No claim was
+raised anywhere; 52/52 claims equal a fresh `computeCap` replay over the
+recorded evidence (gate G3).
+
+## Exact gate results (run, not inferred)
+
+> **Superseded for gate status by Follow-up 2 below**, which fixes these three
+> gate assumptions; the recorded failures here are the state BEFORE those fixes.
+
+1. **`npx tsx script/m29/verify-precision-ledger.ts` → exit 1, KNOWN-GAP
+   (17/19 passed, 5/5 negatives caught).** Everything the ledger controls
+   passes — G1 byte-identical regeneration for both artifacts, G2 inputs hash +
+   volatile-field fixpoint, G3 claim honesty 52/52, G4 giant row, and all five
+   mutants (hand-edited claim, hand-edited number, stale hash, bogus path). The
+   two failures are the gate's own stale assumptions, NOT weakened:
+
+   ```
+   FAIL: G3: ledger covers exactly the owner-approved wave set — 52
+   FAIL: G4: every evidence path named by the ledger exists on disk — 104 paths
+   ```
+
+   - `script/m29/verify-precision-ledger.ts:178` hardcodes
+     `recorded.languages.length === 6` (the wave-1 row count). Fix (Lead owns
+     that file): compare against the union of the sealed approval records
+     instead of a literal — an equality against the authority, not a relaxed
+     bound.
+   - `:209-211` requires **every** `row.evidence.s5/s6.path` to exist, while
+     `:157-160` dereferences `row.evidence.s6.path` unconditionally. The ledger
+     must carry an `s6.path` string for the 38 approved languages with no
+     recorded editor leg (otherwise G3 throws), and G4 then demands that path
+     exists — the two checks cannot both hold for a truthfully absent leg
+     (104 paths = 52 S5 + 52 S6 slots; 38 S6 files do not exist). Fix: treat
+     `present:false` as a declared absence (skip it in G4's existence set; read
+     `s5`/`s6` null-safely in G3, so a future no-leg language replays I0).
+   - Latent, same lines: today all 52 languages have an S5 record, so G3 does
+     not crash; the first approved language without a leg would make
+     `path.join(ROOT, undefined)` throw instead of reading I0. The generator
+     handles that case (above); the gate does not.
+
+2. **`npx tsx script/m29/verify-m29-docs.ts` → exit 1, KNOWN-GAP (12/13
+   passed, 3 negatives).** D1 byte-identical regeneration (both artifacts), D2
+   vocabulary lint, D3 every published claim equals the machine ledger
+   (52/52), D4 all 68 evidence paths named by the MD exist — all pass. One
+   failure:
+
+   ```
+   ESCAPED: M3: a listing row claiming above the ledger is caught
+   ```
+
+   `script/m29/verify-m29-docs.ts:146-155` hardcodes the premise that "groovy
+   has NO machine claim (not wave-onboarded)": now that the ledger aggregates
+   wave 2, groovy has a machine claim (I3), so the mutant's
+   `ledgerClaim === undefined` condition is dead and the mutant escapes. The
+   escaped mutant also records **no detail** (`details: []` in `D1-verify.json`)
+   because `negative()` was called without a detail string — a §8.3 silence
+   beside a red gate. Fix: derive the mutant language from the ledger (e.g. a
+   language whose claim is I0, or forge a claim ABOVE that row's claim) and
+   pass a detail. The other D1 checks are dynamic (no 6/14 count); the README
+   listing check covers the 7 fixed language names of the listing table and
+   still passes.
+
+3. **`npx tsx script/m29/verify-analyzer-relevance.ts` → exit 1, KNOWN-GAP
+   (209/221).** The 12 failures are one defect and are NOT caused by the ledger
+   change — they are a live-vs-copy drift introduced by lane B's
+   `staleRelevantPaths` improvement. `script/m29/verify-analyzer-relevance.ts:60-62`
+   hardcodes the wave-2 naming convention
+   `src/ast/real-<language>-analyzer.ts`, while the LIVE `staleRelevantPaths`
+   (`script/m29/wave-execute.ts:257-269`) resolves aliased analyzers through
+   `LANGUAGE_ANALYZER_INPUTS`. Four aliased languages fail three checks each:
+
+   ```
+   tsx       → real-typescript-analyzer.ts
+   sass      → real-css-analyzer.ts
+   make      → real-makefile-analyzer.ts
+   terraform → real-hcl-analyzer.ts
+   ```
+
+   Fix (Lead owns that file): read the same alias map the executor reads
+   (export it from `wave-execute.ts`, derive the expected analyzer path from
+   it), keeping the "no foreign analyzer" check relative to the mapped list. Do
+   not revert lane B's map — it closes the aliased-analyzer freshness hole.
+
+## Files touched by this follow-up
+
+- `script/m29/generate-precision-ledger.ts` (hand-edited; the only source change)
+- `docs/m29/PRECISION-LEDGER.md` (regenerated, 6 → 52 rows)
+- `validation/m29/results/PRECISION-LEDGER.json` (generated output)
+- `validation/m29/results/R4.json`, `R4-verify.json`, `D1-verify.json`,
+  `analyzer-relevance.json` (machine-emitted evidence of the three gate runs;
+  the last three now record `known-gap` with the exact failures above)
+- `docs/analyzers/wave-lane-a.md` (this section)
+
+Nothing was committed. `script/m29/wave-execute.ts` and
+`src/lsp/call_hierarchy.ts` (lane B / lane C) were not touched.
+
+# Follow-up 2 — the three gate-assumption fixes (before → after)
+
+Request: make the gates agree with the 52-row world, never by weakening a
+check. Fixes applied in the requested order; every number below is a run.
+
+## 1. `script/m29/verify-precision-ledger.ts`
+
+- **Row-set count derived, never hardcoded.** The check now imports
+  `approvedLanguages()` from the generator — the SAME aggregation that builds
+  the published rows (every sealed `wave-\d+-approval.json`, de-duplicated) —
+  and compares length + missing + extra + duplicate sets. The literal `6` is
+  gone, so a wave-4 approval extends the ledger without touching the gate.
+- **Declared-absence contract (generator + gate).** The generator now emits
+  `{ declaredAbsent: true, reason }` for a leg that does not exist yet
+  (`S5` on a newly approved language, `S6` for the 38 languages with no
+  in-editor leg) instead of a path that merely fails to resolve. G3 reads that
+  shape only when the reason is stated AND the record really is absent; a
+  present-but-missing path is a **problem**, not an absence. G4 skips
+  declared-absent slots (they name no path) and still fails on a
+  present-but-missing path. Two new canaries prove both failure modes through
+  the same code: a declared absence that hides an existing record is CAUGHT,
+  and a present-but-missing path is CAUGHT (not read as declared absence).
+- **Latent crash fixed.** The old G3 did `path.join(ROOT, undefined)` for a row
+  with no leg. Slots are now inspected and problems collected, so a future
+  approved language without a leg replays **I0** instead of throwing.
+- The `negatives` count is now `mutants.total` (was the stale literal 5).
+
+| run | state | result |
+|---|---|---|
+| before | 52-row ledger, old gate | exit 1 — **KNOWN-GAP 17/19**, 2 failures: `G3: ledger covers exactly… — 52`, `G4: every evidence path… — 104 paths` |
+| after | 52-row ledger, fixed gate | exit 0 — **VERIFIED 22/22**, 8/8 negatives; `G3 count — ledger=52 approved=52`; `G4 — 66 named paths, 38 declared-absent slots` |
+
+## 2. `script/m29/verify-m29-docs.ts`
+
+- **M3 re-purposed to a premise that is true of today's data.** The old mutant
+  asserted "groovy has NO machine claim (not wave-onboarded)" — dead once wave 2
+  gave groovy a row (I3), so it escaped. The mutant now derives its needle from
+  the ledger: it takes the first row whose claim is the LOWEST published (an I0
+  row — `clean` today), reads its real published MD row, mutates the claim
+  upward to I2 in-memory, and re-runs the same D3 extraction the claim-match
+  check uses — the mutation must be detected. It records a detail on escape
+  (§8.3), and it returns false (gate red) if no I0 row exists, so the mutant
+  cannot quietly stop testing.
+
+| run | state | result |
+|---|---|---|
+| before | 52-row ledger | exit 1 — **KNOWN-GAP 12/13**, `ESCAPED: M3` (no detail recorded) |
+| after | 52-row ledger | exit 0 — **VERIFIED 13/13**, 3/3 negatives; `CAUGHT: M3 … mutated clean's published claim I0 -> I2 (row derived from the ledger, not hardcoded)` |
+
+## 3. `script/m29/verify-analyzer-relevance.ts`
+
+- **Where the mapping comes from (a declared substitution).** The requested
+  single source was `LANGUAGE_ANALYZER_INPUTS` in `wave-execute.ts` — but it is
+  a private `const` (line 324, not exported) and that file belongs to another
+  lane this round. The gate therefore reads the **authority that map mirrors**
+  instead of copying either: it parses `src/ast/engine.ts` `getAnalyzer`'s
+  switch and binds grouped `case` labels to their shared lazy import (that is
+  literally the alias relation: `typescript`+`tsx` → one analyzer). Registry ids
+  are resolved to engine ids through the extension the registry itself declares
+  (`objc` + `.m` → detector's `objective-c`), with the direct id tried first —
+  required because `matlab` also declares `.m`. No alias table is duplicated;
+  the derived `engineAnalyzerRoutes` map is published in the evidence.
+  Negative ability is kept by four mutants through the SAME pure rule: a
+  directory-wide pack, a foreign analyzer, a missing own analyzer, and a wrong
+  analyzer on an ALIASED language are all CAUGHT. If the Lead prefers the
+  import, exporting the map is a one-line change in wave-execute and this gate
+  can switch to it.
+- **Result: 12 failures → 0 for the four aliased languages** (tsx/sass/make/
+  terraform now accepted, with a positive control per language). **3 remaining
+  checks are a REAL latent defect the old naming masquerade hid, not a gate
+  assumption:**
+
+  ```
+  R1: objc — the list names the engine-routed analyzer — src/ast/real-objective-c-analyzer.ts
+  R1: objc — no foreign pack or analyzer in the list — src/ast/real-objc-analyzer.ts
+  R1: objc — the pure rule accepts the live list — …does not name src/ast/real-objective-c-analyzer.ts; foreign analyzer(s): src/ast/real-objc-analyzer.ts
+  ```
+
+  `staleRelevantPaths("objc")` falls back to `src/ast/real-objc-analyzer.ts`,
+  which does not exist; the engine routes `.m` to `real-objective-c-analyzer.ts`.
+  `objc` has no fixture pack and is in no approval record, so no wave leg is
+  affected today, and the one-line fix belongs to the executor owner
+  (`LANGUAGE_ANALYZER_INPUTS: objc -> src/ast/real-objective-c-analyzer.ts`) or
+  to renaming the registry entry. Reported in the evidence's limitations rather
+  than hidden.
+
+| run | state | result |
+|---|---|---|
+| before | pre-fix | exit 1 — **KNOWN-GAP 209/221**, 12 failures (tsx/sass/make/terraform × 3) |
+| after | this fix | exit 1 — **KNOWN-GAP 281/284**, 3 failures, all the `objc` list defect above |
+
+## Higher gates
+
+- **`npx tsx script/m29/verify-m29-docs.ts`** (the doc gate) — exit 0,
+  VERIFIED 13/13 (above).
+- **`npx tsx script/m29/verify-governance.ts`** (the M29 lane governance gate)
+  — exit 1, **KNOWN-GAP 73/75**, 2 failures, neither caused by these changes:
+  `G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — exit=1` (M28's
+  own gate is red at this HEAD) and `G1: every non-planned ledger item has
+  matching persisted evidence at the current commit — R2:stale-commit,
+  V1:stale-commit` (R2/V1 evidence predate HEAD while lanes B/C edit their
+  inputs). Governance did heal the lane ledger's R4 entry from the new run
+  record (`ledger=19 derived=22`, `negativeCases 5→8`, `mutants 6→8`) and
+  projected the G1 entry; its spawned M24–M28 bars refreshed their own evidence
+  outputs as a side effect of running it.
+- **`npx tsx script/m29/verify-closure.ts` was NOT run**: it executes the whole
+  M24–M29 ladder (R2 drives 52 in-editor Neovim legs, V1 up to 30 min) and
+  rewrites the evidence lanes B/C are actively editing; a mid-flight run would
+  be noise, not a verdict. What matters for it is covered: closure re-runs the
+  R4 and D1 legs (both green now) and its pass 1b regenerates the precision
+  ledger over refreshed inputs by design, so the ledger fixpoint it asserts is
+  maintained; the R2/V1 staleness above is exactly what the Lead's closing
+  ladder run refreshes.
+
+## Files touched by follow-up 2
+
+- `script/m29/verify-precision-ledger.ts`, `script/m29/verify-m29-docs.ts`,
+  `script/m29/verify-analyzer-relevance.ts`, `script/m29/generate-precision-ledger.ts`
+- `docs/m29/PRECISION-LEDGER.md` (regenerated: declared-absence shape)
+- `validation/m29/results/PRECISION-LEDGER.json`, `R4.json`, `R4-verify.json`,
+  `D1-verify.json`, `analyzer-relevance.json` (machine outputs of the runs)
+- lane-governance machine outputs refreshed by the governance run (its own
+  evidence + lane ledger + the M24–M28 bars it spawns) — declared, not hand
+  edits
+- `docs/analyzers/wave-lane-a.md` (this section)
+
+Nothing committed. `script/m29/wave-execute.ts`, `src/lsp/call_hierarchy.ts`
+and `script/m29/verify-wave-execution.ts` were not touched. One concurrent-lane
+note: `script/m29/wave-protocol.ts` changed at 18:52 while this work ran (a
+ledger input), so the ledger was regenerated after it as the gate requires.
+
+

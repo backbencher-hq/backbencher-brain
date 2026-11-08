@@ -3,7 +3,7 @@
   "milestone": "M29",
   "githubMilestone": 29,
   "title": "M29: Precision Waves (IDE v5)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m29/M29-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 535,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
       "acceptanceCriteria": [
         "Ledger + gate + wiring",
@@ -30,14 +30,14 @@
         "Clean rerun"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "6b5268bb42db9076cc676f044bb567a6ad6f71db",
+        "status": "known-gap",
+        "currentCommit": "cdb44c27950deed9da91c236f43e79473ec7cbd4",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 69,
-        "failed": 0,
+        "passed": 67,
+        "failed": 2,
         "negativeCases": 10,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "2 check(s) failed: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: docs/IDE-PROGRAM-DECISIONS.md, docs/IDE-PROGRAM-STATUS.md, docs/m29/M29-MASTER-PLAN.md, package.json, script/m29/generate-precision-ledger.ts, script/m29/verify-analyzer-relevance.ts"
       }
     },
     {
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "cdb44c27950deed9da91c236f43e79473ec7cbd4",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -151,15 +151,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "cdb44c27950deed9da91c236f43e79473ec7cbd4",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
-        "passed": 19,
+        "passed": 22,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 6,
-        "mutantsTotal": 6,
-        "negativeCases": 5,
+        "mutantsCaught": 8,
+        "mutantsTotal": 8,
+        "negativeCases": 8,
         "blockedReason": "G1: PRECISION-LEDGER.json regenerates byte-identically: on-disk JSON differs from a fresh build — regenerate with --write"
       }
     },
@@ -240,7 +240,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "cdb44c27950deed9da91c236f43e79473ec7cbd4",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -283,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:37:04.424Z",
-    "contentSha256": "bee1bdcdcb6e153ba2ff89e45290c765cf2955a63e6506425b04efaa20cf5baf"
+    "sealedAt": "2026-11-08T18:58:27.682Z",
+    "contentSha256": "ea9b1c89de166e3d4c502f8d1c7966ec38dfcd3fcdf65a96f425e1c755ddd05a"
   }
 }

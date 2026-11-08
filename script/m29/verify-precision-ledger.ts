@@ -15,9 +15,17 @@
 //                      (the artifact is a fixpoint across upstream re-runs)
 //   G3 claim honesty:  every recorded claim equals computeCap replayed over
 //                      the recorded evidence steps — and a synthetic row whose
-//                      S5 fails computes I0 (claims cannot be edited up)
+//                      S5 fails computes I0 (claims cannot be edited up); the
+//                      row set is compared against the SAME sealed-approval
+//                      aggregation the generator publishes from (never a
+//                      hardcoded wave count); an evidence slot is either a
+//                      real, parseable record or a DECLARED absence with a
+//                      stated reason and no record on disk
 //   G4 listing:        the marketplace README references the published ledger;
-//                      every evidence path the ledger names exists
+//                      every NON-declared evidence path the ledger names exists
+//                      (a present-but-missing path is a broken claim, so this
+//                      check can still fail), while a declared absence is
+//                      skipped and separately proved truthful by G3
 //   M1-M4:             mutants — a hand-edited claim, a hand-edited number, a
 //                      stale inputs hash, a deleted evidence file — caught
 //
@@ -28,7 +36,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { createHash } from "node:crypto"
-import { buildLedger, normalizeEvidence } from "./generate-precision-ledger.ts"
+import { buildLedger, normalizeEvidence, approvedLanguages } from "./generate-precision-ledger.ts"
 import { computeCap, type SpecLedger, type Step } from "./wave-protocol.ts"
 import { writeSealed } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
@@ -153,19 +161,66 @@ try {
 let claimChecks = 0
 let claimAgree = 0
 const disagreements: string[] = []
+const evidenceProblems: string[] = []
+
+/**
+ * Inspect one evidence slot under the DECLARED-ABSENCE CONTRACT the generator
+ * publishes in:
+ *   `{ path, status }`                 a record that MUST exist and parse;
+ *   `{ declaredAbsent: true, reason }` a leg not recorded yet — valid ONLY when
+ *                                      a reason is stated AND the record really
+ *                                      is absent on disk.
+ * A present-but-missing path is a broken claim, never "declared absent": the two
+ * facts must stay distinguishable or a deleted record could hide behind the
+ * absence shape. The problem is RETURNED, not thrown — a gate that crashes on a
+ * row is not a gate (the first approved language with no leg used to make the
+ * old `path.join(ROOT, undefined)` throw), and returning it lets the canaries
+ * below prove each failure mode through this same code path.
+ */
+function inspectEvidenceSlot(row: any, label: "s5" | "s6", expectedPath: string): { record: any | null; problem: string | null } {
+  const slot = row?.evidence?.[label]
+  if (slot === null || typeof slot !== "object") {
+    return { record: null, problem: `${row?.language}: ${label} slot is missing` }
+  }
+  if (slot.declaredAbsent === true) {
+    if (typeof slot.reason !== "string" || slot.reason.trim().length === 0) {
+      return { record: null, problem: `${row.language}: ${label} declared absent with no reason` }
+    }
+    if (existsSync(path.join(ROOT, expectedPath))) {
+      return { record: null, problem: `${row.language}: ${label} declares absence but ${expectedPath} exists (a declared absence cannot hide a real record)` }
+    }
+    return { record: null, problem: null }
+  }
+  if (typeof slot.path !== "string" || slot.path.length === 0) {
+    return { record: null, problem: `${row.language}: ${label} carries neither a path nor a declared absence` }
+  }
+  if (!existsSync(path.join(ROOT, slot.path))) {
+    return { record: null, problem: `${row.language}: ${label} path is present-but-missing: ${slot.path}` }
+  }
+  try {
+    return { record: JSON.parse(readFileSync(path.join(ROOT, slot.path), "utf8")), problem: null }
+  } catch {
+    return { record: null, problem: `${row.language}: ${label} record is unreadable: ${slot.path}` }
+  }
+}
+
 for (const row of (recorded?.languages ?? []) as any[]) {
-  const s5 = JSON.parse(readFileSync(path.join(ROOT, row.evidence.s5.path), "utf8"))
-  const s6 = existsSync(path.join(ROOT, row.evidence.s6.path))
-    ? JSON.parse(readFileSync(path.join(ROOT, row.evidence.s6.path), "utf8"))
-    : null
+  const lang = String(row.language)
+  const s5Slot = inspectEvidenceSlot(row, "s5", `validation/m29/results/wave-${lang}.json`)
+  const s6Slot = inspectEvidenceSlot(row, "s6", `validation/m29/results/wave-editor-${lang}.json`)
+  if (s5Slot.problem) evidenceProblems.push(s5Slot.problem)
+  if (s6Slot.problem) evidenceProblems.push(s6Slot.problem)
+  const s5 = s5Slot.record
+  const s6 = s6Slot.record
   const conformance = { conformant: row.conformance.conformant, reason: row.conformance.detail }
-  const s5ok = s5.status === "verified"
+  const s5ok = s5?.status === "verified"
   const s6ok = !!s6 && s6.status === "verified" && (s6.checks?.every((c: any) => c.ok) ?? false)
+  const s4ok = s5?.steps?.find((s: any) => s.step === "S4-real-index")?.status === "pass"
   const steps: Step[] = [
     { step: "S1-analyzer-conformance", status: conformance.conformant ? "pass" : "fail", detail: conformance.reason },
     { step: "S2-position-gate", status: row.features.hover ? "pass" : "fail", detail: "recorded" },
     { step: "S3-freshness-gate", status: row.features.hover ? "pass" : "fail", detail: "recorded" },
-    { step: "S4-real-index", status: s5.steps.find((s: any) => s.step === "S4-real-index")?.status === "pass" ? "pass" : "fail", detail: "recorded" },
+    { step: "S4-real-index", status: s4ok ? "pass" : "fail", detail: "recorded" },
     { step: "S5-server-leg", status: s5ok ? "pass" : "fail", detail: "recorded" },
     { step: "S6-editor-leg", status: s6 ? (s6ok ? "pass" : "fail") : "blocked", detail: "recorded" },
   ]
@@ -175,7 +230,40 @@ for (const row of (recorded?.languages ?? []) as any[]) {
   else disagreements.push(`${row.language}: ledger=${row.claim} replay=${replayed}`)
 }
 check("G3: every ledger claim equals computeCap replayed over recorded evidence", claimChecks > 0 && claimAgree === claimChecks, disagreements.join("; ") || `${claimAgree}/${claimChecks}`)
-check("G3: ledger covers exactly the owner-approved wave set", Array.isArray(recorded?.languages) && recorded.languages.length === 6, String(recorded?.languages?.length))
+check(
+  "G3: every non-declared evidence slot is a real, parseable record and every declared absence is true",
+  evidenceProblems.length === 0,
+  evidenceProblems.slice(0, 4).join("; ") || `${claimChecks} rows checked`,
+)
+// Canaries through the SAME contract code: the declared-absence shape must not
+// become a free pass. A real record declared absent, and a path that is named
+// but missing, are both CAUGHT (and the second is not read as an absence).
+negative(
+  "G3: a declared absence that hides an existing record is caught",
+  inspectEvidenceSlot({ language: "canary", evidence: { s6: { declaredAbsent: true, reason: "canary" } } }, "s6", "validation/m29/results/wave-editor-java.json").problem !== null,
+  "wave-editor-java.json exists, so declaring its absence must be a problem",
+)
+negative(
+  "G3: a present-but-missing evidence path is caught, not read as declared absence",
+  inspectEvidenceSlot({ language: "canary", evidence: { s5: { path: "validation/m29/results/__bogus__.json" } } }, "s5", "validation/m29/results/wave-canary.json").problem !== null,
+  "a named path that does not exist is a broken claim",
+)
+
+// The expected row set comes from the SAME aggregation the generator publishes
+// from (`approvedLanguages` reads every sealed wave approval, de-duplicated) —
+// never a hardcoded wave count. The literal `6` this check carried is exactly
+// what made it fail when waves 2-3 were approved; a literal `52` would break it
+// again at wave 4.
+const expectedLanguages = approvedLanguages().map((a) => a.language)
+const recordedLanguages = ((recorded?.languages ?? []) as any[]).map((r) => String(r.language))
+const missingLangs = expectedLanguages.filter((l) => !recordedLanguages.includes(l))
+const extraLangs = recordedLanguages.filter((l) => !expectedLanguages.includes(l))
+const duplicateLangs = recordedLanguages.filter((l, i) => recordedLanguages.indexOf(l) !== i)
+check(
+  "G3: ledger covers exactly the owner-approved wave set",
+  recordedLanguages.length === expectedLanguages.length && missingLangs.length === 0 && extraLangs.length === 0 && duplicateLangs.length === 0,
+  `ledger=${recordedLanguages.length} approved=${expectedLanguages.length}${missingLangs.length ? ` missing=[${missingLangs.join(",")}]` : ""}${extraLangs.length ? ` extra=[${extraLangs.join(",")}]` : ""}${duplicateLangs.length ? ` dup=[${duplicateLangs.join(",")}]` : ""}`,
+)
 
 // Negative canaries through the SAME binding (tier rules per R1's verifier):
 // a failed tier-1 step caps at I0; a failed S5 with tier-1 green caps at I1
@@ -205,10 +293,24 @@ negative("G3: a failed S5 caps the claim at I1 (never above the highest failed g
 const readme = readFileSync(README, "utf8")
 check("G4: marketplace README references the published ledger", readme.includes("docs/m29/PRECISION-LEDGER.md"))
 check("G4: the published MD names the drift gate", onDiskMd.includes("verify-precision-ledger.ts"))
-const evidencePaths: string[] = [
-  ...((recorded?.languages ?? []) as any[]).flatMap((r) => [r.evidence?.s5?.path, r.evidence?.s6?.path]).filter((p: string | undefined): p is string => typeof p === "string"),
-]
-check("G4: every evidence path named by the ledger exists on disk", evidencePaths.length >= 12 && evidencePaths.every((p) => existsSync(path.join(ROOT, p))), `${evidencePaths.length} paths`)
+// Evidence-existence under the same declared-absence contract G3 reads: a
+// NAMED path must exist on disk (a present-but-missing record is a broken
+// claim, so this check can still fail); a declared absence is NOT a path and is
+// not asked to exist — G3 separately proves the absence is truthful (a stated
+// reason, and the record really absent).
+const evidencePaths: string[] = []
+const declaredAbsentSlots: string[] = []
+for (const r of (recorded?.languages ?? []) as any[]) {
+  for (const label of ["s5", "s6"] as const) {
+    const slot = r.evidence?.[label]
+    if (slot && slot.declaredAbsent === true) {
+      declaredAbsentSlots.push(`${r.language}:${label}`)
+      continue
+    }
+    if (typeof slot?.path === "string") evidencePaths.push(slot.path)
+  }
+}
+check("G4: every non-declared evidence path named by the ledger exists on disk", evidencePaths.length >= 12 && evidencePaths.every((p) => existsSync(path.join(ROOT, p))), `${evidencePaths.length} named paths, ${declaredAbsentSlots.length} declared-absent slots`)
 check("G4: giant-scale row cites R3 evidence", recorded?.giantScale?.present === true && recorded?.giantScale?.evidence === "validation/m29/results/R3.json" && existsSync(path.join(ROOT, "validation/m29/results/R3.json")))
 
 // ---------------------------------------------------------------------------
@@ -253,7 +355,7 @@ const result = {
   status: failed === 0 ? "verified" : "known-gap",
   passed,
   failed,
-  negatives: { planned: 5 },
+  negatives: { planned: mutants.total },
   verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
   currentCommit: gitCommit(),
   verifierCommand: "npx tsx script/m29/verify-precision-ledger.ts",
@@ -263,5 +365,5 @@ const result = {
   details: details.slice(0, 10),
 }
 writeSealed(path.join(ROOT, "validation/m29/results/R4-verify.json"), result)
-console.log(`R4: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 5 negatives)`)
+console.log(`R4: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, ${mutants.caught}/${mutants.total} negatives)`)
 process.exit(failed === 0 ? 0 : 1)

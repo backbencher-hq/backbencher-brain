@@ -47,12 +47,53 @@ export interface WaveLegResult {
   commit: string
   machine: { node: string; platform: string; arch: string }
   generatedAt: string
+  /** Features the leg PASSED *because they do not apply* to this language —
+   *  e.g. call hierarchy on a config language, where the honest answer is a
+   *  declared absence naming the symbol kind. A passing step that carries no
+   *  feature can otherwise be read as a claim the language does not support, so
+   *  the reason is recorded here as well as in the step detail. */
+  featureNotes?: string[]
 }
 
 /** §3 warm budgets (ms, p95) — server-leg regime (contract §3 table). */
 const WARM_BUDGETS: Record<string, number> = {
   hover: 50, definition: 50, references: 50,
   documentSymbol: 50, workspaceSymbol: 150, prepareCallHierarchy: 100,
+}
+
+/** LSP SymbolKind numbers a call hierarchy may be PREPARED for: Method (6),
+ *  Constructor (9), Function (12). Any other prepared item is the false claim
+ *  L5 exists to catch (M29 wave 3: a property/variable/make-variable prepared
+ *  as a CallHierarchyItem, so the old check passed for the wrong reason). */
+const CALLABLE_LSP_KINDS: ReadonlySet<number> = new Set([6, 9, 12])
+
+/** Index symbol types that are callable — the same set the component applies
+ *  (src/lsp/call_hierarchy.ts → CALLABLE_SYMBOL_TYPES, mirroring
+ *  src/lsp/signature.ts's CALLABLE_TYPES). Read from the SAME real index the
+ *  server serves; never inferred from the response. */
+const CALLABLE_SYMBOL_TYPES: ReadonlySet<string> = new Set([
+  "function", "method", "constructor", "procedure", "subroutine", "getter", "setter",
+])
+
+interface IndexedTarget { name: string; symbol_type: string }
+
+/** The indexed symbol the S5 fixture points at, from the real index built in
+ *  the S4 stage (WHERE the server's answer comes from). Used only to decide what
+ *  L5 is ENTITLED to require — a callable target must prepare an item, a
+ *  non-callable one must not. Returns null when the index stores no row for the
+ *  name on that 1-based line, which is itself a declared L5 failure (the leg
+ *  cannot establish what kind the target is). */
+function indexedTargetAt(db: unknown, filePath: string, line0: number, symbolName: string): IndexedTarget | null {
+  const q = db as { prepare: (sql: string) => { all: (...args: unknown[]) => unknown[] } }
+  const rows = q
+    .prepare(
+      `SELECT s.name, s.symbol_type FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+       WHERE f.path = ? AND s.name = ? AND s.line_start IS NOT NULL AND s.line_end IS NOT NULL
+         AND s.line_start <= ? AND s.line_end >= ?
+       ORDER BY (s.line_end - s.line_start) ASC LIMIT 1`,
+    )
+    .all(filePath, symbolName, line0 + 1, line0 + 1) as IndexedTarget[]
+  return rows[0] ?? null
 }
 
 function budgetViolationsOf(ms: FeatureMeasurement[]): string[] {
@@ -154,6 +195,8 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
       assert("L1: capabilities advertised", caps.hoverProvider === true && caps.definitionProvider === true && caps.referencesProvider === true && caps.documentSymbolProvider === true, JSON.stringify(caps).slice(0, 150))
       transport.notify("initialized", {})
 
+      /** Passed-because-not-applicable notes (see WaveLegResult.featureNotes). */
+      const featureNotes: string[] = []
       const uri = `file://${path.join(packDir, `main.${ext}`)}`
       const sym = expectations.hover.symbol
       const hoverChar = hoverCharacter(packDir, ext, expectations.hoverLine, sym)
@@ -186,9 +229,47 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
       const missList: any[] = Array.isArray(miss) ? miss : Array.isArray(miss?.symbols) ? miss.symbols : []
       assert("L4: absence is declared (empty, not fabricated)", missList.length === 0, JSON.stringify(missList).slice(0, 150))
 
-      const prep = (await transport.request("textDocument/prepareCallHierarchy", { textDocument: { uri }, position: pos }))?.result
+      // L5: call hierarchy is DEFINED for callable symbols. Two-sided on
+      // purpose (M29 wave-3 defect): a CALLABLE target must prepare an item
+      // (the positive), and a NON-CALLABLE target must NOT prepare one — it must
+      // answer DECLARED absence naming its kind (the negative; the pre-fix
+      // server prepared a CallHierarchyItem for hcl properties, terraform
+      // variables, make variables and json properties, so L5 "passed" for the
+      // wrong reason). "No item" alone is NEVER a pass: the target's kind is read
+      // from the same real index the server serves, and a null with no kind
+      // reason fails. When a server forwards its declared absence on the wire
+      // that code/message is quoted; otherwise the index-backed kind is the
+      // reason recorded (and the leg carries it as a feature note, so an L5 pass
+      // for a config language is never read as a call-hierarchy claim).
+      const prepMsg = await transport.request("textDocument/prepareCallHierarchy", { textDocument: { uri }, position: pos })
+      const prep = prepMsg?.result
       const item = prep?.item ?? (Array.isArray(prep) ? prep[0] : prep)
-      assert("L5: call hierarchy prepares", item?.name === sym, JSON.stringify(prep ?? null).slice(0, 150))
+      const wireAbsence = prep !== null && typeof prep === "object" && !Array.isArray(prep) ? (prep as any).absence : null
+      const target = indexedTargetAt(db, realpathSync.native(path.join(packDir, `main.${ext}`)), expectations.hoverLine, sym)
+      const targetType = target === null ? null : String(target.symbol_type)
+      const targetCallable = targetType !== null && CALLABLE_SYMBOL_TYPES.has(targetType.toLowerCase())
+      const preparedCallable = item !== null && item !== undefined && item.name === sym && CALLABLE_LSP_KINDS.has(Number(item.kind))
+      const preparedNonCallable = item !== null && item !== undefined && !preparedCallable
+      const declaredNonCallable = (item === null || item === undefined) && target !== null && !targetCallable
+      if (declaredNonCallable) {
+        const serverSaid = wireAbsence !== null && typeof wireAbsence?.code === "string"
+          ? ` (server declared ${wireAbsence.code}: ${String(wireAbsence.message ?? "").slice(0, 140)})`
+          : ""
+        featureNotes.push(
+          `call hierarchy declared absent: kind '${targetType}' is not callable — no item placed${serverSaid}`,
+        )
+      }
+      assert(
+        "L5: call hierarchy only for a callable symbol (item, or declared absence naming the kind)",
+        preparedCallable || declaredNonCallable,
+        preparedCallable
+          ? `callable symbol '${sym}' (${targetType ?? "kind not established"}) -> item kind ${item?.kind}`
+          : declaredNonCallable
+            ? featureNotes[featureNotes.length - 1]!
+            : preparedNonCallable
+              ? `prepared an item (kind ${item?.kind}) for a NON-callable target '${sym}' (${targetType ?? "kind not established"}) — a call tree for something that cannot be called`
+              : `no item and no declarable kind: callable target '${sym}' (${targetType ?? "not in the index"}) must prepare an item${wireAbsence ? ` (wire absence: ${String(wireAbsence.code)})` : ""}`,
+      )
 
       // Warm p95 latency (§3 budgets, server-leg regime).
       const measurements: FeatureMeasurement[] = []
@@ -209,6 +290,7 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
         status: ok ? "verified" : "failed",
         steps, indexCounts, measurements,
         budgetViolations: violations, commit, machine, generatedAt,
+        ...(featureNotes.length > 0 ? { featureNotes } : {}),
       }
       return result
     } catch (error) {
@@ -231,12 +313,36 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
  *      leg — a cheap, declared re-run refreshes it. Never another language's
  *      pack or analyzer (per-language coupling is banned and mutant-gated).
  *    - the shared LSP surfaces the leg exercises.
+ *
+ * The analyzer inputs are the engine's `getAnalyzer` target
+ * (`src/ast/engine.ts` is the authority) plus the language-specific
+ * tables/passes the produced index reads. Most languages follow the generic
+ * `real-<language>-analyzer.ts` name; `LANGUAGE_ANALYZER_INPUTS` names the rest
+ * (e.g. make's analyzer is `real-makefile-analyzer.ts`) so a language stales
+ * exactly when one of ITS inputs changes — never on another language's.
  */
+const LANGUAGE_ANALYZER_INPUTS: Record<string, readonly string[]> = {
+  objc: ["src/ast/real-objective-c-analyzer.ts"],
+  tsx: ["src/ast/real-typescript-analyzer.ts"],
+  sass: ["src/ast/real-css-analyzer.ts"],
+  make: ["src/ast/real-makefile-analyzer.ts"],
+  terraform: ["src/ast/real-hcl-analyzer.ts"],
+  javascript: [
+    "src/ast/real-javascript-analyzer.ts",
+    "src/ast/js-builtin-prototypes.ts",
+    "src/ast/js-runtime-globals.ts",
+  ],
+  julia: ["src/ast/real-julia-analyzer.ts", "src/ast/julia-binding-collapse.ts"],
+  php: ["src/ast/real-php-analyzer.ts", "src/ast/php-internal-symbols.ts"],
+  solidity: ["src/ast/real-solidity-analyzer.ts", "src/ast/solidity-reserved-tokens.ts"],
+}
+
 export function staleRelevantPaths(language: string): string[] {
   return [
     "script/m29/wave-execute.ts",
     `script/m29/wave-fixtures/${language}`,
-    `src/ast/real-${language}-analyzer.ts`,
+    ...(LANGUAGE_ANALYZER_INPUTS[language] ?? [`src/ast/real-${language}-analyzer.ts`]),
+    "src/lsp/call_hierarchy.ts",
     "src/lsp/launch_languages.ts",
     "src/lsp/hover.ts",
     "src/lsp/navigation.ts",

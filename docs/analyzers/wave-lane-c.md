@@ -53,6 +53,11 @@ Verdict vocabulary used here:
 
 Counts: **9 PASS**, **2 NOT-LSP-APPROPRIATE (call hierarchy)**, **1 BLOCKED**.
 
+> The `hcl`/`terraform` rows above record the state BEFORE the call-hierarchy
+> defect was fixed. The addendum at the end of this file records the defect, the
+> fix, the before/after L5 behaviour and the re-run evidence at
+> `validation/m29/results/wave-*.json`.
+
 ## Measured S5 legs
 
 Every leg also passed `§3: warm p95 within budgets` (0 budget violations).
@@ -174,3 +179,143 @@ hcl/terraform `main`, clean `main`, fsharp `WaveTest`, csharp `WaveTest`) must p
 the ROOT name in `documentSymbols`, not the nested class — otherwise L4 fails on
 a correct LSP answer. This lane's `expectations.json` files do that; the class is
 the child of the declared root.
+
+## Addendum — the call-hierarchy defect and its fix
+
+### The defect
+
+`prepareCallHierarchy` placed a `CallHierarchyItem` for ANY indexed symbol that
+covered the position, callable or not, and the wave L5 check only asserted
+`item?.name === symbol`. Measured before the fix at commit `cdb44c279`:
+
+| evidence | L5 detail | what kind 10/13 is |
+|---|---|---|
+| `git show cdb44c279:validation/m29/results/wave-hcl.json` | `[{"name":"app_name","kind":10,...}]` | `KIND_MAP.property` (`src/lsp/call_hierarchy.ts:215+`) |
+| `git show cdb44c279:validation/m29/results/wave-terraform.json` | `[{"name":"app_name","kind":13,...}]` | `KIND_MAP.variable` |
+
+The same shape was measured in lanes A/B (a make variable, a json property). LSP
+call hierarchy is defined over CALLABLE symbols: an editor offered a caller /
+callee tree for a config attribute. That is a false semantic claim, and L5
+"passed for the wrong reason" (`item.name === symbol` held for a property).
+
+### The fix (2 files)
+
+1. `src/lsp/call_hierarchy.ts` — a symbol must be callable before an item is
+   placed. `CALLABLE_SYMBOL_TYPES` (mirrors `signature.ts`'s private
+   `CALLABLE_TYPES`: function, method, constructor, procedure, subroutine,
+   getter, setter) is applied right after the position resolves. Any other kind
+   returns the file's existing declared-absence path:
+   `{ item: null, notIndexed: true, absence: absenceWith("no_stored_calls",
+   "symbol kind '<kind>' is not callable — call hierarchy does not apply …
+   (this is NOT 'no callers')", filePath), staleness }`. The file header's
+   guarantee, evidence line and "contracts it must not break" were updated.
+2. `script/m29/wave-execute.ts` — L5 is now two-sided and never a blind pass:
+   - an item passes only when `name === hoverSymbol` AND its LSP kind is
+     callable (Method 6 / Constructor 9 / Function 12);
+   - NO item passes only when the same real index the S4 stage built stores the
+     target symbol on the hover line with a NON-callable kind. The step detail
+     and the leg's new `featureNotes[]` carry
+     `call hierarchy declared absent: kind '<kind>' is not callable — no item placed`;
+   - no item for a callable target — or a target the index cannot place — FAILS;
+   - if a server forwards its declared absence on the response, the leg quotes
+     its `code`/`message` instead of the index-backed kind.
+
+### Before / after, per language (sealed legs)
+
+| language | L5 before (`cdb44c279`) | L5 after (working tree) | leg status after |
+|---|---|---|---|
+| swift | item name `greet`, kind 6 | item name `greet`, kind 6 | verified |
+| dart | item name `greet`, kind 6 | item name `greet`, kind 6 | verified |
+| csharp | item name `Greet`, kind 6 | item name `Greet`, kind 6 | verified |
+| fsharp | item name `Greet`, kind 6 | item name `Greet`, kind 6 | verified |
+| nim | item name `greet`, kind 12 | item name `greet`, kind 12 | verified |
+| vb | item name `Greet`, kind 6 | item name `Greet`, kind 6 | verified |
+| vba | item name `Greet`, kind 12 | item name `Greet`, kind 12 | verified |
+| clean | item name `greet`, kind 12 | item name `greet`, kind 12 | verified |
+| solidity | item name `greet`, kind 6 | item name `greet`, kind 6 | verified |
+| hcl | item name `app_name`, kind 10 (property) | declared absent — kind `property` is not callable | verified + `featureNotes` |
+| terraform | item name `app_name`, kind 13 (variable) | declared absent — kind `variable` is not callable | verified + `featureNotes` |
+| matlab | no item (`null`) | no item for a CALLABLE target → L5 fails | failed (`.m` path, unchanged) |
+
+Re-run command (all 12): `npx tsx script/m29/wave-execute.ts --languages
+swift,dart,csharp,fsharp,nim,vb,vba,clean,solidity,hcl,terraform,matlab` →
+11 verified, matlab failed on the `.m` blocker only. Evidence:
+`validation/m29/results/wave-<lang>.json` for each, sealed at
+`cdb44c279` with the fixed `dist/`.
+
+### Component-level positive AND negative probe
+
+`prepareCallHierarchy` driven directly over a real index (same component the
+server runs):
+
+| target | expected | measured |
+|---|---|---|
+| hcl `app_name` (property) | absent | `absence.code=no_stored_calls`, `"symbol kind 'property' is not callable …"` |
+| terraform `app_name` (variable) | absent | `"symbol kind 'variable' is not callable …"` |
+| swift `Greeter` (CLASS position) | absent | `"symbol kind 'class' is not callable …"` — a class, previously an item |
+| swift `greet` (method) | item | `item.name=greet kind=6 detail="method greet(…) → String"` |
+| csharp `Greet` (method) | item | `item.name=Greet kind=6` |
+| solidity `greet` (method) | item | `item.name=greet kind=6` |
+| clean `greet` (function) | item | `item.name=greet kind=12` |
+
+Wire check over stdio: `textDocument/prepareCallHierarchy` now returns `null`
+for hcl and `[{"name":"greet","kind":6,...}]` for swift — so the negative was
+exercised on the same surface the editor uses, not only the component.
+
+### Wire limitation — the declared reason does not travel (Lead action)
+
+The component now DECLARES the absence, but the wire carries only the protocol's
+empty shape: `src/lsp/server.ts:1333` does
+`return r.item === null ? null : [r.item]`, dropping `r.absence`, and the prepare
+handler (`src/lsp/server.ts:1313`) is not registered `{ absentable: true }` — unlike
+the read handlers, whose `bb/absence` notice is the declared-absence carrier.
+Consequence: L5's hcl/terraform pass currently rests on the `null` plus the kind
+read from the same index (recorded in the leg). To put the reason on the wire:
+
+1. `src/lsp/server.ts` (Lead-owned): when `r.item === null && r.absence !== null`,
+   `throw new DeclaredAbsenceThrow({ method: "textDocument/prepareCallHierarchy",
+   reason: <"language_not_launched" for file_type_unknown/language_outside_launch_set,
+   else "not_indexed">, language: r.absence.language, detail: r.absence.message,
+   evidenceTier: null, searchedIndex: <false for the launch-set codes, else true>,
+   totalCount: null })`, and register the method `{ absentable: true }`. A dedicated
+   `not_callable` reason in `AbsenceReason` would keep `not_indexed` from being
+   overloaded.
+2. `script/m25/feature-assertions.ts` (Lead-owned): the stdio transport's `onData`
+   discards every message without an `id`, so a `bb/absence` notice is invisible to
+   a wave leg; asserting the notice needs a captured-notifications accessor. Until
+   then the executor's index-backed kind is the only observable, and it is a fact
+   from the same index — never a blind pass.
+
+### Gates run, and one finding that is NOT this fix
+
+- `npx tsx script/m55/verify-call-hierarchy.ts` → **T2: VERIFIED** (64/64 passed,
+  9/9 mutants caught, 0 not judged). `validation/m55/results/T2.json` refreshed.
+- `npx tsx script/m24/verify-call-hierarchy.ts` → **KNOWN-GAP 88/97**
+  (`validation/m24/results/L5.json` refreshed). The 9 failures are NOT caused by
+  this fix: the gate was run twice, once with the HEAD component and once with the
+  fixed component — both 88/97 with the same 9 failures. Cause: the gate's
+  "non-launch" fixture is `fixture.rb`, and **ruby entered the launch set** in
+  `cdb44c279` (52 languages), so its G7/G8 negatives ("a non-launch file returns NO
+  item", "the absence names the launch set", `launchLanguages.length === 14`) now
+  assert that a launch language is unserved. Lead action: the gate fixture needs a
+  genuinely unrouted file type, and the `14` literal must come from the launch-set
+  owner.
+- `npm run build` succeeded after the source change; `dist/` is current.
+
+### Required follow-ups for the other lanes
+
+- **`npm run build` is REQUIRED** for any lane that re-runs `wave-execute`: the
+  leg's server subprocess is `dist/lsp/server.js`, which embeds the component.
+- **`script/m29/wave-execute.ts` is a shared input of every leg**
+  (`staleRelevantPaths`). Committing this fix stales all 52 languages' legs, and
+  every leg re-run under the old engine still carries the old "L5 passed for an
+  item" evidence. All three lanes must re-run their legs after the commit.
+- The precision-ledger generator keys `callHierarchy` on the `"L5:"` step prefix,
+  which the renamed step still matches — so a regenerated ledger would still
+  render `pass` for hcl/terraform. The not-applicable fact lives in the leg's
+  `featureNotes`; the generator (script owner) should render `n/a` (or
+  `declared-absent`) when `featureNotes` names call hierarchy.
+- Other lanes' packs: the new L5 can FAIL where the old one passed — a `null`
+  prepare whose target the index cannot place by name on the hover line. Fixture
+  `hover.symbol` must equal the indexed symbol name at `hoverLine` (this lane's
+  do; verified by the 11 green legs above).

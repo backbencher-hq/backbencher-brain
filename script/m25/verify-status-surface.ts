@@ -103,12 +103,12 @@ try {
     check("law-unknown: unknown renders UNKNOWN (never fresh)", unknown.tooltipLines.some((l) => l.includes("UNKNOWN")), unknown.tooltipLines.join(" | "))
     check("law-unknown: unknown still shows the stale badge (treated as stale)", unknown.staleBadge !== null)
 
-    // law-undeclared — ruby is OUTSIDE the launch set (wave-1 approval does
+    // law-undeclared — objc is OUTSIDE the launch set (wave-1 approval does
     // not name it), so the extension must not invent a level for it.
-    const undeclared = renderStatus({ ...baseInput, language: "ruby" })
+    const undeclared = renderStatus({ ...baseInput, language: "objc" })
     check("law-undeclared: undeclared language says no declared level", undeclared.tooltipLines.some((l) => l.includes("no declared claim level")), undeclared.tooltipLines.join(" | "))
-    check("law-undeclared: no invented I-level for ruby", !undeclared.tooltipLines.some((l) => l.startsWith("this file (ruby)") && /I\d/.test(l)))
-    check("law-undeclared: ruby absent from the per-language table", !undeclared.perLanguage.some((p) => p.language === "ruby"))
+    check("law-undeclared: no invented I-level for objc", !undeclared.tooltipLines.some((l) => l.startsWith("this file (objc)") && /I\d/.test(l)))
+    check("law-undeclared: objc absent from the per-language table", !undeclared.perLanguage.some((p) => p.language === "objc"))
 
     // law-failure
     const down = renderStatus({ ...baseInput, server: { up: false, version: null, versionOk: false } })
@@ -185,7 +185,7 @@ try {
       ["no index", { ...baseInput, index: { phase: "no-index" } }],
       ["cancelled", { ...baseInput, index: { phase: "cancelled" } }],
       ["failed", { ...baseInput, index: { phase: "failed" } }],
-      ["undeclared language", { ...baseInput, language: "ruby" }],
+      ["undeclared language", { ...baseInput, language: "objc" }],
     ]
     const lines: string[] = ["# E3 render capture — canonical rendered states (log evidence)", `# generated: ${new Date().toISOString()}`, ""]
     for (const [name, input] of states) {
@@ -250,7 +250,7 @@ try {
       from: /: `this file \(\$\{input\.language\}\): no declared claim level — features not offered`,/,
       to: ": `this file (${input.language}): I1 — protocol-passed`,",
       probe: `async (mod) => {
-      const v = mod.renderStatus({ ...baseInput, language: "ruby" })
+      const v = mod.renderStatus({ ...baseInput, language: "objc" })
       // Caught when the undeclared language (ruby) gets an invented I-level.
       return v.tooltipLines.some((l) => l.startsWith("this file (ruby)") && /I\\d/.test(l))
     }`,

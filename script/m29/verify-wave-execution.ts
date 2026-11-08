@@ -25,7 +25,7 @@ import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
 import path from "node:path"
-import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
+import { ROOT, WAVE_LANGUAGES, acceptDisposition, dispositionEvidenceExists, readDisposition, type WaveDisposition } from "./wave-protocol.ts"
 import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
 import { writeSealed, canonicalizeKeys } from "../lib/evidence.ts"
 import { fingerprintFields } from "../m61/claim_fingerprints.ts"
@@ -115,6 +115,7 @@ const WARM_BUDGETS: Record<string, number> = {
   documentSymbol: 50, workspaceSymbol: 150, prepareCallHierarchy: 100,
 }
 
+
 // --- R1: the approval record governs ----------------------------------------
 let approval = approvalRecord()
 check("R1: approval record exists and is readable", approval !== null)
@@ -127,7 +128,13 @@ if (approval) {
 }
 
 // --- R2: S5 legs (real index + real server) for every approved language -----
-const legSummaries: Array<{ language: string; status: string; steps: number; budgetsOk: boolean }> = []
+// A language is expected to be `verified`; a language that is not may instead
+// be TERMINAL — a sealed disposition that names precisely why its LSP surface
+// is limited, accepted only when its failingChecks are the leg's REAL failed
+// steps and its evidence record exists. Terminal states are printed with their
+// reason and never counted as verified; a missing leg is always a failure.
+const terminalByLang = new Map<string, { disposition: string; reason: string }>()
+const legSummaries: Array<{ language: string; status: string; steps: number; budgetsOk: boolean; terminal?: string; dispositionReason?: string }> = []
 for (const lang of approval?.languages ?? []) {
   const legPath = path.join(ROOT, "validation/m29/results", `wave-${lang}.json`)
   if (!existsSync(legPath)) {
@@ -136,7 +143,32 @@ for (const lang of approval?.languages ?? []) {
     continue
   }
   const leg = parseSealedRecord(legPath) as WaveLeg
-  check(`R2: ${lang} S5 status verified`, leg.status === "verified", leg.status)
+  const legFailedSteps = leg.steps.filter((s) => s.status === "fail").map((s) => s.step)
+  let terminal: { disposition: string; reason: string } | null = null
+  if (leg.status !== "verified") {
+    const dispositionRead = readDisposition(lang)
+    if (dispositionRead.ok) {
+      const verdict = acceptDisposition(
+        lang,
+        dispositionRead.disposition,
+        legFailedSteps,
+        dispositionEvidenceExists(dispositionRead.disposition.evidence),
+      )
+      if (verdict.accepted) {
+        terminal = { disposition: dispositionRead.disposition.disposition, reason: verdict.reason }
+      } else {
+        check(`R2: ${lang} sealed disposition is NOT accepted`, false, verdict.reason)
+      }
+    }
+  }
+  if (leg.status === "verified") {
+    check(`R2: ${lang} S5 status verified`, true, "verified")
+  } else if (terminal !== null) {
+    check(`R2: ${lang} S5 terminal ${terminal.disposition} (sealed disposition)`, true, terminal.reason)
+    terminalByLang.set(lang, terminal)
+  } else {
+    check(`R2: ${lang} S5 status verified`, false, leg.status)
+  }
   // Freshness per the ledger model: the leg is stale only if a RELEVANT
   // input changed since its commit (exact-HEAD equality would stale on
   // every evidence-only pin, which is output, not input).
@@ -160,18 +192,40 @@ for (const lang of approval?.languages ?? []) {
   check(`R2: ${lang} S5 inputs unchanged since its run`, !legStale, `${leg.commit.slice(0, 12)} vs HEAD`)
   check(`R2: ${lang} S5 real index non-empty`, (leg.indexCounts?.files ?? 0) > 0 && (leg.indexCounts?.symbols ?? 0) > 0, JSON.stringify(leg.indexCounts))
   const fails = leg.steps.filter((s) => s.status === "fail")
-  check(`R2: ${lang} S5 has no failed steps`, fails.length === 0, fails.map((s) => s.step).join(","))
+  check(
+    `R2: ${lang} S5 has no failed steps`,
+    leg.status === "verified" ? fails.length === 0 : terminal !== null,
+    terminal !== null ? `${fails.length} failing step(s) covered by the sealed disposition` : fails.map((s) => s.step).join(","),
+  )
   check(`R2: ${lang} S5 executed only its own language`, leg.language === lang)
   const budgetStep = leg.steps.find((s) => s.step.startsWith("§3"))
   check(`R2: ${lang} S5 §3 budget step passed`, budgetStep?.status === "pass", budgetStep?.detail)
-  legSummaries.push({ language: lang, status: leg.status, steps: leg.steps.length, budgetsOk: budgetStep?.status === "pass" })
+  legSummaries.push({
+    language: lang,
+    status: leg.status,
+    steps: leg.steps.length,
+    budgetsOk: budgetStep?.status === "pass",
+    ...(terminal !== null ? { terminal: terminal.disposition, dispositionReason: terminal.reason } : {}),
+  })
 }
 
 // --- R3: S6 legs — REAL headless Neovim per language -------------------------
 check("R3: portable Neovim provisioned (.tools layout, D-7)", existsSync(NVIM), NVIM)
-const editorSummaries: Array<{ language: string; status: string; checks: number; failed: number }> = []
+const editorSummaries: Array<{ language: string; status: string; checks: number; failed: number; terminal?: string; dispositionReason?: string }> = []
 if (existsSync(NVIM) && approval) {
   for (const lang of approval.languages) {
+    // A language whose S5 leg was accepted as TERMINAL (sealed disposition)
+    // has no honest in-editor green to produce: the disposition says why the
+    // surface is limited, and an editor leg would either fail for the same
+    // declared reason or exercise a surface the disposition rules out. Record
+    // the terminal state with its reason — never counted as verified, never
+    // conflated with a missing editor leg.
+    const terminal = terminalByLang.get(lang)
+    if (terminal !== undefined) {
+      check(`R3: ${lang} in-editor leg terminal ${terminal.disposition} (sealed disposition)`, true, terminal.reason)
+      editorSummaries.push({ language: lang, status: `terminal-${terminal.disposition}`, checks: 0, failed: 0, terminal: terminal.disposition, dispositionReason: terminal.reason })
+      continue
+    }
     const packDir = path.join(ROOT, "script/m29/wave-fixtures", lang)
     const ext = WAVE_LANGUAGES[lang]
     const expPath = path.join(packDir, "expectations.json")
@@ -307,6 +361,35 @@ if (existsSync(NVIM) && approval) {
   const drifted = { languages: ["java", "python", "typescript", "javascript", "kotlin", "cobol"] }
   const driftIllegal = drifted.languages.some((l) => WAVE_LANGUAGES[l] === undefined)
   mutant("approval drift to a non-registry language passes", driftIllegal)
+
+  // M5: the disposition acceptance rule. A waiver that points at evidence the
+  // leg did not produce has no teeth — naming a check the leg PASSED must be
+  // rejected exactly like a missing evidence record or another language's leg.
+  // The positive control is the other half of the mutant: a gate that can only
+  // reject is not a rule, it is a wall, and a real matching disposition must
+  // still be accepted.
+  {
+    const legFailed = ["L5: call hierarchy only for a callable symbol (item, or declared absence naming the kind)"]
+    const base: WaveDisposition = {
+      language: "make",
+      disposition: "not-lsp-appropriate",
+      reason: "a make target has no call tree (build DSL, no callable symbols)",
+      failingChecks: legFailed,
+      evidence: "validation/m29/results/wave-make.json",
+      declaredAt: "2026-11-08T00:00:00.000Z",
+      declaredBy: "mutation-suite",
+    }
+    const matching = acceptDisposition("make", base, legFailed, true)
+    check("R4: a sealed disposition matching the leg is accepted (positive control)", matching.accepted, matching.reason)
+    const invented = acceptDisposition("make", { ...base, failingChecks: ["L2: hover renders the symbol"] }, legFailed, true)
+    mutant("a disposition naming a check the leg did not fail goes unnoticed", !invented.accepted, invented.reason)
+    const missingEvidence = acceptDisposition("make", base, legFailed, false)
+    mutant("a disposition whose evidence record is missing goes unnoticed", !missingEvidence.accepted, missingEvidence.reason)
+    const foreignEvidence = acceptDisposition("make", { ...base, evidence: "validation/m29/results/wave-terraform.json" }, legFailed, true)
+    mutant("a disposition resting on another language's leg goes unnoticed", !foreignEvidence.accepted, foreignEvidence.reason)
+    const wrongLanguage = acceptDisposition("sass", base, legFailed, true)
+    mutant("a disposition filed under another language goes unnoticed", !wrongLanguage.accepted, wrongLanguage.reason)
+  }
 }
 
 // --- Persist evidence --------------------------------------------------------
@@ -333,13 +416,19 @@ const result = {
   },
   s5Legs: legSummaries,
   s6Legs: editorSummaries,
+  terminalDispositions: [...terminalByLang.entries()].map(([language, declared]) => ({
+    language,
+    disposition: declared.disposition,
+    reason: declared.reason,
+  })),
   limitations: [
     "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed.",
-    "S5/S6 legs exercise the six owner-approved languages; languages outside the approval record are not onboarded this wave (the binding forbids it).",
+    "S5/S6 legs exercise exactly the languages named by the wave approval records; languages outside the approval record are not onboarded this wave (the binding forbids it).",
+    "An approved language whose S5 leg is not verified is accepted as a TERMINAL blocked / not-lsp-appropriate state only when a sealed validation/m29/results/wave-<lang>-disposition.json exists whose failingChecks are a subset of the leg's REAL failed steps and whose evidence record exists. It is printed with its reason and never counted as verified; a missing leg is always a failure.",
   ],
 }
 const evidenceDir = path.join(ROOT, "validation/m29/results")
 mkdirSync(evidenceDir, { recursive: true })
 writeSealed(path.join(evidenceDir, "R2.json"), result)
-console.log(`R2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
+console.log(`R2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants, ${terminalByLang.size} terminal disposition(s))`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)

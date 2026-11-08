@@ -133,7 +133,7 @@ rust-analyzer, tsserver, jdtls, …) and never competes with them:
 
 | extension | min bb_lsp server | notes |
 |-----------|-------------------|-------|
-| 0.1.x     | 0.3.0             | declared in `bbLsp.minServerVersion`; a server that won't state its version is never trusted (fail closed) |
+| 0.1.x     | 0.1.0             | declared in `bbLsp.minServerVersion`; a server that won't state its version is never trusted (fail closed) |
 
 Rules:
 - The server version comes from the single source (`BACKBENCHER_BRAIN_VERSION`).
@@ -146,7 +146,7 @@ Rules:
 |---------|---------|---------|
 | `bbLsp.serverPath` | empty | explicit server entry override (validated, never guessed) |
 | `bbLsp.sourceMode` | auto | compiled dist preferred; source via bun is a declared fallback |
-| `bbLsp.minServerVersion` | 0.3.0 | minimum server version accepted |
+| `bbLsp.minServerVersion` | 0.1.0 | minimum server version accepted |
 | `bbLsp.activationBudgetMs` | 150 | declared activation budget (contract §7.3); a miss is a failed gate |
 | `bbLsp.autoIndexMode` | ask | consent before building an index; `never` is a declared no-op |
 

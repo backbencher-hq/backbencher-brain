@@ -14,7 +14,9 @@
 // filter is declared on the response (§15.1), and every omission is declared
 // with its reason (§11.7).
 // WHERE ITS EVIDENCE LIVES — validation/m55/results/T2.json,
-// validation/m24/results/L5.json; gates script/m55/verify-call-hierarchy.ts and
+// validation/m24/results/L5.json; waves validation/m29/results/wave-<lang>.json
+// (prepare on a non-callable symbol: hcl, terraform, make, json — M29 wave 3);
+// gates script/m55/verify-call-hierarchy.ts and
 // script/m24/verify-call-hierarchy.ts; contract §11.7, §15.1, §15.3.
 // EDIT TOGETHER WHEN THIS CHANGES — src/lsp/server.ts (registration + request
 // validation), src/lsp/symbols.ts (the shared absence vocabulary),
@@ -24,7 +26,9 @@
 // CONTRACTS IT MUST NOT BREAK — a fromRange always names the invocation it
 // points at; a non-call relation is never rendered; the relationship-kind filter
 // is declared on every response; a malformed client item is InvalidParams
-// (-32602), never -32603.
+// (-32602), never -32603; an item is placed ONLY for a callable symbol — a
+// class/property/variable/module answers declared absence naming its kind
+// (§11.7), never a fabricated call tree.
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // src/lsp/call_hierarchy.ts — M24.L5 (extended by M55.T2, issue #771).
@@ -37,8 +41,9 @@
 // declared, never silently cut (IDE Honesty Contract §2).
 //
 // Declared guarantees (gated by script/m24/verify-call-hierarchy.ts):
-//   prepare:   symbol at position -> call hierarchy item (or declared
-//              absence when not indexed)
+//   prepare:   symbol at position -> call hierarchy item FOR A CALLABLE SYMBOL
+//              (or declared absence when not indexed / not callable — a class,
+//              property, variable or module has no call hierarchy to show)
 //   expand:    incoming/outgoing edges from the engine -> LSP calls
 //   truncate:  engine's truncated + truncationReason are carried into the
 //              response metadata verbatim (never swallowed)
@@ -233,6 +238,31 @@ const KIND_MAP: Record<string, number> = {
 // Boolean(17) Array(18) Object(19) Key(20) Null(21) EnumMember(22) Struct(23)
 // Event(24) Operator(25) TypeParameter(26).
 KIND_MAP["variable"] = 13; // Variable
+
+/** The symbol kinds a call hierarchy may be PREPARED for: a call hierarchy is
+ *  defined over callables ("who calls this / what does it call"). The analyzers
+ *  store many other kinds — class, property, variable, module, struct, type,
+ *  namespace, field — and answering `prepareCallHierarchy` with an item for one
+ *  of those is a false semantic claim: an editor then offers a caller/callee
+ *  tree for something that cannot be called (measured by M29 wave 3: an hcl
+ *  `property`, a terraform `variable`, a make variable and a json property each
+ *  prepared as a CallHierarchyItem — validation/m29/results/wave-hcl.json,
+ *  wave-terraform.json at commit cdb44c279). Such a symbol answers DECLARED
+ *  ABSENCE with its kind named, exactly like a file outside the launch set.
+ *
+ *  The members mirror signature.ts's private CALLABLE_TYPES — a symbol takes a
+ *  parameter list and can be invoked. If that set widens, widen this one: the
+ *  call-hierarchy door and the signature renderer must agree on what a callable
+ *  is, or one surface renders `()` for a kind the other refuses to open. */
+const CALLABLE_SYMBOL_TYPES: ReadonlySet<string> = new Set([
+  "function",
+  "method",
+  "constructor",
+  "procedure",
+  "subroutine",
+  "getter",
+  "setter",
+]);
 
 export interface LspPosition {
   line: number;
@@ -984,6 +1014,26 @@ export function prepareCallHierarchy(
     };
   }
   const staleness = symbolStaleness(raw, symbol.file_id, symbol.path);
+  // §11.7 + the callable rule: a symbol was FOUND, and it is not callable. Call
+  // hierarchy is defined for callables, so placing an item here would tell an
+  // editor a call tree exists for a class/property/variable/module that has no
+  // callers and no callees. This is declared absence with the KIND named — not a
+  // bare null (indistinguishable from "no symbol here") and not a fabricated
+  // item. `no_stored_calls` is the vocabulary's "the symbol was found and the
+  // surface has no calls to show" code; the message states WHY: the kind itself
+  // is not callable.
+  if (!CALLABLE_SYMBOL_TYPES.has((symbol.symbol_type ?? "").toLowerCase())) {
+    return {
+      item: null,
+      notIndexed: true,
+      absence: absenceWith(
+        "no_stored_calls",
+        `symbol kind '${symbol.symbol_type}' is not callable — call hierarchy does not apply (this is NOT 'no callers': the surface has no callable identity for this kind)`,
+        request.filePath,
+      ),
+      staleness,
+    };
+  }
   let sourceText: string;
   try {
     sourceText = readFileSync(symbol.path, "utf8");

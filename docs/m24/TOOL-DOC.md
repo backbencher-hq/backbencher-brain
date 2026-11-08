@@ -14,7 +14,7 @@ every response states where its truth comes from (contract §2 claim levels).
 
 ## Launch languages
 
-Verified for: java, groovy, kotlin, scala, typescript, javascript, python, zig, go, rust, c, cpp, vue, svelte.
+Verified for: java, groovy, kotlin, scala, typescript, javascript, python, zig, go, rust, c, cpp, vue, svelte, tsx, html, css, scss, sass, json, yaml, toml, markdown, xml, graphql, protobuf, sql, perl, ruby, php, lua, elixir, erlang, haskell, clojure, julia, r, bash, powershell, make, swift, dart, csharp, fsharp, nim, vb, vba, matlab, clean, solidity, hcl, terraform.
 Anything else (Go, Rust, Ruby, … — every language outside the launch set
 above) is **declared absent** — the server
 replies with an honest not-indexed/not-launch response, never a guess.
@@ -23,20 +23,58 @@ replies with an honest not-indexed/not-launch response, never a guess.
 
 | Language | L2 | L3 | L4 | L5 |
 | --- | --- | --- | --- | --- |
-| java | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| groovy | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| kotlin | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| scala | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| typescript | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| javascript | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| python | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| zig | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| go | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| rust | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| c | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| cpp | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| vue | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
-| svelte | I1 ✓ | I1 ✓ | I1 ✓ | I1 ✓ |
+| java | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| groovy | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| kotlin | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| scala | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| typescript | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| javascript | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| python | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| zig | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| go | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| rust | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| c | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| cpp | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| vue | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| svelte | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| tsx | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| html | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| css | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| scss | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| sass | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| json | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| yaml | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| toml | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| markdown | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| xml | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| graphql | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| protobuf | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| sql | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| perl | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| ruby | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| php | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| lua | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| elixir | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| erlang | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| haskell | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| clojure | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| julia | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| r | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| bash | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| powershell | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| make | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| swift | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| dart | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| csharp | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| fsharp | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| nim | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| vb | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| vba | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| matlab | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| clean | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| solidity | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| hcl | I1 ✓ | I1 ✓ | I1 ✓ | — |
+| terraform | I1 ✓ | I1 ✓ | I1 ✓ | — |
 
 - **I1 (protocol-passed)**: the feature passes the reference LSP client
   harness (`script/m24/lsp_harness.ts`, wired into `npm run verify`) with
@@ -51,7 +89,7 @@ replies with an honest not-indexed/not-launch response, never a guess.
 - **L2 — Hover (signature + usage count + evidence tier + stale marker)**: `verified` (evidence `validation/m24/results/L2.json`)
 - **L3 — Definition + references**: `verified` (evidence `validation/m24/results/L3.json`)
 - **L4 — Document + workspace symbols**: `verified` (evidence `validation/m24/results/L4.json`)
-- **L5 — Call hierarchy (prepare / incoming / outgoing)**: `verified` (evidence `validation/m24/results/L5.json`)
+- **L5 — Call hierarchy (prepare / incoming / outgoing)**: `missing evidence — not claimed` (evidence `validation/m24/results/L5.json`)
 
 ## What bb_lsp never does (complement stance, contract §7)
 

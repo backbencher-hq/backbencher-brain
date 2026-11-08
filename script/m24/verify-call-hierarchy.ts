@@ -48,6 +48,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { hashFileContent } from "../../src/brain/freshness.ts"
+import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages.ts"
 import {
   findInlinePositionArithmetic,
   selfTestSurvivors,
@@ -138,8 +139,8 @@ const MAIN_REL = "main.ts"
  *  fixture used a bare `greet` reference, which the transitive-hop rule dropped
  *  for an unrelated reason — a test that passes for the wrong reason is not a
  *  gate.) */
-const OFF_LAUNCH_REL = "fixture.rb"
-const OFF_LAUNCH_SOURCE = "# ruby\nclass Widget\n  def spin\n    greet()\n  end\nend\n"
+const OFF_LAUNCH_REL = "fixture.unknown"
+const OFF_LAUNCH_SOURCE = "# file type outside the launch set\nclass Widget\n  def spin\n    greet()\n  end\nend\n"
 
 interface FixtureSymbol {
   id: string
@@ -192,7 +193,7 @@ function fixtureNodes(dir: string): Record<string, FixtureNode> {
   return {
     "sym-greet": { id: "sym-greet", name: "greet", symbolType: "method", file: MAIN_REL, filePath: abs, line: 2, lineEnd: 4, language: "typescript", complexity: 1, isExternal: false },
     "sym-main": { id: "sym-main", name: "main", symbolType: "function", file: MAIN_REL, filePath: abs, line: 7, lineEnd: 10, language: "typescript", complexity: 2, isExternal: false },
-    "sym-spin": { id: "sym-spin", name: "spin", symbolType: "method", file: OFF_LAUNCH_REL, filePath: off, line: 3, lineEnd: 5, language: "ruby", complexity: 1, isExternal: false },
+    "sym-spin": { id: "sym-spin", name: "spin", symbolType: "method", file: OFF_LAUNCH_REL, filePath: off, line: 3, lineEnd: 5, language: "unknown", complexity: 1, isExternal: false },
     // A node whose stored line is past EOF (a stale index row): its position
     // CANNOT be placed, and the item must say so instead of clamping to line 0.
     "sym-ghostline": { id: "sym-ghostline", name: "ghostline", symbolType: "function", file: MAIN_REL, filePath: abs, line: 900, lineEnd: 900, language: "typescript", complexity: 1, isExternal: false },
@@ -247,7 +248,7 @@ function makeFixture(dir: string, opts: { staleHashes?: boolean } = {}): any {
   const hashOf = (p: string, rel: string): string =>
     opts.staleHashes === true ? "0".repeat(16) : hashFileContent(readFileSync(p, "utf8"))
   const fileId = (rel: string): string => `file-${rel}`
-  const langOf = (rel: string): string => (rel === OFF_LAUNCH_REL ? "ruby" : "typescript")
+  const langOf = (rel: string): string => (rel === OFF_LAUNCH_REL ? "unknown" : "typescript")
 
   const raw = {
     prepare(sql: string) {
@@ -438,7 +439,7 @@ async function testDeclaredAbsence(): Promise<void> {
   negative("G7: prepare on a non-launch file returns NO item even though the index has one", prep.item === null, JSON.stringify(prep.item))
   negative("G7: prepare on a non-launch file is declared not-indexed", prep.notIndexed === true)
   negative("G7: prepare on a non-launch file carries a machine-readable code", prep.absence?.code === "file_type_unknown", JSON.stringify(prep.absence))
-  negative("G7: the prepare absence names the launch set", Array.isArray(prep.absence?.launchLanguages) && prep.absence.launchLanguages.length === 14, JSON.stringify(prep.absence?.launchLanguages))
+  negative("G7: the prepare absence names the launch set", Array.isArray(prep.absence?.launchLanguages) && prep.absence.launchLanguages.length === LAUNCH_LANGUAGES.length, JSON.stringify(prep.absence?.launchLanguages))
 
   // 2. incomingCalls / outgoingCalls rooted at a non-launch file.
   const offItem = {
@@ -1242,7 +1243,7 @@ async function chMutantOracle(mod: any, mutantSource: string): Promise<boolean> 
     const prep = mod.prepareCallHierarchy(raw, { filePath: join(d, OFF_LAUNCH_REL), line: 2, character: 4 })
     if (prep.item !== null || prep.absence === null || prep.absence === undefined) return true
     if (prep.absence.code !== "file_type_unknown") return true
-    if (!Array.isArray(prep.absence.launchLanguages) || prep.absence.launchLanguages.length !== 14) return true
+    if (!Array.isArray(prep.absence.launchLanguages) || prep.absence.launchLanguages.length !== LAUNCH_LANGUAGES.length) return true
     const offItem = {
       name: "spin", kind: 6, uri: `file://${join(d, OFF_LAUNCH_REL)}`,
       range: { start: { line: 2, character: 0 }, end: { line: 4, character: 0 } },

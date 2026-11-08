@@ -19,6 +19,20 @@
 // guilt: a step that did not run is `blocked` with a machine-readable reason,
 // never `pass`, never omitted (contract §8.3).
 //
+// A launched language may additionally carry a SEALED DISPOSITION
+// (validation/m29/results/wave-<lang>-disposition.json, written by
+// writeDisposition() through the one sealed evidence path): a machine-readable
+// record stating precisely why its LSP surface is terminally limited —
+// "blocked" (the surface cannot be exercised today: a missing grammar, a
+// shared file extension the path map refuses to guess) or
+// "not-lsp-appropriate" (the surface exists but the LSP semantics do not apply:
+// a build DSL with no callables). It is the honesty mechanism for an approved
+// language that cannot honestly be verified. A disposition never raises a
+// claim level; the verifier accepts it only when its failingChecks are a subset
+// of the leg's REAL failed steps and its evidence record exists. A missing,
+// unsealed or mismatched disposition fails — a waiver granted without evidence
+// has no teeth (contract §8.3).
+//
 // CLI: npx tsx script/m29/wave-protocol.ts --language <lang> [--out <file>]
 // Exit 0 = every non-blocked step passed; exit 1 = any real failure.
 
@@ -30,6 +44,7 @@ import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { readEvidence } from "../lib/evidence.ts"
 import { fileURLToPath } from "node:url"
 
 export const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -56,6 +71,129 @@ export const WAVE_LANGUAGES: Record<string, string> = {
   r: "r", bash: "sh", powershell: "ps1", make: "mk", fsharp: "fs",
   nim: "nim", vb: "vb", vba: "bas", matlab: "m", clean: "icl",
   solidity: "sol", hcl: "hcl", terraform: "tf",
+}
+
+/** A SEALED disposition for an approved language whose LSP surface is honestly
+ *  limited (the M29 wave-3 honesty mechanism). The record lives at
+ *  validation/m29/results/wave-<lang>-disposition.json and is written through
+ *  writeSealed(), so the trusted read refuses a hand edit.
+ *
+ *  The disposition never raises a claim level — it records WHY a launched
+ *  language's S5/S6 evidence is terminally limited, which is exactly the
+ *  machine-readable reason contract §8.3 says a blocked state must carry.
+ *  A gate accepts one only when its `failingChecks` are a subset of the leg's
+ *  REAL failed steps and its `evidence` record exists; anything else fails. */
+export interface WaveDisposition {
+  language: string
+  disposition: "blocked" | "not-lsp-appropriate"
+  /** One sentence naming the concrete limit (never "unknown reason"). */
+  reason: string
+  /** The leg steps this disposition covers; must be a subset of the leg's failed steps. */
+  failingChecks: string[]
+  /** Repo-relative path of the evidence record the disposition rests on. */
+  evidence: string
+  declaredAt: string
+  declaredBy: string
+}
+
+/** Path of a language's sealed disposition record (absent = no waiver claimed). */
+export function dispositionPath(language: string): string {
+  return path.join(ROOT, "validation/m29/results", `wave-${language}-disposition.json`)
+}
+
+/** Write a disposition through the ONE sealed evidence write path. Refuses a
+ *  record that could not be judged at all (no language, no reason, unknown
+ *  disposition, no failing checks, no evidence path, no declarer) — a waiver
+ *  granted without evidence has no teeth. */
+export function writeDisposition(disposition: WaveDisposition): void {
+  if (typeof disposition.language !== "string" || disposition.language.trim() === "") throw new Error("wave disposition: language is required")
+  if (disposition.disposition !== "blocked" && disposition.disposition !== "not-lsp-appropriate") {
+    throw new Error(`wave disposition: unknown disposition ${String(disposition.disposition)} (expected "blocked" or "not-lsp-appropriate")`)
+  }
+  if (typeof disposition.reason !== "string" || disposition.reason.trim() === "") throw new Error("wave disposition: reason is required")
+  if (!Array.isArray(disposition.failingChecks) || disposition.failingChecks.length === 0) throw new Error("wave disposition: failingChecks must name at least one leg step")
+  if (typeof disposition.evidence !== "string" || disposition.evidence.trim() === "") throw new Error("wave disposition: evidence path is required")
+  if (typeof disposition.declaredAt !== "string" || disposition.declaredAt.trim() === "") throw new Error("wave disposition: declaredAt is required")
+  if (typeof disposition.declaredBy !== "string" || disposition.declaredBy.trim() === "") throw new Error("wave disposition: declaredBy is required")
+  writeSealed(dispositionPath(disposition.language), disposition as unknown as Record<string, unknown>)
+}
+
+/** Trusted read of a language's sealed disposition. A missing record is a
+ *  declared absence (`ok: false` with the reason) — never an assumed
+ *  disposition; an unsealed/tampered record is refused by `readEvidence`. */
+export function readDisposition(language: string): { ok: true; disposition: WaveDisposition } | { ok: false; reason: string } {
+  const file = dispositionPath(language)
+  if (!existsSync(file)) return { ok: false, reason: `no sealed disposition record for ${language} (${path.relative(ROOT, file)})` }
+  const read = readEvidence<WaveDisposition>(file)
+  if (!read.ok) return { ok: false, reason: `disposition record refused: ${read.reason} (kind=${read.kind})` }
+  return { ok: true, disposition: read.record }
+}
+
+/** Resolve a disposition's evidence path against ROOT and report whether the
+ *  record exists. Evidence is a repo-relative record path (never assumed). */
+export function dispositionEvidenceExists(evidence: string): boolean {
+  if (typeof evidence !== "string" || evidence.trim() === "") return false
+  return existsSync(path.isAbsolute(evidence) ? evidence : path.join(ROOT, evidence))
+}
+
+/**
+ * The acceptance rule for a sealed disposition — PURE, so a gate and its
+ * mutant suite can prove it both accepts a matching record and rejects a
+ * mismatched one. It is the ONE owner of "is this waiver evidence-backed?".
+ *
+ * An approved language whose S5 leg is not `verified` may carry a sealed
+ * disposition that records WHY its LSP surface is terminally limited. It is
+ * accepted as a TERMINAL blocked / not-lsp-appropriate state only when ALL of
+ * these hold:
+ *   - it names THIS language;
+ *   - it declares a known disposition and a non-empty reason;
+ *   - it names at least one failing check, and EVERY named check is one the
+ *     leg actually failed — a disposition may not invent evidence (naming a
+ *     check the leg passed is exactly the waiver-without-teeth the gate must
+ *     catch);
+ *   - its evidence record exists and, when that record is a wave record, it
+ *     belongs to THIS language — never another language's leg.
+ * The caller consults this only for a leg whose status is not `verified`; a
+ * verified leg passes as today and a missing leg stays a failure, so a
+ * disposition is never conflated with either.
+ */
+export function acceptDisposition(
+  language: string,
+  disposition: WaveDisposition,
+  legFailedSteps: string[],
+  evidenceExists: boolean,
+): { accepted: boolean; reason: string } {
+  if (disposition.language !== language) {
+    return { accepted: false, reason: `disposition names language ${JSON.stringify(disposition.language)}, not ${language}` }
+  }
+  if (disposition.disposition !== "blocked" && disposition.disposition !== "not-lsp-appropriate") {
+    return { accepted: false, reason: `unknown disposition ${JSON.stringify(disposition.disposition)}` }
+  }
+  if (typeof disposition.reason !== "string" || disposition.reason.trim() === "") {
+    return { accepted: false, reason: "disposition carries no reason" }
+  }
+  if (!Array.isArray(disposition.failingChecks) || disposition.failingChecks.length === 0) {
+    return { accepted: false, reason: "disposition names no failing check" }
+  }
+  const invented = disposition.failingChecks.filter((check) => !legFailedSteps.includes(check))
+  if (invented.length > 0) {
+    return { accepted: false, reason: `disposition names check(s) the leg did not fail: ${invented.join(" | ")}` }
+  }
+  if (typeof disposition.evidence !== "string" || disposition.evidence.trim() === "") {
+    return { accepted: false, reason: "disposition carries no evidence path" }
+  }
+  if (!evidenceExists) {
+    return { accepted: false, reason: `disposition evidence does not exist: ${disposition.evidence}` }
+  }
+  const base = path.basename(disposition.evidence)
+  const foreign = /^wave-(?:editor-)?([A-Za-z0-9_-]+)\.json$/.exec(base)
+  if (foreign !== null && foreign[1] !== language) {
+    return { accepted: false, reason: `disposition evidence ${base} belongs to ${foreign[1]}, not ${language}` }
+  }
+  return {
+    accepted: true,
+    reason: `${disposition.disposition}: ${disposition.reason} (covers ${disposition.failingChecks.length} failed check(s); evidence ${disposition.evidence})`,
+  }
 }
 
 export type StepStatus = "pass" | "fail" | "blocked"
