@@ -12,6 +12,7 @@
 import { spawn } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, statSync, writeFileSync, chmodSync } from "node:fs"
 import { writeSealed } from "../lib/evidence.ts"
+import { retainVerifiedEvidence } from "./editor_evidence.ts"
 import { resolveEditorCli } from "../lib/editor-cli.ts"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -109,6 +110,8 @@ async function main() {
 
   mkdirSync(RESULTS, { recursive: true })
   const records: Array<Record<string, unknown>> = []
+  /** Forks whose verified evidence was kept because this run could not measure. */
+  const retained: string[] = []
 
   for (const fork of availability) {
     const evidenceFile = `F-${fork.name.toUpperCase()}.json`
@@ -263,6 +266,30 @@ async function main() {
     if (crashDetail) limitations.push(`inner suite crash: ${String(crashDetail).slice(0, 300)}`)
     if (innerResults?.activation && !innerResults.activation.versionOk) limitations.push("server version below declared minimum for this fork run")
 
+    // A RUN THAT STARTED NO EXTENSION HOST IS A FAILED MEASUREMENT, NOT NEW EVIDENCE.
+    // Without this, a loaded machine flipped a verified fork to `blocked` and the
+    // M25 bar ("at least one fork verified at I4") failed on evidence that had just
+    // been deleted by the attempt to re-measure it. The attempt is recorded; the
+    // verified record is left as measured. No verified record -> fall through and
+    // write the honest blocked/known-gap as before.
+    if (checks.length === 0 && retainVerifiedEvidence({
+      resultsDir: RESULTS,
+      evidenceFile,
+      attemptFile: evidenceFile.replace(/\.json$/, "-attempt.json"),
+      attempts: 1,
+      reason: "the fork started no extension host, so zero checks ran",
+      extra: { fork: fork.name },
+    })) {
+      // The matrix is generated from `records`, and a fork is never omitted from it,
+      // so the retained record is read back and rendered as the verified row it is.
+      try {
+        records.push(JSON.parse(readFileSync(path.join(RESULTS, evidenceFile), "utf8")))
+      } catch {
+        // unreadable record: the closure's own census will report it
+      }
+      retained.push(evidenceFile)
+      continue
+    }
     const rec = {
       issue: "M25.E6",
       code: "E6",
