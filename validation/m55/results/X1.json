@@ -2,23 +2,23 @@
   "issue": "M55.X1",
   "code": "X1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 41,
-  "passed": 40,
-  "failed": 1,
-  "realFailed": 1,
+  "passed": 41,
+  "failed": 0,
+  "realFailed": 0,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "f1f8604596d453a320fb3db7d8a8401aebc207ae",
+  "currentCommit": "de7e074510a09726ef730c0117a582b42929dcd5",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-08T07:58:23.626Z",
+  "generatedAt": "2026-11-08T07:58:33.345Z",
   "audit": {
-    "head": "f1f8604596d453a320fb3db7d8a8401aebc207ae",
+    "head": "de7e074510a09726ef730c0117a582b42929dcd5",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
@@ -359,9 +359,7 @@
     ],
     "handoffIssue": 816
   },
-  "failures": [
-    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 6004 vs 6003 bytes"
-  ],
+  "failures": [],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
     "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 41 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
@@ -369,7 +367,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T07:58:23.627Z",
-    "contentSha256": "991dba48455526e33cc7705c183668befec2115b23d9005f8a96709a4fea73b7"
+    "sealedAt": "2026-11-08T07:58:33.347Z",
+    "contentSha256": "7f2cc08ff45726dd666f6f70f97f7a5885d9d8c46be23f52e6568d356b799932"
   }
 }
