@@ -38,9 +38,11 @@ echo "== 4/6 ledger sync (withdraw citations this history cannot resolve)"
 npx tsx script/m41/sync-ledger.ts --drop-unreachable-citations
 npx tsx script/m41/sync-ledger.ts --milestone m56 --drop-unreachable-citations
 
-echo "== 5/6 governance"
+echo "== 5/6 governance, then sync again so closure reads verified siblings"
 npx tsx script/m41/verify-governance.ts
 npx tsx script/m56/verify-governance.ts
+npx tsx script/m41/sync-ledger.ts
+npx tsx script/m41/sync-ledger.ts --milestone m56
 
 echo "== 6/6 closure (X1), re-sync, re-run governance at the same HEAD"
 npx tsx script/m41/verify-closure.ts

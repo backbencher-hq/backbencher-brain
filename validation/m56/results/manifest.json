@@ -3,10 +3,10 @@
   "milestone": "M56",
   "githubMilestone": 56,
   "title": "Website Completion: Surfaces, Sources, IA",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-10-16T18:51:34.636Z",
+  "updatedAt": "2026-11-08T01:16:31.853Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -37,17 +37,6 @@
       "githubIssue": 779,
       "tool": "gate",
       "status": "verified",
-      "evidence": {
-        "status": "verified",
-        "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
-        "verifierCommand": "npx tsx script/m56/verify-governance.ts",
-        "evidenceFile": "G1.json",
-        "generatedAt": "2026-10-16T18:50:05.772Z",
-        "passed": 41,
-        "failed": 0,
-        "negativeCases": 16,
-        "blockedReason": "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design."
-      },
       "scope": "governance: ledger integrity, real issue numbers, banned vocabulary, key hygiene, ledger-artifact agreement, committed batch procedure",
       "acceptanceCriteria": [
         "ledger structure, identity and issue numbers enforced exactly",
@@ -59,7 +48,18 @@
         "green with negative cases",
         "evidence at current commit",
         "ledger synced from artifacts by script/m41/sync-ledger.ts --milestone m56"
-      ]
+      ],
+      "evidence": {
+        "evidenceFile": "G1.json",
+        "status": "verified",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:16:19.060Z",
+        "passed": 41,
+        "failed": 0,
+        "negativeCases": 16,
+        "checks": 41,
+        "verifierCommand": "npx tsx script/m56/verify-governance.ts"
+      }
     },
     {
       "code": "E1",
@@ -81,14 +81,13 @@
       "evidence": {
         "evidenceFile": "E1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T17:18:00.659Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:09:16.053Z",
         "passed": 31,
         "failed": 0,
         "negativeCases": 7,
         "checks": 31,
-        "verifierCommand": "npx tsx script/m56/verify-editors-page.ts",
-        "blockedReason": "Rendered checks reuse website/.next when it is newer than every site source, and rebuild otherwise; a fresh checkout always rebuilds."
+        "verifierCommand": "npx tsx script/m56/verify-editors-page.ts"
       }
     },
     {
@@ -111,14 +110,13 @@
       "evidence": {
         "evidenceFile": "T1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:27:55.924Z",
-        "passed": 28,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:08:44.823Z",
+        "passed": 29,
         "failed": 0,
         "negativeCases": 6,
-        "checks": 28,
-        "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
-        "blockedReason": "The byte-identity proof runs the canonical generator (script/verify-tool-docs.ts); it therefore covers all 18 generated artifacts, not the site file alone."
+        "checks": 29,
+        "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts"
       }
     },
     {
@@ -141,14 +139,13 @@
       "evidence": {
         "evidenceFile": "L1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:26:01.894Z",
-        "passed": 31,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:09:18.598Z",
+        "passed": 44,
         "failed": 0,
-        "negativeCases": 6,
-        "checks": 31,
-        "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts",
-        "blockedReason": "`emits` is derived from the analyzer source by regex over RelationshipType sites and literal type strings, the same over-reporting derivation script/m60/rel-type-coverage-gate.ts uses. A relationship built through an indirection neither regex can see would be missed; the derivation errs toward over-reporting so a family's claim is checked against a superset."
+        "negativeCases": 9,
+        "checks": 44,
+        "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts"
       }
     },
     {
@@ -171,14 +168,13 @@
       "evidence": {
         "evidenceFile": "D1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T17:52:00.455Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:10:56.481Z",
         "passed": 54,
         "failed": 0,
         "negativeCases": 9,
         "checks": 54,
-        "verifierCommand": "npx tsx script/m56/verify-docs-completeness.ts",
-        "blockedReason": "The CLI reference is generated from the CLI's own help text, read from source through script/m56/cli-probe.ts (running src/cli/index.ts directly is a no-op under Node because import.meta.main is Bun-only)."
+        "verifierCommand": "npx tsx script/m56/verify-docs-completeness.ts"
       }
     },
     {
@@ -201,8 +197,8 @@
       "evidence": {
         "evidenceFile": "S1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T17:41:16.044Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:11:25.297Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 7,
@@ -230,14 +226,13 @@
       "evidence": {
         "evidenceFile": "I1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T17:23:55.345Z",
-        "passed": 31,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:11:26.070Z",
+        "passed": 32,
         "failed": 0,
         "negativeCases": 7,
-        "checks": 31,
-        "verifierCommand": "npx tsx script/m56/verify-ia.ts",
-        "blockedReason": "Rendered-HTML link scanning covers the surfaces that can link a retired path (support, nav, footer, docs, install); a retired link inside a long-form legal page would not be seen here."
+        "checks": 32,
+        "verifierCommand": "npx tsx script/m56/verify-ia.ts"
       }
     },
     {
@@ -260,15 +255,14 @@
       "evidence": {
         "evidenceFile": "D2.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T17:28:13.210Z",
-        "passed": 42,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:14:13.326Z",
+        "passed": 43,
         "failed": 0,
         "negativeCases": 10,
-        "checks": 42,
+        "checks": 43,
         "verifierCommand": "npx tsx script/m56/verify-design.ts",
-        "ownerApproval": "pending — D2's acceptance is the owner's visual review of /editors, /support, the homepage tools section and the language cells; that review has not been recorded yet (state recorded 2026-10-16). The verifier is green; the human judgement is still open, and X1 fails if this field is ever dropped or silently rewritten as a pass.",
-        "blockedReason": "Contrast is computed on declared colours (tokens and literal classes), not on rendered pixels — a parent opacity or blend mode could still reduce effective contrast; no such utility is used in site source (alpha text classes are refused)."
+        "ownerApproval": "pending — the owner has not yet given the visual review (the site is built, screenshot-verified and awaiting review as of 2026-11-07). D2 reads this line and writes it into its evidence; X1 refuses a closure whose design gate has no recorded approval state."
       }
     },
     {
@@ -291,20 +285,19 @@
       "evidence": {
         "evidenceFile": "X1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:51:14.404Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:16:30.796Z",
         "passed": 50,
         "failed": 0,
         "negativeCases": 17,
         "checks": 50,
-        "verifierCommand": "npx tsx script/m56/verify-closure.ts",
-        "blockedReason": "X1 proves the batch was produced at one commit and that the wiring, deploy contract and honesty records hold. It does not re-run the eight site gates itself; their evidence is what the batch is made of, and running them again would move the batch past the commit it pins."
+        "verifierCommand": "npx tsx script/m56/verify-closure.ts"
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:31:57.004Z",
-    "contentSha256": "59d13f01b24cc4b66effc303d6b61442a969ef70c6adf27046ee2e1599eb51d3"
+    "sealedAt": "2026-11-08T01:16:31.854Z",
+    "contentSha256": "4a1aa6ec3cb9bce1d82a0ae157a9191c6331bef14dceb053c8be91efca5f0dcf"
   }
 }

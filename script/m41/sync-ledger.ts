@@ -91,7 +91,7 @@ const MANIFEST_PATH = path.join(RESULTS, "manifest.json")
 
 // Facts a verifier writes that a ledger entry may record. Value-only: a key
 // absent from the ledger entry is left absent (G1 validates the entry's shape).
-const SYNCED_KEYS = ["currentCommit", "generatedAt", "passed", "failed", "realFailed", "negativeCases", "checks", "mutantsCaught", "mutantsTotal"] as const
+const SYNCED_KEYS = ["currentCommit", "generatedAt", "passed", "failed", "realFailed", "negativeCases", "checks", "mutantsCaught", "mutantsTotal", "ownerApproval"] as const
 
 // Synced for information, but NOT part of the agreement contract — the gate
 // compares commit + counts only, because it rewrites its own artifact in the
@@ -193,8 +193,13 @@ for (const issue of ledger.issues) {
   const contractBefore: Record<string, unknown> = {}
   const contractAfter: Record<string, unknown> = {}
   for (const key of SYNCED_KEYS) {
-    if (prior[key] === undefined || e[key] === undefined) continue
+    if (e[key] === undefined) continue
+    // A verifier may introduce a field after its ledger entry was first derived
+    // (ownerApproval for D2 is the case); sync copies it rather than requiring a
+    // hand edit of the ledger. Agreement is still compared only where the prior
+    // entry already carried the key.
     next[key] = e[key]
+    if (prior[key] === undefined) continue
     if (!NON_CONTRACT_KEYS.has(key)) {
       contractBefore[key] = prior[key]
       contractAfter[key] = e[key]

@@ -3,10 +3,10 @@
   "milestone": "M41",
   "githubMilestone": 41,
   "title": "Website Truth, SEO & Design",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-10-16T18:51:42.683Z",
+  "updatedAt": "2026-11-08T01:15:08.509Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -52,14 +52,13 @@
       "evidence": {
         "evidenceFile": "G1.json",
         "status": "verified",
-        "currentCommit": "dffea7f764b8d396f953bbd2e24734744589943e",
-        "generatedAt": "2026-10-16T18:51:05.278Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:13:20.345Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 11,
         "checks": 32,
-        "verifierCommand": "npx tsx script/m41/verify-governance.ts",
-        "blockedReason": "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design."
+        "verifierCommand": "npx tsx script/m41/verify-governance.ts"
       }
     },
     {
@@ -81,14 +80,13 @@
       "evidence": {
         "evidenceFile": "T1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:00:13.214Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:05:07.779Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 4,
         "checks": 21,
-        "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
-        "blockedReason": "Inventory 'Site claims' column is a T1-baseline snapshot (pre-T2); truth-side verdicts are verified live, claim-side columns are historical by design."
+        "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts"
       }
     },
     {
@@ -110,14 +108,13 @@
       "evidence": {
         "evidenceFile": "T2.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:19:05.258Z",
-        "passed": 58,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:06:10.625Z",
+        "passed": 60,
         "failed": 0,
         "negativeCases": 3,
-        "checks": 58,
-        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
-        "blockedReason": "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks."
+        "checks": 60,
+        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts"
       }
     },
     {
@@ -139,14 +136,13 @@
       "evidence": {
         "evidenceFile": "T3.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:24:19.333Z",
-        "passed": 58,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:07:23.750Z",
+        "passed": 60,
         "failed": 0,
         "negativeCases": 3,
-        "checks": 58,
-        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
-        "blockedReason": "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks."
+        "checks": 60,
+        "verifierCommand": "npx tsx script/m41/verify-site-truth.ts"
       }
     },
     {
@@ -168,14 +164,13 @@
       "evidence": {
         "evidenceFile": "S1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:11:44.790Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:08:36.000Z",
         "passed": 67,
         "failed": 0,
         "negativeCases": 11,
         "checks": 67,
-        "verifierCommand": "npx tsx script/m41/verify-seo.ts",
-        "blockedReason": "Keyword checks verify presence in rendered content; ranking outcomes are S2 (search-engine onboarding) scope and depend on external engines."
+        "verifierCommand": "npx tsx script/m41/verify-seo.ts"
       }
     },
     {
@@ -228,14 +223,13 @@
       "evidence": {
         "evidenceFile": "D1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:11:48.836Z",
-        "passed": 17,
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:08:36.736Z",
+        "passed": 18,
         "failed": 0,
         "negativeCases": 3,
-        "checks": 17,
-        "verifierCommand": "npx tsx script/m41/verify-design.ts",
-        "blockedReason": "Visual quality is asserted by screenshots plus owner review, not by pixel heuristics."
+        "checks": 18,
+        "verifierCommand": "npx tsx script/m41/verify-design.ts"
       }
     },
     {
@@ -258,20 +252,19 @@
       "evidence": {
         "evidenceFile": "X1.json",
         "status": "verified",
-        "currentCommit": "061c35fa9c88fae70639cea8c90c9fcb2c0ac4f9",
-        "generatedAt": "2026-10-16T18:42:14.583Z",
+        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "generatedAt": "2026-11-08T01:12:55.201Z",
         "passed": 36,
         "failed": 0,
         "negativeCases": 13,
         "checks": 36,
-        "verifierCommand": "npx tsx script/m41/verify-closure.ts",
-        "blockedReason": "X1 proves the batch was produced at one commit and that the wiring, deploy contract and owner confirmations hold. It does not re-run the seven site gates itself; their evidence is what the batch is made of."
+        "verifierCommand": "npx tsx script/m41/verify-closure.ts"
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-17T15:31:56.927Z",
-    "contentSha256": "8c0ad11c251dc957d124a06a25a8cfc3f8e5977fce097ab7a54f65ddff83e0fa"
+    "sealedAt": "2026-11-08T01:15:08.509Z",
+    "contentSha256": "6df82bc4aa3117370d42888371b7f4a8021130017eb156ed1e9658e9018d618b"
   }
 }

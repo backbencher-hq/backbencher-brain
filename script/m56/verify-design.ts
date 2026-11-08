@@ -474,6 +474,18 @@ negative("N10: an unreferenced component is detected", !sources.some((s) => read
 
 // --- evidence -------------------------------------------------------------------------
 
+// The owner-approval state is a RECORD, not a verdict this gate can make. X1
+// polices that the record exists (and that any "approved" is dated), so the
+// state lives in the review brief and is copied into this artifact verbatim.
+const approvalBrief = (() => {
+  try {
+    return read("docs/website/APPROVAL-BRIEF.md")
+  } catch {
+    return ""
+  }
+})()
+const ownerApproval = /^- \*\*Owner approval:\*\*\s*(.+)$/m.exec(approvalBrief)?.[1]?.trim() ?? "missing — no approval record in docs/website/APPROVAL-BRIEF.md"
+
 const failed = checks - passed
 const ok = failed === 0
 if (!READ_ONLY) {
@@ -500,6 +512,7 @@ if (!READ_ONLY) {
         verifierCommand: "npx tsx script/m56/verify-design.ts",
         evidenceFile: "D2.json",
         generatedAt: new Date().toISOString(),
+        ownerApproval,
         contrastFloors: {
           floor: FLOOR,
           referenceBackground: LIGHTEST,
