@@ -251,8 +251,9 @@ try {
       to: ": `this file (${input.language}): I1 — protocol-passed`,",
       probe: `async (mod) => {
       const v = mod.renderStatus({ ...baseInput, language: "objc" })
-      // Caught when the undeclared language (ruby) gets an invented I-level.
-      return v.tooltipLines.some((l) => l.startsWith("this file (ruby)") && /I\\d/.test(l))
+      // Caught when the undeclared language (objc — ruby is launched now) gets an
+      // invented I-level.
+      return v.tooltipLines.some((l) => l.startsWith("this file (objc)") && /I\\d/.test(l))
     }`,
     },
     {

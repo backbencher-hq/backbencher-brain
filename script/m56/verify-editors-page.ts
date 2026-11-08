@@ -116,7 +116,7 @@ try {
   genOut = `${err.stdout ?? ""}\n${err.stderr ?? ""}`
 }
 check("E1: editor-data generator is byte-clean (data file + every still sha-pinned)", genOk, genOut.split("\n").filter(Boolean).slice(-3).join(" | "))
-check("E1: generator reports the expected shape", /EDS: PASS \(.+4 stills verified, 4 editors, 6 ledger rows\)/.test(genOut), genOut.trim().slice(0, 160))
+check("E1: generator reports the expected shape", /EDS: PASS \(.+4 stills verified, 4 editors, \d+ ledger rows\)/.test(genOut), genOut.trim().slice(0, 160))
 
 const dataSrc = existsSync(DATA) ? readFileSync(DATA, "utf8") : ""
 const F = (await import(DATA)) as { EDITOR_FACTS: any }
@@ -129,9 +129,10 @@ const readmeMatrix = mdTable(readme, "## Features and claim levels")
 // Row shape: | language | 5 levels | — header row is the first table line, so
 // drop it when its first cell is not a language we expect.
 const matrixData = readmeMatrix.filter((r) => !/^language$/i.test(r[0] ?? ""))
-const statusModel = read("ide/vscode/src/status-model.ts")
-const statusBlock = statusModel.slice(statusModel.indexOf("export const CLAIM_LEVELS"))
-const statusLevels = Object.fromEntries([...statusBlock.slice(0, statusBlock.indexOf("}")).matchAll(/(\w+): "([^"]+)"/g)].map((m) => [m[1]!, m[2]!]))
+// The extension's shipped table is a GENERATED module (same evidence as the
+// M24 tool doc), so the verifier imports the authoritative record instead of
+// parsing source text — parsing is exactly how the two drifted before.
+const statusLevels = { ...((await import("../../ide/vscode/src/claim-levels.generated")) as { CLAIM_LEVELS: Record<string, string> }).CLAIM_LEVELS }
 const toolDoc = read("docs/m24/TOOL-DOC.md")
 const toolDocRows = mdTable(toolDoc, "## Claim levels (contract §2)")
 

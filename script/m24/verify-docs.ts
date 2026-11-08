@@ -218,6 +218,7 @@ async function testMutation(): Promise<void> {
     try {
       mkdirSync(join(dir, "docs/m24"), { recursive: true })
       mkdirSync(join(dir, "validation/m24/results"), { recursive: true })
+      mkdirSync(join(dir, "validation/m29/results"), { recursive: true })
       copyFileSync(PLAN, join(dir, "docs/m24/M24-MASTER-PLAN.md"))
       for (const code of ["L2", "L3", "L4", "L5"]) {
         // Sealed, because the generator reads through the trusted reader and an
@@ -229,6 +230,17 @@ async function testMutation(): Promise<void> {
           currentCommit: "decoy",
           generatedAt: "1970-01-01T00:00:00.000Z",
           verdict: { ok: statuses[code] ?? "verified" === "verified" },
+        })
+      }
+      // The claim table is per LANGUAGE now: it needs this language's own
+      // measured leg, or every row reads I0 and the decoy proves nothing.
+      for (const language of ["java"]) {
+        writeSealed(join(dir, `validation/m29/results/wave-${language}.json`), {
+          language,
+          status: "verified",
+          commit: "decoy",
+          generatedAt: "1970-01-01T00:00:00.000Z",
+          steps: [{ step: "decoy", status: "pass", detail: "decoy" }],
         })
       }
       const source = readFileSync(GENERATOR, "utf8")
@@ -264,7 +276,7 @@ async function testMutation(): Promise<void> {
   // changed must be rejected by the same predicate G1 uses.
   const reworded = await decoy(
     { L2: "verified", L3: "known-gap", L4: "verified", L5: "verified" },
-    (s) => s.replace('return ok ? "I1 ✓" : "—"', 'return ok ? "I1 (measured)" : "—"'),
+    (s) => s.replace('return ok ? "I1 ✓" : "I0 —"', 'return ok ? "I1 (measured)" : "I0 —"'),
   )
   negative(
     "G5b: the drift comparison can fail — a generator whose claim cells change is rejected by the same predicate G1 uses",

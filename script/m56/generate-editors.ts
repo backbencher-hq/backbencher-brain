@@ -38,6 +38,7 @@
 // and fails on any marketplace-availability claim.
 
 import { createHash } from "node:crypto"
+import { CLAIM_LEVELS } from "../../ide/vscode/src/claim-levels.generated"
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
@@ -151,12 +152,11 @@ const shippedClaims = headingTable(readme, "## Features and claim levels").map((
   return { language, level: distinct[0]!, features }
 })
 
-// The extension's own shipped levels (drift-gated to docs/m24/TOOL-DOC.md).
-const claimBlock = statusModelSrc.slice(statusModelSrc.indexOf("export const CLAIM_LEVELS"))
-const extensionClaims = [...claimBlock.slice(0, claimBlock.indexOf("}")).matchAll(/(\w+): "([^"]+)"/g)].map((m) => ({
-  language: m[1]!,
-  level: m[2]!,
-}))
+// The extension's own shipped levels. They are no longer a literal in the
+// status model: the table is a GENERATED module (same evidence as
+// docs/m24/TOOL-DOC.md), so the generator reads that authoritative record
+// instead of parsing source text — parsing is what let the two drift.
+const extensionClaims = Object.entries(CLAIM_LEVELS).map(([language, level]) => ({ language, level: String(level) }))
 
 // The LSP launch set has ONE owner (src/lsp/launch_languages.ts — its own header
 // says so) and it is read from there, never inferred: the set used to live

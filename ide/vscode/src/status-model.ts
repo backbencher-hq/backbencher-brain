@@ -47,64 +47,14 @@ export type { LaunchLanguage }
  * the WEAKEST feature level for the language (features are only as strong
  * as the weakest claim — contract §2).
  */
-export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
-  // M24 launch five + M29 wave 1 (javascript, python) + M29 wave 2
-  // (groovy, zig, go, rust, c, cpp, vue, svelte): recorded claim I1.
-  java: "I1",
-  groovy: "I1",
-  kotlin: "I1",
-  scala: "I1",
-  typescript: "I1",
-  javascript: "I1",
-  python: "I1",
-  zig: "I1",
-  go: "I1",
-  rust: "I1",
-  c: "I1",
-  cpp: "I1",
-  vue: "I1",
-  svelte: "I1",
-  // M29 wave 3 (owner-approved 2026-11-08): launched but not yet measured by
-  // the extension's claim table — lowest claim, never inflated.
-  tsx: "I0",
-  html: "I0",
-  css: "I0",
-  scss: "I0",
-  sass: "I0",
-  json: "I0",
-  yaml: "I0",
-  toml: "I0",
-  markdown: "I0",
-  xml: "I0",
-  graphql: "I0",
-  protobuf: "I0",
-  sql: "I0",
-  perl: "I0",
-  ruby: "I0",
-  php: "I0",
-  lua: "I0",
-  elixir: "I0",
-  erlang: "I0",
-  haskell: "I0",
-  clojure: "I0",
-  julia: "I0",
-  r: "I0",
-  bash: "I0",
-  powershell: "I0",
-  make: "I0",
-  swift: "I0",
-  dart: "I0",
-  csharp: "I0",
-  fsharp: "I0",
-  nim: "I0",
-  vb: "I0",
-  vba: "I0",
-  matlab: "I0",
-  clean: "I0",
-  solidity: "I0",
-  hcl: "I0",
-  terraform: "I0",
-}
+import { CLAIM_LEVELS as GENERATED_CLAIM_LEVELS } from "./claim-levels.generated"
+
+/** The extension's per-language claim table. DERIVED, not hand-set: it is the
+ *  generated module produced by the same evidence that writes the M24 tool
+ *  documentation (script/m24/generate-tool-doc.ts), so the status bar and the
+ *  docs cannot disagree. A language whose wave leg is not verified carries I0
+ *  (unverified); its reason lives in the sealed disposition or the failed leg. */
+export const CLAIM_LEVELS: Record<LaunchLanguage, string> = GENERATED_CLAIM_LEVELS as Record<LaunchLanguage, string>
 
 /** Human-readable expansion of a claim level — CONTRACT §2 ladder (single source).
  *
