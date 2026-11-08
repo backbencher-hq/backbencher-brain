@@ -2,17 +2,17 @@
   "issue": "M55.G1",
   "code": "G1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 17,
-  "passed": 16,
+  "passed": 17,
   "failed": 0,
-  "realFailed": 1,
+  "realFailed": 0,
   "negativeCases": 8,
-  "currentCommit": "da68260def9569f5d4eb1b410979f64dddfde26c",
+  "currentCommit": "1ae42bb72bc591edec017d2d24c74c1e3e551b26",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-08T07:14:53.353Z",
+  "generatedAt": "2026-11-08T07:58:22.348Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -48,9 +48,7 @@
       }
     ]
   },
-  "failures": [
-    "G1: the M55 ledger is structurally valid at HEAD — evidence-stale:G1(script/m55/verify-governance.ts)"
-  ],
+  "failures": [],
   "limitations": [
     "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
     "Relevance-based staleness mirrors M24.G1: a file not listed for an issue does not invalidate its evidence. The list is maintained here; a new component must be added to it when its issue lands.",
@@ -58,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T07:14:53.359Z",
-    "contentSha256": "c06702c7e2f1668c2d401e81745bd9d783398b8b7b475fa9b52b34e8e77729b3"
+    "sealedAt": "2026-11-08T07:58:22.356Z",
+    "contentSha256": "3ac2eb252f9d16f5196ceabfdad367f9a6a882942b921ddc4a6ebd4f0dfb02cd"
   }
 }

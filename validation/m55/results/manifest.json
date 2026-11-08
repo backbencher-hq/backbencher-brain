@@ -20,7 +20,7 @@
       "code": "G1",
       "githubIssue": 773,
       "tool": "m55-governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); §15 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where the M44 and M53 gates also exit 0; exits non-zero for each planted mutant ledger (missing evidence file, stale commit pin, no acceptance criteria, a closable issue behind a planned prerequisite)",
@@ -33,14 +33,14 @@
         "verify-chain + CI verify:fast wiring present (machine-read from package.json)"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 14,
         "failed": 0,
         "realFailed": 1,
         "negativeCases": 8,
-        "currentCommit": "da68260def9569f5d4eb1b410979f64dddfde26c",
+        "currentCommit": "1ae42bb72bc591edec017d2d24c74c1e3e551b26",
         "blockedReason": "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently."
       }
     },
@@ -280,11 +280,11 @@
         "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 37,
-        "failed": 4,
+        "passed": 39,
+        "failed": 2,
         "realFailed": 11,
         "negativeCases": 5,
-        "currentCommit": "988f33cd8fc507afb36e4389b10c6065f169d3df",
+        "currentCommit": "fcd9133269985c30a9e9982c649224c172bb33d1",
         "blockedReason": "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked."
       },
       "handoffIssue": 816
@@ -292,7 +292,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T07:14:53.358Z",
-    "contentSha256": "8d1f1b15c27d60749023a69be3dcd61a0805c855fab712fb301e9b5fd860a761"
+    "sealedAt": "2026-11-08T07:58:22.355Z",
+    "contentSha256": "80002fc7e2a190b09217d88eb26e9cb5c9c11c2f82220e6b01ecab56acb29f4c"
   }
 }
