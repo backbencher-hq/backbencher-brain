@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "protobuf",
   "raw": {
     "definition": {
@@ -846,7 +846,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:24:29.161Z",
-    "contentSha256": "c887647f083b54c2e4bff6042a5b23ef911843a2a72c1e384eaf7cf27f1243b9"
+    "sealedAt": "2026-11-08T21:09:49.104Z",
+    "contentSha256": "39f0757cb10c4bfeff42f0e9ffcfd666a969438f4d69a6dc9995de1287527513"
   }
 }

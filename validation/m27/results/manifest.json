@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 616,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,14 +29,14 @@
         "Evidence persisted at validation/m27/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "status": "known-gap",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 71,
-        "failed": 0,
+        "passed": 70,
+        "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "not verified at 2106cea27041b3dffb9a0f3c8180bbaa216edc6c: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
+        "blockedReason": "not verified at a4a58c5e1911be6c4460ff428bbea0c3b4f332e2: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
       }
     },
     {
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:37:04.119Z",
-    "contentSha256": "49a2c99eab36650f80e3ba61a82a59d53566c03b108d165e1f040815ff0727ba"
+    "sealedAt": "2026-11-08T22:07:06.895Z",
+    "contentSha256": "be8dcf4a23b6ccd622b54a6bd668fa3de727208c4aa52ee3bffb17068b755039"
   },
-  "updatedAt": "2026-11-08T09:37:04.119Z"
+  "updatedAt": "2026-11-08T22:07:06.895Z"
 }

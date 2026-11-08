@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "730cb3d432ec7c094ba40de2af2bb5c06a17b850",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "groovy",
   "raw": {
     "definition": {
@@ -343,7 +343,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:14:12.072Z",
-    "contentSha256": "5b6a94fad63c48f6209d57a1b89918ec25fe61fabe7a205d2e00f75e06fc3730"
+    "sealedAt": "2026-11-08T21:09:03.008Z",
+    "contentSha256": "4011b407d6c18bae61ad41b65870c128b7b939e01b799ad4c1fadc55814e958a"
   }
 }

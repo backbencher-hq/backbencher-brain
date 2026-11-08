@@ -3,18 +3,18 @@
   "code": "E4",
   "milestone": "M25",
   "status": "verified",
-  "checks": 56,
-  "passed": 56,
+  "checks": 95,
+  "passed": 95,
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negativeCases": 5,
-  "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+  "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
   "evidenceFile": "E4.json",
   "publishRecord": "validation/m25/results/E4-openvsx.json",
   "vsix": "ide/vscode/bb-lsp-vscode-0.1.0.vsix",
-  "generatedAt": "2026-11-08T09:04:14.715Z",
+  "generatedAt": "2026-11-08T21:29:25.841Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:04:14.715Z",
-    "contentSha256": "a59345cc243aecca5f48f6c9d05e06090f2189b1c8bf95196817b6dd66013f05"
+    "sealedAt": "2026-11-08T21:29:25.841Z",
+    "contentSha256": "b0af9dfc5dcf37faeb3a2f71ef61244a043fa32ef114b88c7f4487c41bcca5c5"
   }
 }

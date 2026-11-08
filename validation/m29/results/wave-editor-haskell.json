@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "haskell",
   "raw": {
     "definition": {
@@ -330,7 +330,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:24:43.457Z",
-    "contentSha256": "17a4805acd02dd0e9f401aa2d5cbbbb06d217b6939e4b9d0ac6446868d61ac79"
+    "sealedAt": "2026-11-08T21:10:07.183Z",
+    "contentSha256": "89777d12062813d12133efe4a5e9f119c98d5eb840cc500a106ac98c6af4c078"
   }
 }

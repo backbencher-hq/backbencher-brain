@@ -1,5 +1,5 @@
 {
-  "commit": "7152eeae15ee4a964621b62426f250e259fdb933",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "gates": {
     "m24-closure": {
       "rc": 0,
@@ -95,7 +95,7 @@
     },
     "m29-precision-ledger": {
       "rc": 0,
-      "verdict": "VERIFIED (19/19 passed, 5 negatives)"
+      "verdict": "VERIFIED (22/22 passed, 8/8 negatives)"
     },
     "m29-precision-improvements": {
       "rc": 0,
@@ -106,8 +106,8 @@
       "verdict": "VERIFIED (13/13 passed, 3 negatives)"
     },
     "m29-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)"
+      "rc": 1,
+      "verdict": "KNOWN-GAP (25/32 passed, 3 negatives)"
     },
     "m42-enrichment": {
       "rc": 0,
@@ -134,8 +134,8 @@
       "verdict": "VERIFIED (71/71 passed, 7/7 mutants caught, 0 not judged)"
     },
     "m42-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (33/33 passed, 7 negatives)"
+      "rc": 1,
+      "verdict": "KNOWN-GAP (28/33 passed, 7 negatives)"
     },
     "m44-hub-tree": {
       "rc": 0,
@@ -151,7 +151,7 @@
     },
     "m44-hub-list": {
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 7152eeae)"
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ a4a58c5e)"
     },
     "m44-usages-fallback": {
       "rc": 0,
@@ -162,8 +162,8 @@
       "verdict": "VERIFIED (20/20 passed, 6/6 mutants caught)"
     },
     "m44-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (53/53 passed, 8 negatives)"
+      "rc": 1,
+      "verdict": "KNOWN-GAP (48/53 passed, 8 negatives)"
     }
   }
 }

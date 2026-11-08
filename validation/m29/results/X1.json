@@ -2,28 +2,36 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 32,
-  "passed": 32,
-  "failed": 0,
-  "failures": [],
+  "passed": 25,
+  "failed": 7,
+  "failures": [
+    "X1: M26 ladder run green at HEAD: G1: KNOWN-GAP (68/70 passed, 10 negative)  (exit=1)",
+    "X1: M27 ladder run green at HEAD: G1: KNOWN-GAP (72/73 passed, 11 negative)  (exit=1)",
+    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (77/79 passed, 17 negative)  (exit=1)",
+    "X1: M29-R2 ladder run green at HEAD: R2: KNOWN-GAP (378/430 passed, 9/9 mutants, 2 terminal disposition(s))  (exit=1)",
+    "X1: M29-R3 ladder run green at HEAD: R3: KNOWN-GAP (27/28 passed, 6 negatives)  (exit=1)",
+    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1,R2,R3",
+    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:R2 not evidence-verified; pre1:R3 not evidence-verified"
+  ],
   "negativeCases": 3,
   "suiteExits": {
     "M24": 0,
     "M25": 0,
-    "M26": 0,
-    "M27": 0,
-    "M28": 0,
+    "M26": 1,
+    "M27": 1,
+    "M28": 1,
     "M29-R1": 0,
-    "M29-R2": 0,
-    "M29-R3": 0,
+    "M29-R2": 1,
+    "M29-R3": 1,
     "M29-R5": 0,
     "M29-R4": 0,
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
-  "sourceFingerprint": "8a5d2187b576dda7564609957cfb0af57d3fa0e3aaa337b00f9e89f3fed924a4",
+  "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
+  "sourceFingerprint": "dc703da8ba1a1bb473b605af2f39896f3d17f3c6e64592b760efc5da2ac097f1",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -58,7 +66,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-08T09:31:12.020Z",
+  "generatedAt": "2026-11-08T22:05:21.386Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -67,7 +75,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:31:12.021Z",
-    "contentSha256": "34f3b0e64cf7a3cc3a5887d1a4d8442590df5c510423033b1e9ba5131235edfe"
+    "sealedAt": "2026-11-08T22:05:21.386Z",
+    "contentSha256": "8214c37d4e222fbfb564b6e4f3b2b8fcf8af2dac535a09a5961db5f94839fc18"
   }
 }

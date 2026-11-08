@@ -3,7 +3,7 @@
   "milestone": "M24",
   "githubMilestone": 24,
   "title": "bb_lsp — The Server (IDE Program v0)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-08-31T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 487,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "authority, ledger, closure gate, npm run verify wiring",
       "acceptanceCriteria": [
         "machine-readable ledger with all 11 M24 issues",
@@ -39,12 +39,12 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "status": "verified",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 23,
-        "failed": 1,
+        "passed": 24,
+        "failed": 0,
         "negativeCases": 11,
         "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -110,7 +110,7 @@
       "code": "L1",
       "githubIssue": 490,
       "tool": "lsp-server",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "server lifecycle, capabilities advertisement, stdio transport, project resolution",
       "acceptanceCriteria": [
         "initialize/shutdown handshake works over stdio",
@@ -123,15 +123,15 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "status": "verified",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
-        "passed": 141,
-        "failed": 1,
+        "passed": 142,
+        "failed": 0,
         "negativeCases": 24,
         "blockedReason": "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
-        "realFailed": 1,
+        "realFailed": 0,
         "mutantsCaught": 34,
         "mutantsTotal": 34
       }
@@ -140,7 +140,7 @@
       "code": "L2",
       "githubIssue": 491,
       "tool": "lsp-hover",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "hover with signature, usage count, evidence class, stale marker",
       "acceptanceCriteria": [
         "hover returns signature plus usage count plus evidence class",
@@ -153,15 +153,15 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "status": "verified",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
-        "passed": 55,
-        "failed": 3,
+        "passed": 59,
+        "failed": 0,
         "negativeCases": 14,
         "blockedReason": "index-sourced only; no compiler-backed types (complement stance)",
-        "realFailed": 3,
+        "realFailed": 0,
         "mutantsCaught": 6,
         "mutantsTotal": 6
       }
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -200,7 +200,7 @@
       "code": "L4",
       "githubIssue": 493,
       "tool": "lsp-symbols",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "document symbols and workspace symbols from the index",
       "acceptanceCriteria": [
         "document symbols reflect indexed structure",
@@ -213,15 +213,15 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "status": "verified",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
-        "passed": 45,
-        "failed": 5,
+        "passed": 50,
+        "failed": 0,
         "negativeCases": 14,
         "blockedReason": "index-sourced only; hierarchy depth limited to what the analyzer stored via owner_symbol_id",
-        "realFailed": 5,
+        "realFailed": 0,
         "mutantsCaught": 10,
         "mutantsTotal": 10
       }
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,7 +274,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
         "passed": 26,
@@ -288,7 +288,7 @@
       "code": "D1",
       "githubIssue": 496,
       "tool": "lsp-docs",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "tool documentation truthful per contract vocabulary, claim levels published",
       "acceptanceCriteria": [
         "documentation states claim levels and limitations",
@@ -301,15 +301,15 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "e3abd7b5d7b9ea348ec05d33e5bea5b7c5a37a4f",
+        "status": "verified",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
-        "passed": 44,
-        "failed": 3,
+        "passed": 47,
+        "failed": 0,
         "negativeCases": 6,
         "blockedReason": "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent",
-        "realFailed": 3
+        "realFailed": 0
       }
     },
     {
@@ -330,10 +330,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m24/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 69,
+        "passed": 107,
         "failed": 0,
         "negativeCases": 6,
         "blockedReason": "Closure audit re-runs the full M24 suite at the current commit; pass 2 proves evidence regenerates byte-identical modulo DECLARED variable fields: the generatedAt timestamp and measured latency samples (p95WarmMs), whose pass/fail verdict must still be identical."
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T20:06:56.513Z",
-    "contentSha256": "292c936c1a760f774dde06ef14e1163a8303a7ffbffee89a25ababdbd09511d4"
+    "sealedAt": "2026-11-08T22:07:06.575Z",
+    "contentSha256": "d5d7cddb3f48977ce39a2db4990d0d3fde7b37ec7213c1a21321134391887a26"
   }
 }

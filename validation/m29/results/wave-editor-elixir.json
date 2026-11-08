@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "elixir",
   "raw": {
     "definition": {
@@ -309,7 +309,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:24:39.939Z",
-    "contentSha256": "a9b91c15cf71962e7fe016ab3e2d3b3875bb4c5c0ce655435b309bcf5a8ce0b5"
+    "sealedAt": "2026-11-08T21:10:02.806Z",
+    "contentSha256": "46d0261d565a2447b3d6b4202d132a1ea476824ddef673ad7a76543ffaa1f394"
   }
 }

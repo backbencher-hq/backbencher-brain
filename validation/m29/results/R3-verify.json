@@ -1,12 +1,12 @@
 {
-  "status": "verified",
-  "passed": 28,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 27,
+  "failed": 1,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
-  "relevantInputsHash": "cabf52a7f051a06e20bf68488f2899bfc6a22866",
+  "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
+  "relevantInputsHash": "9d7fddc418d241e2ebc4ccd978833a7fd41da0c4",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "sourceFingerprint": "b82775474d328a36476e2b3e623efaaebcbc4e34fa73e5eb478f09e9fcfeeb5d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -20,11 +20,13 @@
     "script/m29/giant-repo-budget.ts"
   ],
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-11-08T09:21:03.101Z",
-  "details": [],
+  "generatedAt": "2026-11-08T21:54:48.999Z",
+  "details": [
+    "R2: relevant inputs unchanged since the evidence run: evidence=cabf52a7f051a06e20bf68488f2899bfc6a22866 vs current=9d7fddc418d241e2ebc4ccd978833a7fd41da0c4 — re-run giant-repo-budget.ts --reuse to refresh"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:21:03.102Z",
-    "contentSha256": "809c740c9b751ec7f0a10f6292b90ab2680347a625f2ef554cdc38109601ceff"
+    "sealedAt": "2026-11-08T21:54:49.000Z",
+    "contentSha256": "44dc391e7ce0fa839fc60933f781cb1371ae8c46a46d42df8d02bec0bbe35ae2"
   }
 }

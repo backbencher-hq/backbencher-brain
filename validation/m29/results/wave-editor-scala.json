@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "730cb3d432ec7c094ba40de2af2bb5c06a17b850",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "scala",
   "raw": {
     "definition": {
@@ -332,7 +332,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:14:09.885Z",
-    "contentSha256": "95b5fba41a296bd8eed519ed241f199e394dfb2a62a06a286546cad41bee751c"
+    "sealedAt": "2026-11-08T21:09:00.733Z",
+    "contentSha256": "510a563e52779f2ee56757f3aea5b96c304544e23f2d5125473d3226095b4c20"
   }
 }

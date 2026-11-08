@@ -3,7 +3,7 @@
   "milestone": "M42",
   "githubMilestone": 42,
   "title": "The Interactive Hover (IDE v6)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m42/M42-MASTER-PLAN.md (Issues / Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§12 Hover Interaction Rules, M42 amendment)",
   "prerequisite": "M29 completion bar met — verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
@@ -12,7 +12,7 @@
       "code": "G1",
       "githubIssue": 648,
       "tool": "governance-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract §12)",
       "acceptanceCriteria": [
         "ledger structurally sound, dependency order enforced, X1 last",
@@ -25,14 +25,14 @@
         "master plan lint-clean (banned vocabulary = zero)"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "6b5268bb42db9076cc676f044bb567a6ad6f71db",
+        "status": "known-gap",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 25,
-        "failed": 0,
+        "passed": 24,
+        "failed": 1,
         "negativeCases": 7,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "1 check(s) failed: G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
       }
     },
     {
@@ -53,7 +53,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
         "passed": 25,
@@ -84,7 +84,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
         "passed": 71,
@@ -116,7 +116,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
         "passed": 29,
@@ -148,7 +148,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
         "passed": 33,
@@ -180,7 +180,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
         "passed": 43,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
         "passed": 38,
@@ -225,7 +225,7 @@
       "code": "X1",
       "githubIssue": 655,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Program closure for M42 + launch bar: full-ladder audit at HEAD, OS matrix via CI, OpenVSX publish, known-gaps inventory fixed-or-owner-waived, owner spot-check prepared",
       "acceptanceCriteria": [
         "ladder green at HEAD (single-pass fixpoint, machine-readable mutant verdicts)",
@@ -238,12 +238,12 @@
         "board clean: placeholders closed, no silent gaps"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "7152eeae15ee4a964621b62426f250e259fdb933",
+        "status": "known-gap",
+        "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 33,
-        "failed": 0,
+        "passed": 28,
+        "failed": 5,
         "negativeCases": 7,
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)",
         "blockedReason": "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run."
@@ -252,7 +252,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T09:36:47.461Z",
-    "contentSha256": "b459042853a9e784a4364b60e53089f303c44f24c811805436237ff4d7df5aa2"
+    "sealedAt": "2026-11-08T22:05:31.760Z",
+    "contentSha256": "1133541b10ff01f2b6229ad504ff5ad076644b8ee8f9ef0153b3af5a7cbc6aa9"
   }
 }

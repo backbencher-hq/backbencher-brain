@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "graphql",
   "raw": {
     "definition": {
@@ -921,7 +921,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:24:27.307Z",
-    "contentSha256": "d6c7ef85151ab6feb919518758c08efca485c847fbbef319891248ed22780710"
+    "sealedAt": "2026-11-08T21:09:46.467Z",
+    "contentSha256": "d6708c95650bde56e36a17cd810842f7753b10e1590dcfb05bba85e9f1c82f18"
   }
 }

@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "yaml",
   "raw": {
     "definition": {
@@ -564,7 +564,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:24:17.781Z",
-    "contentSha256": "ea01d7d1c7a2c586ef48eef7ea249aea2641eae76f7f2982e7da5ca223e84631"
+    "sealedAt": "2026-11-08T21:09:32.103Z",
+    "contentSha256": "ec292f10bea5abbc314b0abd160bad21dabdd57e1c507040e5e341b2d893b735"
   }
 }

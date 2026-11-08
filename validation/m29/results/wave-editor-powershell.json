@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "731faa0d904bbe1b3c116350d39292627d81d0f4",
+  "commit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
   "language": "powershell",
   "raw": {
     "definition": {
@@ -339,7 +339,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T19:24:52.882Z",
-    "contentSha256": "8e58b786abdf9f7af6ef655c3e847aa38217e3cd0ed3e3a890cdc62c69fe9053"
+    "sealedAt": "2026-11-08T21:10:19.224Z",
+    "contentSha256": "05542ace5a2ec514002f50b9c20b1291b59b91dc2196622fbda8a1e54c4d582c"
   }
 }
