@@ -9,7 +9,7 @@
   "failures": [
     "S2: pinned editor host ran the clean-profile session — Error: Test run failed with code 1"
   ],
-  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+  "currentCommit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
   "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
   "evidenceFile": "D1-install.json",
   "mutantsCaught": 3,
@@ -19,7 +19,7 @@
     "ok: M: install doc launching without a clean profile passes",
     "ok: M: install doc omitting the status command passes"
   ],
-  "generatedAt": "2026-11-07T23:22:43.668Z",
+  "generatedAt": "2026-11-08T00:16:47.993Z",
   "limitations": [
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
     "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
@@ -27,7 +27,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:22:43.669Z",
-    "contentSha256": "b97ab4d464410c3e7bb6ea96153e094c79cb483973f9775ff0e9466c47305fbf"
+    "sealedAt": "2026-11-08T00:16:47.994Z",
+    "contentSha256": "e2818d4190b41e85990d4119286e7b7f8faffe28460471754255da46d3ecc1e1"
   }
 }

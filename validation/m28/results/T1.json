@@ -18,7 +18,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+  "currentCommit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
   "sourceFingerprint": "6f030d11b91462a55a7f22528b0888685faf3b8ebf3b816435d27f1eda5b88c0",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -28,14 +28,14 @@
   ],
   "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-11-07T23:32:27.113Z",
+  "generatedAt": "2026-11-08T00:25:00.056Z",
   "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
   "limitations": [
     "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:32:27.114Z",
-    "contentSha256": "17e89840acf36e6836266009b3ffe12997799c031a82ba46c5ae3e7ac8104168"
+    "sealedAt": "2026-11-08T00:25:00.057Z",
+    "contentSha256": "cd0068d3cb61aa1b6cff7f096307a70af9a8b2ee040e6d9906477530edfcc214"
   }
 }

@@ -88,7 +88,7 @@
     }
   ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+  "currentCommit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
   "sourceFingerprint": "e0d9c2f329912ecc435c95d5e454628d59d1a723a677178b1c4148308389ee4d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -100,14 +100,14 @@
     "script/m26/ambient-reality.ts",
     "script/m26/graph-core.ts"
   ],
-  "generatedAt": "2026-11-07T23:28:31.345Z",
+  "generatedAt": "2026-11-08T00:21:51.942Z",
   "limitations": [
     "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
     "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:28:31.346Z",
-    "contentSha256": "f0c3d41b0a747492e4ed98362f2aa6f001865bb2a0f4f0566674d614b40eba08"
+    "sealedAt": "2026-11-08T00:21:51.943Z",
+    "contentSha256": "5f8b3866b94a815c30cf66cf5b191a922a3f8a96154a621fc06e1dc7200aa981"
   }
 }

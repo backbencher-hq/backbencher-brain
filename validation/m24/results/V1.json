@@ -2,7 +2,7 @@
   "issue": "495",
   "code": "V1",
   "status": "verified",
-  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+  "currentCommit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
   "sourceFingerprint": "5218e730873641d38378ce9c519e2a9c80832517a794dc9b91b1db3298b407f9",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -12,7 +12,7 @@
   ],
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-11-07T23:18:10.958Z",
+  "generatedAt": "2026-11-08T00:12:22.214Z",
   "passed": 26,
   "failed": 0,
   "failures": [],
@@ -26,7 +26,7 @@
     {
       "runtime": "node-source",
       "status": "verified",
-      "commit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+      "commit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
       "machine": {
         "kernel": "Linux 7.2.15-76070215-generic",
         "kernelSource": "os.type() + os.release()",
@@ -46,43 +46,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 16.043429000000287,
+          "p95WarmMs": 10.351211999999578,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 5.220057000000452,
+          "p95WarmMs": 3.5705950000001394,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 7.501984000000448,
+          "p95WarmMs": 3.01190299999962,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 5.551072999999633,
+          "p95WarmMs": 2.9185150000002977,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 4.295329999999922,
+          "p95WarmMs": 2.787569999999505,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 4.2481589999997595,
+          "p95WarmMs": 3.183495000000221,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 4.010647000000063,
+          "p95WarmMs": 4.966793999999936,
           "samples": 60,
           "passed": true
         }
@@ -91,7 +91,7 @@
     {
       "runtime": "node-dist",
       "status": "verified",
-      "commit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+      "commit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
       "machine": {
         "kernel": "Linux 7.2.15-76070215-generic",
         "kernelSource": "os.type() + os.release()",
@@ -111,43 +111,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 8.485042999998768,
+          "p95WarmMs": 6.235099999999875,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 2.7279899999994086,
+          "p95WarmMs": 2.382699000001594,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 2.8972279999998136,
+          "p95WarmMs": 2.6778699999995297,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 2.4598769999993237,
+          "p95WarmMs": 2.5903090000010707,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 2.3961770000005345,
+          "p95WarmMs": 2.4901599999993778,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 2.6101090000011027,
+          "p95WarmMs": 2.525775000000067,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 3.9917100000002392,
+          "p95WarmMs": 3.312028000000282,
           "samples": 60,
           "passed": true
         }
@@ -156,7 +156,7 @@
     {
       "runtime": "bun-source",
       "status": "verified",
-      "commit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+      "commit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
       "machine": {
         "kernel": "Linux 7.2.15-76070215-generic",
         "kernelSource": "os.type() + os.release()",
@@ -176,43 +176,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 9.694349000001239,
+          "p95WarmMs": 8.400994999999966,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 6.18932500000119,
+          "p95WarmMs": 4.289059000000634,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 5.899282999998832,
+          "p95WarmMs": 3.386839000000691,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 5.3457259999995586,
+          "p95WarmMs": 3.199268000000302,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 12.968941999999515,
+          "p95WarmMs": 2.79996200000096,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 12.664633000000322,
+          "p95WarmMs": 3.046154999999999,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 5.446619999998802,
+          "p95WarmMs": 3.081326999999874,
           "samples": 60,
           "passed": true
         }
@@ -291,7 +291,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:18:10.963Z",
-    "contentSha256": "7d52430057cadb6df6f55d30a1ce6569b53c61d6d5035772902950d831e4fc26"
+    "sealedAt": "2026-11-08T00:12:22.218Z",
+    "contentSha256": "c8d65a11330ce2bf664384608254f3950b5c7ec2bd3d4d0ae166e15fb4e39a64"
   }
 }

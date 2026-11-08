@@ -10,7 +10,7 @@
     "X1: E5 verifier passes at HEAD, or is a declared block with a recorded reason — E5: KNOWN-GAP (0/0 in-editor checks passed)  (exit=1)",
     "X1: D1 verifier passes at HEAD, or is a declared block with a recorded reason — D1: KNOWN-GAP (21/22 passed, 4 negative)  (exit=1)",
     "X1: D1i verifier passes at HEAD, or is a declared block with a recorded reason — S4 — deactivate the clean profile  (exit=1)",
-    "X1: v1 completion bar audited item-by-item — zero violations — bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)",
+    "X1: v1 completion bar audited item-by-item — zero violations — bar1: VS Code I3 (pinned in-editor run) not verified; bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)",
     "X1: D1 regeneration run passes — D1: KNOWN-GAP (21/22 passed, 4 negative)  (exit=1)"
   ],
   "negativeCases": 3,
@@ -68,10 +68,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "b995cdc25d74ee22efbe51569d9bfbef9dca3672",
+  "currentCommit": "9ea2efb6842b90e4f2e38b9858e879f2e55e0533",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-07T23:25:29.334Z",
+  "generatedAt": "2026-11-08T00:19:17.583Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -79,7 +79,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:25:29.335Z",
-    "contentSha256": "a663856f1c5cd0fcb7245a9b0d58071f3b34bd3c27b310ca8bcb9554a4eef812"
+    "sealedAt": "2026-11-08T00:19:17.584Z",
+    "contentSha256": "2a5d8acfa80a01cc77b4b77d9ee767340a2bee80ea63a5f7ebcc9cc8a375e381"
   }
 }

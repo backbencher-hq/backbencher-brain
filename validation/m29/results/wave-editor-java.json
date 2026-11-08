@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "2b8716e4ebfde1e898e6f4d77abbc3b94c63d386",
+  "commit": "30d8fa775d110aed69f3da04e0de44e920d86cc2",
   "language": "java",
   "raw": {
     "definition": {
@@ -331,7 +331,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-07T23:43:53.951Z",
-    "contentSha256": "8d413c1f3ea2046c67d1d86b404f9c0cbb9fb9dfea9a38f4d6e57a1c4d765c6a"
+    "sealedAt": "2026-11-08T00:36:09.087Z",
+    "contentSha256": "2ac4eeff923e7cc36217455f759318f32fdfac4821e58a28dffaee3bdcaf9b85"
   }
 }
