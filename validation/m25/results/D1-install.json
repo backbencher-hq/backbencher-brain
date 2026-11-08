@@ -2,12 +2,14 @@
   "issue": "506",
   "code": "D1-install",
   "milestone": "M25",
-  "status": "verified",
-  "checks": 21,
-  "passed": 21,
-  "failed": 0,
-  "failures": [],
-  "currentCommit": "b1fa1742779952e62f109e0f72c444c361b88ad9",
+  "status": "known-gap",
+  "checks": 12,
+  "passed": 11,
+  "failed": 1,
+  "failures": [
+    "S2: pinned editor host ran the clean-profile session — Error: Test run failed with code 1"
+  ],
+  "currentCommit": "0dff18c8c66b62777fe2a2c589aa00709c4e2694",
   "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
   "evidenceFile": "D1-install.json",
   "mutantsCaught": 3,
@@ -17,7 +19,7 @@
     "ok: M: install doc launching without a clean profile passes",
     "ok: M: install doc omitting the status command passes"
   ],
-  "generatedAt": "2026-11-08T01:46:44.523Z",
+  "generatedAt": "2026-11-08T01:59:12.721Z",
   "limitations": [
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
     "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
@@ -25,7 +27,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T01:46:44.523Z",
-    "contentSha256": "61c3baef99953b05631ef01e2add95357682517b3cd08435ac2e79c17feb1f56"
+    "sealedAt": "2026-11-08T01:59:12.722Z",
+    "contentSha256": "b894d5e4b63081101df2c116522b8550a0d99dae76bf443ad0a9840c2cb6d039"
   }
 }

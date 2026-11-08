@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "d8c064bc4d2c0b378e70fe01b96470a3ac6e7559",
+  "commit": "6209b09f1d7f991cd53daf90cc42015f08c6088d",
   "language": "zig",
   "raw": {
     "definition": {
@@ -412,7 +412,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T01:29:42.462Z",
-    "contentSha256": "0326d21d4ace56e5049747a0170e12709f13fd59f3c62dbee6537118bd7fca4e"
+    "sealedAt": "2026-11-08T02:20:59.353Z",
+    "contentSha256": "70ddac41f563a65b60b636fda5af458e0e4a1a27a6efe9582e01a0b22aa3c3ea"
   }
 }
