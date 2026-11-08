@@ -253,20 +253,21 @@ check("T2: hand-written tool notes are deleted", !existsSync(path.join(SITE, "sr
   }
 }
 
-// N2 (full rebuild mutant): hand-type a stale version into the atlas hero and prove
-// the rendered-output gate FAILS. This is the end-to-end proof that a
+// N2 (full rebuild mutant): hand-type a stale version into the homepage footer
+// (the surface that carries the generated version in the 2026-11-08 identity) and
+// prove the rendered-output gate FAILS. This is the end-to-end proof that a
 // hand-typed claim cannot survive this verifier.
 if (buildOk) {
-  const heroPath = path.join(SITE, "src/components/atlas/AtlasHero.tsx")
+  const heroPath = path.join(SITE, "src/components/site/SiteFooter.tsx")
   // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
   // `git commit -a` on the shared checkout once swept the in-repo backup AND
   // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
-  const heroBackup = path.join(tmpdir(), `atlas-hero-t2bak-${process.pid}.tsx`)
+  const heroBackup = path.join(tmpdir(), `site-footer-t2bak-${process.pid}.tsx`)
   cpSync(heroPath, heroBackup)
   let mutantCaught = false
   let mutantDetail = ""
   try {
-    const mutated = read("website/src/components/atlas/AtlasHero.tsx").replace("{TRUTH.version}", `{"9.9.9"}`)
+    const mutated = read("website/src/components/site/SiteFooter.tsx").replace("{TRUTH.version}", `{"9.9.9"}`)
     writeFileSync(heroPath, mutated)
     try {
       execFileSync("npm", ["run", "build"], { cwd: SITE, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 420_000 })
