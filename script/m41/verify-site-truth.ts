@@ -263,17 +263,15 @@ check("T2: hand-written tool notes are deleted", !existsSync(path.join(SITE, "sr
 // prove the rendered-output gate FAILS. This is the end-to-end proof that a
 // hand-typed claim cannot survive this verifier.
 if (buildOk) {
-  const heroPath = path.join(SITE, "src/components/cobalt/CobaltColophon.tsx")
   // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
   // `git commit -a` on the shared checkout once swept the in-repo backup AND
   // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
-  // The homepage render sites of the generated version. The colophon is no longer
-  // on the homepage (the page was redesigned to AtlasHero + SiteFooter), so the
-  // mutant targets every site that actually renders it: mutating one while
-  // another still prints the honest version proves nothing.
+  // The homepage render sites of the generated version are AtlasHero + SiteFooter.
+  // There used to be a third backup of src/components/cobalt/CobaltColophon.tsx
+  // here; the homepage redesign removed that component, and the dead cpSync made
+  // this verifier crash (ENOENT) on any clean checkout that did not carry the
+  // uncommitted redesign files. Only tracked, actually-mutated files are backed up.
   const VERSION_SITES = ["website/src/components/atlas/AtlasHero.tsx", "website/src/components/site/SiteFooter.tsx"]
-  const heroBackup = path.join(tmpdir(), `homepage-t2bak-${process.pid}.tsx`)
-  cpSync(heroPath, heroBackup)
   const siteBackups = VERSION_SITES.map((rel) => ({ rel, bytes: read(rel) }))
   let mutantCaught = false
   let mutantDetail = ""
@@ -289,8 +287,6 @@ if (buildOk) {
       mutantDetail = "mutant build failed for the wrong reason"
     }
   } finally {
-    cpSync(heroBackup, heroPath)
-    rmSync(heroBackup)
     for (const site of siteBackups) writeFileSync(path.join(ROOT, site.rel), site.bytes)
   }
   // The gate rule the mutant must violate, evaluated on the mutant output:
