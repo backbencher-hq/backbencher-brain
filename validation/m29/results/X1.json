@@ -2,33 +2,28 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 32,
-  "passed": 28,
-  "failed": 4,
-  "failures": [
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (78/79 passed, 17 negative)  (exit=1)",
-    "X1: M29-R3 ladder run green at HEAD: R3: KNOWN-GAP (27/28 passed, 6 negatives)  (exit=1)",
-    "X1: every M29 ledger item (except X1 itself) is evidence-verified: G1,R3",
-    "X1: closure preconditions audited — zero violations: pre1:G1 not evidence-verified; pre1:R3 not evidence-verified"
-  ],
+  "passed": 32,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
   "suiteExits": {
     "M24": 0,
     "M25": 0,
     "M26": 0,
     "M27": 0,
-    "M28": 1,
+    "M28": 0,
     "M29-R1": 0,
     "M29-R2": 0,
-    "M29-R3": 1,
+    "M29-R3": 0,
     "M29-R5": 0,
     "M29-R4": 0,
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
-  "sourceFingerprint": "78eadda415fa65fb826e5301875df2904d567d5816e532a16054eb064db1bc41",
+  "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
+  "sourceFingerprint": "346b9c795f2ae6cef9b4c2d43a151580e809a7f20d3793f1b68d2d2874d7ee69",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m29/verify-closure.ts",
@@ -63,7 +58,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-08T23:20:03.255Z",
+  "generatedAt": "2026-11-09T00:27:27.133Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -72,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T23:20:03.255Z",
-    "contentSha256": "1af6d48cd8d4c190f3ca26d45d9a3fe1b37f73268fe49d70c6c0380019bb88bc"
+    "sealedAt": "2026-11-09T00:27:27.133Z",
+    "contentSha256": "f563fc2bec12681e52f51d162075bf21f74d55341e4fd201ab4ba7dedaf880a9"
   }
 }

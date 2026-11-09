@@ -2,19 +2,16 @@
   "issue": "M27.G1",
   "code": "G1",
   "milestone": "M27",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 71,
   "passed": 71,
   "failed": 0,
   "negativeCases": 11,
-  "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
-  "workingTreeRelevantChanges": [
-    "ide/helix/languages.toml",
-    "ide/zed/bb-lsp/extension.toml"
-  ],
+  "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-08T23:23:16.530Z",
+  "generatedAt": "2026-11-09T00:33:36.742Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
@@ -26,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T23:23:16.532Z",
-    "contentSha256": "8893e74db152371269e1fc11995770b31443022ebfc39aa6a882f458b11a7169"
+    "sealedAt": "2026-11-09T00:33:36.744Z",
+    "contentSha256": "ce4278f00ca2b0e9fc91a610b219525737ecc106061a11864bd78bcbba1f675b"
   }
 }

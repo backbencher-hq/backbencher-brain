@@ -2,15 +2,11 @@
   "issue": "694",
   "code": "X1",
   "milestone": "M44",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 53,
-  "passed": 50,
-  "failed": 3,
-  "failures": [
-    "X1: M28 ladder run green at HEAD: G1: KNOWN-GAP (78/79 passed, 17 negative)  (exit=1)",
-    "X1: M29 ladder run green at HEAD: FAIL: G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) — exit=1  (exit=1)",
-    "X1: closure preconditions audited — zero violations: pre2:ladder leg M28 failed (exit=1); pre2:ladder leg M29 failed (exit=1); 5 fork leg(s) declared absent WITH a reason (allowed by contract §2 I4/§8.3)"
-  ],
+  "passed": 53,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 8,
   "suiteExits": {
     "E5": 0,
@@ -19,8 +15,8 @@
     "M25": 0,
     "M26": 0,
     "M27": 0,
-    "M28": 1,
-    "M29": 1,
+    "M28": 0,
+    "M29": 0,
     "M42-H1": 0,
     "M42-H2": 0,
     "M42-H3": 0,
@@ -37,7 +33,7 @@
     "e5": "validation/m25/results/E5.json (re-run at this HEAD — full suite incl. the M44 hub legs)",
     "e6": "validation/m25/results/F-CURSOR.json + F-ANTIGRAVITY.json (re-run at this HEAD, terminal gate 26→88); F-WINDSURF blocked-with-reason"
   },
-  "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+  "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
   "verifierCommand": "npx tsx script/m44/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -51,7 +47,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-08T23:22:57.187Z",
+  "generatedAt": "2026-11-09T00:32:57.763Z",
   "limitations": [
     "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
@@ -60,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T23:22:57.187Z",
-    "contentSha256": "1acf1442e4388a9c3aefab93faed224e614c188b2acc27cf726d771d9e2a3e94"
+    "sealedAt": "2026-11-09T00:32:57.763Z",
+    "contentSha256": "2b433b7538395ef9f76d98db1bf57c6237550c447e6e189e1d5b47704a139a90"
   }
 }

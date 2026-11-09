@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 616,
       "tool": "governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,14 +29,14 @@
         "Evidence persisted at validation/m27/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "status": "verified",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 71,
         "failed": 0,
         "negativeCases": 11,
-        "blockedReason": "not verified at 2aeb9acc090f18553542713e60d427ed451d331f: G1: M26 bar — M26 governance gate exits 0 at HEAD (spawned)"
+        "blockedReason": "not verified at 0b46b0e99223e2a52cb7172fb3e6f7414b2e370a: G1: every non-planned ledger item has matching persisted evidence at the current commit"
       }
     },
     {
@@ -203,8 +203,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T23:23:16.533Z",
-    "contentSha256": "8b74de43f11173b199705c7a675f1998a8f03d1ea2a4f7da37863e127e1021da"
+    "sealedAt": "2026-11-09T00:33:36.745Z",
+    "contentSha256": "7276102fececf85bd51cb0aea3f935673d1a2c7a45f64020de2867eba9f2e124"
   },
-  "updatedAt": "2026-11-08T23:23:16.533Z"
+  "updatedAt": "2026-11-09T00:33:36.745Z"
 }

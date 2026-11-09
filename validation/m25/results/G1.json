@@ -2,18 +2,16 @@
   "issue": "M25.G1",
   "code": "G1",
   "milestone": "M25",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 91,
   "passed": 91,
   "failed": 0,
   "negativeCases": 21,
-  "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
-  "workingTreeRelevantChanges": [
-    "script/m25/verify-packaging.ts"
-  ],
+  "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-08T22:07:06.607Z",
+  "generatedAt": "2026-11-09T00:33:36.405Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
@@ -23,10 +21,9 @@
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "no check failed - relevant uncommitted files at measure time: script/m25/verify-packaging.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T22:07:06.619Z",
-    "contentSha256": "bfab832f4dea823b3a3492b5125419e3f658c931925e594c27378ebc1b0f1b1f"
+    "sealedAt": "2026-11-09T00:33:36.417Z",
+    "contentSha256": "a02f5fdf57757bf9600fa6d17fc51f1966b9f5165c4409102ae668608b562dd8"
   }
 }

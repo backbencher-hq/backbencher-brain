@@ -12,7 +12,7 @@
       "code": "G1",
       "githubIssue": 648,
       "tool": "governance-gate",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract §12)",
       "acceptanceCriteria": [
         "ledger structurally sound, dependency order enforced, X1 last",
@@ -25,12 +25,12 @@
         "master plan lint-clean (banned vocabulary = zero)"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "status": "verified",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 24,
-        "failed": 1,
+        "passed": 25,
+        "failed": 0,
         "negativeCases": 7,
         "blockedReason": "1 check(s) failed: G1: M29 bar — M29 governance gate exits 0 at HEAD (spawned) — the relevant tree was clean at measure time"
       }
@@ -53,7 +53,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
         "evidenceFile": "H1.json",
         "passed": 25,
@@ -84,7 +84,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
         "evidenceFile": "H2.json",
         "passed": 71,
@@ -116,7 +116,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
         "evidenceFile": "H3.json",
         "passed": 29,
@@ -148,7 +148,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
         "evidenceFile": "H4.json",
         "passed": 33,
@@ -180,7 +180,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-hub.ts",
         "evidenceFile": "H5.json",
         "passed": 43,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
         "evidenceFile": "H6.json",
         "passed": 38,
@@ -239,11 +239,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+        "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
         "verifierCommand": "npx tsx script/m42/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 28,
-        "failed": 5,
+        "passed": 32,
+        "failed": 1,
         "negativeCases": 7,
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)",
         "blockedReason": "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run."
@@ -252,7 +252,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T23:20:14.757Z",
-    "contentSha256": "cc63928dd9fc3efe56a83a9c73f68e0b8c6ee0396601c7aa4760f86442995bb2"
+    "sealedAt": "2026-11-09T00:33:18.433Z",
+    "contentSha256": "265f4e83244a7601bbee9869d08fe117314abaa93a49d200d162d862fbca11d7"
   }
 }

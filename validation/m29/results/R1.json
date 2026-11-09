@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 7,
   "mutantsTotal": 7,
-  "currentCommit": "2aeb9acc090f18553542713e60d427ed451d331f",
+  "currentCommit": "0b46b0e99223e2a52cb7172fb3e6f7414b2e370a",
   "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
   "sourceFingerprint": "3fcaa518e55f0f0b898e3ce9a47aaf3175c2a5d7281490a38483cd81a2c87895",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
@@ -18,7 +18,7 @@
     "script/m29/wave-protocol.ts"
   ],
   "evidenceFile": "R1.json",
-  "generatedAt": "2026-11-08T23:19:43.643Z",
+  "generatedAt": "2026-11-09T00:27:13.423Z",
   "limitations": [
     "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
     "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T23:19:43.644Z",
-    "contentSha256": "0b6d8e924803458d6bb65a2644cfddf10a0a8ec7da5785e4d9207a2a5a8143d4"
+    "sealedAt": "2026-11-09T00:27:13.423Z",
+    "contentSha256": "49ede3cee31527d3587c2d067ba76bd0c7128733ee595953477cff74fd1fcd1c"
   }
 }
