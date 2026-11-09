@@ -461,6 +461,9 @@ async function cmdIndex(
     )
   } else {
     console.log(green(bold(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`, S), S))
+    // The product's thesis, at the moment a user has just produced evidence. TTY-only:
+    // piping `bb index` into a parser must keep the exact bytes it had before.
+    if (process.stdout.isTTY) console.log(dim("  Evidence is the answer — every number above was recorded by this run.", S))
   }
   if (missing === 0 && storeFailures > 0) {
     // The rollbacks happened but recovery saved every file: the index is complete and
@@ -1008,7 +1011,7 @@ export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
   program
     .name("bb")
-    .description("Backbencher Brain — universal code intelligence (40+ languages)")
+    .description("Backbencher Brain — evidence is the answer · code intelligence for 53 languages")
     // M33.S1: parity across all three version forms (-V was the only form before).
     .version(BACKBENCHER_BRAIN_VERSION, "-v, --version", "output the version number")
     // M22.W1: one logging story. Workers inherit BB_LOG_LEVEL from the parent
