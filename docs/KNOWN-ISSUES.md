@@ -90,8 +90,10 @@ they are named here with the measured reason and status:
   of a constant, and the site-embed gate was ported from the deleted terminal hero to
   the shipped atlas hero. C1 53/53 · D1 46/46 · T1 19/19 · G1 50/50 · X1 29/29, ledger
   closed.
-- **M61 — verifier machinery: UNFINISHED, and it blocks the last gate of
-  `verify:fast`.** M62's closure requires the M61 bar, whose ledger is open with five
+- **M61 — verifier machinery: UNFINISHED. It blocks the M62 closure in the LOCAL full
+  chain (`npm run verify`); it does not block CI, whose `verify:fast` is the
+  runner-certified subset and no longer carries the M62 gates (see
+  docs/RELEASE-PREP-0.1.0.md §11).** M62's closure requires the M61 bar, whose ledger is open with five
   red records. Measured defects (all in older lane scripts, not in the launch chain):
   `script/m24/verify-hover-latency.ts` writes `validation/m24/results/L6.json` as a bare
   write outside the sealing path, owns no lane record, is wired into no execution tier
