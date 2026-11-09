@@ -1,9 +1,9 @@
 # Skills inventory and gap analysis (2026-11-09)
 
-Status: audit only. No bb skill exists yet; `docs/drafts/public-repos/backbencher-skills/README.md`
-is the only skills artifact, and it describes categories, not skills. This page records what
-is installed today, what the product surface is, and the proposed catalog the first batch
-should be written against.
+Status: IMPLEMENTED 2026-11-09. The nine skills described below now exist in `skills/`, ship
+as `@backbencher/skills` with an installer (`bin/bb-skills.mjs`), and are gated by
+`script/verify-skills.ts` (167/167 checks, run by `npm test`). This page keeps the audit that
+produced them: what was installed before, what the product surface is, and the budget rules.
 
 ## 1. What is installed today
 
@@ -115,3 +115,22 @@ around a `stale` flag is worse than one that never installed bb).
 Not a fork of `docs/tools/` (reference it), not a wrapper that hides declarations, not a
 prompt that acts on tool output, and not a substitute for the installer: the skill can tell
 an agent `bb mcp` exists, but only the installer puts the server in the host's config.
+
+## 7. Implemented state (2026-11-09)
+
+- **Content:** `skills/skills/<name>/SKILL.md` — nine skills, 46–74 lines each, every
+  description a "use when" line, every file ending with the canonical optional-report
+  paragraph and containing the shared-rules line verbatim.
+- **Ownership:** each of the 16 public MCP tools is owned by exactly ONE skill
+  (`owner-tools` frontmatter); the gate fails on a gap or a double claim. CLI commands are
+  covered by the package README's quick reference.
+- **No attribution:** the shared-rules line each skill carries forbids `Co-Authored-By`,
+  `Generated with`, or any bb/Backbencher credit line; the gate blacklist-fails such phrases.
+- **Installer:** `npx @backbencher/skills install [--host claude|agents|copilot|user-claude]
+  [--dir <path>] [--dry-run] [--force] [--json]`, plus `verify` and `list`. Writes
+  `.bb-skills.json`, is idempotent, and refuses to overwrite a skill directory it did not
+  install. The gate exercises all five behaviours in a temp directory.
+- **Package:** `@backbencher/skills` v0.1.0, MIT, `files: [bin/, skills/, README.md, LICENSE]`.
+- **Release:** `script/release/split-public-repos.sh` now derives a third artifact
+  (`skills/` subtree → its own repo, from the SAME verified/redacted clone), and the brain
+  artifact excludes `website/` and `skills/`.
