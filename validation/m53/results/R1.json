@@ -43,7 +43,22 @@
     "m29-wave-protocol",
     "m29-precision-ledger",
     "m29-precision-improvements",
-    "m29-m29-docs"
+    "m29-m29-docs",
+    "m29-closure",
+    "m42-enrichment",
+    "m42-highlight",
+    "m42-hover-actions",
+    "m42-hub",
+    "m42-hub-nav",
+    "m42-rich-hover",
+    "m42-closure",
+    "m44-hub-tree",
+    "m44-impact-resolution",
+    "m44-legend",
+    "m44-hub-list",
+    "m44-usages-fallback",
+    "m44-usages-groups",
+    "m44-closure"
   ],
   "gates": [
     {
@@ -375,12 +390,12 @@
       "timedOut": false
     }
   ],
-  "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
+  "currentCommit": "87b4636189d4f0536217b47147a1516e297eba85",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-09T09:06:56.151Z",
+  "generatedAt": "2026-11-09T09:07:38.845Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T09:06:56.151Z",
-    "contentSha256": "29e3b67a0105dd6562bb13cf97199ff59b663d4c0c2b2302c6637df1c494464c"
+    "sealedAt": "2026-11-09T09:07:38.845Z",
+    "contentSha256": "28708d7285ed1e97e2fb2f060b399a9c896a7decbbcd877f7790b179f6d89ad3"
   }
 }
