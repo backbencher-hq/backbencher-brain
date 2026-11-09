@@ -442,3 +442,12 @@ validation/tools/**/work/t2-*/
 # Editor session log from the headless nvim A2 leg.
 .nvimlog
 **/.nvimlog
+
+# Local verification scratch (session caches, never source artifacts). The tracked
+# working material under .tmp-probe/ and the lane scratch under script/*/tmp are NOT
+# covered by these: they are committed evidence/reference trees.
+/.bb-verify/
+/.vscode-test/
+/.perf-fixtures/
+/.corpus*/
+/.tmp-*/
