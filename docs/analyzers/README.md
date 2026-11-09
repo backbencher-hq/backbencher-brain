@@ -40,7 +40,7 @@ Older artifacts, the `history/` pages, and the narrative inside individual lane 
 quote 43/44/45/46/47/48/49: those were the count at the revision the sentence describes, recorded as
 such (e.g. "the census scanned all 48 analyzers" is a measurement of that revision, not a claim about
 today). The contract above applies to CURRENT statements — this page, the repository README
-(`50 language analyzers`), and the gates' own output — and the three equalities the campaign depends
+(the repository README's `50 Tree-sitter analyzers`), and the gates' own output — and the three equalities the campaign depends
 on (analyzer = canonical page = fleet lane = F1 grammar-audit row = 50) are asserted by
 `script/m14/verify-analyzer-docs.ts` on every run.
 

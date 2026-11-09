@@ -57,7 +57,7 @@ Default. May be developed; may not ship behind any trust label.
 
 ### I1 — PROTOCOL-PASSED
 The capability passes an LSP-level verifier: a reference client harness issues
-real protocol requests against `bb lsp` and asserts response shape and
+real protocol requests against the LSP server (`dist/lsp/server.js --stdio`) and asserts response shape and
 content on fixtures. Precondition: harness exists under `script/mXX/`, has at
 least one positive and one negative case, and can fail.
 

@@ -1,7 +1,7 @@
 # Backbencher Brain (`bb`)
 
 **Evidence-first code intelligence, local-first and runtime-agnostic.** `bb` indexes a repository with
-**53 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
+**53 languages** through **50 Tree-sitter analyzers**, stores the result in a per-project SQLite database, and answers
 questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
 supported. No telemetry, no server, no account required.
 
@@ -16,9 +16,9 @@ missing answer is reported as missing rather than guessed. Embeddings are model-
 until `bb index --force` re-embeds them, and the answer says so instead of returning a mixed index
 as if it were one space.
 
-- **Docs index:** [`docs/README.md`](docs/README.md)
+- **Docs index:** [`docs/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/README.md)
 - **Indexing guide:** [`docs/indexing/README.md`](docs/indexing/README.md)
-- **Analyzers:** one canonical page per language — [`docs/analyzers/README.md`](docs/analyzers/README.md)
+- **Analyzers:** one canonical page per language — [`docs/analyzers/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/analyzers/README.md)
 - **Tools:** [`docs/tools/`](docs/tools/) (generated from the tool registry)
 
 ---
@@ -247,7 +247,7 @@ VS Code workspace (`<project>/.vscode/mcp.json`):
 
 When the CLI is installed globally, `command` is just `bb`. From a source checkout, use the absolute path
 to `bin/bb` (Node) or `bun run src/mcp/server.ts` (Bun) — see the
-[MCP, CLI and Indexer Guide](docs/MCP_CLI_INDEXER_GUIDE.md) for host setup for Claude Code, Cursor, Zed and
+[MCP, CLI and Indexer Guide](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/MCP_CLI_INDEXER_GUIDE.md) for host setup for Claude Code, Cursor, Zed and
 opencode, plus the stdout-safety and stdio lifecycle rules.
 
 `bb onboard <project>` writes a generated “use the bb tools” section into that project's `AGENTS.md` so an
@@ -266,7 +266,7 @@ and confines itself to the project, validates ASTs, writes atomically and reinde
 defaults, examples, returns, errors, limitations, performance, safety and evidence guidance); the generated
 human reference is [`docs/tools/`](docs/tools/). `bb --help` lists exactly these sixteen; the legacy tool
 names retired before the first public release are documented in
-[MCP_TOOL_MIGRATION.md](docs/MCP_TOOL_MIGRATION.md).
+[MCP_TOOL_MIGRATION.md](https://github.com/backbencher-hq/backbencher-brain/blob/main/archive/docs-pre-consolidation/MCP_TOOL_MIGRATION.md).
 
 ---
 
@@ -290,19 +290,26 @@ silently mixed. See EMBEDDINGS.md for the full provider list, precedence rules (
 
 ## Language support
 
-**53 language analyzers**, all first-class in discovery, parsing, relationship extraction and the
+**53 languages**, all first-class in discovery, parsing, relationship extraction and the
 cross-language graph:
 
 Bash, C, C#, C++, Clean, Clojure, CSS, Dart, Elixir, Erlang, F#, Go, GraphQL, Groovy, Haskell, HCL, HTML,
 Java, JavaScript, JSON, Julia, Kotlin, Lua, Make, Markdown, MATLAB, Nim, Objective-C, Perl, PHP, PowerShell,
-Protobuf, Python, R, Ruby, Rust, Scala, SCSS, Solidity, SQL, Svelte, Swift, TOML, TypeScript, VB, VBA, Vue,
-XML, YAML, Zig.
+Protobuf, Python, R, Ruby, Rust, Sass, Scala, SCSS, Solidity, SQL, Svelte, Swift, Terraform, TOML, TSX,
+TypeScript, VB, VBA, Vue, XML, YAML, Zig.
 
-Each language has exactly one canonical documentation page — [`docs/analyzers/README.md`](docs/analyzers/README.md)
-indexes all fifty — covering its symbol contract, relationship ontology, supported/unsupported constructs,
-regex inventory, complexity envelope, differential ground truth, corpus validation, mutation evidence and
-declared limitations. That page is measured by `script/m14/verify-analyzer-docs.ts`; the analyzer
-implementation is `src/ast/real-<language>-analyzer.ts`.
+Each **analyzer** has exactly one canonical documentation page —
+[`docs/analyzers/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/analyzers/README.md) indexes all fifty — covering its symbol contract,
+relationship ontology, supported/unsupported constructs, regex inventory, complexity envelope,
+differential ground truth, corpus validation, mutation evidence and declared limitations. That page is
+measured by `script/m14/verify-analyzer-docs.ts`; the implementation for `<name>` is
+`src/ast/real-<name>-analyzer.ts` (`make` lives in `real-makefile-analyzer.ts`).
+
+The three counts are different denominators and are never mixed: **53** supported languages are handled by
+**50** analyzers (TSX uses the TypeScript analyzer, Sass the CSS analyzer and Terraform the HCL analyzer);
+the `bb_lsp` launch set is **52** languages (Objective-C is excluded because `.m` is also MATLAB), and
+**50** of those carry verified in-editor evidence — Sass and MATLAB are sealed terminal dispositions,
+never counted as verified. See [`docs/m24/TOOL-DOC.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/m24/TOOL-DOC.md) for the per-language claim levels.
 
 ---
 
@@ -324,18 +331,18 @@ The only network calls the product makes are the embedding provider you configur
 
 | Document | Read it for |
 | --- | --- |
-| [`docs/README.md`](docs/README.md) | the documentation index (start here if not sure) |
+| [`docs/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/README.md) | the documentation index (start here if not sure) |
 | [`docs/indexing/README.md`](docs/indexing/README.md) | the flag matrix, what each indexing mode does, how to read a run's report |
 | [`docs/indexing/resume.md`](docs/indexing/resume.md) | interrupt/checkpoint/resume and the `skipped-unchanged` trap |
 | [`docs/indexing/performance.md`](docs/indexing/performance.md) | measured timings, why a big repo takes time, what is **not** measured |
 | [`docs/indexing/troubleshooting.md`](docs/indexing/troubleshooting.md) | worker-pool failures and other common errors |
 | [`docs/indexing/environment-variables.md`](docs/indexing/environment-variables.md) | every `BB_*` variable and whether it is a user knob |
 | [`docs/indexing/discovery-matrix.md`](docs/indexing/discovery-matrix.md) | exactly what is scanned (and what is not), case by case |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | module layout, evidence and mutation contracts |
-| [`docs/GRAPH_ENGINE.md`](docs/GRAPH_ENGINE.md) | what each relationship edge means and how it is resolved |
+| [`docs/ARCHITECTURE.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/ARCHITECTURE.md) | module layout, evidence and mutation contracts |
+| [`docs/GRAPH_ENGINE.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/GRAPH_ENGINE.md) | what each relationship edge means and how it is resolved |
 | [`docs/tools/`](docs/tools/) | the generated per-tool reference (schemas, examples, errors, limits) |
-| [`docs/analyzers/README.md`](docs/analyzers/README.md) | the 50 analyzer pages |
-| [`docs/MCP_CLI_INDEXER_GUIDE.md`](docs/MCP_CLI_INDEXER_GUIDE.md) | the end-to-end operational lifecycle (CLI/MCP parity, host setup, evidence semantics) |
+| [`docs/analyzers/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/analyzers/README.md) | the 50 analyzer pages |
+| [`docs/MCP_CLI_INDEXER_GUIDE.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/MCP_CLI_INDEXER_GUIDE.md) | the end-to-end operational lifecycle (CLI/MCP parity, host setup, evidence semantics) |
 | [`EMBEDDINGS.md`](EMBEDDINGS.md) | the shipped embedding setup guide |
 | [`CHANGELOG.md`](CHANGELOG.md) | release history and removed aliases |
 | `man bb` | the CLI manual, installed with the npm package |
@@ -348,7 +355,7 @@ The only network calls the product makes are the embedding provider you configur
 in a per-project SQLite database; `src/intelligence/` contains the search, semantic, graph, analysis,
 pattern, security, documentation, visualization, migration, edit and health engines; `src/mcp/` and
 `src/cli/` are thin adapters over the same registry and handlers. Read-only tools never refresh implicitly.
-`bb_edit` is the only advertised mutation surface. See [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+`bb_edit` is the only advertised mutation surface. See [ARCHITECTURE.md](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/ARCHITECTURE.md).
 
 The engine and indexer suites run under both runtimes — Node (compiled `dist/`, better-sqlite3) and Bun
 (`src/`, `bun:sqlite`):

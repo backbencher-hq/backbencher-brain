@@ -16,7 +16,7 @@ result.
 
 | Version | Milestone | Name | Ships | Differentiator |
 |---|---|---|---|---|
-| v0 | M24 | The Server | `bb lsp` — LSP 3.18 over brain.db: hover (signature + usage count + evidence class), definition, references, document/workspace symbols, call hierarchy in/out | The only server whose hover states how much to trust it |
+| v0 | M24 | The Server | the LSP server (`dist/lsp/server.js --stdio`) — LSP 3.18 over brain.db: hover (signature + usage count + evidence class), definition, references, document/workspace symbols, call hierarchy in/out | The only server whose hover states how much to trust it |
 | v1 | M25 | The Extension | VS Code extension (thin client), auto-index on open, OpenVSX publish, fork-verification gates (I3/I4) | 40+ languages, one install, zero per-language setup |
 | v2 | M26 | The Graph | Usage-graph webview, cross-language hover, evidence badges on edges, bounded impact mode | The graph IntelliJ cannot show: cross-language + honest confidence |
 | v3 | M27 | Everywhere | JetBrains via LSP4IJ (configuration, not code) first; Zed, Neovim, Helix verified | One index, every IDE |

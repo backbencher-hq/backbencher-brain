@@ -119,8 +119,8 @@ scheduled in the issue-closure comments.
 
 ## v0 — The Server (M24): shipped capabilities
 
-Standalone LSP 3.18 binary over stdio (`bb lsp`, entry in
-`src/lsp/server.ts`), reading the persisted `brain.db` index:
+Standalone LSP 3.18 binary over stdio (entry point `dist/lsp/server.js`,
+source in `src/lsp/server.ts`), reading the persisted `brain.db` index:
 
 | Feature | Level | Evidence |
 | --- | --- | --- |

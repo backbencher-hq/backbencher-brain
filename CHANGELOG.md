@@ -17,14 +17,14 @@ behind this summary.
   `bb_annotate`, `bb_annotations`. Tool descriptors are the same for the CLI and the
   MCP server, and `docs/data/public-tools.json` is generated from the executable
   registry so the catalog cannot drift from the tool that answers.
-- **53 languages with a dedicated analyzer**, from TypeScript/JavaScript, Python, Go,
+- **53 languages handled by 50 Tree-sitter analyzers**, from TypeScript/JavaScript, Python, Go,
   Rust, Java/Kotlin/Scala/Groovy and C/C++ through to Haskell, Clojure, Clean, Erlang,
   Julia, Nim, Solidity, HCL/Terraform, Vue, Svelte and more. The list is the
   `SUPPORTED_LANGUAGES` map in `src/ast/engine.ts`; the site reads the same map.
 - **A CLI with 14 commands**: `bb index` (build/inspect the index), `bb search`,
   `bb mcp`, `bb setup`, `bb stats`, `bb status`, `bb health`, `bb doctor`,
   `bb projects`, `bb onboard`, `bb tool`, `bb upgrade`, `bb version`, `bb help`.
-- **An LSP server (`bb lsp`)** for the launch languages recorded in
+- **An LSP server** (`dist/lsp/server.js` over stdio; the editor extension launches it) for the launch languages recorded in
   `src/lsp/launch_languages.ts` — hover, definition, references, document symbols,
   workspace symbols, call hierarchy. The launch set is extended only through the
   recorded wave protocol, so the set here is what the gates prove, not a promise.
@@ -292,4 +292,4 @@ and fail with a named missing/undeclared list rather than a bare number.
   documentation, visualization, and migration engines. They are implementation
   layers, not separately advertised MCP tools.
 
-Historical migration details remain in `docs/MCP_TOOL_MIGRATION.md`.
+Historical migration details remain in `archive/docs-pre-consolidation/MCP_TOOL_MIGRATION.md`.
