@@ -2,18 +2,18 @@
   "issue": "M62.A2",
   "code": "A2",
   "milestone": "M62",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 33,
-  "passed": 32,
-  "failed": 1,
+  "passed": 33,
+  "failed": 0,
   "realFailed": 0,
   "negativeCases": 8,
   "mutantsCaught": 8,
   "mutantsTotal": 8,
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "currentCommit": "8d2f7920f3600fc7f2a76d9be69ff960fa3e2100",
   "verifierCommand": "npx tsx script/m62/verify-consumers.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-11-05T04:11:50.994Z",
+  "generatedAt": "2026-11-09T10:10:05.976Z",
   "schemaVersion": 1,
   "laws": [
     "P1 engine-derives-address",
@@ -433,7 +433,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:11:50.995Z",
-    "contentSha256": "10cd748b7bef40083dfaca53b998d0232357f4446253b9cd071709c81f0fc807"
+    "sealedAt": "2026-11-09T10:10:05.976Z",
+    "contentSha256": "fc291aeecd375d0caa53f405be9713f752d031cb6a198499d4e21ca6a6006d65"
   }
 }
