@@ -144,10 +144,10 @@
     "scanned": 949,
     "skipped": 31
   },
-  "generatedAt": "2026-11-08T22:34:36.785Z",
+  "generatedAt": "2026-11-09T00:52:51.711Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T22:34:36.787Z",
-    "contentSha256": "5d9ad565bad84bb7c0487bfa78c6ae8f33a1f2918e025ccc68def02333dda6db"
+    "sealedAt": "2026-11-09T00:52:51.713Z",
+    "contentSha256": "76803a49a5d0f4a79815c85703989fda799387be5986c7ab1bb8cbc4fd3cfd40"
   }
 }

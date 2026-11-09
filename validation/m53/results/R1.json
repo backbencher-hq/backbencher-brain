@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 38,
-  "failed": 3,
+  "status": "verified",
+  "passed": 41,
+  "failed": 0,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -43,19 +43,7 @@
     "m29-wave-protocol",
     "m29-precision-ledger",
     "m29-precision-improvements",
-    "m29-m29-docs",
-    "m42-enrichment",
-    "m42-highlight",
-    "m42-hover-actions",
-    "m42-hub",
-    "m42-hub-nav",
-    "m42-rich-hover",
-    "m44-hub-tree",
-    "m44-impact-resolution",
-    "m44-legend",
-    "m44-hub-list",
-    "m44-usages-fallback",
-    "m44-usages-groups"
+    "m29-m29-docs"
   ],
   "gates": [
     {
@@ -269,9 +257,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (25/32 passed, 3 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -325,9 +313,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (28/33 passed, 7 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (33/33 passed, 7 negatives)",
+      "ok": true,
       "timedOut": false
     },
     {
@@ -358,7 +346,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ a4a58c5e)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 6876804b)",
       "ok": true,
       "timedOut": false
     },
@@ -381,18 +369,18 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (48/53 passed, 8 negatives)",
-      "ok": false,
+      "rc": 0,
+      "verdict": "VERIFIED (53/53 passed, 8 negatives)",
+      "ok": true,
       "timedOut": false
     }
   ],
-  "currentCommit": "a4a58c5e1911be6c4460ff428bbea0c3b4f332e2",
+  "currentCommit": "6876804bde7611668d72b8f7f4a4bfe801304e06",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-08T22:07:54.701Z",
+  "generatedAt": "2026-11-09T04:29:34.823Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T22:07:54.702Z",
-    "contentSha256": "bce3b538345c39e40abbc7d68970fe4b09a3c0be1818d498d290d56b4e17e41e"
+    "sealedAt": "2026-11-09T04:29:34.824Z",
+    "contentSha256": "8995c694ccd913cc89ef414151706590e14bb5fc8f8723cd4c19de5e48f93a0c"
   }
 }
