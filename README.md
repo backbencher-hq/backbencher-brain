@@ -305,6 +305,29 @@ complexity envelope, differential ground truth, corpus validation, mutation evid
 limitations. That page is measured by `script/m14/verify-analyzer-docs.ts`; the implementation for
 `<name>` is `src/ast/real-<name>-analyzer.ts` (`make` lives in `real-makefile-analyzer.ts`).
 
+## Editor and IDE
+
+The same index powers an LSP 3.18 server — `dist/lsp/server.js --stdio`, shipped in the npm
+package — and four editor integrations under [`ide/`](https://github.com/backbencher-hq/backbencher-brain/tree/main/ide):
+
+- **VS Code family** (VS Code, Cursor, Antigravity): the `bb_lsp-vscode` extension (one VSIX)
+  provides hover with evidence tier and staleness, go-to-definition, references, document
+  symbols, workspace symbols and call hierarchy.
+- **Zed**, **Helix** and **JetBrains** (via LSP4IJ): manifests and configuration templates that
+  point the editor at the same server.
+
+They are complements to your editor's own language servers, by declared design: **no completion,
+no diagnostics, no rename** — navigation, graph and evidence only
+([honesty contract](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/IDE-HONESTY-CONTRACT.md)).
+The editor lane serves 49 languages (the 50 minus Objective-C, excluded because `.m` is shared
+with MATLAB); 48 carry recorded editor evidence, and a language outside the launch set gets a
+declared not-indexed answer rather than a guess. Per-request-ID claim levels are in
+[`docs/m24/TOOL-DOC.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/m24/TOOL-DOC.md),
+per-editor install and verification status in
+[`ide/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/ide/README.md) and on
+[backbencher.cc/editors](https://backbencher.cc/editors). The extension's status bar shows the same
+generated claim table the documentation ships.
+
 Three request IDs ride an existing analyzer rather than adding a language: **TSX** is served by the
 TypeScript analyzer, **Sass** by the CSS analyzer, and **Terraform** by the HCL analyzer. The editor lane
 cannot exceed the analyzers — it is the same set, minus Objective-C: `bb_lsp` serves **49 languages** in

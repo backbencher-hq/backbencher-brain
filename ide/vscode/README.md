@@ -2,7 +2,7 @@
 
 Honest code navigation from the Backbencher index: hover with evidence tier and
 staleness, definition, references, document symbols, workspace symbols, and call
-hierarchy for Java, Groovy, Kotlin, Scala, and TypeScript.
+hierarchy for every language in the shipped claim table below.
 
 **A complement to your editor's own language servers — graph, navigation, and
 evidence only.** No completion, no diagnostics, no rename (declared scope,
