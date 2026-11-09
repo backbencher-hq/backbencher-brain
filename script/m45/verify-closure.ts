@@ -110,7 +110,12 @@ for (const code of ["G1", "C1", "D1", "T1"]) {
   check(`X1: ledger ${code} is verified`, issue?.status === "verified", String(issue?.status))
 }
 const x1 = (ledger.issues ?? []).find((i: { code: string }) => i.code === "X1")
-check("X1: ledger X1 is planned or verified (not blocked)", ["planned", "verified"].includes(x1?.status), String(x1?.status))
+// The X1 entry is the verdict THIS gate writes. A previous closure that was not green
+// leaves it planned (never ran) or known-gap (ran, recorded why); both are states this
+// gate exists to lift, so it must be able to run over them. Only `blocked` is refused —
+// that is a declared "cannot close" and lifting it silently would be exactly the
+// laundering the honesty contract forbids.
+check("X1: ledger X1 is not blocked (planned, known-gap and verified are all re-runnable)", x1?.status !== "blocked", String(x1?.status))
 
 // --- 3. prerequisite bars --------------------------------------------------------------
 
