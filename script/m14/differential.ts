@@ -946,6 +946,19 @@ export const SECOND_CORPUS: Record<string, string> = {
   markdown: "kubernetes",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
+/**
+ * `--pin-baseline`: let a SCOPED run write the floor REGISTRY. It never writes the
+ * canonical evidence artifact — that guard stands above and is separate — so the
+ * milestone-sized claim stays exactly as its own sweep left it.
+ *
+ * RESTORED with the oracle, and it is not a convenience flag: the scoped guard
+ * RETURNS before the canonical pin, so a scoped run can never reach that statement.
+ * Without this, `--lang perl --pin-baseline` exited 0 having pinned NOTHING, the perl
+ * rows were absent from differential-baseline.json, and #419 sections E and F had
+ * nothing to read — with no error anywhere, because a scoped pin that does nothing
+ * still prints a plausible line.
+ */
+const PIN_BASELINE_FROM_SCOPE = process.argv.includes("--pin-baseline")
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
 /**
  * HOW MANY DIFF SAMPLES a lane RETAINS for triage. The cap exists so a catastrophic lane cannot
@@ -27113,7 +27126,12 @@ async function main() {
     // A scoped run may still PIN what it measured — see mergeBaseline's note. It
     // may never WRITE the canonical artifact, which is the claim the guard above is
     // about; those are two different acts and only one of them is milestone-sized.
-    if (process.argv.includes("--update-baseline")) {
+    // The scoped guard RETURNS here, which is why `--pin-baseline` has to be honoured
+    // HERE and not only at the canonical pin below: a scoped run never reaches that
+    // statement. See PIN_BASELINE_FROM_SCOPE's own note.
+    if (PIN_BASELINE_FROM_SCOPE) {
+      mergeBaseline()
+    } else if (process.argv.includes("--update-baseline")) {
       mergeBaseline()
     } else if (evaluation.unpinnedLanes.length || evaluationSecond.unpinnedLanes.length) {
       const unpinned = [...evaluation.unpinnedLanes, ...evaluationSecond.unpinnedLanes]

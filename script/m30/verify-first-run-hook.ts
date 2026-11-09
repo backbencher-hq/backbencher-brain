@@ -80,7 +80,12 @@ type HookResult = { ok: boolean; stdout: string; stderr: string; exitCode: numbe
 
 async function runHook(script: string, env: Record<string, string>, componentPath: string, timeoutMs = 10000): Promise<HookResult> {
   const dir = mkdtempSync(path.join(os.tmpdir(), "m30-s2-"))
-  const scriptPath = path.join(dir, "fixture.ts")
+  // `.mts`, not `.ts`: with no package.json in the temp dir, tsx treats a `.ts`
+  // fixture as CJS, and importing `src/cli/index.ts` (top-level await) then fails with
+  // "Top-level await is currently not supported with the cjs output format". The
+  // runner has no bun, so its node+tsx fallback hit exactly that and the CLI arm
+  // failed while the bun arm passed. `.mts` is unambiguously ESM in both runners.
+  const scriptPath = path.join(dir, "fixture.mts")
   const dataDir = path.join(dir, "bbdata")
   mkdirSync(dataDir, { recursive: true })
   writeFileSync(scriptPath, script.replaceAll("__COMPONENT__", JSON.stringify(componentPath)).replaceAll("__DATADIR__", JSON.stringify(dataDir)))

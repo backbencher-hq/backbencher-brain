@@ -55,8 +55,13 @@ const TARGET = path.join(ROOT, "script/m14/differential.ts")
 const APPLY = process.argv.includes("--apply")
 
 /** The last commit whose tree carries the perl oracle. Recovered, not re-typed. */
-const ORACLE_SOURCE = "bbb895867"
-const ORACLE_SOURCE_NOTE = "backup/pre-update-20261002-110317"
+// This repository's history does not contain bbb895867 (the co-agent's line that
+// originally carried the oracle never merged here). 37dd997a5 is the newest commit
+// in THIS history whose tree still carries the complete perl oracle — derivePerlEdges,
+// both allowlist entries and the scoped pin — measured by walking the file's own
+// commit history for the five register strings.
+const ORACLE_SOURCE = "37dd997a5"
+const ORACLE_SOURCE_NOTE = "merge of origin/main into the oracle line, last tree carrying it"
 
 const fail = (msg: string): never => {
   console.error(`restore-perl-oracle: ${msg}`)
@@ -275,17 +280,47 @@ const ORACLE_ANCHOR = `export function deriveJavaEdges(root: any): { label: stri
 // 3. apply, verifying every anchor exactly once
 // ---------------------------------------------------------------------------
 const current = fs.readFileSync(TARGET, "utf8")
-if (current.includes("export function derivePerlEdges")) fail(`${path.relative(ROOT, TARGET)} already carries the perl oracle — nothing to do`)
-if (current.includes("PIN_BASELINE_FROM_SCOPE")) fail("PIN_BASELINE_FROM_SCOPE is already present while the oracle is not — inspect the tree before restoring")
-
+// PARTIAL restore, per wiring step. The oracle body and its allowlist entries can
+// survive while the scoped pin is lost (that is exactly the state this tree is in:
+// derivePerlEdges is present, PIN_BASELINE_FROM_SCOPE is not), so each step is applied
+// only when its own marker is absent. Every anchor still has to match exactly once —
+// a moved anchor fails loudly rather than writing a partial wiring.
 let next = current
-next = insertBefore(next, ORACLE_ANCHOR, ORACLE_HEADER + adaptedBody + "\n\n", "oracle insertion point")
-next = insertAfter(next, IMPORT_ANCHOR, IMPORT_ADDED, "perl import")
-next = insertAfter(next, PIN_ANCHOR, PIN_ADDED, "PIN_BASELINE_FROM_SCOPE const")
-next = insertAfter(next, DISPATCH_ANCHOR, DISPATCH_ADDED, "perl truth dispatch")
-next = insertAfter(next, CALLS_ANCHOR, CALLS_ADDED, "perl calls allowlist entry")
-next = insertAfter(next, CONTAINS_ANCHOR, CONTAINS_ADDED, "perl contains allowlist entry")
-next = replaceOnce(next, SCOPED_GUARD_ANCHOR, SCOPED_GUARD_ADDED, "scoped pin guard")
+const done: string[] = []
+const has = (s: string) => next.includes(s)
+
+if (!has("export function derivePerlEdges")) {
+  next = insertBefore(next, ORACLE_ANCHOR, ORACLE_HEADER + adaptedBody + "\n\n", "oracle insertion point")
+  done.push("oracle body")
+}
+if (!has("real-perl-analyzer")) {
+  next = insertAfter(next, IMPORT_ANCHOR, IMPORT_ADDED, "perl import")
+  done.push("import")
+}
+if (!has("PIN_BASELINE_FROM_SCOPE")) {
+  next = insertAfter(next, PIN_ANCHOR, PIN_ADDED, "PIN_BASELINE_FROM_SCOPE const")
+  done.push("PIN const")
+}
+if (!has('if (lang === "perl")')) {
+  next = insertAfter(next, DISPATCH_ANCHOR, DISPATCH_ADDED, "perl truth dispatch")
+  done.push("truth dispatch")
+}
+if (!has('lang === "perl" ? ["calls"]')) {
+  next = insertAfter(next, CALLS_ANCHOR, CALLS_ADDED, "perl calls allowlist entry")
+  done.push("calls allowlist")
+}
+if (!has('lang === "perl" ? ["contains"]')) {
+  next = insertAfter(next, CONTAINS_ANCHOR, CONTAINS_ADDED, "perl contains allowlist entry")
+  done.push("contains allowlist")
+}
+if (!has("if (PIN_BASELINE_FROM_SCOPE)")) {
+  next = replaceOnce(next, SCOPED_GUARD_ANCHOR, SCOPED_GUARD_ADDED, "scoped pin guard")
+  done.push("scoped pin guard")
+}
+if (next === current) {
+  console.log("nothing to do: every wiring step is already present")
+  process.exit(0)
+}
 
 // The register's own strings. This is the acceptance test, not a smoke test.
 const REQUIRED = [
@@ -297,6 +332,7 @@ const REQUIRED = [
 ]
 const missing = REQUIRED.filter((s) => !next.includes(s))
 if (missing.length > 0) fail(`the register's strings are still absent after the edit: ${missing.join(", ")}`)
+console.log(`wiring applied: ${done.join(", ")}`)
 
 console.log(`oracle recovered from ${ORACLE_SOURCE} (${ORACLE_SOURCE_NOTE}): ${oracleLines.length} lines recovered, ${adaptedBody.split("\n").length} as restored`)
 console.log("wiring restored: import, PIN_BASELINE_FROM_SCOPE, truth dispatch, calls allowlist, contains allowlist, scoped pin")
