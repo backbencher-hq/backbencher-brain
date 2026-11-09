@@ -75,6 +75,23 @@ run the same wave protocol.
            src/app/languages/page.tsx, src/app/privacy/page.tsx
   ```
 
+## 5. Pre-existing known gaps outside the launch evidence chain
+
+These lanes are older milestones whose evidence is not cited by the launch chain
+(M24-M29, M42, M44, M53, M55). They are recorded here because `npm run verify:fast` runs
+their gates and they are red for reasons that predate this release:
+
+- **M45 — Demo Media Truth (C1).** The demo capture manifest is pinned to bb 0.3.0,
+  2026-09-07, and expects 31 relationships from the 3-file demo corpus. The corpus now
+  indexes to **30** relationships; the same canary read 32 at another commit in the
+  lane's own history, i.e. the count moves with the analyzer edge-precision work rather
+  than with the corpus. The capture itself (editor frames plus hover proof from a live
+  VS Code session) cannot be re-run headlessly here, so the manifest is honestly stale.
+  M45.X1's record says `failed` and the ledger projects it as a declared known-gap
+  (never as verified). Re-capturing the media is the fix; it needs an editor session.
+- **M13/M15/M16/M20/M40/M43/M48 — pre-lane raw evidence** is present in the private
+  working tree but was not re-sealed in this workstream; no launch claim cites it.
+
 ## Not limitations, by design
 
 - **Languages outside the launch set** answer every LSP request with a declared
