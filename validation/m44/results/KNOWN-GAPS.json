@@ -95,7 +95,7 @@
   "note": "Compiled by script/m44/verify-closure.ts from the m44 evidence limitations + closure-time items (deterministic; no wall clock). Every entry carries its disposition in docs/m44/LAUNCH-RECORD.md (fixed / documented-with-reason / owner / CI-pending). None silent.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T05:14:53.081Z",
+    "sealedAt": "2026-11-09T08:20:58.059Z",
     "contentSha256": "272997566ef63d0d7dfbec131843b44e8deda43a09344981a770f160d3e09fd1"
   }
 }

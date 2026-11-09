@@ -3,15 +3,15 @@
   "code": "G1",
   "milestone": "M29",
   "status": "verified",
-  "checks": 75,
-  "passed": 75,
+  "checks": 76,
+  "passed": 76,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "5a113cbf30940e4787103a78dd70d6c128e9ae4b",
+  "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-09T05:14:03.818Z",
+  "generatedAt": "2026-11-09T08:20:19.240Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T05:14:03.828Z",
-    "contentSha256": "0ca1eae41c2667dfdc99020930619ba241397cd4282fe05a50b06be35514465e"
+    "sealedAt": "2026-11-09T08:20:19.261Z",
+    "contentSha256": "b2ebea1dc52a99d7914f1164a016a79fdfe0a70d4e462ef165827812f8cd2d06"
   }
 }
