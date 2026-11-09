@@ -1,5 +1,5 @@
 {
-  "commit": "6876804bde7611668d72b8f7f4a4bfe801304e06",
+  "commit": "78db3f43a20cad4d5885f7eda516a19dc8efdb3a",
   "gates": {
     "m24-closure": {
       "rc": 0,
@@ -48,122 +48,6 @@
     "m26-webview-harness": {
       "rc": 0,
       "verdict": "VERIFIED (41/41 passed, 5/5 mutants caught)"
-    },
-    "m26-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (50/50 passed, 3 negative)"
-    },
-    "m27-nvim": {
-      "rc": 0,
-      "verdict": "VERIFIED (31/31 passed, 4/4 mutants)"
-    },
-    "m27-zed": {
-      "rc": 0,
-      "verdict": "VERIFIED (36/36 passed, 5/5 mutants)"
-    },
-    "m27-helix": {
-      "rc": 0,
-      "verdict": "VERIFIED (21/21 passed, 4/4 mutants)"
-    },
-    "m27-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (34/34 passed, 6 negative)"
-    },
-    "m28-union": {
-      "rc": 0,
-      "verdict": "VERIFIED (30/30 passed, 6/6 mutants)"
-    },
-    "m28-mcp-tools": {
-      "rc": 0,
-      "verdict": "VERIFIED (26/26 passed, 2/2 mutants)"
-    },
-    "m28-annotation-store": {
-      "rc": 0,
-      "verdict": "VERIFIED (50/50 passed, 7/7 mutants)"
-    },
-    "m28-annotation-ui": {
-      "rc": 0,
-      "verdict": "VERIFIED (23/23 passed, 6/6 mutants, 0 blocked leg(s))"
-    },
-    "m28-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (31/31 passed, 4 negative)"
-    },
-    "m29-wave-protocol": {
-      "rc": 0,
-      "verdict": "VERIFIED (36/36 passed, 7/7 mutants — every mutant must be caught)"
-    },
-    "m29-precision-ledger": {
-      "rc": 0,
-      "verdict": "VERIFIED (22/22 passed, 8/8 negatives)"
-    },
-    "m29-precision-improvements": {
-      "rc": 0,
-      "verdict": "VERIFIED (20/20 passed, 4 negatives)"
-    },
-    "m29-m29-docs": {
-      "rc": 0,
-      "verdict": "VERIFIED (13/13 passed, 3 negatives)"
-    },
-    "m29-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)"
-    },
-    "m42-enrichment": {
-      "rc": 0,
-      "verdict": "VERIFIED (29/29 passed, 5/5 mutants)"
-    },
-    "m42-highlight": {
-      "rc": 0,
-      "verdict": "VERIFIED (25/25 passed, 8/8 mutants)"
-    },
-    "m42-hover-actions": {
-      "rc": 0,
-      "verdict": "VERIFIED (33/33 passed, 5/5 mutants caught)"
-    },
-    "m42-hub": {
-      "rc": 0,
-      "verdict": "VERIFIED (43/43 passed, 5/5 mutants caught)"
-    },
-    "m42-hub-nav": {
-      "rc": 0,
-      "verdict": "VERIFIED (38/38 passed, 5/5 mutants caught)"
-    },
-    "m42-rich-hover": {
-      "rc": 0,
-      "verdict": "VERIFIED (71/71 passed, 7/7 mutants caught, 0 not judged)"
-    },
-    "m42-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (33/33 passed, 7 negatives)"
-    },
-    "m44-hub-tree": {
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 9/9 mutants caught)"
-    },
-    "m44-impact-resolution": {
-      "rc": 0,
-      "verdict": "VERIFIED (33/33 passed, 5/5 mutants caught)"
-    },
-    "m44-legend": {
-      "rc": 0,
-      "verdict": "VERIFIED (25/25 passed, 4/4 mutants caught)"
-    },
-    "m44-hub-list": {
-      "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 6876804b)"
-    },
-    "m44-usages-fallback": {
-      "rc": 0,
-      "verdict": "VERIFIED (31/31 passed, 6/6 mutants caught, 2 negative)"
-    },
-    "m44-usages-groups": {
-      "rc": 0,
-      "verdict": "VERIFIED (20/20 passed, 6/6 mutants caught)"
-    },
-    "m44-closure": {
-      "rc": 0,
-      "verdict": "VERIFIED (53/53 passed, 8 negatives)"
     }
   }
 }
