@@ -47,7 +47,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-11-09T08:20:58.060Z",
+  "generatedAt": "2026-11-09T08:21:17.692Z",
   "limitations": [
     "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
@@ -56,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T08:20:58.060Z",
-    "contentSha256": "b3012ae239b29af1ec23193b064ae628f368bec1dfa94ab06a906ef4ab05bf4a"
+    "sealedAt": "2026-11-09T08:21:17.692Z",
+    "contentSha256": "327062e1167eed2dd106d1098e61b93eab395e1a9e0b9e7ab2d7fb92fc5eae93"
   }
 }
