@@ -17,10 +17,13 @@ behind this summary.
   `bb_annotate`, `bb_annotations`. Tool descriptors are the same for the CLI and the
   MCP server, and `docs/data/public-tools.json` is generated from the executable
   registry so the catalog cannot drift from the tool that answers.
-- **53 languages handled by 50 Tree-sitter analyzers**, from TypeScript/JavaScript, Python, Go,
+- **50 language analyzers**, from TypeScript/JavaScript, Python, Go,
   Rust, Java/Kotlin/Scala/Groovy and C/C++ through to Haskell, Clojure, Clean, Erlang,
-  Julia, Nim, Solidity, HCL/Terraform, Vue, Svelte and more. The list is the
-  `SUPPORTED_LANGUAGES` map in `src/ast/engine.ts`; the site reads the same map.
+  Julia, Nim, Solidity, HCL/Terraform, Vue, Svelte and more. TSX, Sass and Terraform are
+  aliases of the TypeScript, CSS and HCL analyzers, not extra languages; the editor lane
+  covers 49 of the 50 (Objective-C is excluded because `.m` is shared with MATLAB) and 48
+  carry recorded in-editor evidence. The list is the `SUPPORTED_LANGUAGES` map in
+  `src/ast/engine.ts`; the site reads the same map.
 - **A CLI with 14 commands**: `bb index` (build/inspect the index), `bb search`,
   `bb mcp`, `bb setup`, `bb stats`, `bb status`, `bb health`, `bb doctor`,
   `bb projects`, `bb onboard`, `bb tool`, `bb upgrade`, `bb version`, `bb help`.

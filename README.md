@@ -1,7 +1,7 @@
 # Backbencher Brain (`bb`)
 
 **Evidence-first code intelligence, local-first and runtime-agnostic.** `bb` indexes a repository with
-**53 languages** through **50 Tree-sitter analyzers**, stores the result in a per-project SQLite database, and answers
+**50 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
 questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
 supported. No telemetry, no server, no account required.
 
@@ -290,26 +290,29 @@ silently mixed. See EMBEDDINGS.md for the full provider list, precedence rules (
 
 ## Language support
 
-**53 languages**, all first-class in discovery, parsing, relationship extraction and the
+**50 languages**, all first-class in discovery, parsing, relationship extraction and the
 cross-language graph:
 
 Bash, C, C#, C++, Clean, Clojure, CSS, Dart, Elixir, Erlang, F#, Go, GraphQL, Groovy, Haskell, HCL, HTML,
 Java, JavaScript, JSON, Julia, Kotlin, Lua, Make, Markdown, MATLAB, Nim, Objective-C, Perl, PHP, PowerShell,
-Protobuf, Python, R, Ruby, Rust, Sass, Scala, SCSS, Solidity, SQL, Svelte, Swift, Terraform, TOML, TSX,
-TypeScript, VB, VBA, Vue, XML, YAML, Zig.
+Protobuf, Python, R, Ruby, Rust, Scala, SCSS, Solidity, SQL, Svelte, Swift, TOML, TypeScript, VB, VBA,
+Vue, XML, YAML, Zig.
 
 Each **analyzer** has exactly one canonical documentation page —
-[`docs/analyzers/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/analyzers/README.md) indexes all fifty — covering its symbol contract,
-relationship ontology, supported/unsupported constructs, regex inventory, complexity envelope,
-differential ground truth, corpus validation, mutation evidence and declared limitations. That page is
-measured by `script/m14/verify-analyzer-docs.ts`; the implementation for `<name>` is
-`src/ast/real-<name>-analyzer.ts` (`make` lives in `real-makefile-analyzer.ts`).
+[`docs/analyzers/README.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/analyzers/README.md) indexes all fifty —
+covering its symbol contract, relationship ontology, supported/unsupported constructs, regex inventory,
+complexity envelope, differential ground truth, corpus validation, mutation evidence and declared
+limitations. That page is measured by `script/m14/verify-analyzer-docs.ts`; the implementation for
+`<name>` is `src/ast/real-<name>-analyzer.ts` (`make` lives in `real-makefile-analyzer.ts`).
 
-The three counts are different denominators and are never mixed: **53** supported languages are handled by
-**50** analyzers (TSX uses the TypeScript analyzer, Sass the CSS analyzer and Terraform the HCL analyzer);
-the `bb_lsp` launch set is **52** languages (Objective-C is excluded because `.m` is also MATLAB), and
-**50** of those carry verified in-editor evidence — Sass and MATLAB are sealed terminal dispositions,
-never counted as verified. See [`docs/m24/TOOL-DOC.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/m24/TOOL-DOC.md) for the per-language claim levels.
+Three request IDs ride an existing analyzer rather than adding a language: **TSX** is served by the
+TypeScript analyzer, **Sass** by the CSS analyzer, and **Terraform** by the HCL analyzer. The editor lane
+cannot exceed the analyzers — it is the same set, minus Objective-C: `bb_lsp` serves **49 languages** in
+the editor (Objective-C is excluded because `.m` is shared with MATLAB and cannot be disambiguated by
+extension), and **48** of those carry recorded in-editor evidence. MATLAB and Sass are sealed terminal
+dispositions and are never counted as verified. See
+[`docs/m24/TOOL-DOC.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/m24/TOOL-DOC.md)
+for the per-request-ID claim levels.
 
 ---
 

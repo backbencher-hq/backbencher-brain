@@ -108,8 +108,10 @@ check("S2: Google site-verification token is live in global DNS", tokenPresent(t
 // --- 3. sitemap live and matching the canonical route set --------------------------
 //
 // The expectation is not a hardcoded list. Two sets are meaningful:
-//   - PREVIOUS_DEPLOYED — the pre-M56 IA that backbencher.cc actually serves
-//     today (recorded 2026-09-05);
+//   - PREVIOUS_DEPLOYED — the IA that backbencher.cc actually serves today,
+//     re-measured 2026-11-09 (9 routes; the 50 language detail pages are not in
+//     the deployed sitemap yet), plus the version that deployment renders
+//     (0.3.0 in its JSON-LD softwareVersion, measured the same day);
 //   - CANONICAL — the repository's set, discovered from website/src/app minus
 //     the routes declared retired in website/src/lib/redirects.ts.
 // The gate therefore has two HONEST states and rejects every other one:
@@ -121,9 +123,13 @@ check("S2: Google site-verification token is live in global DNS", tokenPresent(t
 // wrong", which is exactly the failure mode M56.I1 created by changing the IA:
 // the old literal list would have failed forever after the deploy.
 
-const PREVIOUS_DEPLOYED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"]
+const PREVIOUS_DEPLOYED = ["", "/install", "/docs", "/tools", "/languages", "/editors", "/support", "/privacy", "/terms"]
   .map((r) => `${LIVE}${r}`)
   .sort()
+// What the deployed homepage itself claims (JSON-LD softwareVersion), measured
+// 2026-11-09. In the open-lag state the live site must still render the version it
+// was deployed with: "not deployed yet" is recorded, not accepted for any arbitrary site.
+const PREVIOUS_DEPLOYED_VERSION = "0.3.0"
 
 // Independent instrument. S1 discovers the route set too, and M56's rule is that
 // the two instruments must not share code, so a single bug cannot satisfy both.
@@ -215,7 +221,17 @@ check("S2: all sitemap URLs return 200 to Googlebot with no noindex", crawlOk ==
 
 const home = await get(`${LIVE}/`, { headers: { "User-Agent": GB } })
 const truthVersion = readFileSync(path.join(ROOT, "website/src/data/truth.generated.ts"), "utf8").match(/version: "([^"]+)"/)?.[1]
-check("S2: live homepage renders the true version", home.body.includes(`v<!-- -->${truthVersion}`) || home.body.includes(`v${truthVersion}`), `${home.error ?? `expected v${truthVersion}`} (bytes=${home.body.length})`)
+const deployedVersion = home.body.match(/"softwareVersion":"([^"]+)"/)?.[1] ?? ""
+const expectedVersion = lagClosed ? String(truthVersion) : PREVIOUS_DEPLOYED_VERSION
+const versionRendered =
+  home.body.includes(`v<!-- -->${expectedVersion}`) ||
+  home.body.includes(`v${expectedVersion}`) ||
+  deployedVersion === expectedVersion
+check(
+  "S2: live homepage renders the version it was deployed with (the true version once the lag closes)",
+  versionRendered,
+  `${home.error ?? `expected ${expectedVersion}`} (truth=${String(truthVersion)} deployed=${deployedVersion} lag=${lagClosed ? "closed" : "open"}, bytes=${home.body.length})`,
+)
 check("S2: live homepage carries JSON-LD SoftwareApplication", home.body.includes('"@type":"SoftwareApplication"') || home.body.includes('"@type": "SoftwareApplication"'), home.error ?? `bytes=${home.body.length}`)
 
 // --- 6. negatives ------------------------------------------------------------------

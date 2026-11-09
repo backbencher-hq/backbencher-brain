@@ -1011,7 +1011,7 @@ export async function runCli(argv: string[]): Promise<void> {
   const program = new Command()
   program
     .name("bb")
-    .description("Backbencher Brain — evidence is the answer · code intelligence for 53 languages")
+    .description("Backbencher Brain — evidence is the answer · code intelligence for 50 languages")
     // M33.S1: parity across all three version forms (-V was the only form before).
     .version(BACKBENCHER_BRAIN_VERSION, "-v, --version", "output the version number")
     // M22.W1: one logging story. Workers inherit BB_LOG_LEVEL from the parent

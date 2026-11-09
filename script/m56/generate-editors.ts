@@ -175,6 +175,19 @@ must(
   `extension status model has ${statusLanguages.length} languages, the LSP launch-set owner has ${launchLanguages.length}`,
 )
 
+// ONE language number for the public surface: the languages that actually carry a
+// verified claim. The launch set is a set of REQUEST IDs — TSX/Sass/Terraform are
+// aliases of the TypeScript/CSS/HCL analyzers, and Objective-C is deliberately
+// outside the editor lane because `.m` is shared with MATLAB — so neither 52 nor 53
+// is a language count. The verified count is: every claim above I0.
+const verifiedLanguages = extensionClaims.filter((c) => c.level !== "I0").map((c) => c.language)
+const analyzerAliases = ["tsx", "sass", "terraform"] as const
+const outsideEditor = ["objective-c"] as const
+must(
+  verifiedLanguages.length === 50,
+  `verified language count moved: expected 50 verified claims, got ${verifiedLanguages.length}`,
+)
+
 // The extension's shipped claim table is a different record and may legitimately
 // cover fewer languages than the LSP launches. The gap is declared on the page.
 const unclaimedLaunchLanguages = launchLanguages.filter((l) => !shippedClaims.some((c) => c.language === l))
@@ -438,6 +451,9 @@ const facts = {
   extension,
   launchLanguages,
   launchLanguagesSource: "src/lsp/launch_languages.ts",
+  verifiedLanguages,
+  analyzerAliases,
+  outsideEditor,
   unclaimedLaunchLanguages,
   shippedClaims,
   shippedClaimSources: [README_REL, "ide/vscode/src/status-model.ts", "docs/m24/TOOL-DOC.md"],
