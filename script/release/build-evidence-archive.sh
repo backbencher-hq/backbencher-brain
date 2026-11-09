@@ -57,10 +57,17 @@ if [ "$CHECK" -eq 1 ]; then
   [ -f "$SUMS" ] || { echo "FAIL: no committed checksum at $SUMS — build first" >&2; exit 1; }
   tmpdir="$(mktemp -d)"
   tmp="$tmpdir/$NAME"
-  git archive --format=tar "$REV" -- $(cat "$LIST") | zstd -3 -T0 -q -o "$tmp" || {
+  git archive --format=tar --mtime=@0 "$REV" -- $(cat "$LIST") | zstd -3 -T0 -q -o "$tmp" || {
     rm -rf "$tmpdir"; echo "FAIL: rebuild failed at $REV_FULL" >&2; exit 1
   }
-  want="$(awk '{print $1}' "$SUMS")"
+  want="$(awk 'NR==1{print $1}' "$SUMS")"
+  pinned="$(awk -F': ' '/^# revision: /{print $2}' "$SUMS")"
+  # The pinned revision is informational: the archive's OWN hash covers its content, so
+  # a later commit that only records the hash (this document) does not invalidate it.
+  # A real content change produces a different hash and fails below.
+  if [ -n "$pinned" ]; then
+    echo "note: archive was built at ${pinned:0:8}; checking at $REV_FULL"
+  fi
   got="$(sha256sum "$tmp" | awk '{print $1}')"
   rm -rf "$tmpdir"
   if [ "$want" != "$got" ]; then
@@ -71,10 +78,11 @@ if [ "$CHECK" -eq 1 ]; then
 fi
 
 rm -f "$OUT" "$SUMS"
-git archive --format=tar "$REV" -- $(cat "$LIST") | zstd -3 -T0 -q -o "$OUT" || {
+git archive --format=tar --mtime=@0 "$REV" -- $(cat "$LIST") | zstd -3 -T0 -q -o "$OUT" || {
   echo "FAIL: could not build the archive at $REV_FULL" >&2; exit 1
 }
 sha256sum "$OUT" > "$SUMS"
+printf '# revision: %s\n' "$(git rev-parse "$REV")" >> "$SUMS"
 printf 'archive:  %s (%.1f MB, %s files)\nsha256:   %s\n' \
   "$OUT" "$(awk -v b="$(stat -c%s "$OUT")" 'BEGIN{print b/1048576}')" "$count" \
   "$(awk '{print $1}' "$SUMS")"
