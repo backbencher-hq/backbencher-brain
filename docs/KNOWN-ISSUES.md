@@ -77,18 +77,31 @@ run the same wave protocol.
 
 ## 5. Pre-existing known gaps outside the launch evidence chain
 
-These lanes are older milestones whose evidence is not cited by the launch chain
-(M24-M29, M42, M44, M53, M55). They are recorded here because `npm run verify:fast` runs
-their gates and they are red for reasons that predate this release:
+These are later-phase or older lanes whose evidence the launch chain
+(M24-M29, M42, M44, M53, M55) does not cite. `npm run verify:fast` runs their gates, so
+they are named here with the measured reason and status:
 
-- **M45 — Demo Media Truth (C1).** The demo capture manifest is pinned to bb 0.3.0,
-  2026-09-07, and expects 31 relationships from the 3-file demo corpus. The corpus now
-  indexes to **30** relationships; the same canary read 32 at another commit in the
-  lane's own history, i.e. the count moves with the analyzer edge-precision work rather
-  than with the corpus. The capture itself (editor frames plus hover proof from a live
-  VS Code session) cannot be re-run headlessly here, so the manifest is honestly stale.
-  M45.X1's record says `failed` and the ledger projects it as a declared known-gap
-  (never as verified). Re-capturing the media is the fix; it needs an editor session.
+- **M45 — Demo Media Truth: CLOSED.** It was known-gap because its capture manifest
+  pinned a corpus index identity from bb 0.3.0 (31 relationships) that the analyzer
+  edge-precision work moved to 30. Fixed, not waived: the index identity is now
+  revalidated explicitly by `capture-harness.ts --revalidate-index "<reason>"`
+  (reason/time/previous hash recorded in the manifest, the editor capture's own commit
+  kept as a historical ancestor), the expected counts are read from the manifest instead
+  of a constant, and the site-embed gate was ported from the deleted terminal hero to
+  the shipped atlas hero. C1 53/53 · D1 46/46 · T1 19/19 · G1 50/50 · X1 29/29, ledger
+  closed.
+- **M61 — verifier machinery: UNFINISHED, and it blocks the last gate of
+  `verify:fast`.** M62's closure requires the M61 bar, whose ledger is open with five
+  red records. Measured defects (all in older lane scripts, not in the launch chain):
+  `script/m24/verify-hover-latency.ts` writes `validation/m24/results/L6.json` as a bare
+  write outside the sealing path, owns no lane record, is wired into no execution tier
+  and dynamic-imports a lane module; `script/m24/verify-hover-docs.ts` runs checks but
+  owns no record and is not declared a non-gate; `script/m28/verify-surface-parity.ts`
+  reads an undeclared `BB_U2_FULL_SHAPE_MATRIX`; the published claims rows for
+  `m25-issues` and `m44-x1` no longer match their ledgers; and three extinction mutants
+  (tdz-dynamic-import, concurrent-clobber, on-demand-gate-rot) cannot be proven extinct
+  while those records are red. Closing M61 is a bounded piece of work, not a launch
+  blocker: it is verifier tooling, not product behaviour.
 - **M13/M15/M16/M20/M40/M43/M48 — pre-lane raw evidence** is present in the private
   working tree but was not re-sealed in this workstream; no launch claim cites it.
 
