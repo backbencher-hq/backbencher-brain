@@ -135,7 +135,13 @@ const SUPPORT_CHANNELS = [
 function truthNumbers(): { tables: number; tools: number; langs: number; parsers: number } {
   const t = readFileSync(path.join(ROOT, "website/src/data/truth.generated.ts"), "utf8")
   const tables = Number(t.match(/tables: (\d+)/)?.[1])
-  const langs = Number(t.match(/classified: (\d+)/)?.[1])
+  // `langs` is the PUBLIC language count — the analyzer count, not the registry's
+  // route-id count. TSX/Sass/Terraform are aliases of the TypeScript/CSS/HCL
+  // analyzers (README states it), so the support answer must not count them again.
+  // The canonical analyzer count lives in docs/analyzers/README.md's measured block.
+  const analyzersBlock = readFileSync(path.join(ROOT, "docs/analyzers/README.md"), "utf8")
+  const langs = Number(analyzersBlock.match(/<!-- ANALYZER-COUNTS:START -->\s*(\{[^}]*\})/)?.[1]?.match(/"analyzers":\s*(\d+)/)?.[1])
+  // `parsers` keeps its meaning: how many REGISTRY IDS have a dedicated grammar behind them.
   const parsers = Number(t.match(/dedicatedParsers: (\d+)/)?.[1])
   const tools = (t.match(/"bb_[a-z_]+"/g) ?? []).length
   if (!tables || !langs || !parsers || !tools) {
@@ -165,8 +171,8 @@ const countChecks: { claim: string; ok: boolean }[] = [
     ok: parsed.qas.some((x) => x.a.includes(`${truth.langs} languages`)),
   },
   {
-    claim: `${truth.parsers} with dedicated tree-sitter parsers`,
-    ok: parsed.qas.some((x) => x.a.includes(`${truth.parsers} with dedicated`)),
+    claim: `${truth.parsers} ids`,
+    ok: parsed.qas.some((x) => x.a.includes(`${truth.parsers} ids`)),
   },
   {
     claim: `${truth.tools} bb tools`,

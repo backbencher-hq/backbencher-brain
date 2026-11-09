@@ -92,7 +92,12 @@ const parsersCount = (read("website/src/data/brain-languages.ts").match(/^\s*\{ 
 const relMatch = read("website/src/data/brain-languages.ts").match(/RELATIONSHIP_TYPES = \[([^\]]+)\]/)
 const relTypes = relMatch ? relMatch[1].split(",").filter((entry) => entry.trim()).length : 0
 check("T2: home renders the generated version", home.includes(`bb ${version}`), `bb ${version}`)
-check("T2: home renders the generated language count", home.includes(`${langCount} languages`), `${langCount} languages`)
+// The public language count is the ANALYZER count — 50. The registry's 53 ids are
+// route ids, three of which (TSX/Sass/Terraform) are aliases of an existing
+// analyzer; the page states that separately. `parsersCount` is the site's own
+// analyzer list, so this check now pins the visible claim to the analyzer source
+// instead of to the registry's id count.
+check("T2: home renders the generated language count", home.includes(`${parsersCount} languages`), `${parsersCount} languages`)
 check("T2: home renders the generated dedicated-grammar count", home.includes(`${dedicated} dedicated grammars`), `${dedicated} dedicated grammars`)
 check("T2: home renders the generated analyzer count", home.includes(`${parsersCount} analyzers`), `${parsersCount} analyzers`)
 check("T2: home renders the generated relationship-type count", home.includes(`${relTypes} relationship types`), `${relTypes} relationship types`)

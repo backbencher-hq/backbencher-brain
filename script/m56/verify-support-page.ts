@@ -158,13 +158,18 @@ function firstDiff(a: string[], b: string[]): string {
 // Truth cross-check: the numbers faq.md states must agree with the engine.
 const truth = read("website/src/data/truth.generated.ts")
 const tables = Number(truth.match(/tables: (\d+)/)?.[1])
-const langs = Number(truth.match(/classified: (\d+)/)?.[1])
+// The PUBLIC language count is the analyzer count (50), read from the canonical
+// measured block in docs/analyzers/README.md — the registry's 53 ids are route ids
+// and three of them are aliases, so the FAQ must not count them as languages again.
+const langs = Number(
+  read("docs/analyzers/README.md").match(/<!-- ANALYZER-COUNTS:START -->\s*(\{[^}]*\})/)?.[1]?.match(/"analyzers":\s*(\d+)/)?.[1],
+)
 const parsers = Number(truth.match(/dedicatedParsers: (\d+)/)?.[1])
 const tools = (truth.match(/"bb_[a-z_]+"/g) ?? []).length
 check("S1: engine truth numbers are readable", Boolean(tables && langs && parsers && tools), `tables=${tables} langs=${langs} parsers=${parsers} tools=${tools}`)
 check("S1: faq.md states the real table count", md.includes(`${tables} tables`))
 check("S1: faq.md states the real tool count", md.includes(`${tools} agent tools`) && md.includes(`${tools} MCP tools`) && md.includes(`${tools} bb tools`))
-check("S1: faq.md states the real language counts", md.includes(`${langs} languages`) && md.includes(`${parsers} with dedicated`))
+check("S1: faq.md states the real language counts", md.includes(`${langs} languages`) && md.includes(`${parsers} ids`))
 
 // --- 2. the rendered /support page ----------------------------------------------------
 
