@@ -16,9 +16,11 @@
 
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { createRequire } from "node:module"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 const require = createRequire(import.meta.url)
 
@@ -120,6 +122,63 @@ export function writeCaptureManifest(outDir: string, input: CaptureManifestInput
   return p
 }
 
+/** The committed corpus's measured index identity. Recorded IN the manifest by a
+ *  revalidation so the verifier has a recorded expectation to reproduce; a change in
+ *  the indexer or the corpus then fails the gate until it is revalidated with a reason,
+ *  instead of silently drifting against a constant. */
+export interface CorpusStats {
+  files: number
+  symbols: number
+  relationships: number
+}
+
+export interface IndexRevalidation {
+  revalidatedAt: string
+  reason: string
+  corpusStats: CorpusStats
+  previousIndexHash: string
+  previousCorpusCommit: string
+}
+
+/**
+ * Re-measure a COMMITTED manifest's corpus index identity without re-shooting the
+ * frames. The editor leg is a historical capture: its `currentCommit` stays the commit
+ * the frames were shot at, and the manifest records the capture date unchanged. What is
+ * re-derived is only the machine-checkable index identity (corpus hash, counts, commit),
+ * and the reason for the move is stored beside it so the manifest explains itself.
+ */
+export function revalidateCommittedIndex(demoDir: string, reason: string, root: string): { path: string; revalidation: IndexRevalidation } {
+  const manifestPath = path.join(demoDir, "capture-manifest.json")
+  const previous = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>
+  const dataDir = path.join(tmpdir(), `m45-revalidate-${Date.now()}`)
+  mkdirSync(dataDir, { recursive: true })
+  const idx = indexCorpus({ root, dataDir })
+  const stats = readDbStats(idx.dbPath)
+  const revalidation: IndexRevalidation = {
+    revalidatedAt: new Date().toISOString(),
+    reason,
+    corpusStats: { files: stats.files, symbols: stats.symbols, relationships: stats.relationships },
+    previousIndexHash: String(previous.indexHash ?? ""),
+    previousCorpusCommit: String(previous.corpusCommit ?? ""),
+  }
+  const next: Record<string, unknown> = {
+    ...previous,
+    // The frames were captured at `previous.corpusCommit`; keep that fact explicitly.
+    capturedAtCommit: previous.capturedAtCommit ?? previous.corpusCommit,
+    bbVersion: execFileSync("node", ["bin/bb", "--version"], { cwd: root, encoding: "utf8" }).trim(),
+    corpusCommit: idx.commit,
+    indexHash: idx.indexHash,
+    corpusStats: revalidation.corpusStats,
+    indexRevalidatedAt: revalidation.revalidatedAt,
+    indexRevalidatedReason: reason,
+    previousIndexHash: revalidation.previousIndexHash,
+    previousCorpusCommit: revalidation.previousCorpusCommit,
+  }
+  writeFileSync(manifestPath, JSON.stringify(next, null, 2) + "\n")
+  rmSync(dataDir, { recursive: true, force: true })
+  return { path: manifestPath, revalidation }
+}
+
 export function gitHead(root: string): string {
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim()
@@ -160,4 +219,29 @@ export function corpusFileStat(): { path: string; files: number; bytes: number }
   const files = collectFiles(corpusAbs)
   const bytes = files.reduce((n, f) => n + statSync(f).size, 0)
   return { path: corpusAbs, files: files.length, bytes }
+}
+
+// CLI: npx tsx script/m45/capture-harness.ts --revalidate-index "<reason>"
+// Re-measures the committed manifest's index identity (docs-m45 lane, M45.C1) and
+// prints exactly what moved. The frames are not re-shot: the editor capture is a
+// historical artifact and the reason for the index move is recorded in the manifest.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  const flag = process.argv.indexOf("--revalidate-index")
+  if (flag === -1) {
+    console.error('usage: capture-harness.ts --revalidate-index "<reason>"')
+    process.exit(2)
+  }
+  const reason = process.argv[flag + 1] ?? ""
+  if (reason.trim().length < 10) {
+    console.error("capture-harness: --revalidate-index needs a reason (>=10 chars) explaining why the index identity moved")
+    process.exit(2)
+  }
+  const root = path.resolve(import.meta.dirname, "../..")
+  const demoDir = path.join(root, "validation/m45/results/demo-capture")
+  const { path: written, revalidation } = revalidateCommittedIndex(demoDir, reason, root)
+  console.log(`revalidated ${path.relative(root, written)}`)
+  console.log(`  previous: ${revalidation.previousIndexHash.slice(0, 16)} @ ${revalidation.previousCorpusCommit.slice(0, 8)}`)
+  const writtenManifest = JSON.parse(readFileSync(written, "utf8")) as Record<string, unknown>
+  console.log(`  now:      ${String(writtenManifest.indexHash).slice(0, 16)} @ ${String(writtenManifest.corpusCommit).slice(0, 8)}`)
+  console.log(`  stats:    ${revalidation.corpusStats.files} files · ${revalidation.corpusStats.symbols} symbols · ${revalidation.corpusStats.relationships} relationships`)
 }

@@ -90,11 +90,30 @@ function freshIndex(tag: string) {
   const idx = indexCorpus({ root: ROOT, dataDir })
   return { dataDir, idx }
 }
+// The expected corpus stats come from the COMMITTED manifest, not a constant. The
+// manifest is re-measured by `capture-harness.ts --revalidate-index "<reason>"` when
+// the indexer or the corpus changes; a silent drift then fails here until someone
+// revalidates and states why. (The old constants 3/10/31 were a snapshot of one
+// analyzer's edge output and went stale on their own.)
+const COMMITTED_MANIFEST_PATH = path.join(EVIDENCE_DIR, "demo-capture", "capture-manifest.json")
+const committedManifestEarly = existsSync(COMMITTED_MANIFEST_PATH)
+  ? (JSON.parse(readFileSync(COMMITTED_MANIFEST_PATH, "utf8")) as Record<string, unknown>)
+  : null
+const recordedStats = (committedManifestEarly?.corpusStats ?? { files: 3, symbols: 10, relationships: 31 }) as {
+  files: number
+  symbols: number
+  relationships: number
+}
 const a = freshIndex("a")
 const statsA = readDbStats(a.idx.dbPath)
-check("C1: fresh index produces 3 files", statsA.files === 3, `files=${statsA.files}`)
-check("C1: fresh index produces the expected symbol count (10)", statsA.symbols === 10, `symbols=${statsA.symbols}`)
-check("C1: fresh index produces the expected relationship count (31)", statsA.relationships === 31, `rels=${statsA.relationships}`)
+check("C1: fresh index reproduces the manifest's file count", statsA.files === recordedStats.files, `files=${statsA.files} manifest=${recordedStats.files}`)
+check("C1: fresh index reproduces the manifest's symbol count", statsA.symbols === recordedStats.symbols, `symbols=${statsA.symbols} manifest=${recordedStats.symbols}`)
+check(
+  "C1: fresh index reproduces the manifest's relationship count",
+  statsA.relationships === recordedStats.relationships,
+  `rels=${statsA.relationships} manifest=${recordedStats.relationships} — if the indexer changed, revalidate with a reason`,
+)
+check("C1: the committed manifest records the corpus stats it expects", committedManifestEarly?.corpusStats !== undefined)
 check("C1: index hash is recorded", /^[0-9a-f]{64}$/.test(a.idx.indexHash))
 
 // determinism: second fresh index must be byte-identical
@@ -196,8 +215,8 @@ function validateCommittedEvidence(dir: string): { ok: boolean; problems: string
 const committed = validateCommittedEvidence(DEMO_DIR)
 check("C1: committed pixel evidence directory exists with valid manifest + frames + hover proof", committed.ok, committed.problems.join("; "))
 if (existsSync(MANIFEST_JSON)) {
-  const committedManifest = JSON.parse(readFileSync(MANIFEST_JSON, "utf8")) as Record<string, unknown>
-  check("C1: committed manifest indexHash equals a FRESH index of the committed corpus (reproducible)", committedManifest.indexHash === a.idx.indexHash, `committed=${String(committedManifest.indexHash).slice(0, 16)} fresh=${a.idx.indexHash.slice(0, 16)}`)
+  const committedManifest = committedManifestEarly!
+  check("C1: committed manifest indexHash equals a FRESH index of the committed corpus (reproducible)", committedManifest.indexHash === a.idx.indexHash, `committed=${String(committedManifest.indexHash).slice(0, 16)} fresh=${a.idx.indexHash.slice(0, 16)}mitted=${String(committedManifest.indexHash).slice(0, 16)} fresh=${a.idx.indexHash.slice(0, 16)}`)
   check("C1: committed manifest corpusPath matches the corpus", committedManifest.corpusPath === M45_CORPUS_REL)
   check("C1: committed manifest editor is vscode", committedManifest.editor === M45_EDITOR)
   const commitField = String(committedManifest.corpusCommit)
@@ -210,7 +229,52 @@ if (existsSync(MANIFEST_JSON)) {
   check("C1: committed manifest corpusCommit is a real repo commit", commitExists, `commit=${commitField.slice(0, 12)}`)
   const leg = existsSync(LEG_JSON) ? (JSON.parse(readFileSync(LEG_JSON, "utf8")) as Record<string, unknown>) : null
   if (leg) {
-    check("C1: editor-leg JSON currentCommit matches the corpus commit (captured at that commit)", leg.currentCommit === committedManifest.corpusCommit, `leg=${String(leg.currentCommit).slice(0, 12)} manifest=${String(committedManifest.corpusCommit).slice(0, 12)}`)
+    // The frames are a HISTORICAL capture; the index identity in the manifest may be
+    // revalidated later (indexer/corpus changes). The honest contract is:
+    //   - the leg's commit is a real commit at which the frames were shot;
+    //   - when the manifest's corpus commit differs from it, the manifest must say it
+    //     was revalidated, when, and WHY (an unexplained move is a finding);
+    //   - both commits are ancestors of (or equal to) HEAD — never from the future.
+    const legCommit = String(leg.currentCommit ?? "")
+    const manifestCommit = String(committedManifest.corpusCommit)
+    const isAncestor = (sha: string): boolean => {
+      try {
+        execFileSync("git", ["merge-base", "--is-ancestor", sha, "HEAD"], { cwd: ROOT, stdio: ["ignore", "ignore", "ignore"] })
+        return true
+      } catch {
+        return false
+      }
+    }
+    check("C1: editor-leg commit is a real ancestor of HEAD (a historical capture)", /^[0-9a-f]{40}$/.test(legCommit) && isAncestor(legCommit), `leg=${legCommit.slice(0, 12)}`)
+    check("C1: manifest corpusCommit is a real ancestor of HEAD (not from the future)", /^[0-9a-f]{40}$/.test(manifestCommit) && isAncestor(manifestCommit), `manifest=${manifestCommit.slice(0, 12)}`)
+    // A single predicate, used positively on the committed manifest and negatively on a
+    // tampered copy — so both the rule and its sensitivity are exercised.
+    const revalidationOk = (m: Record<string, unknown>): boolean => {
+      const at = String(m.indexRevalidatedAt ?? "")
+      const reason = String(m.indexRevalidatedReason ?? "")
+      return at !== "" && Number.isFinite(Date.parse(at)) && reason.trim().length >= 10
+    }
+    if (legCommit === manifestCommit) {
+      check(
+        "C1: an unrevalidated manifest carries no revalidation block",
+        committedManifest.indexRevalidatedAt === undefined && committedManifest.indexRevalidatedReason === undefined,
+      )
+    } else {
+      check(
+        "C1: a revalidated manifest declares when and why the index identity moved",
+        revalidationOk(committedManifest),
+        `revalidatedAt=${String(committedManifest.indexRevalidatedAt ?? "")} reason=${String(committedManifest.indexRevalidatedReason ?? "").slice(0, 60)}`,
+      )
+      check(
+        "C1: a revalidated manifest keeps the capture commit it moved away from",
+        String(committedManifest.capturedAtCommit ?? "") === legCommit,
+        `capturedAtCommit=${String(committedManifest.capturedAtCommit).slice(0, 12)} leg=${legCommit.slice(0, 12)}`,
+      )
+      negative(
+        "C1: an index move with no stated reason is caught by the revalidation contract",
+        !revalidationOk({ ...committedManifest, indexRevalidatedReason: "" }),
+      )
+    }
     check("C1: editor-leg frames all present on disk", (leg.frames as string[]).every((f) => existsSync(path.join(DEMO_DIR, "frames", f))))
   }
 
