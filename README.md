@@ -1,6 +1,6 @@
 # Backbencher Brain (`bb`)
 
-**Evidence-first code intelligence, local-first and runtime-agnostic.** `bb` indexes a repository with
+**Evidence is the answer.** `bb` is local-first, runtime-agnostic code intelligence: it indexes a repository with
 **50 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
 questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
 supported. No telemetry, no server, no account required.
