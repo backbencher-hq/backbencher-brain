@@ -4,13 +4,17 @@
 // discipline is actually WIRED for enforcement:
 //   A. package.json defines `verify:fast` containing exactly the certified
 //      set — and nothing else (a removed gate or a smuggled-in gate that can
-//      never run on a runner both fail). The set has two tiers, each with a
+//      never run on a runner both fail). The set has three tiers, each with a
 //      stated certification basis:
 //        - 21 fresh-HOME-certified gates (M30×6, M32×6, M33×6, M34×3).
-//        - 3 runner-proven additions: M29 R1/R4 (observed green on
-//          ubuntu-latest in CI run 34774391788) and M56 governance
-//          (HOME-independent: it reads plan/ledger/git metadata only, and is
-//          green in a runner-faithful checkout with no website deps).
+//        - 3 runner-proven additions: M29 wave-protocol/precision-ledger and
+//          M56 governance (HOME-independent: it reads plan/ledger/git metadata
+//          only, and is green in a runner-faithful checkout with no website
+//          deps).
+//        - 7 security gates (M15×4, M20×3, plus script/verify-security.ts):
+//          they spawn the built binary over fixtures only — no display, no
+//          VSIX, no ffmpeg, no website deps — and run green locally, which is
+//          this tier's certification basis.
 //      A leg that needs website deps, a built site, a display, the packaged
 //      VSIX, or ffmpeg is NOT eligible, however green it is on a dev box —
 //      those live in the verify-site job or the local `npm run verify` chain.

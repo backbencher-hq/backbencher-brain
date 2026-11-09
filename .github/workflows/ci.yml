@@ -153,7 +153,10 @@ jobs:
   # set and nothing else — that equality is asserted by
   # script/m36/verify-verify-fast.ts, which also guarantees this job is
   # passable. The set is 21 fresh-HOME-certified gates (M30×6, M32×6, M33×6,
-  # M34×3) plus 3 runner-proven additions (M29 R1/R4, M56 governance).
+  # M34×3), 3 runner-proven additions (M29 wave-protocol/precision-ledger,
+  # M56 governance) and 7 security gates (M15×4, M20×3, script/verify-security)
+  # that spawn the built binary over fixtures only — no display, no VSIX, no
+  # ffmpeg, no website deps.
   # A leg needing website deps, a built site, a display, the gitignored
   # extension VSIX or ffmpeg can never run here, however green it is locally.
   # Where the other legs live instead:
