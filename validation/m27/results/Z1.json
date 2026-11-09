@@ -30,7 +30,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+  "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
   "sourceFingerprint": "29463272d0757a837561b62de83a7c0c21e1146d4ef59739c2cba9b73805eb82",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -46,7 +46,7 @@
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-11-09T07:34:42.613Z",
+  "generatedAt": "2026-11-09T08:38:41.803Z",
   "claimLevel": "I2 — the shipped launcher was EXECUTED for real (server-beside, ../../../dist fallback, both declared-error paths, node via $HOME prefix with an empty PATH; 4 launcher mutants caught); the in-editor session leg is blocked-with-reason",
   "blockedLegs": [
     {
@@ -60,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T07:34:42.613Z",
-    "contentSha256": "d3abecbb9c43fe100b90e1a07378b757433c98461e5742a92943aa98e870cd7e"
+    "sealedAt": "2026-11-09T08:38:41.804Z",
+    "contentSha256": "1360c6880ae83294f1c4e5f3918be62c74108a7689c7ff6ce867ff57d46722c3"
   }
 }

@@ -31,7 +31,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 69,
@@ -58,7 +58,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
         "evidenceFile": "R1.json",
         "passed": 36,
@@ -86,7 +86,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
         "evidenceFile": "R2.json",
         "passed": 430,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
         "evidenceFile": "R3-verify.json",
         "passed": 28,
@@ -151,7 +151,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 22,
@@ -181,7 +181,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
@@ -210,7 +210,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
         "evidenceFile": "V1-verify.json",
         "passed": 14,
@@ -240,7 +240,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
         "evidenceFile": "D1-verify.json",
         "passed": 13,
@@ -270,7 +270,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "e2abf6f58d8e1e2654818e44eac2fe24f59c49a5",
+        "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
         "verifierCommand": "npx tsx script/m29/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 32,
@@ -283,7 +283,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T08:20:19.260Z",
-    "contentSha256": "81b8cfe1e3d9b4d6b3bac94cb5209ffcb8223ca6b2e759318a31b2e3e3e192ad"
+    "sealedAt": "2026-11-09T09:05:58.553Z",
+    "contentSha256": "f1971665801aacd549f6f1fe87518199cd2bebae70ace8dd88d7c657219a287d"
   }
 }

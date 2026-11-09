@@ -43,21 +43,7 @@
     "m29-wave-protocol",
     "m29-precision-ledger",
     "m29-precision-improvements",
-    "m29-m29-docs",
-    "m29-closure",
-    "m42-enrichment",
-    "m42-highlight",
-    "m42-hover-actions",
-    "m42-hub",
-    "m42-hub-nav",
-    "m42-rich-hover",
-    "m42-closure",
-    "m44-hub-tree",
-    "m44-impact-resolution",
-    "m44-legend",
-    "m44-hub-list",
-    "m44-usages-fallback",
-    "m44-usages-groups"
+    "m29-m29-docs"
   ],
   "gates": [
     {
@@ -360,7 +346,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ e2abf6f5)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 49908bc2)",
       "ok": true,
       "timedOut": false
     },
@@ -389,12 +375,12 @@
       "timedOut": false
     }
   ],
-  "currentCommit": "1a10c18cd1fe053b36cf639d6a2040fe71828438",
+  "currentCommit": "49908bc21ee47bc0ef388b184469060f0a81f7b5",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-11-09T08:21:18.496Z",
+  "generatedAt": "2026-11-09T09:06:56.151Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T08:21:18.497Z",
-    "contentSha256": "4f0ad305e61126f8123eca1bb4365d9eb27e6262f771f9fa3f0a329ab16f3235"
+    "sealedAt": "2026-11-09T09:06:56.151Z",
+    "contentSha256": "29e3b67a0105dd6562bb13cf97199ff59b663d4c0c2b2302c6637df1c494464c"
   }
 }
