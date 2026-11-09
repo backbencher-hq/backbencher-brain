@@ -9,9 +9,10 @@
 // RETIRED (a redirect, no media, no nav/sitemap entry) rather than live.
 //
 // Checks:
-//   1. Hero figure: HeroTerminal exists, renders REAL verbatim CLI output, and
-//      HeroSection actually renders it. The hero is VIDEO-FREE (owner decision
-//      2026-09-12): no film lives in the hero. Reduced-motion reveals all lines.
+//   1. Hero figure: AtlasHero (the atlas provenance plate, which replaced the
+//      live-terminal figure) exists, is rendered by the homepage, and the hero is
+//      VIDEO-FREE: no film and no capture manifest live in the hero. Reduced-motion
+//      is honoured. The retired terminal surface must stay retired.
 //   2. Retirement: /demos is a redirect stub to /editors through the site's one
 //      redirect declaration; the withdrawn media is gone from the published
 //      bundle; no source references the /demos/ asset path.
@@ -57,16 +58,33 @@ function read(p: string): string {
 
 const RETIRED = ["/demos", "/faq", "/contact", "/troubleshooting"]
 
-// --- 1. hero figure (video-free by owner decision) ----------------------------------
+// --- 1. hero figure (video-free by decision) -----------------------------------------
+//
+// SCOPE MOVE (recorded, not deleted): the live-terminal hero this section used to
+// assert was RETIRED by the site redesign — the hero is now the atlas provenance plate
+// (AtlasHero), which makes the same point the terminal did (an answer with its evidence)
+// without a CLI simulation. The durable claims are unchanged and are what this section
+// asserts now: the hero is VIDEO-FREE, it is actually rendered by the homepage, and the
+// retired terminal surface stays retired (a regression that re-adds it fails here).
 
-const heroTerminal = read(path.join(SITE, "src/components/HeroTerminal.tsx"))
-const heroSection = read(path.join(SITE, "src/components/HeroSection.tsx"))
+const pageSource = read(path.join(SITE, "src/app/page.tsx"))
+const atlasHero = read(path.join(SITE, "src/components/atlas/AtlasHero.tsx"))
+const atlasDir = path.join(SITE, "src/components/atlas")
+let atlasSources = ""
+if (existsSync(atlasDir)) {
+  for (const f of readdirSync(atlasDir)) {
+    if (/\.tsx?$/.test(f)) atlasSources += read(path.join(atlasDir, f))
+  }
+}
+check("T1: the atlas hero component exists", atlasHero.length > 1000)
+check("T1: the homepage renders the hero figure", pageSource.includes("<AtlasHero />") && pageSource.includes('from "@/components/atlas/AtlasHero"'))
+check("T1: the hero figure is video-free (no film, no capture manifest)", !atlasSources.includes("<video") && !atlasSources.includes(".mp4") && !atlasSources.includes("capture-manifest"))
+check(
+  "T1: the retired terminal hero stays retired (HeroTerminal / HeroSection are gone)",
+  !existsSync(path.join(SITE, "src/components/HeroTerminal.tsx")) && !existsSync(path.join(SITE, "src/components/HeroSection.tsx")),
+)
 const globals = read(path.join(SITE, "src/app/globals.css"))
-check("T1: HeroTerminal component exists", heroTerminal.length > 200)
-check("T1: hero terminal shows verbatim CLI output (not invented)", heroTerminal.includes('"bb --version"') && heroTerminal.includes("Usage: bb [options] [command]"))
-check("T1: hero figure is video-free (owner decision 2026-09-12)", !heroSection.includes("<video") && !heroSection.includes("HeroFilm"))
-check("T1: HeroSection renders the live terminal", heroSection.includes("<HeroTerminal />"))
-check("T1: reduced-motion reveals all lines instantly (CSS gate)", globals.includes(".hero-line") && /reduce\)/.test(globals))
+check("T1: the hero's motion respects reduced-motion (CSS gate)", /prefers-reduced-motion[\s\S]{0,400}reduce/.test(globals))
 
 // --- 2. /demos is retired -----------------------------------------------------------
 
@@ -97,7 +115,7 @@ check("T1: no site source references the withdrawn /demos/ assets", demosAssetRe
 // --- 3. discovery -------------------------------------------------------------------
 
 const navSrc = read(path.join(SITE, "src/components/Navigation.tsx"))
-const footerSrc = read(path.join(SITE, "src/components/SiteFooter.tsx"))
+const footerSrc = read(path.join(SITE, "src/components/site/SiteFooter.tsx"))
 check("T1: no retired path is linked from the navigation", !RETIRED.some((r) => navSrc.includes(`href: '${r}'`)))
 check("T1: no retired path is linked from the footer", !RETIRED.some((r) => footerSrc.includes(`href: "${r}"`)))
 const sitemapSrc = read(path.join(SITE, "src/app/sitemap.ts"))
@@ -121,7 +139,7 @@ check(
   "T1: the M41 SEO gate pins the /demos retirement in its redirect contract",
   seoGate.includes('"/demos": "/editors"') && seoGate.includes("EXPECTED_REDIRECTS"),
 )
-check("T1: M41 design gate accepts the live terminal hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("HeroTerminal"))
+check("T1: M41 design gate accepts the current hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("AtlasHero"))
 
 // --- 6. build truth -----------------------------------------------------------------
 
@@ -151,8 +169,18 @@ function mutated(mutator: (s: string) => string, source: string, name: string, p
   }
 }
 
-mutated((s) => s.replace("Usage: bb [options] [command]", "Usage: invented [fake] [lines]"), path.join(SITE, "src/components/HeroTerminal.tsx"), "T1-mutant: verbatim output replaced fails", (s) => s.includes("Usage: bb [options] [command]"))
-mutated((s) => s.replace("<HeroTerminal />", "{null}"), path.join(SITE, "src/components/HeroSection.tsx"), "T1-mutant: unrendered hero figure fails", (s) => s.includes("<HeroTerminal />"))
+mutated(
+  (s) => s.replace("</section>", "<video src=\"/demos/hero-cut.mp4\" /></section>"),
+  path.join(SITE, "src/components/atlas/AtlasHero.tsx"),
+  "T1-mutant: a film re-added to the hero fails the video-free check",
+  (s) => !s.includes("<video") && !s.includes(".mp4"),
+)
+mutated(
+  (s) => s.replace("<AtlasHero />", "{null}"),
+  path.join(SITE, "src/app/page.tsx"),
+  "T1-mutant: unrendered hero figure fails",
+  (s) => s.includes("<AtlasHero />"),
+)
 // Resurrect /demos as a content page: the retirement predicate must fail.
 mutated(
   (s) => s.replace('redirect(REDIRECTS["/demos"])', '<video src="/demos/hero-cut.mp4" />'),
