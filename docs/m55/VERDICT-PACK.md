@@ -5,7 +5,7 @@ fails unless the file is byte-identical to a fresh generation, except for exactl
 two declared lines — the `Audit HEAD` line (it moves on every committed run) and
 the owner's verdict line (preserved verbatim, §8.5).
 
-Audit HEAD: `87b4636189d4f0536217b47147a1516e297eba85`  ·  capture run: `owner-test-2026-09-21`
+Audit HEAD: `10d92c441cacc69b6c8930888c8e93b77ede9950`  ·  capture run: `owner-test-2026-09-21`
 
 ## The verdict is the owner's
 
