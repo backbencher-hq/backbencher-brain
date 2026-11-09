@@ -34,11 +34,11 @@
         "status": "known-gap",
         "verifierCommand": "npx tsx script/m62/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 8,
-        "failed": 3,
-        "realFailed": 3,
+        "passed": 9,
+        "failed": 2,
+        "realFailed": 2,
         "negativeCases": 8,
-        "recordCommit": "c963bb3a86002ca4160c0e162a4ce5c327ebf416"
+        "recordCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc"
       }
     },
     {
@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "c963bb3a86002ca4160c0e162a4ce5c327ebf416",
-        "recordSealedAt": "2026-10-17T17:42:03.149Z"
+        "recordCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+        "recordSealedAt": "2026-11-09T10:22:32.864Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 8,
         "mutantsTotal": 8,
         "negativeCases": 8,
-        "recordCommit": "c963bb3a86002ca4160c0e162a4ce5c327ebf416",
-        "recordSealedAt": "2026-10-17T17:44:51.500Z"
+        "recordCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+        "recordSealedAt": "2026-11-09T10:22:53.529Z"
       }
     },
     {
@@ -142,8 +142,8 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "c963bb3a86002ca4160c0e162a4ce5c327ebf416",
-        "recordSealedAt": "2026-10-17T17:45:16.719Z"
+        "recordCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+        "recordSealedAt": "2026-11-09T10:22:56.495Z"
       }
     },
     {
