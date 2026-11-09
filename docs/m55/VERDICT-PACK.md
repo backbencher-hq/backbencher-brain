@@ -5,7 +5,7 @@ fails unless the file is byte-identical to a fresh generation, except for exactl
 two declared lines — the `Audit HEAD` line (it moves on every committed run) and
 the owner's verdict line (preserved verbatim, §8.5).
 
-Audit HEAD: `55acbc7f9691dbe42621296ac1a2c3e58a71bed3`  ·  capture run: `owner-test-2026-09-21`
+Audit HEAD: `87b4636189d4f0536217b47147a1516e297eba85`  ·  capture run: `owner-test-2026-09-21`
 
 ## The verdict is the owner's
 
@@ -25,7 +25,7 @@ behind them, and the verdict line at the end stays for the owner to write.
 | T5 | [#775](https://github.com/backbencher-hq/backbencher-brain/issues/775) | `T5.json` | verified | 70 | — |
 | P1 | [#776](https://github.com/backbencher-hq/backbencher-brain/issues/776) | `P1.json` | verified | 25 | 4/4 |
 | V1 | [#777](https://github.com/backbencher-hq/backbencher-brain/issues/777) | `V1.json` | verified | 55 | 14/14 |
-| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 35 | — |
+| X1 | [#778](https://github.com/backbencher-hq/backbencher-brain/issues/778) | `X1.json` | known-gap | 40 | — |
 
 ## 2. Every claim, and the frame behind it
 

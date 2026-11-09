@@ -2,30 +2,32 @@
   "issue": "M55.X1",
   "code": "X1",
   "milestone": "M55",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 41,
-  "passed": 41,
-  "failed": 0,
-  "realFailed": 0,
+  "passed": 40,
+  "failed": 1,
+  "realFailed": 1,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "55acbc7f9691dbe42621296ac1a2c3e58a71bed3",
+  "currentCommit": "87b4636189d4f0536217b47147a1516e297eba85",
   "workingTreeRelevantChanges": [
     "docs/m55/VERDICT-PACK.md",
-    "validation/m55/results/X1.json"
+    "validation/m55/results/G1.json",
+    "validation/m55/results/X1.json",
+    "validation/m55/results/manifest.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-11-09T05:26:10.117Z",
+  "generatedAt": "2026-11-09T09:08:09.308Z",
   "audit": {
-    "head": "55acbc7f9691dbe42621296ac1a2c3e58a71bed3",
+    "head": "87b4636189d4f0536217b47147a1516e297eba85",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
-      "pin": "5a113cbf30940e4787103a78dd70d6c128e9ae4b",
+      "pin": "87b4636189d4f0536217b47147a1516e297eba85",
       "green": 41,
       "total": 41,
       "milestones": {
@@ -362,7 +364,9 @@
     ],
     "handoffIssue": 816
   },
-  "failures": [],
+  "failures": [
+    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 6002 vs 6003 bytes"
+  ],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
     "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 41 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
@@ -370,7 +374,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T05:26:10.120Z",
-    "contentSha256": "e205b374dc13adde677103942a1f3a78d65e68eb4e5b573f7a0d1ef0cc9085ae"
+    "sealedAt": "2026-11-09T09:08:09.310Z",
+    "contentSha256": "c3a6838196a04fcac76bdc518a906903bf60a9d12e150f01418981d6ff518222"
   }
 }

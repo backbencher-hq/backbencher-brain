@@ -8,19 +8,15 @@
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 8,
-  "currentCommit": "5a113cbf30940e4787103a78dd70d6c128e9ae4b",
+  "currentCommit": "87b4636189d4f0536217b47147a1516e297eba85",
   "workingTreeRelevantChanges": [
     "validation/m55/results/G1.json",
-    "validation/m55/results/P1.json",
-    "validation/m55/results/T2.json",
-    "validation/m55/results/T3.json",
-    "validation/m55/results/T4.json",
     "validation/m55/results/X1.json",
     "validation/m55/results/manifest.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-09T05:25:29.690Z",
+  "generatedAt": "2026-11-09T09:08:08.094Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -31,11 +27,12 @@
       "T4",
       "T5",
       "P1",
-      "V1"
+      "V1",
+      "X1"
     ],
     "planned": [],
     "partial": [],
-    "ledgerStatus": "open"
+    "ledgerStatus": "closed"
   },
   "contract": {
     "section15": "docs/IDE-HONESTY-CONTRACT.md",
@@ -65,7 +62,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T05:25:29.696Z",
-    "contentSha256": "fdec13204f617e75a711a2fbdbb1691aea93ebaf4eee83efc9de60c059661682"
+    "sealedAt": "2026-11-09T09:08:08.101Z",
+    "contentSha256": "e4c8ce60dc389a7932b9d4df165d459af023820a8a9125bf15b91f4b36526fb4"
   }
 }
