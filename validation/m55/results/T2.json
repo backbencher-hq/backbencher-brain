@@ -103,8 +103,8 @@
       "./symbols"
     ]
   },
-  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
-  "sourceFingerprint": "108b525f54ba131ab5a209bfae8ae4a8b940714e255f66f755659381b90f725b",
+  "currentCommit": "5a113cbf30940e4787103a78dd70d6c128e9ae4b",
+  "sourceFingerprint": "04f69f929621192ff644f4f6d088ad85b84193adb0f4201e91e416a5e6268709",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-call-hierarchy.ts",
@@ -122,7 +122,7 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-11-05T14:22:17.825Z",
+  "generatedAt": "2026-11-09T05:24:20.255Z",
   "fixture": {
     "root": "$HOME/mcp/backbencher-brain/validation/m55/fixtures/t2-workspace",
     "files": [
@@ -176,7 +176,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:22:17.825Z",
-    "contentSha256": "f5d2a0e88c963e12a1c184d78452aeca2b41d0522daf8d828cc89000e0e463c5"
+    "sealedAt": "2026-11-09T05:24:20.255Z",
+    "contentSha256": "8fdb7b131e46d862afe04940c92c4a9871a910d06a9e75145f647ae434796a81"
   }
 }

@@ -12,8 +12,8 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "01917660d010a1b9f02a5b90c39dc557b915e29f",
-  "sourceFingerprint": "3b55476f72168872cc6dabdab57fe6b7097360a5ee0bb8d17903872536f95115",
+  "currentCommit": "5a113cbf30940e4787103a78dd70d6c128e9ae4b",
+  "sourceFingerprint": "c5457c890afc98618c0d1498c92d543a6e873dcbdca73ec52a77b31d88526a3d",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
     "script/m55/verify-relations.ts",
@@ -29,10 +29,10 @@
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-11-05T14:22:25.892Z",
+  "generatedAt": "2026-11-09T05:22:52.053Z",
   "fixture": {
-    "workspace": "/tmp/m55-t3-ws-VvRTBc",
-    "projectId": "a2b83e1345932db0159d082cf4c640e30fc3c0ca",
+    "workspace": "$HOME/mcp/backbencher-brain/.tools/tmp/m55-t3-ws-5KUbhx",
+    "projectId": "cfe303d6b8e37430a433cb98977a22386649e5ba",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -148,7 +148,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T14:22:25.893Z",
-    "contentSha256": "f3a171aabae6d2058e31c3b45389e91de3cd4af8ed7af4bcb66fcf5f95defaac"
+    "sealedAt": "2026-11-09T05:22:52.053Z",
+    "contentSha256": "1120ddbf267fe3a29b61f106fad84ee348b2a6a867ece7e33d6a09fc1ec7b3ce"
   }
 }
