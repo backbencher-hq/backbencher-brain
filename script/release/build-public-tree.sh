@@ -26,13 +26,18 @@ set -uo pipefail
 SOURCE=""
 DEST=".tools/bb-public-final"
 KEEP_CLONE=0
+# Extra paths to drop from the public tree (repeatable). Used by
+# script/release/split-public-repos.sh to publish a repo split, e.g. excluding
+# website/ because the site is its own repository. Same rule syntax as remove-1.
+EXCLUDES=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --source) SOURCE="$2"; shift 2 ;;
     --dest) DEST="$2"; shift 2 ;;
+    --exclude) EXCLUDES+=("$2"); shift 2 ;;
     --keep-clone) KEEP_CLONE=1; shift ;;
-    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -102,6 +107,10 @@ glob:docs/website/REVIEW-AND-DIRECTION-*
 glob:docs/website/FIX-LOG-*
 glob:docs/website/MASTER-REVIEW-*
 RULES
+# --exclude arguments are appended to the same rule file, after the built-in set.
+if [ ${#EXCLUDES[@]} -gt 0 ]; then
+  for extra in "${EXCLUDES[@]}"; do printf '%s\n' "$extra" >> "$tmp/remove-1.txt"; done
+fi
 
 cat > "$tmp/removed-later.txt" <<'RULES'
 glob:validation/**/fixtures/**
