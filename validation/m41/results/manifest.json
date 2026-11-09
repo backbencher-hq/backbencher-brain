@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-11-08T01:15:08.509Z",
+  "updatedAt": "2026-11-09T14:45:33.660Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -80,8 +80,8 @@
       "evidence": {
         "evidenceFile": "T1.json",
         "status": "verified",
-        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
-        "generatedAt": "2026-11-08T01:05:07.779Z",
+        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+        "generatedAt": "2026-11-09T14:39:58.356Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 4,
@@ -108,8 +108,8 @@
       "evidence": {
         "evidenceFile": "T2.json",
         "status": "verified",
-        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
-        "generatedAt": "2026-11-08T01:06:10.625Z",
+        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+        "generatedAt": "2026-11-09T14:41:02.805Z",
         "passed": 60,
         "failed": 0,
         "negativeCases": 3,
@@ -136,8 +136,8 @@
       "evidence": {
         "evidenceFile": "T3.json",
         "status": "verified",
-        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
-        "generatedAt": "2026-11-08T01:07:23.750Z",
+        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+        "generatedAt": "2026-11-09T14:42:07.310Z",
         "passed": 60,
         "failed": 0,
         "negativeCases": 3,
@@ -164,8 +164,8 @@
       "evidence": {
         "evidenceFile": "S1.json",
         "status": "verified",
-        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
-        "generatedAt": "2026-11-08T01:08:36.000Z",
+        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+        "generatedAt": "2026-11-09T14:43:09.551Z",
         "passed": 67,
         "failed": 0,
         "negativeCases": 11,
@@ -192,16 +192,17 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "fedeb9424d69ecc6050a93eced105fb6f9c5d0ec",
+        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
         "verifierCommand": "npx tsx script/m41/verify-seo-onboarding.ts",
         "evidenceFile": "S2.json",
         "ownerConfirmationsFile": "S2-OWNER-CONFIRMATIONS.json",
-        "generatedAt": "2026-09-13T22:44:19.158Z",
+        "generatedAt": "2026-11-09T14:43:11.366Z",
         "passed": 15,
         "failed": 0,
         "negativeCases": 5,
         "deployGate": "Deploy-gated by construction: S2 probes the LIVE deployment (dns.google + backbencher.cc) and cannot be re-run from the repository working tree. It is accepted PASS-with-negatives at this ancestor commit; the owner re-runs the gate after the Vercel deploy, which records deployLag (open -> closed) and re-pins S2 onto the batch commit. M56.X1 and M41.X1 both refuse to close on an unstated lag state.",
-        "blockedReason": "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates."
+        "blockedReason": "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
+        "checks": 15
       }
     },
     {
@@ -223,13 +224,14 @@
       "evidence": {
         "evidenceFile": "D1.json",
         "status": "verified",
-        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
-        "generatedAt": "2026-11-08T01:08:36.736Z",
+        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+        "generatedAt": "2026-11-09T14:39:59.058Z",
         "passed": 18,
         "failed": 0,
         "negativeCases": 3,
         "checks": 18,
-        "verifierCommand": "npx tsx script/m41/verify-design.ts"
+        "verifierCommand": "npx tsx script/m41/verify-design.ts",
+        "ownerApproval": "Owner approved the warm-dark editorial direction and the full-site execution in review."
       }
     },
     {
@@ -264,7 +266,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-08T01:15:08.509Z",
-    "contentSha256": "6df82bc4aa3117370d42888371b7f4a8021130017eb156ed1e9658e9018d618b"
+    "sealedAt": "2026-11-09T14:45:33.660Z",
+    "contentSha256": "6515fee1b74f7ae37dbcc4e1205f9884a6857c855827ca7cc8d0bc290e70aa25"
   }
 }
