@@ -29,9 +29,9 @@ does not belong in git, so it is published as one archive per release.
 | asset | `evidence-0.1.0.tar.zst` |
 | files | 9,826 (validation raw material + design-evidence images) |
 | size | 156.1 MB compressed |
-| sha256 | `7564601b7ce804a8157ed74cfe3e7633f252f7dcf9d2bb37081812592ddb0975` |
-| built from | the release tag's committed tree by `script/release/build-evidence-archive.sh` (revision `f762b6a2c`) |
-| reproducible | yes — the archive uses `--mtime=@0` and a tree-derived file list, so content (not the commit clock) determines the bytes; `--check` rebuilds and compares the checksum |
+| sha256 | `a686bd6ca0c4ba478ca1228b82572f394571c94d52e5394c8a4cb2eaf186bc5c` |
+| built from | the release tag's committed tree by `script/release/build-evidence-archive.sh` (revision `560f384ea`; content-addressed, so a later commit that only records this hash does not invalidate it) |
+| reproducible | yes — `--mtime=@0`, numeric owner, GNU format and sorted entries make the hash a function of content; verified byte-identical across two different HEAD commits |
 
 ## Fetch the raw material
 
