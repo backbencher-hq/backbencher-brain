@@ -67,7 +67,8 @@ function validateLedger(ledger: Ledger, plan: string): string[] {
   const errors: string[] = []
   if (ledger.schemaVersion !== 1) errors.push("schemaVersion")
   if (ledger.milestone !== "M20" || ledger.githubMilestone !== 20) errors.push("milestone")
-  if (ledger.status !== "open") errors.push("status")
+  if (ledger.status !== "open" && ledger.status !== "closed") errors.push("status")
+  if (ledger.status === "closed" && ledger.issues.some((i: { status: string }) => i.status !== "verified")) errors.push("status:closed-over-unverified")
   if (!ledger.authority || !plan.includes("Authority order")) errors.push("authority")
   if (!Array.isArray(ledger.issues) || ledger.issues.length !== 17) errors.push("issue-count")
   const codes = new Set<string>()

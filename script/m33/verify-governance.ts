@@ -109,7 +109,8 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
   const errors: string[] = []
   if (ledger.schemaVersion !== 1) errors.push("schemaVersion")
   if (ledger.milestone !== "M33" || ledger.githubMilestone !== 33) errors.push("milestone")
-  if (ledger.status !== "open") errors.push("status")
+  if (ledger.status !== "open" && ledger.status !== "closed") errors.push("status")
+  if (ledger.status === "closed" && ledger.issues.some((i: { status: string }) => i.status !== "verified")) errors.push("status:closed-over-unverified")
   if (!ledger.authority || !plan.includes("Authority order")) errors.push("authority")
   if (!ledger.governingContract || !contract.includes("M14")) errors.push("contract")
   if (!ledger.evidencePolicy || !plan.includes("Protocol (every issue)")) errors.push("evidence-policy")
@@ -140,7 +141,7 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
 
 function gitTrackedFiles(): string[] {
   try {
-    return execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
+    return execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
       .split("\n")
       .map((f) => f.trim())
       .filter(Boolean)

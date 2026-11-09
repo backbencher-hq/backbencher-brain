@@ -145,13 +145,22 @@ export function projectEntry(
     return { entry, changed }
   }
   const recordStatus = str(record.status)
-  if (!recordStatus) {
-    changed.push(`record ${evidenceFile} carries no status — cannot project`)
-    return { entry, changed }
-  }
-  if (!LANE_STATUSES.includes(recordStatus)) {
-    changed.push(`record ${evidenceFile} status=${JSON.stringify(recordStatus)} is outside ${LANE_STATUSES.join("/")}`)
-    return { entry, changed }
+  if (!recordStatus || !LANE_STATUSES.includes(recordStatus)) {
+    // An unusable status cannot prove the ledger's claim, and leaving the entry
+    // untouched let a lane whose record says "failed" (or says nothing) keep reading
+    // `verified` forever — the projection reported the mismatch, and the mismatch
+    // survived. Demote the entry to known-gap WITH the reason: the lane then reads
+    // honestly, a known-gap is a terminal state that needs a stated reason, and a
+    // record cannot be laundered into a pass by being unparsable.
+    const reason = !recordStatus
+      ? `record ${evidenceFile} carries no status — projected known-gap`
+      : `record ${evidenceFile} status=${JSON.stringify(recordStatus)} is outside ${LANE_STATUSES.join("/")} — projected known-gap`
+    changed.push(reason)
+    const ev = entry.evidence ?? {}
+    return {
+      entry: { ...entry, status: "known-gap", evidence: { ...ev, status: "known-gap", evidenceFile, blockedReason: reason } },
+      changed,
+    }
   }
 
   const ev = entry.evidence ?? {}

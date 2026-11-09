@@ -19,7 +19,7 @@
 
 import { existsSync } from "node:fs"
 import path from "node:path"
-import { laneStatusOf, projectLedger, type ProjectableLedger } from "./ledger_projection.ts"
+import { LANE_STATUSES, laneStatusOf, projectLedger, type ProjectableLedger } from "./ledger_projection.ts"
 
 export type LaneGateWiring = {
   /** Absolute path to the lane's manifest. */
@@ -90,11 +90,28 @@ export function projectLaneLedger(w: LaneGateWiring): string[] {
   // --- 2. verify the projection from disk ------------------------------------
   const verify = w.readLedgerBack()
   const entries = verify?.issues ?? []
+  // A record whose status is unusable (absent, or outside the lane vocabulary) cannot
+  // be projected, so the projection demotes the entry to known-gap WITH the reason.
+  // That demoted entry must not be counted as drift against the raw record — but it
+  // also must not be verified: `demoted` below fails the gate if one survives as
+  // anything other than known-gap.
+  const known = (st: unknown): boolean => typeof st === "string" && LANE_STATUSES.includes(st)
   const drifted = entries.filter((i) => {
     if (i.code === "G1") return false
     const rec = w.readRecord(String(i.evidence?.evidenceFile ?? `${i.code}.json`))
-    return rec !== null && typeof rec.status === "string" && i.status !== rec.status
+    return rec !== null && known(rec.status) && i.status !== rec.status
   })
+  const undemoted = entries.filter((i) => {
+    if (i.code === "G1") return false
+    const rec = w.readRecord(String(i.evidence?.evidenceFile ?? `${i.code}.json`))
+    if (rec === null || known(rec.status)) return false
+    return i.status !== "known-gap"
+  })
+  if (undemoted.length === 0) w.onPass("every unprojectable record is demoted to a declared known-gap")
+  else {
+    w.onFinding(`unprojectable records left claiming a status: ${undemoted.map((i) => `${i.code}: ${String(i.status)}`).join(", ")}`)
+    findings.push("undemoted record")
+  }
   const unreadable = entries.filter((i) => {
     if (i.code === "G1") return false
     return w.readRecord(String(i.evidence?.evidenceFile ?? `${i.code}.json`)) === null

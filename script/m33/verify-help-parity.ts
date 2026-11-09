@@ -72,17 +72,18 @@ function parseSource(): Map<string, string[]> {
   const map = new Map<string, string[]>()
   let current = "__root__"
   map.set(current, [])
-  for (const line of src.split("\n")) {
-    const cmd = /\.command\("([^"]+)"\)/.exec(line)
-    if (cmd) {
-      current = cmd[1]!
+  // Declaration order matters (a .option belongs to the .command above it), so both
+  // are matched in ONE pass. The old line-based loop only saw .option("...") when the
+  // flag sat on the same line as the call; a multi-line declaration (commander allows,
+  // and --file/--exclude use it for a long description) was invisible, so help listed
+  // a flag the "implementation" appeared not to declare.
+  const declRe = /\.command\("([^"]+)"\)|\.option\(\s*"([^"]+)"/g
+  for (const m of src.matchAll(declRe)) {
+    if (m[1] !== undefined) {
+      current = m[1]
       map.set(current, [])
-      continue
-    }
-    const opt = /\.option\("([^"]+)"/.exec(line)
-    if (opt) {
-      const flag = opt[1]!.split(/[ <]/)[0]!
-      map.get(current)!.push(flag)
+    } else if (m[2] !== undefined) {
+      map.get(current)!.push(m[2].split(/[ <]/)[0]!)
     }
   }
   // program.version's short alias is a root flag declared via .version(...).

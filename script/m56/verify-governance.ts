@@ -151,7 +151,8 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
   const errors: string[] = []
   if (ledger.schemaVersion !== 1) errors.push("schemaVersion")
   if (ledger.milestone !== "M56" || ledger.githubMilestone !== 56) errors.push("milestone")
-  if (ledger.status !== "open") errors.push("status")
+  if (ledger.status !== "open" && ledger.status !== "closed") errors.push("status")
+  if (ledger.status === "closed" && ledger.issues.some((i: { status: string }) => i.status !== "verified")) errors.push("status:closed-over-unverified")
   if (!ledger.authority || !ledger.authority.includes("docs/m56/M56-MASTER-PLAN.md")) errors.push("authority")
   if (!ledger.governingContract || !contract.includes("M14")) errors.push("contract")
   if (!ledger.evidencePolicy) errors.push("evidence-policy")

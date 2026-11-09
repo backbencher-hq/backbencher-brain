@@ -175,6 +175,12 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   delete process.env.BB_EMBEDDING_BASE_URL
   delete process.env.BB_EMBEDDING_API_KEY
   delete process.env.BB_EMBEDDING_MODEL
+  // The lifecycle path writes a real index. Without an explicit data dir it writes
+  // under ~/.bb, which is read-only on a locked-down machine (and would also mean a
+  // gate mutating the developer's real data dir). Point it at a temp dir for this
+  // block; the config-and-index "same dataDir" rule then holds against the temp dir.
+  const realData = mkdtempSync(path.join(os.tmpdir(), "m32-s2-data-"))
+  process.env.BB_DATA_DIR = realData
   try {
     // In-process imports of the source modules (module-scope import() with a
     // query string can break tsx's transform of these heavier modules).
@@ -193,21 +199,20 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
     // Diagnose with a config model that differs from the real stored one.
     // The config and the index MUST share one dataDir — as in reality, where
     // both live under ~/.bb (readStoredModels resolves the DB under dataDir).
-    const cfgData = path.dirname(path.dirname(path.dirname(BrainDatabase.getDbPath(projectId))))
+    const cfgData = realData
     writeGlobalConfig(cfgData, { embedding_base_url: "https://g.example/v1", embedding_model: "not-" + String(rows[0]?.model ?? "x"), embedding_api_key: "fixture-doctor-key-000000" }, 0o600)
     const r = doctor.runDoctorChecks({ cwd: projDir, env: {}, dataDir: cfgData, projectId })
     check("A8: real mismatch from genuine stored vectors", findings(r).has("model-mismatch"), JSON.stringify(r.findings.map((x: any) => x.id)))
     try { BrainDatabase.close(projectId) } catch {}
     rmSync(projDir, { recursive: true, force: true })
-    rmSync(path.join(os.homedir(), ".bb", "projects", projectId), { recursive: true, force: true })
-    rmSync(path.join(os.homedir(), ".bb", "config.json"), { force: true })
+    rmSync(realData, { recursive: true, force: true })
   } catch (e: any) {
     detail = String(e?.message ?? e).slice(0, 200)
   } finally {
     // Restore by DELETE, not assignment: process.env.X = undefined coerces to
     // the string "undefined", which later child processes inherit as a real
     // (garbage) value and the env tier suddenly "exists" with garbage model.
-    for (const k of ["BB_EMBEDDING_BASE_URL", "BB_EMBEDDING_API_KEY", "BB_EMBEDDING_MODEL"]) {
+    for (const k of ["BB_EMBEDDING_BASE_URL", "BB_EMBEDDING_API_KEY", "BB_EMBEDDING_MODEL", "BB_DATA_DIR"]) {
       if (savedEnv[k] === undefined) delete process.env[k]
       else process.env[k] = savedEnv[k]
     }

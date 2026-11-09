@@ -198,7 +198,7 @@ check("H1: every planted doc mutant was caught", docMutantResults.every((m) => m
   // that exit and assert the emitted text.
   function runCaptured(args: string[]): string {
     try {
-      return execFileSync(bb, args, { env: { ...process.env, BB_DATA_DIR: dataDir }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).toString()
+      return execFileSync(bb, args, { cwd: dir, env: { ...process.env, BB_DATA_DIR: dataDir }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).toString()
     } catch (e: any) {
       return String(e?.stdout ?? "")
     }

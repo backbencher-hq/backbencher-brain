@@ -113,7 +113,11 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
   const errors: string[] = []
   if (ledger.schemaVersion !== 1) errors.push("schemaVersion")
   if (ledger.milestone !== "M30" || ledger.githubMilestone !== 30) errors.push("milestone")
-  if (ledger.status !== "open") errors.push("status")
+  // A ledger is "open" while work is in flight and "closed" once every issue is
+  // verified; the old check required "open" forever, so a FINISHED milestone failed its
+  // own gate. Closed is accepted only when the ledger's own issues justify it.
+  if (ledger.status !== "open" && ledger.status !== "closed") errors.push("status")
+  if (ledger.status === "closed" && ledger.issues.some((i) => i.status !== "verified")) errors.push("status:closed-over-unverified")
   if (!ledger.authority || !plan.includes("Authority order")) errors.push("authority")
   if (!ledger.governingContract || !contract.includes("M14")) errors.push("contract")
   if (!ledger.evidencePolicy || !plan.includes("Protocol (every issue)")) errors.push("evidence-policy")
@@ -145,7 +149,10 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
 
 function gitTrackedFiles(): string[] {
   try {
-    return execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
+    // 20k+ tracked paths exceed execFileSync's default 1 MiB buffer: the call used to
+    // throw ENOBUFS and the catch turned it into "no tracked files", silently skipping
+    // the whole secret-hygiene block. Size the buffer for the real corpus.
+    return execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
       .split("\n")
       .map((f) => f.trim())
       .filter(Boolean)

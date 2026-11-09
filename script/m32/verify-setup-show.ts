@@ -330,7 +330,7 @@ check("S1: every planted defect was caught", mutantResults.every((m) => m.caught
   let r1 = ""
   let r1ok = false
   try {
-    r1 = execFileSync(bb, ["setup", "show"], { env: { ...process.env, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()
+    r1 = execFileSync(bb, ["setup", "show"], { cwd: t.proj, env: { ...process.env, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()
     r1ok = true
   } catch (e: any) {
     r1 = String(e?.stdout ?? "")
@@ -338,7 +338,7 @@ check("S1: every planted defect was caught", mutantResults.every((m) => m.caught
   }
   check("D: binary renders honest no-config view", r1ok && r1.includes("Winner: none") && r1.includes("bb setup"), r1.split("\n").slice(-2).join(" | "))
   writeGlobalConfig(t.dataDir, { embedding_base_url: "https://g.example/v1", embedding_model: "g-model", embedding_api_key: FULL_GLOBAL_KEY }, 0o644)
-  const r2 = execFileSync(bb, ["setup", "show"], { env: { ...process.env, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()
+  const r2 = execFileSync(bb, ["setup", "show"], { cwd: t.proj, env: { ...process.env, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()
   check("D: binary shows global winner with fingerprint only", r2.includes("Winner: global") && r2.includes("••••" + FULL_GLOBAL_KEY.slice(-4)) && !r2.includes(FULL_GLOBAL_KEY))
   check("D: binary warns on 0644 config", r2.includes("644") && r2.includes("bb doctor"))
   const r3 = execFileSync(bb, ["setup", "show"], { env: { ...process.env, BB_EMBEDDING_BASE_URL: "https://e.example/v1", BB_EMBEDDING_MODEL: "e-model", BB_EMBEDDING_API_KEY: FULL_ENV_KEY, BB_DATA_DIR: t.dataDir }, encoding: "utf8" }).toString()

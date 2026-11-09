@@ -1,7 +1,7 @@
 # Backbencher Brain (`bb`)
 
 **Evidence-first code intelligence, local-first and runtime-agnostic.** `bb` indexes a repository with
-**52 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
+**53 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
 questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
 supported. No telemetry, no server, no account required.
 
@@ -11,7 +11,10 @@ source ──▶ AST index (SQLite) ──▶ graph / search / evidence ──�
 
 The index stores symbols, relationships (including cross-language edges), complexity, framework and
 security-flow inputs, and optional embeddings. Every answer declares whether it is fresh or stale; a
-missing answer is reported as missing rather than guessed.
+missing answer is reported as missing rather than guessed. Embeddings are model-labeled per row, and
+`bb_ask` never compares across vector spaces: rows written by a different model are not searched
+until `bb index --force` re-embeds them, and the answer says so instead of returning a mixed index
+as if it were one space.
 
 - **Docs index:** [`docs/README.md`](docs/README.md)
 - **Indexing guide:** [`docs/indexing/README.md`](docs/indexing/README.md)
@@ -267,9 +270,27 @@ names retired before the first public release are documented in
 
 ---
 
+## Embedding providers (optional)
+
+`bb` indexes without any provider; embeddings only power `bb_ask` / `bb_search` semantic ranking.
+When you want them:
+
+- **`bb setup`** opens an interactive wizard: it validates the key against the provider, then writes
+  the config with mode `0600`. The wizard prompts only once per provider and can be re-run any time.
+- **`bb setup show`** prints the effective configuration and where each value came from, with the key
+reduced to its last-4
+fingerprint only — never the full key.
+- **`bb doctor`** is read-only diagnosis of the embedding setup and index consistency; `bb doctor --fix`
+  mutates exactly one thing: config file permissions back to `0600`.
+
+Vectors are model-labeled and the ask path never compares across vector spaces: after adding a model,
+run `bb index --force` to re-embed, or those rows are reported as not searchable instead of being
+silently mixed. See EMBEDDINGS.md for the full provider list, precedence rules (env > `~/.bb/config.json`
+> `bb.json`) and the `--force` behaviour.
+
 ## Language support
 
-**52 language analyzers**, all first-class in discovery, parsing, relationship extraction and the
+**53 language analyzers**, all first-class in discovery, parsing, relationship extraction and the
 cross-language graph:
 
 Bash, C, C#, C++, Clean, Clojure, CSS, Dart, Elixir, Erlang, F#, Go, GraphQL, Groovy, Haskell, HCL, HTML,
