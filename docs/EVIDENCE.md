@@ -29,7 +29,7 @@ does not belong in git, so it is published as one archive per release.
 | asset | `evidence-0.1.0.tar.zst` |
 | files | 9,826 (validation raw material + design-evidence images) |
 | size | 156.1 MB compressed |
-| sha256 | `a686bd6ca0c4ba478ca1228b82572f394571c94d52e5394c8a4cb2eaf186bc5c` |
+| sha256 | `00c8ffd87b923809ec35dd160a779341f6bbfdf33c2b9021e28b3f0753d79c3d` |
 | built from | the release tag's committed tree by `script/release/build-evidence-archive.sh` (revision `560f384ea`; content-addressed, so a later commit that only records this hash does not invalidate it) |
 | reproducible | yes — `--mtime=@0`, numeric owner, GNU format and sorted entries make the hash a function of content; verified byte-identical across two different HEAD commits |
 
