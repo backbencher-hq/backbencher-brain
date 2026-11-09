@@ -15,17 +15,14 @@ in one place, instead of a README in every directory that can drift from the cod
 | `script/` | The verification machinery: top-level `script/verify-*.ts` gates for shipped surfaces, `script/mNN/` milestone gates and instruments, `script/m14/` the analyzer campaign (specs, fixtures, lane instruments), `script/tool-docs/` the curation sources for the generated tool references, `script/perf/` measurement probes, `script/lib/` shared harness. What is a gate vs an instrument, and which runtime each needs: [`../script/README.md`](../script/README.md). |
 | `validation/` | Evidence: gate results (JSON) and human-readable review/verification pages, organised by milestone (`validation/m14/`, `m25/`, …). Gate-produced, not hand-edited; provenance and re-run rules: [`../validation/README.md`](../validation/README.md). |
 | `docs/` | This documentation tree (indexing, tools, analyzers, architecture and the historical milestone records). |
-| `reviews/` | Per-analyzer and cross-cutting review records used as evidence for analyzer claims; historical, not current contracts. |
-| `archive/` | Recovered code from branches deleted on 2026-11-01 (`archive/unmerged-pre-merge-2026-11-01/`) and removed pre-consolidation docs (`archive/docs-pre-consolidation/`), preserved because tracked evidence cites them. |
 | `ide/` | Editor integrations: VS Code-family extension, Zed extension, LSP4IJ template for JetBrains IDEs, Helix config. Start at [`../ide/README.md`](../ide/README.md). |
-| `website/` | The Next.js site (backbencher.cc); numbers on it are generated from the pinned artifacts (`website/README.md`). |
 | `grammars/` | Vendored/pinned Tree-sitter grammar sources and their `PIN.md`/`PROVENANCE.md` records; the pinned WASM binaries live in `wasm/`. |
 | `wasm/` | The pinned Tree-sitter WASM artifacts the engine loads; digest pins live in `src/ast/engine.ts`. |
 | `bin/` | The `bb` launcher; `dist/` is build output (ignored), and the compiled path is what npm/Node runs. |
 | `test/` | Harness suites and fixtures that are not part of the gate suite (CLI surface, indexing lifecycle, demo fixtures): [`../test/README.md`](../test/README.md). |
 | `plans/` | Small machine-readable plan inputs still read by milestone instruments (for example the M11 corpus plan). |
 
-`node_modules/`, `dist/`, `local-archive/`, `dsh-local-patches/`, local agent-tool worktrees and other
+`node_modules/`, `dist/`, local worktrees and other
 machine-local directories are ignored; they are not repository content.
 
 ## Start here
@@ -87,8 +84,8 @@ retired-name tables of [`TOOL-REGISTRY.md`](./TOOL-REGISTRY.md) and
 points at these directories, so an installed user has the same reference. There are no hidden tools or aliases:
 the `0.3.0` release removed them, and `bb --help` lists exactly these sixteen.
 
-Ownership and scope for future changes: [`TOOL-OWNERS.md`](./TOOL-OWNERS.md) maps every tool to its
-permanent owner, the files that owner may change, its evidence directory and its acceptance gate.
+Ownership and scope for future changes is tracked in the private campaign ledger; the public
+contract for each tool is its page under `docs/tools/`.
 
 ### Deep guides
 
@@ -126,16 +123,17 @@ Milestone records are evidence of what was checked when, not current behaviour. 
 directories and equally to the legacy milestone records kept directly under `docs/` (`M10-*`, `M13-*`,
 `M14-*`, `M26-*`, `M55-*`, `MCP_*`). They are not contracts and should not be read as current tool
 documentation; the per-tool pages and deep guides above are. Older plans and migration guides that no longer
-describe the shipped surface are kept in [`archive/docs-pre-consolidation/`](../archive/docs-pre-consolidation/)
-rather than mixed into the live set.
+describe the shipped surface are kept in the private release archive rather than mixed into the
+live set.
 
 ## Analyzers
 
 One canonical page per analyzer: [`analyzers/README.md`](./analyzers/README.md) indexes all fifty
 (`docs/analyzers/<language>.md`). Those pages are measured by `script/m14/verify-analyzer-docs.ts` against
 [`analyzers/TEMPLATE.md`](./analyzers/TEMPLATE.md) (eight measured sections, plus an explained
-relationship-ontology table; the measured worklist is on the analyzer index). Older lane journals that tracked code and validation evidence cite are kept under
-[`analyzers/history/`](./analyzers/history/) rather than mixed into the canonical set.
+relationship-ontology table; the measured worklist is on the analyzer index). Older lane journals
+that tracked code and validation evidence are kept in the private campaign archive rather than
+mixed into the canonical set.
 
 ## Architecture and programs
 
@@ -151,9 +149,6 @@ relationship-ontology table; the measured worklist is on the analyzer index). Ol
   current behaviour; prefer the per-topic pages above.
 - `validation/` — gate results and measurement evidence (JSON and markdown). Tracked evidence is referenced by
   gates; `script/m14/verify-self-contained.ts` checks the parts the machinery actually reads.
-- `reviews/` — per-lane review records and resolution evidence.
-- `archive/` — recovered code from branches removed on 2026-11-01 (`archive/unmerged-pre-merge-2026-11-01/`),
-  and pre-consolidation handoff/process pages (`archive/docs-pre-consolidation/`) that tracked evidence cites by path.
 - [`validation/languages/results/tool-matrix.json`](../validation/languages/results/tool-matrix.json) — the language × tool
   matrix evidence: every analyzer language indexed from a real fixture and exercised through the public tools.
   Contract and extension steps: [`LANGUAGE-TOOL-MATRIX.md`](./LANGUAGE-TOOL-MATRIX.md).
@@ -162,7 +157,7 @@ relationship-ontology table; the measured worklist is on the analyzer index). Ol
 
 A page may keep its previous revision as `<name>.superseded-<commit>.md` next to it. That is allowed only
 while tracked evidence still cites the old content; the copy is evidence, not documentation, and it is
-removed to `archive/` once no gate or ledger references it. The current revision is always the unsuffixed
+removed from the live set once no gate or ledger references it. The current revision is always the unsuffixed
 file. Do not treat a superseded copy as the contract when both exist.
 
 ## Verifying a doc

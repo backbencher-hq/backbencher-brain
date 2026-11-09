@@ -315,7 +315,7 @@ as such.
 had no avalanche, so consecutive "rotations" drew the same 60 files. Every
 earlier 100 % figure from a draw was one file set measured repeatedly. Fixed with
 mulberry32; three independent rotations now read 99.9 %, 100 %, 100 % with 0
-unexplained. See `docs/analyzers/history/vb-lane-notes.md`.
+unexplained. See the private lane history.
 
 The differential is what found the three defects a corpus-wide count could not,
 because in each case the count stayed healthy while a class of output was missing
@@ -367,7 +367,7 @@ or wrong:
 **Not closed.** No fixtures, no mutants, no F8 spec, no F10 floor, and no
 committed `M14.0.F5` artifact — the canonical artifact belongs to the full
 60-file, 30-language sweep, and a scoped `--lang vb` run refuses to write it
-rather than replace a bigger claim with a smaller one. See `docs/analyzers/history/vb-lane-notes.md` and
+rather than replace a bigger claim with a smaller one. See the private lane history and
 `reviews/vb/master-review.md`.
 
 ---

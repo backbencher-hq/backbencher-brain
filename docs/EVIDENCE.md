@@ -50,7 +50,7 @@ record, and an unverified archive is not evidence.
 ## Running the chain
 
 ```bash
-npm ci && npm run build     # builds dist/ and fetches the grammar wasm
+npm ci && npm run build     # builds dist/ (the grammar wasm is tracked in the repository)
 npx tsx script/m53/verify-r1-ladder.ts --resume   # the lane ladder (M24-M44)
 npx tsx script/m53/verify-closure.ts              # M53 closure
 npx tsx script/m55/verify-governance.ts           # M55 bar audit
