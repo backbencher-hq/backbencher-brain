@@ -47,7 +47,7 @@ task. This is the observed gap in the 2026-11-09 session: the bb MCP server *was
 4. **No "is it actually being used" check.** `bb doctor` diagnoses embeddings/index, not
    "server registered / skills installed / guidance current".
 
-## 4. Proposed catalog (12 skills; full tool + CLI coverage)
+## 4. Proposed catalog (final target: 9 skills; full tool + CLI coverage)
 
 Descriptions are the frontmatter text an agent routes on — all start with "use when".
 
@@ -61,7 +61,7 @@ Descriptions are the frontmatter text an agent routes on — all start with "use
 | `bb-edit-safety` | Use when changing source through `bb_edit` (write/update/insert/delete/refactor): dry runs, modes, pre-image checks, batch atomicity, formatter behaviour, and when a refusal is the correct outcome. | `bb_edit`, `bb_index` post-pass |
 | `bb-report-writing` | Use when a bb tool returns something wrong or misleading and the agent must produce a reproducible report (version, doctor, tool call, freshness, expected vs actual). | agent-report issue form, `bb --version`, `bb doctor` |
 
-### Batch 2 — the workflows that already have evidence records (5)
+### Batch 2 — the workflows that already have evidence records (4; graph-overview merged into navigation)
 
 | skill | frontmatter description | covers |
 | --- | --- | --- |
@@ -69,16 +69,37 @@ Descriptions are the frontmatter text an agent routes on — all start with "use
 | `bb-code-audit` | Use when asked for dead code, anti-patterns, security exposure or complexity hotspots in an indexed repository. | `bb_patterns`, `bb_security`, `bb_analyze` (complexity/stats) |
 | `bb-doc-writing` | Use when asked to document a symbol, file, module, feature or API with resolvable citations and a freshness block. | `bb_doc` |
 | `bb-migration-planning` | Use when planning a cross-language change or an API migration with dependency order and explicitly unsupported mappings. | `bb_migrate`, `bb_analyze` (impact) |
-| `bb-graph-overview` | Use when the question is about architecture or dependency shape rather than one symbol, and a visual/overview answer is wanted. | `bb_visualize`, `bb_analyze` (stats) |
+**Merged:** architecture/dependency-overview questions are the same routing family as
+callers/callees — `bb-code-navigation` covers them with `bb_visualize` and `bb-analyze stats`
+instead of a separate `bb-graph-overview` trigger competing for the same tasks.
 
-### Batch 3 — optional, after the core is proven (2)
+### Deferred (not skills; docs or commands instead)
 
 | skill | frontmatter description | covers |
 | --- | --- | --- |
-| `bb-annotations` | Use when a finding should be attached to a symbol for other agents and later runs to read, rather than left as a comment in a file. | `bb_annotate`, `bb_annotations` |
-| `bb-editor-setup` | Use when the user wants bb inside their editor (LSP hover/definition/references/symbols/call hierarchy) rather than through MCP. | `dist/lsp/server.js`, VSIX, Zed/Helix/LSP4IJ configs |
+| `bb-annotations` | folded into `bb-edit-safety`'s references (annotations are adjacent to edit workflows), not a standalone skill |
+| `bb-editor-setup` | belongs to `bb-install-and-connect`'s references and the IDE docs, not a separate skill |
 
 Coverage: all 16 MCP tools and all 14 CLI commands map to at least one skill above.
+
+## 4b. Context budget (measured 2026-11-09)
+
+A skill costs context in two places, and only the first is always-on:
+
+| cost | measured | rule |
+| --- | --- | --- |
+| catalog (name + description), always-on | 12 proposed skills = 1,397 chars ≈ 349 tokens; batch-1 five = 632 chars ≈ 158 tokens | **catalog ≤ 9 skills**; each description unique and task-shaped, start with "use when" |
+| body, only when selected | — | **SKILL.md ≤ ~1.5k tokens (≈120 lines)**; tables/corpora move to `references/`, loaded on demand |
+
+For scale: the bb MCP server's 16 tool definitions already cost 29,476 chars
+(≈7,369 tokens) in every connected agent, and the 137 installed skills' catalog costs
+37,326 chars (≈9,331 tokens). The 9-skill catalog is ~4% of the MCP tool cost — count is
+not the budget problem. **Description collision is**: two skills that plausibly match the
+same task make routing worse for every skill in the catalog. Hence merge rather than split.
+
+Retirement rule: a skill whose description has not matched across a release cycle is
+removed from the package (no tombstone skill), because a stale trigger taxes every
+session that keeps it.
 
 ## 5. Why this order
 
