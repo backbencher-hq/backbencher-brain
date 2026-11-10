@@ -9,7 +9,7 @@ not gated), and its relationship-ontology table must leave no cell unexplained.
 The pre-2026-11-01 split (`real-<language>-analyzer.md` for the structured page plus a
 second `<language>.md` verdict/journal page) is gone: the structured page took the
 natural `<language>.md` name, and the old investigation journals are kept, clearly
-separated, in the private campaign history, because tracked code and validation evidence
+separated, in the private archive, because tracked code and validation evidence
 cite them by path. The private session log holds the working record; it is history, not a
 contract.
 
@@ -36,12 +36,12 @@ statement cannot drift from the tree again.
 | relationship types | 14 | the canonical ontology (`src/ast/types.ts` `RelationshipType`) |
 | page sections | 8 | measured sections a canonical page must carry with content (`TEMPLATE.md`) |
 
-Older artifacts, the `history/` pages, and the narrative inside individual lane pages legitimately
+Older artifacts, the `history/` pages, and the narrative inside individual analyzer pages legitimately
 quote 43/44/45/46/47/48/49: those were the count at the revision the sentence describes, recorded as
 such (e.g. "the census scanned all 48 analyzers" is a measurement of that revision, not a claim about
 today). The contract above applies to CURRENT statements — this page, the repository README
-(the repository README's `50 Tree-sitter analyzers`), and the gates' own output — and the three equalities the campaign depends
-on (analyzer = canonical page = fleet lane = F1 grammar-audit row = 50) are asserted by
+(the repository README's `50 Tree-sitter analyzers`), and the gates' own output — and the three equalities the analyzer contract depends
+on (analyzer = canonical page = instrument set = F1 grammar-audit row = 50) are asserted by
 `script/m14/verify-analyzer-docs.ts` on every run.
 
 ## The 50 analyzers

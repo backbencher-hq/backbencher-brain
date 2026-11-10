@@ -118,6 +118,10 @@ for _a, _b in [
     (b"REDACTED-IP", b"REDACTED-IP"),
     (b"fixtures", b"fixtures"),
     (b"Generated with a tool", b"Generated with a tool"),
+    (b"agent-tooling", b"agent-tooling"),
+    (b"agent-tooling", b"agent-tooling"),
+    (b"client-tooling", b"client-tooling"),
+    (b"client-tooling", b"client-tooling"),
 ]:
     _data = _data.replace(_a, _b)
 _data = re.sub(rb"gh[opsu]_[A-Za-z0-9]{20,}", b"REDACTED", _data)
