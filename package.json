@@ -30,7 +30,10 @@
     "docs/indexing/",
     "README.md",
     "EMBEDDINGS.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "grammars/README.md",
+    "grammars/THIRD-PARTY-NOTICES.md",
+    "grammars/*/LICENSE*"
   ],
   "exports": {
     ".": "./dist/index.js",
@@ -44,7 +47,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:scripts": "tsc --noEmit -p tsconfig.scripts.json",
     "verify:suite": "tsx script/m62/verify-suite.mts",
-    "test": "npx tsx script/verify-engine.ts && npx tsx script/verify-schema.ts && npx tsx script/verify-tool-registry.ts && npx tsx script/verify-public-surface.ts && npx tsx script/verify-skills.ts",
+    "test": "npx tsx script/verify-engine.ts && npx tsx script/verify-schema.ts && npx tsx script/verify-tool-registry.ts && npx tsx script/verify-public-surface.ts && npx tsx script/verify-skills.ts && npx tsx script/verify-grammar-licenses.ts",
     "verify:fast": "npx tsx script/m30/verify-governance.ts && npx tsx script/m30/verify-setup.ts && npx tsx script/m30/verify-first-run-hook.ts && npx tsx script/m30/verify-key-validation.ts && npx tsx script/m30/verify-rate-limit.ts && npx tsx script/m30/verify-honesty-docs.ts && npx tsx script/m32/verify-governance.ts && npx tsx script/m32/verify-smoke.ts && npx tsx script/m32/verify-setup-show.ts && npx tsx script/m32/verify-doctor.ts && npx tsx script/m32/verify-doctor-fix.ts && npx tsx script/m32/verify-honesty-docs.ts && npx tsx script/m33/verify-governance.ts && npx tsx script/m33/verify-version.ts && npx tsx script/m33/verify-unknown-command.ts && npx tsx script/m33/verify-man-page.ts && npx tsx script/m33/verify-help-parity.ts && npx tsx script/m33/verify-honesty-docs.ts && npx tsx script/m34/verify-governance.ts && npx tsx script/m34/verify-install-smoke.ts && npx tsx script/m34/verify-script-gate.ts && npx tsx script/m29/verify-wave-protocol.ts && npx tsx script/m29/verify-precision-ledger.ts && npx tsx script/m56/verify-governance.ts && npx tsx script/m15/verify-security-regressions.ts && npx tsx script/m15/verify-security-precision.ts && npx tsx script/verify-security.ts && npx tsx script/m20/verify-security-flow-boundary.ts && npx tsx script/m20/verify-security-adversarial.ts && npx tsx script/m20/verify-security-history.ts && npx tsx script/m15/verify-security-deep.ts",
     "prepublishOnly": "npm run build",
     "prepack": "npm run typecheck 1>&2 && npm run build 1>&2",
