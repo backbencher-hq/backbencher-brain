@@ -12,7 +12,7 @@ in one place, instead of a README in every directory that can drift from the cod
 | Path | What it is |
 | --- | --- |
 | `src/` | The product source. `src/ast/` parses languages into evidence; `src/storage/` owns the SQLite layer; `src/intelligence/` contains the search/semantic/graph/analysis/pattern/security/doc/visualization/migration/edit/health engines; `src/mcp/` (registry, descriptors, handlers) and `src/cli/` are the adapters; `src/lsp/` is the language server; `src/setup/` and `src/config/` own setup, doctor and configuration. Module contracts: [`ARCHITECTURE.md`](./ARCHITECTURE.md). |
-| `script/` | The verification machinery: top-level `script/verify-*.ts` gates for shipped surfaces, `script/mNN/` milestone gates and instruments, `script/m14/` the analyzer campaign (specs, fixtures, lane instruments), `script/tool-docs/` the curation sources for the generated tool references, `script/perf/` measurement probes, `script/lib/` shared harness. What is a gate vs an instrument, and which runtime each needs: [`../script/README.md`](../script/README.md). |
+| `script/` | The verification machinery: top-level `script/verify-*.ts` gates for shipped surfaces, `script/mNN/` milestone gates and instruments, `script/m14/` the analyzer suite (specs, fixtures, lane instruments), `script/tool-docs/` the curation sources for the generated tool references, `script/perf/` measurement probes, `script/lib/` shared harness. What is a gate vs an instrument, and which runtime each needs: [`../script/README.md`](../script/README.md). |
 | `validation/` | Evidence: gate results (JSON) and human-readable review/verification pages, organised by milestone (`validation/m14/`, `m25/`, …). Gate-produced, not hand-edited; provenance and re-run rules: [`../validation/README.md`](../validation/README.md). |
 | `docs/` | This documentation tree (indexing, tools, analyzers, architecture and the historical milestone records). |
 | `ide/` | Editor integrations: VS Code-family extension, Zed extension, LSP4IJ template for JetBrains IDEs, Helix config. Start at [`../ide/README.md`](../ide/README.md). |
@@ -78,13 +78,13 @@ tool: it is the `test_mapping`, `test_gaps`, `test_impact` and `test_quality` mo
 [`BB_TEST_QUALITY.md`](./BB_TEST_QUALITY.md)). The per-mode names retired before 0.3.0
 (`bb_select`, `bb_write`, `bb_test_quality`, …) are not callable; they are listed only in the
 retired-name tables of [`TOOL-REGISTRY.md`](./TOOL-REGISTRY.md) and
-[`website/TOOLS.md`](./website/TOOLS.md) so readers can migrate off them.
+the tool pages under [`docs/tools/`](./tools/) so readers can migrate off them.
 
 `npm run docs:verify` regenerates the artifact set and fails on drift. `man bb` ships with the package and
 points at these directories, so an installed user has the same reference. There are no hidden tools or aliases:
 the `0.3.0` release removed them, and `bb --help` lists exactly these sixteen.
 
-Ownership and scope for future changes is tracked in the private campaign ledger; the public
+Ownership and scope for future changes is tracked in the private ownership ledger; the public
 contract for each tool is its page under `docs/tools/`.
 
 ### Deep guides
@@ -131,8 +131,8 @@ live set.
 One canonical page per analyzer: [`analyzers/README.md`](./analyzers/README.md) indexes all fifty
 (`docs/analyzers/<language>.md`). Those pages are measured by `script/m14/verify-analyzer-docs.ts` against
 [`analyzers/TEMPLATE.md`](./analyzers/TEMPLATE.md) (eight measured sections, plus an explained
-relationship-ontology table; the measured worklist is on the analyzer index). Older lane journals
-that tracked code and validation evidence are kept in the private campaign archive rather than
+relationship-ontology table; the measured worklist is on the analyzer index). Older analyzer journals
+that tracked code and validation evidence are kept in the private archive rather than
 mixed into the canonical set.
 
 ## Architecture and programs

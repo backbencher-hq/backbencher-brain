@@ -23,7 +23,6 @@ tool-mode-corpus.json.fresh
 .tools/
 .vscode-test/
 .perf-fixtures/
-.client-tooling/
 grammars/tree-sitter-*/src/*
 grammars/tree-sitter-*/tree-sitter-*.wasm
 !grammars/tree-sitter-cpp/src/scanner.c
@@ -123,11 +122,8 @@ src/ast/__*.ts
 *-scratch.ts
 *-scratch.mts
 .tmp-rewrite/
-client-tooling-proxy-work/
-client-tooling2api-work/
 .corpus-tail/
 .corpus/
-.agent-tooling.worktrees/
 .agents/
 dsh-local-patches/
 .bb-write-probe/

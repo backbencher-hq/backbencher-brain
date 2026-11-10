@@ -9,15 +9,15 @@ not gated), and its relationship-ontology table must leave no cell unexplained.
 The pre-2026-11-01 split (`real-<language>-analyzer.md` for the structured page plus a
 second `<language>.md` verdict/journal page) is gone: the structured page took the
 natural `<language>.md` name, and the old investigation journals are kept, clearly
-separated, under [`history/`](./history/) because tracked code and validation evidence
-cite them by path. The [session log](./ANALYZER-SESSION-LOG.md) is the campaign's work
-record; it is history, not a contract.
+separated, in the private campaign history, because tracked code and validation evidence
+cite them by path. The private session log holds the working record; it is history, not a
+contract.
 
 ## Counting the analyzers — one number, five denominators
 
-The exact number of language analyzers is **50**, and it is one number because an analyzer *is*
-a lane: 50 `src/ast/real-*-analyzer.ts` implementations, each with one canonical page here, one
-fleet/instrument lane, and one grammar-conformance row. Every other figure you may see in gate
+The exact number of language analyzers is **50**, and it is one number because an analyzer is one
+implementation: 50 `src/ast/real-*-analyzer.ts` files, each with one canonical page here, one
+instrument set, and one grammar-conformance row. Every other figure you may see in gate
 output (47, 48, 49, 53…) is a *different denominator*, not a different count — and the block
 below is machine-checked by `script/m14/verify-analyzer-docs.ts` on every gate run, so the current
 statement cannot drift from the tree again.

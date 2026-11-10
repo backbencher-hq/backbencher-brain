@@ -319,7 +319,7 @@ package — and four editor integrations under [`ide/`](https://github.com/backb
 They are complements to your editor's own language servers, by declared design: **no completion,
 no diagnostics, no rename** — navigation, graph and evidence only
 ([honesty contract](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/IDE-HONESTY-CONTRACT.md)).
-The editor lane serves 49 languages (the 50 minus Objective-C, excluded because `.m` is shared
+The editor integration serves 49 languages (the 50 minus Objective-C, excluded because `.m` is shared
 with MATLAB); 48 carry recorded editor evidence, and a language outside the launch set gets a
 declared not-indexed answer rather than a guess. Per-request-ID claim levels are in
 [`docs/m24/TOOL-DOC.md`](https://github.com/backbencher-hq/backbencher-brain/blob/main/docs/m24/TOOL-DOC.md),
@@ -329,7 +329,7 @@ per-editor install and verification status in
 generated claim table the documentation ships.
 
 Three request IDs ride an existing analyzer rather than adding a language: **TSX** is served by the
-TypeScript analyzer, **Sass** by the CSS analyzer, and **Terraform** by the HCL analyzer. The editor lane
+TypeScript analyzer, **Sass** by the CSS analyzer, and **Terraform** by the HCL analyzer. The editor integration
 cannot exceed the analyzers — it is the same set, minus Objective-C: `bb_lsp` serves **49 languages** in
 the editor (Objective-C is excluded because `.m` is shared with MATLAB and cannot be disambiguated by
 extension), and **48** of those carry recorded in-editor evidence. MATLAB and Sass are sealed terminal

@@ -12,10 +12,10 @@ does not belong in git, so it is published as one archive per release.
 
 ## What is in the repository
 
-- `validation/<lane>/results/**` — sealed records: `{ status, checks, currentCommit,
+- `validation/<milestone>/results/**` — sealed records: `{ status, checks, currentCommit,
   generatedAt, ... }` written by the verifier scripts. A record whose inputs changed
   since it was written is *stale* and is not read as a pass; the gates refuse it.
-- `docs/m*/` — each lane's plan, findings and closure documents.
+- `docs/m*/` — each milestone's plan, findings and closure documents.
 - `docs/m29/PRECISION-LEDGER.md` — the per-language claim table: claim level, feature
   matrix, measured latency, analyzer precision and the evidence path behind each row.
 - `validation/**/fixtures/**`, `validation/**/measurements/**`,
@@ -51,7 +51,7 @@ record, and an unverified archive is not evidence.
 
 ```bash
 npm ci && npm run build     # builds dist/ (the grammar wasm is tracked in the repository)
-npx tsx script/m53/verify-r1-ladder.ts --resume   # the lane ladder (M24-M44)
+npx tsx script/m53/verify-r1-ladder.ts --resume   # the analysis ladder (M24-M44)
 npx tsx script/m53/verify-closure.ts              # M53 closure
 npx tsx script/m55/verify-governance.ts           # M55 bar audit
 npx tsx script/m55/verify-closure.ts              # M55 closure
