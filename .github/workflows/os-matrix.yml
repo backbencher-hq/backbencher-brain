@@ -1,11 +1,7 @@
-# M42.X1 launch bar (issue #655): the E7 OS-matrix legs on GitHub-hosted
-# runners. Each OS runs script/m25/verify-cross-platform.ts, which proves the
-# shared assertion core against the SHIPPED node-dist server on THIS OS
-# (budgets re-measured and gated per OS, contract §3/§10), machine-emits that
-# OS's evidence (E7-<os>.json) and honest blocked records for the other two.
-# Linux also re-verifies locally; darwin/windows have no other executable
-# home, which is the recorded CI-PENDING reason in docs/m42/LAUNCH-RECORD.md.
-name: OS matrix (M42.X1 E7 legs)
+# The private development repository runs the E7 cross-platform evidence legs. The filtered
+# release tree does not publish the lane-owned evidence set, so here the same runners prove the
+# shipped artefact instead: install, build, and run the built CLI on each OS.
+name: OS matrix
 
 on:
   push:
@@ -35,19 +31,9 @@ jobs:
       - name: Build (shipped dist server)
         run: npm run build
 
-      - name: Run the E7 cross-platform leg for ${{ matrix.os }}
+      - name: Shipped-binary smoke on ${{ matrix.os }}
+        shell: bash
         run: |
-          if [ -f script/m25/verify-cross-platform.ts ] && [ -d validation/m25 ]; then
-            npx tsx script/m25/verify-cross-platform.ts
-          else
-            node bin/bb --version
-            node bin/bb --help >/dev/null
-            echo "Filtered release tree: the E7 evidence set is owned by the private development repository; ran the shipped-binary smoke instead."
-          fi
-
-      - name: Upload E7 evidence artifacts for ${{ matrix.os }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e7-evidence-${{ matrix.os }}
-          path: validation/m25/results/E7-*.json
-          if-no-files-found: ignore
+          node bin/bb --version
+          node bin/bb --help >/dev/null
+          echo "release-tree smoke OK on ${{ matrix.os }}"
