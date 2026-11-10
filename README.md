@@ -1,5 +1,15 @@
 # Backbencher Brain (`bb`)
 
+<p align="center">
+  <a href="https://backbencher.cc"><img src="https://backbencher.cc/web-app-manifest-512x512.png" width="88" alt="bb logo" /></a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/backbencher-brain"><img src="https://img.shields.io/npm/v/backbencher-brain.svg" alt="npm version"></a>
+  <a href="https://github.com/backbencher-hq/backbencher-brain/actions/workflows/ci.yml"><img src="https://github.com/backbencher-hq/backbencher-brain/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/backbencher-hq/backbencher-brain/blob/main/LICENSE"><img src="https://img.shields.io/github/license/backbencher-hq/backbencher-brain.svg" alt="MIT license"></a>
+</p>
+
 **Evidence is the answer.** `bb` is local-first, runtime-agnostic code intelligence: it indexes a repository with
 **50 Tree-sitter language analyzers**, stores the result in a per-project SQLite database, and answers
 questions about it from a CLI, an **MCP server** for agent hosts, or a library. Node **and** Bun are
