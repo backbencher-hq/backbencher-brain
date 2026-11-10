@@ -39,6 +39,7 @@ jobs:
   # root lockfile). Next builds dominate the cost, so untouched pushes stay
   # fast; a design or content regression fails before Vercel can deploy it.
   verify-site:
+    if: ${{ hashFiles('website/package.json') != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -173,6 +174,7 @@ jobs:
   # Requires groff/man-db for the man-page gate (absent from runner images —
   # installed explicitly, never skipped).
   verify:
+    if: ${{ hashFiles('validation/m30/results/manifest.json') != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

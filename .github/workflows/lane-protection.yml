@@ -26,6 +26,10 @@ jobs:
 
       - name: Block unapproved deletions of closed-milestone artifacts
         run: |
+          if [ ! -f validation/lane-protection/protected-paths.json ]; then
+            echo "Filtered release tree: the protected-paths ledger is owned by the private development repository; nothing to compare here."
+            exit 0
+          fi
           BASE=""
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="origin/${{ github.base_ref }}"
