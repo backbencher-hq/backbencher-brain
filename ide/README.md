@@ -12,7 +12,7 @@ open an indexed project.
 
 | Path | Editor | What it is |
 | --- | --- | --- |
-| `ide/vscode/` | VS Code, Cursor, Antigravity and other VS Code-family editors | The `bb_lsp-vscode` extension (one VSIX serves the family). Claim levels per language/feature are in its README; build with `node ./esbuild-extension.mjs` after `npm run build` at the repo root, package with `npx @vscode/vsce package`. |
+| `ide/vscode/` | VS Code, Cursor, Antigravity and other VS Code-family editors | The `bb_lsp-vscode` extension (one VSIX serves the family), attached to each GitHub release as `bb-lsp-vscode-<version>.vsix`. Claim levels per language/feature are in its README; build with `node ./esbuild-extension.mjs` after `npm run build` at the repo root, package with `npx @vscode/vsce package`. |
 | `ide/zed/bb-lsp/` | Zed | Extension manifest, two language configs and the launcher script. The README states the declared server/Node resolution order; the launcher errors loudly rather than silently falling back. |
 | `ide/lsp4ij/bb-lsp/` | JetBrains IDEs via the LSP4IJ plugin | Configuration-only template (no Kotlin plugin): import it in the LSP4IJ settings and set `BB_ROOT` to the checkout. Language mappings: TypeScript, JavaScript, Java, Scala. |
 | `ide/helix/languages.toml` | Helix | A language-server stanza per supported language. The command path is a placeholder by design and must be edited; `script/m56/verify-published-paths.ts` gates that no published editor config carries a machine-specific absolute path. |

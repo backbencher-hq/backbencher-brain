@@ -1199,7 +1199,7 @@ Full reference: man bb, or docs/indexing/ in the repository.
     })
 
   /**
- * Report the upgrade path. bb installs via `npm install -g backbencher-brain`,
+ * Report the upgrade path. bb installs via `npm install -g @backbencher/brain`,
  * so npm owns the files and this command deliberately does NOT replace them —
  * a self-updater would fight the package manager and break on read-only or
  * root-owned global prefixes.
@@ -1222,7 +1222,7 @@ async function cmdUpgrade(opts: { check?: boolean; to?: string }) {
   try {
     // The URL must carry the RANGE, not a hardcoded `/latest`. It did, which made
     // `--to <range>` silently meaningless: `bb upgrade --to 4.17.21` still asked
-    // the registry for `backbencher-brain@latest` and reported 404. A flag that
+    // the registry for `@backbencher/brain@latest` and reported 404. A flag that
     // is accepted and ignored is worse than one that is rejected.
     //
     // Endpoint form matters, and was measured rather than assumed:
@@ -1235,9 +1235,10 @@ async function cmdUpgrade(opts: { check?: boolean; to?: string }) {
     // two real packages before choosing this.
     const encoded = encodeURIComponent(range)
     const isDistTag = /^[a-z][a-z0-9._-]*$/i.test(range) && !/^\d/.test(range)
+    const encodedName = encodeURIComponent(PKG_NAME)
     const url = isDistTag
-      ? `https://registry.npmjs.org/${PKG_NAME}/${encoded}`
-      : `https://registry.npmjs.org/${PKG_NAME}`
+      ? `https://registry.npmjs.org/${encodedName}/${encoded}`
+      : `https://registry.npmjs.org/${encodedName}`
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { accept: "application/json" },
@@ -1311,7 +1312,7 @@ program
     .addHelpText(
       "after",
       `
-bb is installed with \`npm install -g backbencher-brain\`, so npm owns the
+bb is installed with \`npm install -g @backbencher/brain\`, so npm owns the
 install and bb does not replace its own files. This command reports the installed
 version, the newest published version, and the command to run — it never mutates
 an install behind npm's back.

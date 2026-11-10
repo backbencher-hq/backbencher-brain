@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/backbencher-brain"><img src="https://img.shields.io/npm/v/backbencher-brain.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@backbencher/brain"><img src="https://img.shields.io/npm/v/@backbencher%2Fbrain.svg" alt="npm version"></a>
   <a href="https://github.com/backbencher-hq/backbencher-brain/actions/workflows/ci.yml"><img src="https://github.com/backbencher-hq/backbencher-brain/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/backbencher-hq/backbencher-brain/blob/main/LICENSE"><img src="https://img.shields.io/github/license/backbencher-hq/backbencher-brain.svg" alt="MIT license"></a>
 </p>
@@ -38,7 +38,7 @@ as if it were one space.
 Backbencher ships as an npm package. Node.js 18 or newer is the only requirement.
 
 ```bash
-npm install -g backbencher-brain
+npm install -g @backbencher/brain
 bb --version
 ```
 
@@ -67,7 +67,7 @@ on Windows); add that directory to your `PATH`.
 ### Pin a release
 
 ```bash
-npm install -g backbencher-brain@0.1.0
+npm install -g @backbencher/brain@0.1.0
 # or with the installer scripts:
 VERSION=0.1.0 curl -fsSL https://backbencher.cc/install.sh | bash
 ```
@@ -159,7 +159,7 @@ Linux-specific operational details, because this is the platform most installs r
   you want to leave headroom. Memory scales with the worker count and file size; very large files are
   capped by the discovery rules described in [`docs/indexing/discovery-matrix.md`](docs/indexing/discovery-matrix.md).
 - **Updating and removing.**
-  - npm install: `npm install -g backbencher-brain@latest`; `bb upgrade` tells you whether a newer release
+  - npm install: `npm install -g @backbencher/brain@latest`; `bb upgrade` tells you whether a newer release
     exists and prints the exact command, but deliberately does not replace its own files;
   - installer scripts: re-run the installer (or prefix `VERSION=…` to pin);
   - remove the program with `npm rm -g backbencher-brain` (or delete the release binary); remove `~/.bb`
@@ -198,7 +198,7 @@ bb help <command>         # same, via the help command
 Global flags: `--verbose` (debug logs, per-file worker/WASM lines), `--quiet` (warnings/errors only).
 A mistyped command suggests the closest real one and points to `bb --help`. `bb <command> --help` is
 authoritative for that command's options; `bb help <command>` is the same. `bb docter` suggests `doctor`).
-The full manual ships with npm installs and is available as `man bb` after `npm install -g backbencher-brain`.
+The full manual ships with npm installs and is available as `man bb` after `npm install -g @backbencher/brain`.
 
 Example outputs are honest by construction: `bb status` shows the actual per-phase timings, `bb health`
 reports a *sample* for freshness (and says so), and a run that stored fewer files than it discovered
@@ -207,7 +207,7 @@ reports the index as incomplete rather than exit 0 in silence.
 ### Help and manual
 
 `bb <command> --help` shows that command's options. `bb help <command>` is the same.
-The full manual ships with npm installs and is available as `man bb` after `npm install -g backbencher-brain`.
+The full manual ships with npm installs and is available as `man bb` after `npm install -g @backbencher/brain`.
 
 ### Fingerprint-only and permissions-only claims (M32)
 

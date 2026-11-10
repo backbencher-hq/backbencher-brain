@@ -12,7 +12,7 @@ surface is the program you install plus the install path that delivers it.
 | pre-0.1 internal builds (0.2.x, 0.3.x) and the retired 1.0.x binary line | No — not published, not maintained |
 
 Fixes ship in the newest 0.1.x patch release. Upgrade with
-`npm install -g backbencher-brain@latest`.
+`npm install -g @backbencher/brain@latest`.
 
 ## Reporting a vulnerability
 

@@ -1,5 +1,5 @@
 {
-  "name": "backbencher-brain",
+  "name": "@backbencher/brain",
   "version": "0.1.0",
   "description": "Universal code intelligence: index any project with 50 language analyzers, query via CLI or any MCP host (Claude Code, Cursor, VS Code).",
   "type": "module",

@@ -3,7 +3,7 @@
 ## 0.1.0 — first public release
 
 The first public release of Backbencher Brain (`backbencher-brain` on npm, `bb` on
-the command line). Everything below is what a fresh `npm install -g backbencher-brain`
+the command line). Everything below is what a fresh `npm install -g @backbencher/brain`
 gives you. The section still headed **Unreleased** further down was written against
 internal builds and ships in this release; read it as the detailed change record
 behind this summary.
@@ -43,7 +43,7 @@ behind this summary.
 ### Install
 
 ```bash
-npm install -g backbencher-brain     # primary path, Node.js >= 18
+npm install -g @backbencher/brain     # primary path, Node.js >= 18
 bb --version
 bb setup                              # optional: semantic search provider
 bb index /path/to/project

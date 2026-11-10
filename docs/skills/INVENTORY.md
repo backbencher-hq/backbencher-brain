@@ -39,7 +39,7 @@ task. This is the observed gap in the 2026-11-09 session: the bb MCP server *was
 
 1. **No bb skills at all.** Route: `skills/` in this repo (proposed) → package `files` →
    installed into each host's skills directory by `bb onboard`.
-2. **No installer.** `npm i -g backbencher-brain` puts files on disk; it does not register the
+2. **No installer.** `npm i -g @backbencher/brain` puts files on disk; it does not register the
    stdio MCP server in any host, and there is no command that copies skills into
    `.claude/skills/`, `.agents/skills/`, `.github/skills/`, etc.
 3. **No skills gate.** Nothing validates frontmatter, "use when" descriptions, referenced

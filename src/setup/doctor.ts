@@ -330,7 +330,7 @@ export function runDoctorChecks(opts: {
         `This project's index exists but doctor could not read its embedding table from this runtime ` +
         `(${storedRead.unreadable}). Stored vectors are UNKNOWN, not absent — the model-consistency checks ` +
         `below cannot run.`,
-      fix: "run the shipped binary (npx backbencher-brain doctor) or check the database file permissions",
+      fix: "run the shipped binary (npx @backbencher/brain doctor) or check the database file permissions",
     })
   }
   if (winnerModel && storedModels.length > 0) {

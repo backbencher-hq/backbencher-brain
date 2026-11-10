@@ -217,7 +217,7 @@ function npmInstallFix(what: string): string[] {
       "tsx is a DEV dependency. A production install (`npm ci --omit=dev`, NODE_ENV=production,\n" +
       "a slim CI image) removes it, and the pool then fails exactly like this — silently,\n" +
       "because nothing on the path from \"tsx is gone\" to \"workers don't start\" said so.",
-    "Or run the published build, which needs no tsx at all: `npm i -g backbencher-brain`",
+    "Or run the published build, which needs no tsx at all: `npm i -g @backbencher/brain`",
   ]
 }
 
