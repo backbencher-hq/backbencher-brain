@@ -100,6 +100,35 @@ if commit.committer_email != b"ishaq2321@users.noreply.github.com":
     commit.committer_email = b"ishaq2321@users.noreply.github.com"
 PY
 
+REDACT_CB='import re
+_data = blob.data
+for _a, _b in [
+    (b"backbencher-hq/backbencher-brain", b"backbencher-hq/backbencher-brain"),
+    (b"backbencher-hq/backbencher-brain", b"backbencher-hq/backbencher-brain"),
+    (b"$HOME", b"$HOME"),
+    (b"$HOME", b"$HOME"),
+    (b"$HOME", b"$HOME"),
+    (b"$HOME", b"$HOME"),
+    (b"file://$HOME", b"file://$HOME"),
+    (b"REDACTED-EMAIL", b"REDACTED-EMAIL"),
+    (b"ishaq2321@users.noreply.github.com", b"ishaq2321@users.noreply.github.com"),
+    (b"REDACTED-PROXY", b"REDACTED-PROXY"),
+    (b"REDACTED-PROXY", b"REDACTED-PROXY"),
+    (b"REDACTED-IP", b"REDACTED-IP"),
+    (b"REDACTED-IP", b"REDACTED-IP"),
+    (b"fixtures", b"fixtures"),
+    (b"Generated with a tool", b"Generated with a tool"),
+]:
+    _data = _data.replace(_a, _b)
+_data = re.sub(rb"gh[opsu]_[A-Za-z0-9]{20,}", b"REDACTED", _data)
+_data = re.sub(rb"github_pat_[A-Za-z0-9_]{30,}", b"REDACTED", _data)
+_data = re.sub(rb"glpat-[A-Za-z0-9_-]{18,}", b"REDACTED", _data)
+_data = re.sub(rb"sk-or-v1-[A-Za-z0-9_-]{16,}", b"REDACTED", _data)
+_data = re.sub(rb"sk-ant-[A-Za-z0-9_-]{20,}", b"REDACTED", _data)
+_data = re.sub(rb"x-access-token:gh[a-z]_[A-Za-z0-9]{10,}", b"x-access-token:REDACTED", _data)
+_data = re.sub(rb"(?i)
+blob.data = _data'
+
 # --- clone + filter ---------------------------------------------------------
 say "clone"
 git clone --no-local -q "$SOURCE" "$DEST" 2>&1 | tail -2
@@ -121,7 +150,7 @@ filter() {
 
 filter 1 "$tmp/remove-1.txt" --strip-blobs-bigger-than 100M \
   --replace-text "$tmp/redact.txt" --replace-message "$tmp/messages.txt" \
-  --commit-callback "$IDENTITY_CB"
+  --commit-callback "$IDENTITY_CB" --blob-callback "$REDACT_CB"
 filter 2 "$tmp/removed-later.txt"
 
 # Pass 3: keep a validation/ file only when its milestone directory is on the

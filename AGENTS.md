@@ -34,8 +34,8 @@ Write tools (`bb_edit`, `bb_index`, `bb_annotate`) change the index or source �
 ## Commit attribution
 
 Commit messages are authored by the repository owner. Do not add agent
-attribution footers — no "Generated with …" line and no "Co-Authored-By" trailer
-naming an agent, model or tool.
+attribution footers — no generated-by line, and no co-author trailer naming an
+agent, model or tool.
 
 ## Durable state
 
