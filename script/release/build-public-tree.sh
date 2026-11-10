@@ -202,8 +202,8 @@ for f in README.md LICENSE CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_COND
 done
 echo "kept files:         present"
 
-if ! python3 "$RULES_DIR/validation_keep.py" check "$DEST"; then
-  fail "a retained document cites evidence the tree does not carry"
+if ! python3 "$RULES_DIR/validation_keep.py" check "$DEST" "$SOURCE"; then
+  fail "a retained document cites a record the trim dropped"
 fi
 
 wasm_count="$(git -C "$DEST" ls-tree -r HEAD wasm/ | wc -l)"
