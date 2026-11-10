@@ -202,6 +202,7 @@ async function cmdIndex(
   // The banner belongs before every side effect of this run (a --force wipe prints its own reclaim
   // lines): the first thing on screen should say WHAT is being indexed, not what was reclaimed.
   console.log(bold(`indexing ${abs} (project ${pid.slice(0, 8)}…)`, S))
+  if (process.stdout.isTTY) console.log(dim("  scanning project files…", S))
   // M43.P1: a --force wipe+index is ONE lock scope — acquire before the wipe
   // so a concurrent indexer can never slip between the wipe and the run.
   // Non-force paths acquire inside indexProjectParallel/runPostProcessing.
@@ -341,6 +342,15 @@ async function cmdIndex(
       // M43.P1: another live process holds this project's index lock — refuse
       // loudly with the holder named, never interleave writes.
       console.error(`✗ ${e.message}`)
+    } else if (abort.signal.aborted) {
+      // M21.R3 covers cancellation after parsing starts. Cancellation during
+      // discovery or worker startup used to fall through this handler: the
+      // signal had fired, Ctrl+C looked dead, and the run either waited for the
+      // 30s worker probe or crashed with a stack. It is a clean stop.
+      progress.clear()
+      console.log("⏸ index cancelled before parsing started — no files were written. Re-run when ready: bb index")
+      process.exitCode = 130
+      return
     } else {
       throw e
     }

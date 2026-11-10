@@ -6595,6 +6595,24 @@ export async function indexProjectParallel(
     stats.totalFiles = files.length + stats.skippedFiles
     phases.parsedFiles = files.length
 
+    // Publish the discovered corpus BEFORE the worker probe. The renderer prints
+    // the size expectation ("large project — grab a coffee") off this first
+    // update; without it, a slow worker startup on a cold machine is minutes of
+    // silence between "loaded .bbignore rules" and the first parsed file.
+    if (options.onProgress && files.length > 0) {
+      try {
+        options.onProgress({
+          ...stats,
+          totalFiles: stats.totalFiles,
+          currentFile: "",
+          progress: 0,
+          filesPerSecond: 0,
+          elapsedSeconds: Date.now() - stats.startTime,
+          phase: "worker-pool",
+        })
+      } catch {}
+    }
+
     if (files.length === 0) {
       log.warn("no files to index (all skipped or none found)")
       phases.noop = true
@@ -6723,7 +6741,10 @@ export async function indexProjectParallel(
     // Try worker pool first (real process isolation with fork + 45s timeouts)
     // Falls back to in-process only if fork() is unavailable
     let processFn = processWithWorkerPool
-    // Test if fork works by spawning the binary with BB_POOL_WORKER=1
+    // Test if fork works by spawning the binary with BB_POOL_WORKER=1.
+    // Announce it: worker startup loads the parser engine, and on a cold machine
+    // that is the longest silent stretch of the run.
+    _log.log(`[brain] preparing the parallel worker pool (${files.length} files)…`)
     const workerStartupStart = Date.now()
     try {
       const { fork } = await import("child_process")
@@ -6741,6 +6762,13 @@ export async function indexProjectParallel(
         stdio: ["ignore", "pipe", "pipe", "ipc"],
       })
       await new Promise<void>((resolve, reject) => {
+        // Ctrl+C during startup must stop the probe, not wait out its timeout.
+        const onAbort = () => {
+          clearTimeout(timeout)
+          try { testWorker.kill() } catch {}
+          reject(new Error("index cancelled during worker startup"))
+        }
+        if (signal) signal.addEventListener("abort", onAbort, { once: true })
         // Was hardcoded 60s while the pool's own startup watchdog used
         // BB_WORKER_STARTUP_TIMEOUT_MS (default 30s) — so a slow machine could
         // fail the real pool at 30s and then wait another 60s for a probe that
@@ -6753,6 +6781,7 @@ export async function indexProjectParallel(
         testWorker.on("message", (msg: any) => {
           if (msg?.type === "ready") {
             clearTimeout(timeout)
+            signal?.removeEventListener("abort", onAbort)
             testWorker.kill()
             resolve()
           }
@@ -6773,6 +6802,7 @@ export async function indexProjectParallel(
       _log.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
       log.info("worker pool fork test passed — using parallel workers")
     } catch (e: any) {
+      if (signal?.aborted) throw new Error("index cancelled during worker startup")
       _log.log(`[brain] ⚠ worker pool unavailable — falling back to serial in-process indexing`)
       // Name the cause, not just the fact. Users reported "workers don't start"
       // with nothing actionable; the underlying reason (usually a missing tsx)
