@@ -1,3 +1,5 @@
+# Paths never needed inside the published package.
+
 src/
 tests/
 docs/

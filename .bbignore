@@ -1,33 +1,10 @@
 # .bbignore — what this repository does NOT index.
 #
-# Same syntax as .gitignore (bb reads it through the `ignore` package, alongside
-# .gitignore, before any parsing). Lines are additive exclusions; nothing here
-# changes what bb indexes for any OTHER project.
-#
-# ── WHY THIS FILE EXISTS (measured 2026-10-08) ──────────────────────────────
-#
-# `bb index .` on this checkout discovered 11,045 files and ~944k symbols, and
-# the run was dominated by its own generated artefacts rather than by source.
-# Evidence from the run's own log:
-#
-#   [STORE] elixir-grammar-ab.json:            10103 symbols
-#   [STORE] incoming-audit-1875files.json:      8753 symbols
-#   [STORE] zig-absent-class-3848.json:         2153 symbols
-#   [STORE] elixir-grammar-ab.json ...  ...  (validation/m60/results, m12/ground-truth,
-#   [STORE] oracle-callsite-scoped-cpp-f30.json: 678   m13/results, m59/results, ...)
-#
-# and the parent indexer spent 31 of one run's 34 minutes with its event loop
-# BLOCKED (single blocks of 15s, 89s, 250s) storing them. JSON was 3,514 files /
-# 816,369 symbols — 86% of everything indexed. These are outputs of this
-# programme's own gates: `.gitignore` already states the rule for them
-# ("Generated M60 census/oracle output — NEVER in git (programme rule 7)"). An
-# index of this repository should be an index of the repository's CODE.
-#
-# Nothing here is deleted or hidden from git: every excluded path stays tracked,
-# reviewable and gated. `bb index` simply stops reading generated evidence as if
-# it were source. Delete a line to put that tree back in the index.
+# Same syntax as .gitignore; bb reads it through the `ignore` package alongside
+# .gitignore. Lines are additive exclusions and change nothing for other projects.
+# This repository's generated evidence trees are outputs of its own gates, not
+# source; excluding them keeps an index of this repository about the code.
 
-# ── Programme evidence output (rule 7) ──────────────────────────────────────
 validation/**/results/
 validation/**/measurements/
 validation/**/ground-truth/
@@ -37,69 +14,16 @@ validation/**/tmp/
 validation/**/unversioned-recovered/
 validation/m60/**/*.json
 validation/m60/**/*.log
-
-# Raw walk/row dumps and logs are data, not source (and are gitignored anyway).
 **/*.ndjson
-
-# ── Worktree snapshots: whole copies of src/ at old revisions ───────────────
-# 286 tracked files, including FOUR divergent copies of script/m14/differential.ts
-# (14,140 / 14,355 / 14,355 / 17,581 lines). Indexing them stores duplicate
-# symbols for the same analyse(s) and pollutes every later search.
 worktree-snapshots/
-
-# ── Vendored tree-sitter grammar artefacts ──────────────────────────────────
-# 351 files / 72 MB of GENERATED grammar tables (node-types.json up to 514 KB,
-# grammar.json up to 429 KB) and the parsers built from them. Measured in the
-# run: `[STORE] node-types.json: 3369 symbols`, `[STORE] grammar.json: 1635` —
-# one grammar table costs more to store than the whole analyzer lane that
-# consumes it, and none of it is this project's code.
 grammars/
-
-# ── The fixture corpus (the last 20% that costs as much as the first 80%) ───
-# 3,936 files / 207 MB — 44% of everything discovered — of which 1,483 are
-# `*.expectation.json` plus a fixture source in each of the 46 lanes. They are
-# the programme's ground truth and they stay tracked, reviewed and gated; but
-# `analysis-exclusions.ts` ALREADY hides every `fixtures` directory from analysis
-# results, so indexing them stores symbols that no analysis surface will show.
-#
-# Measured: the 40%->95% stretch of a run (7m7s -> 26m12s) is almost entirely
-# this tree. Excluding it is what makes an index of this repository an index of
-# its CODE.
-#
-# To walk the fixture corpus itself, run bb with validation/m14/fixtures as the
-# project root — that is a different question, and it gets its own database:
-#   bb index validation/m14/fixtures
 validation/**/fixtures/
-
-# ── Scratch probe trees: method, not product ────────────────────────────────
-# Keep them on disk and in git (they are the method behind shipped numbers);
-# they are not part of the code graph.
 .tmp-probe/
-
-# ── Absolute-precision exclusions of the biggest single offenders ───────────
-# Named so a reader can see exactly which file motivated the rule above.
 validation/m60/grammar-survey.json
 validation/m60/grammar-survey.cache.json
 validation/m60/target-spelling-register.json
 validation/m60/script-surface-baseline.json
 validation/m49/regex-debt-register.json
 validation/m12/ground-truth/
-
-# ── Local measurement databases and scratch roots ───────────────────────────
-# Found by auditing the index against `git ls-files`: three files —
-# `.bb-bench/status`, `.bb-prof/status`, `.bb-scope/status` — were indexed out of
-# throwaway databases created for the index-speed measurements, because nothing
-# excluded them and bb honours only .gitignore/.bbignore. They are regenerable
-# data, never source, and their rows then outlive the directories they came from
-# (freshness reported them missing until the next run purged them).
 .bb-*/
-
-
-# ── The built-in rules are defaults, and this is now the way to override one ──
-# `bin/` is in bb's built-in skip list because it usually holds build output. In this
-# project it also holds `bin/bb`, the shipped CLI launcher (`#!/usr/bin/env node`, 13
-# lines of real JavaScript). Until the walk learned to consult an explicit `!pattern`
-# BEFORE the built-in skips, no ignore file could bring that file back — the presence
-# of this line is the demonstration that the override now works, and it is deliberate
-# rather than incidental.
 !bin/
